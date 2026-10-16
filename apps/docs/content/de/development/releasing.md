@@ -4,7 +4,7 @@ description: Wie Versionen nummeriert werden, was ein Release veröffentlicht un
 order: 9
 ---
 
-Kaeso wird als Ganzes veröffentlicht: Das Gateway, die Konsole, die Crates von KPP und die Pakete der UI-Bibliothek teilen sich eine Versionsnummer, und ein Release veröffentlicht sie alle. Mitwirkende erstellen nie Tags oder Releases; der Maintainer erstellt jedes Release aus `prod` mit dem Release-Workflow des Repositorys und veröffentlicht die Dokumentation mit dessen Pages-Workflow.
+Kaeso wird als Ganzes veröffentlicht: Das Gateway, die Konsole, die Crates von KPP und die Pakete der UI-Bibliothek teilen sich eine Versionsnummer, und ein Release veröffentlicht sie alle. Mitwirkende erstellen nie Tags oder Releases; der Maintainer erstellt jedes Release aus `prod` mit dem Release-Workflow des Repositorys und stellt die Dokumentation und den Showcase vom Tag des Releases bereit.
 
 ## Versionen
 
@@ -80,10 +80,10 @@ git merge --no-ff -m "Merge release 0.2.0 into dev" origin/prod
 git push origin dev
 ```
 
-6. **Die Dokumentation veröffentlichen**, mit dem Pages-Workflow und dem Tag des Releases, etwa `v0.2.0`. Nach einem Pre-Release ist das optional, denn die Website beschreibt dann das Pre-Release.
+6. **Die Websites bereitstellen**, vom Tag des Releases, etwa `v0.2.0`, wie unter [Die Websites](#die-websites) beschrieben. Nach einem Pre-Release ist das optional, denn die Websites beschreiben dann das Pre-Release.
 
 ```bash
-gh workflow run pages.yml --repo logicplanes/kaeso --ref v0.2.0
+git checkout v0.2.0
 ```
 
 ## Pre-Releases
@@ -136,6 +136,20 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 Die Jobs für npm und crates.io melden sich über Trusted Publishing an, sodass das Repository keine Registry-Tokens enthält. Sie überspringen eine Version, die schon veröffentlicht ist; schlägt ein Veröffentlichungsjob fehl, schließt das erneute Ausführen der fehlgeschlagenen Jobs des Laufs das Release ab.
 
-## Der Pages-Workflow
+## Die Websites
 
-`.github/workflows/pages.yml` läuft auf dem Tag des Releases, das veröffentlicht wird, gewählt als Ref des Workflows, und verweigert jeden Lauf, der nicht von einem Release-Tag kommt. Er installiert den Workspace, baut die Bibliotheken mit `pnpm build:packages`, baut diese Website mit `pnpm --filter kaeso-docs build`, Budgets eingeschlossen, und stellt `apps/docs/dist` auf GitHub Pages unter docs.kaeso.app bereit. Die Dokumentation beschreibt das Release, aus dem sie veröffentlicht wurde.
+Die Dokumentation unter docs.kaeso.app und der Showcase unter ui.kaeso.app sind statische Websites. Der Maintainer stellt sie vom Tag eines Releases auf einem statischen Host bereit; kein Workflow übernimmt das. Beide Builds prüfen ihre Budgets:
+
+```bash
+pnpm install --frozen-lockfile && pnpm build:packages
+```
+
+```bash
+pnpm --filter kaeso-docs build
+```
+
+```bash
+pnpm --filter kaeso-showcase build
+```
+
+`apps/docs/dist` enthält die Dokumentation und `apps/showcase/dist` den Showcase, jede Seite schon fertig in Englisch, Deutsch und vereinfachtem Chinesisch. Die Websites beschreiben das Release, aus dem sie gebaut wurden.
