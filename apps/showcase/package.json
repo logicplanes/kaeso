@@ -46,6 +46,6 @@
     "@types/react-dom": "19.2.3",
     "oxlint": "1.85.0",
     "pngjs": "7.0.0",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }
