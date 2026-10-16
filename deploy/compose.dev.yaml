@@ -25,7 +25,7 @@ services:
       retries: 30
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.3.48.2-alpine
+    image: clickhouse/clickhouse-server:26.3.49.3-alpine
     environment:
       CLICKHOUSE_USER: kaeso
       CLICKHOUSE_PASSWORD: kaeso
