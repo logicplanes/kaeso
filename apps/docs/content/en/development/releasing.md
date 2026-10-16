@@ -4,7 +4,7 @@ description: How versions are numbered, what a release publishes, and how the ma
 order: 9
 ---
 
-Kaeso is released as a whole: the gateway, the console, KPP's crates and the UI library's packages share one version number, and one release publishes all of them. Contributors never create tags or releases; the maintainer makes every release from `prod` with the repository's Release workflow and publishes the documentation with its Pages workflow.
+Kaeso is released as a whole: the gateway, the console, KPP's crates and the UI library's packages share one version number, and one release publishes all of them. Contributors never create tags or releases; the maintainer makes every release from `prod` with the repository's Release workflow and deploys the documentation and the showcase from the release's tag.
 
 ## Versions
 
@@ -80,10 +80,10 @@ git merge --no-ff -m "Merge release 0.2.0 into dev" origin/prod
 git push origin dev
 ```
 
-6. **Publish the documentation** with the Pages workflow and the release's tag, such as `v0.2.0`. After a pre-release this is optional, since the site then describes the pre-release.
+6. **Deploy the sites** from the release's tag, such as `v0.2.0`, as described in [the sites](#the-sites). After a pre-release this is optional, since the sites then describe the pre-release.
 
 ```bash
-gh workflow run pages.yml --repo logicplanes/kaeso --ref v0.2.0
+git checkout v0.2.0
 ```
 
 ## Pre-releases
@@ -136,6 +136,20 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 The npm and crates.io jobs authenticate with trusted publishing, so the repository holds no registry tokens. They skip a version that is already published, so when a publishing job fails, re-running the run's failed jobs finishes the release.
 
-## The Pages workflow
+## The sites
 
-`.github/workflows/pages.yml` runs from the tag of the release to publish, chosen as the workflow's ref, and refuses to run from anything that isn't a release tag. It installs the workspace, builds the libraries with `pnpm build:packages`, builds this site with `pnpm --filter kaeso-docs build`, budgets included, and deploys `apps/docs/dist` to GitHub Pages at docs.kaeso.app. The documentation describes the release it was published from.
+The documentation at docs.kaeso.app and the showcase at ui.kaeso.app are static sites, deployed by the maintainer from a release's tag to a static host; no workflow deploys them. Both builds check their budgets:
+
+```bash
+pnpm install --frozen-lockfile && pnpm build:packages
+```
+
+```bash
+pnpm --filter kaeso-docs build
+```
+
+```bash
+pnpm --filter kaeso-showcase build
+```
+
+`apps/docs/dist` holds the documentation and `apps/showcase/dist` the showcase, every page already rendered in English, German and Simplified Chinese. The sites describe the release they were built from.

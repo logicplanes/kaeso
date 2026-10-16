@@ -25,7 +25,7 @@ Kaeso, the open-source, self-hosted AI gateway ([kaeso.app](https://kaeso.app)):
 | `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                    |                                                      |
 | `openapi.json`  | The Platform API document, generated from the gateway's code                                                |                                                      |
 | `scripts/`      | The npm package and licence checks, and the changelog steps of a release                                    |                                                      |
-| `.github/`      | CI, Release and Pages workflows, templates                                                                  |                                                      |
+| `.github/`      | CI and Release workflows, templates                                                                         |                                                      |
 
 ## Setup
 
@@ -93,6 +93,6 @@ CI runs these checks for every area a pull request changes, and all of them on `
 ## Git and releases
 
 - Work on `dev` or on a branch from `dev`, and open pull requests into `dev`. Never push to `prod`: the maintainer pushes `dev` there to make a release.
-- Never create tags or releases and never publish crates, npm packages, images or sites: the maintainer runs the Release and Pages workflows.
+- Never create tags or releases and never publish crates, npm packages, images or sites: the maintainer runs the Release workflow and deploys the sites.
 - Every user-visible change gets a line under `[Unreleased]` in `CHANGELOG.md`, in the same pull request.
 - Commit messages say what changed and why.

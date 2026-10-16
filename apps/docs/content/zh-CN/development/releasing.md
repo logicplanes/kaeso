@@ -4,7 +4,7 @@ description: 版本如何编号、一个版本发布哪些内容，以及维护�
 order: 9
 ---
 
-Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库的包共用同一个版本号，一次发布就会发布所有这些内容。贡献者从不创建标签或版本；每个版本都由维护者从 `prod` 通过仓库的 Release 工作流发布，文档则通过 Pages 工作流发布。
+Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库的包共用同一个版本号，一次发布就会发布所有这些内容。贡献者从不创建标签或版本；每个版本都由维护者从 `prod` 通过仓库的 Release 工作流发布，文档和组件展示站则由维护者从该版本的标签部署。
 
 ## 版本号
 
@@ -80,10 +80,10 @@ git merge --no-ff -m "Merge release 0.2.0 into dev" origin/prod
 git push origin dev
 ```
 
-6. **发布文档**：用 Pages 工作流和该版本的标签，例如 `v0.2.0`。发布预发布版本后这一步是可选的，因为站点随后描述的是该预发布版本。
+6. **部署网站**：从该版本的标签（例如 `v0.2.0`）部署，方法见[网站](#网站)。发布预发布版本后这一步是可选的，因为网站随后描述的是该预发布版本。
 
 ```bash
-gh workflow run pages.yml --repo logicplanes/kaeso --ref v0.2.0
+git checkout v0.2.0
 ```
 
 ## 预发布版本
@@ -136,6 +136,20 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 npm 和 crates.io 作业通过可信发布（trusted publishing）进行身份验证，因此仓库中不保存任何注册表令牌。它们会跳过已经发布的版本，因此某个发布作业失败时，重新运行该次运行中失败的作业即可完成发布。
 
-## Pages 工作流
+## 网站
 
-`.github/workflows/pages.yml` 在要发布的版本的标签上运行（启动工作流时选择该标签作为 ref），不是从版本标签启动的运行会被拒绝。它会安装工作区，用 `pnpm build:packages` 构建这些库，用 `pnpm --filter kaeso-docs build` 构建本站（包括体积预算检查），并将 `apps/docs/dist` 部署到 GitHub Pages 上的 docs.kaeso.app。文档描述的是它发布时所基于的版本。
+docs.kaeso.app 上的文档和 ui.kaeso.app 上的组件展示站都是静态网站，由维护者从某个版本的标签部署到静态托管服务；没有工作流负责部署。两次构建都会检查体积预算：
+
+```bash
+pnpm install --frozen-lockfile && pnpm build:packages
+```
+
+```bash
+pnpm --filter kaeso-docs build
+```
+
+```bash
+pnpm --filter kaeso-showcase build
+```
+
+`apps/docs/dist` 包含文档，`apps/showcase/dist` 包含组件展示站，每个页面都已用英语、德语和简体中文渲染好。网站描述的是构建它们时所基于的版本。
