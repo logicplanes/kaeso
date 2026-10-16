@@ -1,7 +1,7 @@
 name: kaeso-dev
 
 x-node: &node
-  image: node:24.21.0-alpine
+  image: node:26.11.1-alpine
   working_dir: /stack
   profiles: [console]
   volumes:
