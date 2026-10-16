@@ -1,15 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { open } from "./support";
+import { open, slowMachine } from "./support";
 
 const pickers = [
   { name: "Expires", chunk: /\/date-popup\.[\w-]+\.js$/, dialog: "Choose a date" },
   { name: "Period", chunk: /\/range-popup\.[\w-]+\.js$/, dialog: "Choose a date range" },
 ] as const;
-
-async function slowMachine(page: Page) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
-}
 
 function boxesAfterPress(page: Page, dialog: string) {
   return page.evaluate(

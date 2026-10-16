@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { open } from "./support";
+import { open, slowMachine } from "./support";
 
 interface Frame {
   box: string;
@@ -57,11 +57,6 @@ for (const menu of cases) {
 }
 
 const SIDEBAR_MENU = /\/sidebar-menu\.[\w-]+\.js$/;
-
-async function slowMachine(page: Page) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
-}
 
 function boxesAfterPress(page: Page) {
   return page.evaluate(

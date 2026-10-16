@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
+
 ## [0.1.0] - 2026-10-16
 
 The first release of Kaeso, the open-source AI gateway you run yourself: the gateway, KPP, the console, the UI library and the documentation, from one repository under one version.

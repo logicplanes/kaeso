@@ -782,7 +782,7 @@
 
 @utility collapse-motion {
   height: var(--collapsible-panel-height, var(--accordion-panel-height, auto));
-  overflow: hidden;
+  overflow: clip;
   transition-property: height, opacity;
   transition-duration: var(--k-duration-disclosure);
   transition-timing-function: var(--k-ease-overlay);
@@ -1083,7 +1083,7 @@
 }
 
 @utility sidebar-motion {
-  overflow: hidden;
+  overflow: clip;
   transition-property: width;
   transition-duration: var(--k-duration-disclosure);
   transition-timing-function: var(--k-ease-overlay);
