@@ -1,0 +1,70 @@
+{
+  "model": "gpt-5.5",
+  "store": false,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "reasoning": {
+    "effort": "high",
+    "summary": "auto"
+  },
+  "tools": [
+    {
+      "type": "function",
+      "name": "get_weather",
+      "description": "Get the current weather for a city.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name, e.g. Paris"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ]
+          }
+        },
+        "required": [
+          "city",
+          "unit"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  ],
+  "input": [
+    {
+      "role": "user",
+      "content": "Should I bring an umbrella in Paris today?"
+    },
+    {
+      "id": "rs_04300c408ad3cbe0006acb64b9d3468194c36baf7c7f5c9ee3",
+      "type": "reasoning",
+      "encrypted_content": "gAAAAABqytGAzs-eslHeHN7Sbf1ZA3hHGYUcg7X3ykWBonXAXhSDFyWywGzd6p-STLWJnmA9fo_T-x4qEEGe7tB6OJBrPSCSvXSWXm-CjDQbbV9hBUz6etumCFQRQkYV60Wmo1oonEInQmVg-keDD4KVipQXyHDbMaDQPn4K2hstup0CyaUlOvFuNjyLgjZLCJqYSWsBCN079FHHpgsHXsUHSQ0pq3miUufXfA8B8mnEk6F2G9pwJlzG6Gw1ousr6A7K-jHmugx1AWWTGnhwjQHrpdIPHTjmFPpg5LrtqRqD_D7gAcei7V8LrRCrIi3p4cbVGKbvI2Tj85chgxmlbahVfuH1tQWa_XtbjM27eXrQfJCfDWy0Qo4Yw9zKvT3TGXrx3P2fkup9tiZ1OggmOJ_NtXDKMUfBar81x-LSqnSH41UDEwdVJk5meD4XYpNIFm4op6i7Os6I",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Checking tomorrow's forecast**\n\nThe user wants to know about an umbrella in Paris tomorrow. I should call the weather tool for Paris before answering."
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "id": "fc_04300c408ad3cbe0006acb64b9f8e88190fd5812ed00437890",
+      "call_id": "call_5GXBuXmucGIkbFfAryp6wDbC",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+      "status": "completed"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_5GXBuXmucGIkbFfAryp6wDbC",
+      "output": "{\"city\":\"Paris\",\"forecast\":\"rain\",\"precip_probability\":0.8,\"temperature_c\":14}"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_totp SET wrapped_key = $3, key_id = $4, updated_at = now() WHERE user_id = $1 AND wrapped_key = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b76b9316fc3e15bfbbfa0c04f91ef25d9442eff2591042526223be0baf75a26f"
+}

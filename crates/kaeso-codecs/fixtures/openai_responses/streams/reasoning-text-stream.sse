@@ -1,0 +1,54 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_0c5e2a91d7f3b604006acb8a10f2e481a39d6c7e5b8a4f21d0","object":"response","access_programs":null,"created_at":1791724048,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-oss-120b","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"low","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_0c5e2a91d7f3b604006acb8a10f2e481a39d6c7e5b8a4f21d0","object":"response","access_programs":null,"created_at":1791724048,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-oss-120b","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"low","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","type":"reasoning","summary":[]}}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","sequence_number":3,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"part":{"type":"reasoning_text","text":""}}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","sequence_number":4,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"delta":"The user wants "}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","sequence_number":5,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"delta":"the boiling point of water "}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","sequence_number":6,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"delta":"at sea level: 100 degrees Celsius."}
+
+event: response.reasoning_text.done
+data: {"type":"response.reasoning_text.done","sequence_number":7,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"text":"The user wants the boiling point of water at sea level: 100 degrees Celsius."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","sequence_number":8,"item_id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","output_index":0,"content_index":0,"part":{"type":"reasoning_text","text":"The user wants the boiling point of water at sea level: 100 degrees Celsius."}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":9,"output_index":0,"item":{"id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","type":"reasoning","summary":[],"content":[{"type":"reasoning_text","text":"The user wants the boiling point of water at sea level: 100 degrees Celsius."}]}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":10,"output_index":1,"item":{"id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","type":"message","status":"in_progress","content":[],"role":"assistant"}}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","sequence_number":11,"item_id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","output_index":1,"content_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":12,"item_id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","output_index":1,"content_index":0,"delta":"Water boils at ","logprobs":[],"obfuscation":"k3Xz9"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":13,"item_id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","output_index":1,"content_index":0,"delta":"100 °C at sea level.","logprobs":[],"obfuscation":"k3Xz9"}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","sequence_number":14,"item_id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","output_index":1,"content_index":0,"text":"Water boils at 100 °C at sea level.","logprobs":[]}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","sequence_number":15,"item_id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","output_index":1,"content_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":"Water boils at 100 °C at sea level."}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":16,"output_index":1,"item":{"id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"Water boils at 100 °C at sea level."}],"role":"assistant"}}
+
+event: response.completed
+data: {"type":"response.completed","sequence_number":17,"response":{"id":"resp_0c5e2a91d7f3b604006acb8a10f2e481a39d6c7e5b8a4f21d0","object":"response","access_programs":null,"created_at":1791724048,"status":"completed","background":false,"completed_at":1791724049,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-oss-120b","output":[{"id":"rs_0c5e2a91d7f3b604006acb8a10f8c3819e2b74d05a6c19e8f3","type":"reasoning","summary":[],"content":[{"type":"reasoning_text","text":"The user wants the boiling point of water at sea level: 100 degrees Celsius."}]},{"id":"msg_0c5e2a91d7f3b604006acb8a11a2d8819f5e07c3b9d41a62c7","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"Water boils at 100 °C at sea level."}],"role":"assistant"}],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"low","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":22,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":31,"output_tokens_details":{"reasoning_tokens":18},"total_tokens":53},"user":null,"metadata":{}}}
+

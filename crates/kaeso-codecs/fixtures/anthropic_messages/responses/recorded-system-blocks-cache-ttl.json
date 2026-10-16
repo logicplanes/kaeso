@@ -1,0 +1,37 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_011CfvjfVE9ySjFrkwcbpewj",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "",
+      "signature": "CAQS5AQKEAgSGAI4AUIIdGhpbmtpbmcSDA2PIZYvFydE1mXioRoMs152+FhWfH+IpfceIjC3vcSwH2TjY67AMPTdhTpNOKhGZiKNZQ8lt5StjwS6FwCLuY61QNghUt9lsxqIR5wqgQT7dgkyfjiIFUzuSXoLgmHs7E6jCbDpk2D9/RN3RS6aE2JQpEvjCbyZBMlQcXJktYsmptLgarOj3F2wMQJ01UtHklMecXy1RahJOfcN3Aej3HeURv4rKQCRzE6nCR+7NO8LeMixwDkamvFMldXvS0koBoPzgnr0DodJ+G5Zkynk2N/EXVu95ag/B6rQx6kDmoeqSnTJpBYtrXy/pBcK/zS1rXV07efHU6zyuvEdXdGWvJCsIJLoIac7EZF8+BlU1iH+EyqvlRnV2G67d1UjDdpz5vf4BChawN/rW2/J1iZK8Mw+qCarMTh7XO+b2WpEThSawWTeru7obj6lvw3e8tHsAtLUi6bH7gvASGXw/1tg4oIAbVqp/2FZ0SzuvyYG+o5hbhbG/LLMd4o7jGvYJrkkSG3PYNAUjbJohPGfJKY6hORBV8KEPsFMnal/ohqgZDPr/CfLWvSjQkUhQpA2GuDvbaeIgRx7OSWtMEoZlhcSJ2HwbnlU3ZhIijJQhBMyuNJUGUugXl+xBipN2G3l5vsV3pRE6WVig1GXuj2mmfFjRQWe9TPuJL7LgoGSYHwucY28qWU4ZkXEKgxrhV367AnHgt+ygQcypmkLv4n8F6IyY3Wn8fkyn/mcyT/qml1LbLlOF3cqbxRiZXV/RZxcoA9EsVM3o0aRmvkw1CJyNWfT6x4YAQ=="
+    },
+    {
+      "type": "text",
+      "text": "Under **Clause 2 (Termination)**, either party can terminate the agreement by giving **90 days' written notice**.\n\nThe contract doesn't say:\n- how the written notice has to be delivered (for example, by email, courier or registered mail)\n- whether the 90 days start when the notice is sent or when it's received\n- whether a party needs a reason, or \"cause,\" to terminate. Clause 2 doesn't require one, so it appears either party can end the agreement without giving a reason.\n\nClause 1 sets the agreement to run for 24 months from the Effective Date. The contract doesn't say how Clause 2 interacts with that term, such as whether a party can terminate early during those 24 months. The wording \"either party may terminate\" suggests it can, but the contract doesn't state this outright."
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 577,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 577,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 267,
+    "output_tokens_details": {
+      "thinking_tokens": 14
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

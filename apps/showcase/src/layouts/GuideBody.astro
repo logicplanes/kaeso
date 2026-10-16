@@ -1,0 +1,38 @@
+---
+import { docsText } from "~/lib/locale";
+import { docsLangOf } from "~/lib/languages";
+interface Props {
+  title: string;
+  description?: string | undefined;
+  toc: [string, string][];
+  wide?: boolean | undefined;
+}
+const { title, description, toc, wide = false } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+---
+
+<div class="mx-auto flex w-full max-w-docs gap-48 px-24 pt-40 pb-96 md:px-40">
+  <article class="min-w-0 flex-1">
+    <header class="flex flex-col gap-12">
+      <h1 class="text-title-lg font-semibold text-fg text-balance">{title}</h1>
+      {description && <p class="max-w-prose text-body-lg font-regular text-fg-secondary text-pretty">{description}</p>}
+    </header>
+    <div class:list={["mt-32", wide ? "k-guide-wide" : "prose-k"]}>
+      <slot />
+    </div>
+  </article>
+  {toc.length > 1 && (
+    <aside class="hidden w-200 shrink-0 xl:block" aria-labelledby="toc">
+      <nav class="sticky top-40 flex flex-col gap-2">
+        <span id="toc" class="mb-8 text-caption font-medium text-fg-secondary">
+          {docsText(lang, "On this page")}
+        </span>
+        {toc.map(([id, label]) => (
+          <a href={`#${id}`} class="relative rounded-code py-4 pl-12 text-small text-fg-secondary transition-control hover:text-fg focus-ring">
+            {label}
+          </a>
+        ))}
+      </nav>
+    </aside>
+  )}
+</div>

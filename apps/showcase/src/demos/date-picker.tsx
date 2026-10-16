@@ -1,0 +1,68 @@
+import { Calendar, DatePicker, DateRangePicker, TimeInput } from "@logicplanes/kaeso-ui";
+import { StateSection } from "~/lib/states";
+
+export const meta = {
+  title: "DatePicker",
+  description: "A pill showing the date; a calendar with circles, today ringed, and a typed ISO field.",
+  group: "Components",
+  entry: "date-picker",
+  import: "DatePicker, DateRangePicker, Calendar, TimeInput",
+  keyboard: [
+    ["Arrows", "Move between days"],
+    ["Page Up Page Down", "Previous and next month"],
+    ["Enter", "Chooses the day"],
+  ],
+  a11y: [
+    "The calendar is a grid with day names; typed ISO fields (YYYY-MM-DD) are an alternative to pointing.",
+    "The calendar, the trigger and the typed fields name the same day, in the viewer's calendar.",
+    "An aria-label or a field's label names the trigger; the date or range it shows is its description.",
+  ],
+};
+export const examples = [
+  { id: "single", title: "Date", fn: "Single" },
+  {
+    id: "range",
+    title: "Range with presets",
+    fn: "Range",
+    description: "Presets first: Last 24 hours, 7 days, 30 days, This month, Last month, Custom. A preset applies at once; chosen days with Apply.",
+  },
+  { id: "time", title: "Time", fn: "Time" },
+];
+export function Single() {
+  return <DatePicker label="Expires" defaultValue={new Date(2027, 0, 1)} />;
+}
+export function Range() {
+  return <DateRangePicker aria-label="Period" defaultValue={{ from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) }} />;
+}
+export function Time() {
+  return <TimeInput label="Daily report at" defaultValue="09:30" utc />;
+}
+export function States() {
+  return (
+    <>
+      <StateSection title="Triggers">
+        <div className="flex flex-wrap items-center gap-12">
+          <DatePicker aria-label="Empty" />
+          <DatePicker aria-label="Value" defaultValue={new Date(2026, 9, 12)} />
+          <DatePicker aria-label="Hover" defaultValue={new Date(2026, 9, 12)} data-force="hover" />
+          <DatePicker aria-label="Focus" defaultValue={new Date(2026, 9, 12)} data-force="focus" />
+          <DateRangePicker aria-label="Range" defaultValue={{ from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) }} />
+          <DatePicker aria-label="Disabled" disabled defaultValue={new Date(2026, 9, 12)} />
+        </div>
+      </StateSection>
+      <StateSection title="Calendar">
+        <div className="flex flex-wrap gap-32">
+          <Calendar month={new Date(2026, 9, 1)} selected={new Date(2026, 9, 14)} />
+          <Calendar mode="range" month={new Date(2026, 9, 1)} selected={{ from: new Date(2026, 9, 5), to: new Date(2026, 9, 16) }} />
+        </div>
+      </StateSection>
+      <StateSection title="Time">
+        <div className="flex items-center gap-12">
+          <TimeInput aria-label="Time" defaultValue="09:30" />
+          <TimeInput aria-label="Focus" defaultValue="23:05" data-force="focus" utc />
+          <TimeInput aria-label="Disabled" defaultValue="09:30" disabled />
+        </div>
+      </StateSection>
+    </>
+  );
+}

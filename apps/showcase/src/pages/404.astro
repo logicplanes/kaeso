@@ -1,0 +1,8 @@
+---
+import NotFoundPage from "~/layouts/NotFoundPage.astro";
+import { prepareDocsPage } from "~/lib/locale";
+
+await prepareDocsPage(undefined);
+---
+
+<NotFoundPage />

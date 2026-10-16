@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE api_keys SET disabled_at = $2, disabled_reason = 'user_deactivated', updated_at = now() WHERE user_id = $1 AND disabled_at IS NULL AND archived_at IS NULL RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ab0806785ec7aed9662c7dad0fddb451f968116be6a0bc3cee10f18e511a9cf9"
+}

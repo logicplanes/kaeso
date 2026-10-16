@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Finish creating your Kaeso account
+
+Create your Kaeso account
+
+The link works once and expires in 24 hours.
+
+Create account:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+If you did not sign up, you can ignore this email.
+
+-- 
+Sent by Kaeso at kaeso.example.com.

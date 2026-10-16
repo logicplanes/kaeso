@@ -1,0 +1,88 @@
+---
+title: Installation
+description: Das Paket installieren, das Stylesheet einmal importieren und die Theme- und Toast-Provider an der Wurzel einhängen.
+---
+
+import CodeView from "~/components/CodeView.astro";
+
+## Installieren
+
+`@logicplanes/kaeso-ui` bringt `@logicplanes/kaeso-tokens` mit; beide erscheinen gemeinsam und immer mit derselben Version. React 19 und Hugeicons sind Peer-Abhängigkeiten.
+
+<CodeView lang="bash" code={`pnpm add @logicplanes/kaeso-ui react react-dom @hugeicons/react @hugeicons/core-free-icons`} />
+
+## Styles
+
+Mit Tailwind CSS v4 den Tailwind-Einstieg der Bibliothek nach Tailwind selbst importieren. Er bringt die Tokens, das Theme, in dem nur Token-Werte existieren, die Schriften und die Komponentenstile mit und lässt Tailwind die Bibliothek durchsuchen.
+
+<CodeView lang="css" code={`@import "tailwindcss";\n@import "@logicplanes/kaeso-ui/tailwind.css";`} />
+
+Ohne Tailwind stattdessen das vorgefertigte Stylesheet importieren:
+
+<CodeView lang="tsx" code={`import "@logicplanes/kaeso-ui/styles.css";`} />
+
+## Provider
+
+Das Theme-Skript in den Kopf des Dokuments setzen, damit schon das erste Bild das richtige Theme hat, dann `ThemeProvider`, `TooltipProvider` und einen `Toaster` nahe der Wurzel einhängen.
+
+<CodeView
+  code={`import { ThemeProvider, TooltipProvider, Toaster, themeScript } from "@logicplanes/kaeso-ui";
+
+export function Root({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>
+          <TooltipProvider>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}`}
+/>
+
+## Sprachen
+
+Die Komponenten sprechen Englisch, Deutsch und vereinfachtes Chinesisch. Ohne `LocaleProvider` ist alles Englisch; mit einem folgen der eigene Text der Komponenten und die Formatierer seiner Sprache, und der Katalog lädt erst, wenn er gebraucht wird.
+
+<CodeView
+  code={`import { LocaleProvider, loadUiMessages, resolveUiLocale } from "@logicplanes/kaeso-ui/i18n";
+
+const locale = resolveUiLocale(navigator.language);
+const messages = await loadUiMessages(locale);
+
+export function Root() {
+  return (
+    <LocaleProvider locale={locale} messages={messages}>
+      <App />
+    </LocaleProvider>
+  );
+}`}
+/>
+
+## Importe
+
+Aus dem Sammeleinstieg importieren oder aus dem eigenen Einstieg einer Komponente, um nur diese zu laden. Beides ist tree-shakeable; die Einstiege halten schwere Teile wie Diagramme und den Code-Highlighter aus Seiten heraus, die sie nicht nutzen. Jedes Diagramm hat ebenfalls einen Einstieg (`@logicplanes/kaeso-ui/charts/timeseries`, `/bar`, `/sparkline`, `/donut`, `/heatmap`, `/gauge`, `/sankey`). Die Popover der Auswahlfelder, der Virtualisierer einer langen Liste und das Kontrollkästchen einer auswählbaren Liste laden beim ersten Bedarf.
+
+<CodeView
+  code={`import { Button, Menu } from "@logicplanes/kaeso-ui";
+import { DataTable } from "@logicplanes/kaeso-ui/data-table";
+import { formatUSD } from "@logicplanes/kaeso-ui/format";`}
+/>
+
+## Links
+
+Komponenten, die Links darstellen (Einträge der Seitenleiste, Seitennavigation), verwenden standardmäßig einen einfachen Anker. Den Link des eigenen Routers einmal übergeben:
+
+<CodeView
+  code={`import { LinkProvider } from "@logicplanes/kaeso-ui";
+import { Link } from "your-router";
+
+<LinkProvider component={Link}>{children}</LinkProvider>`}
+/>

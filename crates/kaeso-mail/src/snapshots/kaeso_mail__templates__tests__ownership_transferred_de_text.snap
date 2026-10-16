@@ -1,0 +1,15 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Sie sind jetzt Inhaber von Acme
+
+Sie sind jetzt Inhaber von Acme
+
+Ada Lovelace hat Sie zum Inhaber der Organisation gemacht.
+
+Organisation öffnen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Hinweise zu Organisationen werden immer gesendet.

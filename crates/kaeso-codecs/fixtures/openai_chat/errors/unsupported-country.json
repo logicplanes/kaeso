@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Country, region, or territory not supported",
+    "type": "request_forbidden",
+    "param": null,
+    "code": "unsupported_country_region_territory"
+  }
+}

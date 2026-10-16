@@ -1,0 +1,80 @@
+import type { ComponentDocs } from "../../component-docs.js";
+
+export const docs = {
+  DatePicker: {
+    description: "A pill showing the date; a popover with the calendar and a typed ISO field.",
+    props: {
+      "aria-label": 'Names the trigger when there is no `label`: "Expires". What it shows (the date, or the placeholder) becomes its description.',
+      "aria-labelledby": "Names the trigger by the elements with these ids, as `aria-label` does.",
+      defaultValue: "The chosen day on first render.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      disabledDays: "Returns `true` for days that can't be chosen.",
+      id: "The id of the control, so a label elsewhere can point to it.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      onValueChange: "Called with the chosen day, or `null` when it is cleared.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      placeholder: 'Shown without a date. Defaults to "Pick a date" ("Pick a range" for a range) in the provider\'s language.',
+      required: "Marks it as required in a form.",
+      size: "The height of the field.",
+      value: "The chosen day, when you control it.",
+      weekStartsOn: "The first day of the week, from 0 (Sunday) to 6 (Saturday); the language decides by default.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  DateRangePicker: {
+    description:
+      'A pill showing the range ("Oct 1 – Oct 12") or its preset ("Last 30 days"); presets first, then the months and typed ISO fields. A preset applies at once; days chosen in the popover apply with Apply.',
+    props: {
+      "aria-label": 'Names the trigger when there is no `label`: "Expires". What it shows (the date, or the placeholder) becomes its description.',
+      "aria-labelledby": "Names the trigger by the elements with these ids, as `aria-label` does.",
+      defaultValue: "The chosen range on first render.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      disabledDays: "Returns `true` for days that can't be chosen.",
+      id: "The id of the control, so a label elsewhere can point to it.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      onValueChange: "A preset's range, or the days chosen with Apply; `preset` is the preset's id (\"Last 7 days\"), `null` for chosen days.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      placeholder: 'Shown without a date. Defaults to "Pick a date" ("Pick a range" for a range) in the provider\'s language.',
+      preset:
+        'The preset the value is, by its id (or label): the trigger shows its name ("Last 6 months", "All time") and the popover marks it. Set it from where the period lives (the address), with `null` for chosen days. Without it, the trigger names a preset picked here while the range is still that preset\'s.',
+      presets: "Defaults to the last 24 hours, 7 and 30 days, this month and last month, named in the provider's language.",
+      required: "Marks it as required in a form.",
+      size: "The height of the field.",
+      value: "The chosen range, when you control it.",
+      weekStartsOn: "The first day of the week, from 0 (Sunday) to 6 (Saturday); the language decides by default.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  TimeInput: {
+    description: "Hours and minutes as two segments in one pill; arrows step, typing advances.",
+    props: {
+      "aria-label": 'Names the group when there is no `label`. Defaults to "Time" in the provider\'s language.',
+      defaultValue: "The time on first render, as `HH:mm`.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      id: "The id of the control, so a label elsewhere can point to it.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      onValueChange: "Called with the time as `HH:mm` when a whole time changes: after two digits, on blur, or with the arrows.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      required: "Marks it as required in a form.",
+      size: "The height of the field.",
+      utc: 'Shows "UTC" after the time.',
+      value: '"HH:MM" in 24 hours.',
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+} satisfies ComponentDocs;

@@ -1,0 +1,36 @@
+[package]
+name = "kaeso-store"
+description = "Kaeso gateway storage: PostgreSQL (sqlx), ClickHouse and Valkey, with migrations."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+kaeso-core.workspace = true
+sqlx.workspace = true
+clickhouse.workspace = true
+redis.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+time.workspace = true
+rust_decimal.workspace = true
+futures.workspace = true
+metrics.workspace = true
+secrecy.workspace = true
+url.workspace = true
+percent-encoding.workspace = true
+ipnet.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+kaeso-testkit.workspace = true

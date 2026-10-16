@@ -1,0 +1,202 @@
+{
+  "id": "chatcmpl-sGYjwW3KrMtm1hprMAFYLdf3GciR8",
+  "object": "chat.completion",
+  "created": 1791651407,
+  "model": "gpt-5.5-2026-04-23",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Above the village of Brindle slept Ember, a dragon who guarded the valley from storms. Each spring the children brought her honey cakes, and each winter she warmed their chimneys.",
+        "refusal": null,
+        "annotations": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 22,
+    "completion_tokens": 41,
+    "total_tokens": 63,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_9ed7396329",
+  "moderation": {
+    "input": {
+      "type": "moderation_results",
+      "model": "omni-moderation-latest",
+      "results": [
+        {
+          "type": "moderation_result",
+          "model": "omni-moderation-latest",
+          "flagged": false,
+          "categories": {
+            "harassment": false,
+            "harassment/threatening": false,
+            "hate": false,
+            "hate/threatening": false,
+            "illicit": false,
+            "illicit/violent": false,
+            "self-harm": false,
+            "self-harm/intent": false,
+            "self-harm/instructions": false,
+            "sexual": false,
+            "sexual/minors": false,
+            "violence": false,
+            "violence/graphic": false
+          },
+          "category_scores": {
+            "harassment": 1e-06,
+            "harassment/threatening": 1e-06,
+            "hate": 1e-06,
+            "hate/threatening": 1e-06,
+            "illicit": 1e-06,
+            "illicit/violent": 1e-06,
+            "self-harm": 1e-06,
+            "self-harm/intent": 1e-06,
+            "self-harm/instructions": 1e-06,
+            "sexual": 1e-06,
+            "sexual/minors": 1e-06,
+            "violence": 0.0021,
+            "violence/graphic": 1e-06
+          },
+          "category_applied_input_types": {
+            "harassment": [
+              "text"
+            ],
+            "harassment/threatening": [
+              "text"
+            ],
+            "hate": [
+              "text"
+            ],
+            "hate/threatening": [
+              "text"
+            ],
+            "illicit": [
+              "text"
+            ],
+            "illicit/violent": [
+              "text"
+            ],
+            "self-harm": [
+              "text"
+            ],
+            "self-harm/intent": [
+              "text"
+            ],
+            "self-harm/instructions": [
+              "text"
+            ],
+            "sexual": [
+              "text"
+            ],
+            "sexual/minors": [
+              "text"
+            ],
+            "violence": [
+              "text"
+            ],
+            "violence/graphic": [
+              "text"
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "type": "moderation_results",
+      "model": "omni-moderation-latest",
+      "results": [
+        {
+          "type": "moderation_result",
+          "model": "omni-moderation-latest",
+          "flagged": false,
+          "categories": {
+            "harassment": false,
+            "harassment/threatening": false,
+            "hate": false,
+            "hate/threatening": false,
+            "illicit": false,
+            "illicit/violent": false,
+            "self-harm": false,
+            "self-harm/intent": false,
+            "self-harm/instructions": false,
+            "sexual": false,
+            "sexual/minors": false,
+            "violence": false,
+            "violence/graphic": false
+          },
+          "category_scores": {
+            "harassment": 1e-06,
+            "harassment/threatening": 1e-06,
+            "hate": 1e-06,
+            "hate/threatening": 1e-06,
+            "illicit": 1e-06,
+            "illicit/violent": 1e-06,
+            "self-harm": 1e-06,
+            "self-harm/intent": 1e-06,
+            "self-harm/instructions": 1e-06,
+            "sexual": 1e-06,
+            "sexual/minors": 1e-06,
+            "violence": 0.0143,
+            "violence/graphic": 1e-06
+          },
+          "category_applied_input_types": {
+            "harassment": [
+              "text"
+            ],
+            "harassment/threatening": [
+              "text"
+            ],
+            "hate": [
+              "text"
+            ],
+            "hate/threatening": [
+              "text"
+            ],
+            "illicit": [
+              "text"
+            ],
+            "illicit/violent": [
+              "text"
+            ],
+            "self-harm": [
+              "text"
+            ],
+            "self-harm/intent": [
+              "text"
+            ],
+            "self-harm/instructions": [
+              "text"
+            ],
+            "sexual": [
+              "text"
+            ],
+            "sexual/minors": [
+              "text"
+            ],
+            "violence": [
+              "text"
+            ],
+            "violence/graphic": [
+              "text"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

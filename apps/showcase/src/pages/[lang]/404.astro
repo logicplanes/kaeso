@@ -1,0 +1,10 @@
+---
+import NotFoundPage from "~/layouts/NotFoundPage.astro";
+import { prepareDocsPage } from "~/lib/locale";
+import { otherLanguagePaths } from "~/lib/languages";
+
+export const getStaticPaths = otherLanguagePaths;
+await prepareDocsPage(Astro.params.lang);
+---
+
+<NotFoundPage />

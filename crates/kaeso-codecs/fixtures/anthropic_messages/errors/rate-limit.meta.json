@@ -1,0 +1,9 @@
+{
+  "status": 429,
+  "headers": {
+    "retry-after": "20",
+    "anthropic-ratelimit-input-tokens-limit": "450000",
+    "anthropic-ratelimit-input-tokens-remaining": "0",
+    "anthropic-ratelimit-input-tokens-reset": "2026-10-11T14:03:20Z"
+  }
+}

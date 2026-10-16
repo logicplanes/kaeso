@@ -1,0 +1,23 @@
+---
+import Shell from "./Shell.astro";
+import GuideBody from "./GuideBody.astro";
+import type { GuideVersion } from "~/lib/guides";
+import { docsLangOf } from "~/lib/languages";
+
+interface Props {
+  versions: GuideVersion[];
+  path: string;
+  contentClass?: string | undefined;
+}
+const { versions, path, contentClass } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+const { title, description, headings, Content } = versions.find((v) => v.lang === lang) ?? versions[0]!;
+---
+
+<Shell title={title} description={description} path={path}>
+  <GuideBody title={title} description={description} toc={headings.filter((h) => h.depth === 2).map((h) => [h.slug, h.text])}>
+    <div class={contentClass}>
+      <Content />
+    </div>
+  </GuideBody>
+</Shell>

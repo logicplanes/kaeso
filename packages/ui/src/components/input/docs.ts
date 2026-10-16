@@ -1,0 +1,161 @@
+import type { ComponentDocs } from "../../component-docs.js";
+
+export const docs = {
+  Input: {
+    description: "A pill text field with the secondary material and the field focus. Takes label, description and error.",
+    props: {
+      align: "Text alignment of the value; numbers align to the end with tabular digits.",
+      description: "One sentence of help under the label.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      leadingIcon: "An icon before the text.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      prefix: 'Text before the value: "https://".',
+      size: "The height of the input.",
+      suffix: 'Text after the value: "USD", "/ min".',
+      trailing: "Any trailing element (a button, a Kbd).",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  InputGroup: {
+    description: "Joins an input with buttons or text before or after it into one pill.",
+    props: {
+      disabled: "Turns off every control in the group.",
+      invalid: "Shows the whole group as invalid.",
+      leadingIcon: "Leading content is an icon: the left padding drops by 2px (optical).",
+      readOnly: "Shows the value without letting people change it.",
+      size: "The height of the group.",
+      trailingButton: "Trailing content is a button: the right padding drops so the circle sits concentric in the pill.",
+    },
+  },
+  NumberInput: {
+    description:
+      "Numbers that stay exact: right-aligned tabular digits, a unit, stepper circles on hover, thousands separators on blur, and a decimal string value.",
+    props: {
+      align: "Text alignment of the value; numbers align to the end with tabular digits.",
+      defaultValue: "The number on first render, as text.",
+      description: "One sentence of help under the label.",
+      hideStepper: "Hide the stepper circles.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      leadingIcon: "An icon before the text.",
+      max: "The highest number allowed.",
+      min: "The lowest number allowed.",
+      onValueChange: "Called with the number as text, as typed.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      prefix: 'Text before the value: "https://".',
+      size: "The height of the input.",
+      step: "Step for the stepper and arrow keys, as a decimal string.",
+      suffix: 'Text after the value: "USD", "/ min".',
+      trailing: "Any trailing element (a button, a Kbd).",
+      unit: 'Unit after the value: "USD", "tokens", "/ min".',
+      value: 'The exact value as a decimal string ("12.50"). Never a float.',
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  OTPInput: {
+    description:
+      "Six rounded-14 cells for TOTP codes, over one accessible input: paste fills every cell, Backspace moves back, the browser can offer the code.",
+    props: {
+      defaultValue: "The code on first render.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      length: "How many characters the code has.",
+      onComplete: "Called once every cell is filled.",
+      onValueChange: "Called with the code as it is typed.",
+      size: "The size of each character's box.",
+      value: "The code typed so far, when you control it.",
+    },
+  },
+  SearchInput: {
+    description: "Search: a leading icon, a clear circle when filled, an optional shortcut hint. Escape clears.",
+    props: {
+      align: "Text alignment of the value; numbers align to the end with tabular digits.",
+      description: "One sentence of help under the label.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      onClear: "Called when the clear button is pressed.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      placeholder: 'Defaults to "Search" in the provider\'s language.',
+      shortcut: 'A shortcut hint shown while empty: `["mod", "k"]` or `["/"]`.',
+      size: "The height of the input.",
+      trailing: "Any trailing element (a button, a Kbd).",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  SensitiveInput: {
+    description:
+      "Masked by default with an eye circle to reveal. Monospace when revealed, never autocompleted (secrets), paste-friendly, Caps Lock hint for passwords.",
+    props: {
+      align: "Text alignment of the value; numbers align to the end with tabular digits.",
+      defaultRevealed: "Start revealed.",
+      description: "One sentence of help under the label.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      kind: "A password (never revealed once saved) or a secret such as an API key.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      leadingIcon: "An icon before the text.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      prefix: 'Text before the value: "https://".',
+      size: "The height of the input.",
+      suffix: 'Text after the value: "USD", "/ min".',
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  TagInput: {
+    description: "Removable tags in a field: Enter, comma and paste split; Backspace removes the last tag.",
+    props: {
+      "aria-label": "The accessible name, for when there is no visible label.",
+      defaultValue: "The tags on first render.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      id: "The id of the control, so a label elsewhere can point to it.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      name: "The field name the value is sent under in a form.",
+      onValueChange: "Called with the tags whenever one is added or removed.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      placeholder: "Text shown while there is no value.",
+      required: "Marks it as required in a form.",
+      separators: "Characters that end a tag, besides Enter.",
+      validate:
+        "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip (and to a screen reader); errors are never drawn under the field, so toast it too when someone submits.",
+      value: "The tags, when you control them.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  Textarea: {
+    description: "A multi-line field: radius 14 (multi-line text cannot be a pill), the same material and states as Input.",
+    props: {
+      description: "One sentence of help under the label.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      maxRows: "Lines before it scrolls.",
+      mono: "Uses the monospace font, for code and JSON.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      resize: "Grows with its content (`auto`) or can be resized by hand (`vertical`).",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+} satisfies ComponentDocs;

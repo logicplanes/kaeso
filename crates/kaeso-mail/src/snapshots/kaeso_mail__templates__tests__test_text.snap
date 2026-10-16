@@ -1,0 +1,12 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Kaeso test email
+
+Email works
+
+This test from the instance settings arrived, so Kaeso can send email.
+
+-- 
+Sent by Kaeso at kaeso.example.com.

@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.value->>'role_id' AS \"role!\", count(DISTINCT i.id) AS \"n!\" FROM invites i CROSS JOIN LATERAL jsonb_array_elements(i.project_roles) e WHERE i.org_id = $1 AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now() AND jsonb_typeof(e.value) = 'object' AND e.value->>'role_id' IS NOT NULL GROUP BY e.value->>'role_id'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "e022b2c09071d69baef149c52d7dd3d2dca420ab4c2dc3cadc904002a76738dd"
+}

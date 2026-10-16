@@ -1,0 +1,24 @@
+{
+  "model": "gpt-audio-mini",
+  "modalities": [
+    "text"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Transcribe this clip."
+        },
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "UklGRjQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ]
+}

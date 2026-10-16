@@ -1,0 +1,51 @@
+{
+  "name": "kaeso-showcase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The showcase of the Kaeso UI library at ui.kaeso.app.",
+  "license": "MIT",
+  "author": "Devin Oldenburg",
+  "homepage": "https://ui.kaeso.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicplanes/kaeso.git",
+    "directory": "apps/showcase"
+  },
+  "bugs": {
+    "url": "https://github.com/logicplanes/kaeso/issues"
+  },
+  "scripts": {
+    "gen": "node scripts/gen-pages.mjs",
+    "dev": "node scripts/gen-pages.mjs && astro dev",
+    "build": "node scripts/gen-pages.mjs && astro build",
+    "preview": "astro preview",
+    "lint": "oxlint --deny-warnings .",
+    "typecheck": "node scripts/gen-pages.mjs && tsc -p tsconfig.json && tsc -p tsconfig.e2e.json",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "7.0.3",
+    "@astrojs/react": "6.0.1",
+    "@hugeicons/core-free-icons": "4.3.5",
+    "@hugeicons/react": "1.1.10",
+    "@logicplanes/kaeso-tokens": "workspace:*",
+    "@logicplanes/kaeso-ui": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.2.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.6",
+    "@types/pngjs": "6.0.5",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "oxlint": "1.85.0",
+    "pngjs": "7.0.0",
+    "typescript": "5.9.3"
+  }
+}

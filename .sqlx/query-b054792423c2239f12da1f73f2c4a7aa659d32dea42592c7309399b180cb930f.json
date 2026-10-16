@@ -1,0 +1,310 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT k.id, k.secret_hash, k.org_id, o.state AS org_state, k.project_id, p.archived_at AS project_archived_at, k.user_id, u.state AS \"user_state?\", k.service_account_id, s.archived_at AS \"service_account_archived_at?\", k.inference, k.platform, k.expires_at, k.disabled_at, k.archived_at, k.last_used_at, om.preset AS \"org_preset?\", COALESCE(om.rights_added, '{}') AS \"org_rights_added!\", COALESCE(om.rights_removed, '{}') AS \"org_rights_removed!\", om.role_id AS \"org_role_id?\", orr.rights AS \"org_role_rights?\", orr.project_rights AS \"org_role_project_rights?\", COALESCE(pm.preset, s.preset) AS \"project_preset?\", COALESCE(pm.role_id, s.role_id) AS \"project_role_id?\", prr.rights AS \"project_role_rights?\", COALESCE(pm.rights_added, s.rights_added, '{}') AS \"project_rights_added!\", COALESCE(pm.rights_removed, s.rights_removed, '{}') AS \"project_rights_removed!\" FROM api_keys k JOIN organizations o ON o.id = k.org_id JOIN projects p ON p.id = k.project_id LEFT JOIN users u ON u.id = k.user_id LEFT JOIN service_accounts s ON s.id = k.service_account_id LEFT JOIN org_memberships om ON om.org_id = k.org_id AND om.user_id = k.user_id LEFT JOIN project_memberships pm ON pm.project_id = k.project_id AND pm.user_id = k.user_id LEFT JOIN org_roles orr ON orr.id = om.role_id LEFT JOIN org_roles prr ON prr.id = COALESCE(pm.role_id, s.role_id) WHERE k.secret_hash = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "secret_hash",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "secret_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "org_state",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "project_archived_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "archived_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "user_state?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "service_account_archived_at?",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "archived_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "inference",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "inference"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "platform",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "platform"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "disabled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "disabled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "archived_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "archived_at"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "last_used_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "last_used_at"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "org_preset?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "org_rights_added!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 18,
+        "name": "org_rights_removed!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 19,
+        "name": "org_role_id?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "role_id"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "org_role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "org_role_project_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "project_preset?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 23,
+        "name": "project_role_id?",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 24,
+        "name": "project_role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "project_rights_added!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 26,
+        "name": "project_rights_removed!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      null,
+      null,
+      true,
+      false,
+      false,
+      null,
+      null,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "b054792423c2239f12da1f73f2c4a7aa659d32dea42592c7309399b180cb930f"
+}

@@ -1,0 +1,101 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\" FROM org_memberships m LEFT JOIN org_roles r ON r.id = m.role_id WHERE m.org_id = $1 AND m.user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "preset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "role_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "role_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rights_added",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "rights_added"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "rights_removed",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "rights_removed"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "role_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "role_project_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6c1ab765263df6196b432d7d4eefe744c112bfbd6efa2add81c8e9dc1d25d8bc"
+}

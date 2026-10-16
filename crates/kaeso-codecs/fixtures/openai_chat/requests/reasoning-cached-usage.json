@@ -1,0 +1,18 @@
+{
+  "model": "gpt-6.1-sol",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "You are the support assistant for Northwind Mobile. Policy summary: plans renew monthly on the signup date; customers may cancel online at any time before renewal; no fees apply for cancellation; partial months are not refunded; roaming add-ons expire with the plan. Always answer in plain language and cite the relevant policy point."
+    },
+    {
+      "role": "user",
+      "content": "If I cancel today, do I get money back for the rest of the month?"
+    }
+  ],
+  "reasoning_effort": "high",
+  "max_completion_tokens": 4096,
+  "verbosity": "low",
+  "service_tier": "priority",
+  "prompt_cache_key": "northwind-support-v3"
+}

@@ -1,0 +1,25 @@
+[package]
+name = "kaeso"
+description = "The Kaeso gateway binary: CLI, configuration, startup and shutdown."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "kaeso"
+path = "src/main.rs"
+
+[dependencies]
+kaeso-server.workspace = true
+kaeso-crypto.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tokio.workspace = true
+secrecy.workspace = true
+
+[lints]
+workspace = true

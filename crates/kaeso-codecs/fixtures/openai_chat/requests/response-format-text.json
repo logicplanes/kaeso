@@ -1,0 +1,12 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name three primary colors."
+    }
+  ],
+  "response_format": {
+    "type": "text"
+  }
+}

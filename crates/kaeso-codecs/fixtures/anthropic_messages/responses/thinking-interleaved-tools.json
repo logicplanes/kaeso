@@ -1,0 +1,39 @@
+{
+  "model": "claude-sonnet-4-6",
+  "id": "msg_013uYDVcQfWZchN4HvY8V1RM",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Weather is 21°C and sunny, which is fine. Now I need the local time to know whether it's daytime.",
+      "signature": "EqEvMLy0mgL4Jn097PRtUwQqpJkIISOwyrLu1oAKdY4i7lNR6i2aFMTTTochE5GSviGPMjDKfe74sSPfqEHZB0HyikpFqkoL09SgZJ+NOL/H3uusbZoYUOJoHz8FbQ0WXU7qpAGfv2RS2RId0PKTeDeyxRseRdeQ+o3XQajNG6kl4KsEieRN00yFJIs1AAS0btsd79p6KGO7iIhTBQOZ/C9iAyQGzxTpr6xVujxRKY5zaz6x78gH8a/a16AAqXk0grZiSVDagY47DbRtOBMukGOajfzCdDbPGlH9dRV0B8ay2GWEfRjpc6LgXQY6n74A"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01afnDK4mGFJyw1zWvMT248V",
+      "name": "get_time",
+      "input": {
+        "timezone": "Europe/Paris"
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 912,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 118,
+    "output_tokens_details": {
+      "thinking_tokens": 49
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "model": "claude-sonnet-5",
+  "max_tokens": 4096,
+  "thinking": {
+    "type": "disabled"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize this article in one sentence: The city council voted 7-2 on Tuesday to extend the downtown bike lane network by 12 miles over the next three years."
+    }
+  ]
+}

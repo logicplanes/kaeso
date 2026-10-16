@@ -1,0 +1,33 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_045973cd4d36fb07006acb7e442148819308217faee63e64b1","object":"response","access_programs":null,"created_at":1791721028,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-5.5-2026-04-23","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"medium","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_045973cd4d36fb07006acb7e442148819308217faee63e64b1","object":"response","access_programs":null,"created_at":1791721028,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-5.5-2026-04-23","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"medium","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"id":"rs_045973cd4d36fb07006acb7e44ee868190c44b89fab3a12e31","type":"reasoning","summary":[]}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":3,"output_index":0,"item":{"id":"rs_045973cd4d36fb07006acb7e44ee868190c44b89fab3a12e31","type":"reasoning","summary":[]}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":4,"output_index":1,"item":{"id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","type":"message","status":"in_progress","content":[],"role":"assistant"}}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","sequence_number":5,"item_id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","output_index":1,"content_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":6,"item_id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","output_index":1,"content_index":0,"delta":"Grey","logprobs":[],"obfuscation":"o5mcg7Kxkcpc"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":7,"item_id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","output_index":1,"content_index":0,"delta":" waves","logprobs":[],"obfuscation":"zNdqm0n4ff"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":8,"item_id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","output_index":1,"content_index":0,"delta":" fold","logprobs":[],"obfuscation":"hulWNd76Dy2"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":9,"item_id":"msg_045973cd4d36fb07006acb7e44c97a81942002a9e7e30aaa71","output_index":1,"content_index":0,"delta":" and","logprobs":[],"obfuscation":"K1fJ9cVC1bML"}
+
+event: error
+data: {"type":"error","sequence_number":10,"code":"server_error","message":"An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID req_b59cd990357b70ab1f21a476ede765b3 in your message.","param":null}
+

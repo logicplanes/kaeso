@@ -1,0 +1,12 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 您已退出 Kaeso
+
+您已退出登录
+
+一名管理员结束了您账户的所有会话；请重新登录以继续。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送；安全通知总会发送。

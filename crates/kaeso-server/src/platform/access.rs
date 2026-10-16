@@ -1,0 +1,715 @@
+use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
+
+use axum::extract::rejection::RawPathParamsRejection;
+use axum::extract::{ConnectInfo, FromRequestParts, MatchedPath, RawPathParams, Request, State};
+use axum::http::request::Parts;
+use axum::http::{Method, header};
+use axum::middleware::{self, Next};
+use axum::response::{IntoResponse, Response};
+use kaeso_core::id::{OrgId, ProjectId, RequestId, UserId};
+use kaeso_core::rights::{
+    OrgGrant, OrgHolding, OrgPreset, OrgRight, OrgRights, ProjectGrant, ProjectRight,
+    ProjectRights, Right, effective_project_rights,
+};
+use kaeso_store::pg::keys::{KeyAuth, OrgKeyAuth};
+use kaeso_store::pg::members;
+use kaeso_store::pg::orgs::Org;
+use kaeso_store::pg::projects::Project;
+use kaeso_store::pg::sessions::SessionRow;
+use time::OffsetDateTime;
+use utoipa::openapi::RefOr;
+use utoipa::openapi::path::{Operation, ParameterIn, PathItem};
+use utoipa::openapi::security::SecurityRequirement;
+use utoipa_axum::router::UtoipaMethodRouter;
+
+use super::error::{ApiError, ApiResult};
+use super::{cookies, params};
+use crate::auth::keys::{self, KeyCaller, LookupError};
+use crate::auth::sessions::{self, RECENT_SIGN_IN};
+use crate::http::{client_ip, request_id};
+use crate::state::AppState;
+
+const WHILE_SCHEDULED: &[&str] = &["/orgs/{org}/restore"];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Access {
+    Public,
+    Session,
+    InstanceAdmin,
+    Org(OrgRight),
+    Project(ProjectRight),
+}
+
+impl Access {
+    pub fn name(self) -> String {
+        match self {
+            Access::Public => "public".into(),
+            Access::Session => "session".into(),
+            Access::InstanceAdmin => "instance_admin".into(),
+            Access::Org(r) => format!("right:{}", r.as_str()),
+            Access::Project(r) => format!("right:{}", r.as_str()),
+        }
+    }
+
+    fn describe(self) -> String {
+        match self {
+            Access::Public => "**Access:** public; no authentication.".into(),
+            Access::Session => {
+                "**Access:** a signed-in console session; no right is needed.".into()
+            }
+            Access::InstanceAdmin => "**Access:** a console session of an instance admin.".into(),
+            Access::Org(r) => format!(
+                "**Right:** `{}` on the organization in the path{}.",
+                r.as_str(),
+                if r.needs_recent_sign_in() {
+                    "; with a session, a sign-in within the last 15 minutes"
+                } else {
+                    ""
+                }
+            ),
+            Access::Project(r) => format!(
+                "**Right:** `{}` on the project in the path{}.",
+                r.as_str(),
+                if r.needs_recent_sign_in() {
+                    "; with a session, a sign-in within the last 15 minutes"
+                } else {
+                    ""
+                }
+            ),
+        }
+    }
+
+    fn right(self) -> Option<Right> {
+        match self {
+            Access::Org(r) => Some(Right::Org(r)),
+            Access::Project(r) => Some(Right::Project(r)),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Secure {
+    state: Option<AppState>,
+}
+
+impl Secure {
+    pub fn new(state: &AppState) -> Secure {
+        Secure {
+            state: Some(state.clone()),
+        }
+    }
+
+    pub fn documentation_only() -> Secure {
+        Secure { state: None }
+    }
+
+    pub fn route(
+        &self,
+        access: Access,
+        routes: UtoipaMethodRouter<AppState>,
+    ) -> UtoipaMethodRouter<AppState> {
+        let (schemas, mut paths, router) = routes;
+        for item in paths.paths.values_mut() {
+            for op in operations(item) {
+                document(op, access);
+            }
+        }
+        match &self.state {
+            Some(state) => {
+                let layered = router.layer(middleware::from_fn_with_state(
+                    (state.clone(), access),
+                    authorize,
+                ));
+                (schemas, paths, layered)
+            }
+            None => (schemas, paths, router),
+        }
+    }
+}
+
+pub fn operations(item: &mut PathItem) -> impl Iterator<Item = &mut Operation> {
+    [
+        &mut item.get,
+        &mut item.put,
+        &mut item.post,
+        &mut item.delete,
+        &mut item.patch,
+        &mut item.head,
+        &mut item.options,
+        &mut item.trace,
+    ]
+    .into_iter()
+    .filter_map(Option::as_mut)
+}
+
+fn document(op: &mut Operation, access: Access) {
+    let note = access.describe();
+    op.description = Some(match op.description.take() {
+        Some(d) if !d.is_empty() => format!("{d}\n\n{note}"),
+        _ => note,
+    });
+    let mut ext = op.extensions.take().unwrap_or_default();
+    ext.insert(
+        "x-kaeso-access".to_owned(),
+        serde_json::Value::String(access.name()),
+    );
+    op.extensions = Some(ext);
+    op.security = Some(match access {
+        Access::Public => vec![SecurityRequirement::default()],
+        Access::Session | Access::InstanceAdmin => {
+            vec![SecurityRequirement::new("session", Vec::<String>::new())]
+        }
+        Access::Org(_) | Access::Project(_) => vec![
+            SecurityRequirement::new("session", Vec::<String>::new()),
+            SecurityRequirement::new("api_key", Vec::<String>::new()),
+        ],
+    });
+    for (status, name) in [
+        ("400", "InvalidRequest"),
+        ("401", "Unauthenticated"),
+        ("403", "Forbidden"),
+        ("404", "NotFound"),
+        ("409", "Conflict"),
+        ("412", "Stale"),
+        ("413", "TooLarge"),
+        ("429", "RateLimited"),
+        ("500", "Internal"),
+        ("503", "Unavailable"),
+    ] {
+        if access == Access::Public && status == "403" {
+            continue;
+        }
+        if status == "413" && op.request_body.is_none() {
+            continue;
+        }
+        if status == "412" && !accepts_if_match(op) {
+            continue;
+        }
+        op.responses
+            .responses
+            .entry(status.to_owned())
+            .or_insert_with(|| utoipa::openapi::Ref::from_response_name(name).into());
+    }
+}
+
+fn accepts_if_match(op: &Operation) -> bool {
+    op.parameters.iter().flatten().any(|p| {
+        matches!(p, RefOr::T(p) if p.parameter_in == ParameterIn::Header
+            && p.name.eq_ignore_ascii_case("If-Match"))
+    })
+}
+
+#[derive(Clone, Debug)]
+pub enum Caller {
+    Anonymous,
+    Session(Arc<SessionRow>),
+    ProjectKey(Arc<KeyAuth>),
+    OrgKey(Arc<OrgKeyAuth>),
+}
+
+#[derive(Clone, Debug)]
+pub struct OrgScope {
+    pub org: Org,
+    pub rights: OrgRights,
+    pub every_project: ProjectRights,
+    pub grant: Option<OrgGrant>,
+}
+
+impl OrgScope {
+    pub fn id(&self) -> OrgId {
+        OrgId::from_uuid(self.org.id)
+    }
+
+    pub fn holding(&self) -> OrgHolding {
+        OrgHolding {
+            org: self.rights,
+            every_project: self.every_project,
+        }
+    }
+
+    pub fn is_owner(&self) -> bool {
+        self.grant.as_ref().is_some_and(OrgGrant::is_owner)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ProjectScope {
+    pub project: Project,
+    pub rights: ProjectRights,
+    pub grant: Option<ProjectGrant>,
+}
+
+impl ProjectScope {
+    pub fn id(&self) -> ProjectId {
+        ProjectId::from_uuid(self.project.id)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Ctx(Arc<CtxInner>);
+
+#[derive(Debug)]
+pub struct CtxInner {
+    pub request_id: RequestId,
+    pub now: OffsetDateTime,
+    pub ip: Option<IpAddr>,
+    pub user_agent: Option<String>,
+    pub accept_language: Option<String>,
+    pub caller: Caller,
+    pub org: Option<OrgScope>,
+    pub project: Option<ProjectScope>,
+}
+
+impl std::ops::Deref for Ctx {
+    type Target = CtxInner;
+    fn deref(&self) -> &CtxInner {
+        &self.0
+    }
+}
+
+impl CtxInner {
+    pub fn session(&self) -> ApiResult<&Arc<SessionRow>> {
+        match &self.caller {
+            Caller::Session(s) => Ok(s),
+            Caller::Anonymous => Err(ApiError::Authentication("Sign in first.".into())),
+            Caller::ProjectKey(_) | Caller::OrgKey(_) => Err(ApiError::PermissionDenied(
+                "This needs a console session; API keys cannot manage accounts or the instance."
+                    .into(),
+            )),
+        }
+    }
+
+    pub fn user_id(&self) -> ApiResult<UserId> {
+        self.session().map(|s| UserId::from_uuid(s.user_id))
+    }
+
+    pub fn acting_user(&self) -> Option<UserId> {
+        match &self.caller {
+            Caller::Session(s) => Some(UserId::from_uuid(s.user_id)),
+            Caller::ProjectKey(k) => k.user_id.map(UserId::from_uuid),
+            Caller::Anonymous | Caller::OrgKey(_) => None,
+        }
+    }
+
+    pub fn acting_service_account(&self) -> Option<uuid::Uuid> {
+        match &self.caller {
+            Caller::ProjectKey(k) => k.service_account_id,
+            _ => None,
+        }
+    }
+
+    pub fn org(&self) -> ApiResult<&OrgScope> {
+        self.org
+            .as_ref()
+            .ok_or_else(|| ApiError::internal("route without an org scope"))
+    }
+
+    pub fn project(&self) -> ApiResult<&ProjectScope> {
+        self.project
+            .as_ref()
+            .ok_or_else(|| ApiError::internal("route without a project scope"))
+    }
+
+    pub fn require_recent_sign_in(&self) -> ApiResult<()> {
+        match &self.caller {
+            Caller::Session(s) if self.now - s.signed_in_at > RECENT_SIGN_IN => {
+                Err(ApiError::RecentSignInRequired)
+            }
+            _ => Ok(()),
+        }
+    }
+}
+
+impl<S: Send + Sync> FromRequestParts<S> for Ctx {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
+        parts.extensions.get::<Ctx>().cloned().ok_or_else(|| {
+            ApiError::internal("Platform API route registered without access control")
+        })
+    }
+}
+
+async fn authorize(
+    State((state, access)): State<(AppState, Access)>,
+    params: Result<RawPathParams, RawPathParamsRejection>,
+    req: Request,
+    next: Next,
+) -> Response {
+    let params = match params {
+        Ok(p) => p,
+        Err(e) => return params::raw_path_error(&e).into_response(),
+    };
+    let (mut parts, body) = req.into_parts();
+    match check(&state, access, &params, &parts).await {
+        Ok(ctx) => {
+            parts.extensions.insert(ctx);
+            next.run(Request::from_parts(parts, body)).await
+        }
+        Err(e) => {
+            let stale_cookie = matches!(e, ApiError::Authentication(_))
+                && !parts.headers.contains_key(header::AUTHORIZATION)
+                && cookies::session_token(&state, &parts.headers).is_some();
+            let mut response = e.into_response();
+            if stale_cookie {
+                response
+                    .headers_mut()
+                    .append(header::SET_COOKIE, cookies::clear(&state));
+            }
+            response
+        }
+    }
+}
+
+async fn check(
+    state: &AppState,
+    access: Access,
+    params: &RawPathParams,
+    req: &Parts,
+) -> ApiResult<Ctx> {
+    let now = state.clock.now();
+    let peer = req
+        .extensions
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|c| c.0.ip());
+    let forwarded = req
+        .headers
+        .get_all("x-forwarded-for")
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .collect::<Vec<_>>()
+        .join(",");
+    let ip = client_ip::resolve(peer, &forwarded, &state.config.trusted_proxies);
+    let user_agent = req
+        .headers
+        .get(header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.chars().take(512).collect());
+    let accept_language = req
+        .headers
+        .get(header::ACCEPT_LANGUAGE)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.chars().take(256).collect());
+    let request_id = request_id::current().unwrap_or_default();
+
+    let caller = match authenticate(state, req, ip).await {
+        Ok(caller) => caller,
+        Err(ApiError::Authentication(_))
+            if access == Access::Public && !req.headers.contains_key(header::AUTHORIZATION) =>
+        {
+            Caller::Anonymous
+        }
+        Err(e) => return Err(e),
+    };
+    let state_changing = !matches!(req.method, Method::GET | Method::HEAD | Method::OPTIONS);
+    let browser = matches!(caller, Caller::Session(_)) || access == Access::Public;
+    if state_changing && browser {
+        check_origin(state, req)?;
+    }
+    let changes_org = state_changing
+        && !req
+            .extensions
+            .get::<MatchedPath>()
+            .is_some_and(|p| WHILE_SCHEDULED.iter().any(|w| p.as_str().ends_with(w)));
+
+    let mut ctx = CtxInner {
+        request_id,
+        now,
+        ip,
+        user_agent,
+        accept_language,
+        caller,
+        org: None,
+        project: None,
+    };
+    match access {
+        Access::Public => {}
+        Access::Session => {
+            ctx.session()?;
+        }
+        Access::InstanceAdmin => {
+            if !ctx.session()?.is_instance_admin {
+                return Err(ApiError::PermissionDenied(
+                    "Only instance admins can do this.".into(),
+                ));
+            }
+        }
+        Access::Org(right) => {
+            let org = path_id::<OrgId>(params, "org", "organization")?;
+            let scope = match &ctx.caller {
+                Caller::Session(_) => org_scope(state, &ctx, org, None, changes_org).await?,
+                Caller::OrgKey(_) | Caller::ProjectKey(_) => {
+                    key_scope(state, &ctx, org, None).await?
+                }
+                Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
+            };
+            if !scope.0.rights.contains(right) {
+                return Err(denied(Right::Org(right), "organization"));
+            }
+            ctx.org = Some(scope.0);
+        }
+        Access::Project(right) => {
+            let org = path_id::<OrgId>(params, "org", "organization")?;
+            let project = path_id::<ProjectId>(params, "project", "project")?;
+            let (org_scope, project_scope) = match &ctx.caller {
+                Caller::Session(_) => {
+                    org_scope(state, &ctx, org, Some(project), changes_org).await?
+                }
+                Caller::OrgKey(_) | Caller::ProjectKey(_) => {
+                    key_scope(state, &ctx, org, Some(project)).await?
+                }
+                Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
+            };
+            let project_scope = project_scope.ok_or_else(|| ApiError::not_found("project"))?;
+            if !project_scope.rights.contains(right) {
+                return Err(denied(Right::Project(right), "project"));
+            }
+            ctx.org = Some(org_scope);
+            ctx.project = Some(project_scope);
+        }
+    }
+    let ctx = Ctx(Arc::new(ctx));
+    if access.right().is_some_and(Right::needs_recent_sign_in) {
+        ctx.require_recent_sign_in()?;
+    }
+    Ok(ctx)
+}
+
+fn denied(right: Right, on: &str) -> ApiError {
+    ApiError::MissingRight {
+        right: right.as_str(),
+        message: format!(
+            "You need the right `{right}` in this {on}; ask one of its admins for it."
+        ),
+    }
+}
+
+fn path_id<T: std::str::FromStr>(params: &RawPathParams, name: &str, what: &str) -> ApiResult<T> {
+    params
+        .iter()
+        .find(|(k, _)| *k == name)
+        .and_then(|(_, v)| v.parse::<T>().ok())
+        .ok_or_else(|| ApiError::not_found(what))
+}
+
+async fn authenticate(state: &AppState, req: &Parts, ip: Option<IpAddr>) -> ApiResult<Caller> {
+    if let Some(value) = req.headers.get(header::AUTHORIZATION) {
+        let presented = value.to_str().ok().and_then(keys::bearer).ok_or_else(|| {
+            ApiError::Authentication("Send the key as `Authorization: Bearer <key>`.".into())
+        })?;
+        let found = keys::authenticate(state, presented, ip)
+            .await
+            .map_err(|e| match e {
+                LookupError::Store(e) => ApiError::from(e),
+                LookupError::Throttled(t) => {
+                    metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "throttled").increment(1);
+                    ApiError::RateLimited {
+                        message: t.message(),
+                        retry_after: Some(t.retry_after),
+                    }
+                }
+            })?;
+        return match found {
+            Ok(KeyCaller::Project(k)) if !k.platform => {
+                metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "no_platform_access").increment(1);
+                Err(ApiError::PermissionDenied(
+                    "This key has no Platform API access; use a key with platform access.".into(),
+                ))
+            }
+            Ok(KeyCaller::Project(k)) => Ok(Caller::ProjectKey(k)),
+            Ok(KeyCaller::Org(k)) => Ok(Caller::OrgKey(k)),
+            Err(refusal) => {
+                metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "refused").increment(1);
+                Err(ApiError::Authentication(refusal.message().into()))
+            }
+        };
+    }
+    let Some(token) = cookies::session_token(state, &req.headers) else {
+        return Ok(Caller::Anonymous);
+    };
+    match sessions::authenticate(state, &token).await? {
+        Some(session) => Ok(Caller::Session(session)),
+        None => Err(ApiError::Authentication(
+            "Your session has ended; sign in again.".into(),
+        )),
+    }
+}
+
+fn check_origin(state: &AppState, req: &Parts) -> ApiResult<()> {
+    let expected = state.config.public_origin();
+    match req
+        .headers
+        .get(header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+    {
+        Some(origin) if origin == expected => Ok(()),
+        _ => Err(ApiError::PermissionDenied(format!(
+            "Cross-site request refused; the `Origin` header must be {expected}."
+        ))),
+    }
+}
+
+async fn key_scope(
+    state: &AppState,
+    ctx: &CtxInner,
+    org: OrgId,
+    project: Option<ProjectId>,
+) -> ApiResult<(OrgScope, Option<ProjectScope>)> {
+    let (key_org, org_rights, project_rights, own_project) = match &ctx.caller {
+        Caller::OrgKey(k) => (
+            k.org_id,
+            OrgPreset::Admin.rights(),
+            OrgPreset::Admin.project_rights(),
+            None,
+        ),
+        Caller::ProjectKey(k) => {
+            if project.is_none() {
+                return Err(ApiError::PermissionDenied(
+                    "Project API keys work only in their own project; use an org platform key."
+                        .into(),
+                ));
+            }
+            (
+                k.org_id,
+                OrgRights::EMPTY,
+                keys::project_rights(k),
+                Some(k.project_id),
+            )
+        }
+        _ => return Err(ApiError::Authentication("Sign in first.".into())),
+    };
+    if key_org != org.uuid() || (own_project.is_some() && own_project != project.map(|p| p.uuid()))
+    {
+        return Err(ApiError::not_found(if project.is_some() {
+            "project"
+        } else {
+            "organization"
+        }));
+    }
+    let mut conn = state.pg.acquire().await?;
+    let found = members::access_context(&mut conn, org.uuid(), None, project.map(|p| p.uuid()))
+        .await?
+        .ok_or_else(|| ApiError::not_found("organization"))?;
+    let project_scope = match (found.project, project) {
+        (Some(p), Some(_)) => Some(ProjectScope {
+            project: p,
+            rights: project_rights,
+            grant: None,
+        }),
+        (None, Some(_)) => return Err(ApiError::not_found("project")),
+        _ => None,
+    };
+    Ok((
+        OrgScope {
+            org: found.org,
+            rights: org_rights,
+            every_project: if own_project.is_some() {
+                ProjectRights::EMPTY
+            } else {
+                project_rights
+            },
+            grant: None,
+        },
+        project_scope,
+    ))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PolicyGap {
+    NeedsSso,
+    Needs2fa,
+}
+
+pub fn policy_gap(
+    session: &SessionRow,
+    org_id: uuid::Uuid,
+    require_sso: bool,
+    require_2fa: bool,
+) -> Option<PolicyGap> {
+    if require_sso && !(session.method == "oidc" && session.oidc_org_id == Some(org_id)) {
+        Some(PolicyGap::NeedsSso)
+    } else if require_2fa && session.method == "password" && !session.second_factor {
+        Some(PolicyGap::Needs2fa)
+    } else {
+        None
+    }
+}
+
+pub fn require_org_policy(session: &SessionRow, org: &Org) -> ApiResult<()> {
+    match policy_gap(session, org.id, org.require_sso, org.require_2fa) {
+        None => Ok(()),
+        Some(PolicyGap::NeedsSso) => Err(ApiError::PermissionDenied(
+            "This organization requires signing in with SSO.".into(),
+        )),
+        Some(PolicyGap::Needs2fa) => Err(ApiError::PermissionDenied(
+            "This organization requires two-factor authentication; set it up, then sign in again."
+                .into(),
+        )),
+    }
+}
+
+async fn org_scope(
+    state: &AppState,
+    ctx: &CtxInner,
+    org: OrgId,
+    project: Option<ProjectId>,
+    changes: bool,
+) -> ApiResult<(OrgScope, Option<ProjectScope>)> {
+    let Caller::Session(session) = &ctx.caller else {
+        return Err(ApiError::Authentication("Sign in first.".into()));
+    };
+    let mut conn = state.pg.acquire().await?;
+    let found = members::access_context(
+        &mut conn,
+        org.uuid(),
+        Some(session.user_id),
+        project.map(|p| p.uuid()),
+    )
+    .await?;
+    let Some(found) = found else {
+        return Err(ApiError::not_found("organization"));
+    };
+    let Some(grant) = found
+        .org_grant
+        .as_ref()
+        .map(super::grants::org_from_store)
+        .transpose()?
+    else {
+        return Err(ApiError::not_found("organization"));
+    };
+    if changes && found.org.state == "scheduled_for_deletion" {
+        return Err(ApiError::OrgScheduledForDeletion);
+    }
+    require_org_policy(session, &found.org)?;
+    let project_scope = match (found.project, project) {
+        (Some(p), Some(_)) => {
+            let project_grant = found
+                .project_grant
+                .as_ref()
+                .map(super::grants::project_from_store)
+                .transpose()?;
+            let rights = effective_project_rights(Some(&grant), project_grant.as_ref());
+            if rights.is_empty() {
+                return Err(ApiError::not_found("project"));
+            }
+            Some(ProjectScope {
+                project: p,
+                rights,
+                grant: project_grant,
+            })
+        }
+        (None, Some(_)) => return Err(ApiError::not_found("project")),
+        _ => None,
+    };
+    Ok((
+        OrgScope {
+            org: found.org,
+            rights: grant.effective(),
+            every_project: grant.every_project(),
+            grant: Some(grant),
+        },
+        project_scope,
+    ))
+}

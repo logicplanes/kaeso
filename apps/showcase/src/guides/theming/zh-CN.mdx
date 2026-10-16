@@ -1,0 +1,61 @@
+---
+title: 主题
+description: 浅色以纯白为底，深色以纯黑为底，或跟随系统设置。主题通过一个属性切换，无需深色变体。
+---
+
+import CodeView from "~/components/CodeView.astro";
+
+## 主题的工作方式
+
+每种颜色都是一个 CSS 变量，带有浅色值和深色值。当系统偏好深色，或元素带有 `data-theme="dark"` 时，使用深色值；`data-theme="light"` 强制使用浅色。组件从不使用 `dark:` 变体：令牌会自行切换。
+
+## 选择主题
+
+`ThemeProvider` 会记住用户的选择（跟随系统、浅色或深色），并在文档上设置 `data-theme`。`ThemeMenu` 是对应的控件；`useTheme()` 用于读取和设置（`theme` 是所选项，`resolvedTheme` 是实际显示的主题）。
+
+<CodeView
+  code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";
+
+export function ThemeControl() {
+  return <ThemeMenu />;
+}
+
+export function DarkModeOffer() {
+  const { resolvedTheme, setTheme } = useTheme();
+  if (resolvedTheme === "dark") return null;
+  return <Button onClick={() => setTheme("dark")}>Use dark mode</Button>;
+}`}
+/>
+
+## 使用另一种主题的区域
+
+任何元素都可以切换其子树的主题。在带主题的区域内打开的浮层必须挂载到该区域内，否则会沿用页面的主题；为此请用 `PortalContainer` 包裹该区域。
+
+<CodeView
+  code={`import { Button, Menu, PortalContainer } from "@logicplanes/kaeso-ui";
+
+export function DarkPreview() {
+  return (
+    <div data-theme="dark" className="bg-panel text-fg">
+      <PortalContainer>
+        <Menu>
+          <Menu.Trigger>
+            <Button>Actions</Button>
+          </Menu.Trigger>
+          <Menu.Content>
+            <Menu.Item>Rename</Menu.Item>
+          </Menu.Content>
+        </Menu>
+      </PortalContainer>
+    </div>
+  );
+}`}
+/>
+
+## 对比度与动效偏好
+
+在 `prefers-contrast: more` 下，描边环改用更强的线条，次要文字变为主要文字。在 `prefers-reduced-motion` 下，变换会被移除，只保留透明度过渡。
+
+## 不可调整的部分
+
+没有可以更换的强调色，也没有可以调节的圆角：设计标识固定在令牌中。需要不同外观的产品应分叉令牌，而不是组件。

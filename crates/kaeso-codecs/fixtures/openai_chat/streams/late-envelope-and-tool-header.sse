@@ -1,0 +1,12 @@
+data: {"choices":[],"created":0,"id":"","model":"","object":"","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{"hate":{"filtered":false,"severity":"safe"},"self_harm":{"filtered":false,"severity":"safe"},"sexual":{"filtered":false,"severity":"safe"},"violence":{"filtered":false,"severity":"safe"}}}]}
+
+data: {"id":"chatcmpl-6TnLateEnvelope0x1","object":"chat.completion.chunk","created":1791641500,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"type":"function","function":{"arguments":""}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnLateEnvelope0x1","object":"chat.completion.chunk","created":1791641500,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_Lt7aQe2mVb9xRc4nWk1pZs8y","function":{"name":"get_weather"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnLateEnvelope0x1","object":"chat.completion.chunk","created":1791641500,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"location\":\"Oslo\"}"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnLateEnvelope0x1","object":"chat.completion.chunk","created":1791641500,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+

@@ -1,0 +1,15 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Das Projekt hat 80 % des Monatsbudgets von 50 USD verbraucht
+
+Ein Budget ist zu 80 % verbraucht
+
+Das Projekt hat 80 % des Monatsbudgets von 50 USD verbraucht.
+
+Limits öffnen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Warnungen schalten Sie in den Benachrichtigungseinstellungen Ihres Kontos ab.

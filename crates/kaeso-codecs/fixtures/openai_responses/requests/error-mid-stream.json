@@ -1,0 +1,5 @@
+{
+  "model": "gpt-5.5",
+  "input": "Write a haiku about the sea.",
+  "stream": true
+}

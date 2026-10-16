@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM avatars a WHERE a.hash = $1 AND NOT EXISTS (SELECT 1 FROM users WHERE avatar = $1) AND NOT EXISTS (SELECT 1 FROM organizations WHERE avatar = $1) AND NOT EXISTS (SELECT 1 FROM projects WHERE avatar = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "db1d137f9d1b074d242e401dd063aedebfc0085a195e028f10233ba3e9e5c7f0"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "chatcmpl-EXqNCokAXxEjwEw2uQHAvML5YMAt3",
+  "object": "chat.completion",
+  "created": 1791734854,
+  "model": "gpt-5.5-2026-04-23",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "For a hard-boiled egg, boil it for about 10–12 minutes, then transfer it to cold water to stop cooking and make peeling easier.",
+        "refusal": null,
+        "annotations": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 81,
+    "completion_tokens": 34,
+    "total_tokens": 115,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": null
+}

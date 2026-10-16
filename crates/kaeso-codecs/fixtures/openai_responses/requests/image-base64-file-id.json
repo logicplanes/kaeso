@@ -1,0 +1,30 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Describe both images in one sentence each."
+        },
+        {
+          "type": "input_image",
+          "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+          "detail": "low"
+        },
+        {
+          "type": "input_image",
+          "file_id": "file-6F2ksmvXxt4VdoqmHRw6kL",
+          "detail": "high"
+        },
+        {
+          "type": "input_image",
+          "image_url": "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png",
+          "detail": "original"
+        }
+      ]
+    }
+  ]
+}

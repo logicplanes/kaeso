@@ -1,0 +1,124 @@
+import { screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { ORG } from "~/test/fixtures";
+import { hoverReason, notifications } from "~/test/fixtures/org";
+import { credential } from "~/test/fixtures/shell";
+import { apiError, on, requests } from "~/test/network";
+import { renderUi } from "~/test/render";
+import { ProviderKeyDialog } from "./provider-key-dialog";
+
+const CREDENTIALS = "orgs/:org/credentials";
+
+async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}) {
+  const onClose = vi.fn();
+  const view = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} {...props} />);
+  const dialog = await screen.findByRole("dialog", { name: /provider key|Connect|Replace/ });
+  return { ...view, dialog, onClose };
+}
+
+describe("ProviderKeyDialog", () => {
+  it("adds a key for the provider you pick", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "anthropic", name: "Messages prod", is_default: false }));
+    const { user, dialog, onClose } = await open({ keys: [credential(), credential({ id: "cred_two", is_default: false })] });
+
+    expect(within(dialog).getByRole("heading", { name: "Add provider key" })).toBeInTheDocument();
+    expect(
+      within(dialog)
+        .getByRole("radio", { name: /OpenAI/ })
+        .closest("label"),
+    ).toHaveTextContent("2 keys");
+    expect(
+      within(dialog)
+        .getByRole("radio", { name: /Anthropic/ })
+        .closest("label"),
+    ).toHaveTextContent("Not connected yet");
+    await user.click(within(dialog).getByRole("radio", { name: /Anthropic/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at console.anthropic.com under API keys; it starts with sk-ant-.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Anthropic API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-ant-…");
+    await user.type(secret, "  sk-ant-123  ");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), " Messages prod ");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Messages prod added")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "anthropic", name: "Messages prod", secret: "sk-ant-123", make_default: false },
+    ]);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("says what the key step still needs", async () => {
+    const { user, dialog } = await open({ provider: "anthropic" });
+    const secret = within(dialog).getByLabelText("Anthropic API key");
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+    await hoverReason(user, add(), "Paste the Anthropic API key");
+    await user.type(secret, "sk-ant one");
+    await hoverReason(user, add(), "The key can't contain spaces or line breaks");
+    await user.clear(secret);
+    await user.type(secret, "sk-ant-123");
+    await hoverReason(user, add(), "Give the key a name");
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(requests("POST", CREDENTIALS)).toHaveLength(0);
+  });
+
+  it("connects a chosen provider and can make the new key its default", async () => {
+    on("POST", CREDENTIALS, credential({ name: "Backup", is_default: true }));
+    const { user, dialog } = await open({ provider: "openai", keys: [credential()] });
+
+    expect(within(dialog).getByRole("heading", { name: "Connect OpenAI" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio", { name: /Anthropic/ })).not.toBeInTheDocument();
+    expect(within(dialog).getByText("Create one at platform.openai.com under API keys; it starts with sk-.")).toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-new");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Backup{Enter}");
+
+    expect(await within(dialog).findByRole("heading", { name: "Make it the OpenAI default?" })).toBeVisible();
+    expect(within(dialog).getByRole("radio", { name: /Keep Production as the default/ })).toHaveAttribute("aria-checked", "true");
+    await user.click(within(dialog).getByRole("radio", { name: /Make this key the default/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Backup is the OpenAI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "openai", name: "Backup", secret: "sk-new", make_default: true }]);
+  });
+
+  it("asks only for the provider's key for a provider it has no hint for", async () => {
+    const { dialog } = await open({ provider: "mistral" });
+    expect(within(dialog).getByRole("heading", { name: "Connect Mistral" })).toBeInTheDocument();
+    expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Mistral API key")).toHaveAttribute("placeholder", "sk-…");
+  });
+
+  it("replaces a key's secret", async () => {
+    on("POST", `${CREDENTIALS}/:credential/replace`, credential());
+    const { user, dialog, onClose } = await open({ keys: [credential()], replace: credential() });
+
+    expect(within(dialog).getByRole("heading", { name: "Replace Production" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Paste the new OpenAI key" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-rotated");
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+
+    expect(await notifications().findByText("Production replaced")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => [r.params.credential, r.body])).toEqual([["cred_prod", { secret: "sk-rotated" }]]);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("shows the API's message and keeps the dialog open when the key is refused", async () => {
+    on("POST", CREDENTIALS, apiError(422, "invalid_request", "OpenAI rejected this key.", { param: "secret" }));
+    const { user, dialog, onClose } = await open({ provider: "openai" });
+
+    await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-bad");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bad{Enter}");
+    expect((await notifications().findAllByText("OpenAI rejected this key.")).length).toBeGreaterThan(0);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes on cancel", async () => {
+    const { user, dialog, onClose } = await open();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(onClose).toHaveBeenCalled();
+    expect(requests("POST", CREDENTIALS)).toHaveLength(0);
+  });
+});

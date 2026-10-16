@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "type": "timeout_error",
+    "message": "Request timed out"
+  },
+  "request_id": "req_011CA3fzF4vpu2Kcx3iZLrBL"
+}

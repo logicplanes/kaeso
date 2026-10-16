@@ -1,0 +1,11 @@
+{
+  "error": {
+    "message": "Invalid value for 'reasoning_effort': 'none' is not supported with this model.",
+    "type": "invalid_request_error",
+    "param": "reasoning_effort",
+    "code": "invalid_value",
+    "x_future_field": {
+      "hint": "made-up"
+    }
+  }
+}

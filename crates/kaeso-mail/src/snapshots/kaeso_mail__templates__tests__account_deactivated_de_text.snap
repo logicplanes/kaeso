@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ihr Kaeso-Konto wurde deaktiviert
+
+Ihr Konto wurde deaktiviert
+
+Ein Admin hat Sie abgemeldet, und Ihre API-Schlüssel funktionieren nicht mehr.
+
+Wenn Sie das für einen Fehler halten, wenden Sie sich an den Admin.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

@@ -1,0 +1,213 @@
+---
+source: crates/kaeso-core/src/rights/tests.rs
+expression: rights_reference()
+---
+## Organization rights
+
+| Right | Category | Name | Allows | Needs (beyond `org.view`) | Recent sign-in | Kaeso Cloud only |
+|---|---|---|---|---|:-:|:-:|
+| `org.view` | Organization | View organization | See the organization, its settings and its roles. |  |  |  |
+| `org.update` | Organization | Edit organization | Rename the organization, change its picture and general settings, and choose the default project. |  |  |  |
+| `org.delete` ⚠ | Organization | Delete organization | Schedule the organization for deletion, or restore it while it waits. |  | ✓ |  |
+| `org.ownership.transfer` ⚠ | Organization | Transfer ownership | Make another member an owner in your place. | `members.view` | ✓ |  |
+| `members.view` | Members & access | View members | See members, their roles and their rights. |  |  |  |
+| `members.invite` | Members & access | Invite members | Invite people by email with a role you could grant yourself. | `members.view` |  |  |
+| `members.invites.revoke` | Members & access | Cancel invites | Cancel pending invitations. | `members.view` |  |  |
+| `members.remove` ⚠ | Members & access | Remove members | Remove members from the organization and archive their keys in it. | `members.view` |  |  |
+| `members.rights.update` | Members & access | Change member roles | Change members' org roles and individual org rights. | `members.view` |  |  |
+| `roles.manage` | Members & access | Manage roles | Create, edit and delete the organization's custom roles. |  |  |  |
+| `projects.view.all` | Projects | View all projects | See every project, including ones the member isn't in. |  |  |  |
+| `projects.create` | Projects | Create projects | Create projects; the creator becomes their admin. |  |  |  |
+| `projects.archive.any` ⚠ | Projects | Archive any project | Archive any project and all its keys. | `projects.view.all` |  |  |
+| `provider_credentials.view` | Providers | View provider keys | See the organization's provider keys (metadata only, never secrets). |  |  |  |
+| `provider_credentials.create` | Providers | Add provider keys | Add provider keys to the organization. | `provider_credentials.view` | ✓ |  |
+| `provider_credentials.replace` | Providers | Change provider keys | Replace and rename provider keys, choose each provider's default and assign keys to projects. | `provider_credentials.view` | ✓ |  |
+| `provider_credentials.delete` ⚠ | Providers | Delete provider keys | Remove a provider key from the organization. | `provider_credentials.view` |  |  |
+| `security.sso.manage` | Security | Manage SSO | Configure the organization's identity provider and the role of people who arrive through it. |  | ✓ |  |
+| `security.sso.require` ⚠ | Security | Require SSO | Require members to sign in to this organization through SSO. |  | ✓ |  |
+| `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
+| `security.key_policy.manage` | Security | Set key lifetime | Set the organization's maximum key lifetime. |  |  |  |
+| `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |
+| `platform_keys.create` ⚠ | Keys | Create platform keys | Create organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
+| `platform_keys.revoke` | Keys | Disable platform keys | Disable, enable or archive organization platform keys. | `platform_keys.view` |  |  |
+| `logs.settings.manage` | Logs & data | Manage log settings | Set log retention and switch content logging on or off for the organization. |  |  |  |
+| `logs.storage.view` | Logs & data | View log storage | See how many log entries exist and how much space they take. |  |  |  |
+| `logs.delete` ⚠ | Logs & data | Delete logs | Delete the organization's logs for a time range. | `logs.storage.view` | ✓ |  |
+| `usage.org.view` | Usage & billing | View org usage | See usage across all projects. |  |  |  |
+| `costs.org.view` | Usage & billing | View org costs | See costs across all projects. | `usage.org.view` |  |  |
+| `billing.view` | Usage & billing | View billing | See plan, invoices and payment status (Kaeso Cloud). |  |  | ✓ |
+| `billing.manage` | Usage & billing | Manage billing | Change the plan and payment method (Kaeso Cloud). | `billing.view` |  | ✓ |
+| `audit_log.view` | Audit | View audit log | Read the organization's audit log. |  |  |  |
+| `audit_log.export` | Audit | Export audit log | Export the organization's audit log. | `audit_log.view` |  |  |
+
+## Project rights
+
+| Right | Category | Name | Allows | Needs (beyond `project.view`) | Recent sign-in | Kaeso Cloud only |
+|---|---|---|---|---|:-:|:-:|
+| `project.view` | Project | View project | See the project and its settings. |  |  |  |
+| `project.update` | Project | Edit project | Rename the project and change its settings and picture. |  |  |  |
+| `project.archive` ⚠ | Project | Archive project | Archive this project and all its keys. |  |  |  |
+| `project.members.view` | Members & access | View members | See the project's members, their roles and their rights. |  |  |  |
+| `project.members.add` | Members & access | Add members | Add organization members to the project with a role you could grant yourself. | `project.members.view` |  |  |
+| `project.members.remove` | Members & access | Remove members | Remove members from the project and archive their keys in it. | `project.members.view` |  |  |
+| `project.members.rights.update` | Members & access | Change member roles | Change members' project roles and individual project rights. | `project.members.view` |  |  |
+| `service_accounts.view` | Members & access | View service accounts | See the project's service accounts and their rights. |  |  |  |
+| `service_accounts.create` | Members & access | Create service accounts | Create service accounts with rights you hold yourself. | `service_accounts.view` |  |  |
+| `service_accounts.rights.update` | Members & access | Change service accounts | Rename service accounts and change their roles and rights. | `service_accounts.view` |  |  |
+| `service_accounts.archive` | Members & access | Archive service accounts | Archive service accounts and their keys. | `service_accounts.view` |  |  |
+| `api.request` | Model use | Call models with keys | Call the project's models with one's own API keys. |  |  |  |
+| `playground.use` | Model use | Use the Playground | Call the project's models from the console Playground. |  |  |  |
+| `keys.own.create` | Keys | Create own keys | Create API keys for oneself. |  |  |  |
+| `keys.own.manage` | Keys | Manage own keys | Disable, enable or archive one's own API keys. |  |  |  |
+| `keys.all.view` | Keys | View all keys | See every key in the project (metadata). |  |  |  |
+| `keys.all.manage` | Keys | Manage all keys | Disable, enable or archive anyone's keys in the project. | `keys.all.view` |  |  |
+| `service_accounts.keys.create` | Keys | Create service account keys | Create keys for the project's service accounts. | `service_accounts.view` |  |  |
+| `keys.platform_access.grant` ⚠ | Keys | Give keys platform access | Give a new key access to the Platform API. |  | ✓ |  |
+| `security.key_policy.project.manage` | Keys | Set key lifetime | Set the project's maximum key lifetime. |  |  |  |
+| `models.view` | Models | View models | See the project's models, aliases and routing. |  |  |  |
+| `models.manage` | Models | Manage models | Add, change and remove models and aliases. | `models.view` |  |  |
+| `limits.view` | Limits & budgets | View limits | See project, member and key limits, budgets and model access. |  |  |  |
+| `limits.manage` | Limits & budgets | Manage limits | Change project, member and key limits, budgets and model access. | `limits.view` |  |  |
+| `logs.metadata.view` | Logs & data | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |  |  |
+| `logs.content.view` ⚠ | Logs & data | View prompts and outputs | See request and response bodies in the logs. | `logs.metadata.view` |  |  |
+| `logs.export` ⚠ | Logs & data | Export logs | Export the project's request logs. | `logs.metadata.view` |  |  |
+| `logs.content.disable` | Logs & data | Turn off content logging | Switch content logging off for this project. |  |  |  |
+| `usage.view` | Usage & costs | View usage | See the project's usage. |  |  |  |
+| `costs.view` | Usage & costs | View costs | See the project's costs. | `usage.view` |  |  |
+| `project.audit_log.view` | Audit | View project audit log | Read the audit log of changes in this project. |  |  |  |
+
+## Built-in organization roles
+
+| Role | Id | Description | Default project role |
+|---|---|---|---|
+| Owner | `owner` | Holds every right, now and in future releases; only owners manage owners. | Admin |
+| Admin | `admin` | Manages the organization and every project, except deleting it, transferring ownership and changing billing. | Admin |
+| Billing | `billing` | Manages billing and sees usage and costs across all projects. | Viewer |
+| Developer | `developer` | Creates projects and sees usage, costs and provider keys; works in the projects they are added to. | Developer |
+| Auditor | `auditor` | Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs. | Viewer |
+| Member | `member` | Sees the organization and its members; works in the projects they are added to. | Viewer |
+
+## Built-in project roles
+
+| Role | Id | Description |
+|---|---|---|
+| Admin | `admin` | Manages the project: members, keys, service accounts, models, limits, logs and settings. |
+| Developer | `developer` | Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs. |
+| Viewer | `viewer` | Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing. |
+
+## Organization roles
+
+| Right | Owner | Admin | Billing | Developer | Auditor | Member |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `org.view` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `org.update` | ✓ | ✓ |  |  |  |  |
+| `org.delete` | ✓ |  |  |  |  |  |
+| `org.ownership.transfer` | ✓ |  |  |  |  |  |
+| `members.view` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `members.invite` | ✓ | ✓ |  |  |  |  |
+| `members.invites.revoke` | ✓ | ✓ |  |  |  |  |
+| `members.remove` | ✓ | ✓ |  |  |  |  |
+| `members.rights.update` | ✓ | ✓ |  |  |  |  |
+| `roles.manage` | ✓ | ✓ |  |  |  |  |
+| `projects.view.all` | ✓ | ✓ | ✓ |  | ✓ |  |
+| `projects.create` | ✓ | ✓ |  | ✓ |  |  |
+| `projects.archive.any` | ✓ | ✓ |  |  |  |  |
+| `provider_credentials.view` | ✓ | ✓ |  | ✓ | ✓ |  |
+| `provider_credentials.create` | ✓ | ✓ |  |  |  |  |
+| `provider_credentials.replace` | ✓ | ✓ |  |  |  |  |
+| `provider_credentials.delete` | ✓ | ✓ |  |  |  |  |
+| `security.sso.manage` | ✓ | ✓ |  |  |  |  |
+| `security.sso.require` | ✓ | ✓ |  |  |  |  |
+| `security.2fa.require` | ✓ | ✓ |  |  |  |  |
+| `security.key_policy.manage` | ✓ | ✓ |  |  |  |  |
+| `platform_keys.view` | ✓ | ✓ |  |  | ✓ |  |
+| `platform_keys.create` | ✓ | ✓ |  |  |  |  |
+| `platform_keys.revoke` | ✓ | ✓ |  |  |  |  |
+| `logs.settings.manage` | ✓ | ✓ |  |  |  |  |
+| `logs.storage.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
+| `logs.delete` | ✓ | ✓ |  |  |  |  |
+| `usage.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
+| `costs.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
+| `billing.view` | ✓ | ✓ | ✓ |  | ✓ |  |
+| `billing.manage` | ✓ |  | ✓ |  |  |  |
+| `audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
+| `audit_log.export` | ✓ | ✓ |  |  | ✓ |  |
+
+## Rights in every project, by organization role
+
+| Right | Owner | Admin | Billing | Developer | Auditor | Member |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `project.view` | ✓ | ✓ |  |  | ✓ |  |
+| `project.update` | ✓ | ✓ |  |  |  |  |
+| `project.archive` | ✓ | ✓ |  |  |  |  |
+| `project.members.view` | ✓ | ✓ |  |  | ✓ |  |
+| `project.members.add` | ✓ | ✓ |  |  |  |  |
+| `project.members.remove` | ✓ | ✓ |  |  |  |  |
+| `project.members.rights.update` | ✓ | ✓ |  |  |  |  |
+| `service_accounts.view` | ✓ | ✓ |  |  | ✓ |  |
+| `service_accounts.create` | ✓ | ✓ |  |  |  |  |
+| `service_accounts.rights.update` | ✓ | ✓ |  |  |  |  |
+| `service_accounts.archive` | ✓ | ✓ |  |  |  |  |
+| `api.request` | ✓ | ✓ |  |  |  |  |
+| `playground.use` | ✓ | ✓ |  |  |  |  |
+| `keys.own.create` | ✓ | ✓ |  |  |  |  |
+| `keys.own.manage` | ✓ | ✓ |  |  |  |  |
+| `keys.all.view` | ✓ | ✓ |  |  | ✓ |  |
+| `keys.all.manage` | ✓ | ✓ |  |  |  |  |
+| `service_accounts.keys.create` | ✓ | ✓ |  |  |  |  |
+| `keys.platform_access.grant` | ✓ | ✓ |  |  |  |  |
+| `security.key_policy.project.manage` | ✓ | ✓ |  |  |  |  |
+| `models.view` | ✓ | ✓ |  |  | ✓ |  |
+| `models.manage` | ✓ | ✓ |  |  |  |  |
+| `limits.view` | ✓ | ✓ |  |  | ✓ |  |
+| `limits.manage` | ✓ | ✓ |  |  |  |  |
+| `logs.metadata.view` | ✓ | ✓ |  |  | ✓ |  |
+| `logs.content.view` | ✓ | ✓ |  |  |  |  |
+| `logs.export` | ✓ | ✓ |  |  |  |  |
+| `logs.content.disable` | ✓ | ✓ |  |  |  |  |
+| `usage.view` | ✓ | ✓ |  |  | ✓ |  |
+| `costs.view` | ✓ | ✓ |  |  | ✓ |  |
+| `project.audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
+
+## Project roles
+
+| Right | Admin | Developer | Viewer |
+|---|:-:|:-:|:-:|
+| `project.view` | ✓ | ✓ | ✓ |
+| `project.update` | ✓ |  |  |
+| `project.archive` | ✓ |  |  |
+| `project.members.view` | ✓ | ✓ | ✓ |
+| `project.members.add` | ✓ |  |  |
+| `project.members.remove` | ✓ |  |  |
+| `project.members.rights.update` | ✓ |  |  |
+| `service_accounts.view` | ✓ | ✓ | ✓ |
+| `service_accounts.create` | ✓ |  |  |
+| `service_accounts.rights.update` | ✓ |  |  |
+| `service_accounts.archive` | ✓ |  |  |
+| `api.request` | ✓ | ✓ |  |
+| `playground.use` | ✓ | ✓ |  |
+| `keys.own.create` | ✓ | ✓ |  |
+| `keys.own.manage` | ✓ | ✓ |  |
+| `keys.all.view` | ✓ | ✓ | ✓ |
+| `keys.all.manage` | ✓ |  |  |
+| `service_accounts.keys.create` | ✓ |  |  |
+| `keys.platform_access.grant` | ✓ |  |  |
+| `security.key_policy.project.manage` | ✓ |  |  |
+| `models.view` | ✓ | ✓ | ✓ |
+| `models.manage` | ✓ |  |  |
+| `limits.view` | ✓ | ✓ | ✓ |
+| `limits.manage` | ✓ |  |  |
+| `logs.metadata.view` | ✓ | ✓ | ✓ |
+| `logs.content.view` | ✓ | ✓ |  |
+| `logs.export` | ✓ |  |  |
+| `logs.content.disable` | ✓ |  |  |
+| `usage.view` | ✓ | ✓ | ✓ |
+| `costs.view` | ✓ | ✓ | ✓ |
+| `project.audit_log.view` | ✓ |  |  |
+
+## Organization rights that reach into every project
+
+| Organization right | Project rights |
+|---|---|
+| `projects.view.all` | `project.view` |
+| `projects.archive.any` | `project.view`, `project.archive` |

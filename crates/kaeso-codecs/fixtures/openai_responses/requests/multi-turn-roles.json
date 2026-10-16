@@ -1,0 +1,68 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "role": "system",
+      "content": "You are a concise travel assistant."
+    },
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Answer in at most two sentences."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": "I'm visiting Lisbon in March. What should I pack?"
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": "Pack layers and a light rain jacket: March in Lisbon is mild but showery."
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "And what about shoes?"
+        }
+      ]
+    },
+    {
+      "id": "msg_02b7dd8dae68d16e006acb552fc45181a28dc99de1db70fe04",
+      "type": "message",
+      "role": "assistant",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Bring comfortable walking shoes with good grip, because the cobblestones get slippery in the rain.",
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "The user prefers metric units."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Is the sea warm enough to swim?"
+    }
+  ],
+  "text": {
+    "verbosity": "low"
+  }
+}

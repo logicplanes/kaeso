@@ -1,0 +1,39 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_01bzhnsPw1PaZ5gA4hRi8PdK",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "",
+      "signature": "EqE/T31k58uykLq0U78khwgJxSPsZCyiB3zB/ksLzl9vldoXdmA0N47uwPgl2KIS+8MRE03DON9Y/bmr2EMS8pafJMd/9x5LUrxEFwFbvFYb7ozoSafbE/tGBAu1Wf4tF0X9HzYg8hMvPRTNts81TioJtWQ6RrCaN42vYmNYz1+mA7VYF67q7MC/7o5IyuvwzG9sjlO77oVt7cxnjmdnYC0XaHTATCpwd7yGuPucLsk6N4+QVtdaY50a/6EsAnVqVkIK/1rGmz4ZmGblDpGJA+M7m0/4JCgYEw3ysPid/Hg/Y31UBCwXsUTdvriXIo0T"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_011Dne1APNuqxuo9C4qyyihS",
+      "name": "get_time",
+      "input": {
+        "timezone": "Asia/Tokyo"
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1034,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 140,
+    "output_tokens_details": {
+      "thinking_tokens": 88
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  }
+}

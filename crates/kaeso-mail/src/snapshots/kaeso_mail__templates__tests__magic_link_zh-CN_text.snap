@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 登录 Kaeso
+
+登录 Kaeso
+
+此链接仅可使用一次，15 分钟后过期。
+
+登录：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+如果您没有请求登录，可以忽略此邮件。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。

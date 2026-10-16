@@ -1,0 +1,80 @@
+import { cloneElement, useMemo, useSyncExternalStore, type HTMLAttributes, type ReactElement, type Ref, type RefCallback } from "react";
+
+export type TriggerProps = HTMLAttributes<Element> & { ref?: Ref<Element> | undefined };
+
+export interface TriggerPropsStore {
+  get: () => TriggerProps | null;
+  set: (props: TriggerProps | null) => void;
+  subscribe: (listener: () => void) => () => void;
+  ref: RefCallback<Element>;
+}
+
+export function triggerPropsStore(): TriggerPropsStore {
+  let props: TriggerProps | null = null;
+  let element: Element | null = null;
+  let given: Ref<Element> | undefined;
+  let detach: (() => void) | undefined;
+  const listeners = new Set<() => void>();
+  const attach = () => {
+    detach?.();
+    detach = element && given ? setRef(given, element) : undefined;
+  };
+  return {
+    get: () => props,
+    set: (next) => {
+      if (next?.ref !== given) {
+        given = next?.ref;
+        attach();
+      }
+      props = next;
+      for (const listener of listeners) listener();
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+    ref: (node) => {
+      element = node;
+      attach();
+    },
+  };
+}
+
+export function setRef<T>(ref: Ref<T> | undefined, value: T): (() => void) | undefined {
+  if (typeof ref === "function") {
+    const cleanup = ref(value);
+    return typeof cleanup === "function" ? cleanup : () => void ref(null);
+  }
+  if (ref) {
+    ref.current = value;
+    return () => void (ref.current = null);
+  }
+  return undefined;
+}
+
+export function HandedTrigger({
+  store,
+  merge,
+  extra,
+  children,
+}: {
+  store: TriggerPropsStore;
+  merge: ((given: TriggerProps, own: object) => object) | undefined;
+  extra?: object | undefined;
+  children: ReactElement;
+}) {
+  const given = useSyncExternalStore(store.subscribe, store.get, store.get);
+  const own = { ...(children.props as object), ...extra } as { ref?: Ref<Element> | undefined };
+  const ref = useMemo(() => mergeRefs(own.ref, store.ref), [own.ref, store]);
+  return cloneElement(children as ReactElement<{ ref?: Ref<Element> | undefined }>, { ...(given && merge ? merge(given, own) : extra), ref });
+}
+HandedTrigger.displayName = "HandedTrigger";
+
+function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
+  return (node) => {
+    const cleanups = refs.map((ref) => setRef(ref, node));
+    return () => {
+      for (const cleanup of cleanups) cleanup?.();
+    };
+  };
+}

@@ -1,0 +1,22 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 1024,
+  "cache_control": {
+    "type": "ephemeral"
+  },
+  "system": "You are a helpful assistant that remembers our conversation.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "My name is Alex. I work on machine learning."
+    },
+    {
+      "role": "assistant",
+      "content": "Nice to meet you, Alex! How can I help with your ML work today?"
+    },
+    {
+      "role": "user",
+      "content": "What did I say I work on?"
+    }
+  ]
+}

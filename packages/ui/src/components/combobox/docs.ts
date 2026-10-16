@@ -1,0 +1,66 @@
+import type { ComponentDocs } from "../../component-docs.js";
+
+export const docs = {
+  Autocomplete: {
+    description: "Free text with suggestions.",
+    props: {
+      "aria-label": "The accessible name, for when there is no visible label.",
+      defaultValue: "The text in the input on first render.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      id: "The id of the control, so a label elsewhere can point to it.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      leadingIcon: "An icon at the start of the input.",
+      name: "The field name the value is sent under in a form.",
+      onValueChange: "Called with the text whenever it changes.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      placeholder: "Text shown while there is no value.",
+      required: "Marks it as required in a form.",
+      size: "The height of the input.",
+      suggestions: "Suggestions; the value is free text.",
+      value: "The text in the input, when you control it.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  Combobox: {
+    description: "A pill input with a filtered list: matched characters highlighted, async, chips for many, create.",
+    props: {
+      "aria-label": "The accessible name, for when there is no visible label.",
+      defaultValue: "The value on first render, when the component keeps its own value.",
+      description: "One sentence of help under the label.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      emptyText: 'What the empty list says: "No models match". Defaults to "No results" in the provider\'s language.',
+      id: "The id of the control, so a label elsewhere can point to it.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      loading: "Shows a quiet progress line at the top of the list (async results).",
+      multiple: "Allows choosing more than one option; `value` is then a list.",
+      name: "The field name the value is sent under in a form.",
+      onCreate: 'Offers "Create “…”" when nothing matches exactly.',
+      onInputValueChange: "Called with the text typed into the input.",
+      onValueChange: "Called with the chosen value, or the list of values with `multiple`.",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      options: "The options to choose from.",
+      placeholder: "Text shown while there is no value.",
+      required: "Marks it as required in a form.",
+      size: "The height of the input.",
+      value: "The chosen value, or a list of values with `multiple`, when you control it.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+    },
+  },
+  Highlight: {
+    description: "Splits a label around the query: matched characters in text, the rest secondary (7.4).",
+    props: {
+      query: "The part of the text to highlight, ignoring case.",
+      text: "The text to show.",
+    },
+  },
+} satisfies ComponentDocs;

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="120" viewBox="0 0 640 120" role="img" aria-label="The request flow">
+  <style>
+    rect { fill: #f2f2f2; } text { fill: #0a0a0a; font: 500 14px Inter, system-ui, sans-serif; } path { stroke: #8a8a8a; }
+    @media (prefers-color-scheme: dark) { rect { fill: #1c1c1c; } text { fill: #fafafa; } path { stroke: #6b6b6b; } }
+  </style>
+  <rect x="0" y="40" width="96" height="40" rx="20"/><text x="48" y="65" text-anchor="middle">App</text>
+  <path d="M96 60h40" stroke-width="1.5"/>
+  <rect x="136" y="40" width="96" height="40" rx="20"/><text x="184" y="65" text-anchor="middle">Key</text>
+  <path d="M232 60h40" stroke-width="1.5"/>
+  <rect x="272" y="40" width="96" height="40" rx="20"/><text x="320" y="65" text-anchor="middle">Model</text>
+  <path d="M368 60h40" stroke-width="1.5"/>
+  <rect x="408" y="40" width="96" height="40" rx="20"/><text x="456" y="65" text-anchor="middle">Limits</text>
+  <path d="M504 60h40" stroke-width="1.5"/>
+  <rect x="544" y="40" width="96" height="40" rx="20"/><text x="592" y="65" text-anchor="middle">Provider</text>
+</svg>

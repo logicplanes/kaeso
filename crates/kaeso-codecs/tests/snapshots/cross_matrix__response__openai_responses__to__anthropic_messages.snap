@@ -1,0 +1,952 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "failed": {
+    "rejected_by_source": "An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID req_bf10eaf02b4ca9756d8cbfc05a244acb in your message."
+  },
+  "file-input-base64-file-id": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wZWZlZmI2M2VhODE2OTk4MDA2YWNiNTFiNGNiZmU4MWEyYTUyZWQ0N2YwNTI1ODI5NSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "hello.pdf is a one-page document that contains only the words \"Hello PDF\". The second document is a quarterly sales report showing revenue growth of 12% over the previous quarter.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0efefb63ea816998006acb51b460fb81909aa1bfd4cb4e482f",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2215,
+      "output_tokens": 98,
+      "output_tokens_details": {
+        "thinking_tokens": 52
+      }
+    }
+  },
+  "file-input-url": {
+    "content": [
+      {
+        "text": "The file seems to contain excerpts from a letter to the shareholders of Berkshire Hathaway Inc., likely written by Warren Buffett. It covers several topics:\n\n1. **Communication Philosophy**: Buffett emphasizes the importance of transparency and candidness in reporting mistakes and successes to shareholders.\n\n2. **Mistakes and Learnings**: The letter acknowledges past mistakes in business assessments and management hires, highlighting the importance of correcting errors promptly.\n\n3. **CEO Succession**: Mention of Greg Abel stepping in as the new CEO and continuing the tradition of honest communication.\n\n4. **Pete Liegl Story**: A detailed account of acquiring Forest River and the relationship with its founder, highlighting trust and effective business decisions.\n\n5. **2024 Performance**: Overview of business performance, particularly in insurance and investment activities, with a focus on GEICO's improvement.\n\n6. **Tax Contributions**: Discussion of significant tax payments to the U.S. Treasury, credited to shareholders' reinvestments.\n\n7. **Investment Strategy**: A breakdown of Berkshire’s investments in both controlled subsidiaries and marketable equities, along with a focus on long-term holding strategies.\n\n8. **American Capitalism**: Reflections on America’s economic development and Berkshire’s role within it.\n\n9. **Property-Casualty Insurance**: Insights into the P/C insurance business model and its challenges and benefits.\n\n10. **Japanese Investments**: Information about Berkshire’s investments in Japanese companies and future plans.\n\n11. **Annual Meeting**: Details about the upcoming annual gathering in Omaha, including schedule changes and new book releases.\n\n12. **Personal Anecdotes**: Light-hearted stories about family and interactions, conveying Buffett's personable approach.\n\n13. **Financial Performance Data**: Tables comparing Berkshire’s annual performance to the S&P 500, showing impressive long-term gains.\n\nOverall, the letter reinforces Berkshire Hathaway's commitment to transparency, investment in both its businesses and the wider economy, and emphasizes strong leadership and prudent financial management.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_686eef60237881a2bd1180bb8b13de430e34c516d176ff86",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 8438,
+      "output_tokens": 398,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "image-base64-file-id": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wMDA3NzQ2YmU5MDQ4ZGI2MDA2YWNiNTE2ZjViOTk4MWEyYTZjYmQ4MzJiZjI2YTg1ZSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "The first image is a single pixel and shows no recognizable subject. The second image is a photo of a gray tabby cat sitting on a windowsill. The third image shows two dice rendered with a semi-transparent background.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0007746be9048db6006acb516f7b3581942faab9ae7713707c",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 1387,
+      "output_tokens": 214,
+      "output_tokens_details": {
+        "thinking_tokens": 166
+      }
+    }
+  },
+  "image-url": {
+    "content": [
+      {
+        "text": "The image depicts a scenic landscape with a wooden boardwalk or pathway leading through lush, green grass under a blue sky with some clouds. The setting suggests a peaceful natural area, possibly a park or nature reserve. There are trees and shrubs in the background.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_67ccd3a9da748190baa7f1570fe91ac604becb25c45c1d41",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 328,
+      "output_tokens": 52,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "json-object-mode": {
+    "content": [
+      {
+        "text": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0a99caf81f824eba006acb699055e381a2da7a8c61a2e6bd2c",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 26,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "max-output-tokens-incomplete": {
+    "content": [
+      {
+        "text": "The printing press, invented by Johannes Gutenberg around 1440, revolutionized the",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0effd1ac380390cd006acb712ee1078193b5d06e53c0a24158",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 17,
+      "output_tokens": 16,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "multi-turn-roles": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wYTE1ZjA3ZWYwYjI2MTcxMDA2YWNiNTY1ZGQyNGE4MTkzNTk3MDQwMzYyY2NiNGNjNCJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Not really: the Atlantic off Lisbon is about 15 °C in March, so only brief, brave dips.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0a15f07ef0b26171006acb565dc15b819044c994fdbf18b02a",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 164,
+      "output_tokens": 87,
+      "output_tokens_details": {
+        "thinking_tokens": 64
+      }
+    }
+  },
+  "reasoning-effort-high": {
+    "content": [
+      {
+        "text": "The classic tongue twister...",
+        "type": "text"
+      }
+    ],
+    "id": "resp_67ccd7eca01881908ff0b5146584e408072912b2993db808",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 81,
+      "output_tokens": 1035,
+      "output_tokens_details": {
+        "thinking_tokens": 832
+      }
+    }
+  },
+  "reasoning-encrypted": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwic3VtbWFyeSI6WyIqKkludGVycHJldGluZyB0aGUgZm9yZWNhc3QqKlxuXG5UaGUgdG9vbCByZXBvcnRzIHJhaW4gd2l0aCBhbiA4MCUgcHJvYmFiaWxpdHkgYW5kIDE0IMKwQy4gVGhhdCBjbGVhcmx5IHdhcnJhbnRzIGFuIHVtYnJlbGxhLCBzbyBJJ2xsIGFuc3dlciB5ZXMgYW5kIGdpdmUgdGhlIG51bWJlcnMuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfcmVhc29uaW5nX2l0ZW1faWQiLCJkYXRhIjoicnNfMGRiNDc5ZmNhNDExNGM1MDAwNmFjYjY2ZDI5MWJkODE5MGVjNjY0MjIyOTdiODI0ZjMifSx7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX2VuY3J5cHRlZF9yZWFzb25pbmciLCJkYXRhIjoiZ0FBQUFBQnF5dEdBbHFXSUxnSzJyVGVUSm8wSkZySmFMNHNfYkVFblgzc3BhNXhWRXNoMGpXN0V4ckMtQjdFdWtOX1lwOXJQejg3QldpX1I2SmxVNE81ZGRXNnR0Y2MxV1FUcTFheUVGYlY4TXN3ZEJuZWZTRkV4Snhyd2ZzZjZxQWhZTDRsRUpnVmxCVXV3ckVGZkg4LXdCYmNsU2gzR09iT1Q0R1lCRzdZN0s2OWd3NjJIb3hQb0RtM3ZiVkNGcTlrdFlFNzJvaW1VTzVpWDdGWElhTGtkbHlRU0xVczhpVk1TeGM4dmZxU2ZYWmlJWnhsZ2laNjZON0Nrc0s2NGtzZXdKcmlIWnhjNzFVc1FFUXN4aDNwRXJINWg4YmEwelNRcmVpM2k0Y0hYM3RGYTNEZmRnUHJVMElrOEYza2Z5aHBrUXdhMjZBRVRaWUdiLVVUeHRKQXlSRWhkYnNzZWcxeEJaWlFXVlA2cU9Wc2x4MDdjdDZFNkpIbU52ZTBROFVWenNwMG96eXpLYXpxVTAzV2p6d2E5ekJ0eE1GdVkwY0xsekxFQmtqTmh5bzNJZVNrZzUtMHJqTWZoQ1VUdG1PSzI4ZnVLUVBIY3B5akJpM2F4N3ZYcTV6ejNvcExPRm5scjJqd0RoRlhfQ044QVZWMEdyekdVd0lQQUNzWURITEJpZEtRRE9BeWlPY2Z3Xy1HV0dSRnpyLU9jSEFxTGNnPT0ifV19",
+        "thinking": "**Interpreting the forecast**\n\nThe tool reports rain with an 80% probability and 14 °C. That clearly warrants an umbrella, so I'll answer yes and give the numbers.",
+        "type": "thinking"
+      },
+      {
+        "text": "Yes, bring an umbrella: Paris has an 80% chance of rain today with temperatures around 14 °C.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0db479fca4114c50006acb66d23eb98190c29d430d0790fb60",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 768,
+      "input_tokens": 144,
+      "output_tokens": 241,
+      "output_tokens_details": {
+        "thinking_tokens": 192
+      }
+    }
+  },
+  "recorded-file-input-url": {
+    "content": [
+      {
+        "text": "This is **Warren Buffett’s 2024 annual letter to Berkshire Hathaway shareholders**, dated **February 22, 2025**. The 15-page file contains the letter plus two pages comparing Berkshire’s stock performance with the S&P 500—not the full annual report.\n\n### What’s inside\n\n- **2024 financial results:** Berkshire reported **$47.4 billion in operating earnings**, up from **$37.4 billion in 2023**, driven largely by stronger insurance results and investment income. Nevertheless, 53% of its 189 operating businesses reported lower earnings.\n- **Investment strategy:** Buffett explains Berkshire’s preference for owning good businesses over holding cash, despite its large cash position. Its marketable equity holdings ended the year at **$272 billion**, down from $354 billion.\n- **Insurance operations:** A discussion of GEICO’s improvement, catastrophe risks, disciplined pricing, and Berkshire’s **$171 billion in insurance “float”**—money held before claims are paid.\n- **Japanese investments:** Berkshire’s stakes in **ITOCHU, Marubeni, Mitsubishi, Mitsui, and Sumitomo** cost $13.8 billion and were worth **$23.5 billion** at year-end. Buffett expects these to remain long-term holdings.\n- **Management and succession:** Reflections on admitting and correcting mistakes, selecting managers, and **Greg Abel’s expected succession as CEO**.\n- **A tribute to Pete Liegl:** The story of Berkshire’s acquisition of Forest River and its founder’s contributions.\n- **Taxes and reinvestment:** Buffett reports **$26.8 billion in U.S. federal income-tax payments** for 2024 and discusses how retained earnings and compounding helped build Berkshire.\n- **Annual meeting information:** Plans for the **May 3, 2025 gathering in Omaha**, including the Q&A schedule and shareholder shopping events.\n\n### Performance tables at the end\n\n| Measure | Berkshire | S&P 500, including dividends |\n|---|---:|---:|\n| 2024 return | 25.5% | 25.0% |\n| Compounded annual gain, 1965–2024 | 19.9% | 10.4% |\n\n**Overall:** It combines a business update with Buffett’s lessons on long-term investing, honest management, risk, and reinvesting profits.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0b6eda942bd25154006acbb3dbf33887d1845901b653897565",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 11539,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3,
+      "output_tokens": 486,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-function-call-output-array": {
+    "content": [
+      {
+        "text": "The chart **“Weekly signups”** has been plotted.\n\nTrend: signups generally increased over the period, rising from **3 → 5**, dipping slightly to **4**, then jumping to **8**. Overall, the trend is **upward**.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_01f0d3ff832da1a2006acbb3e631d88190a3c03bc1050a0a18",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 156,
+      "output_tokens": 58,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-json-object-mode": {
+    "content": [
+      {
+        "text": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}",
+        "type": "text"
+      }
+    ],
+    "id": "resp_05a5286721ef2aa5006acbb3ebc12c87d19a80d34780deefc6",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-max-output-tokens-incomplete": {
+    "content": [
+      {
+        "text": "Certainly! Here is a **detailed history of the printing press**, tracing its",
+        "type": "text"
+      }
+    ],
+    "id": "resp_07145f6a6801ac3c006acbb3ef1e8887d1893f921a83026009",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 16,
+      "output_tokens": 16,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-multi-turn-roles": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wMmI3ZGQ4ZGFlNjhkMTZlMDA2YWNiYjNmMTYwZWM4MTkwOWJhYjEwM2Q5ZTFmNzFjMiJ9LHsib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfZW5jcnlwdGVkX3JlYXNvbmluZyIsImRhdGEiOiJnQUFBQUFCcXk3UHlhRUxDdXJuQ01PM2NuRTJ2X2JnRkhaaGMzMGJBVW9CclpIT1VpRVhhX1FvSjNOcVpHU1ZTV0lKbUN0VDFvWnNNX2hvOGFkUUo4RFM3eUhxeEEydm9kN1h2Q3JJX2E4Q3FHM3RCY2VCUVI5Uzk5VUl1WUktUHVuMS1xaDM2V0lGZC1lMmtxek9wTFpRZlFuckFCZTgxQmVHNzhTYnJEdmNCbzRhVmoxMV9FVVFSSmMzbmk3ZkNITkNwalZlRFFBTTNGRGU2alF0djJvaXR5dEJZdWI5b3YzeEJGa2NYdWIxUk5rdXRkTlJadExzdlpYUVJqLU93YUZkNmVJTkVLQ3Vwc3BubGlhbXV6OVQxUHNLOURjYkRBaDdMRUZjbFVMcXhseGItOFZwVFQ4d2UteE1Nc2RrOHd5SG5Vcm83V3NMYTRoUUt1Z1ZhZVhWTjVjQm5iRm9lRnlkc3V1dUtjcXgwQl9BSUlJWFFRc1phaWcxaGRXWXdrWUE4ZHpaNVdSTEYwdjA2VXJ5d2tjLWhwZGhycnBydkJlVDdycVM0UkViNTRCMFhmTXQ2azRaTkkwZGozbGFuNUFUclBmS3lkZW1YZTFrZkZTLXdiWmZ0UHBjb3NFZXQ3SU90WkNGU1lDREpWTlVYekxXN0tSSlBWRW5lSDgtLXQyeHdnOHl2bW0zZzd4akdNNXpLRm5TVExfbmgxdThFb2I2Q01RZ2VncWxWb3o1ZURVNmE1eFpaWTk5dDBYQ2JENWFOSWxCYlI1dEg1UDVES2pNU2JxM2NULWpuOU5jRkdOVy1GT3BDMndxREI2NEZIU3RYbnN3N1lBSTFTcTBDQVVZc29oSktobTF5UTJQMm1WUENSQjFnZlh6ZGEwbnNwMVBrY01DWXpjeUpzT1RKY3I2M0I2VzQ1OFFFYUhwYlNhcU1KdjFLN3liemNOUkd1cmhFVEI3Zi1VcjFrVWx3RjVEWUd5aEFqZkdNY2dDbGtnYXhvNG1WMUdlUXV2YlBfM3paN1NEUVIyNlpzdWFoZm4zRjJiVEQxTzdrQVBWa3J3Y0NaaFpQMEs1aU56TDFkZ3NZOS1yYWJsdUxJdEhXbWZCR3BVVmxybFdldVFKdnFWMFgzcUtYeFAyZVRmNWVqMkI2Yl9UaTNBeFQtQU5pOFhZSlhkOWtlMy1JVy05cVBvcWJSRHE4RklXR0w3dTN2VFZzZlpsalVpZGx6OHRuV0I0MzJpRWxuOVVfemZZZDJqa1VGeGxMaUgyNTNCUThyRnZBM01zYmNnYlJ5eE1fY29scXU2Mnh3SUh0Z3gzU2l2YVNWdkl3dVBCaFdYTzZwbVhBcVh5Rzk0LURIaDlFc1p5UU82Y3RraEUzd3F6NGsxMXdyTHFsNFZWTFJjYWpuYkhIY3NiMEFsbTFtNWZwdVFPVExaRlpVTEZiRkNTbEljYzRHclRWSk0wMXJJQXVvck5OWi0zNHRzY2ZWakNFRGpBaVFVM1FLVGx2dS01Z2JQZDJXcXduSlpNZEZvbEVCZzE4VTFLdHhyaXZ0UzdvQmd3b2s4eEdWdGQ4SFBUeHpIRVlJWjNBQ1ZCNWhtR1JTaUNwM0tXeWpmZWxlMXhwLWJONGMwRWFsQ1Nubk5lM01udEppaF91U2Rsb3phOFE0aVI5NTJ1UjdROEFqS0Zib0lGRHlFOWZtTGtUbmcyMUJibTBEMWF2Y3pqb2l5YU5uaGpsZ0ktckdrSUR1WThSbmJqZmZLeFBfZm5fem9HVzRxakl0cmJhWHVSYlgtVERITjEtc1JNbEFFRlh2ajAtODNodHItbTBtM0I5d0w4YmVHcEdtdzUybzNuR0ExYnpKRlpVZDJiR3psVGp3NFlIb0VqZlV6bUttNFEwYi1UM2dJdzVOWmZKVlVNclpncWdxR3d6LWpQcVJwcU5sZ250bVBLVVhfV0FZZ1VsWURFNVlDVFVIUEVZUGFSR1NEaDNQLU12aXpnRVVTazJaQk1jWjB4WkJTZ2hFZTZrSkF0cDVwNVdBQkJwV3lMS1c3d1lHbWhFRFZOaDVUQW90bEcxOEFDY0RfcEh6LUR6ampiQ21va05FNDdUTHhJZVphMmtDN250amFYbWtpNjdlbDdzelFYemdHS0FBMDdBMFV3b3FBaXRvaVFlY0c1M25YWXhXY2t3ajJlNlFuX2tGMmNEelpUeFZaenB2bGNKdk1oVWU3YlJDMTJXXzUwSGdWenZzbDliLXo0OGY0dzhBQldVYURwc1l4WVVuV3o3UjZRZ3ZFTHhZcnFvaUFscm1VTVQzSk5XYWZ2NmNlRTB3dXdocGozbXMzR1M0bmI5Y1JQXzRVYWR5dG5SZE1xbDJpQXZ5Sm8wZGswdkQ5TndyNHE2cXh4NUxtSUx2cTk0QXU3bFRISUJ4Qll5TThJek5vTUx4RnlDd3NHN0toazJVQ01nTmk2VmRmNmU1clBwaHI1OGJBLTJjNXljaURzTCJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Usually no—the Atlantic near Lisbon is around 15–16°C in March, which feels quite cold for swimming. A wetsuit is recommended if you plan to surf or spend much time in the water.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_02b7dd8dae68d16e006acbb3f0a3148190ad5ac33242a66d98",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 118,
+      "output_tokens": 84,
+      "output_tokens_details": {
+        "thinking_tokens": 37
+      }
+    }
+  },
+  "recorded-reasoning-effort-high": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wMjZjZmI2MGVkODYzYTAxMDA2YWNiYjNmNDVkMjg4N2QxYmExYjlkMTM2MDY5MDM5NSJ9LHsib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfZW5jcnlwdGVkX3JlYXNvbmluZyIsImRhdGEiOiJnQUFBQUFCcXk3UDJDYk9XVVFmT0xCamVHZWNQNXFMVmM5a2ZmUm9NOGhGR00xa2dWNVk2ZzFvNXU4c0tDV0RFLVZDcWJkSWNVSzV4N05VYWdEaEZXMXp4VnFXVjN3eEV6bmMxeGtvTG0yQmhUbUJST0M5N193YzhFZ0pxR3BncEFCWGZ0ZzkxRG5EWEt1ZHJQZ1FWWVVXMjZPNmFrczNLTncydzk4OHZIUE1laFdMSlZCNS1QUmc5YVQ5YS15RUFrZ3c4LVY1bVFCOC1oMUZfSXJld2NnWTdnVmhDMXRCc3VxZTdFbFNldTQxWHZORkUtNVhmenhwNEtyN014U25vTTFRM19nUngxN0VsZmt6YWpsalFyZ21QWVYxZEhwdmJRY0pPdlVIVTdKOHRDY19UWlhVSjdQQzJzYnA5dlhNTlJNY0UzOEdhck51M0owSDFtWWVkc0tTc2NGYXhkRUNxZDUzcWZ4SjM5eUw4YU5nQnlnWlNhWDhxTllqeGZNSEV2Q2cxc0p5MVJyUXQycW5WUDNRMWtEZTZPZjcxLXNhRGxGY2Q3bHB6S2I5MUtjU1Z0enR1bGRKOE8tUkFrV1h3anFSenNCbFRxZUZuWHBwUlBOT2hYeFBPU3JiRDRTSXdpcUxDVjVCWk1iUzB1TXhDeFBrSUZPbmlmbGtVT3RVYnhKWjltVDYwMGhLVS04YXdVbDR5ZUlsSmt5WGoxYWhWY3R3aTBfX00xdHZNSi1FSEs4enhSZjR4NzZoRlFob19lMVZYeEJ6MXNiU0tRWkFrbjlSQTItdjkxTWd4bnk3ZjhkZktnSkY0Qnp2YUVjQkxQVFQwdjBXR1hOeUlfanBJVWRxU3NxNE1vNW9lMjh2bzdfQTdfMU1XVTgyMnd5bjNla1Q5SGVzY0lzWk51ZHF1eUpvNmlkbzVJYmtpZ084by1yQzZua2ZpQ2tNeFNlN3BIOXFvQ3ZHZkdtOXhZdUZCM0JPMThSd2txLWJTVzVNckJoX2YwaEJwazNRYnBndFIwLUx1aUEzRlRNVFJ2NFRmY2liUGNtZXFXTUotNkoyLXdQdTNrcTZjRlNtei1zLTh4THlPLUlkc3BXUlIxX3FHajRjVVNvbEVfQVBKSDJ3bG01QzdXUnFxWEdrblU5OHhTSzdKM1JQb1R6SE05bVUzSGkwTTFiVE5rRF8zTnJqNEJSN09Fb1FLbkx3czZPX0dSRjZUX2x1ZzVJX2tvcWYxVm1xcFlHRWV1VXZxMTdKMGdTUUkxZE5LMFVZemYyRmRRdXhLelA4ekJwdmF1OTZybjFhckEwSXp1OU5qelg3OG9jNVl5blBMcE9MZDNwZ2VLcTJkeDBPVW1nUGx3bVFfWDlCUHN0V2Y5SGRfQV9DeW82MHZReG5STkhMeFpEcl92UUlnTVpSbGR6THh6REJaNHdNRVlOaWJHZzZzVjlFQl9hY00wZm5ESHpQc2loQzR2MTNhNFM2V2ZJdWpWRHRyQWE4RjNTNFhoRzA1cnI0TzZSS2l1VlF3TlFOTGpSMTdZdmhMOWozNnJjSkl0NWdUaklDdjR2cW1XZUpONjNZOW0zU1VmX3d6djhodmVFUjRxYWNncUdvWVNqdE5FVnFhZlpNMEpVZklickZUd3NCVDZsaWpNZFJrUnFMU2phSlBlZnF1enBKaVlLVm8tbHVVbEt4M0JyaWxFOTV1QTdMNlB2czBmRkZIcGszb1B5QzgyVWNwOWktMjhNREhVQkZXUzBSazVGQS0zRUQ5ajhjY3R2X1VPNkw3YUxSQVFLNms1S2tkaXY4WU9nODdKcmJzaDlVMkFvU3dwTFpNRjJ0SGxoOHA4cXFVR3BfT0JwYVRFNnQ3anN5LVdFTncyaEstNjlJTHhudTZ5Z1pJcmhjZkNyU0E1QTJQTEV4MktWbmNmbDR6SHlXTTdmOXBEVzh5akt2eFFlM1NESFhHVTlPTGpKSGMyVEdNUUlKNnpESTZ2SWhzOUJqWWw1anQwdlZYLVp6VEFHTDd1M1ZuRUZaZko5azFPVEg2bnNlcmRibnhucWg3TEJQV3NqMWtzZU1RSjIwWk40S19GWTdkSzVKOUNMX0RCZXpoTks2VkQ0R1J2OU5rZTF3TjJ0TXByQmVZTHdoQW92R2hTamp4TGgwLUczYmk1cGM4d3M5ZUVXLXkzR0VYb2RsNUNaTzBVa2VIQ0pBQ0tPUXJXbEQwMWVhQlNOaGxMWGt6TnY5RTZyQklJVUxJdUZqd2RXVHUwMU5qM25ZRVFuQ0ZPc1pIbTFzdVRtYWowRkZYVkRKTU1kb0M1M2ZsTGJCektuMGx3X1hCdW11VFJXdTRQNlM3dkM2NnhDcjZ2amQyakJHZ2ZjSDhRTWxCbmxIV3ZOWnNYT3dDNVl3elNhLUJTNjFyRkktcURXdEpHNk5JRHBIZDNzdFpRb0M0TW5OY1ViNnRCOFRTS1Q4bGJzcDBOekJaanZZRUxyS20tb3k3NlpkSElBMXhlQTBmSk1PS1V6ZTdSakpWZ3NGdXZQZEd4SXA2amQtU3BVM0VMN0J4QTBYU2RuTkdJZGg4QW9LNE9wNXFzUHN4UlpxWHh6Z3lyZUFIbVd6QWZ0ell3cm5EMnlXTHNfR1YxVVN2bEQ2YThUUC02RWdPVUpfR0h1Y2F0TzRGYzFkX3c3OGJWVEY5OFE2NHZLdFlOeHlMcEtTbjNtLS1RS0oySnhROEtVT1lkWlNfZkdvMDU3UDNYcXk2S1B4WSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "A woodchuck would chuck as much wood as a woodchuck could chuck, if a woodchuck could chuck wood! 🪵",
+        "type": "text"
+      }
+    ],
+    "id": "resp_026cfb60ed863a01006acbb3f36c8087d1a6030409e218c09c",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 16,
+      "output_tokens": 87,
+      "output_tokens_details": {
+        "thinking_tokens": 52
+      }
+    }
+  },
+  "recorded-sampling-and-ids": {
+    "content": [
+      {
+        "text": "Paris",
+        "type": "text"
+      }
+    ],
+    "id": "resp_01a4329af5a833e1016acbb41e9d3887d182a327663cb1244d",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 19,
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-structured-output-json-schema": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wZjAxM2Y3MTcxM2ViNzgzMDA2YWNiYjQyMDJiMWM4N2QxYTliMTE0Y2ExZTllMzMwOCJ9LHsib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfZW5jcnlwdGVkX3JlYXNvbmluZyIsImRhdGEiOiJnQUFBQUFCcXk3UWhXc1NFUGl1Zy1CcE9TX2FvclZ0SENmbGpWeXpfTkxGUzY4d0llQ0tfSTVBS0pKbm1CZ2w1UmRmdUNxaDh2Rmg2T1p4cm04TUp0Vzc4V0diZU9TaURpY2lUaTNocFJrd2NFY3AxUHNlNjgzbEFySlVPWF9fRjNJMVc1OEpoVnQxU1RsR3BBbnJ1TjZJYkkwRDJMVjRCdHZOME9WdnZwQlJ2cVFYSzVVR2xkbEU4M0N3X0t3VE5oYUpwajlLSWVuWDl5VGtDbWNPei03MF9HMXZ4N0FMLUlYOGlmTkRsRERyR2xuekVCbUJNQ2UtZElXVUhyNlBHTGpNcG1mMkEwUkRsLUFObnNNZ1JNNWYwQ0k3LTJOX2xHMjdfRnM3cEZZM2hyN2FXS0hReDFfZEp3RkQ1VHc5b0JubU5ySVRUNnZ0Skg5d1dySkVvLTRlMjRDMVZsT3RfcF9wZjNYdDFhSnhQU0NBZnFrYjRzQWtDb084dklFT2FvNVM1eG9qRGR6ZWtTSElTd3hIY1kwc3hodHhfTmNtYk5NVjNRN05BRlZBVzBINkc1THFmWktDdUc1MWxmWFh3SVF3am50OUY2NkFvYllFeFZnMS1qem80aXJ2VktmRWxidzYtVE1pLU00TjlSMC04OTh4Q1NIRlZFeHJjeHhheVdGc05KSWQwMk9sMGIydjNtUVc0TU02bHlrV3JvbnBCNzFobmNFTDhHWnRKX01RWW1SV29QaW50dXpGelg5M3dzN2dZdndGVHZzTU1MaTVkOTk1SEc1dVNXOTNmRHg0bm1IZ3ZXemkzUjdrQXc0dmNqOG1CTVFWTGFZLVc5TjBNZ1FLcGRBeVo0X3BtdnFRTVQta2dNUmJWRklzdUJNOXBBcGRrVklHS0lla2p6TXhjUW5XTVozR25MRFJKbHlWdXFMd29vcnc2QVROVVhCcW9UcVJIbk9nOXdUUzQ3azhTWmFNUUgxd0x0TnVIVGhJbWh6eF91S1JzUUhyU2h4bGV4M2hlbnE1aDJ6MEdiUWxjNlVmWEVkY2JpQ3hHajZfeGJrV3o0YklqUzU0Wnd6V1RkajZlbEoxSVo4ZmFFaTRNdU0xMVRkR1JmMGJaRDlhMHFEMUVLTlZRaE94aTNwZkRrVVpOdGRDTk1FUXRzem9vSnMxUWhTenlCTDRUaWlCdTV1aFFCQW1IRXViWWJLWW1MM1FLNXF6MHhhY2ZNaFNvQVpRWEtDbEpHODdyWlJrUVNoQ3lEM0I5anpHNzRSeWdXLXdqU3VIOUhFWjVnUm5jSFNMX2NXa013d0Jsa0Rob210UnQxbjlKbExoS0ZKWjFpdk5KYlk2b0UwRFlVRlRZX0FlTjI5YzllTGQ0b01yOXVHODlvMi1FOGhjaEVYcVk1aDhMYTJMYk9JX0RjMTEzdVUyTUpkU0VJN2stbENCM0FJR2xjc2lwV2lLU1gtb2R6UTZQUUdKekFTcnJBMjd3c0dneVROOEhWb3VzWFVQVkJyN1lUMmVMd3hFNVNUTllHc1hqa1dGMzdsRWFhTktxUVJvenc2R21WdUd0eXVZQXFkRWJ2alhNUXVXRmtCTUZsOEpza1J4YTYyWnRRS0c2d01pLUM0NkhHTWp6dlRHVjFDVkVFN3k3bVJmZmpsSWk4RWllRENzaDNWemlqNTViZ2xuRzVXZTZHVG9UOXlkX0I3amp0NEdnWEIwLXpPakphQVlPNkRRZ2ZGTDFhczZ2WW96VWRoaW9ZVVBELVVzaHNzTk1xNllfRlBoTXVvLXA0UDFDWk1MdVJDVHluYU9JV1FMTWpMNHNjbTk4a1JuRkZ3b2ZKUFprT2FrZDY5SWNGbkZMdW1BdzJsbXJuZU93dEc0RjhKNGp3MEtoR08wcVdJSmtsaHVab2dIbzdWS1FwZUJKLUhYbi03RHdkeXZwOGpQU05waTI5ZXhFdHl6WTgzV2tuV2p3cTIzcHg5SFd4M1ctUUF4RXd6SUlzMDRERmJTdlBwYUlOVGNXSUhtY1kzWmZQVERoYmlwLVZYLVVDM1VxQTd2c2k0LW5meUJycWppRmN6cWYyWXNGM0NJejlRajA2NFRIYk5xQUZGcUJubXo1d1F5MkRLTnpaUTNQcndLSzZMelV4cGtvWTlTaWF5ckJlUHBXVWtuX3k3WVZmYmxuRFdsUTljVzhoeXdpbkwxekxLWjMycXU2WWI2SFJ3Q0JEVVZYRE9IRmRXM2xHbE1WM2N2S1VvR1RxMDZaa1F3am11RUZ3ajQwUEZ1WFpVLVh1NkpzOFVDbEhXdHZjS0p1Si1fVG1fRWFwcXhiMGJmU3BkSTlTLWI5SzdPb3JVOWdPdlR6NFktMDM1RVNZTWxzQnpuQTlSNlk1aHIxbVBXWkpnYWh2RzU5In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "{\"name\":\"science fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0f013f71713eb783006acbb41f6a9487d1b97b25bc1287fd49",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 77,
+      "output_tokens": 55,
+      "output_tokens_details": {
+        "thinking_tokens": 28
+      }
+    }
+  },
+  "recorded-text-input-string": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wN2Y5NWJiZTU0ODNlZWQyMDA2YWNiYjQyNDg2YjA4N2QxYWY5OGI2YmZkYjkzZjZiYSJ9LHsib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfZW5jcnlwdGVkX3JlYXNvbmluZyIsImRhdGEiOiJnQUFBQUFCcXk3UW5Zc1lHaldGWGFWY3U1cHZPWlpWdmI3X01YM1dYNEJmcEhnYl9GR0RVWURONnJ1T2RTOWFpWEw1VTN2ZkEtUkdZZkJ3bERtUFp5Z2F3ZFJaS0NyS1E4R1lDTEF0Nkt2cUpCZW9uQkloS1dKVXNvU2FKUGxpbXNzenctbC10LW0xY181dWlQQWhwT1NISDRUNjl0VTAzZjJXbWR6RVlYcTVvUWpnQklhSWpNRGhWRVVSVjNjNlgzNkJxSkxCemVmc09uUHhNNmxPTTVhUWNzWlQtZThDOWlZd1FCV1BDX2tNeGl4ank3UVNlOGJ0OERkOE1JNkVQUmUyTURHd1l0d1BvbUpIUC1UbGc1TjdQTGZpcE5xTEhpMU50d09IUVR4elZRX2c3NkluSzNkWmFlRmp4dUxidG1yWFJLRGM1cThoTWIzRTRVQ0hBVmRlUG5LcnYwNXRKTXFsakxFUE03bmhQR2l0WjB5eHNaMkVURmtyWjdwVFEwYzg5RWFvaDlZZURMbHc5dUZzQnczSThubHhFaXJzbFJnQ21jSl9tMDlhX3R3WUhNdjdSck1oVlhqdUtPb09mU25DMXdTVUFMeENsaGpoME56NGE5N0VLZU5icXlvYko0T004TmVkX3ljWFYzdi1WNnpSUWc2ZEZ0MjdEZXlCQm1iV2x4MnFvRnNsMzZHREsyVGlpeDVnYnZSeHFmc1Zzbm1ETU80S21lZU1sR1VzNm5XMm1IQ3JxQUhJZ0ZpWWZpaDRSeS1Pa2JSQklhVVlmR3pTWkJFcU9Ma3FCSE14NkNaR3ZXc3dEd1BMb1ZDbS1Va29SNldpY1VpenRUaEpIbFJNWTZwcUF5cDBRUGlWb0VfbjZNbUFMcEFxN2pmWHRTQ0J5QzBkd0ZoSXhBbzlJbmxIMWdOa3JhWDBSdF9heUNONGw0bUpGS28teFRfNC1CVWx1VTdETjdkLU5ESGo2eUhuM19CaFNULXpVTjRJUGRCX3BGT1pBV3VZX19mYVJWVWdpdnQyNHEzbVJYZll5ZGNqQUd2QVo2VWZIZWJDMjNDRS1iOG5hSmRTb0dNaF9rYlYtSEZZazJiUVd5NjRzZ1ktRl9oNGl2ejR0M09ZbDB5LUNWRlVmSFNlQTdCOG1WZ01VMmZPaTNwbXFoZjZNU1V5WUY2bm5rNXNpUkZvUDNUN2otczg1aUY0S0tQeV9sbW5laWlLODJ2aEhhQkpyRTF2VTFLalpJVDJ1R2FwTG9tWDBfM1RuUU85M3lDa0tUWi1adFJ5TGRDRHViVWYtXzlRbFcwMGpnRnk0NHA5ZEJydDhXSVN4V0EybDg3Z1lnQkN5Mzc0SGRkc2VPTTdPODllamdfTll3aGVQalJiRzB1Tm1MazRrLTJjVHNMVnVDT3FfdzdJZGNBRW1neUZwUzQwYTFiUnA4a090T05WalR4cDRLNXVJTUV0cFVlb05zVnFhZ2tQREJrdmxMc20zYnNCdmJxaHdERVkzZktKZ1BET2dDRXljZ0J0dG1QVGlGek90Nk5VZkNlWGJmUmdDMEx4b0xhem5hYTRsN1VaLW5XeEQ5LXlsT19OendCcG1UcGxFeTVwME1nZkRDdEFpeHBzQTRCd2EwMkJzVno0c2phRWFNMDh1amlpYXpoQWo3eTFYT1BDal9xWHREQmJMOUdUcUlIdUcwS0tidDlfbXYwLVpCVnQ4Z2c1bHdYc3JPQ3pPOF95NXBwWmdKc2tOOXpUWU9DeE1wc1RTUGotdWRzTnlGY3NlczJQUUxHSk5ub3lJUUE3VWt4YjBUY1JhT1IzdmRyLXJVaDlpdHNqak1QeGtTRmNoeEJZRnZHUUxzdjlwSU9PSHdtX3JLcjhkbElfMFYyZWxJQTdkWGpWVHhpSnFqNXlGbEtUNmlsS1dFZk1Nd3RsaUVrQ1Z0amluSThBZ0s1cE5wU1RBWVlna1h2NlBaSGN4SWVHd0gwVWdTczh0VXljSHhNNWZRdnlRaVBZRHNyc0NZSFFFVkFUcGkxYVcwbnVwdlRnSXdaVjVKTmNiSDRJVUdxUVNpTjl0dGhETDZqc1FDbDFVdXluRWdWTTdfclpadTJaWEUyb0lhamFSQ3NzPSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "A little unicorn named Luna followed a trail of glowing fireflies to a meadow where the flowers hummed lullabies. She curled beneath a willow tree, tucked her silver hooves into the soft grass, and wished every creature in the forest sweet dreams. As the moon wrapped the meadow in gentle light, Luna closed her eyes and dreamed of dancing among the stars.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_07f95bbe5483eed2006acbb422d8cc87d1ad002a1065c5d9ae",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 17,
+      "output_tokens": 91,
+      "output_tokens_details": {
+        "thinking_tokens": 13
+      }
+    }
+  },
+  "recorded-tool-choice-allowed-tools": {
+    "content": [
+      {
+        "id": "call_WEMfKAvtjJj6qGZSiZ6Aqaqs",
+        "input": {
+          "city": "Oslo",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "resp_05133bdef2bdf91f006acbb427710087d1ba6d97601e35011c",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4627,
+      "output_tokens": 24,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-tool-choice-none": {
+    "content": [
+      {
+        "text": "Hi",
+        "type": "text"
+      }
+    ],
+    "id": "resp_035fcc6380ddfdd9006acbb428ead487d18cb9006686eb8b16",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 73,
+      "output_tokens": 5,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-tool-result-error": {
+    "content": [
+      {
+        "text": "I couldn’t find weather data for “Atlantis” — no weather station was found for that location. If you meant a real place with a similar name, tell me the city/country and I can check again.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_08fb149d49a358a9006acbb429fec881909ef71d270603a548",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 125,
+      "output_tokens": 48,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-tools-function": {
+    "content": [
+      {
+        "id": "call_wdEvTxRQoNKByBADWmlV9V9W",
+        "input": {
+          "location": "Boston, MA",
+          "unit": "fahrenheit"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "resp_0670e38760b32901006acbb42c122487d1a87bb2191281014d",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 80,
+      "output_tokens": 26,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-tools-parallel": {
+    "content": [
+      {
+        "id": "call_peWI0zFuctZgf1VZUhn6yqGb",
+        "input": {
+          "city": "Paris",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_SBNzcERC8STz8ZRqkfh9xetf",
+        "input": {
+          "city": "Tokyo",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "resp_0b1ef656b6db58a8006acbb42ff59887d18e177f69e1660be5",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 119,
+      "output_tokens": 58,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "recorded-web-search": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wYWIzOWJkOGY1MmVjNTYzMDA2YWNiYjQzNjVhZjQ4N2QxYTM5Mzg5ZTI5MzRhMDk3MCJ9LHsib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfZW5jcnlwdGVkX3JlYXNvbmluZyIsImRhdGEiOiJnQUFBQUFCcXk3UTQzVlgwZGJKYzMtS1JqMk1mSnBCQjBPQjZ4MUtpaHRDVTdDeld6bnh6cWRoWU1SdGtDTzFjbG5Wd3lOOVlZSHN1bTRmbWswdGdROENEY0tfZVdwc3BPaDJLU3NXWmV3UDVyY2FXUU1xUU1LQ0VINXlINnJqdmxUX3BzdXpfLWJtSUVHdmpib0JLLTE1NFl5ell4STBsY3pFVDQzbGZaRWszcERaVi1zTFZvRTRNaFhXVC1hRTZ6NzQxWjFxVHVFcVRHZmlYamVqS1piZVdEMVFmMHUtd1FMamxSNXIwVHJaekthdXhUdHpRd1Vna1J3YVI0dHBiNmJORDlReUFSSzNuUHBDbXd4R29sNGFfbEl4dTRZTUpiczB2bnY3NmVELUJlTlFKempFOWl4MFNtd21wQUVUdnVrU25YVUZfTW1wcVpGbmdzeUtQMzNMWUJRVGdHMmZhZEhYUHNsazVQZ24tc2ZiUkRiSV90V2RNYkxWX3pxRmZvaE5TbUJGbGdwcWlIYXd1a1JldzVYbW1tbTZBSXpPem83emxJNEN3OEl3R2dTUjVjRDk0RFREUHI5RWxadEVTYWhmcnFzOHRGdWJ6ZndkeTJLOFUzSUhheVNTZmRTRXlPc1ZyM0hQbk9OdEJiU0xhMXpGSFp1Y1htR0RDdVNVZ3k3UWMwU2lpbFdkWUhzNzNjeURLbWxWYVBFanVVUGhMNTBJUnFKQk1qR1pDM21Vb1ZsVHVQRG5scUlKUzBNZzVldHc0WFVTMDcyak5FZEQ0ek9DcEJjRnpwZENOd3k1Tkt4QXNCNVpla0d2c2NGXzJEV2d1YUt1SWVtTHN1d0ZBSVotUGhpNlZncXNsenFNMzNnYVQxR0NfQ09rOWFZSUZWX1RubEN4QU0zekp2NkNDSlVUcjU0N0YtblpZRGQ4R0ZtTUhycmg5TFJSMVVtdjNrR3lONUs0U1FQNjRVMGh0OFdSZ1hzZXVDdGJzb2swYmVWTDlqWG1pZWdYeldEVGctYjVFN0pCSXlVdHR6OXZ4dE1aNDM2MmlWdE05bEx0OWZ4N2EzNFd1VGZWNms5RFNGb2cxNE1lTm1Yb3FfUlk2akl6RHpwd05lVnFQajdwS1lyLTAxOExNenpNRnZzZ29DckJpOUdQQ1lDV3JkZ3dnVXJ1VTZFQTJjZ0J0cnE0djk5WFJDWUp5WnVObzJHWk1iM19YdWlFYlFDV3dodEpnc2M2WTlOLU4xQk5EWC0xRS11V2pIRHF6RVpxNlQ2ZUFOdnlQTmF6Q2IzU25wQk9UTXhrcWx3b1p0c21xZzFLYWlmczFucEpvcC1Db3lld0NvRXJOemZFQVd4TnFoeHZSbXNmLXpaTkt2T1N0cTh2b0EtMWsxeU9JM051REthMkZ2YWs4RlJDRUkyRjFPMkRfbno4cUMwOU9UWEtGRVV3SzQ5T2h2QXpocUdBMFdtRWVrQk5pdW85TE1zQjU0M191RXE5NFRWMDdqc3VSeF9oVjh5MHlDcTJtdHhPU1NWM3gxOWw1dXVhRWRuSHRwS1dtblhfNEdUeWxlMjY1cjEyR2lFaHhnY0ZZVnF1MGNnS2l0RlhVc083Q0JLbkZMcld0ckdlUFRFeV90Wm1tU05heGdqTG16Q0ZGUDlTcXp1cXJxa2hnaXVWVEpPcU4yVUNqRXl2OVEwOGlWdlhvTFdBbHZzVi1KYTA1OUI3VGl2aExfNkdXXzd0Ry1SRGtfTkRBU2VibEQxOEx1c3RkMzRMY1pyV2lYRDdBRkRJdndveVRNMU9Ob2tRSDl5bG14b2gzVHhhY1dqY1FnMm1vb1haV3Bucm9zSXlVclFKTU5pTjlEX1hwOGZIQVVvWDFVNEsydzVxTTlRYm1zRW8yYW9LZVlIek5NSHV4d21QeG0zS3A3QmhBR3c3bTIzUER1d0lOQzJlYUZoaGNBaHl0UTFwb1FSY0djTHViRUJIVWlJTE0xN3BsYWhjZ1hYbkI2TkFiMUd2U21ublBUWFNxVy0wY25XbEhjNnlVV3NEZjhSdmdoZDJ0Y0pzWTdrYWdhVDMxNGJSM0xTbjJPdEtQOWdJN1JwY1Bpanl6UC1wU3FtSFhHZTJ3QjZOc1dhUlgyU0s0SEJOeWU5aHBmaHhpIn1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "According to the **official Oceanário de Lisboa site**, the Lisbon Oceanarium is open:\n\n- **Daily:** **10:00 AM – 8:00 PM**\n- **Last entry:** **7:00 PM**\n- **24 and 31 December:** **10:00 AM – 7:00 PM**; last entry **6:00 PM**\n- **25 December and 1 January:** **11:00 AM – 8:00 PM**; last entry **7:00 PM** ([oceanario.pt](https://oceanario.pt/en/?utm_source=openai))",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0ab39bd8f52ec563006acbb435d3a087d1aea84fe88ecc91e4",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 3712,
+      "input_tokens": 4639,
+      "output_tokens": 168,
+      "output_tokens_details": {
+        "thinking_tokens": 46
+      }
+    }
+  },
+  "refusal": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wNjk1NzM5MDBkZTk5MWZiMDA2YWNiNzYwN2E3ZGQ4MTkwN2Y5M2I1NDZkMDZkYzE4ZCJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "I'm sorry, but I can't help with creating phishing emails.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_069573900de991fb006acb7607465781a2efed98d8aa4e11a5",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 71,
+      "output_tokens": 52,
+      "output_tokens_details": {
+        "thinking_tokens": 38
+      }
+    }
+  },
+  "sampling-and-ids": {
+    "content": [
+      {
+        "text": "Paris.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0cf08dd747ce803c006acb6fc39dd581a24f15975d75c78306",
+    "model": "gpt-4.1-2025-04-14",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 21,
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "structured-output-json-schema": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wYmRiN2Y2N2Y3OGQ4YjRiMDA2YWNiNjg1MzAzNGU4MTk0NGQ1NThlMTE1Yjk4NzVjNyJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "{\"name\":\"Science Fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0bdb7f67f78d8b4b006acb685311aa81a25ce033401d6e81ad",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 78,
+      "output_tokens": 46,
+      "output_tokens_details": {
+        "thinking_tokens": 24
+      }
+    }
+  },
+  "text-input-string": {
+    "content": [
+      {
+        "text": "In a peaceful grove beneath a silver moon, a unicorn named Lumina discovered a hidden pool that reflected the stars. As she dipped her horn into the water, the pool began to shimmer, revealing a pathway to a magical realm of endless night skies. Filled with wonder, Lumina whispered a wish for all who dream to find their own hidden magic, and as she glanced back, her hoofprints sparkled like stardust.",
+        "type": "text"
+      }
+    ],
+    "id": "resp_67ccd2bed1ec8190b14f964abc0542670bb6a6b452d3795b",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 36,
+      "output_tokens": 87,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "tool-result-error": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wNzI1MjE2YzU5NDU0YWMyMDA2YWNiNjIxMmJmMDU4MTk0MmY1ZDUzOGI4MjU0NTg5OSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "I couldn't find any weather data for Atlantis. It isn't a real city, so there's no weather station to ask. Is there another place you'd like the forecast for?",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0725216c59454ac2006acb6212ee8481901217df6b349c0411",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 176,
+      "output_tokens": 71,
+      "output_tokens_details": {
+        "thinking_tokens": 28
+      }
+    }
+  },
+  "tools-function": {
+    "content": [
+      {
+        "id": "call_unLAR8MvFNptuiZK6K6HCy5k",
+        "input": {
+          "location": "Boston, MA",
+          "unit": "celsius"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "resp_67ca09c5efe0819096d0511c92b8c890096610f474011cc0",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 291,
+      "output_tokens": 23,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "tools-parallel": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wMDYzNmU0YzhmYzg3ZDhjMDA2YWNiNTlkNzQyY2Y4MTkwM2Y4MDg5YmI1ZjAzYTkxNyJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "id": "call_ZhPaNDVL6V7jzIneVoHYEMoQ",
+        "input": {
+          "city": "Paris",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_pwCM918E1HFqBn52cfr654wv",
+        "input": {
+          "city": "Tokyo",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "resp_00636e4c8fc87d8c006acb59d707e68193d289d5d3e535bb23",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 142,
+      "output_tokens": 108,
+      "output_tokens_details": {
+        "thinking_tokens": 64
+      }
+    }
+  },
+  "unknown-output-item": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "resp_05a05f5f82977baf006acb7f8a3e7b8194916fd6ab0a37d004",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 8,
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "web-search": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wZDlkOTY3MDZjMzU2OWJiMDA2YWNiNmM3ZDc0NDA4MTkzMWQwYmE3MzBkYzRhMTAzNSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18wZDlkOTY3MDZjMzU2OWJiMDA2YWNiNmM3ZDg5M2Q4MTk0MDhhZjU4NjI2YjUyY2ZiYSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))",
+        "type": "text"
+      }
+    ],
+    "id": "resp_0d9d96706c3569bb006acb6c7dfc578190a5c4b1441a09cf00",
+    "model": "gpt-5.5-2026-04-23",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 4864,
+      "input_tokens": 3261,
+      "output_tokens": 412,
+      "output_tokens_details": {
+        "thinking_tokens": 256
+      }
+    }
+  }
+}

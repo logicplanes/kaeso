@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "messages.1.content.0: Invalid `encrypted_content` in `search_result` block"
+  },
+  "request_id": "req_011Cfvjei6HEKFMULX51ByZr"
+}

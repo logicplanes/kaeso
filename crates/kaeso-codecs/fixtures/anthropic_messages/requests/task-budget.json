@@ -1,0 +1,18 @@
+{
+  "model": "claude-opus-5-5",
+  "max_tokens": 128000,
+  "stream": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Review the codebase and propose a refactor plan."
+    }
+  ],
+  "output_config": {
+    "effort": "high",
+    "task_budget": {
+      "type": "tokens",
+      "total": 64000
+    }
+  }
+}

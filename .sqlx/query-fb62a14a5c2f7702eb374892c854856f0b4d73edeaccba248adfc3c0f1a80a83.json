@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_memberships (id, project_id, user_id, preset) SELECT id, $2, user_id, preset FROM UNNEST($1::uuid[], $3::uuid[], $4::text[]) AS j (id, user_id, preset) ON CONFLICT (project_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "UuidArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fb62a14a5c2f7702eb374892c854856f0b4d73edeaccba248adfc3c0f1a80a83"
+}

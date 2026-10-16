@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE invites SET revoked_at = $3, updated_at = now() WHERE id = $2 AND org_id IS NOT DISTINCT FROM $1 AND accepted_at IS NULL AND revoked_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f22e5d2c3a7bc19e04e523362ba18d29bf7cc161c0fe0af08350fabdff4add05"
+}

@@ -1,0 +1,36 @@
+auth | Sign-in and sessions | auth/setup, auth/password, auth/totp, auth/magic-link, auth/oidc, auth/session, auth/sessions, auth/password-reset, auth/logout | |
+me | Profile | me, me/email | |
+me | Security | me/password, me/totp, me/recovery-codes, me/sessions | |
+me | Memberships | me/memberships | |
+me | Own keys | me/keys | |
+me | Notifications | me/notifications | |
+me | Account | me | |
+instance | Users | instance/users | |
+instance | Organizations | instance/orgs, instance/orgs/{org}/members, instance/orgs/{org}/projects, instance/orgs/{org}/usage, instance/orgs/{org}/owner, instance/orgs/{org}/restore | |
+instance | Settings | instance/settings, instance/settings/test-email | |
+instance | Models | instance/models-dev, instance/models-dev/sync | |
+instance | System | instance/system | |
+instance | Audit | instance/audit-log | |
+org | Overview | orgs/{org}/usage, orgs/{org}/usage/span | usage.org.view, costs.org.view |
+org | Settings | orgs/{org}, orgs/{org}/restore, orgs/{org}/ownership-transfer | org.update, org.delete, org.ownership.transfer |
+org | Members | orgs/{org}/members | members.* |
+org | Roles | orgs/{org}/roles, orgs/{org}/rights | org.view, roles.manage, members.view |
+org | Invites | orgs/{org}/invites | members.invite, members.invites.revoke |
+org | Projects | orgs/{org}/projects, orgs/{org}/default-project | projects.*, org.update |
+org | Provider credentials | orgs/{org}/credentials | provider_credentials.* |
+org | Security | orgs/{org}/security | security.* |
+org | Org platform keys | orgs/{org}/platform-keys | platform_keys.* |
+org | Logs | orgs/{org}/logs/settings, orgs/{org}/logs/storage, orgs/{org}/logs/deletions | logs.settings.manage, logs.storage.view, logs.delete |
+org | Audit log | orgs/{org}/audit-log | audit_log.* |
+org | Billing | orgs/{org}/billing | billing.* | cloud
+project | Overview | orgs/{org}/projects/{project}/usage, orgs/{org}/projects/{project}/usage/span | usage.view, costs.view |
+project | Settings | orgs/{org}/projects/{project}, orgs/{org}/projects/{project}/avatar, orgs/{org}/projects/{project}/archive, orgs/{org}/projects/{project}/key-policy, orgs/{org}/projects/{project}/logs/settings | project.update, project.archive, security.key_policy.project.manage, logs.content.disable |
+project | Members | orgs/{org}/projects/{project}/members, orgs/{org}/projects/{project}/members/{user}/models, orgs/{org}/projects/{project}/my-rights, orgs/{org}/projects/{project}/rights | project.members.*, limits.manage, project.view |
+project | Service accounts | orgs/{org}/projects/{project}/service-accounts, orgs/{org}/projects/{project}/service-accounts/{account}/keys, orgs/{org}/projects/{project}/service-accounts/{account}/models | service_accounts.*, limits.manage |
+project | API keys | orgs/{org}/projects/{project}/keys | keys.*, keys.platform_access.grant |
+project | Models | orgs/{org}/projects/{project}/models, orgs/{org}/projects/{project}/models/search, orgs/{org}/projects/{project}/models/preview, orgs/{org}/projects/{project}/models/batch | models.view, models.manage |
+project | Aliases | orgs/{org}/projects/{project}/aliases | models.manage |
+project | Limits | orgs/{org}/projects/{project}/limits | limits.view, limits.manage |
+project | Logs | orgs/{org}/projects/{project}/logs, orgs/{org}/projects/{project}/logs/export | logs.metadata.view, logs.content.view, logs.export |
+project | Playground | orgs/{org}/projects/{project}/playground/responses, orgs/{org}/projects/{project}/playground/models | playground.use |
+project | Audit log | orgs/{org}/projects/{project}/audit-log | project.audit_log.view |

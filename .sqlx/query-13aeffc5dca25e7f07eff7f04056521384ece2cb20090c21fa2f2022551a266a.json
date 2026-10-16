@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_oidc SET wrapped_key = $3, key_id = $4, updated_at = now() WHERE org_id = $1 AND wrapped_key = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "13aeffc5dca25e7f07eff7f04056521384ece2cb20090c21fa2f2022551a266a"
+}

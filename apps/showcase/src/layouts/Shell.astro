@@ -1,0 +1,73 @@
+---
+import Base from "./Base.astro";
+import DocsSidebar from "~/components/DocsSidebar";
+import { sections } from "~/lib/nav";
+import { Icon, icons } from "@logicplanes/kaeso-ui";
+import { docsText } from "~/lib/locale";
+import { docsLangOf, localizedPath } from "~/lib/languages";
+interface Props {
+  title: string;
+  description?: string;
+  path?: string;
+  notFound?: boolean;
+}
+const { title, description, path, notFound = false } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+const t = (s: string) => docsText(lang, s);
+const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(lang, path);
+---
+
+<Base title={title} description={description} path={path} notFound={notFound}>
+  <div class="isolate flex h-dvh w-full flex-col overflow-hidden bg-chrome text-fg lg:flex-row">
+    <DocsSidebar client:load transition:persist="docs-sidebar" sections={sections(lang)} path={here} />
+    <header class="shrink-0 bg-panel safe-area-bar lg:hidden">
+      <div class="mt-8 flex h-52 items-center justify-between pr-20 pl-28">
+        <a href={localizedPath(lang, "/")} aria-label={t("Kaeso UI home")} class="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
+          <svg viewBox="72 69.3 881.9 177.7" width="60" height="12" fill="currentColor" aria-hidden="true" id="mobile-wordmark"></svg>
+        </a>
+        <button
+          type="button"
+          data-open-nav
+          aria-label={t("Open navigation")}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          class="inline-flex size-32 cursor-pointer items-center justify-center rounded-pill material-ghost transition-control focus-ring"
+        >
+          <Icon icon={icons.sidebar} size="sm" />
+        </button>
+      </div>
+    </header>
+    <main class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel safe-area-panel lg:my-8 lg:mr-8 lg:rounded-panel lg:shadow-panel">
+      <button
+        type="button"
+        data-sidebar-expand
+        aria-label={t("Expand sidebar")}
+        title={`${t("Expand sidebar")}  [`}
+        class="k-expand absolute top-10 left-12 z-10 hidden size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary material-ghost transition-control hover:text-fg focus-ring"
+      >
+        <Icon icon={icons.sidebar} size="sm" />
+      </button>
+      <div id="k-panel" class="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet">
+        <slot />
+      </div>
+    </main>
+  </div>
+</Base>
+<script>
+  import { wordmark } from "../../../../packages/ui/src/components/logo/paths";
+  function setup() {
+    document.querySelectorAll<HTMLButtonElement>("[data-open-nav]").forEach((b) => (b.onclick = () => window.dispatchEvent(new Event("kaeso:open-nav"))));
+    document.querySelectorAll<HTMLButtonElement>("[data-sidebar-expand]").forEach((b) => {
+      let intent: ReturnType<typeof setTimeout> | undefined;
+      b.onclick = () => {
+        clearTimeout(intent);
+        window.dispatchEvent(new Event("kaeso:expand-sidebar"));
+      };
+      b.onpointerenter = () => (intent = setTimeout(() => window.dispatchEvent(new Event("kaeso:peek-sidebar")), 750));
+      b.onpointerleave = () => clearTimeout(intent);
+    });
+    const w = document.getElementById("mobile-wordmark");
+    if (w && !w.childElementCount) w.innerHTML = wordmark.paths.map((d) => `<path d="${d}"/>`).join("");
+  }
+  document.addEventListener("astro:page-load", setup);
+</script>

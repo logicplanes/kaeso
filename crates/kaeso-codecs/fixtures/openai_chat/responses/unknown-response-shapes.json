@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-x9future2",
+  "object": "chat.completion",
+  "created": 1791650100,
+  "model": "gpt-5.6-sol",
+  "choices": [
+    {
+      "index": 1,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "annotations": [
+          {
+            "type": "url_citation",
+            "url_citation": {
+              "start_index": 0,
+              "end_index": 0,
+              "url": "https://example.com",
+              "title": "Example"
+            }
+          }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "x_future_reason"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 0,
+    "total_tokens": 12,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "x_future_detail": 3
+    },
+    "x_future_usage": {
+      "a": 1
+    }
+  },
+  "system_fingerprint": "fp_future"
+}

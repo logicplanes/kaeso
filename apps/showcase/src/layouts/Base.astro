@@ -1,0 +1,53 @@
+---
+import "~/styles/docs.css";
+import { themeScript } from "@logicplanes/kaeso-ui";
+import { docsText } from "~/lib/locale";
+import { DOCS_LANGUAGES, docsLangOf, docsLangScript, localizedPath } from "~/lib/languages";
+import { docsThemeSwapScript } from "~/lib/theme";
+import { ClientRouter } from "astro:transitions";
+interface Props {
+  title: string;
+  description?: string;
+  bodyClass?: string;
+  path?: string | undefined;
+  notFound?: boolean;
+}
+const { title, description = "Kaeso's UI library: every component in every state, in light and dark.", bodyClass, path, notFound = false } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+const shownTitle = docsText(lang, title);
+const fullTitle = shownTitle === "Kaeso UI" ? shownTitle : `${shownTitle} · Kaeso UI`;
+const shownDescription = docsText(lang, description);
+const site = Astro.site?.origin ?? "https://ui.kaeso.app";
+const href = (l: (typeof DOCS_LANGUAGES)[number]["value"]) => `${site}${path === undefined ? "" : localizedPath(l, path)}`;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {(path !== undefined || notFound) && <script is:inline set:html={docsLangScript(lang, notFound)} />}
+    <title>{fullTitle}</title>
+    <meta name="description" content={shownDescription} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    {path !== undefined && <link rel="canonical" href={href(lang)} />}
+    {path !== undefined && DOCS_LANGUAGES.map((l) => <link rel="alternate" hreflang={l.value} href={href(l.value)} />)}
+    {path !== undefined && <link rel="alternate" hreflang="x-default" href={href("en")} />}
+    {notFound && <meta name="robots" content="noindex" />}
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={shownDescription} />
+    <meta property="og:locale" content={{ en: "en_US", de: "de_DE", "zh-CN": "zh_CN" }[lang]} />
+    <meta property="og:image" content="https://ui.kaeso.app/og.png" />
+    <script is:inline set:html={themeScript} />
+    <script is:inline set:html={docsThemeSwapScript} />
+    <ClientRouter fallback="swap" />
+  </head>
+  <body class={bodyClass} transition:animate="none">
+    <slot />
+  </body>
+</html>

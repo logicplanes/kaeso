@@ -1,0 +1,84 @@
+---
+import CodeView from "./CodeView.astro";
+import { docsText } from "~/lib/locale";
+import { docsLangOf } from "~/lib/languages";
+import type { DemoExample } from "~/lib/demos";
+interface Props {
+  example: DemoExample;
+  heading?: boolean;
+}
+const { example, heading = false } = Astro.props;
+const minH = example.minHeight ?? 200;
+const lang = docsLangOf(Astro.params.lang);
+---
+
+<section data-preview id={`ex-${example.id}`} data-vr-section={example.id} data-vr-title={example.title} class:list={[heading && "mt-24"]}>
+  {heading && (
+    <div class="mb-16 flex flex-col gap-4">
+      <h2 class="text-body-lg font-semibold text-fg">{docsText(lang, example.title)}</h2>
+      {example.description && <p class="max-w-prose text-body text-fg-secondary text-pretty">{docsText(lang, example.description)}</p>}
+    </div>
+  )}
+  <div class="overflow-hidden rounded-well shadow-frame">
+    <div class="pv-stage bg-panel text-fg" style={`min-height:${minH}px`}>
+      <slot />
+    </div>
+    <div class="flex justify-end bg-panel px-8 pb-8">
+      <button
+        type="button"
+        data-toggle-code
+        aria-expanded="false"
+        class="inline-flex h-28 items-center rounded-pill px-10 text-caption font-medium text-fg-secondary material-ghost transition-control hover:text-fg focus-ring"
+      >
+        <span data-code-label>{docsText(lang, "Show code")}</span>
+      </button>
+    </div>
+    <div data-code hidden class="bg-panel px-8 pb-8">
+      <CodeView code={example.code} />
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  .pv-stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: safe center;
+    gap: 12px;
+    padding: 48px 32px 24px;
+    overflow: auto;
+  }
+  .pv-stage > *,
+  .pv-stage > astro-island > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+  @media (max-width: 767px) {
+    .pv-stage {
+      padding: 32px 16px 16px;
+    }
+  }
+</style>
+
+<script>
+  import { docsText } from "~/lib/locale";
+  import { docsLangOf } from "~/lib/languages";
+  function init() {
+    document.querySelectorAll<HTMLElement>("[data-preview]").forEach((p) => {
+      if (p.dataset.ready) return;
+      p.dataset.ready = "";
+      const button = p.querySelector<HTMLButtonElement>("[data-toggle-code]");
+      const code = p.querySelector<HTMLElement>("[data-code]");
+      if (!button || !code) return;
+      button.addEventListener("click", () => {
+        const open = code.hidden;
+        code.hidden = !open;
+        button.setAttribute("aria-expanded", String(open));
+        const label = button.querySelector<HTMLElement>("[data-code-label]")!;
+        label.textContent = docsText(docsLangOf(document.documentElement.lang), open ? "Hide code" : "Show code");
+      });
+    });
+  }
+  document.addEventListener("astro:page-load", init);
+</script>

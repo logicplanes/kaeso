@@ -1,0 +1,23 @@
+[package]
+name = "kaeso-kpp"
+description = "KPP, the Kaeso Provider Protocol: Kaeso's canonical in-process format for model requests, responses, streams and errors."
+version.workspace = true
+edition.workspace = true
+rust-version = "1.85"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/kaeso-kpp"
+readme = "README.md"
+keywords = ["llm", "openai", "anthropic", "gateway", "protocol"]
+categories = ["api-bindings", "encoding", "parser-implementations"]
+include = ["/src/**/*.rs", "/README.md", "/LICENSE"]
+
+[dependencies]
+indexmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

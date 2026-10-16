@@ -1,0 +1,26 @@
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"oPILUm"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"Fww1Sql"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":"!"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"aHH"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" How"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"TfMv3xKsPq1iWT"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" can"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"o5wsSCWfdEbX"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" I"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"hFUEr4gf"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" help"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"Av0LXUHXd54K"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" you"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"fJi4rea"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":" today"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"9cQaA"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{"content":"?"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"MNtPW0tQ"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null,"obfuscation":"pGsSJQz"}
+
+data: {"id":"chatcmpl-UL5s8yb6jcdxEOaPlRU1zPeJF5kBk","object":"chat.completion.chunk","created":1791649053,"model":"gpt-5.5-2026-04-23","service_tier":"default","system_fingerprint":"fp_38b8254589","choices":[],"usage":{"prompt_tokens":19,"completion_tokens":10,"total_tokens":29,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"Dua19N"}
+
+data: [DONE]
+

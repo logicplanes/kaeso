@@ -1,0 +1,39 @@
+---
+source: crates/kaeso-server/src/services/logs.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+---
+{
+  "blocks": [
+    {
+      "unknown": {
+        "origin": {
+          "dialect": "anthropic_messages"
+        },
+        "raw": {
+          "id": "srvtoolu_01",
+          "input": {
+            "query": "kaeso"
+          },
+          "name": "web_search",
+          "type": "server_tool_use"
+        }
+      }
+    },
+    {
+      "text": {
+        "text": "Found it."
+      }
+    }
+  ],
+  "id": "msg_03",
+  "model": "claude-sonnet-4-5",
+  "stop": {
+    "stop_sequence": "END"
+  },
+  "usage": {
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "input_tokens": 20,
+    "output_tokens": 5
+  }
+}

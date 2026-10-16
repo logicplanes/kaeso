@@ -1,0 +1,25 @@
+---
+import Base from "./Base.astro";
+import { docsText } from "~/lib/locale";
+import { docsLangOf, localizedPath } from "~/lib/languages";
+import type { DemoPage } from "~/lib/demos";
+interface Props {
+  page: DemoPage;
+}
+const { page } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+---
+
+<Base title={`${page.title} · ${docsText(lang, "Examples")}`} description={`Every example of ${page.title}.`} path={`/components/${page.slug}/examples`}>
+  <main class="min-h-dvh bg-panel text-fg" data-examples-page={page.slug}>
+    <header class="flex h-52 items-center gap-12 px-24 hairline-b">
+      <a href={localizedPath(lang, `/components/${page.slug}`)} class="text-body font-medium text-fg-secondary hover:text-fg">
+        ‹ {page.title}
+      </a>
+      <h1 class="text-small font-regular text-fg-tertiary">{docsText(lang, "All examples")}</h1>
+    </header>
+    <div class="mx-auto flex w-full max-w-960 flex-col gap-48 px-24 py-48">
+      <slot />
+    </div>
+  </main>
+</Base>

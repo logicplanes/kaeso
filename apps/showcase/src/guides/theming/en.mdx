@@ -1,0 +1,61 @@
+---
+title: Theming
+description: Light on pure white, dark on pure black, or the system's choice. Themes switch with one attribute and need no dark variants.
+---
+
+import CodeView from "~/components/CodeView.astro";
+
+## How themes work
+
+Every color is a CSS variable with a light and a dark value. The dark values apply when the system prefers dark, or when an element carries `data-theme="dark"`; `data-theme="light"` forces light. Components never use `dark:` variants: the tokens switch themselves.
+
+## Choosing a theme
+
+`ThemeProvider` remembers the person's choice (system, light or dark) and sets `data-theme` on the document. `ThemeMenu` is the control for it; `useTheme()` reads and sets it (`theme` is the choice, `resolvedTheme` what is shown).
+
+<CodeView
+  code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";
+
+export function ThemeControl() {
+  return <ThemeMenu />;
+}
+
+export function DarkModeOffer() {
+  const { resolvedTheme, setTheme } = useTheme();
+  if (resolvedTheme === "dark") return null;
+  return <Button onClick={() => setTheme("dark")}>Use dark mode</Button>;
+}`}
+/>
+
+## A region in the other theme
+
+Any element can switch its subtree. Overlays opened inside a themed region must portal into it, or they would take the page's theme; wrap the region in `PortalContainer`.
+
+<CodeView
+  code={`import { Button, Menu, PortalContainer } from "@logicplanes/kaeso-ui";
+
+export function DarkPreview() {
+  return (
+    <div data-theme="dark" className="bg-panel text-fg">
+      <PortalContainer>
+        <Menu>
+          <Menu.Trigger>
+            <Button>Actions</Button>
+          </Menu.Trigger>
+          <Menu.Content>
+            <Menu.Item>Rename</Menu.Item>
+          </Menu.Content>
+        </Menu>
+      </PortalContainer>
+    </div>
+  );
+}`}
+/>
+
+## Contrast and motion preferences
+
+With `prefers-contrast: more`, rings move to the strong line and secondary text becomes primary. With `prefers-reduced-motion`, transforms are removed and only opacity transitions remain.
+
+## What not to theme
+
+There is no accent color to change and no radius to tune: the identity is fixed in the tokens. A product that needs a different look forks the tokens, not the components.

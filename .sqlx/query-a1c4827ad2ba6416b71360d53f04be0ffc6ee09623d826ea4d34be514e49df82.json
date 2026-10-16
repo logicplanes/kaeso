@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT key_id AS \"key_id!\", count(*) AS \"n!\" FROM ( SELECT key_id FROM provider_credentials UNION ALL SELECT key_id FROM user_totp UNION ALL SELECT key_id FROM org_oidc) k GROUP BY key_id ORDER BY key_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "key_id!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "a1c4827ad2ba6416b71360d53f04be0ffc6ee09623d826ea4d34be514e49df82"
+}

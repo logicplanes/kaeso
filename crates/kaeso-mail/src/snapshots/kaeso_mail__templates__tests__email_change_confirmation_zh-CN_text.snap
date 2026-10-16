@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 确认您的新 Kaeso 邮箱地址
+
+确认新地址
+
+确认后，您的 Kaeso 账户将使用 owner@example.com。
+
+确认地址：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+此链接 24 小时后过期；如果这不是您的请求，请忽略此邮件。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。

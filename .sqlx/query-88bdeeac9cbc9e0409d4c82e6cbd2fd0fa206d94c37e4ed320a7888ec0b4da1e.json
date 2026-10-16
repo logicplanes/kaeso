@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM model_access WHERE service_account_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "88bdeeac9cbc9e0409d4c82e6cbd2fd0fa206d94c37e4ed320a7888ec0b4da1e"
+}

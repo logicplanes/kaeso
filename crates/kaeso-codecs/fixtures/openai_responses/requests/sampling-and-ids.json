@@ -1,0 +1,21 @@
+{
+  "model": "gpt-4.1",
+  "input": "What is the capital of France? Answer with one word.",
+  "temperature": 0.2,
+  "top_p": 0.9,
+  "top_logprobs": 2,
+  "include": [
+    "message.output_text.logprobs"
+  ],
+  "max_output_tokens": 64,
+  "truncation": "auto",
+  "store": false,
+  "prompt_cache_key": "kaeso-tenant-42:geo-bot:v3",
+  "safety_identifier": "5f2b8c1e9a7d4b3c8e6f1a2d3c4b5a69",
+  "user": "user-1234",
+  "metadata": {
+    "tenant": "acme",
+    "request_source": "fixtures"
+  },
+  "service_tier": "priority"
+}

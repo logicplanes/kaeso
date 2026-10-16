@@ -1,0 +1,24 @@
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"obfuscation":"my9sOIiYDjoZ"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":null}],"obfuscation":"XIjKUhQ179sc"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}],"obfuscation":"4rpodPkFyQ8LA"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" How"},"finish_reason":null}],"obfuscation":"XDEnRNC9l5"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" can"},"finish_reason":null}],"obfuscation":"54H8KMlZSu"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" I"},"finish_reason":null}],"obfuscation":"q4c0eTqGsGUz"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" help"},"finish_reason":null}],"obfuscation":"hjbVjThDo"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" you"},"finish_reason":null}],"obfuscation":"mUxoAKe06r"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":" today"},"finish_reason":null}],"obfuscation":"5MwKS483"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"?"},"finish_reason":null}],"obfuscation":"1pKuTnuW61iS6"}
+
+data: {"id":"chatcmpl-EXqNAH8zgLIEudCQaMUlolqWyqHwJ","object":"chat.completion.chunk","created":1791734852,"model":"gpt-6-astra","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"obfuscation":"DNN4SgUh"}
+
+data: [DONE]
+

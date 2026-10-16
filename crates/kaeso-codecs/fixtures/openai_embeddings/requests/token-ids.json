@@ -1,0 +1,12 @@
+{
+  "model": "text-embedding-3-small",
+  "input": [
+    1212,
+    318,
+    257,
+    1332,
+    13
+  ],
+  "dimensions": 8,
+  "encoding_format": "float"
+}

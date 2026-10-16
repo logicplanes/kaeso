@@ -1,0 +1,1851 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "cache-prewarm": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 5128,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 5120,
+        "cached_tokens": 0
+      },
+      "total_tokens": 5128
+    }
+  },
+  "document-custom-content": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The document reports important findings and notes that more work is needed on sample size.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01Dbxix1RwY8NwAuNVqQ1SpD",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 61,
+      "prompt_tokens": 702,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 763
+    }
+  },
+  "document-pdf-base64": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The document states that water is essential for life.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01MtEiSpQTeozH75gPX5Eryg",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 29,
+      "prompt_tokens": 1612,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1641
+    }
+  },
+  "document-text-citations": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "According to the document, the grass is green and the sky is blue.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01MaZhpqocJmCfW7pvfTgNgr",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 54,
+      "prompt_tokens": 610,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 664
+    }
+  },
+  "image-base64": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The image is a single pixel: a 1x1 PNG filled with one solid color, so there is no discernible subject or detail to describe.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01xFtoF48bF2gZGSxCPwLKHc",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 33,
+      "prompt_tokens": 21,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 54
+    }
+  },
+  "max-tokens": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Quantum physics is the branch of physics that",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01koAWVrcMpDRdGy5XQ4ASmV",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 10,
+      "prompt_tokens": 11,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 21
+    }
+  },
+  "metadata-service-tier": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Write the subject line in the imperative mood and keep it under about 50 characters, e.g. \"Fix race in cache eviction\".",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_016tDAXmM6K8jLaizKWBSEzQ",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 30,
+      "prompt_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 49
+    }
+  },
+  "multi-turn-array-content": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The capital of New Zealand is Wellington.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01BJmFwA1boMTnMr4duGaMUg",
+    "model": "claude-haiku-4-5-20251001",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 41,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 52
+    }
+  },
+  "pause-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Let me look up this year's laureates.The first result is the prize overview page; I'll search for the announcement itself.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011RuYjfcpCtqxm3vucSQBPC",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 118,
+      "prompt_tokens": 5212,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 5330
+    }
+  },
+  "recorded-cache-prewarm": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjcMrJu3iJkhDdv9pi5",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 35,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 35
+    }
+  },
+  "recorded-document-custom-content": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "This document is very brief and has only two statements. It says that these are important findings, but it also notes a limitation: further work is needed on sample size.\n\nIn short, the document presents its findings as significant but says the sample size should be investigated further. It doesn't say what the findings are, what was studied, or how big the current sample is, so a more detailed summary isn't possible from this text alone.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjcS3aK3AHnUexZPv61",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 169,
+      "completion_tokens_details": {
+        "reasoning_tokens": 15
+      },
+      "prompt_tokens": 862,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1031
+    }
+  },
+  "recorded-document-pdf-base64": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The document makes a single statement about water: Water is essential for life.\n\nThat is the only content in these notes, which appear to be a week 1 lecture handout. There are no further details, such as *why* water is essential or what role it plays in living organisms. If you have more pages or notes from the lecture, I'm happy to help with those too.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjcf69gg1YfNaazwQc1",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 140,
+      "completion_tokens_details": {
+        "reasoning_tokens": 20
+      },
+      "prompt_tokens": 2422,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 2562
+    }
+  },
+  "recorded-document-pdf-url": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "# Key Findings: Claude 3.5 Haiku and Upgraded Claude 3.5 Sonnet Model Card Addendum\n\n## Overview\nThe addendum introduces two models: an **upgraded Claude 3.5 Sonnet** (knowledge cutoff April 2024) and the new **Claude 3.5 Haiku** (knowledge cutoff July 2024).\n\n## 1. New Capability: Computer Use\nThe upgraded Sonnet can interpret screenshots and generate GUI",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjcrFNTFbXeMGYyjMkX",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1024,
+      "completion_tokens_details": {
+        "reasoning_tokens": 857
+      },
+      "prompt_tokens": 36570,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 37594
+    }
+  },
+  "recorded-document-text-citations": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "According to the document, the grass is green and the sky is blue.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjdigiihgTeHSKS63Cg",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 58,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 864,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 922
+    }
+  },
+  "recorded-explicit-nulls": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Based on the document, the meeting is at **3pm**.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjdpetn2ikP5ZDse8Qv",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 16,
+      "prompt_tokens": 56,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 72
+    }
+  },
+  "recorded-image-base64": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The image appears to be almost entirely **black** or very dark, with possibly a tiny hint of a dark **purple/blue** tone in a small area.\n\nThere is essentially **no discernible content** visible — it looks like a blank, dark, or heavily underexposed image.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjdxD5QcQcYUMvWFNvH",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 64,
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 81
+    }
+  },
+  "recorded-max-tokens": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjeFLxQGqMVktedfz5T",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 10,
+      "completion_tokens_details": {
+        "reasoning_tokens": 10
+      },
+      "prompt_tokens": 16,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 26
+    }
+  },
+  "recorded-metadata-service-tier": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "**Write the subject line as an imperative command that completes the sentence \"If applied, this commit will...\"**\n\nFor example:\n- ✅ `Fix race condition in session cleanup`\n- ❌ `Fixed some bugs` or `Changes to session stuff`\n\nThis keeps messages consistent with Git's own conventions (like \"Merge branch...\"), forces you to state *what* the commit does, and makes the history read like a clear list of actions when scanning `git log`.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjeQ64W6y3dwGfDWQq9",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 167,
+      "completion_tokens_details": {
+        "reasoning_tokens": 17
+      },
+      "prompt_tokens": 24,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 191
+    }
+  },
+  "recorded-multi-turn-array-content": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The capital of New Zealand is Wellington.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjecVS1uAfhuopq3H2N",
+    "model": "claude-haiku-4-5-20251001",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 41,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 52
+    }
+  },
+  "recorded-refusal": {
+    "choices": [
+      {
+        "finish_reason": "content_filter",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjem5NtYWMkuSfBEZXU",
+    "model": "claude-fable-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 84,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 84
+    }
+  },
+  "recorded-sampling-stop-sequences": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "One, Two, Three, Four, Five. ",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjf15FDCbh5svioLLaK",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 30
+    }
+  },
+  "recorded-sampling-top-p": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "# Grey Cat Name Suggestions\n\nHere are a few options depending on the cat's personality:\n\n- **Smokey** - Classic and fits the color perfectly\n- **Shadow** - Great if your cat is mysterious or sneaky\n- **Ash** or **Asher** - Simple and elegant\n- **Storm** - For a more dramatic personality\n- **Pepper** - Works well for darker grey cats\n- **Slate** - Sophisticated and unique\n- **Luna** - If you prefer something softer and more mystical\n\nDo any of these appeal to you, or would you like suggestions in a different style?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjf5c6Qm3R2MLDAPepK",
+    "model": "claude-haiku-4-5-20251001",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 137,
+      "prompt_tokens": 16,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 153
+    }
+  },
+  "recorded-service-tier-standard-only": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Pong! 👋\n\nWhat can I help you with?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjfECX3kHvVFNCxDbbc",
+    "model": "claude-haiku-4-5-20251001",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 18,
+      "prompt_tokens": 9,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 27
+    }
+  },
+  "recorded-structured-output-json-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjfJDNmpMDXjJ1iHzfd",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 42,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 332,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 374
+    }
+  },
+  "recorded-system-blocks-cache-ttl": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Under **Clause 2 (Termination)**, either party can terminate the agreement by giving **90 days' written notice**.\n\nThe contract doesn't say:\n- how the written notice has to be delivered (for example, by email, courier or registered mail)\n- whether the 90 days start when the notice is sent or when it's received\n- whether a party needs a reason, or \"cause,\" to terminate. Clause 2 doesn't require one, so it appears either party can end the agreement without giving a reason.\n\nClause 1 sets the agreement to run for 24 months from the Effective Date. The contract doesn't say how Clause 2 interacts with that term, such as whether a party can terminate early during those 24 months. The wording \"either party may terminate\" suggests it can, but the contract doesn't state this outright.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjfVE9ySjFrkwcbpewj",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 267,
+      "completion_tokens_details": {
+        "reasoning_tokens": 14
+      },
+      "prompt_tokens": 593,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 577,
+        "cached_tokens": 0
+      },
+      "total_tokens": 860
+    }
+  },
+  "recorded-system-string-multi-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "You said you work on machine learning.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjfiaaFHts4o9b8xcJ2",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 61,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 72
+    }
+  },
+  "recorded-text-simple": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! Nice to meet you. How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjfnp5YeTJaWgPCvJ1S",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 21,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 15,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 36
+    }
+  },
+  "recorded-thinking-adaptive-effort": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The greatest common divisor of 1071 and 462 is **21**.\n\nUsing the Euclidean algorithm:\n\n- 1071 = 2 × 462 + 147\n- 462 = 3 × 147 + 21\n- 147 = 7 × 21 + 0\n\nThe last nonzero remainder is 21.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjfsNAiztELaa8xu1tC",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 144,
+      "completion_tokens_details": {
+        "reasoning_tokens": 43
+      },
+      "prompt_tokens": 27,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 171
+    }
+  },
+  "recorded-thinking-between-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll check the current weather in Dublin for you.",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Dublin, Ireland\",\n        \"unit\": \"celsius\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01BLWnb5NzuGUbnWJYRky3U1",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjg4SvSoq8j3JwURDnG",
+    "model": "claude-sonnet-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 97,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 466,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 563
+    }
+  },
+  "recorded-thinking-disabled": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The city council approved a 7-2 vote on Tuesday to expand the downtown bike lane network by 12 miles over the next three years.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjgCVcQg3CHZLQkNVQC",
+    "model": "claude-sonnet-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 45,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 58,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 103
+    }
+  },
+  "recorded-thinking-enabled-budget": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "## Yes — There Are Infinitely Many Primes ≡ 3 (mod 4)\n\nThis is a classical result, provable with an argument similar to Euclid's proof of infinite primes.\n\n---\n\n### Proof by Contradiction\n\n**Assume** there are only finitely many such primes: $p_1, p_2, \\ldots, p_k$, all satisfying $p_i \\equiv 3 \\pmod{4}$.\n\n**Construct** the number:\n$$N = 4p_1 p_2 \\cdots p_k - 1$$\n\nNote that $N \\equiv 3 \\pmod 4$, and $N$ is odd (so 2 is not a factor).\n\n**Key observation:** The product of numbers each $\\equiv 1 \\pmod{4}$ is itself $\\equiv 1 \\pmod{4}$.\n\nSince $N \\equiv 3 \\pmod{4}$, **at least one** prime factor $q$ of $N$ must satisfy $q \\equiv 3 \\pmod{4}$.\n\n**But:** $q$ cannot be any $p_i$, because:\n$$p_i \\mid 4p_1\\cdots p_k \\quad \\text{and} \\quad p_i \\mid N \\implies p_i \\mid 1 \\quad \\text{(impossible)}$$\n\nThis **contradicts** our assumption that the list was complete. $\\square$\n\n---\n\n### Examples of such primes:\n$$3, 7, 11, 19, 23, 31, 43, 47, 59, 67, \\ldots$$\n\nThis result also follows as a special case of **Dirichlet's theorem**, which guarantees infinitely many primes in any arithmetic progression $a + nd$ where $\\gcd(a, d) = 1$ — here $a=3,\\ d=4$.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjgR4tvemLvtmGDn8Wd",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 972,
+      "completion_tokens_details": {
+        "reasoning_tokens": 512
+      },
+      "prompt_tokens": 55,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1027
+    }
+  },
+  "recorded-thinking-redacted": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "To help determine if it's a good day to see the northern lights, let me first check the current weather in Reykjavik!",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Reykjavik, Iceland\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01TBRejuaYu94Z9EKo4UJ6GP",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjhcgBhAwtq9MuWqne5",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 155,
+      "completion_tokens_details": {
+        "reasoning_tokens": 63
+      },
+      "prompt_tokens": 665,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 820
+    }
+  },
+  "recorded-tool-choice-any-no-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Berlin, Germany\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_015c1bivAkb8RH7obaanPdQM",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjhqCzr8TP6tfnos36G",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 31,
+      "prompt_tokens": 799,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 830
+    }
+  },
+  "recorded-tool-choice-auto-no-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll check the weather in both Seattle and Portland at the same time for you!",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Seattle, WA\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01RVXiR8rGA7LJgHzsLnszji",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjhuopsQgHGkYJPUHP9",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 65,
+      "prompt_tokens": 420,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 485
+    }
+  },
+  "recorded-tool-choice-none": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Based on my training knowledge, Oslo, Norway typically experiences cool autumn weather in October. Average temperatures are roughly:\n\n- **Daytime highs:** around **8–10°C (46–50°F)**\n- **Nighttime lows:** around **2–4°C (36–39°F)**\n\nOctober in Oslo is generally chilly, often rainy, and can occasionally see the first light snowfall toward the end of the month. It's advisable to wear warm layers if visiting during that time.\n\nWould you like me to check the **current weather** in Oslo using real-time data?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvji2W9KA2oWEQx2cjKM",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 134,
+      "prompt_tokens": 633,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 767
+    }
+  },
+  "recorded-tool-choice-tool": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Lisbon, Portugal\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_016r1YrY8SC1LGuVmbDHHK4m",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Europe/Lisbon\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_01Ugg843qoqABjJUNYFER2PR",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjiJQNE6TEWg6P7vrNj",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 77,
+      "prompt_tokens": 804,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 881
+    }
+  },
+  "recorded-tool-result-multi-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Here's the summary:\n\n**Paris 🇫🇷**\n- 🌧️ 18°C, light rain\n- 🕐 Local time unavailable (service error)\n\n**Tokyo 🇯🇵**\n- ☀️ 24°C, clear skies\n- 🕐 10:14 PM (Oct 11, 2026)",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjiRAAi8j5YgxJ1zgRm",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 96,
+      "prompt_tokens": 1113,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1209
+    }
+  },
+  "recorded-tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll fetch the weather and local time for both Paris and Tokyo simultaneously!",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Paris, France\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01Vc2E4ZwGgokZ5A1Jdk61LS",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Tokyo, Japan\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01U78ahksJCEinV7yXB7GKDf",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_017uz8WdQWtvBtgY6GXy7Ctz",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_01TH3Z8k5ADaqn63qu7Y2hRx",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011Cfvjiaq5WaKomkmqvovUE",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 185,
+      "prompt_tokens": 712,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 897
+    }
+  },
+  "recorded-tools-single": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Let me check the current weather in San Francisco for you!",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"San Francisco, CA\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01TP6KtR2XVvvFndB91WEbEc",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjimXXMJjKjjVqEDtki",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 69,
+      "prompt_tokens": 628,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 697
+    }
+  },
+  "recorded-web-search-server-tool": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Claude Shannon was born on **April 30, 1916**, in Petoskey, Michigan. He grew up in nearby Gaylord, Michigan. He is known as the \"father of information theory\" because of his 1948 paper \"A Mathematical Theory of Communication.\" He died on February 24, 2001.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_011CfvjivMLhEotiQb2NJz7h",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 131,
+      "completion_tokens_details": {
+        "reasoning_tokens": 31
+      },
+      "prompt_tokens": 2745,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 2876
+    }
+  },
+  "refusal": {
+    "choices": [
+      {
+        "finish_reason": "content_filter",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01yXeiEz9uQcJSQC8zxB9kMH",
+    "model": "claude-fable-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 412,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 412
+    }
+  },
+  "sampling-stop-sequences": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "One, two, three, four, five.\n\n",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01NHM3nouWadf2xEdWEBHNqU",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 14,
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 36
+    }
+  },
+  "structured-output-json-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01iViD1grjm4P8u6vkhoNaDR",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 31,
+      "prompt_tokens": 212,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 243
+    }
+  },
+  "system-blocks-cache-ttl": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Under clause 2 (Termination), either party must give 90 days' written notice to terminate the agreement.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01roDLFwPZ7mBmV5xXNNQKMW",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 27,
+      "prompt_tokens": 6297,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 6283,
+        "cached_tokens": 0
+      },
+      "total_tokens": 6324
+    }
+  },
+  "system-string-multi-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "You said you work on machine learning.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_019X21FyGADQztnWgK29HTmP",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 52,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 63
+    }
+  },
+  "text-simple": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! It's nice to meet you. How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01YPYNJ43PX3m1nxqjPEjfaw",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 18,
+      "prompt_tokens": 10,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 28
+    }
+  },
+  "thinking-adaptive-effort": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The greatest common divisor of 1071 and 462 is **21**.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01J1HvtbRvKNYVT1pvbdT8XV",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 214,
+      "completion_tokens_details": {
+        "reasoning_tokens": 171
+      },
+      "prompt_tokens": 26,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 240
+    }
+  },
+  "thinking-adaptive-interleaved-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_011Dne1APNuqxuo9C4qyyihS",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01bzhnsPw1PaZ5gA4hRi8PdK",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 140,
+      "completion_tokens_details": {
+        "reasoning_tokens": 88
+      },
+      "prompt_tokens": 1034,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1174
+    }
+  },
+  "thinking-disabled": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The city council approved, 7-2, a three-year plan to add 12 miles of downtown bike lanes.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01Va6mof8Ucr75Zq8PvVjk7c",
+    "model": "claude-sonnet-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 25,
+      "prompt_tokens": 48,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 73
+    }
+  },
+  "thinking-display-omitted": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "27 × 453 = 12,231.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01P4SzwkefVSnGbZwKSjDTJY",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 96,
+      "completion_tokens_details": {
+        "reasoning_tokens": 79
+      },
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 113
+    }
+  },
+  "thinking-enabled-budget": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Yes. Assume there are only finitely many such primes p1, ..., pk and set N = 4·p1·…·pk − 1. N ≡ 3 (mod 4), so at least one prime factor q of N is ≡ 3 (mod 4), because products of primes ≡ 1 (mod 4) are ≡ 1 (mod 4). But q cannot equal any pi, since each pi leaves remainder −1 when dividing N. This contradiction shows there are infinitely many primes p with p mod 4 = 3.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01gWpepASbE5pFasXfFjGPVf",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 612,
+      "completion_tokens_details": {
+        "reasoning_tokens": 287
+      },
+      "prompt_tokens": 51,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 663
+    }
+  },
+  "thinking-interleaved-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_01afnDK4mGFJyw1zWvMT248V",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_013uYDVcQfWZchN4HvY8V1RM",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 118,
+      "completion_tokens_details": {
+        "reasoning_tokens": 49
+      },
+      "prompt_tokens": 912,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1030
+    }
+  },
+  "thinking-redacted": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Reykjavik, Iceland\",\n        \"unit\": \"celsius\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01ZYJXVVjfNgLCKjtMKPUDV1",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 254,
+      "completion_tokens_details": {
+        "reasoning_tokens": 181
+      },
+      "prompt_tokens": 689,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 943
+    }
+  },
+  "tool-choice-tool": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Lisbon, Portugal\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01MwfbnjSw6affPfGTrTjhbJ",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01yxUmuZMiWnEHiT3DdtWvSA",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 41,
+      "prompt_tokens": 655,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 696
+    }
+  },
+  "tool-result-multi-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Paris: 18°C with light rain (I couldn't get the local time; the time service returned an error). Tokyo: 24°C and clear, and it's 22:14 local time.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01NE63JEDrNwXrF2wmKNVhmW",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 52,
+      "prompt_tokens": 1288,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1340
+    }
+  },
+  "tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll look up the weather and local time for both cities.",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Paris, France\",\n        \"unit\": \"celsius\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Tokyo, Japan\",\n        \"unit\": \"celsius\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+                "name": "get_time"
+              },
+              "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01Huvcb6LuCJCdd2Zff7wdbn",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 231,
+      "prompt_tokens": 742,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 973
+    }
+  },
+  "tools-single": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll check the current weather in San Francisco for you.",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"San Francisco, CA\",\n        \"unit\": \"fahrenheit\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01VLLqZ1bfs3WXvVeYqZPtE7",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01aZVoMeJ4jfgoELtozyLhH2",
+    "model": "claude-sonnet-4-6",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 87,
+      "prompt_tokens": 578,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 665
+    }
+  },
+  "unknown-fields": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01nJmcPUKwCP7MRz57RqJYq4",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 15,
+      "prompt_tokens": 12,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 27
+    }
+  },
+  "web-search-server-tool": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll search for when Claude Shannon was born.Based on the search results, Claude Shannon was born on April 30, 1916, in Petoskey, Michigan.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01R2R14PadDFvMb1xgawpzvm",
+    "model": "claude-opus-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 931,
+      "prompt_tokens": 6039,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 6970
+    }
+  }
+}

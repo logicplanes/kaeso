@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE service_accounts SET name = $3, preset = $4, rights_added = $5, rights_removed = $6, archived_at = $7, role_id = $8, updated_at = now() WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c197cc09790598eb7d1dec954e277dc905218e190bd22110af9554ea8a182cd1"
+}

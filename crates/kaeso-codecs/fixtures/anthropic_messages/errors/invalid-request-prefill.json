@@ -1,0 +1,7 @@
+{
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "This model does not support assistant message prefill. The conversation must end with a user message."
+  }
+}

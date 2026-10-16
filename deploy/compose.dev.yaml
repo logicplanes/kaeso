@@ -1,0 +1,145 @@
+name: kaeso-dev
+
+x-node: &node
+  image: node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+  working_dir: /stack
+  profiles: [console]
+  volumes:
+    - ../apps/console/stack:/stack:ro
+
+services:
+  postgres:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      POSTGRES_USER: kaeso
+      POSTGRES_PASSWORD: kaeso
+      POSTGRES_DB: kaeso
+    ports:
+      - 127.0.0.1:${KAESO_POSTGRES_PORT:-55432}:5432
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kaeso"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.48.2-alpine@sha256:7b4bac0d6d220bcc182fa1d781c177c21639edb02b354a232373fe93d2f1d863
+    environment:
+      CLICKHOUSE_USER: kaeso
+      CLICKHOUSE_PASSWORD: kaeso
+      CLICKHOUSE_DB: kaeso
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - 127.0.0.1:${KAESO_CLICKHOUSE_PORT:-58123}:8123
+    volumes:
+      - clickhouse:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8123/ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  valkey:
+    image: valkey/valkey:9.1.2-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    ports:
+      - 127.0.0.1:${KAESO_VALKEY_PORT:-56379}:6379
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mail:
+    image: axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea
+    ports:
+      - 127.0.0.1:${KAESO_MAIL_SMTP_PORT:-51025}:1025
+      - 127.0.0.1:${KAESO_MAIL_PORT:-58025}:8025
+
+  gateway:
+    image: ${KAESO_GATEWAY_IMAGE:-kaeso-gateway:dev}
+    build:
+      context: ..
+      dockerfile: deploy/gateway.Dockerfile
+      target: gateway
+    profiles: [console]
+    environment:
+      KAESO_PUBLIC_URL: ${KAESO_PUBLIC_URL:-http://localhost:3000}
+      KAESO_POSTGRES_URL: postgres://kaeso:kaeso@postgres:5432/kaeso
+      KAESO_CLICKHOUSE_URL: http://kaeso:kaeso@clickhouse:8123
+      KAESO_VALKEY_URL: redis://valkey:6379
+      KAESO_MASTER_KEYS_FILE: /run/kaeso/master_keys
+      KAESO_MAIL_TRANSPORT: smtp
+      KAESO_SMTP_HOST: mail
+      KAESO_SMTP_PORT: "1025"
+      KAESO_SMTP_TLS: none
+      KAESO_SMTP_FROM: Kaeso <kaeso@localhost>
+      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_PROVIDERS_OPENAI_BASE_URL: http://provider:8080
+      KAESO_PROVIDERS_ANTHROPIC_BASE_URL: http://provider:8080
+      KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS: "true"
+      KAESO_LOGS_FLUSH_INTERVAL: 500ms
+      KAESO_LOG_FORMAT: json
+    ports:
+      - 127.0.0.1:${KAESO_GATEWAY_PORT:-18080}:8080
+    volumes:
+      - master-key:/run/kaeso:ro
+    depends_on:
+      master-key:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      mail:
+        condition: service_started
+      provider:
+        condition: service_healthy
+
+  master-key:
+    <<: *node
+    command: ["node", "master-key.mjs", "/run/kaeso/master_keys"]
+    volumes:
+      - ../apps/console/stack:/stack:ro
+      - master-key:/run/kaeso
+
+  provider:
+    <<: *node
+    command: ["node", "provider.mjs"]
+    environment:
+      PORT: "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  idp:
+    <<: *node
+    command: ["node", "idp.mjs"]
+    environment:
+      PORT: ${KAESO_IDP_PORT:-18091}
+      ISSUER: http://idp.localhost:${KAESO_IDP_PORT:-18091}
+    ports:
+      - 127.0.0.1:${KAESO_IDP_PORT:-18091}:${KAESO_IDP_PORT:-18091}
+    networks:
+      default:
+        aliases:
+          - idp.localhost
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:${KAESO_IDP_PORT:-18091}/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  master-key:
+  postgres:
+  clickhouse:

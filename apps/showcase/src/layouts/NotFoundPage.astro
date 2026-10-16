@@ -1,0 +1,18 @@
+---
+import Shell from "./Shell.astro";
+import NotFound from "~/components/NotFound";
+import { docsText } from "~/lib/locale";
+import { docsLangOf } from "~/lib/languages";
+const lang = docsLangOf(Astro.params.lang);
+---
+
+<Shell title="Not found" notFound>
+  <div class="flex min-h-full flex-col">
+    <header class="sticky top-0 z-10 flex h-52 items-center bg-panel pr-16 pl-24 hairline-b-strong k-bar">
+      <h1 class="text-body font-medium text-fg">{docsText(lang, "Not found")}</h1>
+    </header>
+    <div class="flex flex-1 items-center justify-center px-24 py-64">
+      <NotFound client:load />
+    </div>
+  </div>
+</Shell>

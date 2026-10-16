@@ -1,0 +1,12 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a short story about a dragon guarding a village."
+    }
+  ],
+  "moderation": {
+    "model": "omni-moderation-latest"
+  }
+}

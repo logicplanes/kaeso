@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects SET name = $3, content_logging = $4, max_key_lifetime_days = $5, archived_at = $6, avatar = $7, updated_at = now() WHERE org_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Bool",
+        "Int4",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf1d10a73bd05115ff249d9e27377baf3b40221dbccced1359056a68e5032e68"
+}

@@ -1,0 +1,19 @@
+---
+import LocalizedGuide from "~/layouts/LocalizedGuide.astro";
+import { guideVersions } from "~/lib/guides";
+import { prepareDocsPage } from "~/lib/locale";
+import { languagePaths } from "~/lib/languages";
+import * as agents from "../../../../../packages/ui/AGENTS.md";
+import * as de from "~/guides/for-agents/de.md";
+import * as zh from "~/guides/for-agents/zh-CN.md";
+
+export const getStaticPaths = languagePaths;
+await prepareDocsPage(Astro.params.lang);
+
+const en = {
+  ...agents,
+  frontmatter: { title: "For agents", description: "How an agent builds Kaeso screens with this library. Read this before writing interface code." },
+};
+---
+
+<LocalizedGuide path="/for-agents" versions={guideVersions({ en, de, "zh-CN": zh })} contentClass="k-agents" />

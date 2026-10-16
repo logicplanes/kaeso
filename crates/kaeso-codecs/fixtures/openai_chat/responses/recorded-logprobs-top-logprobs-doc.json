@@ -1,0 +1,193 @@
+{
+  "id": "chatcmpl-EXqLbDeap3upPsg7Z620Wpt88ffAJ",
+  "object": "chat.completion",
+  "created": 1791734755,
+  "model": "gpt-6-sol",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help?",
+        "refusal": null,
+        "annotations": []
+      },
+      "logprobs": {
+        "content": [
+          {
+            "token": "Hello",
+            "logprob": -0.010150909423828125,
+            "bytes": [
+              72,
+              101,
+              108,
+              108,
+              111
+            ],
+            "top_logprobs": [
+              {
+                "token": "Hello",
+                "logprob": -0.010150909423828125,
+                "bytes": [
+                  72,
+                  101,
+                  108,
+                  108,
+                  111
+                ]
+              }
+            ]
+          },
+          {
+            "token": "!",
+            "logprob": 0.0,
+            "bytes": [
+              33
+            ],
+            "top_logprobs": [
+              {
+                "token": "!",
+                "logprob": 0.0,
+                "bytes": [
+                  33
+                ]
+              }
+            ]
+          },
+          {
+            "token": " How",
+            "logprob": -0.002544403076171875,
+            "bytes": [
+              32,
+              72,
+              111,
+              119
+            ],
+            "top_logprobs": [
+              {
+                "token": " How",
+                "logprob": -0.002544403076171875,
+                "bytes": [
+                  32,
+                  72,
+                  111,
+                  119
+                ]
+              }
+            ]
+          },
+          {
+            "token": " can",
+            "logprob": 1.52587890625e-05,
+            "bytes": [
+              32,
+              99,
+              97,
+              110
+            ],
+            "top_logprobs": [
+              {
+                "token": " can",
+                "logprob": 1.52587890625e-05,
+                "bytes": [
+                  32,
+                  99,
+                  97,
+                  110
+                ]
+              }
+            ]
+          },
+          {
+            "token": " I",
+            "logprob": 7.62939453125e-06,
+            "bytes": [
+              32,
+              73
+            ],
+            "top_logprobs": [
+              {
+                "token": " I",
+                "logprob": 7.62939453125e-06,
+                "bytes": [
+                  32,
+                  73
+                ]
+              }
+            ]
+          },
+          {
+            "token": " help",
+            "logprob": 3.814697265625e-06,
+            "bytes": [
+              32,
+              104,
+              101,
+              108,
+              112
+            ],
+            "top_logprobs": [
+              {
+                "token": " help",
+                "logprob": 3.814697265625e-06,
+                "bytes": [
+                  32,
+                  104,
+                  101,
+                  108,
+                  112
+                ]
+              }
+            ]
+          },
+          {
+            "token": "?",
+            "logprob": -0.14298248291015625,
+            "bytes": [
+              63
+            ],
+            "top_logprobs": [
+              {
+                "token": "?",
+                "logprob": -0.14298248291015625,
+                "bytes": [
+                  63
+                ]
+              },
+              {
+                "token": " you",
+                "logprob": -2.0157241821289062,
+                "bytes": [
+                  32,
+                  121,
+                  111,
+                  117
+                ]
+              }
+            ]
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 10,
+    "total_tokens": 18,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": null
+}

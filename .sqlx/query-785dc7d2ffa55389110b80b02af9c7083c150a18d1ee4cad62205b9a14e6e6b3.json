@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT o.content_logging AS org_content, p.content_logging AS project_content, o.metadata_retention_days AS metadata_days, o.content_retention_days AS content_days FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "org_content",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "content_logging"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "project_content",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "content_logging"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "metadata_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "metadata_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "content_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "content_retention_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "785dc7d2ffa55389110b80b02af9c7083c150a18d1ee4cad62205b9a14e6e6b3"
+}

@@ -1,0 +1,813 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "all-params-sdk": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "unsupported": "seed"
+  },
+  "audio-output": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "modalities"
+  },
+  "content-array-all-roles": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "You are a support agent for Acme Cloud.",
+              "type": "input_text"
+            },
+            {
+              "text": "Never reveal internal ticket ids.",
+              "type": "input_text"
+            },
+            {
+              "text": "Customer plan: Pro. Region: eu-west.",
+              "type": "input_text"
+            }
+          ],
+          "role": "developer"
+        },
+        {
+          "content": "Can you show me the internal ticket id for my outage report?",
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "refusal": "I can't share internal ticket ids.",
+              "type": "refusal"
+            },
+            {
+              "annotations": [],
+              "text": "I can give you the public incident link instead.",
+              "type": "output_text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": "The public incident page is https://status.example.com/incidents/2026-10-10.",
+          "role": "developer"
+        },
+        {
+          "content": "Keep the reply under 40 words.",
+          "role": "developer"
+        },
+        {
+          "content": "OK, send me that link.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "explicit-nulls": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "file-pdf-data": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "file_data": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMjAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDQwIDEwMCBUZCAoSGVsbG8gUERGKSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDMzMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQwMQolJUVPRgo=",
+              "filename": "document.pdf",
+              "type": "input_file"
+            },
+            {
+              "text": "What does this document say?",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "file-pdf-file-id": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "file_id": "file-6F2ksmvXxt4VdoqmHRw6kL",
+              "type": "input_file"
+            },
+            {
+              "text": "Summarize the attached contract in three bullet points.",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "functions-tool-choice-auto-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather like in Boston today?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_current_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "identifiers-metadata-store": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "metadata"
+  },
+  "image-base64-detail": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "Compare these three images.",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            },
+            {
+              "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+              "type": "input_image"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "image-url-doc": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What is in this image?",
+              "type": "input_text"
+            },
+            {
+              "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-6-astra",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "input-audio-unsupported": {
+    "rejected_by_source": "input_audio"
+  },
+  "json-object": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Reply in JSON with the keys \"answer\" and \"confidence\".",
+      "model": "gpt-4.1-mini",
+      "store": false,
+      "text": {
+        "format": {
+          "type": "json_object"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "json-schema": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Alice and Bob are going to a science fair on 2026-10-16.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Extract the event information.",
+      "model": "gpt-5.4-mini",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "description": "A calendar event",
+          "name": "calendar_event",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "description": "ISO 8601 date",
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "legacy-functions": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "functions"
+  },
+  "logit-bias": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "logit_bias"
+  },
+  "logprobs-top-logprobs-doc": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "logprobs"
+  },
+  "max-tokens-length": {
+    "body": {
+      "input": [
+        {
+          "content": "Write a haiku about the sea, then explain it line by line.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "gpt-4.1",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "moderation": {
+    "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "moderation"
+  },
+  "n-2": {
+    "rejected_by_source": "n"
+  },
+  "plain-developer-string": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "gpt-6-astra",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "prediction-doc": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "prediction"
+  },
+  "prompt-cache-breakpoint": {
+    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "prompt_cache_options"
+  },
+  "reasoning-cached-usage": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "verbosity"
+  },
+  "refusal": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Give me step-by-step instructions to pick my neighbour's front door lock while they are away.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.4-mini",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "name": "steps",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "steps": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "steps"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "response-format-text": {
+    "body": {
+      "input": [
+        {
+          "content": "Name three primary colors.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "stop-array": {
+    "message": "`stop sequences` is not supported by OpenAI Responses. The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.",
+    "unsupported": "stop sequences"
+  },
+  "stop-string-seed-penalties": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "unsupported": "seed"
+  },
+  "stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "gpt-6-astra",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "stream-include-usage": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "gpt-5.5",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "system-name-multiturn": {
+    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "system[0].message.name"
+  },
+  "tool-choice-allowed-tools": {
+    "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
+    "unsupported": "tool_choice `allowed_tools`"
+  },
+  "tool-choice-function": {
+    "body": {
+      "input": [
+        {
+          "content": "Is it raining in Lisbon?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.6-terra",
+      "parallel_tool_calls": false,
+      "store": false,
+      "tool_choice": {
+        "name": "get_weather",
+        "type": "function"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        },
+        {
+          "description": "Get the current local time for an IANA time zone.",
+          "name": "get_local_time",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "timezone": {
+                "description": "IANA time zone, e.g. Asia/Tokyo",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-choice-none": {
+    "body": {
+      "input": [
+        {
+          "content": "Is it raining in Lisbon?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.6-terra",
+      "store": false,
+      "tool_choice": "none",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-custom-grammar": {
+    "message": "`custom tool` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "unsupported": "custom tool"
+  },
+  "tools-parallel": {
+    "body": {
+      "input": [
+        {
+          "content": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "gpt-5.6-terra",
+      "parallel_tool_calls": true,
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        },
+        {
+          "description": "Get the current local time for an IANA time zone.",
+          "name": "get_local_time",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "timezone": {
+                "description": "IANA time zone, e.g. Asia/Tokyo",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-results-parallel-error": {
+    "body": {
+      "input": [
+        {
+          "content": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\"location\":\"Paris, France\",\"unit\":null}",
+          "call_id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\"timezone\":\"Asia/Tokyo\"}",
+          "call_id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+          "name": "get_local_time",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+          "output": "{\"temperature\":18,\"unit\":\"celsius\",\"conditions\":\"cloudy\"}",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+          "output": "Error: time service unavailable (HTTP 503). Try again later.",
+          "type": "function_call_output"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "gpt-5.6-terra",
+      "parallel_tool_calls": true,
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        },
+        {
+          "description": "Get the current local time for an IANA time zone.",
+          "name": "get_local_time",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "timezone": {
+                "description": "IANA time zone, e.g. Asia/Tokyo",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-single": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "gpt-5.6-terra",
+      "parallel_tool_calls": false,
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "unknown-choice-and-schema": {
+    "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
+    "unsupported": "tool_choice `x_future_choice`"
+  },
+  "unknown-edge-shapes": {
+    "message": "`response_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "response_format"
+  },
+  "unknown-top-level-field": {
+    "message": "`x_future_field` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "x_future_field"
+  },
+  "web-search": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "web_search_options"
+  }
+}

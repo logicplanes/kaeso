@@ -1,0 +1,46 @@
+---
+source: crates/kaeso-server/src/services/logs.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+---
+{
+  "blocks": [
+    {
+      "text": {
+        "citations": [
+          {
+            "origin": {
+              "dialect": "anthropic_messages"
+            },
+            "raw": {
+              "cited_text": "Paris",
+              "document_index": 0,
+              "type": "char_location"
+            }
+          }
+        ],
+        "text": "Paris is the capital of France."
+      }
+    }
+  ],
+  "id": "msg_01",
+  "model": "claude-sonnet-4-5",
+  "stop": "end_turn",
+  "usage": {
+    "cache_read_tokens": 4,
+    "cache_write_breakdown": {
+      "ephemeral_1h": 0,
+      "ephemeral_5m": 6
+    },
+    "cache_write_tokens": 6,
+    "input_tokens": 12,
+    "output_tokens": 8,
+    "raw": {
+      "origin": {
+        "dialect": "anthropic_messages"
+      },
+      "value": {
+        "service_tier": "standard"
+      }
+    }
+  }
+}

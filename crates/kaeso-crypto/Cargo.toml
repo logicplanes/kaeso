@@ -1,0 +1,23 @@
+[package]
+name = "kaeso-crypto"
+description = "Kaeso gateway envelope encryption, master key ring and secret wrapper types."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+aes-gcm.workspace = true
+argon2.workspace = true
+totp-rs.workspace = true
+base64.workspace = true
+rand.workspace = true
+secrecy.workspace = true
+thiserror.workspace = true
+zeroize.workspace = true
+
+[lints]
+workspace = true

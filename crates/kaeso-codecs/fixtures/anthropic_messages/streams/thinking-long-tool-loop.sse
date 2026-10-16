@@ -1,0 +1,156 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-6","id":"msg_01KeepAliveThinkingLoop0001","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":1204,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":1,"service_tier":"standard","inference_geo":"global"}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}}
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user wants the weather in Paris and Oslo compared before deciding where to travel next week. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"I should check both cities with the weather tool, but first think about which units and dates matter. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Paris in October averages around 16°C by day; Oslo is closer to 9°C, so the difference is meaningful. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Rain probability matters more than temperature for a city trip, so I will ask for precipitation too. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The tool takes one city per call, so I need two calls; I can start with Paris and then do Oslo. "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EqQBCkYIBhgCKkBkZWVwLXRoaW5raW5nLWZpeHR1cmUtc2lnbmF0dXJlLW5vdC1hLXJlYWwtb25lLWNvbnN0cnVjdGVkLWZvci1rcHAtdGVzdHMSDGtlZXBhbGl2ZS0wMRoMa2VlcGFsaXZlLTAy"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_01KeepAliveWeatherParis01","name":"get_weather","input":{}}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"city\": \"Paris\"}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":1204,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1047,"output_tokens_details":{"thinking_tokens":1010}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+

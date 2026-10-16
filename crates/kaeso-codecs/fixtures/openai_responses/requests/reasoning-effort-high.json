@@ -1,0 +1,7 @@
+{
+  "model": "gpt-6-astra",
+  "input": "How much wood would a woodchuck chuck?",
+  "reasoning": {
+    "effort": "high"
+  }
+}

@@ -1,0 +1,129 @@
+@import "tailwindcss";
+@import "../../../../packages/ui/src/styles/tailwind.css";
+@source "../";
+
+@utility prose-k {
+  max-width: var(--k-width-prose);
+  color: var(--k-text);
+  & p,
+  & li {
+    font-size: var(--k-text-body-lg);
+    line-height: var(--k-leading-body-lg);
+    color: var(--k-text-secondary);
+  }
+  & p + p {
+    margin-top: 12px;
+  }
+  & h2 {
+    margin-top: 48px;
+    margin-bottom: 12px;
+    font-size: var(--k-text-title-sm);
+    line-height: var(--k-leading-title-sm);
+    font-weight: var(--k-weight-semibold);
+    letter-spacing: var(--k-tracking-title-sm);
+  }
+  & h3 {
+    margin-top: 32px;
+    margin-bottom: 8px;
+    font-size: var(--k-text-body-lg);
+    line-height: var(--k-leading-body-lg);
+    font-weight: var(--k-weight-semibold);
+  }
+  & ul {
+    margin-top: 8px;
+    padding-left: 20px;
+    list-style: disc;
+  }
+  & ol {
+    margin-top: 8px;
+    padding-left: 20px;
+    list-style: decimal;
+  }
+  & li + li {
+    margin-top: 4px;
+  }
+  & strong {
+    color: var(--k-text);
+    font-weight: var(--k-weight-semibold);
+  }
+  & a {
+    color: var(--k-text);
+    text-decoration: underline;
+    text-decoration-color: var(--k-line-strong);
+    text-underline-offset: 3px;
+  }
+  & a:hover {
+    text-decoration-color: currentColor;
+  }
+  & code {
+    font-family: var(--k-font-mono);
+    font-size: 13px;
+    background: var(--k-fill-1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: var(--k-text);
+  }
+  & table {
+    width: 100%;
+    margin-top: 16px;
+    font-size: var(--k-text-body);
+    border-collapse: collapse;
+  }
+  & th {
+    text-align: left;
+    font-size: var(--k-text-caption);
+    font-weight: var(--k-weight-medium);
+    color: var(--k-text-secondary);
+    padding: 8px 12px 8px 0;
+    box-shadow: inset 0 -1px 0 var(--k-line);
+  }
+  & pre {
+    margin-top: 12px;
+    padding: 14px 16px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    border-radius: 14px;
+    background: var(--k-fill-1);
+    font-family: var(--k-font-mono);
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--k-text);
+  }
+  & pre code {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+  }
+  & li > pre {
+    margin-bottom: 4px;
+  }
+  & td {
+    padding: 10px 12px 10px 0;
+    box-shadow: inset 0 -1px 0 var(--k-line-subtle);
+    vertical-align: top;
+    color: var(--k-text-secondary);
+  }
+}
+
+@theme {
+  --container-docs: 1200px;
+  --spacing-960: 960px;
+  --spacing-1200: 1200px;
+  --breakpoint-3xl: 1600px;
+}
+
+.k-agents > h1:first-child {
+  display: none;
+}
+.k-agents > p:nth-child(2) {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  html[data-sidebar-collapsed] .k-expand {
+    display: inline-flex;
+  }
+  html[data-sidebar-collapsed] .k-bar {
+    padding-left: 56px;
+  }
+}

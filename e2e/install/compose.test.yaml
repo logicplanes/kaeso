@@ -1,0 +1,26 @@
+services:
+  caddy:
+    ports: !override
+      - "127.0.0.1:${KAESO_TEST_PORT}:80"
+
+  gateway:
+    image: ${KAESO_TEST_GATEWAY_IMAGE}
+    environment:
+      KAESO_PUBLIC_URL: http://localhost:${KAESO_TEST_PORT}
+      KAESO_MAIL_TRANSPORT: log
+      KAESO_SMTP_FROM: Kaeso <kaeso@example.com>
+      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_PROVIDERS_OPENAI_BASE_URL: http://mock:8080
+      KAESO_PROVIDERS_ANTHROPIC_BASE_URL: http://mock:8080
+    networks: [edge, data, providers]
+
+  console:
+    image: ${KAESO_TEST_CONSOLE_IMAGE:-caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f}
+
+  mock:
+    image: ${KAESO_TEST_MOCK_IMAGE}
+    networks: [providers]
+
+networks:
+  providers:
+    internal: true

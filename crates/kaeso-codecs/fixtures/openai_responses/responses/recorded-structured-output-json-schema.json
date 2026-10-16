@@ -1,0 +1,128 @@
+{
+  "id": "resp_0f013f71713eb783006acbb41f6a9487d1b97b25bc1287fd49",
+  "object": "response",
+  "created_at": 1791734815,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1791734816,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.5-2026-04-23",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0f013f71713eb783006acbb4202b1c87d1a9b114ca1e9e3308",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqy7QhWsSEPiug-BpOS_aorVtHCfljVyz_NLFS68wIeCK_I5AKJJnmBgl5RdfuCqh8vFh6OZxrm8MJtW78WGbeOSiDiciTi3hpRkwcEcp1Pse683lArJUOX__F3I1W58JhVt1STlGpAnruN6IbI0D2LV4BtvN0OVvvpBRvqQXK5UGldlE83Cw_KwTNhaJpj9KIenX9yTkCmcOz-70_G1vx7AL-IX8ifNDlDDrGlnzEBmBMCe-dIWUHr6PGLjMpmf2A0RDl-ANnsMgRM5f0CI7-2N_lG27_Fs7pFY3hr7aWKHQx1_dJwFD5Tw9oBnmNrITT6vtJH9wWrJEo-4e24C1VlOt_p_pf3Xt1aJxPSCAfqkb4sAkCoO8vIEOao5S5xojDdzekSHISwxHcY0sxhtx_NcmbNMV3Q7NAFVAW0H6G5LqfZKCuG51lfXXwIQwjnt9F66AobYExVg1-jzo4irvVKfElbw6-TMi-M4N9R0-898xCSHFVExrcxxayWFsNJId02Ol0b2v3mQW4MM6lykWronpB71hncEL8GZtJ_MQYmRWoPintuzFzX93ws7gYvwFTvsMMLi5d995HG5uSW93fDx4nmHgvWzi3R7kAw4vcj8mBMQVLaY-W9N0MgQKpdAyZ4_pmvqQMT-kgMRbVFIsuBM9pApdkVIGKIekjzMxcQnWMZ3GnLDRJlyVuqLwoorw6ATNUXBqoTqRHnOg9wTS47k8SZaMQH1wLtNuHThImhzx_uKRsQHrShxlex3henq5h2z0GbQlc6UfXEdcbiCxGj6_xbkWz4bIjS54ZwzWTdj6elJ1IZ8faEi4MuM11TdGRf0bZD9a0qD1EKNVQhOxi3pfDkUZNtdCNMEQtszooJs1QhSzyBL4TiiBu5uhQBAmHEubYbKYmL3QK5qz0xacfMhSoAZQXKClJG87rZRkQShCyD3B9jzG74RygW-wjSuH9HEZ5gRncHSL_cWkMwwBlkDhomtRt1n9JlLhKFJZ1ivNJbY6oE0DYUFTY_AeN29c9eLd4oMr9uG89o2-E8hchEXqY5h8La2LbOI_Dc113uU2MJdSEI7k-lCB3AIGlcsipWiKSX-odzQ6PQGJzASrrA27wsGgyTN8HVousXUPVBr7YT2eLwxE5STNYGsXjkWF37lEaaNKqQRozw6GmVuGtyuYAqdEbvjXMQuWFkBMFl8JskRxa62ZtQKG6wMi-C46HGMjzvTGV1CVEE7y7mRffjlIi8EieDCsh3Vzij55bglnG5We6GToT9yd_B7jjt4GgXB0-zOjJaAYO6DQgfFL1as6vYozUdhioYUPD-UshssNMq6Y_FPhMuo-p4P1CZMLuRCTynaOIWQLMjL4scm98kRnFFwofJPZkOakd69IcFnFLumAw2lmrneOwtG4F8J4jw0KhGO0qWIJklhuZogHo7VKQpeBJ-HXn-7Dwdyvp8jPSNpi29exEtyzY83WknWjwq23px9HWx3W-QAxEwzIIs04DFbSvPpaINTcWIHmcY3ZfPTDhbip-VX-UC3UqA7vsi4-nfyBrqjiFczqf2YsF3CIz9Qj064THbNqAFFqBnmz5wQy2DKNzZQ3PrwKK6LzUxpkoY9SiayrBePpWUkn_y7YVfblnDWlQ9cW8hywinL1zLKZ32qu6Yb6HRwCBDUVXDOHFdW3lGlMV3cvKUoGTq06ZkQwjmuEFwj40PFuXZU-Xu6Js8UClHWtvcKJuJ-_Tm_Eapqxb0bfSpdI9S-b9K7OorU9gOvTz4Y-035ESYMlsBznA9R6Y5hr1mPWZJgahvG59",
+      "summary": []
+    },
+    {
+      "id": "msg_0f013f71713eb783006acbb420855087d1b8c595bb44b161e0",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "{\"name\":\"science fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": "A calendar event extracted from text.",
+      "name": "calendar_event",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "date",
+          "participants"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 77,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 55,
+    "output_tokens_details": {
+      "reasoning_tokens": 28
+    },
+    "total_tokens": 132
+  },
+  "user": null,
+  "metadata": {}
+}

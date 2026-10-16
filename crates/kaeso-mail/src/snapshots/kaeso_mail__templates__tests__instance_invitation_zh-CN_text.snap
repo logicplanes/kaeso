@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ada Lovelace 邀请您加入 Kaeso
+
+加入 Kaeso
+
+Ada Lovelace 邀请您在此实例上创建账户。
+
+创建账户：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+邀请 21 天后过期；如果您没有预料到此邀请，请忽略此邮件。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。

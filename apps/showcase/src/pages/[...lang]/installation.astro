@@ -1,0 +1,14 @@
+---
+import LocalizedGuide from "~/layouts/LocalizedGuide.astro";
+import { guideVersions } from "~/lib/guides";
+import { prepareDocsPage } from "~/lib/locale";
+import { languagePaths } from "~/lib/languages";
+import * as en from "~/guides/installation/en.mdx";
+import * as de from "~/guides/installation/de.mdx";
+import * as zh from "~/guides/installation/zh-CN.mdx";
+
+export const getStaticPaths = languagePaths;
+await prepareDocsPage(Astro.params.lang);
+---
+
+<LocalizedGuide path="/installation" versions={guideVersions({ en, de, "zh-CN": zh })} />
