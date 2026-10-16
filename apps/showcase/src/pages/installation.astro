@@ -1,0 +1,9 @@
+---
+import LocalizedGuide from "~/layouts/LocalizedGuide.astro";
+import { guideVersions } from "~/lib/guides";
+import * as en from "~/guides/installation/en.mdx";
+import * as de from "~/guides/installation/de.mdx";
+import * as zh from "~/guides/installation/zh-CN.mdx";
+---
+
+<LocalizedGuide versions={guideVersions({ en, de, "zh-CN": zh })} />

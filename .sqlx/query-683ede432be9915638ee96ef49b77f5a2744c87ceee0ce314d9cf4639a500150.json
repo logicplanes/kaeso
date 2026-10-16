@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pg_advisory_xact_lock(hashtextextended('org_owners:' || org_id::text, 0)) FROM (SELECT org_id FROM org_memberships WHERE user_id = $1 AND preset = 'owner' ORDER BY org_id) owned",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pg_advisory_xact_lock",
+        "type_info": "Void",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "683ede432be9915638ee96ef49b77f5a2744c87ceee0ce314d9cf4639a500150"
+}

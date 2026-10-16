@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ada Lovelace invited you to Acme on Kaeso
+
+Join Acme on Kaeso
+
+Ada Lovelace invited you to join as a developer.
+
+Accept invitation:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+The invitation expires in 21 days; if you did not expect it, ignore this email.
+
+-- 
+Sent by Kaeso at kaeso.example.com.

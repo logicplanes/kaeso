@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: API 密钥 ci-deploy 将于 2026年10月18日过期
+
+API 密钥 ci-deploy 将于 2026年10月18日过期
+
+在 Default project 中使用此密钥的请求，将在该日期之后失败。
+
+打开 API 密钥：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+如需轮换，请创建并部署新密钥，再停用旧密钥。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送；可在账户的通知设置中关闭提醒。

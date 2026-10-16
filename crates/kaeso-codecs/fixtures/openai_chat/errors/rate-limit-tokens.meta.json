@@ -1,0 +1,12 @@
+{
+  "status": 429,
+  "headers": {
+    "retry-after": "2",
+    "x-ratelimit-limit-requests": "500",
+    "x-ratelimit-limit-tokens": "30000",
+    "x-ratelimit-remaining-requests": "487",
+    "x-ratelimit-remaining-tokens": "0",
+    "x-ratelimit-reset-requests": "1.56s",
+    "x-ratelimit-reset-tokens": "1.43s"
+  }
+}

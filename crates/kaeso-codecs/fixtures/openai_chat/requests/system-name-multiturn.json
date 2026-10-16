@@ -1,0 +1,27 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "system",
+      "name": "house_rules",
+      "content": "You are a friendly cooking assistant. Answer in two sentences or fewer."
+    },
+    {
+      "role": "user",
+      "name": "alice",
+      "content": "How long should I boil an egg for a runny yolk?"
+    },
+    {
+      "role": "assistant",
+      "content": "About 6 minutes from boiling water, then cool it in cold water for a minute."
+    },
+    {
+      "role": "user",
+      "name": "alice",
+      "content": "And for a hard-boiled one?"
+    }
+  ],
+  "reasoning_effort": "none",
+  "temperature": 0.7,
+  "top_p": 0.9
+}

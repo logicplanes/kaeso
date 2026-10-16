@@ -1,0 +1,89 @@
+{
+  "id": "resp_069573900de991fb006acb7607465781a2efed98d8aa4e11a5",
+  "object": "response",
+  "access_programs": null,
+  "created_at": 1791718919,
+  "status": "completed",
+  "background": false,
+  "completed_at": 1791718920,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.5-2026-04-23",
+  "output": [
+    {
+      "id": "rs_069573900de991fb006acb7607a7dd81907f93b546d06dc18d",
+      "type": "reasoning",
+      "summary": []
+    },
+    {
+      "id": "msg_069573900de991fb006acb760768f481a2318b9f7b3d790fab",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "refusal",
+          "refusal": "I'm sorry, but I can't help with creating phishing emails."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": "medium",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "name": "email",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "body"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 71,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 52,
+    "output_tokens_details": {
+      "reasoning_tokens": 38
+    },
+    "total_tokens": 123
+  },
+  "user": null,
+  "metadata": {}
+}

@@ -1,0 +1,106 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+repository = "https://github.com/logicplanes/kaeso"
+homepage = "https://kaeso.app"
+publish = false
+
+[workspace.dependencies]
+kaeso-kpp = { path = "crates/kaeso-kpp", version = "0.1.0" }
+kaeso-codecs = { path = "crates/kaeso-codecs", version = "0.1.0" }
+kaeso-core = { path = "crates/kaeso-core" }
+kaeso-crypto = { path = "crates/kaeso-crypto" }
+kaeso-mail = { path = "crates/kaeso-mail" }
+kaeso-server = { path = "crates/kaeso-server" }
+kaeso-store = { path = "crates/kaeso-store" }
+kaeso-testkit = { path = "crates/kaeso-testkit" }
+kaeso-upstream = { path = "crates/kaeso-upstream" }
+
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal", "io-util", "fs"] }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "http2", "json", "query", "tokio", "tower-log", "matched-path", "original-uri"] }
+tower = { version = "0.5", features = ["util", "timeout", "limit"] }
+http = "1.5"
+http-body-util = "0.1"
+
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream", "http2", "charset"] }
+futures = "0.3"
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+bytes = "1.12"
+
+sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "time", "rust_decimal", "json", "migrate", "macros", "ipnet"] }
+clickhouse = { version = "0.15", default-features = false, features = ["uuid", "time", "lz4", "rustls-tls"] }
+redis = { version = "1.7", default-features = false, features = ["tokio-comp", "connection-manager", "script", "aio"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
+humantime-serde = "1.1"
+clap = { version = "4.6", features = ["derive", "env"] }
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter", "fmt"] }
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.18", default-features = false }
+
+utoipa = { version = "6", features = ["uuid", "time", "decimal"] }
+utoipa-axum = "0.3"
+
+aes-gcm = "0.11"
+argon2 = { version = "0.6", features = ["zeroize"] }
+sha2 = "0.11"
+subtle = "2.6"
+rand = "0.10"
+zeroize = { version = "1.9", features = ["derive"] }
+secrecy = { version = "0.10", features = ["serde"] }
+totp-rs = { version = "6", default-features = false, features = ["std", "otpauth"] }
+openidconnect = { version = "4", default-features = false, features = ["timing-resistant-secret-traits"] }
+rsa = { version = "0.9", features = ["pem"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+maud = "0.27"
+resvg = { version = "0.48", default-features = false }
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls", "hostname", "rustls-platform-verifier", "aws-lc-rs"] }
+
+uuid = { version = "1.28", features = ["v7", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
+rust_decimal = { version = "1.43", features = ["serde-str"] }
+rust_decimal_macros = "1.40"
+base64 = "0.23"
+url = { version = "2.5", features = ["serde"] }
+idna = "1.1"
+ipnet = { version = "2.12", features = ["serde"] }
+indexmap = { version = "2.14", features = ["serde"] }
+moka = { version = "0.12", features = ["future"] }
+toml = "0.9"
+percent-encoding = "2.3"
+
+thiserror = "2"
+anyhow = "1"
+
+rstest = "0.27"
+insta = { version = "1.49", features = ["json"] }
+proptest = "1.12"
+criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+large_enum_variant = "allow"
+result_large_err = "allow"

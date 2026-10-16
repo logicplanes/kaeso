@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Neue E-Mail-Adresse für Kaeso bestätigen
+
+Neue Adresse bestätigen
+
+Nach der Bestätigung verwendet Ihr Kaeso-Konto owner@example.com.
+
+Adresse bestätigen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Der Link läuft in 24 Stunden ab; wenn Sie das nicht angefordert haben, ignorieren Sie diese E-Mail.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.

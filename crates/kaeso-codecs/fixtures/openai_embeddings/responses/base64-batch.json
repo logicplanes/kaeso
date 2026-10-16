@@ -1,0 +1,25 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": "Ijx5vglPWL44pF6+BxjJPnHeR7+kMVq9/DcePptVdz4="
+    },
+    {
+      "object": "embedding",
+      "index": 1,
+      "embedding": "0Bo6vjXvtD5XCGq93/MyP2Npjb02ut6+ZAQYPoeDuz4="
+    },
+    {
+      "object": "embedding",
+      "index": 2,
+      "embedding": "ZaItPpJ5kL58Pxq+q2mjPgAO3z6kqSw/9IOYPR8Arz4="
+    }
+  ],
+  "model": "text-embedding-3-large",
+  "usage": {
+    "prompt_tokens": 6,
+    "total_tokens": 6
+  }
+}

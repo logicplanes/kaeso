@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ada Lovelace hat Sie zu Kaeso eingeladen
+
+Kaeso beitreten
+
+Ada Lovelace hat Sie eingeladen, ein Konto auf dieser Instanz zu erstellen.
+
+Konto erstellen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Die Einladung gilt 21 Tage; wenn Sie sie nicht erwartet haben, ignorieren Sie diese E-Mail.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.

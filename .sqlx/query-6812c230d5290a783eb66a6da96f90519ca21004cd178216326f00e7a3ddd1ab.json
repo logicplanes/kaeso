@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT models_restricted FROM project_memberships WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "models_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "models_restricted"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6812c230d5290a783eb66a6da96f90519ca21004cd178216326f00e7a3ddd1ab"
+}

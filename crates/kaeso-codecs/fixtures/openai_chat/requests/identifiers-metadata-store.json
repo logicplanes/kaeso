@@ -1,0 +1,18 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Draft a two-line welcome message for new members."
+    }
+  ],
+  "user": "user-1234",
+  "safety_identifier": "8f14e45fceea167a5a36dedd4bea2543",
+  "prompt_cache_key": "welcome-drafts",
+  "metadata": {
+    "tenant": "acme",
+    "feature": "onboarding"
+  },
+  "store": true,
+  "service_tier": "flex"
+}

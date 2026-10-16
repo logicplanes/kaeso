@@ -1,0 +1,129 @@
+{
+  "id": "resp_01a4329af5a833e1016acbb41e9d3887d182a327663cb1244d",
+  "object": "response",
+  "created_at": 1791734814,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1791734815,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": 64,
+  "max_tool_calls": null,
+  "model": "gpt-4.1-2025-04-14",
+  "moderation": null,
+  "output": [
+    {
+      "id": "msg_01a4329af5a833e1016acbb41eff8487d182cbeed33caa61d4",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [
+            {
+              "bytes": [
+                80,
+                97,
+                114,
+                105,
+                115
+              ],
+              "logprob": 0.0,
+              "token": "Paris",
+              "top_logprobs": [
+                {
+                  "bytes": [
+                    80,
+                    97,
+                    114,
+                    105,
+                    115
+                  ],
+                  "logprob": 0.0,
+                  "token": "Paris"
+                },
+                {
+                  "bytes": [
+                    42,
+                    42
+                  ],
+                  "logprob": -22.796875,
+                  "token": "**"
+                }
+              ]
+            }
+          ],
+          "text": "Paris"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "kaeso-tenant-42:geo-bot:v3",
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": null,
+    "effort": null,
+    "summary": null
+  },
+  "safety_identifier": "5f2b8c1e9a7d4b3c8e6f1a2d3c4b5a69",
+  "service_tier": "priority",
+  "store": false,
+  "temperature": 0.2,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 2,
+  "top_p": 0.9,
+  "truncation": "auto",
+  "usage": {
+    "input_tokens": 19,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 21
+  },
+  "user": "user-1234",
+  "metadata": {
+    "tenant": "acme",
+    "request_source": "fixtures"
+  }
+}

@@ -1,0 +1,32 @@
+[alias]
+xtask = ["run", "--quiet", "--package", "xtask", "--"]
+coverage-kpp = [
+  "llvm-cov",
+  "--package",
+  "kaeso-kpp",
+  "--package",
+  "kaeso-codecs",
+  "--all-features",
+  "--ignore-filename-regex",
+  "(/tests/|/tests_[a-z_]+\\.rs|/models_tests\\.rs|/test_support\\.rs|/benches/)",
+  "--fail-under-lines",
+  "95",
+]
+coverage-gateway = [
+  "llvm-cov",
+  "--no-fail-fast",
+  "--workspace",
+  "--exclude",
+  "kaeso-kpp",
+  "--exclude",
+  "kaeso-codecs",
+  "--exclude",
+  "kpp-conformance",
+  "--exclude",
+  "xtask",
+  "--all-features",
+  "--ignore-filename-regex",
+  "(/tests/|/tests?\\.rs|/kaeso-testkit/|/kaeso/src/main\\.rs|/kaeso-server/src/telemetry\\.rs)",
+  "--fail-under-lines",
+  "91",
+]

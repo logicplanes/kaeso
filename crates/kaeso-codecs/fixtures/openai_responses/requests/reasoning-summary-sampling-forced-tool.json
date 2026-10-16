@@ -1,0 +1,42 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "role": "user",
+      "content": "Look up the weather in Oslo, then tell me whether to bring a coat."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "get_weather",
+      "description": "Get the current weather for a city.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  ],
+  "tool_choice": "required",
+  "temperature": 0.2,
+  "top_p": 0.9,
+  "max_output_tokens": 800,
+  "reasoning": {
+    "effort": "low",
+    "summary": "detailed"
+  },
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "store": false,
+  "stream": true
+}

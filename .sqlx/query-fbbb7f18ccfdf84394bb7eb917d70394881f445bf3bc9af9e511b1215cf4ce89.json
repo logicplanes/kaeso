@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT o.id, o.name FROM org_memberships m JOIN organizations o ON o.id = m.org_id WHERE m.user_id = $1 AND m.preset = 'owner' AND NOT EXISTS ( SELECT 1 FROM org_memberships m2 JOIN users u ON u.id = m2.user_id WHERE m2.org_id = m.org_id AND m2.preset = 'owner' AND m2.user_id <> $1 AND u.state <> 'deleted')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "fbbb7f18ccfdf84394bb7eb917d70394881f445bf3bc9af9e511b1215cf4ce89"
+}

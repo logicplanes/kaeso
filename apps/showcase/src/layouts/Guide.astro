@@ -1,0 +1,16 @@
+---
+import Shell from "./Shell.astro";
+import GuideBody from "./GuideBody.astro";
+interface Props {
+  title: string;
+  description: string;
+  toc: [string, string][];
+}
+const { title, description, toc } = Astro.props;
+---
+
+<Shell title={title} description={description}>
+  <GuideBody title={title} description={description} toc={toc} translate>
+    <slot />
+  </GuideBody>
+</Shell>

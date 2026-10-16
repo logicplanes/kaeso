@@ -1,0 +1,46 @@
+{
+  "model": "gpt-5.4-mini",
+  "reasoning_effort": "low",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Extract the event information."
+    },
+    {
+      "role": "user",
+      "content": "Alice and Bob are going to a science fair on 2026-10-16."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "calendar_event",
+      "description": "A calendar event",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "description": "ISO 8601 date"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "date",
+          "participants"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  }
+}

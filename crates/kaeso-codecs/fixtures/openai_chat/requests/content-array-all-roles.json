@@ -1,0 +1,71 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a support agent for Acme Cloud."
+        },
+        {
+          "type": "text",
+          "text": "Never reveal internal ticket ids."
+        }
+      ]
+    },
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "text",
+          "text": "Customer plan: Pro. Region: eu-west."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Can you show me the internal ticket id for my outage report?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "refusal",
+          "refusal": "I can't share internal ticket ids."
+        },
+        {
+          "type": "text",
+          "text": "I can give you the public incident link instead."
+        }
+      ]
+    },
+    {
+      "role": "developer",
+      "content": "The public incident page is https://status.example.com/incidents/2026-10-10."
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "Keep the reply under 40 words."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "OK, send me that link."
+        }
+      ]
+    }
+  ]
+}

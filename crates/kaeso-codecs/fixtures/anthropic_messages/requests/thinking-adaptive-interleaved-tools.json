@@ -1,0 +1,84 @@
+{
+  "model": "claude-opus-5-5",
+  "max_tokens": 16000,
+  "thinking": {
+    "type": "adaptive"
+  },
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ],
+            "description": "The unit of temperature, either 'celsius' or 'fahrenheit'"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      }
+    },
+    {
+      "name": "get_time",
+      "description": "Get the current time in a given time zone",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The IANA time zone name, e.g. America/Los_Angeles"
+          }
+        },
+        "required": [
+          "timezone"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is it a good time to visit the Kyoto gardens right now?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqGNonaN4C/xBVYIVREWdHCxY2oMU3cRkM0yg3H4mPyLediASxDfiUHrDFK2NvdU8LSlrCo/op9weloCkPeFqLae5fvSTX49LUZmw7riy4VduZc8ij1oPpf905ORSE+3Bjan5FohR4qQDGFunmVeHsO4aaAMj8aIusDVPXhufk+rSXU+W54T2TodpAQTvhzXT2avWjjfZZv6GK3GI7hgNahfGmPVcYW/vr2gaVW9n9A6qNmpi7hDqPhx3ioBCQMqghONmScz0Twfg6ALMUkk+As3FFNUXcKf/f3kHWdEfUJwQJK99Q+Zsel4aC5FCBaR"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+          "name": "get_weather",
+          "input": {
+            "location": "Kyoto, Japan",
+            "unit": "celsius"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+          "content": "16°C, overcast"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "kaeso-docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Kaeso's documentation: Markdown pages in English, German and Simplified Chinese, built into a static site.",
+  "license": "MIT",
+  "author": "Devin Oldenburg",
+  "homepage": "https://docs.kaeso.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicplanes/kaeso.git",
+    "directory": "apps/docs"
+  },
+  "bugs": {
+    "url": "https://github.com/logicplanes/kaeso/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && node scripts/budget.ts",
+    "preview": "vite preview",
+    "check:content": "node scripts/content/check.ts",
+    "lint": "eslint . && pnpm check:content",
+    "typecheck": "tsc -b",
+    "test": "vitest run --coverage",
+    "e2e": "playwright test",
+    "licenses:check": "node scripts/licenses.ts"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "4.3.5",
+    "@hugeicons/react": "1.1.10",
+    "@logicplanes/kaeso-tokens": "workspace:*",
+    "@logicplanes/kaeso-ui": "workspace:*",
+    "@tanstack/react-router": "1.170.42",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "24.13.6",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitest/coverage-v8": "5.0.4",
+    "eslint": "10.12.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "happy-dom": "21.0.1",
+    "image-size": "2.0.4",
+    "marked": "18.0.14",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  }
+}

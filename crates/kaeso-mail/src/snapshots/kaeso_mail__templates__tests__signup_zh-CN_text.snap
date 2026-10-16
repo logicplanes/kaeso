@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 完成创建您的 Kaeso 账户
+
+创建 Kaeso 账户
+
+此链接仅可使用一次，24 小时后过期。
+
+创建账户：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+如果您没有注册，可以忽略此邮件。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。

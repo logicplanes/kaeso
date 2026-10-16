@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_roles SET name = $3, description = $4, rights = $5, project_rights = $6, updated_at = now() WHERE org_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "595c86c1dd611af56887692753355b017104b2ac8b9dc5fce7b6e8287282b673"
+}

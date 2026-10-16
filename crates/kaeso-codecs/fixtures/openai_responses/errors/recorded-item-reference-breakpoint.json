@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "prompt_cache_options is not supported on this model",
+    "type": "invalid_request_error",
+    "param": "prompt_cache_options",
+    "code": "invalid_parameter"
+  }
+}

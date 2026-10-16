@@ -1,0 +1,8 @@
+{
+  "model": "gpt-5.5",
+  "input": "Hello!",
+  "x_future_field": {
+    "enabled": true,
+    "level": 3
+  }
+}

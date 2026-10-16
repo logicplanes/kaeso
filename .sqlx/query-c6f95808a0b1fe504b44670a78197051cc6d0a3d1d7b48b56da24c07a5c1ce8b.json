@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_models SET overrides = $3, updated_at = now() WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c6f95808a0b1fe504b44670a78197051cc6d0a3d1d7b48b56da24c07a5c1ce8b"
+}

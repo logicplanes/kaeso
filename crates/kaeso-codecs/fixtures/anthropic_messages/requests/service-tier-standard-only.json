@@ -1,0 +1,11 @@
+{
+  "model": "claude-haiku-4-5-20251001",
+  "max_tokens": 256,
+  "service_tier": "standard_only",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Ping"
+    }
+  ]
+}

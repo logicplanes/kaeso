@@ -1,0 +1,32 @@
+{
+  "model": "gpt-5.5",
+  "input": "Say hello.",
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "temperature": null,
+  "top_p": null,
+  "reasoning": null,
+  "tools": [],
+  "tool_choice": "auto",
+  "parallel_tool_calls": null,
+  "store": null,
+  "stream": null,
+  "stream_options": null,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": null
+  },
+  "truncation": null,
+  "metadata": null,
+  "user": null,
+  "safety_identifier": null,
+  "prompt_cache_key": null,
+  "include": null,
+  "service_tier": null,
+  "previous_response_id": null,
+  "conversation": null,
+  "background": null
+}

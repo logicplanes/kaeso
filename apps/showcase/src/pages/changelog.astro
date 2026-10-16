@@ -1,0 +1,48 @@
+---
+import Guide from "~/layouts/Guide.astro";
+import md from "../../../../CHANGELOG.md?raw";
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const inline = (s: string) =>
+  esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+const body = md.replace(/^# Changelog\n+[^\n]*\n/, "");
+const html: string[] = [];
+const toc: [string, string][] = [];
+let list = false;
+for (const line of body.split("\n")) {
+  if (line.startsWith("- ")) {
+    if (!list) {
+      html.push("<ul>");
+      list = true;
+    }
+    html.push(`<li>${inline(line.slice(2))}</li>`);
+    continue;
+  }
+  if (list) {
+    html.push("</ul>");
+    list = false;
+  }
+  if (line.startsWith("## ")) {
+    const t = line.slice(3).replace(/[[\]]/g, "");
+    const id = t
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    toc.push([id, t]);
+    html.push(`<h2 id="${id}">${esc(t)}</h2>`);
+  } else if (line.startsWith("### ")) html.push(`<h3>${esc(line.slice(4))}</h3>`);
+  else if (line.startsWith("#### ")) html.push(`<h4>${inline(line.slice(5))}</h4>`);
+  else if (line.trim() && !/^\[[^\]]+\]: /.test(line)) html.push(`<p>${inline(line)}</p>`);
+}
+if (list) html.push("</ul>");
+---
+
+<Guide
+  title="Changelog"
+  description="Every user-visible change to Kaeso, including @logicplanes/kaeso-ui and @logicplanes/kaeso-tokens. Versions follow Semantic Versioning."
+  toc={toc}
+>
+  <Fragment set:html={html.join("\n")} />
+</Guide>

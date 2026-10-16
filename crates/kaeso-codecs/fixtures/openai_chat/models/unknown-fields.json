@@ -1,0 +1,25 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gpt-6-astra",
+      "object": "model",
+      "created": 1686935002,
+      "owned_by": "openai",
+      "shutdown_date": null,
+      "x_future_field": {
+        "modalities": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "ft:gpt-4o-mini:acemeco:suffix:abc123",
+      "object": "model",
+      "created": 1723036800,
+      "owned_by": "acemeco"
+    }
+  ],
+  "x_future_list_field": true
+}

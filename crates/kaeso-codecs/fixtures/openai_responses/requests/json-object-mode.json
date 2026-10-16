@@ -1,0 +1,10 @@
+{
+  "model": "gpt-4.1",
+  "input": "Return a JSON object with the keys city and country for the Eiffel Tower.",
+  "text": {
+    "format": {
+      "type": "json_object"
+    }
+  },
+  "temperature": 0
+}

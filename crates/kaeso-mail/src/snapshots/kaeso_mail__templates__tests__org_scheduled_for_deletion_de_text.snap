@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Acme ist zur Löschung vorgemerkt
+
+Acme wird am 10. Nov. 2026 gelöscht
+
+Ada Lovelace hat sie zur Löschung vorgemerkt; ihre API-Schlüssel funktionieren nicht mehr.
+
+Organisation öffnen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Bis dahin kann ein Inhaber oder ein Instanz-Admin sie wiederherstellen.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Hinweise zu Organisationen werden immer gesendet.

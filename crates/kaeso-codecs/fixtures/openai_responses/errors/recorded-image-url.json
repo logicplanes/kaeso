@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Error while downloading file. Upstream status code: 400.",
+    "type": "invalid_request_error",
+    "param": "url",
+    "code": "invalid_value"
+  }
+}

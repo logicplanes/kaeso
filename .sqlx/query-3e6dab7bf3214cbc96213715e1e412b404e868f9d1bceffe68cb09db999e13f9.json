@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT secret_hash AS \"h!\" FROM api_keys WHERE org_id = $1 UNION ALL SELECT secret_hash FROM org_platform_keys WHERE org_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "h!",
+        "type_info": "Bytea",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3e6dab7bf3214cbc96213715e1e412b404e868f9d1bceffe68cb09db999e13f9"
+}

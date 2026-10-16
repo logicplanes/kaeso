@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE service_accounts SET archived_at = $2, updated_at = now() WHERE project_id = $1 AND archived_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5581d80685e72987c28bd514d7ff965f7f3753c604f38644abc950490d3aa025"
+}

@@ -1,0 +1,59 @@
+{
+  "name": "@logicplanes/kaeso-tokens",
+  "version": "0.1.0",
+  "description": "Kaeso's design tokens: CSS variables, the Tailwind v4 theme, TypeScript constants and JSON.",
+  "license": "MIT",
+  "author": "Devin Oldenburg",
+  "homepage": "https://ui.kaeso.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicplanes/kaeso.git",
+    "directory": "packages/tokens"
+  },
+  "bugs": {
+    "url": "https://github.com/logicplanes/kaeso/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "keywords": [
+    "kaeso",
+    "design-tokens",
+    "tailwindcss",
+    "css-variables"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./theme.css": "./dist/theme.css",
+    "./tokens.json": "./dist/tokens.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsx scripts/build.ts && tsc -p tsconfig.build.json",
+    "lint": "oxlint --deny-warnings .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "@vitest/coverage-v8": "5.0.4",
+    "oxlint": "1.85.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.4"
+  }
+}

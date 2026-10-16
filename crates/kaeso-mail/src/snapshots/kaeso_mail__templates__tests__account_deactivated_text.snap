@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Your Kaeso account was deactivated
+
+Your account was deactivated
+
+An administrator signed you out, and your API keys stopped working.
+
+If you think this is a mistake, contact the administrator.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

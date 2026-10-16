@@ -1,0 +1,53 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs"],
+      "project": ["scripts/**/*.mjs"]
+    },
+    "packages/tokens": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts"]
+    },
+    "packages/ui": {
+      "entry": [
+        "src/index.ts",
+        "src/format/index.ts",
+        "src/theme/index.ts",
+        "src/utils/index.ts",
+        "src/i18n/index.tsx",
+        "src/i18n/provider.tsx",
+        "src/components/*/index.ts",
+        "src/components/kaeso/{identity,moments,usage,conversation,rights}.tsx",
+        "src/components/charts/{timeseries,bar,sparkline,donut,heatmap,gauge,sankey}.tsx",
+        "src/blocks/*/index.ts",
+        "scripts/*.mjs",
+        "src/component-docs.ts",
+        "src/**/docs.ts",
+        "src/icons/groups.ts",
+        "src/styles/{styles,tailwind}.css"
+      ],
+      "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs", "test/**/*.ts"],
+      "ignoreDependencies": ["@tailwindcss/cli", "@tailwindcss/vite"]
+    },
+    "apps/showcase": {
+      "entry": [
+        "src/pages/**/*.{astro,ts,mdx}",
+        "src/layouts/{DocPage,ExamplesPage,StatesPage}.astro",
+        "src/components/Preview.astro",
+        "src/demos/*.tsx",
+        "scripts/*.mjs"
+      ],
+      "project": ["src/**/*.{ts,tsx,astro,mdx,css}", "scripts/**/*.mjs", "e2e/**/*.ts"]
+    },
+    "apps/console": {
+      "entry": ["src/routes/**/*.tsx", "stack/*.mjs"],
+      "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs", "stack/**/*.mjs", "e2e/**/*.ts", "eslint/**/*.js"]
+    },
+    "apps/docs": {}
+  },
+  "rules": {
+    "duplicates": "off"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "model": "claude-opus-5-5",
+  "max_tokens": 0,
+  "system": [
+    {
+      "type": "text",
+      "text": "You are an expert software engineer with deep knowledge of distributed systems...",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "warmup"
+    }
+  ]
+}

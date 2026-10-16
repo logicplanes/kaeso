@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Two-factor authentication is on
+
+Two-factor authentication is on
+
+Keep your recovery codes safe; they sign you in if you lose your authenticator.
+
+If this was not you, reset your password and tell your organization's admin.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

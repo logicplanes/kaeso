@@ -1,0 +1,287 @@
+#![allow(clippy::unwrap_used)]
+
+mod common;
+
+use std::collections::BTreeMap;
+use std::time::Duration;
+
+use axum::http::StatusCode;
+use common::v1::{Env, call, chat, messages};
+use kaeso_store::clickhouse::logs::{self as ch, GroupBy};
+use serde_json::{Value, json};
+use uuid::Uuid;
+
+fn uuid(public: &str) -> Uuid {
+    let raw = public.split_once('_').unwrap().1;
+    Uuid::from_u128(kaeso_core::id::decode_base32(raw).unwrap())
+}
+
+fn base(env: &Env) -> String {
+    format!("/orgs/{}/projects/{}", env.owner.org_id, env.project)
+}
+
+async fn create(env: &Env, path: &str, body: Value) -> Value {
+    let r = env
+        .app
+        .post(
+            &format!("{}{path}", base(env)),
+            body,
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    r.body
+}
+
+type Counts = BTreeMap<String, (u64, u64, u64)>;
+
+async fn postgres(env: &Env) -> Counts {
+    let rows: Vec<(String, String, i64, i64, i64)> = sqlx::query_as(
+        "SELECT provider, model_id, sum(requests)::bigint, sum(errors)::bigint, sum(input_tokens)::bigint \
+         FROM usage_daily WHERE project_id = $1 GROUP BY provider, model_id",
+    )
+    .bind(uuid(&env.project))
+    .fetch_all(&env.app.state.pg)
+    .await
+    .unwrap();
+    rows.into_iter()
+        .map(|(p, m, r, e, i)| {
+            let n = |v: i64| u64::try_from(v).unwrap();
+            (format!("{p}/{m}"), (n(r), n(e), n(i)))
+        })
+        .collect()
+}
+
+async fn clickhouse(env: &Env, group: GroupBy) -> BTreeMap<String, (u64, u64, u64)> {
+    let today = time::OffsetDateTime::now_utc().date();
+    ch::usage(
+        &env.app.state.clickhouse,
+        uuid(&env.owner.org_id),
+        Some(uuid(&env.project)),
+        today - time::Duration::days(1),
+        today + time::Duration::days(1),
+        group,
+    )
+    .await
+    .unwrap()
+    .into_iter()
+    .map(|g| (g.key, (g.requests, g.errors, g.input_tokens)))
+    .collect()
+}
+
+async fn ask(env: &Env, key: &str, body: Value) -> common::v1::Answer {
+    call(env, "/v1/messages", Some(key), true, Some(body)).await
+}
+
+#[tokio::test]
+async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
+    let env = common::v1::env(None, None).await;
+    let state = &env.app.state;
+    state.clickhouse.migrate(&state.pg).await.unwrap();
+    assert_eq!(
+        ask(&env, &env.key, messages("claude-haiku-4-5", "Hi"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        ask(&env, &env.key, messages("claude-haiku-4-5", "Hi again"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let r = ask(
+        &env,
+        &env.key,
+        messages("claude-haiku-4-5", "[mock:error=overloaded]"),
+    )
+    .await;
+    assert!(r.status.is_server_error(), "{}", r.text());
+    let r = ask(&env, &env.key, messages("claude-unknown-9", "Hi")).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    let r = ask(&env, &env.key, json!({ "max_tokens": 5 })).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let limited = create(&env, "/keys", json!({ "name": "limited" })).await;
+    let secret = limited["secret"].as_str().unwrap().to_owned();
+    create(
+        &env,
+        "/limits",
+        json!({ "level": "key", "key": limited["id"], "kind": "request_rate", "period": "minute", "amount": 1 }),
+    )
+    .await;
+    assert_eq!(
+        ask(&env, &secret, messages("claude-haiku-4-5", "Hi"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let r = ask(&env, &secret, messages("claude-haiku-4-5", "Hi")).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    let mut cut = chat("claude-haiku-4-5", "[mock:cut]");
+    cut["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(cut),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK);
+
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
+    kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+    assert_eq!(env.app.state.logs.len(), 0, "the log buffer drained");
+    let pg = postgres(&env).await;
+    let rollups = clickhouse(&env, GroupBy::Model).await;
+    assert_eq!(pg, rollups, "PostgreSQL and ClickHouse disagree");
+    let haiku = pg["anthropic/claude-haiku-4-5"];
+    assert_eq!((haiku.0, haiku.1), (6, 3), "{pg:?}");
+    assert!(haiku.2 > 0);
+    assert_eq!(pg["/"], (2, 2, 0), "{pg:?}");
+
+    let by_key = clickhouse(&env, GroupBy::Key).await;
+    let pg_keys: Vec<(Uuid, i64, i64)> = sqlx::query_as(
+        "SELECT api_key_id, sum(requests)::bigint, sum(errors)::bigint FROM usage_daily \
+         WHERE project_id = $1 GROUP BY api_key_id",
+    )
+    .bind(uuid(&env.project))
+    .fetch_all(&env.app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(pg_keys.len(), by_key.len());
+    for (key, requests, errors) in pg_keys {
+        let c = by_key[&key.to_string()];
+        assert_eq!(
+            (c.0, c.1),
+            (
+                u64::try_from(requests).unwrap(),
+                u64::try_from(errors).unwrap()
+            ),
+            "key {key}"
+        );
+    }
+    let limited_counts = by_key[&uuid(limited["id"].as_str().unwrap()).to_string()];
+    assert_eq!((limited_counts.0, limited_counts.1), (2, 1));
+}
+
+async fn rollup_day(env: &Env, day: &str, requests: u64) {
+    env.app
+        .state
+        .clickhouse
+        .client()
+        .query(
+            "INSERT INTO usage_daily (org_id, project_id, day, principal_kind, principal_id, key_id, provider, model, \
+             requests, errors, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost) \
+             VALUES (?, ?, ?, 'user', ?, ?, 'anthropic', 'claude-haiku-4-5', ?, 0, 1, 1, 0, 0, 0, 0)",
+        )
+        .bind(uuid(&env.owner.org_id))
+        .bind(uuid(&env.project))
+        .bind(day)
+        .bind(Uuid::from_u128(1))
+        .bind(Uuid::from_u128(2))
+        .bind(requests)
+        .execute()
+        .await
+        .unwrap();
+}
+
+fn keyed(body: &Value) -> Vec<(String, u64)> {
+    body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| {
+            (
+                r["key"].as_str().unwrap().to_owned(),
+                r["requests"].as_u64().unwrap(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn long_periods_go_by_week_or_month_from_the_first_day_with_usage() {
+    let env = common::v1::env(None, None).await;
+    let state = &env.app.state;
+    state.clickhouse.migrate(&state.pg).await.unwrap();
+    let org = format!("/orgs/{}", env.owner.org_id);
+    let get = async |path: String| env.app.get(&path, &env.owner.cookie).await;
+
+    for scope in [org.clone(), base(&env)] {
+        let r = get(format!("{scope}/usage/span")).await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        assert_eq!(r.body, json!({ "first_day": null, "last_day": null }));
+    }
+
+    for (day, requests) in [
+        ("2024-01-01", 3),
+        ("2024-01-03", 5),
+        ("2024-01-08", 7),
+        ("2024-02-15", 11),
+        ("2025-03-10", 13),
+    ] {
+        rollup_day(&env, day, requests).await;
+    }
+    for scope in [org.clone(), base(&env)] {
+        let r = get(format!("{scope}/usage/span")).await;
+        assert_eq!(
+            r.body,
+            json!({ "first_day": "2024-01-01", "last_day": "2025-03-10" })
+        );
+    }
+
+    let period = "from=2024-01-01&to=2025-12-31";
+    let weeks = get(format!("{}/usage?{period}&group_by=week", base(&env))).await;
+    assert_eq!(weeks.status, StatusCode::OK, "{:?}", weeks.body);
+    let expect = |rows: &[(&str, u64)]| {
+        rows.iter()
+            .map(|(k, n)| ((*k).to_owned(), *n))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        keyed(&weeks.body),
+        expect(&[
+            ("2024-01-01", 8),
+            ("2024-01-08", 7),
+            ("2024-02-12", 11),
+            ("2025-03-10", 13)
+        ])
+    );
+    let months = get(format!("{org}/usage?{period}&group_by=month")).await;
+    assert_eq!(
+        keyed(&months.body),
+        expect(&[("2024-01-01", 15), ("2024-02-01", 11), ("2025-03-01", 13)])
+    );
+    let part = get(format!(
+        "{}/usage?from=2024-01-02&to=2024-01-09&group_by=week",
+        base(&env)
+    ))
+    .await;
+    assert_eq!(
+        keyed(&part.body),
+        expect(&[("2024-01-01", 5), ("2024-01-08", 7)])
+    );
+    let models = get(format!(
+        "{}/usage?from=1900-01-01&group_by=model",
+        base(&env)
+    ))
+    .await;
+    assert_eq!(models.status, StatusCode::OK, "{:?}", models.body);
+    assert_eq!(
+        keyed(&models.body),
+        expect(&[("anthropic/claude-haiku-4-5", 39)])
+    );
+
+    let r = get(format!("{}/usage?{period}&group_by=day", base(&env))).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "from", "{:?}", r.body);
+    let r = get(format!(
+        "{}/usage?from=2025-01-02&to=2025-01-01",
+        base(&env)
+    ))
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+}

@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT secret_ciphertext, secret_nonce, wrapped_key, key_id, enabled_at, last_used_step FROM user_totp WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "secret_ciphertext",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "secret_ciphertext"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "secret_nonce",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "secret_nonce"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "wrapped_key",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "wrapped_key"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "key_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "enabled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "enabled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "last_used_step",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_totp",
+            "name": "last_used_step"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "1d0eb30c4dd3eb2e24a24ca397a95abb1885a8c881b5b1582de630a186a5527b"
+}

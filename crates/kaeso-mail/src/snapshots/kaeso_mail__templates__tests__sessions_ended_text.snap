@@ -1,0 +1,12 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: You were signed out of Kaeso
+
+You were signed out
+
+An administrator ended every session of your account; sign in again to continue.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

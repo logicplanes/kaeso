@@ -1,0 +1,41 @@
+{
+  "id": "chatcmpl-xoslnHTqrJgXdnJ4RlmVTMajFp79B",
+  "object": "chat.completion",
+  "created": 1791651769,
+  "model": "gpt-5.5-2026-04-23",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "It looks like an empty canvas.",
+        "refusal": null,
+        "annotations": [],
+        "x_future_field": "made-up message field"
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "x_future_choice_field": true
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 17,
+    "completion_tokens": 8,
+    "total_tokens": 25,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_051441e4aa",
+  "x_future_field": {
+    "made_up": true
+  }
+}

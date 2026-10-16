@@ -1,0 +1,11 @@
+{
+  "model": "claude-haiku-4-5",
+  "max_tokens": 256,
+  "top_p": 0.9,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Suggest a name for a grey cat."
+    }
+  ]
+}

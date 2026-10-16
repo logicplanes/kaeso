@@ -1,0 +1,224 @@
+{
+  "id": "resp_0ab39bd8f52ec563006acbb435d3a087d1aea84fe88ecc91e4",
+  "object": "response",
+  "created_at": 1791734837,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1791734840,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": 2,
+  "model": "gpt-5.5-2026-04-23",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0ab39bd8f52ec563006acbb4365af487d1a39389e2934a0970",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqy7Q43VX0dbJc3-KRj2MfJpBB0OB6x1KihtCU7CzWznxzqdhYMRtkCO1clnVwyN9YYHsum4fmk0tgQ8CDcK_eWpspOh2KSsWZewP5rcaWQMqQMKCEH5yH6rjvlT_psuz_-bmIEGvjboBK-154YyzYxI0lczET43lfZEk3pDZV-sLVoE4MhXWT-aE6z741Z1qTuEqTGfiXjejKZbeWD1Qf0u-wQLjlR5r0TrZzKauxTtzQwUgkRwaR4tpb6bND9QyARK3nPpCmwxGol4a_lIxu4YMJbs0vnv76eD-BeNQJzjE9ix0SmwmpAETvukSnXUF_MmpqZFngsyKP33LYBQTgG2fadHXPslk5Pgn-sfbRDbI_tWdMbLV_zqFfohNSmBFlgpqiHawukRew5Xmmmm6AIzOzo7zlI4Cw8IwGgSR5cD94DTDPr9ElZtESahfrqs8tFubzfwdy2K8U3IHaySSfdSEyOsVr3HPnONtBbSLa1zFHZucXmGDCuSUgy7Qc0SiilWdYHs73cyDKmlVaPEjuUPhL50IRqJBMjGZC3mUoVlTuPDnlqIJS0Mg5etw4XUS072jNEdD4zOCpBcFzpdCNwy5NKxAsB5ZekGvscF_2DWguaKuIemLsuwFAIZ-Phi6VgqslzqM33gaT1GC_COk9aYIFV_TnlCxAM3zJv6CCJUTr547F-nZYDd8GFmMHrrh9LRR1Umv3kGyN5K4SQP64U0ht8WRgXseuCtbsok0beVL9jXmiegXzWDTg-b5E7JBIyUttz9vxtMZ4362iVtM9lLt9fx7a34WuTfV6k9DSFog14MeNmXoq_RY6jIzDzpwNeVqPj7pKYr-018LMzzMFvsgoCrBi9GPCYCWrdgwgUruU6EA2cgBtrq4v99XRCYJyZuNo2GZMb3_XuiEbQCWwhtJgsc6Y9N-N1BNDX-1E-uWjHDqzEZq6T6eANvyPNazCb3SnpBOTMxkqlwoZtsmqg1Kaifs1npJop-CoyewCoErNzfEAWxNqhxvRmsf-zZNKvOStq8voA-1k1yOI3NuDKa2Fvak8FRCEI2F1O2D_nz8qC09OTXKFEUwK49OhvAzhqGA0WmEekBNiuo9LMsB543_uEq94TV07jsuRx_hV8y0yCq2mtxOSSV3x19l5uuaEdnHtpKWmnX_4GTyle265r12GiEhxgcFYVqu0cgKitFXUsO7CBKnFLrWtrGePTEy_tZmmSNaxgjLmzCFFP9SqzuqrqkhgiuVTJOqN2UCjEyv9Q08iVvXoLWAlvsV-Ja059B7TivhL_6GW_7tG-RDk_NDASeblD18Lustd34LcZrWiXD7AFDIvwoyTM1ONokQH9ylmxoh3TxacWjcQg2mooXZWpnrosIyUrQJMNiN9D_Xp8fHAUoX1U4K2w5qM9QbmsEo2aoKeYHzNMHuxwmPxm3Kp7BhAGw7m23PDuwINC2eaFhhcAhytQ1poQRcGcLubEBHUiILM17plahcgXXnB6NAb1GvSmnnPTXSqW-0cnWlHc6yUWsDf8Rvghd2tcJsY7kagaT314bR3LSn2OtKP9gI7RpcPijyzP-pSqmHXGe2wB6NsWaRX2SK4HBNye9hpfhxi",
+      "summary": []
+    },
+    {
+      "id": "ws_0ab39bd8f52ec563006acbb4368de087d18c7930f2cf1a7b2d",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Lisbon Oceanarium opening hours official site"
+        ],
+        "query": "Lisbon Oceanarium opening hours official site",
+        "sources": [
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/plan-your-visit/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/faqs/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/contact-us/"
+          },
+          {
+            "type": "url",
+            "url": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/planear-visita/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/oceanario-de-lisboa-en/"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/contactos/"
+          },
+          {
+            "type": "url",
+            "url": "https://www.visitlisboa.com/pt-pt/locais/oceanario-de-lisboa"
+          },
+          {
+            "type": "url",
+            "url": "https://s3.eu-west-1.amazonaws.com/assets.visitlisboa.com/ZNxtKAxmBWXXwzXffejB5hPW"
+          },
+          {
+            "type": "url",
+            "url": "https://maps.apple.com/place?place-id=I5F801D69AA80A225"
+          },
+          {
+            "type": "url",
+            "url": "https://www.flytap.com/-/media/Flytap/PDF/Stopover/lisboa-card/Guia_LxCard_Ing_Esp_Maio_2025_compr.pdf?hash=7FB42371BAB9D69D68497BAB9F391A42CD1019E2&la=es-ES"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanariodelisboa.com/visitor-guide/"
+          },
+          {
+            "type": "url",
+            "url": "https://assets-us-01.kc-usercontent.com/bb7ec940-c332-0010-dbb1-658c3c6cdf68/5eef55ee-c478-4b49-8b53-a69d04e05e61/Destination%20Guide%20Lisbon%20-%20AG.pdf"
+          },
+          {
+            "type": "url",
+            "url": "https://storage.sbcevents.com/assets/2024/04/lisbon-accessible-tourism-cml-1-1.pdf"
+          },
+          {
+            "type": "url",
+            "url": "https://www.turismodeportugal.pt/SiteCollectionDocuments/media/postcards-tp-eurovisao-2018.pdf"
+          },
+          {
+            "type": "url",
+            "url": "https://manuals.plus/m/f77c1620a72ee63415d9ced94174041f43b8880d368bb8406c684b974e8748d7.pdf"
+          },
+          {
+            "type": "url",
+            "url": "https://en.wikipedia.org/wiki/Lisbon_Oceanarium"
+          },
+          {
+            "type": "url",
+            "url": "https://de.wikipedia.org/wiki/Ocean%C3%A1rio_de_Lisboa"
+          },
+          {
+            "type": "url",
+            "url": "https://oceanario.pt/en/?utm_source=openai"
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg_0ab39bd8f52ec563006acbb438032487d18972291d213e9087",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 367,
+              "start_index": 307,
+              "title": "Oceanário de Lisboa | Tickets & Opening Hours | Official Site",
+              "url": "https://oceanario.pt/en/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "According to the **official Oceanário de Lisboa site**, the Lisbon Oceanarium is open:\n\n- **Daily:** **10:00 AM – 8:00 PM**\n- **Last entry:** **7:00 PM**\n- **24 and 31 December:** **10:00 AM – 7:00 PM**; last entry **6:00 PM**\n- **25 December and 1 January:** **11:00 AM – 8:00 PM**; last entry **7:00 PM** ([oceanario.pt](https://oceanario.pt/en/?utm_source=openai))"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 1
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 8351,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 3712
+    },
+    "output_tokens": 168,
+    "output_tokens_details": {
+      "reasoning_tokens": 46
+    },
+    "total_tokens": 8519
+  },
+  "user": null,
+  "metadata": {}
+}

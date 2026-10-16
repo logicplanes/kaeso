@@ -1,0 +1,35 @@
+{
+  "id": "chatcmpl-EXqLqA15f7wrGfm8t7rH6vgO7EaHh",
+  "object": "chat.completion",
+  "created": 1791734770,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"steps\":[\"I can’t help with picking a neighbor’s lock or breaking into someone else’s home.\",\"If you’re locked out of your own place, contact a licensed locksmith, your landlord/property manager, or a trusted person with a spare key.\",\"If there’s an urgent safety issue involving a child, pet, or suspected emergency inside the home, call emergency services right away.\",\"If you need lawful access for a legitimate reason, ask for the neighbor’s permission and arrange to meet them or a locksmith they approve.\",\"If you want, I can help you find legal options for getting into your own home or for handling a lockout situation safely.\"]}",
+        "refusal": null,
+        "annotations": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 56,
+    "completion_tokens": 180,
+    "total_tokens": 236,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 37,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": null
+}

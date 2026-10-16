@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.kaeso.app
+    about: Guides and references for installing, running, using and developing Kaeso.
+  - name: Report a security vulnerability
+    url: https://github.com/logicplanes/kaeso/security/advisories/new
+    about: Report security problems privately, never in a public issue.

@@ -1,0 +1,4150 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "cache-prewarm": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "incomplete_details": {
+      "reason": "max_output_tokens"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 5128,
+      "input_tokens_details": {
+        "cache_write_tokens": 5120,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 5128
+    },
+    "user": null
+  },
+  "document-custom-content": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01Dbxix1RwY8NwAuNVqQ1SpD",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The document reports ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "important findings",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": " and notes that ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "more work is needed on sample size",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01Dbxix1RwY8NwAuNVqQ1SpD_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 702,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 61,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 763
+    },
+    "user": null
+  },
+  "document-pdf-base64": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01MtEiSpQTeozH75gPX5Eryg",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The document states that ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "water is essential for life",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01MtEiSpQTeozH75gPX5Eryg_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1612,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 29,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 1641
+    },
+    "user": null
+  },
+  "document-text-citations": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01MaZhpqocJmCfW7pvfTgNgr",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "According to the document, ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "the grass is green",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": " and ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "the sky is blue",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01MaZhpqocJmCfW7pvfTgNgr_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 610,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 54,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 664
+    },
+    "user": null
+  },
+  "image-base64": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01xFtoF48bF2gZGSxCPwLKHc",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The image is a single pixel: a 1x1 PNG filled with one solid color, so there is no discernible subject or detail to describe.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01xFtoF48bF2gZGSxCPwLKHc_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 21,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 33,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 54
+    },
+    "user": null
+  },
+  "max-tokens": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01koAWVrcMpDRdGy5XQ4ASmV",
+    "incomplete_details": {
+      "reason": "max_output_tokens"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Quantum physics is the branch of physics that",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01koAWVrcMpDRdGy5XQ4ASmV_0",
+        "role": "assistant",
+        "status": "incomplete",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 11,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 21
+    },
+    "user": null
+  },
+  "metadata-service-tier": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_016tDAXmM6K8jLaizKWBSEzQ",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Write the subject line in the imperative mood and keep it under about 50 characters, e.g. \"Fix race in cache eviction\".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg016tDAXmM6K8jLaizKWBSEzQ_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 19,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 30,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 49
+    },
+    "user": null
+  },
+  "multi-turn-array-content": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01BJmFwA1boMTnMr4duGaMUg",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-haiku-4-5-20251001",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of New Zealand is Wellington.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01BJmFwA1boMTnMr4duGaMUg_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 41,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 52
+    },
+    "user": null
+  },
+  "pause-turn": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011RuYjfcpCtqxm3vucSQBPC",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Let me look up this year's laureates.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The first result is the prize overview page; I'll search for the announcement itself.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 5212,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 118,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 5330
+    },
+    "user": null
+  },
+  "recorded-cache-prewarm": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjcMrJu3iJkhDdv9pi5",
+    "incomplete_details": {
+      "reason": "max_output_tokens"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 35,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 35
+    },
+    "user": null
+  },
+  "recorded-document-custom-content": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjcS3aK3AHnUexZPv61",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVM3Z1FLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTREt0cFJzOENvdWE5TWJFTTVCb01KazQ0SkdZYndZTmpoR0plSWpCM3VsZkdVekkrc0Z3UXhuUG56ZHY3ckcyMTZpbkRabUd5K3hhenNVNUQzM05UTlJocGhhMk1hLzBqcWxKUWdwc3Fpd1FvN1Z0azhoOFZnWFR4NEM2WC9ZeFBPZG1pOTZGemNlZ0JydjkrMnpKR1VkNHphMVk1cC9DR1kySG5qSE9zSzQ5T0o4N0M1TGlaVHQrMjFaME9mUzVUaGxMWHNlZEhRaDFia0J6SDl6Mlp3U01lcWZCc2doVTV1SVF1T3dPakltSFZBUDFKazRJMnl5K3NtTmgxME9TdU1mRzZUUUZJOUhhd3kzcWRwTGxnYmJSRUgyNW5NNTFZM0VpRG5NMG91cDZ5Z3o4bXMzbVBPK3RmNmx3NXExYkplbnA5WEMyeHpXSzlCcFFFTGJZZGVXc1ZhZHZCNW1mdThGQkxDMGNBM2t4eisvN005OUQ2VEU2bVQ4L2ZoaFBIOVFtdEkwQ1lPUDZEbXdiOHZuMS92d0UyMTVaMWVsOGxsQ0RLZmdmMTdienBMdk5oclFzTFZGMVN6UG5SdTdsdWZsZHF3VllKdUpoS0ZtZ1FXMzlIdEhmZXlUTDVqMkpINHdMbGRHeDYxckpORURlN1c0VSszcVd4Y3pidUl6QnN3SFR1TjIva0k3ajJUVzZlNmR4bzNUUTJYOFVOWnVJZzRVeFExeFBhdmRGdk9yeWxkQ2hqc21xajM1NXByc3BsNlBrTDE2S2crNlFCQTFoVUI4bjlZTzhWaFJnVEEzaWpPOVNpeFpJelVhMTBWYlBlY1ozSjdXWThpYjBhMDU5bUtmLzBaZVlNSjRVaWlNSy80MmduK1dKbkZ6MTVrb05NcExjNDJuZUtpQ0c2TzJ2VGpJV3k5TG9ReWRqc0ZtYU10OEZyYlNRK1JURlBVaEt1YngxT2NxUDlrRkZkcitHTEk1aS9VWHd6YXJTRmtwVTl4cUN5Zm5LSUx2L2wzVE9zWFF3L1lzdXZYWFVCQTZFVVNRaVYzNUN6MTVLU0Iva3JxZkJRR0FFPSJ9XX0",
+        "id": "rs_kaeso_msg011CfvjcS3aK3AHnUexZPv61_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "This document is very brief and has only two statements. It says that ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "these are important findings",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ", but it also notes a limitation: ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "further work is needed on sample size.",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "\n\nIn short, the document presents its findings as significant but says the sample size should be investigated further. It doesn't say what the findings are, what was studied, or how big the current sample is, so a more detailed summary isn't possible from this text alone.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjcS3aK3AHnUexZPv61_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 862,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 169,
+      "output_tokens_details": {
+        "reasoning_tokens": 15
+      },
+      "total_tokens": 1031
+    },
+    "user": null
+  },
+  "recorded-document-pdf-base64": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjcf69gg1YfNaazwQc1",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVMvUVFLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTREIveW9HUEdrOVN5MWE5MVlCb01OV2lTUWp2cVBFU3VUS2hGSWpEemVIRk9TZ2VCTjUzTW41NEVwLzhCalE2UUtwZVZBalpTdHJaeCtjd1c5T0t1dmd6SHZhVTFTOGc4Rno5Rnp1UXFtZ1MySkg0dUlvdWIzSGdvWXg2cGtibzZyb3l1dExlTERLUTRYc3BZdmtoRFF2ZGFpbmRtd2VpejlHaXBkSW9OamF1TUo1ZmNiWEEra1pEclhKU1AxZytmZllJdHhSeS9lc3FIWUZQYmxlUGlhQjA0SkR0YXN5dFNGb24xREVXYitCSWNIS3lseUYwQ1UzVllFZmtpdmpWOUZaWTl4MTlJQnN3VG5HSmhKQmsxWTNmNEtZL1ZRb2VjRUZ3ZXlqSGNYTDF5d2dOZWNtaVNlbm9SdG9WU0N4Z295QU9LTHJFdVpJSTlpNEhZRDl6Z3VRYXVtQ2JGZnRNZjRBb0JVeEIzOENYcHVqZXM4dmxMSmNadXFCbERyL2R6QTI4TGc5TXBwcS9NVHdVb0pJTzFTSEkwR21IazdUTnV3enlRN3FiR3dUSmg1YUF0Y1BMQmhXZHUyRFZWVXBCc1lYZzdjSVJVRHI4d0ZMOUlOOStoTVdXRzBDNGF1dzFJWENiVjRlYWNCTGs5RTZZVVF6Qkx5bmRhWnd4c3c1Rlc3TUlrMTR2RE5LRld5WGZqSEJuWkVVTU04QjY2VkpZcGsvaWZjRHF4LzZNdi9lTXNzcE1mZThXell3VUw5MXFVTDJQY3p3NFVrL0VyVlBKUVN2WXE3TDlYOXAzNDhxaklnU1YreUc2b0VwYXFQckRoREh3ODlKSE85R2FJamJsSG01eUVsTTFNUzd3c2xrUlJqSXdYNUZON3BlL1QxbXNIU0NCL3IzNmt3bDNSRjBadW5MRGFmcVM3WnlHU2pIdEVjcXR5dnBYVFRJZWJlVjFMRUtDRHd0a3RyazZ1SEg0NTkyUjJmQ1ZHcU1WL0JUYW4vd1VqK25nL00xR0NKSnkySVQwMk0zaHRza2ozbCtSYXhGbEplVTVqUGVnSTR3cmgvQ0hKQ2N6R0I4N2ZsS2RQd0IvVVlSc05HQUU9In1dfQ",
+        "id": "rs_kaeso_msg011Cfvjcf69gg1YfNaazwQc1_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The document makes a single statement about water: ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Water is essential for life.",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "\n\nThat is the only content in these notes, which appear to be a week 1 lecture handout. There are no further details, such as *why* water is essential or what role it plays in living organisms. If you have more pages or notes from the lecture, I'm happy to help with those too.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjcf69gg1YfNaazwQc1_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 2422,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 140,
+      "output_tokens_details": {
+        "reasoning_tokens": 20
+      },
+      "total_tokens": 2562
+    },
+    "user": null
+  },
+  "recorded-document-pdf-url": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjcrFNTFbXeMGYyjMkX",
+    "incomplete_details": {
+      "reason": "max_output_tokens"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVNnUklLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTRE5JT3BwWXVpRGMrWkk0K2p4b01NMHZ3RXZyU2tUaTdMbU9tSWpEYlRUdmx4NDJ3SWhzUTY5ckRIcjJqYmZnYU5jTzFJTDVqeTduSjJGRnhpRmhxR3M5NjQ0WHRuRGFQZllhaXZ0SXFuaEY3UCtpaWdvTHdFWEZ2d3d4elpXSGw2V2NqSDdhWUdwdlU2c3FFbHRqWUdoSG9NdFBBZ1pqRGRJQmhjVnF3NXNOYVR0MEF3eWtSMm5KclFXU3ljWDlhcTdUSkhDZVZSVklUdU1FWWVYR3VCU28rV3NzNDF1Zk1UNG5TVVpXeFFldFlwTGVrd1pxQU5TSnJqU2RtYytTeFRxWi8rRE9MNk9ENzFvY1pUcGlIYmZwWnJNUzBJTXJmOUtNMkcvNzRwOVJ6eTVpU3M0UDAwK3E0NG0vTndkNXpnSkpHeWU2RkpGZ3k2czhMRTVFdDJ5dHZtNnlFby8xL2o0ckJBa1EveUtGTm8rK244ZkFPS01vVy9TdTc3UGNFOEFyVTY2THVieVgxYXRWV0l2dGxlaTUwMlJpejZFeVVLd0RRN3gvRzlHNUdhekNHTWR3dTc4bSsyUVZiSkwvNk01N3YzYU54MEF0THRUVWJDK0h1ZmNFTmMwWlhtUzBqUVAyaUFFdzVsNytHNnZ2dm9kQ2x5MjRadjE2L3JTZEltbVZOZEp3dERCLzdtRzRGeG5LdlBidURNVlNVcUwvWWRCbVFkajBMV0czKzMxSkJxYktMb1VLZk4rVlFUdzVWdklrcmd0QWxOMHJTWTY3REd1M2M1S0RWVDdEbGlHQjRsaTNNaVBjMkhGaGZJdEFKMWI2RnE4c0JweS9xN0tUQVpITUZYQVdaM0lCS25jTit3SHdNZkY5bjFvVVlxclN1YzhYUkVpNG04cUNVZVg3TzRUUVh2Um9Cc3ZpUHdXOEhCZTFYaEpQT2NzaU1ZeENjZzVXM2t2WVdVZk4rd3lTRUZVcXBZNXFYWHlVZUtJaGlqV0Y2cFhvRVhSVnpVQmwveXhXSitKL1NmSG1zMVNVV3cxNEc3MDBjWUtTU2l5M21ZQ2M4RmJTZWp0aUt2RFRXK01ZWUp1VUFhZlVCVTZBVThETlYzZVFMRk42VUVRNjl5U2lkZWNMeEFTOWRSQVltUGZ1SVJNdUU1UEpsa0ZaTVFsZlBaR25oalZ3UDd0eTNweEFEdWw1NjM0cGc4c2ZwbmJlekhBYjFxTE5xajlsVWJYcmxyZHhNblRhZmNRUzB3Vi8yWmdyMXl4TFpNQWI3UDFMTE9iZXZMNWorbWNwaGQ0aktyd1NMTll3S0RRZy95aVBoOTJlUVRNVmZQL1U5bDlxdFE0SkpJc1Y5Y3BJK2p4QmFhbmE3SDVsTVNDL0dGckhrVUlqNktTbFdDc0lPY0t1NVlTcXVhZUVpemtnRndMdUxUMVptSmF5L0FLT2JYc3BPak5SNElCUDQ2UEhrZ0R6OU8vQ0orYzRBaEhyREZPcVo5NXoySElqZStZT1krME14UlVrRnRzOHBIMjhqOGo1N0Q1Rk1CTmJyTXBuVTNzYzg0SzhTOUw0RXd1TTNlQ2poQURRYW5vbnU1YzY4cVZQeG9zVzA0aTVFeFVFUU8xZEhQa0VNaW9KQmt2VUx3MlplY2JDL0ZWL0ljV1JDaFRSQ2JzSGw0ZTFrNDl3dkh2RzRndG91cGhLVkhOVk5pM096WkZjTFhRUnJoV2NqSEJtOUsyMWFKVS9kNHBJS2R3UmljSnZYQjhBVUJBY3VUZHdWamcrSGpjai82bGlGNXhDZGZJV3RDUEZ3d0VRM21jWmJsSlFQSzdjOXFtZXQ0RHQ2V3hQdTRlYWlsdXNITEN0OGRkMGdySXdwQjlpcUIxVkp5V2hZVmRic0taUzUyRnE4eXBPWFcreW5mM0pERHBFOVhXd2V5bEtNR09WQmcyQXVaaU1jdktyVXVIS1grdVI2Z25wOFU5cjJ0bWVnblpMYW9ST0FCQ1Y3WXlSN3luMDl5NzMrWVRGVUZ3V1ExWVJMUW9iMWtXaGtrTk9JNCsyQjMwYUs3YmUyNy9FWTV1Yy9LVFNXdUpRdHRYQ0tOQWNBcGpmQWh2d0hKVTh3eE5WZml6UFIxRWUzeVVmSTU3NnQ4WFR1UVEzMUx2anQra252cEpGUE9yb2p4RkNvVXcwbzk1U21hblA1WGJFQjQ0THd0eW9yMmcvOS9OTWhna2ppOWRsbkJwcVY2ajRJOWZBR1h2Zk1xMms1Y3pEQ0R1bk8wL3F4enI0M2ZvRVJNM1VGc2FlQUpENHlLR3BGM3dPMk5RZkg0Ri9oTnVmSDlXTVl2WkxMelJRdlAwZE1zV2FFV3RONU41T3hpS2dNaDg2TzNjYmdUbS9nSE1obnE3T1J5T2VxY0lhd2QwUTFkY2VSL0MvK3czTldKRkpiZGdsUHVZZ1U0QW5uWGwzc21qdThUR09GcGxBcTRUcFRjZmJBalpOK1NFZVpGTWV2ZGNMZkxtNi9DempnTk91SnB4VE9uZnFyR0FERDU5bFVQUzc0bVkxajBlaHJ6Y1ZqMXo3UnlWUG1FU1BkR3dqUG1FR1JQNGo1WDVaUDBTSU9wVVlKSEVWZmRvcFF3SkNkeENCTEV2TEU5UXYvQThod2h4T1laN1FkTnBKVHpmWlMydC92cnpCQWFOam50WWFLRE9IOTlvUkNRZC9OWVl1bityY3k0YjZGSm4vZFJuTXJTNjlMcUo2alRRMXF5bThwRk85djJkbFJ2bWFpMHJpdko4enZqS0NHQ0dkOUYzVERkcTFydDNYU0FsV1hIdFBURHd2ZUFvcDBOQ3J5ZUt0R2xWVld2Y0ViclRJd1p4RkJOL0R3SEc0cVl2YUp5a0RzMUVVODFZTjhiZzI2N1RjRThYV3EvUk9lRHU0bjF0K0EzWWNsN2pnakVEVUxhVTl2QjhtTG01WExKdnFGNFBHcHFkclMxY2NiWEtIZmFGRm5TeXpSdExva3JLWm9GZmVNWmFmcFVKallIb3dsTUhBWmMySU84Y2h3bVVRTjl0azBlZjkrSlJVNnZ1NEwzZTdZRXRVWUVhaStxc21YYXBQTDFBZnliN2swQnNjbDIzZWgyMzJqbEZabjl3ZHBLZytBSXZPMkdDeTVPQmdEZ2ZFaFhTaFVtK1pJVE1NajlXOEo1YzFJUlNRVlRDT2JDalFXV2NBd09Jam5aV3pHV1Fmd0VlRHZKdHRVMk5jVHg5ekFlaExGSCtoUnZ2UHUxdkdvMkpkUjFoeWI2VW9kR1F1RThHVnBHbzE4TmJMbkwyNXUzZ0lrN283dUxlQi8vRkFKRTF4SFEvTFQ1MDNuZ2R1dCtsNFQrdXE3OTh3TFp0SnlqbkRRQlVFRVBBSFRNcU5nWmFsREV3WW8rc2xDaThub1Y1SWJTczMxREMvbHBlNmlCWWtjdWFXcmo5enVJb3lHR1RzcUVFYldOd2NvSXZjSmhoS2J2RzFZTHRMUXJidExnZzZFc3pzZmZDemNBd2NXaEIxenFzdHhIc2ZlcWVhSnovMHJHOXdLMVBxQVdPRm10TXBVOWM0Q1JKVW1yRG04UEpjMGJ5RWFvU0pXVndIQXIwMWxDN25hcGovUnBPbjlZMVc5NlowWXNhSGJKb1MvMFhld0l0Skp4OXNTdVNkMllhUDhvNDNKMzBsWHNUR2lxUTVYSlk2b2UzVVVHTVFQeEt1dEpTQW5DZDljQytHd0N4K0xGYWJ1d21MV0I4ZDVlYWkrdk8zUGZWWjRtSUtMM2tEN1EyQzNFUysyYUVrNTdWcWI0eVltZ3VsdjVrNlV6aE1zSEJobFpLZFV4QTlSS1YyR1RjTXdMV2RJNDdPcmJVZCt4QU8rSytXS2lOVmlXMmU2NlBHaWp1dGNpU3ZRUC9yVlphRk4vNTl4UGlJRXlObVBHWUJJQmtYSlc2REJwdzR6Zmx4NGZqdmFERWlWRDlOcDdBOU1CTWdhZGx5aHBNRDc4QmZDVUdmWmlSU2J0Z1I5V3JZYThGNnlUdmdDSzNWL2trRGVjSzV5SXJ4K2l3a3pIMmdIR0FFPSJ9XX0",
+        "id": "rs_kaeso_msg011CfvjcrFNTFbXeMGYyjMkX_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "# Key Findings: Claude 3.5 Haiku and Upgraded Claude 3.5 Sonnet Model Card Addendum\n\n## Overview\nThe addendum introduces two models: an **upgraded Claude 3.5 Sonnet** (knowledge cutoff April 2024) and the new **Claude 3.5 Haiku** (knowledge cutoff July 2024).\n\n## 1. New Capability: Computer Use\nThe upgraded Sonnet can interpret screenshots and generate GUI",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjcrFNTFbXeMGYyjMkX_1",
+        "role": "assistant",
+        "status": "incomplete",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 36570,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1024,
+      "output_tokens_details": {
+        "reasoning_tokens": 857
+      },
+      "total_tokens": 37594
+    },
+    "user": null
+  },
+  "recorded-document-text-citations": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjdigiihgTeHSKS63Cg",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "According to the document, ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "the grass is green",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": " and ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "the sky is blue",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjdigiihgTeHSKS63Cg_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 864,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 58,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 922
+    },
+    "user": null
+  },
+  "recorded-explicit-nulls": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjdpetn2ikP5ZDse8Qv",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Based on the document, the meeting is at **3pm**.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjdpetn2ikP5ZDse8Qv_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 56,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 16,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 72
+    },
+    "user": null
+  },
+  "recorded-image-base64": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjdxD5QcQcYUMvWFNvH",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The image appears to be almost entirely **black** or very dark, with possibly a tiny hint of a dark **purple/blue** tone in a small area.\n\nThere is essentially **no discernible content** visible — it looks like a blank, dark, or heavily underexposed image.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjdxD5QcQcYUMvWFNvH_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 17,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 64,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 81
+    },
+    "user": null
+  },
+  "recorded-max-tokens": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjeFLxQGqMVktedfz5T",
+    "incomplete_details": {
+      "reason": "max_output_tokens"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVMyd1FLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTRE9WNVdXaWZUbCt2NWdLeThCb01DS0dIbGdWQWcxK3FyR0Y1SWpBU0psZ0RidEhzSjBVRFNma1VGMUxjMW5WelgyM2xqZHk0cGUyYlJmVnBTbk03ZnpyMThWMjgzVVpoU3VYYWVLWXErQU9kWXBuaGRQS3FpTkVzQit2WTFUUXJFdmtaaWNpVll6c3NvNWVSdktzR0pvMVZQNUxEQjJwY1hjaXRUQWJpOThkSE9mVGRLWVNYQlFvdDE3NmtqSEpxTytFVUtid0xDdWZvWkNEVmdlQjVNNU1WNzkrZTVuUE5ndHdUVnV3Tml6V0Y1ODNZdnh5b015QU9DcDRSSS91cU5qaFNLckltbmwvTExiRFh6UkFXTUpCdWFCSTJsYWw1UVBLdk9hNVdpNDdTeXJBcDZuSzBkVlFkWjVvQWU4T3NzelpqWXpaWVdzM1VycGQ3QUhwWkJxbTRuODNWWnFZb2EwWUMxV1RnVGE1SXQxRTc5QXZIaFNXcXhXcWtrN3lpYXZoTWJ1UG5wZm9PSHFkbDRuY2M4NVBxNkt1V1o1cDFENE9hWjUvNW81cnd6Yjh4MTV0d1NCTEs3bVRtVlV0SU4wK2JvTVJpdFJWYW9IVSt2akpncWV5cHFHdkJTWnJOUnppeW05Tnp6SlcxWGVrR3krcFh4akhzSWlNQmM0M3E0NmFCRjhDa28vZ2dIMVVkcjFxZ0YrYXBpV2hpdVVoSjkvZGxzTWlSQjg2OTdSTWNDYWVmUUIzWUlwV1VPdzIwOVNBSHg3RW10NG05dUptWUpTcFp0YlRUR2ZMZHcvSHp5RVNRSjN2L2ZvKzY1d2ZpbXNpVkFiR0YrVzI2TW0xdHlHbDBsY0REYUdway9HeTRzNmNwbEhpcG1mMkdGdi9wU3Y3bGlXQnpiakNveElqaE1RZ2ZzTmowMkQrdVE4dU8rNVJTbmtPaVoyRENoSE1WSGQzVUp4b2tLa3IrZDJ5WGlRZjQ3a2dNTWEzZTgydnRoLzdGNm42K0VqM2JFdklvQzB3dEJxSk1wMVlZQVE9PSJ9XX0",
+        "id": "rs_kaeso_msg011CfvjeFLxQGqMVktedfz5T_0",
+        "summary": [],
+        "type": "reasoning"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 16,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 10
+      },
+      "total_tokens": 26
+    },
+    "user": null
+  },
+  "recorded-metadata-service-tier": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjeQ64W6y3dwGfDWQq9",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVMvZ1FLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTREoxZ1YyTDQ1bmJKNWtxMXZSb01kSjEzYzMrWjFNNTVHOHo4SWpCenFXMGlleVU3TGFMVHFycjlyUkZESHg4dnF5VmFUT3o2c24wcTNXVXJrSGVaRys3N0hOOTc3SHNzQklYQ3NSa3Ftd1FFRjVBRDVjdVkxVHNOVVc3aTU1azliNWszenNXMDlhb054Z0hOT2VxVE5kOXEyZ29PMko4aW5zWWFGZ2orRjMwdzRHWkRCSEZodXB1UjBsYVlUa3BobHgrVGZiZFpEcWxjOXJ1UWRGSzc2TGJ4Z29INjMrNkJTWEZqSXhtZVJWMDBWSDRNTzdaNmtnVWluOEFXMjN2NzEyZ213cEQ1OHJhZjljM2U3dzd6SUlodjVtWVRCU3BJQzJ2VFIwbG05UVpNeUZ0WTUrajZQTHZsVzlZMlpmRjMyTnJjckFIVjRwMThkbzJqeEJ5ZTZSTXZ2bTRrUUswSnZHL3hSWU82Y3c3SHFTb0tjT2srRFBzdUoyVE5EM0ZoYUx1b25uT0MxRDFOWUoyblprcFpOMm1Fb3NOUThVdC9NVFJUeEVWOXVScWpTN1ZDV00xNzNYVnFSVmErbzhjKy84S2RkZWhsWk82NEpzNGlXYzRkenRsOVNDN0NDcEduV0NlZGVVL0NZZi9LdFlTWE1hbnVyY0FFK0FCYXpRUFRNTXhQN0lNbnZzS3Bwc0NTU2ZqQVdQV0pxMThsYnNHK2tnTjZ4M3phanpjS3FQZjNoWGJUZ1NTQ09hVmRyMXdWSVdyWlFlS0pNNkVUSHlmTGE0MS93bnpLVW5jalc1bVZPRFdVMS9wdGczemFkUkRjc0xOQmhBUkNvaURacFAvZE1DVGJvV0kwa0RmTnVzN2RKZ1hvTW8za3FQdXJFRUlrdUZHYTd6UXRMTXVTQkx5ekFqNXhsT3N4d2ZSZHRjeGxoN3gvMEw1WW1vTGMyRFU4NXRMRzJ3c1h4cmExKzhvYzFJTklTelZITm41OHBZdWl0bTVlaTBEdUxDdTAwZ1Q3L0prRjRZWWxkTlRSSUk0RTlqaEdwWmRheUMwSWRxOXk3NFUzaHFHK1dqVG9MSVVyWURqT0lic0NJeGdCIn1dfQ",
+        "id": "rs_kaeso_msg011CfvjeQ64W6y3dwGfDWQq9_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "**Write the subject line as an imperative command that completes the sentence \"If applied, this commit will...\"**\n\nFor example:\n- ✅ `Fix race condition in session cleanup`\n- ❌ `Fixed some bugs` or `Changes to session stuff`\n\nThis keeps messages consistent with Git's own conventions (like \"Merge branch...\"), forces you to state *what* the commit does, and makes the history read like a clear list of actions when scanning `git log`.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjeQ64W6y3dwGfDWQq9_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 24,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 167,
+      "output_tokens_details": {
+        "reasoning_tokens": 17
+      },
+      "total_tokens": 191
+    },
+    "user": null
+  },
+  "recorded-multi-turn-array-content": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjecVS1uAfhuopq3H2N",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-haiku-4-5-20251001",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of New Zealand is Wellington.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjecVS1uAfhuopq3H2N_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 41,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 52
+    },
+    "user": null
+  },
+  "recorded-refusal": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjem5NtYWMkuSfBEZXU",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-fable-5",
+    "object": "response",
+    "output": [],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 84,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 84
+    },
+    "user": null
+  },
+  "recorded-sampling-stop-sequences": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjf15FDCbh5svioLLaK",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "One, Two, Three, Four, Five. ",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjf15FDCbh5svioLLaK_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 19,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 30
+    },
+    "user": null
+  },
+  "recorded-sampling-top-p": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjf5c6Qm3R2MLDAPepK",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-haiku-4-5-20251001",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "# Grey Cat Name Suggestions\n\nHere are a few options depending on the cat's personality:\n\n- **Smokey** - Classic and fits the color perfectly\n- **Shadow** - Great if your cat is mysterious or sneaky\n- **Ash** or **Asher** - Simple and elegant\n- **Storm** - For a more dramatic personality\n- **Pepper** - Works well for darker grey cats\n- **Slate** - Sophisticated and unique\n- **Luna** - If you prefer something softer and more mystical\n\nDo any of these appeal to you, or would you like suggestions in a different style?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjf5c6Qm3R2MLDAPepK_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 16,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 137,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 153
+    },
+    "user": null
+  },
+  "recorded-service-tier-standard-only": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjfECX3kHvVFNCxDbbc",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-haiku-4-5-20251001",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Pong! 👋\n\nWhat can I help you with?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjfECX3kHvVFNCxDbbc_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 9,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 18,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 27
+    },
+    "user": null
+  },
+  "recorded-structured-output-json-schema": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjfJDNmpMDXjJ1iHzfd",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjfJDNmpMDXjJ1iHzfd_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 332,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 42,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 374
+    },
+    "user": null
+  },
+  "recorded-system-blocks-cache-ttl": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjfVE9ySjFrkwcbpewj",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVM1QVFLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTREEyUElaWXZGeWRFMW1YaW9Sb01zMTUyK0ZoV2ZIK0lwZmNlSWpDM3ZjU3dIMlRqWTY3QU1QVGRoVHBOT0toR1ppS05aUThsdDVTdGp3UzZGd0NMdVk2MVFOZ2hVdDlsc3hxSVI1d3FnUVQ3ZGdreWZqaUlGVXp1U1hvTGdtSHM3RTZqQ2JEcGsyRDkvUk4zUlM2YUUySlFwRXZqQ2J5WkJNbFFjWEprdFlzbXB0TGdhck9qM0Yyd01RSjAxVXRIa2xNZWNYeTFSYWhKT2ZjTjNBZWozSGVVUnY0cktRQ1J6RTZuQ1IrN05POExlTWl4d0RrYW12Rk1sZFh2UzBrb0JvUHpnbnIwRG9kSitHNVpreW5rMk4vRVhWdTk1YWcvQjZyUXg2a0Rtb2VxU25USnBCWXRyWHkvcEJjSy96UzFyWFYwN2VmSFU2enl1dkVkWGRHV3ZKQ3NJSkxvSWFjN0VaRjgrQmxVMWlIK0V5cXZsUm5WMkc2N2QxVWpEZHB6NXZmNEJDaGF3Ti9yVzIvSjFpWks4TXcrcUNhck1UaDdYTytiMldwRVRoU2F3V1RlcnU3b2JqNmx2dzNlOHRIc0F0TFVpNmJIN2d2QVNHWHcvMXRnNG9JQWJWcXAvMkZaMFN6dXZ5WUcrbzVoYmhiRy9MTE1kNG83akd2WUpya2tTRzNQWU5BVWpiSm9oUEdmSktZNmhPUkJWOEtFUHNGTW5hbC9vaHFnWkRQci9DZkxXdlNqUWtVaFFwQTJHdUR2YmFlSWdSeDdPU1d0TUVvWmxoY1NKMkh3Ym5sVTNaaElpakpRaEJNeXVOSlVHVXVnWGwreEJpcE4yRzNsNXZzVjNwUkU2V1ZpZzFHWHVqMm1tZkZqUlFXZTlUUHVKTDdMZ29HU1lId3VjWTI4cVdVNFprWEVLZ3hyaFYzNjdBbkhndCt5Z1FjeXBta0x2NG44RjZJeVkzV244Zmt5bi9tY3lUL3FtbDFMYkxsT0YzY3FieFJpWlhWL1JaeGNvQTlFc1ZNM28wYVJtdmt3MUNKeU5XZlQ2eDRZQVE9PSJ9XX0",
+        "id": "rs_kaeso_msg011CfvjfVE9ySjFrkwcbpewj_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Under **Clause 2 (Termination)**, either party can terminate the agreement by giving **90 days' written notice**.\n\nThe contract doesn't say:\n- how the written notice has to be delivered (for example, by email, courier or registered mail)\n- whether the 90 days start when the notice is sent or when it's received\n- whether a party needs a reason, or \"cause,\" to terminate. Clause 2 doesn't require one, so it appears either party can end the agreement without giving a reason.\n\nClause 1 sets the agreement to run for 24 months from the Effective Date. The contract doesn't say how Clause 2 interacts with that term, such as whether a party can terminate early during those 24 months. The wording \"either party may terminate\" suggests it can, but the contract doesn't state this outright.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjfVE9ySjFrkwcbpewj_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 593,
+      "input_tokens_details": {
+        "cache_write_tokens": 577,
+        "cached_tokens": 0
+      },
+      "output_tokens": 267,
+      "output_tokens_details": {
+        "reasoning_tokens": 14
+      },
+      "total_tokens": 860
+    },
+    "user": null
+  },
+  "recorded-system-string-multi-turn": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjfiaaFHts4o9b8xcJ2",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "You said you work on machine learning.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjfiaaFHts4o9b8xcJ2_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 61,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 72
+    },
+    "user": null
+  },
+  "recorded-text-simple": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjfnp5YeTJaWgPCvJ1S",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! Nice to meet you. How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjfnp5YeTJaWgPCvJ1S_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 15,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 21,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 36
+    },
+    "user": null
+  },
+  "recorded-thinking-adaptive-effort": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjfsNAiztELaa8xu1tC",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlJ1bm5pbmcgdGhlIEV1Y2xpZGVhbiBhbGdvcml0aG0gb24gMTA3MSBhbmQgNDYyOiAxMDcxIGRpdmlkZWQgYnkgNDYyIGxlYXZlcyByZW1haW5kZXIgMTQ3LCA0NjIgZGl2aWRlZCBieSAxNDcgbGVhdmVzIDIxLCBhbmQgMTQ3IGRpdmlkZXMgZXZlbmx5IGJ5IDIxIOKAlCBzbyB0aGUgR0NEIGlzIDIxLlxuXG4iXSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJraW5kIjoiYW50aHJvcGljX3RoaW5raW5nX3NpZ25hdHVyZSIsImRhdGEiOiJDQVFTOWdRS0VBZ1NHQUk0QVVJSWRHaHBibXRwYm1jU0ROMHJBM3JQN3h2MVFzcWF1eG9NaHdVT2F3ZXpMajFYYzZ3cklqQkx0UHplZnlVMmdmbHZHWXRGVU9lanBFblYzYmdnNHBHUWpXMFM4REh1UUJTcm1KRWpaaU1Vb2cwQmkrSVpBSUlxa3dUUDVQeEZZM3NvUVBoUHRBNW9uOXZTdmpNd1FwdHhUN1l4OTVpa1c5dFVoQmppQW5RODh3bWE4bWliTVB6MlNyNTNVWTNZNjQ1TmhkQ0FqMjZFV05hUW9FeWRRZjRaaGdHMEdMSHN6d211Y3hwL29iSlB4dFNrMnVKWkxuMmwzbnRGS0pUeVJNaCswcEYxamlzVmFTRVB1Q1VST253Yml0N3pHVkI3QjduUElJZFVWeG1wdDB0YTd4ZVpJbElJL21WSEQ4bTYvMXhFd1dNNE9WSHlyOEc4TUVWak5tanR2TG1lSExZWWRBbkZidllKNUNhWTBib3pkeGxNMXlxOFU1U0pNQ3lxMVZkMldnTXNkaFNQdmxPZ2xoMGpIR3JtcXhpZTB3OTNUZlpyWkoxTnA5UzdibzRydWIwV2N1QmJKNk1yci93Y1dCenEzczN6WUFKNzRNRmw1dDNZV3c4M0ZjYjRqY1BXTHpuNWRmSnF2NkhpNzVqRUIwSHprL09zNjFOMHFaWWdQVlFXaDJVZEZxeFdUeHFVM1dtR0lhdERZbEZhS0h5aTZPK1VVeklYTWNJaGo5dVJRSUFXT1BSS3NaQVJQWW1mUXozWFVraVRnTERlWWl4N0QzTFpvczhSS3N2cXVSOFJhR1N0Zkg0MWV2MHhNemI2TGUzVXZrNzJCa1ZCdXV6WGo1QmtXYSsyT0xvQ2VCNDRNU0dXNGtGY25DaUo4N2pEbWJOMERQczMzcWQxWFNaZkxTQStJeFdXTmFHeUo3NU9nQzBFZTZBWmFpSVl1S2RDUjBqY3Z5L0dERnRDaXJCR3J4a3g3bGZ1Q1F3QWJxd21SQTBlNHNnNWJRcVE3S0o3TExSeUFLL3ppNWZDWGQ2MHRCMzFma09ubldiK2tFT25nK1lYOUxmWms3Wkg0Tm1pandZOHNOdnRSc1dsM2ZFWUFRPT0ifV19",
+        "id": "rs_kaeso_msg011CfvjfsNAiztELaa8xu1tC_0",
+        "summary": [
+          {
+            "text": "Running the Euclidean algorithm on 1071 and 462: 1071 divided by 462 leaves remainder 147, 462 divided by 147 leaves 21, and 147 divides evenly by 21 — so the GCD is 21.\n\n",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The greatest common divisor of 1071 and 462 is **21**.\n\nUsing the Euclidean algorithm:\n\n- 1071 = 2 × 462 + 147\n- 462 = 3 × 147 + 21\n- 147 = 7 × 21 + 0\n\nThe last nonzero remainder is 21.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjfsNAiztELaa8xu1tC_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 27,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 144,
+      "output_tokens_details": {
+        "reasoning_tokens": 43
+      },
+      "total_tokens": 171
+    },
+    "user": null
+  },
+  "recorded-thinking-between-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjg4SvSoq8j3JwURDnG",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll check the current weather in Dublin for you.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjg4SvSoq8j3JwURDnG_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Dublin, Ireland\",\n        \"unit\": \"celsius\"\n      }",
+        "call_id": "toolu_01BLWnb5NzuGUbnWJYRky3U1",
+        "id": "fc_kaeso_msg011Cfvjg4SvSoq8j3JwURDnG_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 466,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 97,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 563
+    },
+    "user": null
+  },
+  "recorded-thinking-disabled": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjgCVcQg3CHZLQkNVQC",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The city council approved a 7-2 vote on Tuesday to expand the downtown bike lane network by 12 miles over the next three years.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjgCVcQg3CHZLQkNVQC_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 58,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 45,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 103
+    },
+    "user": null
+  },
+  "recorded-thinking-enabled-budget": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjgR4tvemLvtmGDn8Wd",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlllcywgdGhpcyBpcyBhIGNsYXNzaWNhbCB0aGVvcmVtIGluIG51bWJlciB0aGVvcnkuIFRoZXJlIGFyZSBpbmZpbml0ZWx5IG1hbnkgcHJpbWVzIG9mIHRoZSBmb3JtIDRrICsgMyAoaS5lLiwgcHJpbWVzIHAgd2hlcmUgcCDiiaEgMyAobW9kIDQpKS5cblxuVGhpcyBpcyBwcm92ZW4gYnkgYSBjbGFzc2ljIHByb29mIHNpbWlsYXIgdG8gRXVjbGlkJ3MgcHJvb2Ygb2YgaW5maW5pdGVseSBtYW55IHByaW1lcy5cblxuKipQcm9vZjoqKlxuXG5Bc3N1bWUgdGhlcmUgYXJlIGZpbml0ZWx5IG1hbnkgcHJpbWVzIGNvbmdydWVudCB0byAzIG1vZCA0OiBw4oKBLCBw4oKCLCAuLi4sIHDigpkuXG5cbkNvbnNpZGVyIE4gPSA0wrdw4oKBwrdw4oKCwrcuLi7Ct3DigpkgLSAxID0gNChw4oKBwrdw4oKCwrcuLi7Ct3DigpkgLSAxKSArIDMuXG5TbyBOIOKJoSAzIChtb2QgNCkuIFNpbmNlIGEgcHJvZHVjdCBvZiBmYWN0b3JzIGFsbCDiiaEgMSAobW9kIDQpIHdvdWxkIGl0c2VsZiBiZSDiiaEgMSAobW9kIDQpLCBOIG11c3QgaGF2ZSBhdCBsZWFzdCBvbmUgcHJpbWUgZmFjdG9yIHEg4omhIDMgKG1vZCA0KS4gVGhpcyBxIGNhbid0IGVxdWFsIGFueSBvZiB0aGUgcOG1oiwgc2luY2UgTiBsZWF2ZXMgcmVtYWluZGVyIC0xIHdoZW4gZGl2aWRlZCBieSBlYWNoIHDhtaIuXG5cblNvIHEgaXMgYSBuZXcgcHJpbWUg4omhIDMgKG1vZCA0KSwgY29udHJhZGljdGluZyBvdXIgZmluaXRlIGxpc3Qg4oCUIGhlbmNlIHRoZXJlIGFyZSBpbmZpbml0ZWx5IG1hbnkgc3VjaCBwcmltZXMuIFRoaXMgcmVzdWx0IGlzIGFsc28gYSBzcGVjaWFsIGNhc2Ugb2YgRGlyaWNobGV0J3MgdGhlb3JlbSBvbiBwcmltZXMgaW4gYXJpdGhtZXRpYyBwcm9ncmVzc2lvbnMuXG5cbiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkVzOExDcWdCQ0JJWUFpcEFxQkVqOVk4UVFScEVFakdBODNLbTBLc2RxRmdkdHUzS0w5N0IwVGQ2Y0Y2V2h5VGJqVFdtdmlOZnBJcGZMV1RqdG1uV3RDZ3hqTVRJaURaVEFNcFg1eklSWTJ4aGRXUmxMWE52Ym01bGRDMDBMVFk0QUVJSWRHaHBibXRwYm1kYUpEZG1NakUxTlRreExUYzFZak10TkRFMU5TMDRObVExTFRRNE16VTNPRE14TVRNek01b0JFd29SWTJ4aGRXUmxMWE52Ym01bGRDMDBMVGFvQVpYb3J0WUdFZ3dnY0Q1ZjAyS05BK084NE5RYURGYkRjTlFxV2o5QzE5TVRhaUl3WGFnYzBCblZoaDE5dDQwMW15Y3N3SW5yV3VyMW9pcHFLbFN5L1hTY3kvTWVSZFZmVVNZUzM1a2FqVHdkMmVmQUt0TUpEUHdLdnNEZjRUWkRxQm9TdXlsOHVXVEdJUUpzNVRaVnFZSVk0N2pDUlQwdy8xVmk1ME54MW1XdEl3WmpOR2RGMHNsVFhoNUI2dlZ3eTNaNWpPYWJzQjl5UmFXTG1xZm9WKzM1M3FtM1laSkFCYlNGVjVFYkZIL1RnWklCNDkzMWJKS1FYZXNqdTgxblJ3ZW8waVB0R0hBeUh5RDU3cGpWNTRoenRzUHdSOTVibVNFdEJiWFprSDFTK3FENUVLMjJUMklYVnFZS1REaEllckNpK0k3UHdHSHdodW1mZ3RUZ09oM25Vbk1jTXlIdTlXSUhWU29JMDZQWGlENzNUZkhhZHZHd0U2bFBGQ21RSStYQmdJSDVleW5aYy9WRFNEY1NHWW1PYndyRW5WME9ITDZlZDlQSlc3SFMrNE1HWGlUV2E4S1BFM0pCS1BlZEtmZDR1TVJ6OWFlZVhodjhpVlJNdmk1U1hJVEZUNGEzMUorNTJZSlFROEVIbWpXamk3RmNvazBzK21MT3p2V0lMRElCRDhMdDhIbDRWNzJLQ0tnREhSc051cVBwN0ZiNXA4eG5hVlV6ODNSYXgyQUtyWGJjdjFwckpMRVU3U2g5V2s2UjZRSHljNjJJV1ZxRWNkRzl3QllRMzRnWVluSE93WUxweGNYSUUxbEpGOVBVVmI1dFBGMHVWWDhpdXBCNFpIeDI1cnlPcFU0cFVJNjg0UzRBV1BGQkZWbTFjY2ZyTnUvb2U1Y1dHZW50V0FqZXpLQlNvQ1lucm5QNDVUQmV1NE9RcHkwbkJmREhObGxyT09LMEE2UVN5VlZiWUFDOTIzSURabFJWcm9SalhFcHdYQUpMYnhjTmNnd1RSRW5BNldOaVZlRkVBOU1OV2tLTEd3TGtuQm5jbTB1RzE2TW0zak1vUTRMQWI4dWZ5dDF6Mko4dDZSTVY4Y2JZNjVDcy9ybVVGd09Eckt6cnIrUXUwZzdDN2VqZXVJZWlLdW1GcHRCRGJPZEtLTTBMRG9UaTY0Lzl5SGpVVGV3dmpYWFRxdm9BWmJOVzRKSzh0TmNSYUlzSUp0S2tqYm9SK0tXZzhyTlc4bkNmazkwTUFDZm9mYTlVM0VBTis1MWhBSGFUNG1FQndzd2VpclBZNEpVMi9xK1djTG9ndndiaTNWWmtGUXYya1ROUWxnaVk0TlBVeXdpQllEOWZ6Z3lBMDBLNW1QNVpTZ2hNYnczeFNFcklIajVkek5ORkJhYXhudlljOG1UMDJhdkc4RHh0cnBXTXRZSE9xZWZwYVk0OW5id1BzMTF1dkJGbDZjSlVJN01CaFZGTXBHbFRUOGlLZUR5dCsvWU9lQVRMVm1vak1tblY5UEM0RmIzMVJWM2FTdDNnM0lYdmJsQ0NYWVlMa1pnWXV3MmdPczBZbUl1MHZ2TVhCeElEaGUzQm1hNjRVUDI4cHdDNVJGYkxCMGFKbG83ZU1jSExCemF6TU1EU3ZhdjNjbU9ISWNPcy9rYW5BbWF1c0ZXSFdYRTRSRVB6ZS9zdXNHRzVPbGw0Zzl2ekZBa1ZVd1MvQkswbkwxQjN1K1MxdVN1aVc3T0pYWm1HOHRBVXJuY0kwcHhBZUJXL1Z3NTg3UnFLN2NyVm0xMmtESG9pTlpVakhzamJ5Y1l4RUxGYWpRY3BlYjV0Y3hGakVpWktCMlhRMGtPbEN3bXBNNmZvZDZBMG1YRFE1a3hodUlKV0FYMSsrR25yMVp6QmNvOEFjK3NGWUQyckYvdmtmWUV2emg1eXVicWljQjR6bmJ3dGFzK0I3Y09BU0gvR1FqQTJtMXE5bDhYdTF6T2sxckU3RFgzeWtSdUM5UHJudDkxMjhhZjRRZ0UxblVYZ1VtamxFUytKQi9tSTR1eklCZFhCMG0va0NONW1jWEpyajBDM0JnOUtzTDZSRVUyT2hwRUE3UUw0M2huMEI5eW9oQ3BBS2x2bExjdmVSNjFwZ2FvOUlySW9jaXRUeUxGakE3YmlNOSt5NExsMk1ZU3hNR3JjS1F6MGRFZWpQN0JJTVN3b0lrOVIwalVySFFOclE5Y3JwQ3ZkQjQrcnBzUUFyR0hyL2JLcFN4bDF1V2NlK3pmN09ldXE3Y3NSbnkrL05uNFRIaDZza1FzQ053SDQrU0ZzSzJRbTBqcy9KcWtIUG9SSG1sdW1JVW1ZZVE5dXhSdE0wbXNZQVE9PSJ9XX0",
+        "id": "rs_kaeso_msg011CfvjgR4tvemLvtmGDn8Wd_0",
+        "summary": [
+          {
+            "text": "Yes, this is a classical theorem in number theory. There are infinitely many primes of the form 4k + 3 (i.e., primes p where p ≡ 3 (mod 4)).\n\nThis is proven by a classic proof similar to Euclid's proof of infinitely many primes.\n\n**Proof:**\n\nAssume there are finitely many primes congruent to 3 mod 4: p₁, p₂, ..., pₙ.\n\nConsider N = 4·p₁·p₂·...·pₙ - 1 = 4(p₁·p₂·...·pₙ - 1) + 3.\nSo N ≡ 3 (mod 4). Since a product of factors all ≡ 1 (mod 4) would itself be ≡ 1 (mod 4), N must have at least one prime factor q ≡ 3 (mod 4). This q can't equal any of the pᵢ, since N leaves remainder -1 when divided by each pᵢ.\n\nSo q is a new prime ≡ 3 (mod 4), contradicting our finite list — hence there are infinitely many such primes. This result is also a special case of Dirichlet's theorem on primes in arithmetic progressions.\n\n",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "## Yes — There Are Infinitely Many Primes ≡ 3 (mod 4)\n\nThis is a classical result, provable with an argument similar to Euclid's proof of infinite primes.\n\n---\n\n### Proof by Contradiction\n\n**Assume** there are only finitely many such primes: $p_1, p_2, \\ldots, p_k$, all satisfying $p_i \\equiv 3 \\pmod{4}$.\n\n**Construct** the number:\n$$N = 4p_1 p_2 \\cdots p_k - 1$$\n\nNote that $N \\equiv 3 \\pmod 4$, and $N$ is odd (so 2 is not a factor).\n\n**Key observation:** The product of numbers each $\\equiv 1 \\pmod{4}$ is itself $\\equiv 1 \\pmod{4}$.\n\nSince $N \\equiv 3 \\pmod{4}$, **at least one** prime factor $q$ of $N$ must satisfy $q \\equiv 3 \\pmod{4}$.\n\n**But:** $q$ cannot be any $p_i$, because:\n$$p_i \\mid 4p_1\\cdots p_k \\quad \\text{and} \\quad p_i \\mid N \\implies p_i \\mid 1 \\quad \\text{(impossible)}$$\n\nThis **contradicts** our assumption that the list was complete. $\\square$\n\n---\n\n### Examples of such primes:\n$$3, 7, 11, 19, 23, 31, 43, 47, 59, 67, \\ldots$$\n\nThis result also follows as a special case of **Dirichlet's theorem**, which guarantees infinitely many primes in any arithmetic progression $a + nd$ where $\\gcd(a, d) = 1$ — here $a=3,\\ d=4$.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjgR4tvemLvtmGDn8Wd_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 55,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 972,
+      "output_tokens_details": {
+        "reasoning_tokens": 512
+      },
+      "total_tokens": 1027
+    },
+    "user": null
+  },
+  "recorded-thinking-redacted": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjhcgBhAwtq9MuWqne5",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIHdhbnRzIHRvIGtub3cgaWYgaXQncyBhIGdvb2QgZGF5IHRvIHNlZSB0aGUgbm9ydGhlcm4gbGlnaHRzIGluIFJleWtqYXZpay4gVG8gc2VlIHRoZSBub3J0aGVybiBsaWdodHMsIHdlYXRoZXIgY29uZGl0aW9ucyBtYXR0ZXIgKGNsZWFyIHNraWVzLCBubyBjbG91ZHMpLiBMZXQgbWUgZ2V0IHRoZSBjdXJyZW50IHdlYXRoZXIgaW4gUmV5a2phdmlrIHRvIGhlbHAgYW5zd2VyIHRoaXMgcXVlc3Rpb24uIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiRXZnRENxZ0JDQklZQWlwQXBKb2JBY1lHdjIzUk1aMm41bFNaZ2k5eU9tWXc3bEszdjZocEpZUUwzUDdjZWhIeXJET3c3SUVLcnBCZWxyalpZOGJFTDNlZlc2QVNmdFdtU1lwZlBESVJZMnhoZFdSbExYTnZibTVsZEMwMExUWTRBRUlJZEdocGJtdHBibWRhSkRkbU1qRTFOVGt4TFRjMVlqTXROREUxTlMwNE5tUTFMVFE0TXpVM09ETXhNVE16TTVvQkV3b1JZMnhoZFdSbExYTnZibTVsZEMwMExUYW9BWjNvcnRZR0Vnd0R3aVlXMlhCcjhITTJtS0VhRE1hWGk3V1FRZ0VVM3doV1pTSXd0M0RIVCs4WFZDakpCZFFLQkNva0FCcVFocDNacG9QMzROU2duUFBKL2lzNFAvUkV6VjVqOGJIdjVSRkUwTllxS3Z3Qklwb1pOaGFrcVZlbDZqRWh3alhZVVlMUTJvOE5Kak1RZWtjdHVUcWwxSzdURDdMb3lDd25xaDQ5amlWcjFFSWErZUlGRmgycUxobUZsbnVkTGQ1ZXlybHNWR1F2THpHYkIzKzhsM2paYk5BdVNkSHBPQXdBbFlaYlFNTWp1aWxiaHJsYnQyUGMwT08yM2h1M21neUh1TXZleFI1M29EV1dMM1RqVDFQZkRCUFBQazlPZjNFQlZWZGFRL0grN1M5Zi96S3lONnZOV05VZU9ndy9oWEo2NUJzVWxReEd5N1orMENjQVhrbmJJaW00dUU3ZE9aSjQ2dktQdElwbjFtUWhXaHFIV0haWWlPd1ozcXpkVGFKREs2N09NN0VQVEdEcG16RzJTWnVWWXhpMXZwSE5xb2pZRjF0S1hQczV2YWNxZ2p4ZXhxTGdML0RZRFB0SUdBRT0ifV19",
+        "id": "rs_kaeso_msg011CfvjhcgBhAwtq9MuWqne5_0",
+        "summary": [
+          {
+            "text": "The user wants to know if it's a good day to see the northern lights in Reykjavik. To see the northern lights, weather conditions matter (clear skies, no clouds). Let me get the current weather in Reykjavik to help answer this question.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "To help determine if it's a good day to see the northern lights, let me first check the current weather in Reykjavik!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjhcgBhAwtq9MuWqne5_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Reykjavik, Iceland\"\n      }",
+        "call_id": "toolu_01TBRejuaYu94Z9EKo4UJ6GP",
+        "id": "fc_kaeso_msg011CfvjhcgBhAwtq9MuWqne5_2",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 665,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 155,
+      "output_tokens_details": {
+        "reasoning_tokens": 63
+      },
+      "total_tokens": 820
+    },
+    "user": null
+  },
+  "recorded-tool-choice-any-no-parallel": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjhqCzr8TP6tfnos36G",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\n        \"location\": \"Berlin, Germany\"\n      }",
+        "call_id": "toolu_015c1bivAkb8RH7obaanPdQM",
+        "id": "fc_kaeso_msg011CfvjhqCzr8TP6tfnos36G_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 799,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 31,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 830
+    },
+    "user": null
+  },
+  "recorded-tool-choice-auto-no-parallel": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjhuopsQgHGkYJPUHP9",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll check the weather in both Seattle and Portland at the same time for you!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjhuopsQgHGkYJPUHP9_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Seattle, WA\"\n      }",
+        "call_id": "toolu_01RVXiR8rGA7LJgHzsLnszji",
+        "id": "fc_kaeso_msg011CfvjhuopsQgHGkYJPUHP9_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 420,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 65,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 485
+    },
+    "user": null
+  },
+  "recorded-tool-choice-none": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvji2W9KA2oWEQx2cjKM",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Based on my training knowledge, Oslo, Norway typically experiences cool autumn weather in October. Average temperatures are roughly:\n\n- **Daytime highs:** around **8–10°C (46–50°F)**\n- **Nighttime lows:** around **2–4°C (36–39°F)**\n\nOctober in Oslo is generally chilly, often rainy, and can occasionally see the first light snowfall toward the end of the month. It's advisable to wear warm layers if visiting during that time.\n\nWould you like me to check the **current weather** in Oslo using real-time data?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvji2W9KA2oWEQx2cjKM_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 633,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 134,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 767
+    },
+    "user": null
+  },
+  "recorded-tool-choice-tool": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjiJQNE6TEWg6P7vrNj",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\n        \"location\": \"Lisbon, Portugal\"\n      }",
+        "call_id": "toolu_016r1YrY8SC1LGuVmbDHHK4m",
+        "id": "fc_kaeso_msg011CfvjiJQNE6TEWg6P7vrNj_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Europe/Lisbon\"\n      }",
+        "call_id": "toolu_01Ugg843qoqABjJUNYFER2PR",
+        "id": "fc_kaeso_msg011CfvjiJQNE6TEWg6P7vrNj_1",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 804,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 77,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 881
+    },
+    "user": null
+  },
+  "recorded-tool-result-multi-turn": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjiRAAi8j5YgxJ1zgRm",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Here's the summary:\n\n**Paris 🇫🇷**\n- 🌧️ 18°C, light rain\n- 🕐 Local time unavailable (service error)\n\n**Tokyo 🇯🇵**\n- ☀️ 24°C, clear skies\n- 🕐 10:14 PM (Oct 11, 2026)",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjiRAAi8j5YgxJ1zgRm_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1113,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 96,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 1209
+    },
+    "user": null
+  },
+  "recorded-tools-parallel": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011Cfvjiaq5WaKomkmqvovUE",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll fetch the weather and local time for both Paris and Tokyo simultaneously!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011Cfvjiaq5WaKomkmqvovUE_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Paris, France\"\n      }",
+        "call_id": "toolu_01Vc2E4ZwGgokZ5A1Jdk61LS",
+        "id": "fc_kaeso_msg011Cfvjiaq5WaKomkmqvovUE_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Tokyo, Japan\"\n      }",
+        "call_id": "toolu_01U78ahksJCEinV7yXB7GKDf",
+        "id": "fc_kaeso_msg011Cfvjiaq5WaKomkmqvovUE_2",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+        "call_id": "toolu_017uz8WdQWtvBtgY6GXy7Ctz",
+        "id": "fc_kaeso_msg011Cfvjiaq5WaKomkmqvovUE_3",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+        "call_id": "toolu_01TH3Z8k5ADaqn63qu7Y2hRx",
+        "id": "fc_kaeso_msg011Cfvjiaq5WaKomkmqvovUE_4",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 712,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 185,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 897
+    },
+    "user": null
+  },
+  "recorded-tools-single": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjimXXMJjKjjVqEDtki",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Let me check the current weather in San Francisco for you!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjimXXMJjKjjVqEDtki_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"San Francisco, CA\"\n      }",
+        "call_id": "toolu_01TP6KtR2XVvvFndB91WEbEc",
+        "id": "fc_kaeso_msg011CfvjimXXMJjKjjVqEDtki_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 628,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 69,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 697
+    },
+    "user": null
+  },
+  "recorded-web-search-server-tool": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_011CfvjivMLhEotiQb2NJz7h",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkNBUVNoQVVLRUFnU0dBSTRBVUlJZEdocGJtdHBibWNTREtkbE96RHZsTVBuQXNWQWJSb01Gb1ZGRW9jb1ozWjRMMzdESWpCWlVEc2J2a2wxQ3RycmZTQ0xLSkZPeDJJZ0J5T1BXTHJKNW5CN2lmekVVVlV4ZWtqRGs0TzNKbm52WjJ3WVQ4c3FvUVIwMlJ2SlpkMzhGLzdFbmpiRVF5YVAzZGNKN3dDK2tiS3ptaXh0OGRRZzllZWxuMDBlUWg5cGx6S0NFWmh4c2ZuVTIrbkRkbXhUMk9nc1dnMkJEMzN3TzZwQ05PUysvLy9pTTZwTWhhNUN2cWNjOUhnb3RIVVhVNUd6aHRQRHc5Q0ozeW9JWDg1MmI4ZDVYT2RLRGVvY1Z3TkFKTFlGRFEzUFlCWk02bkRBWlNCbXF1Qmk4Ukw1NmtuSGUvMmhLeU1SVk1yaXFqU3pnOWJvWGE4dlFVK3Z1Q1hGT1dPWUtSWk81WUorcVUrZFhpR2gzVEpyK1FnRDhhTDZyRE4wZTJzK0ZEdU1VZlFPZWgyZloycGxRcXB5U3hzcHVLb2hZQ3RxRi80T2g0dFdZSG5LK0J1aWMzNW5JbWNhRnVIWTZydVFQVEE2SmVwVHhDUlB4REhKRi8wVmFmaVM0N25KSG1BcjF2WmMvMkxwVnRJMXRqRmc5S1BKUVI5RlBlL1NDcHFmMk5URHBOQW0vcExwOW90QmJGdVFyQUdaY2xXK2dpNGFCY3BobzNpSkxlMWszYkJTNzBKeURWSjVNNkI1RkxQWWtUd2xSRUtLQy9hZnVyajdXbnJOdVViY3Y3elB6ZXhmS0FRd3p2U0ZUTVpxNTZrempzQ01TSkNTUEFSY2JxR0F3R2k5b2FiSnlFMjcvdklXb2Y2QjdlNHNON0JiTTM3d3oxWUxoM1EvaDdGcVlOcmdPRHJFRWwzSGhwNmtGOEdQWEV4ZmpDNjJiaGc4dDExTmhjR2RpUDFsK1oyOGVCaS9JQTVPNDVFdEtsODRHek1NTDJUMElHYzBOR1d1bkh0dE9LcW5Gekh6ZVNvSE5WeGwxeGRTalFRRlV6MkQ1SzVMWXYwT3RrL3NzelNXUFFJVWlFK2JhQURsUFBpZGR6MzF1Qml1Yk1GcUQ5T0ppSFVVM0FkdmxSZ0IifV19",
+        "id": "rs_kaeso_msg011CfvjivMLhEotiQb2NJz7h_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Claude Shannon was born on **April 30, 1916**, in Petoskey, Michigan. He grew up in nearby Gaylord, Michigan. He is known as the \"father of information theory\" because of his 1948 paper \"A Mathematical Theory of Communication.\" He died on February 24, 2001.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg011CfvjivMLhEotiQb2NJz7h_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 2745,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 131,
+      "output_tokens_details": {
+        "reasoning_tokens": 31
+      },
+      "total_tokens": 2876
+    },
+    "user": null
+  },
+  "refusal": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01yXeiEz9uQcJSQC8zxB9kMH",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-fable-5",
+    "object": "response",
+    "output": [],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 412,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 412
+    },
+    "user": null
+  },
+  "sampling-stop-sequences": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01NHM3nouWadf2xEdWEBHNqU",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "One, two, three, four, five.\n\n",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01NHM3nouWadf2xEdWEBHNqU_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 22,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 36
+    },
+    "user": null
+  },
+  "structured-output-json-schema": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01iViD1grjm4P8u6vkhoNaDR",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01iViD1grjm4P8u6vkhoNaDR_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 212,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 31,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 243
+    },
+    "user": null
+  },
+  "system-blocks-cache-ttl": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01roDLFwPZ7mBmV5xXNNQKMW",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Under clause 2 (Termination), either party must give 90 days' written notice to terminate the agreement.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01roDLFwPZ7mBmV5xXNNQKMW_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 6297,
+      "input_tokens_details": {
+        "cache_write_tokens": 6283,
+        "cached_tokens": 0
+      },
+      "output_tokens": 27,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 6324
+    },
+    "user": null
+  },
+  "system-string-multi-turn": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_019X21FyGADQztnWgK29HTmP",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "You said you work on machine learning.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg019X21FyGADQztnWgK29HTmP_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 52,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 11,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 63
+    },
+    "user": null
+  },
+  "text-simple": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01YPYNJ43PX3m1nxqjPEjfaw",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! It's nice to meet you. How can I help you today?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01YPYNJ43PX3m1nxqjPEjfaw_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 10,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 18,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 28
+    },
+    "user": null
+  },
+  "thinking-adaptive-effort": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01J1HvtbRvKNYVT1pvbdT8XV",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlVzZSB0aGUgRXVjbGlkZWFuIGFsZ29yaXRobS5cbjEwNzEgPSAyKjQ2MiArIDE0N1xuNDYyID0gMyoxNDcgKyAyMVxuMTQ3ID0gNyoyMSArIDBcbkdDRCA9IDIxIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiRXFIMTEvQjUxWVovUVd3MzV0c0tGa1hvNXVKYVZpV0x1QmRpMEgyMUJSNkpma2VBQWtiQ1NGcmdXaXg5QlJ0VjAwbllDc3M2NDVLaTRBNUpFbmJvaDVRbk5GVDA0LzY1U2NZWWk2OTByUUFwVmpkT1NOS0dzMWtDVEdJZjdoY1hzR2JFRTVVVHJNdFNxZ3JIODJ5ZWd5dk5LL0hxVm8xU3NVc0JxazNldGFXK202UjR4S0drQ1pVV2lndUZncVphNFlJb21jY0YrOVh6T1AyY2NqV2FKZVczeUdvUVFrOXFLOTlzSG92SCtYWGNMeDRzWExIQSs5cGFFNmtZZ1dsaDlDWGdHRGVUc3cwS0dONmJJRk5TbmR4Ykp2KzMxa0tLQU5lQWJkZ04vYWV3YmJNYzZISDdJOUxoOGp2ZUJRLzIifV19",
+        "id": "rs_kaeso_msg01J1HvtbRvKNYVT1pvbdT8XV_0",
+        "summary": [
+          {
+            "text": "Use the Euclidean algorithm.\n1071 = 2*462 + 147\n462 = 3*147 + 21\n147 = 7*21 + 0\nGCD = 21",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The greatest common divisor of 1071 and 462 is **21**.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01J1HvtbRvKNYVT1pvbdT8XV_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 26,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 214,
+      "output_tokens_details": {
+        "reasoning_tokens": 171
+      },
+      "total_tokens": 240
+    },
+    "user": null
+  },
+  "thinking-adaptive-interleaved-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01bzhnsPw1PaZ5gA4hRi8PdK",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkVxRS9UMzFrNTh1eWtMcTBVNzhraHdnSnhTUHNaQ3lpQjN6Qi9rc0x6bDl2bGRvWGRtQTBONDd1d1BnbDJLSVMrOE1SRTAzRE9OOVkvYm1yMkVNUzhwYWZKTWQvOXg1TFVyeEVGd0ZidkZZYjdvem9TYWZiRS90R0JBdTFXZjR0RjBYOUh6WWc4aE12UFJUTnRzODFUaW9KdFdRNlJyQ2FONDJ2WW1OWXoxK21BN1ZZRjY3cTdNQy83bzVJeXV2d3pHOXNqbE83N29WdDdjeG5qbWRuWUMwWGFIVEFUQ3B3ZDd5R3VQdWNMc2s2TjQrUVZ0ZGFZNTBhLzZFc0FuVnFWa0lLLzFyR216NFptR2JsRHBHSkErTTdtMC80SkNnWUV3M3lzUGlkL0hnL1kzMVVCQ3dYc1VUZHZyaVhJbzBUIn1dfQ",
+        "id": "rs_kaeso_msg01bzhnsPw1PaZ5gA4hRi8PdK_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+        "call_id": "toolu_011Dne1APNuqxuo9C4qyyihS",
+        "id": "fc_kaeso_msg01bzhnsPw1PaZ5gA4hRi8PdK_1",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1034,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 140,
+      "output_tokens_details": {
+        "reasoning_tokens": 88
+      },
+      "total_tokens": 1174
+    },
+    "user": null
+  },
+  "thinking-disabled": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01Va6mof8Ucr75Zq8PvVjk7c",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The city council approved, 7-2, a three-year plan to add 12 miles of downtown bike lanes.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01Va6mof8Ucr75Zq8PvVjk7c_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 48,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 25,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 73
+    },
+    "user": null
+  },
+  "thinking-display-omitted": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01P4SzwkefVSnGbZwKSjDTJY",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkVxR2NpWEFYYWd0WEtOeWl3R3R3am5kc1FqbExkaU5JNG8wYkd5S1ZSb3NQQ0MrOWx6MjNVanRCM05VNjNkWUxFdzlPcmg5cDZ6dVhmUXFTS0l3WjV4cUVQeXQva0h4dEhIQ1pKaWZXRTI1MUxvZytIQzdFcHhIODJGeXBsVzI2NmdQMmt1OFVNQkV4aUV6TWdWVTdqd0FXSmJWdGpodnNTcFRodnpVaml4QkwvRWE0RjViUDVHcHgxRXY4RW9YRHBDNlRRM25GbVhkaGc3SWUxWllIc0g1dHBBdEE1ZmNnc0NuV1FHQ0FKcGk4UU1PblhuVTR5bXoxeXVGbldzL0ZyemFqUVdYR3U2NnJLWXUrdVFoQ3paS3JWbzVUdyt4Q2Y2b1JqcVhKRVZ6YU04MnhRRnU0V21GMVRnQ3YxUjdMIn1dfQ",
+        "id": "rs_kaeso_msg01P4SzwkefVSnGbZwKSjDTJY_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "27 × 453 = 12,231.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01P4SzwkefVSnGbZwKSjDTJY_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 17,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 96,
+      "output_tokens_details": {
+        "reasoning_tokens": 79
+      },
+      "total_tokens": 113
+    },
+    "user": null
+  },
+  "thinking-enabled-budget": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01gWpepASbE5pFasXfFjGPVf",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIkxldCBtZSByZWNhbGwgdGhlIGNsYXNzaWMgRXVjbGlkLXN0eWxlIGFyZ3VtZW50IGFkYXB0ZWQgdG8gcHJpbWVzIG9mIHRoZSBmb3JtIDRrKzMuXG5cblN1cHBvc2UgZmluaXRlbHkgbWFueTogcDEsIC4uLiwgcGsuIExldCBOID0gNChwMS4uLnBrKSAtIDEuIE4gaXMgY29uZ3J1ZW50IHRvIDMgbW9kIDQuIEEgcHJvZHVjdCBvZiBwcmltZXMgdGhhdCBhcmUgYWxsIDEgbW9kIDQgaXMgMSBtb2QgNCwgc28gTiBoYXMgYSBwcmltZSBmYWN0b3IgcSB0aGF0IGlzIDMgbW9kIDQuIHEgY2Fubm90IGJlIGFueSBwaSBiZWNhdXNlIE4gbGVhdmVzIHJlbWFpbmRlciAtMSBvbiBkaXZpc2lvbiBieSBlYWNoIHBpLiBDb250cmFkaWN0aW9uLiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkVxRXVtNzROK2UxUGkwTnNZZGZIOU5ydW5rdEo2TVJyd25NSWJGajIwNWs1QmZ4OGxYSHdwQVhjSjFDQ20vOEl6Qzk3QjZML3J0ay9kSHdEMVBIWmlaTlpGVFM0RE5hUDFEbkRERUZoRE5EVEwxelRCL1luNExFallacVAvVXFEVHZRaGY2NlRzZnE1c1cxZWZRaVIza0NRV2NEaXVvc0JFSzVUK3BGcjRSVEhJVkgxTHRyODlDbndUUERDT3VJQXBDSGI5Y0NIQlJpbjdEQVNpT240aW9kamhtWC81MXZIZ0NQUlp2eVh6V1lpRkhFWVc0QUlzaFpFVkZob2wvUnlVSm9idlI4U1hKc3UwUHcwUnVURFNHTUhOTWtZTlhLWUpaeGdSTzdiZWF6Mm1HTkI5RHBvUW9DRVo5VFBIcVFEIn1dfQ",
+        "id": "rs_kaeso_msg01gWpepASbE5pFasXfFjGPVf_0",
+        "summary": [
+          {
+            "text": "Let me recall the classic Euclid-style argument adapted to primes of the form 4k+3.\n\nSuppose finitely many: p1, ..., pk. Let N = 4(p1...pk) - 1. N is congruent to 3 mod 4. A product of primes that are all 1 mod 4 is 1 mod 4, so N has a prime factor q that is 3 mod 4. q cannot be any pi because N leaves remainder -1 on division by each pi. Contradiction.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Yes. Assume there are only finitely many such primes p1, ..., pk and set N = 4·p1·…·pk − 1. N ≡ 3 (mod 4), so at least one prime factor q of N is ≡ 3 (mod 4), because products of primes ≡ 1 (mod 4) are ≡ 1 (mod 4). But q cannot equal any pi, since each pi leaves remainder −1 when dividing N. This contradiction shows there are infinitely many primes p with p mod 4 = 3.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01gWpepASbE5pFasXfFjGPVf_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 51,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 612,
+      "output_tokens_details": {
+        "reasoning_tokens": 287
+      },
+      "total_tokens": 663
+    },
+    "user": null
+  },
+  "thinking-interleaved-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_013uYDVcQfWZchN4HvY8V1RM",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIldlYXRoZXIgaXMgMjHCsEMgYW5kIHN1bm55LCB3aGljaCBpcyBmaW5lLiBOb3cgSSBuZWVkIHRoZSBsb2NhbCB0aW1lIHRvIGtub3cgd2hldGhlciBpdCdzIGRheXRpbWUuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiRXFFdk1MeTBtZ0w0Sm4wOTdQUnRVd1FxcEprSUlTT3d5ckx1MW9BS2RZNGk3bE5SNmkyYUZNVFRUb2NoRTVHU3ZpR1BNakRLZmU3NHNTUGZxRUhaQjBIeWlrcEZxa29MMDlTZ1pKK05PTC9IM3V1c2Jab1lVT0pvSHo4RmJRMFdYVTdxcEFHZnYyUlMyUklkMFBLVGVEZXl4UnNlUmRlUStvM1hRYWpORzZrbDRLc0VpZVJOMDB5RkpJczFBQVMwYnRzZDc5cDZLR083aUloVEJRT1ovQzlpQXlRR3p4VHByNnhWdWp4UktZNXphejZ4NzhnSDhhL2ExNkFBcVhrMGdyWmlTVkRhZ1k0N0RiUnRPQk11a0dPYWpmekNkRGJQR2xIOWRSVjBCOGF5MkdXRWZSanBjNkxnWFFZNm43NEEifV19",
+        "id": "rs_kaeso_msg013uYDVcQfWZchN4HvY8V1RM_0",
+        "summary": [
+          {
+            "text": "Weather is 21°C and sunny, which is fine. Now I need the local time to know whether it's daytime.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+        "call_id": "toolu_01afnDK4mGFJyw1zWvMT248V",
+        "id": "fc_kaeso_msg013uYDVcQfWZchN4HvY8V1RM_1",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 912,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 118,
+      "output_tokens_details": {
+        "reasoning_tokens": 49
+      },
+      "total_tokens": 1030
+    },
+    "user": null
+  },
+  "thinking-redacted": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01ZYJXVVjfNgLCKjtMKPUDV1",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIkF1cm9yYSB2aXNpYmlsaXR5IGRlcGVuZHMgbW9zdGx5IG9uIGNsb3VkIGNvdmVyLCBzbyBJIHNob3VsZCBjaGVjayB0aGUgY3VycmVudCB3ZWF0aGVyIGluIFJleWtqYXZpayBmaXJzdC4iXSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJraW5kIjoiYW50aHJvcGljX3RoaW5raW5nX3NpZ25hdHVyZSIsImRhdGEiOiJFcUhhWnFNKzFZRGt2YWxLTk9uWjUvRVFsSitzMmYwQmxEUEtNYkx1QWl5TExqQUx0NDUrK2k0Y3pHRzlPR2Q5cWppc1owZ1pvbGVraFI3eXp6K21QbkFIazA1M0g2N1U5TThFaThYanRvdFh5eVNuMmNLRDhBdEMxZ21ydXBJZFB4OFVPekljN2ZpUVdMTDIvbU5XNlJhdG10WExWbjhjNDBJRHhLK3hDbStTdTdFVktoVGZacmFxR3dFQW1mS2pUWW1xbEFoRHkvLzlHYU5lLzludzFOM2lKMVVWQkdHQm8rVnNGdjR2K3ZwODkwQmdjaTkyak5jNUpJbEVHT2xyNVhxUS82bk1GQ1V6SkNHMGdTYXJ2WldEdnA2UWxXRTkyYUYyUmMvQzRBei9DYTdYbWptaXNnOFB0TzYxNTErWSJ9XX0",
+        "id": "rs_kaeso_msg01ZYJXVVjfNgLCKjtMKPUDV1_0",
+        "summary": [
+          {
+            "text": "Aurora visibility depends mostly on cloud cover, so I should check the current weather in Reykjavik first.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfcmVkYWN0ZWRfdGhpbmtpbmciLCJkYXRhIjoiRXJuZVZZZEoySVZDbExjTGZXY3RGSWdnaUxQdEUyS29vbytaU1NoVXB3ZXdkeW9UdGtlcGZWME5JSUJJYmlWSTRGVGgyaHdzbGtOV1NJRldPZTI4bTEyWXZHSHNYUkZHNytPVzBmbzFZaktTemZvRHZraFoxbWZLeFpRQWRRK3dEbUJFN0Y4bVBZVDdXTldzWmc1OHpvNzdwKzJ6WVFrOFZCV3pQaGN2RlliUXp3ZzBaT0hueWQwclNpTXNKVlQ1WlJHbS92dnpqNjEwMm5hMndZbUR3VUloOWhpUDB0Y0tFczBMdW9rNm00KythSGswWHhnZ3VwWGxTL0poQnVrbkN3MWZlNk1DcEMrdXU5ZG1weENQZk9jcGJ5aktobzRicFA1Q1hrWEtGZTJ3MS9vb0lTL2lSMDVNT0tlS2xyc3hWbjlaV2RlelF5OGJBNFdHejdRVW0xZmVYcEZKcGtQODF5RER0ZnlpT3VWYlM3Qnp3QmNNL25nRXgyOGRmYmw2Uk9FYkZLTnFWZENWeDd1SHhBem40WkJRRjQ0ZzRFY1NBRFgxQ0tnRGEyaz0ifV19",
+        "id": "rs_kaeso_msg01ZYJXVVjfNgLCKjtMKPUDV1_1",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Reykjavik, Iceland\",\n        \"unit\": \"celsius\"\n      }",
+        "call_id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+        "id": "fc_kaeso_msg01ZYJXVVjfNgLCKjtMKPUDV1_2",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 689,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 254,
+      "output_tokens_details": {
+        "reasoning_tokens": 181
+      },
+      "total_tokens": 943
+    },
+    "user": null
+  },
+  "tool-choice-tool": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01yxUmuZMiWnEHiT3DdtWvSA",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\n        \"location\": \"Lisbon, Portugal\"\n      }",
+        "call_id": "toolu_01MwfbnjSw6affPfGTrTjhbJ",
+        "id": "fc_kaeso_msg01yxUmuZMiWnEHiT3DdtWvSA_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 655,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 41,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 696
+    },
+    "user": null
+  },
+  "tool-result-multi-turn": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01NE63JEDrNwXrF2wmKNVhmW",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Paris: 18°C with light rain (I couldn't get the local time; the time service returned an error). Tokyo: 24°C and clear, and it's 22:14 local time.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01NE63JEDrNwXrF2wmKNVhmW_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1288,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 52,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 1340
+    },
+    "user": null
+  },
+  "tools-parallel": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01Huvcb6LuCJCdd2Zff7wdbn",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll look up the weather and local time for both cities.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01Huvcb6LuCJCdd2Zff7wdbn_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Paris, France\",\n        \"unit\": \"celsius\"\n      }",
+        "call_id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+        "id": "fc_kaeso_msg01Huvcb6LuCJCdd2Zff7wdbn_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Tokyo, Japan\",\n        \"unit\": \"celsius\"\n      }",
+        "call_id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+        "id": "fc_kaeso_msg01Huvcb6LuCJCdd2Zff7wdbn_2",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Europe/Paris\"\n      }",
+        "call_id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+        "id": "fc_kaeso_msg01Huvcb6LuCJCdd2Zff7wdbn_3",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      },
+      {
+        "arguments": "{\n        \"timezone\": \"Asia/Tokyo\"\n      }",
+        "call_id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+        "id": "fc_kaeso_msg01Huvcb6LuCJCdd2Zff7wdbn_4",
+        "name": "get_time",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 742,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 231,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 973
+    },
+    "user": null
+  },
+  "tools-single": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01aZVoMeJ4jfgoELtozyLhH2",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-4-6",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll check the current weather in San Francisco for you.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01aZVoMeJ4jfgoELtozyLhH2_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"San Francisco, CA\",\n        \"unit\": \"fahrenheit\"\n      }",
+        "call_id": "toolu_01VLLqZ1bfs3WXvVeYqZPtE7",
+        "id": "fc_kaeso_msg01aZVoMeJ4jfgoELtozyLhH2_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 578,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 87,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 665
+    },
+    "user": null
+  },
+  "unknown-fields": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01nJmcPUKwCP7MRz57RqJYq4",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! How can I help?",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01nJmcPUKwCP7MRz57RqJYq4_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 15,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 27
+    },
+    "user": null
+  },
+  "web-search-server-tool": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01R2R14PadDFvMb1xgawpzvm",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-opus-5-5",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll search for when Claude Shannon was born.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01R2R14PadDFvMb1xgawpzvm_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Based on the search results, ",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan",
+            "type": "output_text"
+          },
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": ".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 6039,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 931,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 6970
+    },
+    "user": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_016tDAXmM6K8jLaizKWBSEzQ",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Write the subject line in the imperative mood and keep it under about 50 characters, e.g. \"Fix race in cache eviction\"."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 19,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 30,
+    "service_tier": "priority",
+    "inference_geo": "us"
+  }
+}

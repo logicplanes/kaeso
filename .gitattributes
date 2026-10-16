@@ -1,0 +1,22 @@
+* text=auto eol=lf
+
+crates/kaeso-codecs/fixtures/**/*.json -text
+crates/kaeso-codecs/fixtures/**/*.sse -text
+
+*.snap linguist-generated
+Cargo.lock linguist-generated
+pnpm-lock.yaml linguist-generated
+openapi.json linguist-generated
+.sqlx/** linguist-generated
+crates/kaeso-core/data/models-dev.json linguist-generated
+apps/console/src/test/fixtures/*.json linguist-generated
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.wav binary
+*.woff2 binary

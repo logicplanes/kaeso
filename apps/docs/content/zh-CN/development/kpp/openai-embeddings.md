@@ -1,0 +1,67 @@
+---
+title: OpenAI Embeddings
+description: OpenAI Embeddings 格式的每个字段如何映射到 KPP 以及如何映射回来。
+order: 7
+---
+
+OpenAI Embeddings，`POST /v1/embeddings`。编解码器：`kaeso_codecs::openai_embeddings::OpenAiEmbeddings`。
+
+来源：OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（`CreateEmbeddingRequest`、`CreateEmbeddingResponse`、`Embedding`、`ErrorResponse`）、[创建接口参考](https://developers.openai.com/api/reference/resources/embeddings/methods/create)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
+
+表格中使用以下术语：
+
+- **类型化**：一个类型化的 KPP 字段。
+- **extras**：`Extras::fields`，绑定到 `openai_embeddings`；其他方言会拒绝它们（[Extras](cross-format.md#extras)）。
+- **形式标记**：编解码器私有的 `Extras::form` 标记；`verbatim` 保留已声明键的 `null` 写法。
+
+## 请求：`CreateEmbeddingRequest`
+
+| Wire 字段 | KPP | 说明 |
+|---|---|---|
+| `model` | `EmbedRequest.model`（类型化） | 必填。 |
+| `input` 字符串 | `input = [EmbedInput::Text]`（类型化） | 单个文本的规范写法。 |
+| `input` 字符串数组 | 每个字符串一个 `EmbedInput::Text`（类型化） | 只有一个元素的数组：形式标记 `input: "array"`。 |
+| `input` token ID 数组 | `input = [EmbedInput::Tokens]`（类型化） | 单个 token 数组的规范写法。 |
+| `input` token ID 数组的数组 | 每个数组一个 `EmbedInput::Tokens`（类型化） | 只有一个元素的数组：形式标记 `input: "nested"`。 |
+| `input` 空数组 | `input = []` | 对 API 无效（`minItems: 1`）；网关在解码后运行的 `EmbedRequest::validate()` 会以 `InvalidRequest` 拒绝它。 |
+| `input` 其他任何结构（不是 `u32` 的数字、混合数组） | `InvalidRequest` | |
+| `encoding_format` 为 `float`、`base64` 或缺失 | `encoding` 为 `Float`、`Base64` 或 `Float`（类型化） | 显式的 `float`：形式标记 `encoding_format: "float"`。其他值：`InvalidRequest`，因为 KPP 中没有存放它们的位置。 |
+| `dimensions` | `dimensions`（类型化） | |
+| `user` | `user`（类型化） | |
+| `null` 值 | 形式标记（`verbatim`） | |
+| 未知键 | extras | |
+| 请求头 `openai-beta` | extras `header:openai-beta` | 只转发给 Embeddings。 |
+
+规范允许 1 到 2,048 个输入，每个输入最多 8,192 个 token。编解码器不强制执行这些限制，超出时由服务商返回它自己的 400。
+
+`check()` 会拒绝生成请求和 token 计数请求（`generation request`）、混合文本输入与 token 输入的请求（`mixed text and token inputs`），以及 `cross::check_foreign` 拒绝的一切内容，例如其他方言的 extras（[请求](cross-format.md#请求)）。
+
+## 回复：`CreateEmbeddingResponse`
+
+| Wire 字段 | KPP | 说明 |
+|---|---|---|
+| `object`（`list`） | 无 | 其他值：形式标记 `object`。 |
+| `model` | `EmbedResponse.model`（类型化） | |
+| `data[].index` | `Embedding.index`（类型化） | |
+| `data[].embedding` 数字数组 | `EmbeddingVector::Float`（`f64`，原样写回）（类型化） | |
+| `data[].embedding` 字符串 | `EmbeddingVector::Base64`（按收到的原样）（类型化） | 服务商以另一种编码回复时，回复会转换为应用的 `encoding_format`（取自 `EncodeCtx::request`）：浮点数变为小端 `f32` 的 base64，base64 则变为以最短 `f32` 形式写出的浮点数。字节数不是 `f32` 整数倍的 base64 无法转换：`ProviderError`。 |
+| `data[].object`（`embedding`） | 无 | 其他值：embedding 上的形式标记 `object`。未知键：该 embedding 的 extras。 |
+| `usage.prompt_tokens` | `usage.input_tokens`（类型化） | 用量对象保留在 `usage.raw` 中。 |
+| `usage.total_tokens` | 推导得出 | 写为 `prompt_tokens`，因为嵌入没有输出 token；本方言的原始用量对象优先。 |
+| `usage` 为 `null` | 形式标记（`verbatim`） | |
+| 没有 `usage` | 形式标记 `no_usage` | 服务商没有发送用量对象时，不会凭空生成一个。 |
+| 未知键 | extras | |
+
+生成请求的回复无法以这种格式写出（`Unsupported`，`generation response`）。
+
+## 流式
+
+该端点不支持流式。流编码器对每个事件都返回 `Unsupported`（`streaming`）；流解码器报告一个带 `Unsupported`（`streaming`）的 `StreamEvent::Error`，之后不再产生任何内容。
+
+## 错误
+
+错误使用 OpenAI 的错误结构 `{"error": {message, type, param, code, misalignment}}`。存在 `misalignment` 时，它会连同整个错误体保留在 `KppError.raw` 中，并原样再次发送给 OpenAI Embeddings 和 Responses 应用。解码和编码遵循与 [OpenAI Responses 的错误](openai-responses.md#错误errorresponse)相同的表格，其实现也与 Responses 编解码器共用。在这里解码的错误带有来源 `openai_embeddings`。
+
+## 模型
+
+`GET /v1/models` 和 `GET /v1/models/{model}` 在每个 OpenAI API 中都使用同一种结构。本编解码器使用 OpenAI Chat Completions 页面中[模型](openai-chat.md#模型)一节所述的共用实现对其编码和解码，fixture 位于 `fixtures/openai_chat/models/`。解码出的 extras 带有来源 `openai_embeddings`。

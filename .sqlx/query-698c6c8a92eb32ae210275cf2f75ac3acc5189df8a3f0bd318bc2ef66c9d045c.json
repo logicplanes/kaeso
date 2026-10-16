@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM project_provider_keys WHERE org_id = $1 AND credential_id = $2 AND NOT (project_id = ANY($3))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "698c6c8a92eb32ae210275cf2f75ac3acc5189df8a3f0bd318bc2ef66c9d045c"
+}

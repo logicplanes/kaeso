@@ -1,0 +1,17 @@
+{
+  "model": "gpt-audio-mini",
+  "modalities": [
+    "text",
+    "audio"
+  ],
+  "audio": {
+    "voice": "marin",
+    "format": "wav"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello."
+    }
+  ]
+}

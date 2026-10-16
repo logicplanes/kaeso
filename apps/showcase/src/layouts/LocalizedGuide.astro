@@ -1,0 +1,24 @@
+---
+import Shell from "./Shell.astro";
+import GuideBody from "./GuideBody.astro";
+import type { GuideVersion } from "~/lib/guides";
+
+interface Props {
+  versions: GuideVersion[];
+  contentClass?: string | undefined;
+}
+const { versions, contentClass } = Astro.props;
+const english = versions.find((v) => v.lang === "en") ?? versions[0]!;
+---
+
+<Shell title={english.title} description={english.description}>
+  {versions.map(({ lang, title, description, headings, Content }) => (
+    <div data-docs-lang={lang} lang={lang} data-docs-page-title={title}>
+      <GuideBody title={title} description={description} tocId={`toc-${lang}`} toc={headings.filter((h) => h.depth === 2).map((h) => [h.slug, h.text])}>
+        <div class={contentClass}>
+          <Content />
+        </div>
+      </GuideBody>
+    </div>
+  ))}
+</Shell>

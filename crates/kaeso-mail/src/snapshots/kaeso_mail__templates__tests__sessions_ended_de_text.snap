@@ -1,0 +1,12 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Sie wurden von Kaeso abgemeldet
+
+Sie wurden abgemeldet
+
+Ein Admin hat alle Sitzungen Ihres Kontos beendet; melden Sie sich erneut an.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

@@ -1,0 +1,40 @@
+[package]
+name = "kaeso-testkit"
+description = "Test-only helpers for the Kaeso gateway: mock providers built from kpp fixtures, a mock identity provider, and database fixtures."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+kaeso-kpp.workspace = true
+kaeso-codecs.workspace = true
+futures.workspace = true
+bytes.workspace = true
+kaeso-store.workspace = true
+axum = { workspace = true, features = ["form"] }
+tokio.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+clickhouse.workspace = true
+secrecy.workspace = true
+uuid.workspace = true
+url.workspace = true
+openidconnect.workspace = true
+rsa.workspace = true
+chrono.workspace = true
+serde.workspace = true
+sha2.workspace = true
+base64.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+
+[lints.clippy]
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"

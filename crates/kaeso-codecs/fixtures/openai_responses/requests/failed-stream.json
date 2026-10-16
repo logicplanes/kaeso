@@ -1,0 +1,5 @@
+{
+  "model": "gpt-5.5",
+  "input": "Summarize the plot of Hamlet in three sentences.",
+  "stream": true
+}

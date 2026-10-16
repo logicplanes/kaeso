@@ -1,0 +1,73 @@
+{
+  "model": "claude-sonnet-4-6",
+  "id": "msg_011Cfvjiaq5WaKomkmqvovUE",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I'll fetch the weather and local time for both Paris and Tokyo simultaneously!"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01Vc2E4ZwGgokZ5A1Jdk61LS",
+      "name": "get_weather",
+      "input": {
+        "location": "Paris, France"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01U78ahksJCEinV7yXB7GKDf",
+      "name": "get_weather",
+      "input": {
+        "location": "Tokyo, Japan"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_017uz8WdQWtvBtgY6GXy7Ctz",
+      "name": "get_time",
+      "input": {
+        "timezone": "Europe/Paris"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01TH3Z8k5ADaqn63qu7Y2hRx",
+      "name": "get_time",
+      "input": {
+        "timezone": "Asia/Tokyo"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 712,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 185,
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

@@ -1,0 +1,13 @@
+{
+  "model": "gpt-4.1",
+  "input": "Name the largest planet in the Solar System in one sentence.",
+  "temperature": 0,
+  "top_logprobs": 2,
+  "include": [
+    "message.output_text.logprobs"
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_obfuscation": false
+  }
+}

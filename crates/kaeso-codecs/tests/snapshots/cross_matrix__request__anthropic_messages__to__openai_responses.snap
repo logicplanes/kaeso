@@ -1,0 +1,1214 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "cache-prewarm": {
+    "body": {
+      "input": [
+        {
+          "content": "warmup",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are an expert software engineer with deep knowledge of distributed systems...",
+      "max_output_tokens": 0,
+      "model": "claude-opus-5-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "claude-code-mid-conversation-system": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": [
+            {
+              "text": "x-anthropic-billing-header: cc_version=2.1.296.cf4; cc_entrypoint=claude-desktop",
+              "type": "input_text"
+            },
+            {
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+              "type": "input_text"
+            }
+          ],
+          "role": "developer"
+        },
+        {
+          "content": [
+            {
+              "text": "<system-reminder>\nToday's date is 2026-10-12.\n</system-reminder>\n",
+              "type": "input_text"
+            },
+            {
+              "text": "say hi",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": "# Environment\nYou have been invoked in the following environment: \n - Primary working directory: /tmp/work\n - Platform: darwin",
+          "role": "developer"
+        }
+      ],
+      "max_output_tokens": 128000,
+      "model": "claude-opus-5-5",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "safety_identifier": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Reads a file from the local filesystem.",
+          "name": "Read",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "file_path": {
+                "description": "The absolute path to the file to read",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_path"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "context-management-clear-tool-uses": {
+    "message": "`context_management` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "unsupported": "context_management"
+  },
+  "document-custom-content": {
+    "message": "`document content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
+    "unsupported": "document content block"
+  },
+  "document-file-and-text": {
+    "message": "`document title` is not supported by OpenAI Responses. Remove the document title.",
+    "unsupported": "document title"
+  },
+  "document-pdf-base64": {
+    "message": "`document title` is not supported by OpenAI Responses. Remove the document title.",
+    "unsupported": "document title"
+  },
+  "document-pdf-url": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "file_url": "https://assets.anthropic.com/m/1cd9d098ac3e6467/original/Claude-3-Model-Card-October-Addendum.pdf",
+              "type": "input_file"
+            },
+            {
+              "text": "What are the key findings in this document?",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-opus-5-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "document-text-citations": {
+    "message": "`text document` is not supported by OpenAI Responses. Send the text as a text block, or as a PDF.",
+    "unsupported": "text document"
+  },
+  "explicit-nulls": {
+    "message": "`text document` is not supported by OpenAI Responses. Send the text as a text block, or as a PDF.",
+    "unsupported": "text document"
+  },
+  "image-base64": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            },
+            {
+              "text": "Describe this image.",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "image-url-and-file": {
+    "message": "`file id` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Provider file ids (here `file_011CNha8iCJcU1wXNR6q4V8w`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "unsupported": "file id"
+  },
+  "max-tokens": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum physics",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 10,
+      "model": "claude-opus-5-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "metadata-service-tier": {
+    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "service_tier"
+  },
+  "mid-conversation-system-tool-results": {
+    "body": {
+      "input": [
+        {
+          "content": "Run the test suite and fix any failures.",
+          "role": "user"
+        },
+        {
+          "arguments": "{}",
+          "call_id": "toolu_01",
+          "name": "run_tests",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01",
+          "output": "12 passed, 0 failed",
+          "type": "function_call_output"
+        },
+        {
+          "content": "The user sent the following message while you were working: also update the changelog before you finish.",
+          "role": "developer"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "description": "Run the project's test suite.",
+          "name": "run_tests",
+          "parameters": {
+            "properties": {},
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "multi-turn-array-content": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the capital of Australia?",
+          "role": "user"
+        },
+        {
+          "content": "The capital of Australia is Canberra.",
+          "role": "assistant"
+        },
+        {
+          "content": "And of New Zealand?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 512,
+      "model": "claude-haiku-4-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "pause-turn-continuation": {
+    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
+    "unsupported": "server_tool_use content block"
+  },
+  "refusal": {
+    "body": {
+      "input": [
+        {
+          "content": "Write a working exploit for an unpatched remote code execution bug in a popular VPN appliance.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-fable-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "sampling-stop-sequences": {
+    "message": "`top_k` is not supported by OpenAI Responses. OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.",
+    "unsupported": "top_k"
+  },
+  "sampling-top-p": {
+    "body": {
+      "input": [
+        {
+          "content": "Suggest a name for a grey cat.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "claude-haiku-4-5",
+      "store": false,
+      "top_p": 0.9
+    },
+    "path": "/v1/responses"
+  },
+  "service-tier-standard-only": {
+    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "service_tier"
+  },
+  "structured-output-json-schema": {
+    "body": {
+      "input": [
+        {
+          "content": "Extract the key information from this email: John Smith (john@example.com) is interested in our Enterprise plan and wants to schedule a demo for next Tuesday at 2pm.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "response",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "demo_requested": {
+                "type": "boolean"
+              },
+              "email": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "plan_interest": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "plan_interest",
+              "demo_requested"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "system-blocks-cache-ttl": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "You are an AI assistant tasked with analyzing legal contracts. Answer only from the contract text the user provides, cite clause numbers, and say clearly when the contract is silent on a question.",
+              "type": "input_text"
+            },
+            {
+              "text": "Today's date is 2026-10-11.",
+              "type": "input_text"
+            }
+          ],
+          "role": "developer"
+        },
+        {
+          "content": [
+            {
+              "text": "<contract>\n1. Term. This agreement runs for 24 months from the Effective Date.\n2. Termination. Either party may terminate with 90 days written notice.\n</contract>",
+              "type": "input_text"
+            },
+            {
+              "text": "How much notice is needed to terminate?",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "system-string-multi-turn": {
+    "body": {
+      "input": [
+        {
+          "content": "My name is Alex. I work on machine learning.",
+          "role": "user"
+        },
+        {
+          "content": "Nice to meet you, Alex! How can I help with your ML work today?",
+          "role": "assistant"
+        },
+        {
+          "content": "What did I say I work on?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant that remembers our conversation.",
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "task-budget": {
+    "message": "`output_config.task_budget` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "unsupported": "output_config.task_budget"
+  },
+  "text-simple": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello, Claude",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-opus-5-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-adaptive-effort": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the greatest common divisor of 1071 and 462?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-opus-5-5",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-adaptive-interleaved-tools": {
+    "body": {
+      "input": [
+        {
+          "content": "Is it a good time to visit the Kyoto gardens right now?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n            \"location\": \"Kyoto, Japan\",\n            \"unit\": \"celsius\"\n          }",
+          "call_id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+          "output": "16°C, overcast",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-between-tools": {
+    "message": "`reasoning mode \"between_tools\"` is not supported by OpenAI Responses. Remove the reasoning mode or set a reasoning effort.",
+    "unsupported": "reasoning mode \"between_tools\""
+  },
+  "thinking-disabled": {
+    "body": {
+      "input": [
+        {
+          "content": "Summarize this article in one sentence: The city council voted 7-2 on Tuesday to extend the downtown bike lane network by 12 miles over the next three years.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 4096,
+      "model": "claude-sonnet-5",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-display-omitted": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 27 * 453?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 8000,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-enabled-budget": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Are there an infinite number of prime numbers such that n mod 4 == 3?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-sonnet-4-6",
+      "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-interleaved-tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is it a good moment for a picnic in Paris right now?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n            \"location\": \"Paris, France\",\n            \"unit\": \"celsius\"\n          }",
+          "call_id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+          "output": "21°C, sunny",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-sonnet-4-6",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-redacted": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is it a good day to see the northern lights in Reykjavik?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-sonnet-4-6",
+      "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-redacted-replay": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is it a good day to see the northern lights in Reykjavik?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n            \"location\": \"Reykjavik, Iceland\",\n            \"unit\": \"celsius\"\n          }",
+          "call_id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+          "output": "-2°C, clear skies, wind 8 km/h",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 16000,
+      "model": "claude-sonnet-4-6",
+      "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-choice-any-no-parallel": {
+    "body": {
+      "input": [
+        {
+          "content": "Weather in Berlin and Rome, please.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "parallel_tool_calls": false,
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-choice-auto-no-parallel": {
+    "body": {
+      "input": [
+        {
+          "content": "Is it raining in Seattle or Portland?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "parallel_tool_calls": false,
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-choice-none": {
+    "body": {
+      "input": [
+        {
+          "content": "Without calling any tools: what is a typical October temperature in Oslo?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false,
+      "tool_choice": "none",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-choice-tool": {
+    "body": {
+      "input": [
+        {
+          "content": "I'm flying to Lisbon tomorrow.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "parallel_tool_calls": true,
+      "store": false,
+      "tool_choice": {
+        "name": "get_weather",
+        "type": "function"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-result-multi-turn": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather and the local time in Paris and in Tokyo?",
+          "role": "user"
+        },
+        {
+          "content": "I'll look up the weather and local time for both cities.",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\n            \"location\": \"Paris, France\",\n            \"unit\": \"celsius\"\n          }",
+          "call_id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\n            \"location\": \"Tokyo, Japan\",\n            \"unit\": \"celsius\"\n          }",
+          "call_id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\n            \"timezone\": \"Europe/Paris\"\n          }",
+          "call_id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+          "name": "get_time",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\n            \"timezone\": \"Asia/Tokyo\"\n          }",
+          "call_id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+          "name": "get_time",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+          "output": "18°C, light rain",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+          "output": [
+            {
+              "text": "24°C, clear skies. Radar image attached.",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            }
+          ],
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+          "output": "ConnectionError: the time service is not available (HTTP 503)",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+          "output": "2026-10-11T22:14:05+09:00",
+          "type": "function_call_output"
+        },
+        {
+          "content": "Keep the answer short.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-search-deferred-tools": {
+    "message": "`tool_reference content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format. From Claude Code, unset `ENABLE_TOOL_SEARCH` or set it to `false`.",
+    "unsupported": "tool_reference content block"
+  },
+  "tools-parallel": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather and the local time in Paris and in Tokyo?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Get the current time in a given time zone",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "timezone": {
+                "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-single": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather like in San Francisco?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "claude-sonnet-4-6",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "unknown-choice-and-format": {
+    "message": "`output_config.format` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "output_config.format"
+  },
+  "unknown-fields": {
+    "message": "`x_future_field` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "x_future_field"
+  },
+  "unknown-tool-choice-without-name": {
+    "message": "tool_choice `tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
+    "unsupported": "tool_choice `tool`"
+  },
+  "web-search-result-replay": {
+    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
+    "unsupported": "server_tool_use content block"
+  },
+  "web-search-server-tool": {
+    "message": "`web_search_20250305 tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Input tag 'web_search_20250305' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "unsupported": "web_search_20250305 tool"
+  }
+}

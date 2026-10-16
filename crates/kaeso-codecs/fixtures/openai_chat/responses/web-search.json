@@ -1,0 +1,55 @@
+{
+  "id": "chatcmpl-YdXqw9E9zYRQiqSIu9o0yl3R9Q5M5",
+  "object": "chat.completion",
+  "created": 1791650558,
+  "model": "gpt-5-search-api",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "This week a volunteer-built community garden opened in Hackney, giving 40 families allotment space ([example.com](https://example.com/news/2026/10/08/community-garden-opens?utm_source=openai)). Separately, several Camden libraries extended their opening hours to 10 pm ([example.org](https://example.org/london/2026/10/09/library-late-hours?utm_source=openai)).",
+        "refusal": null,
+        "annotations": [
+          {
+            "type": "url_citation",
+            "url_citation": {
+              "end_index": 192,
+              "start_index": 99,
+              "title": "Community garden opens with 40 family plots",
+              "url": "https://example.com/news/2026/10/08/community-garden-opens?utm_source=openai"
+            }
+          },
+          {
+            "type": "url_citation",
+            "url_citation": {
+              "end_index": 360,
+              "start_index": 269,
+              "title": "Libraries extend evening opening hours",
+              "url": "https://example.org/london/2026/10/09/library-late-hours?utm_source=openai"
+            }
+          }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1834,
+    "completion_tokens": 96,
+    "total_tokens": 1930,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_1812bc6de9"
+}

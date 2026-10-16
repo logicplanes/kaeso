@@ -1,0 +1,9 @@
+services:
+  console:
+    image: caddy:2.11.7-alpine
+    command: ["caddy", "respond", "--listen", ":3000", "--header", "Content-Type: text/html; charset=utf-8", "<!doctype html><title>Kaeso</title>"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

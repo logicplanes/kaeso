@@ -1,0 +1,85 @@
+[anthropic."claude-haiku-4-5"]
+adaptive_thinking = false
+efforts = []
+
+[anthropic."claude-haiku-4-5-20251001"]
+adaptive_thinking = false
+efforts = []
+
+[anthropic."claude-sonnet-4-5"]
+adaptive_thinking = false
+efforts = []
+
+[anthropic."claude-sonnet-4-5-20250929"]
+adaptive_thinking = false
+efforts = []
+
+[anthropic."claude-opus-4-5"]
+adaptive_thinking = false
+efforts = ["low", "medium", "high"]
+
+[anthropic."claude-opus-4-5-20251101"]
+adaptive_thinking = false
+efforts = ["low", "medium", "high"]
+
+[anthropic."claude-opus-4-6"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "max"]
+
+[anthropic."claude-sonnet-4-6"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "max"]
+
+[anthropic."claude-opus-4-7"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-opus-4-8"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-opus-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-sonnet-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-fable-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-opus-5-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-sonnet-5-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-haiku-5-5"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[anthropic."claude-fable-5-1"]
+adaptive_thinking = true
+efforts = ["low", "medium", "high", "xhigh", "max"]
+
+[openai."text-embedding-3-small"]
+egress_dialect = "openai_embeddings"
+
+[openai."text-embedding-3-large"]
+egress_dialect = "openai_embeddings"
+
+[openai."text-embedding-ada-002"]
+egress_dialect = "openai_embeddings"
+
+[openai."gpt-5.4-mini"]
+egress_dialect = "openai_responses"
+
+[openai."gpt-6-astra"]
+egress_dialect = "openai_responses"
+
+[openai."gpt-5.6-terra"]
+egress_dialect = "openai_responses"

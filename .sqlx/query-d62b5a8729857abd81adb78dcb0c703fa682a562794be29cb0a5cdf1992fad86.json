@@ -1,0 +1,196 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, period, amount, hard, alert_thresholds, created_at, updated_at FROM limits WHERE project_id = $1 ORDER BY level, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "level",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "api_key_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "api_key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "catalogue_model_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "catalogue_model_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "period",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "period"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "amount",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "hard",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "hard"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "alert_thresholds",
+        "type_info": "Int2Array",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "alert_thresholds"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d62b5a8729857abd81adb78dcb0c703fa682a562794be29cb0a5cdf1992fad86"
+}

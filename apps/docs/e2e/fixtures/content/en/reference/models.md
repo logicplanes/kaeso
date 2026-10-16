@@ -1,0 +1,14 @@
+---
+title: Models
+description: The model names a key may call, and their aliases.
+---
+
+A project's catalogue lists the models its keys may call.
+
+## Names
+
+A model is called by its native name (`claude-haiku-4-5`), by `provider/model` (`anthropic/claude-haiku-4-5`), or by an alias.
+
+## Aliases
+
+An alias is a name of the project's own, such as `fast`, that points at a model of its catalogue.

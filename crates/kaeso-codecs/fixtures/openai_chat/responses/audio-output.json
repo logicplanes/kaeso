@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-8Wo4aPi29WHbgP7meI6IHyHz5wXGi",
+  "object": "chat.completion",
+  "created": 1791644032,
+  "model": "gpt-audio-mini-2025-12-15",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "annotations": [],
+        "audio": {
+          "id": "audio_zlzzifcgwgcsfrvwal9cumgvhexml0nr",
+          "expires_at": 1791647632,
+          "data": "UklGRjQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "transcript": "Hello!"
+        }
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 31,
+    "total_tokens": 45,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 25,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_9c0636e4c8"
+}

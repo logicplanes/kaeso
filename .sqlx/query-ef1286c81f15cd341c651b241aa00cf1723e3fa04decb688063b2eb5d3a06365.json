@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM invites WHERE org_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > now() AND project_roles @> jsonb_build_array(jsonb_build_object('role_id', $2::text))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "ef1286c81f15cd341c651b241aa00cf1723e3fa04decb688063b2eb5d3a06365"
+}

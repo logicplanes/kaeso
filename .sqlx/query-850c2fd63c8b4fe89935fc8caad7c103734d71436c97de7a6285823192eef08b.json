@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT avatar AS \"avatar!\" FROM organizations WHERE id = $1 AND avatar IS NOT NULL UNION SELECT avatar FROM projects WHERE org_id = $1 AND avatar IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "avatar!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "850c2fd63c8b4fe89935fc8caad7c103734d71436c97de7a6285823192eef08b"
+}

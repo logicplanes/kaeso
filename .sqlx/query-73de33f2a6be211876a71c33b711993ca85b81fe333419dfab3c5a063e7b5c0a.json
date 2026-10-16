@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_models SET delisted_at = $3, last_known = $4, updated_at = now() WHERE provider = $1 AND model_id = $2 AND NOT custom AND delisted_at IS NULL RETURNING project_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "project_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "73de33f2a6be211876a71c33b711993ca85b81fe333419dfab3c5a063e7b5c0a"
+}

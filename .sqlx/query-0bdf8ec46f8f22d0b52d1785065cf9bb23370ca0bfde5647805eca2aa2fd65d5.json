@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE instance_settings SET setup_completed_at = $1, updated_at = now() WHERE setup_completed_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0bdf8ec46f8f22d0b52d1785065cf9bb23370ca0bfde5647805eca2aa2fd65d5"
+}

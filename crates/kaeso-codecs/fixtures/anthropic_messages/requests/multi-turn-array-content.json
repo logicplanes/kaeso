@@ -1,0 +1,39 @@
+{
+  "model": "claude-haiku-4-5",
+  "max_tokens": 512,
+  "system": [
+    {
+      "type": "text",
+      "text": "Answer in one short sentence."
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What's the capital of Australia?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The capital of Australia is Canberra."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "And of New Zealand?"
+        }
+      ]
+    }
+  ]
+}

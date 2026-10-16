@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pm.user_id, ma.catalogue_model_id AS \"model?\" FROM project_memberships pm LEFT JOIN model_access ma ON ma.membership_id = pm.id WHERE pm.project_id = $1 AND pm.models_restricted",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "model?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "model_access",
+            "name": "catalogue_model_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "6972f4e4751b8d450df8462cc07079b46dce4adcc9e5f1b4d2a0470a6edb6b28"
+}

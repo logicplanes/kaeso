@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Your two-factor authentication was reset
+
+Two-factor authentication was reset
+
+An administrator reset it and signed you out; set it up again when you next sign in.
+
+If you did not ask for this, contact your organization's admin.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

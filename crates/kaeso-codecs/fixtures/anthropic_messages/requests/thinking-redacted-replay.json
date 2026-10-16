@@ -1,0 +1,73 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 16000,
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 8000
+  },
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ],
+            "description": "The unit of temperature, either 'celsius' or 'fahrenheit'"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is it a good day to see the northern lights in Reykjavik?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "Aurora visibility depends mostly on cloud cover, so I should check the current weather in Reykjavik first.",
+          "signature": "EqHaZqM+1YDkvalKNOnZ5/EQlJ+s2f0BlDPKMbLuAiyLLjALt45++i4czGG9OGd9qjisZ0gZolekhR7yzz+mPnAHk053H67U9M8Ei8XjtotXyySn2cKD8AtC1gmrupIdPx8UOzIc7fiQWLL2/mNW6RatmtXLVn8c40IDxK+xCm+Su7EVKhTfZraqGwEAmfKjTYmqlAhDy//9GaNe/9nw1N3iJ1UVBGGBo+VsFv4v+vp890Bgci92jNc5JIlEGOlr5XqQ/6nMFCUzJCG0gSarvZWDvp6QlWE92aF2Rc/C4Az/Ca7Xmjmisg8PtO6151+Y"
+        },
+        {
+          "type": "redacted_thinking",
+          "data": "ErneVYdJ2IVClLcLfWctFIggiLPtE2Kooo+ZSShUpwewdyoTtkepfV0NIIBIbiVI4FTh2hwslkNWSIFWOe28m12YvGHsXRFG7+OW0fo1YjKSzfoDvkhZ1mfKxZQAdQ+wDmBE7F8mPYT7WNWsZg58zo77p+2zYQk8VBWzPhcvFYbQzwg0ZOHnyd0rSiMsJVT5ZRGm/vvzj6102na2wYmDwUIh9hiP0tcKEs0Luok6m4++aHk0XxggupXlS/JhBuknCw1fe6MCpC+uu9dmpxCPfOcpbyjKho4bpP5CXkXKFe2w1/ooIS/iR05MOKeKlrsxVn9ZWdezQy8bA4WGz7QUm1feXpFJpkP81yDDtfyiOuVbS7BzwBcM/ngEx28dfbl6ROEbFKNqVdCVx7uHxAzn4ZBQF44g4EcSADX1CKgDa2k="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+          "name": "get_weather",
+          "input": {
+            "location": "Reykjavik, Iceland",
+            "unit": "celsius"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+          "content": "-2°C, clear skies, wind 8 km/h"
+        }
+      ]
+    }
+  ]
+}

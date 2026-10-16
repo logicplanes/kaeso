@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT models_restricted FROM service_accounts WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "models_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "models_restricted"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "26c3af2a15ea3c5858cdcab1323411bbe49d34f785ef66c81c9ba00c143cd327"
+}

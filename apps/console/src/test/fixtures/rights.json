@@ -1,0 +1,758 @@
+{
+  "org": {
+    "categories": [
+      {
+        "id": "organization",
+        "name": "Organization",
+        "rights": [
+          {
+            "id": "org.view",
+            "scope": "org",
+            "name": "View organization",
+            "description": "See the organization, its settings and its roles.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": []
+          },
+          {
+            "id": "org.update",
+            "scope": "org",
+            "name": "Edit organization",
+            "description": "Rename the organization, change its picture and general settings, and choose the default project.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "org.delete",
+            "scope": "org",
+            "name": "Delete organization",
+            "description": "Schedule the organization for deletion, or restore it while it waits.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "org.ownership.transfer",
+            "scope": "org",
+            "name": "Transfer ownership",
+            "description": "Make another member an owner in your place.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view", "members.view"]
+          }
+        ]
+      },
+      {
+        "id": "members",
+        "name": "Members & access",
+        "rights": [
+          {
+            "id": "members.view",
+            "scope": "org",
+            "name": "View members",
+            "description": "See members, their roles and their rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "members.invite",
+            "scope": "org",
+            "name": "Invite members",
+            "description": "Invite people by email with a role you could grant yourself.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "members.view"]
+          },
+          {
+            "id": "members.invites.revoke",
+            "scope": "org",
+            "name": "Cancel invites",
+            "description": "Cancel pending invitations.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "members.view"]
+          },
+          {
+            "id": "members.remove",
+            "scope": "org",
+            "name": "Remove members",
+            "description": "Remove members from the organization and archive their keys in it.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "members.view"]
+          },
+          {
+            "id": "members.rights.update",
+            "scope": "org",
+            "name": "Change member roles",
+            "description": "Change members' org roles and individual org rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "members.view"]
+          },
+          {
+            "id": "roles.manage",
+            "scope": "org",
+            "name": "Manage roles",
+            "description": "Create, edit and delete the organization's custom roles.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          }
+        ]
+      },
+      {
+        "id": "projects",
+        "name": "Projects",
+        "rights": [
+          {
+            "id": "projects.view.all",
+            "scope": "org",
+            "name": "View all projects",
+            "description": "See every project, including ones the member isn't in.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "projects.create",
+            "scope": "org",
+            "name": "Create projects",
+            "description": "Create projects; the creator becomes their admin.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "projects.archive.any",
+            "scope": "org",
+            "name": "Archive any project",
+            "description": "Archive any project and all its keys.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "projects.view.all"]
+          }
+        ]
+      },
+      {
+        "id": "providers",
+        "name": "Providers",
+        "rights": [
+          {
+            "id": "provider_credentials.view",
+            "scope": "org",
+            "name": "View provider keys",
+            "description": "See the organization's provider keys (metadata only, never secrets).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "provider_credentials.create",
+            "scope": "org",
+            "name": "Add provider keys",
+            "description": "Add provider keys to the organization.",
+            "sensitive": false,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view", "provider_credentials.view"]
+          },
+          {
+            "id": "provider_credentials.replace",
+            "scope": "org",
+            "name": "Change provider keys",
+            "description": "Replace and rename provider keys, choose each provider's default and assign keys to projects.",
+            "sensitive": false,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view", "provider_credentials.view"]
+          },
+          {
+            "id": "provider_credentials.delete",
+            "scope": "org",
+            "name": "Delete provider keys",
+            "description": "Remove a provider key from the organization.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "provider_credentials.view"]
+          }
+        ]
+      },
+      {
+        "id": "security",
+        "name": "Security",
+        "rights": [
+          {
+            "id": "security.sso.manage",
+            "scope": "org",
+            "name": "Manage SSO",
+            "description": "Configure the organization's identity provider and the role of people who arrive through it.",
+            "sensitive": false,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "security.sso.require",
+            "scope": "org",
+            "name": "Require SSO",
+            "description": "Require members to sign in to this organization through SSO.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "security.2fa.require",
+            "scope": "org",
+            "name": "Require two-factor",
+            "description": "Require two-factor authentication for members.",
+            "sensitive": false,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "security.key_policy.manage",
+            "scope": "org",
+            "name": "Set key lifetime",
+            "description": "Set the organization's maximum key lifetime.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          }
+        ]
+      },
+      {
+        "id": "keys",
+        "name": "Keys",
+        "rights": [
+          {
+            "id": "platform_keys.view",
+            "scope": "org",
+            "name": "View platform keys",
+            "description": "See the organization's platform keys (metadata).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "platform_keys.create",
+            "scope": "org",
+            "name": "Create platform keys",
+            "description": "Create organization platform keys, which manage everything at org level.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view", "platform_keys.view"]
+          },
+          {
+            "id": "platform_keys.revoke",
+            "scope": "org",
+            "name": "Disable platform keys",
+            "description": "Disable, enable or archive organization platform keys.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "platform_keys.view"]
+          }
+        ]
+      },
+      {
+        "id": "logs",
+        "name": "Logs & data",
+        "rights": [
+          {
+            "id": "logs.settings.manage",
+            "scope": "org",
+            "name": "Manage log settings",
+            "description": "Set log retention and switch content logging on or off for the organization.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "logs.storage.view",
+            "scope": "org",
+            "name": "View log storage",
+            "description": "See how many log entries exist and how much space they take.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "logs.delete",
+            "scope": "org",
+            "name": "Delete logs",
+            "description": "Delete the organization's logs for a time range.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["org.view", "logs.storage.view"]
+          }
+        ]
+      },
+      {
+        "id": "usage",
+        "name": "Usage & billing",
+        "rights": [
+          {
+            "id": "usage.org.view",
+            "scope": "org",
+            "name": "View org usage",
+            "description": "See usage across all projects.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "costs.org.view",
+            "scope": "org",
+            "name": "View org costs",
+            "description": "See costs across all projects.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "usage.org.view"]
+          },
+          {
+            "id": "billing.view",
+            "scope": "org",
+            "name": "View billing",
+            "description": "See plan, invoices and payment status (Kaeso Cloud).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": true,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "billing.manage",
+            "scope": "org",
+            "name": "Manage billing",
+            "description": "Change the plan and payment method (Kaeso Cloud).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": true,
+            "needs": ["org.view", "billing.view"]
+          }
+        ]
+      },
+      {
+        "id": "audit",
+        "name": "Audit",
+        "rights": [
+          {
+            "id": "audit_log.view",
+            "scope": "org",
+            "name": "View audit log",
+            "description": "Read the organization's audit log.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "audit_log.export",
+            "scope": "org",
+            "name": "Export audit log",
+            "description": "Export the organization's audit log.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["org.view", "audit_log.view"]
+          }
+        ]
+      }
+    ]
+  },
+  "project": {
+    "categories": [
+      {
+        "id": "project",
+        "name": "Project",
+        "rights": [
+          {
+            "id": "project.view",
+            "scope": "project",
+            "name": "View project",
+            "description": "See the project and its settings.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": []
+          },
+          {
+            "id": "project.update",
+            "scope": "project",
+            "name": "Edit project",
+            "description": "Rename the project and change its settings and picture.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "project.archive",
+            "scope": "project",
+            "name": "Archive project",
+            "description": "Archive this project and all its keys.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          }
+        ]
+      },
+      {
+        "id": "members",
+        "name": "Members & access",
+        "rights": [
+          {
+            "id": "project.members.view",
+            "scope": "project",
+            "name": "View members",
+            "description": "See the project's members, their roles and their rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "project.members.add",
+            "scope": "project",
+            "name": "Add members",
+            "description": "Add organization members to the project with a role you could grant yourself.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "project.members.view"]
+          },
+          {
+            "id": "project.members.remove",
+            "scope": "project",
+            "name": "Remove members",
+            "description": "Remove members from the project and archive their keys in it.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "project.members.view"]
+          },
+          {
+            "id": "project.members.rights.update",
+            "scope": "project",
+            "name": "Change member roles",
+            "description": "Change members' project roles and individual project rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "project.members.view"]
+          },
+          {
+            "id": "service_accounts.view",
+            "scope": "project",
+            "name": "View service accounts",
+            "description": "See the project's service accounts and their rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "service_accounts.create",
+            "scope": "project",
+            "name": "Create service accounts",
+            "description": "Create service accounts with rights you hold yourself.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "service_accounts.view"]
+          },
+          {
+            "id": "service_accounts.rights.update",
+            "scope": "project",
+            "name": "Change service accounts",
+            "description": "Rename service accounts and change their roles and rights.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "service_accounts.view"]
+          },
+          {
+            "id": "service_accounts.archive",
+            "scope": "project",
+            "name": "Archive service accounts",
+            "description": "Archive service accounts and their keys.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "service_accounts.view"]
+          }
+        ]
+      },
+      {
+        "id": "model_use",
+        "name": "Model use",
+        "rights": [
+          {
+            "id": "api.request",
+            "scope": "project",
+            "name": "Call models with keys",
+            "description": "Call the project's models with one's own API keys.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "playground.use",
+            "scope": "project",
+            "name": "Use the Playground",
+            "description": "Call the project's models from the console Playground.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          }
+        ]
+      },
+      {
+        "id": "keys",
+        "name": "Keys",
+        "rights": [
+          {
+            "id": "keys.own.create",
+            "scope": "project",
+            "name": "Create own keys",
+            "description": "Create API keys for oneself.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "keys.own.manage",
+            "scope": "project",
+            "name": "Manage own keys",
+            "description": "Disable, enable or archive one's own API keys.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "keys.all.view",
+            "scope": "project",
+            "name": "View all keys",
+            "description": "See every key in the project (metadata).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "keys.all.manage",
+            "scope": "project",
+            "name": "Manage all keys",
+            "description": "Disable, enable or archive anyone's keys in the project.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "keys.all.view"]
+          },
+          {
+            "id": "service_accounts.keys.create",
+            "scope": "project",
+            "name": "Create service account keys",
+            "description": "Create keys for the project's service accounts.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "service_accounts.view"]
+          },
+          {
+            "id": "keys.platform_access.grant",
+            "scope": "project",
+            "name": "Give keys platform access",
+            "description": "Give a new key access to the Platform API.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "security.key_policy.project.manage",
+            "scope": "project",
+            "name": "Set key lifetime",
+            "description": "Set the project's maximum key lifetime.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          }
+        ]
+      },
+      {
+        "id": "models",
+        "name": "Models",
+        "rights": [
+          {
+            "id": "models.view",
+            "scope": "project",
+            "name": "View models",
+            "description": "See the project's models, aliases and routing.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "models.manage",
+            "scope": "project",
+            "name": "Manage models",
+            "description": "Add, change and remove models and aliases.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "models.view"]
+          }
+        ]
+      },
+      {
+        "id": "limits",
+        "name": "Limits & budgets",
+        "rights": [
+          {
+            "id": "limits.view",
+            "scope": "project",
+            "name": "View limits",
+            "description": "See project, member and key limits, budgets and model access.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "limits.manage",
+            "scope": "project",
+            "name": "Manage limits",
+            "description": "Change project, member and key limits, budgets and model access.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "limits.view"]
+          }
+        ]
+      },
+      {
+        "id": "logs",
+        "name": "Logs & data",
+        "rights": [
+          {
+            "id": "logs.metadata.view",
+            "scope": "project",
+            "name": "View request logs",
+            "description": "See request logs: model, tokens, cost, latency, status and key.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "logs.content.view",
+            "scope": "project",
+            "name": "View prompts and outputs",
+            "description": "See request and response bodies in the logs.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "logs.metadata.view"]
+          },
+          {
+            "id": "logs.export",
+            "scope": "project",
+            "name": "Export logs",
+            "description": "Export the project's request logs.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "logs.metadata.view"]
+          },
+          {
+            "id": "logs.content.disable",
+            "scope": "project",
+            "name": "Turn off content logging",
+            "description": "Switch content logging off for this project.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          }
+        ]
+      },
+      {
+        "id": "usage",
+        "name": "Usage & costs",
+        "rights": [
+          {
+            "id": "usage.view",
+            "scope": "project",
+            "name": "View usage",
+            "description": "See the project's usage.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "costs.view",
+            "scope": "project",
+            "name": "View costs",
+            "description": "See the project's costs.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view", "usage.view"]
+          }
+        ]
+      },
+      {
+        "id": "audit",
+        "name": "Audit",
+        "rights": [
+          {
+            "id": "project.audit_log.view",
+            "scope": "project",
+            "name": "View project audit log",
+            "description": "Read the audit log of changes in this project.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "needs": ["project.view"]
+          }
+        ]
+      }
+    ]
+  }
+}

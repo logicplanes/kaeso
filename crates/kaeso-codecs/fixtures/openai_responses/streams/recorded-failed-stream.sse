@@ -1,0 +1,333 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_00275e29df2da86b006acbb3d8229487d1829153cad996bf20","object":"response","created_at":1791734744,"status":"in_progress","access_programs":null,"background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-5.5-2026-04-23","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"24h","reasoning":{"context":"current_turn","effort":"medium","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":0.98,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":0}
+
+event: response.in_progress
+data: {"type":"response.in_progress","response":{"id":"resp_00275e29df2da86b006acbb3d8229487d1829153cad996bf20","object":"response","created_at":1791734744,"status":"in_progress","access_programs":null,"background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-5.5-2026-04-23","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"24h","reasoning":{"context":"current_turn","effort":"medium","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":0.98,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":1}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","type":"message","status":"in_progress","content":[],"phase":"final_answer","role":"assistant"},"output_index":0,"sequence_number":2}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""},"sequence_number":3}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"Prince","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"I5hB13ktUR","output_index":0,"sequence_number":4}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Hamlet","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"Cqw2RPjrA","output_index":0,"sequence_number":5}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" of","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"K73T5Ad8YjsIj","output_index":0,"sequence_number":6}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Denmark","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"hAzWv1Lo","output_index":0,"sequence_number":7}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" is","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"Ug37M33I9ZjQd","output_index":0,"sequence_number":8}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" devastated","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"BB8SB","output_index":0,"sequence_number":9}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" by","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"cfV445sxOZqew","output_index":0,"sequence_number":10}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" his","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"B2H9iPhRohiG","output_index":0,"sequence_number":11}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" father","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"dQMeVrJTq","output_index":0,"sequence_number":12}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"’s","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"vfIYhPsVGzWWJG","output_index":0,"sequence_number":13}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" death","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"zGCq0YyIcc","output_index":0,"sequence_number":14}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"2vcnkuoDpTH1","output_index":0,"sequence_number":15}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" his","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"DzIc2EFJ212D","output_index":0,"sequence_number":16}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" mother","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"34W3NnY7o","output_index":0,"sequence_number":17}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Ger","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"YJy8XjVuF4hC","output_index":0,"sequence_number":18}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"tr","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"dAVTZe7Yu0oCZ2","output_index":0,"sequence_number":19}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"ude","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"Z9tEHw4Bdwqra","output_index":0,"sequence_number":20}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"’s","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"qpdXUexCNVAcOw","output_index":0,"sequence_number":21}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" quick","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"1nCbukpKVm","output_index":0,"sequence_number":22}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" marriage","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"jhbgIeH","output_index":0,"sequence_number":23}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" to","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"pGRcWVg40lzV1","output_index":0,"sequence_number":24}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" his","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"PWATaCTCHyfb","output_index":0,"sequence_number":25}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" uncle","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"CEbDTjGvV5","output_index":0,"sequence_number":26}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Cla","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"poDaa71EEwyP","output_index":0,"sequence_number":27}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"udi","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"BFCn7Pp4smi2l","output_index":0,"sequence_number":28}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"us","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"WuPlPbk7feZEqO","output_index":0,"sequence_number":29}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"MJ8tVun39WjQPt0","output_index":0,"sequence_number":30}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" who","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"3LPPj5qN95Mx","output_index":0,"sequence_number":31}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" has","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"OqHlWxsl8ghh","output_index":0,"sequence_number":32}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" taken","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"BKmxjBiFSu","output_index":0,"sequence_number":33}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" the","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"slL1GZpUUOOB","output_index":0,"sequence_number":34}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" throne","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"PcTbNsmgs","output_index":0,"sequence_number":35}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"1JYoZ4RbsewcU7N","output_index":0,"sequence_number":36}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" When","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"7lV0IIRqZFy","output_index":0,"sequence_number":37}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" his","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"EKT0cz892Blk","output_index":0,"sequence_number":38}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" father","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"WzZ9bTVG4","output_index":0,"sequence_number":39}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"’s","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ECLngMEkqz6y3q","output_index":0,"sequence_number":40}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" ghost","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"moJ4n3zFR0","output_index":0,"sequence_number":41}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" reveals","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"nGtUoPJv","output_index":0,"sequence_number":42}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" that","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"FQLlpk6JxTz","output_index":0,"sequence_number":43}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Cla","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"01GpD0ekwdrs","output_index":0,"sequence_number":44}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"udi","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"jrHyRSMo8xZrQ","output_index":0,"sequence_number":45}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"us","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"TsLqQapLaGr2zu","output_index":0,"sequence_number":46}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" murdered","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"OJ0Uhti","output_index":0,"sequence_number":47}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" him","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"FMPxHoddp81g","output_index":0,"sequence_number":48}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"LQALYnrQegDRFdy","output_index":0,"sequence_number":49}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Hamlet","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"6qJJivhqK","output_index":0,"sequence_number":50}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" fe","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"g4gFXZnoodr7P","output_index":0,"sequence_number":51}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"igns","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"bu5S8DaxrbmV","output_index":0,"sequence_number":52}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" madness","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"z8UwMacN","output_index":0,"sequence_number":53}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"XS7SMLc9QiWk","output_index":0,"sequence_number":54}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" struggles","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"MkboLT","output_index":0,"sequence_number":55}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" with","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"mEt5LdIr1bl","output_index":0,"sequence_number":56}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" doubt","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"sbhuAc3fpI","output_index":0,"sequence_number":57}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ZJ9zWWEyzSv0qRo","output_index":0,"sequence_number":58}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" revenge","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"9rItIHNL","output_index":0,"sequence_number":59}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"46Akj1ys34QcJ6U","output_index":0,"sequence_number":60}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"9GvFhOm3Ss8K","output_index":0,"sequence_number":61}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" moral","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"TEyLWG3MfW","output_index":0,"sequence_number":62}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" hesitation","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"y15o9","output_index":0,"sequence_number":63}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" while","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"Op9hyE4O4n","output_index":0,"sequence_number":64}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" the","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"tn7IDjlfdVW0","output_index":0,"sequence_number":65}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" court","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"qCaHF8WKLM","output_index":0,"sequence_number":66}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" desc","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"SMjTGScMzvj","output_index":0,"sequence_number":67}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"ends","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"9LADUs0wqpDX","output_index":0,"sequence_number":68}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" into","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"VnGYlDd1FIe","output_index":0,"sequence_number":69}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" manipulation","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"l1y","output_index":0,"sequence_number":70}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"T25304EHgAdD","output_index":0,"sequence_number":71}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" tragedy","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"nNghdItN","output_index":0,"sequence_number":72}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"MUiqogEt2kq7m2z","output_index":0,"sequence_number":73}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" His","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"8fSHrAfVbeTI","output_index":0,"sequence_number":74}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" pursuit","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"FeWbeZ7J","output_index":0,"sequence_number":75}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" of","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"U7hRtmHVRYwGM","output_index":0,"sequence_number":76}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" vengeance","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"5ab1S8","output_index":0,"sequence_number":77}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" leads","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ad9WE1GUHv","output_index":0,"sequence_number":78}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" to","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"xm1c1dtYhsEfI","output_index":0,"sequence_number":79}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" the","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"IvsGZ6q8aCRk","output_index":0,"sequence_number":80}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" deaths","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"57tLu7fMp","output_index":0,"sequence_number":81}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" of","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"PyqGQDhKPziOW","output_index":0,"sequence_number":82}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Pol","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"vUGsaoDQwCOt","output_index":0,"sequence_number":83}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"oni","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"GEJFE6GtdvH9b","output_index":0,"sequence_number":84}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"us","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"v6dMCy9o29yytG","output_index":0,"sequence_number":85}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"alpAcnfj0XAfMyr","output_index":0,"sequence_number":86}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Op","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"VrsuT17mdlZ2y","output_index":0,"sequence_number":87}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"hel","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"EOImP4cD80Jbi","output_index":0,"sequence_number":88}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"ia","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"JyXuqW7Ba9PTEj","output_index":0,"sequence_number":89}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ofEprKVBc6jzK7d","output_index":0,"sequence_number":90}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Ger","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"l4q78UsrmBdu","output_index":0,"sequence_number":91}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"tr","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"JKWmqq0RVKqXpz","output_index":0,"sequence_number":92}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"ude","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"7QNzxJ6yBIL15","output_index":0,"sequence_number":93}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ow1NTGUxeLzAc3Z","output_index":0,"sequence_number":94}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" La","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"fkGivKeRazYGH","output_index":0,"sequence_number":95}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"ertes","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ZQdD1E6VSBB","output_index":0,"sequence_number":96}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"d9jC6NWS5gdkPjQ","output_index":0,"sequence_number":97}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Cla","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"ADqOGRIZSWk6","output_index":0,"sequence_number":98}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"udi","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"5ELFvKJ64Hilv","output_index":0,"sequence_number":99}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"us","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"vcjiZifJz4PmzN","output_index":0,"sequence_number":100}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"dCwG2hin7ZiQAga","output_index":0,"sequence_number":101}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"auQooHEwxWef","output_index":0,"sequence_number":102}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" finally","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"Ahzknxc9","output_index":0,"sequence_number":103}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Hamlet","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"XCjPqJqu6","output_index":0,"sequence_number":104}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" himself","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"HwTTMf3W","output_index":0,"sequence_number":105}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"obfuscation":"tvKkBMnUxss3XEt","output_index":0,"sequence_number":106}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","content_index":0,"item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","logprobs":[],"output_index":0,"sequence_number":107,"text":"Prince Hamlet of Denmark is devastated by his father’s death and his mother Gertrude’s quick marriage to his uncle Claudius, who has taken the throne. When his father’s ghost reveals that Claudius murdered him, Hamlet feigns madness and struggles with doubt, revenge, and moral hesitation while the court descends into manipulation and tragedy. His pursuit of vengeance leads to the deaths of Polonius, Ophelia, Gertrude, Laertes, Claudius, and finally Hamlet himself."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":"Prince Hamlet of Denmark is devastated by his father’s death and his mother Gertrude’s quick marriage to his uncle Claudius, who has taken the throne. When his father’s ghost reveals that Claudius murdered him, Hamlet feigns madness and struggles with doubt, revenge, and moral hesitation while the court descends into manipulation and tragedy. His pursuit of vengeance leads to the deaths of Polonius, Ophelia, Gertrude, Laertes, Claudius, and finally Hamlet himself."},"sequence_number":108}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"Prince Hamlet of Denmark is devastated by his father’s death and his mother Gertrude’s quick marriage to his uncle Claudius, who has taken the throne. When his father’s ghost reveals that Claudius murdered him, Hamlet feigns madness and struggles with doubt, revenge, and moral hesitation while the court descends into manipulation and tragedy. His pursuit of vengeance leads to the deaths of Polonius, Ophelia, Gertrude, Laertes, Claudius, and finally Hamlet himself."}],"phase":"final_answer","role":"assistant"},"output_index":0,"sequence_number":109}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_00275e29df2da86b006acbb3d8229487d1829153cad996bf20","object":"response","created_at":1791734744,"status":"completed","access_programs":null,"background":false,"completed_at":1791734746,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-5.5-2026-04-23","moderation":null,"output":[{"id":"msg_00275e29df2da86b006acbb3d8f10087d1b9d435c284165d10","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"Prince Hamlet of Denmark is devastated by his father’s death and his mother Gertrude’s quick marriage to his uncle Claudius, who has taken the throne. When his father’s ghost reveals that Claudius murdered him, Hamlet feigns madness and struggles with doubt, revenge, and moral hesitation while the court descends into manipulation and tragedy. His pursuit of vengeance leads to the deaths of Polonius, Ophelia, Gertrude, Laertes, Claudius, and finally Hamlet himself."}],"phase":"final_answer","role":"assistant"}],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"24h","reasoning":{"context":"current_turn","effort":"medium","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":0.98,"truncation":"disabled","usage":{"input_tokens":17,"input_tokens_details":{"cache_write_tokens":0,"cached_tokens":0},"output_tokens":107,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":124},"user":null,"metadata":{}},"sequence_number":110}
+

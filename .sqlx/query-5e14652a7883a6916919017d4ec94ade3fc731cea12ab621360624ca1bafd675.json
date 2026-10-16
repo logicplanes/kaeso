@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO aliases (id, org_id, project_id, name, catalogue_model_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (project_id, name) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5e14652a7883a6916919017d4ec94ade3fc731cea12ab621360624ca1bafd675"
+}

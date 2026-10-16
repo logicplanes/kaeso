@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_memberships SET preset = $3, role_id = $4, rights_added = $5, rights_removed = $6, updated_at = now() WHERE project_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2583041b8f5f3570bd820d32a56b3d29e93b8af6794ee7212c9cd984b54c86cf"
+}

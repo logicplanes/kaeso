@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Two-factor authentication is off
+
+Two-factor authentication is off
+
+Signing in to your account no longer asks for a code.
+
+If this was not you, reset your password and tell your organization's admin.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

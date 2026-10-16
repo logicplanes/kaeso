@@ -1,0 +1,844 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "error-mid-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "Write a haiku about the sea.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "explicit-nulls": {
+    "body": {
+      "messages": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tool_choice": "auto"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "failed-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "Summarize the plot of Hamlet in three sentences.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "file-input-base64-file-id": {
+    "message": "`messages[0].blocks[2].detail` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "messages[0].blocks[2].detail"
+  },
+  "file-input-url": {
+    "message": "`document URL` is not supported by OpenAI Chat Completions. Send the PDF as base64 data or an uploaded file id instead.",
+    "unsupported": "document URL"
+  },
+  "function-call-output-array": {
+    "message": "`image in system, developer and tool messages` is not supported by OpenAI Chat Completions. It only accepts that content in other roles; move or remove the image.",
+    "unsupported": "image in system, developer and tool messages"
+  },
+  "function-call-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "What's the weather in Boston?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "reasoning_effort": "minimal",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tool_choice": {
+        "function": {
+          "name": "get_weather"
+        },
+        "type": "function"
+      },
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "image-base64-file-id": {
+    "message": "`image file id` is not supported by OpenAI Chat Completions. Images must be sent as a URL or base64 data.",
+    "unsupported": "image file id"
+  },
+  "image-url": {
+    "body": {
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "what is in this image?",
+              "type": "text"
+            },
+            {
+              "image_url": {
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+              },
+              "type": "image_url"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "item-reference-breakpoint": {
+    "message": "`prompt_cache_options` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "prompt_cache_options"
+  },
+  "json-object-mode": {
+    "body": {
+      "messages": [
+        {
+          "content": "Return a JSON object with the keys city and country for the Eiffel Tower.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "response_format": {
+        "type": "json_object"
+      },
+      "temperature": 0.0
+    },
+    "path": "/v1/chat/completions"
+  },
+  "logprobs-no-obfuscation-stream": {
+    "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "top_logprobs"
+  },
+  "max-output-tokens-incomplete": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Write a detailed history of the printing press.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "max-output-tokens-incomplete-stream": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Write a detailed history of the printing press.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "multi-turn-roles": {
+    "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "text.verbosity"
+  },
+  "reasoning-effort-high": {
+    "body": {
+      "messages": [
+        {
+          "content": "How much wood would a woodchuck chuck?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "reasoning_effort": "high"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "reasoning-encrypted": {
+    "body": {
+      "messages": [
+        {
+          "content": "Should I bring an umbrella in Paris today?",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_5GXBuXmucGIkbFfAryp6wDbC",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "{\"city\":\"Paris\",\"forecast\":\"rain\",\"precip_probability\":0.8,\"temperature_c\":14}",
+          "role": "tool",
+          "tool_call_id": "call_5GXBuXmucGIkbFfAryp6wDbC"
+        }
+      ],
+      "model": "gpt-5.5",
+      "reasoning_effort": "high",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "reasoning-summary-sampling-forced-tool": {
+    "body": {
+      "max_completion_tokens": 800,
+      "messages": [
+        {
+          "content": "Look up the weather in Oslo, then tell me whether to bring a coat.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "reasoning_effort": "low",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "temperature": 0.2,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ],
+      "top_p": 0.9
+    },
+    "path": "/v1/chat/completions"
+  },
+  "reasoning-summary-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is 17 * 24? Answer with the number only.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "reasoning_effort": "medium",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "reasoning-text-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the boiling point of water at sea level?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "reasoning_effort": "low",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "refusal": {
+    "body": {
+      "messages": [
+        {
+          "content": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "response_format": {
+        "json_schema": {
+          "name": "email",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "subject",
+              "body"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "refusal-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "response_format": {
+        "json_schema": {
+          "name": "email",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "subject",
+              "body"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      },
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "sampling-and-ids": {
+    "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "top_logprobs"
+  },
+  "stateful-background": {
+    "rejected_by_source": "background"
+  },
+  "stateful-conversation": {
+    "rejected_by_source": "conversation"
+  },
+  "stateful-conversation-id-string": {
+    "rejected_by_source": "conversation"
+  },
+  "stateful-previous-response-id": {
+    "rejected_by_source": "previous_response_id"
+  },
+  "structured-output-json-schema": {
+    "body": {
+      "messages": [
+        {
+          "content": "Extract the event information.",
+          "role": "system"
+        },
+        {
+          "content": "Alice and Bob are going to a science fair on Friday.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "response_format": {
+        "json_schema": {
+          "description": "A calendar event extracted from text.",
+          "name": "calendar_event",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "text-basic-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "You are a helpful assistant.",
+          "role": "system"
+        },
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "text-input-string": {
+    "body": {
+      "messages": [
+        {
+          "content": "Tell me a three sentence bedtime story about a unicorn.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tool-choice-allowed-tools": {
+    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "unsupported": "web_search tool"
+  },
+  "tool-choice-none": {
+    "body": {
+      "messages": [
+        {
+          "content": "Just say hi, do not call tools.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tool_choice": "none",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tool-result-error": {
+    "body": {
+      "messages": [
+        {
+          "content": "What's the weather in Atlantis?",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Atlantis\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_vo7VMxMVy7xer74L0nymKZaV",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "{\"error\":\"city_not_found\",\"message\":\"No weather station found for 'Atlantis'.\"}",
+          "role": "tool",
+          "tool_call_id": "call_vo7VMxMVy7xer74L0nymKZaV"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-function": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the weather like in Boston today?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather in a given location",
+            "name": "get_current_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city and state, e.g. San Francisco, CA",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location",
+                "unit"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-parallel": {
+    "body": {
+      "messages": [
+        {
+          "content": "What's the weather in Paris and in Tokyo right now? Use celsius.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "parallel_tool_calls": true,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Get the current local time in an IANA time zone.",
+            "name": "get_local_time",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "timezone": {
+                  "description": "IANA time zone, e.g. Europe/Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "timezone"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-parallel-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "What's the weather in Paris and in Tokyo right now? Use celsius.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "parallel_tool_calls": true,
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tool_choice": "required",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "description": "City name, e.g. Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Get the current local time in an IANA time zone.",
+            "name": "get_local_time",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "timezone": {
+                  "description": "IANA time zone, e.g. Europe/Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "timezone"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "unknown-event-stream": {
+    "body": {
+      "messages": [
+        {
+          "content": "Say hello.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "unknown-item-type": {
+    "message": "`future_item content block` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "unsupported": "future_item content block"
+  },
+  "unknown-top-level-field": {
+    "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "x_future_field"
+  },
+  "web-search": {
+    "message": "`include` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "include"
+  },
+  "web-search-stream": {
+    "message": "`include` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "include"
+  }
+}
