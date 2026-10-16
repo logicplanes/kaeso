@@ -1,0 +1,27 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_01roDLFwPZ7mBmV5xXNNQKMW",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Under clause 2 (Termination), either party must give 90 days' written notice to terminate the agreement."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 6283,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 2187,
+      "ephemeral_1h_input_tokens": 4096
+    },
+    "output_tokens": 27,
+    "service_tier": "standard",
+    "inference_geo": "global"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "model": "claude-sonnet-4-6",
+  "id": "msg_011CfvjhuopsQgHGkYJPUHP9",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I'll check the weather in both Seattle and Portland at the same time for you!"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01RVXiR8rGA7LJgHzsLnszji",
+      "name": "get_weather",
+      "input": {
+        "location": "Seattle, WA"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 420,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 65,
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

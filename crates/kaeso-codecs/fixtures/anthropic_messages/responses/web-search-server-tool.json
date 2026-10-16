@@ -1,0 +1,83 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_01R2R14PadDFvMb1xgawpzvm",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I'll search for when Claude Shannon was born."
+    },
+    {
+      "type": "server_tool_use",
+      "id": "srvtoolu_014kmbKgb53atx6qA8ggJBo3",
+      "name": "web_search",
+      "input": {
+        "query": "claude shannon birth date"
+      }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srvtoolu_014kmbKgb53atx6qA8ggJBo3",
+      "content": [
+        {
+          "type": "web_search_result",
+          "url": "https://en.wikipedia.org/wiki/Claude_Shannon",
+          "title": "Claude Shannon - Wikipedia",
+          "encrypted_content": "EqizYmcXlj9STy6ohExEMwwwROdPXRvhqf1YUlhXXL5JY5hYE/5cQ6cz252xCx1qJQgIBRhDPSJWP6YweL1bWmaqEhWJop+sPRZxcGBrb7/9aC3sjm4b7W5AfWpoRB7ntekLPA9lDawy2JQhkgNb+XQAygmfMsX5hvlA/MRNw3z9IsTdl3i/x/zjiVpIGdXfIiQu/TeqZcjdww+4pO3JQS4gMkoLs5aAKrt/yONVrRwtEulj",
+          "page_age": "April 30, 2025"
+        },
+        {
+          "type": "web_search_result",
+          "url": "https://www.britannica.com/biography/Claude-Shannon",
+          "title": "Claude Shannon | Biography, Information Theory, & Facts | Britannica",
+          "encrypted_content": "Eqgnqm5bh7VQHRKI49PuvTzwRl7I0e6Yw/d21giQnHjAIu85+lm/504UZ4kWZf3+5Zz3NR3RSrtpjPs6Uf+gZ+3SA9y9Xtlmyw04yBjzLUz4k6j9jeBoYfhyZlgAx/moSc7YpBkwkopl5qXSxkaH0d+rrpxkgzyYFBDbjnN2FYnDRpxjse1wlQQids/HTIlxW3j6fUXc4/eonKSiIJrtrsN4btyhnFMU3WBFtLHvO1igd3rl",
+          "page_age": null
+        }
+      ],
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "text",
+      "text": "Based on the search results, "
+    },
+    {
+      "type": "text",
+      "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://en.wikipedia.org/wiki/Claude_Shannon",
+          "title": "Claude Shannon - Wikipedia",
+          "encrypted_index": "Eo91c8Eee1GDSeuiZ4ELPDWPbb0e0o4BQip/lavfw77oBG+dACqILquBA1cY6IPsqK9Koa+JYNWB+EH6",
+          "cited_text": "Claude Elwood Shannon (April 30, 1916 – February 24, 2001) was an American mathematician, electrical engineer, computer scientist, cryptographer and i..."
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "text": "."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 6039,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 931,
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  }
+}

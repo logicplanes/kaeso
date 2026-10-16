@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Zwei-Faktor-Authentifizierung ist aktiviert
+
+Zwei-Faktor-Authentifizierung ist aktiviert
+
+Bewahren Sie Ihre Wiederherstellungscodes sicher auf; sie ersetzen einen verlorenen Authenticator.
+
+Waren Sie das nicht, setzen Sie Ihr Passwort zurück und informieren Sie den Admin Ihrer Organisation.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

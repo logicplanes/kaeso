@@ -1,0 +1,48 @@
+{
+  "model": "claude-opus-5-5",
+  "max_tokens": 1024,
+  "cache_control": {
+    "type": "ephemeral"
+  },
+  "tools": [
+    {
+      "name": "run_tests",
+      "description": "Run the project's test suite.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run the test suite and fix any failures."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01",
+          "name": "run_tests",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01",
+          "content": "12 passed, 0 failed"
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": "The user sent the following message while you were working: also update the changelog before you finish."
+    }
+  ]
+}

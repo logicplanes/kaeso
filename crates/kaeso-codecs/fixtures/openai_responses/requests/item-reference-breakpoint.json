@@ -1,0 +1,44 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "type": "item_reference",
+      "id": "msg_0d71a3c94be2f058006acb8b02c1d4819b6e2f0a93c5d7e41b"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Here is the style guide we always use: write in plain English, prefer short sentences, and never use the passive voice.",
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Rewrite: 'The report was written by the team.'"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "phase": "final_answer",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "The team wrote the report.",
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Now make it shorter."
+    }
+  ],
+  "prompt_cache_options": {
+    "ttl": "30m"
+  }
+}

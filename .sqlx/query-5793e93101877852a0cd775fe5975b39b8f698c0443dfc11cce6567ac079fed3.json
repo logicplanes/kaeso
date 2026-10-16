@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sign_in_tokens SET used_at = $1 WHERE kind = $2 AND used_at IS NULL AND ($3::uuid IS NULL OR user_id = $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5793e93101877852a0cd775fe5975b39b8f698c0443dfc11cce6567ac079fed3"
+}

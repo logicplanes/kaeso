@@ -1,0 +1,15 @@
+{
+  "model": "gpt-4.1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "List fruits, one per line, ending with END."
+    }
+  ],
+  "stop": "END",
+  "seed": 42,
+  "temperature": 0.2,
+  "frequency_penalty": 0.5,
+  "presence_penalty": -0.25,
+  "max_completion_tokens": 200
+}

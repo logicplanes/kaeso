@@ -1,0 +1,9 @@
+{
+  "model": "gpt-5.5",
+  "input": "Write a 2,000-word report on the history of lighthouses.",
+  "background": true,
+  "store": true,
+  "reasoning": {
+    "effort": "high"
+  }
+}

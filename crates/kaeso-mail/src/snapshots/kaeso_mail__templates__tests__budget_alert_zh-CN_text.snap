@@ -1,0 +1,15 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 该项目的每月支出预算（50 USD）已用 80%
+
+预算已用 80%
+
+该项目的每月支出预算（50 USD）已用 80%。
+
+打开限额：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送；可在账户的通知设置中关闭提醒。

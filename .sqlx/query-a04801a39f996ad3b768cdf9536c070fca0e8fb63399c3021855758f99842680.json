@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_provider_keys (project_id, provider, org_id, credential_id) SELECT unnest($4::uuid[]), $2, $1, $3 ON CONFLICT (project_id, provider) DO UPDATE SET credential_id = EXCLUDED.credential_id, created_at = now() WHERE project_provider_keys.credential_id <> EXCLUDED.credential_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a04801a39f996ad3b768cdf9536c070fca0e8fb63399c3021855758f99842680"
+}

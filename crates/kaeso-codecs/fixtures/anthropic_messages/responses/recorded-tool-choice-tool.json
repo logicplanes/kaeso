@@ -1,0 +1,47 @@
+{
+  "model": "claude-sonnet-4-6",
+  "id": "msg_011CfvjiJQNE6TEWg6P7vrNj",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_016r1YrY8SC1LGuVmbDHHK4m",
+      "name": "get_weather",
+      "input": {
+        "location": "Lisbon, Portugal"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01Ugg843qoqABjJUNYFER2PR",
+      "name": "get_time",
+      "input": {
+        "timezone": "Europe/Lisbon"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 804,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 77,
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

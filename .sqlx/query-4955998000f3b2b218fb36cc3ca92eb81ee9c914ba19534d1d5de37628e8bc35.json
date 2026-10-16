@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE instance_settings SET org_creation = $1, metadata_retention_days = $2, content_retention_days = $3, max_metadata_retention_days = $4, max_content_retention_days = $5, org_deletion = $6, org_deletion_grace_days = $7, account_creation = $8, allowed_domains = $9, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Int4",
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4955998000f3b2b218fb36cc3ca92eb81ee9c914ba19534d1d5de37628e8bc35"
+}

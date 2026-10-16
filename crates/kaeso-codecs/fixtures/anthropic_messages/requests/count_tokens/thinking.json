@@ -1,0 +1,30 @@
+{
+  "model": "claude-opus-5-5",
+  "thinking": {
+    "type": "adaptive"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Are there an infinite number of prime numbers such that n mod 4 == 3?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "This is a nice number theory question. Lets think about it step by step...",
+          "signature": "EuYBCkQYAiJAgCs1le6/Pol5Z4/JMomVOouGrWdhYNsH3ukzUECbB6iWrSQtsQuRHJID6lWV..."
+        },
+        {
+          "type": "text",
+          "text": "Yes, there are infinitely many prime numbers p such that p mod 4 = 3..."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Can you write a formal proof?"
+    }
+  ]
+}

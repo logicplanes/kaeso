@@ -1,0 +1,21 @@
+[package]
+name = "kpp-conformance"
+description = "Serves KPP's encoders to the official OpenAI and Anthropic Python SDKs for the conformance suite in e2e/conformance."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+kaeso-kpp.workspace = true
+kaeso-codecs.workspace = true
+axum.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

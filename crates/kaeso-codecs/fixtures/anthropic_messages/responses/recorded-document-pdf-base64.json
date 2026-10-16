@@ -1,0 +1,55 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_011Cfvjcf69gg1YfNaazwQc1",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "",
+      "signature": "CAQS/QQKEAgSGAI4AUIIdGhpbmtpbmcSDB/yoGPGk9Sy1a91YBoMNWiSQjvqPESuTKhFIjDzeHFOSgeBN53Mn54Ep/8BjQ6QKpeVAjZStrZx+cwW9OKuvgzHvaU1S8g8Fz9FzuQqmgS2JH4uIoub3HgoYx6pkbo6royutLeLDKQ4XspYvkhDQvdaindmweiz9GipdIoNjauMJ5fcbXA+kZDrXJSP1g+ffYItxRy/esqHYFPblePiaB04JDtasytSFon1DEWb+BIcHKylyF0CU3VYEfkivjV9FZY9x19IBswTnGJhJBk1Y3f4KY/VQoecEFweyjHcXL1ywgNecmiSenoRtoVSCxgoyAOKLrEuZII9i4HYD9zguQaumCbFftMf4AoBUxB38CXpujes8vlLJcZuqBlDr/dzA28Lg9Mppq/MTwUoJIO1SHI0GmHk7TNuwzyQ7qbGwTJh5aAtcPLBhWdu2DVVUpBsYXg7cIRUDr8wFL9IN9+hMWWG0C4auw1IXCbV4eacBLk9E6YUQzBLyndaZwxsw5FW7MIk14vDNKFWyXfjHBnZEUMM8B66VJYpk/ifcDqx/6Mv/eMsspMfe8WzYwUL91qUL2Pczw4Uk/ErVPJQSvYq7L9X9p348qjIgSV+yG6oEpaqPrDhDHw89JHO9GaIjblHm5yElM1MS7wslkRRjIwX5FN7pe/T1msHSCB/r36kwl3RF0ZunLDafqS7ZyGSjHtEcqtyvpXTTIebeV1LEKCDwtktrk6uHH4592R2fCVGqMV/BTan/wUj+ng/M1GCJJy2IT02M3htskj3l+RaxFlJeU5jPegI4wrh/CHJCczGB87flKdPwB/UYRsNGAE="
+    },
+    {
+      "type": "text",
+      "text": "The document makes a single statement about water: "
+    },
+    {
+      "citations": [
+        {
+          "type": "page_location",
+          "cited_text": "Water is essential for life.",
+          "document_index": 0,
+          "document_title": "Biology Notes",
+          "start_page_number": 1,
+          "end_page_number": 2
+        }
+      ],
+      "type": "text",
+      "text": "Water is essential for life."
+    },
+    {
+      "type": "text",
+      "text": "\n\nThat is the only content in these notes, which appear to be a week 1 lecture handout. There are no further details, such as *why* water is essential or what role it plays in living organisms. If you have more pages or notes from the lecture, I'm happy to help with those too."
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 2422,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 140,
+    "output_tokens_details": {
+      "thinking_tokens": 20
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

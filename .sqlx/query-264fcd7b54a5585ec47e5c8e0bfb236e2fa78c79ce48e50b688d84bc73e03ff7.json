@@ -1,0 +1,143 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.id, r.org_id, r.scope, r.name, r.description, r.rights, r.project_rights, r.created_by, r.created_at, r.updated_at, ((SELECT count(*) FROM org_memberships m WHERE m.role_id = r.id) + (SELECT count(*) FROM project_memberships m WHERE m.role_id = r.id) + (SELECT count(*) FROM service_accounts s WHERE s.role_id = r.id AND s.archived_at IS NULL) + (SELECT count(*) FROM invites i WHERE i.org_role_id = r.id AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now())) AS \"holders!\" FROM org_roles r WHERE r.org_id = $1 ORDER BY r.scope, lower(r.name)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "scope",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "scope"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "project_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_by",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "holders!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "264fcd7b54a5585ec47e5c8e0bfb236e2fa78c79ce48e50b688d84bc73e03ff7"
+}

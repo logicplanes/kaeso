@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET state = 'deleted', email = NULL, name = NULL, password_hash = NULL, email_verified_at = NULL, is_instance_admin = false, deleted_at = $2, updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e53f500e7128d3cb4d9e5e92814c093fa6a35a5da0cbd6a1d658c162bee38308"
+}

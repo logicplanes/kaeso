@@ -1,0 +1,87 @@
+---
+title: 安装
+description: 安装软件包，导入一次样式表，并在根部挂载主题和提示消息的 Provider。
+---
+
+import CodeView from "~/components/CodeView.astro";
+
+## 安装
+
+`@logicplanes/kaeso-ui` 会一并带上 `@logicplanes/kaeso-tokens`；两者同时发布，版本始终一致。React 19 和 Hugeicons 是对等依赖。
+
+<CodeView lang="bash" code={`pnpm add @logicplanes/kaeso-ui react react-dom @hugeicons/react @hugeicons/core-free-icons`} />
+
+## 样式
+
+使用 Tailwind CSS v4 时，在 Tailwind 本身之后导入组件库的 Tailwind 入口。它包含令牌、只存在令牌值的主题、字体和组件样式，并让 Tailwind 扫描组件库。
+
+<CodeView lang="css" code={`@import "tailwindcss";\n@import "@logicplanes/kaeso-ui/tailwind.css";`} />
+
+不使用 Tailwind 时，改为导入预构建的样式表：
+
+<CodeView lang="tsx" code={`import "@logicplanes/kaeso-ui/styles.css";`} />
+
+## Provider
+
+将主题脚本放在文档头部，让首次绘制就使用正确的主题，然后在根部附近挂载 `ThemeProvider`、`TooltipProvider` 和一个 `Toaster`。
+
+<CodeView
+  code={`import { ThemeProvider, TooltipProvider, Toaster, themeScript } from "@logicplanes/kaeso-ui";
+
+export function Root({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>
+          <TooltipProvider>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}`}
+/>
+
+## 语言
+
+组件支持英语、德语和简体中文。没有 `LocaleProvider` 时一切为英语；有了它，组件自身的文字和格式化函数都会跟随其语言，语言包只在需要时加载。
+
+<CodeView
+  code={`import { LocaleProvider, loadUiMessages, resolveUiLocale } from "@logicplanes/kaeso-ui/i18n";
+
+const locale = resolveUiLocale(navigator.language);
+const messages = await loadUiMessages(locale);
+
+root.render(
+
+  <LocaleProvider locale={locale} messages={messages}>
+    <App />
+  </LocaleProvider>,
+);`}
+/>
+
+## 导入
+
+可以从总入口导入，也可以从组件自己的入口导入，只加载该组件。两种方式都支持摇树优化；独立入口能让图表和代码高亮器等较重的部分不进入不需要它们的页面。每种图表也有自己的入口（`@logicplanes/kaeso-ui/charts/timeseries`、`/bar`、`/sparkline`、`/donut`、`/heatmap`、`/gauge`、`/sankey`）。选择器的弹出层、长列表的虚拟化器和可选列表的复选框会在首次需要时加载。
+
+<CodeView
+  code={`import { Button, Menu } from "@logicplanes/kaeso-ui";
+import { DataTable } from "@logicplanes/kaeso-ui/data-table";
+import { formatUSD } from "@logicplanes/kaeso-ui/format";`}
+/>
+
+## 链接
+
+渲染链接的组件（侧边栏条目、分页）默认使用普通锚点。只需传入一次所用路由的链接组件：
+
+<CodeView
+  code={`import { LinkProvider } from "@logicplanes/kaeso-ui";
+import { Link } from "your-router";
+
+<LinkProvider component={Link}>{children}</LinkProvider>`}
+/>

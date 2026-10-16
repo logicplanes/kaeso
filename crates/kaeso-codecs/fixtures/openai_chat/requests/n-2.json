@@ -1,0 +1,11 @@
+{
+  "model": "gpt-4.1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Suggest a name for a bakery."
+    }
+  ],
+  "n": 2,
+  "temperature": 1.2
+}

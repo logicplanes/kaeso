@@ -1,0 +1,21 @@
+{
+  "model": "gpt-5-search-api",
+  "web_search_options": {
+    "search_context_size": "medium",
+    "user_location": {
+      "type": "approximate",
+      "approximate": {
+        "country": "GB",
+        "city": "London",
+        "region": "London",
+        "timezone": "Europe/London"
+      }
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "What's a positive local news story from this week?"
+    }
+  ]
+}

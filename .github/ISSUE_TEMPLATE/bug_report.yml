@@ -1,0 +1,69 @@
+name: Bug report
+description: Kaeso does something it should not, or fails to do what it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not report security vulnerabilities here. Use private vulnerability reporting as described in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The Kaeso release, package version or commit.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Model API
+        - Platform API
+        - Format translation (KPP)
+        - Console
+        - Sign-in and accounts
+        - Limits, usage and costs
+        - Request logs
+        - Emails
+        - Installation and operations
+        - UI library
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead. A screenshot helps for anything you see.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: The smallest request, payload, code or steps that show the problem, and relevant log lines. Remove API keys, provider keys, session cookies and personal data.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it happens
+      description: For anything you see in the console, the documentation or a component.
+      multiple: true
+      options:
+        - English
+        - German
+        - Simplified Chinese
+        - Light theme
+        - Dark theme
+        - Phone width
+        - Keyboard or screen reader
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: How Kaeso runs and, for anything you see, the browser and operating system.
+      placeholder: Compose package on Ubuntu 24.04, Firefox 144 on macOS

@@ -1,0 +1,387 @@
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, PoisonError};
+use std::time::Duration;
+
+use futures::future::BoxFuture;
+use kaeso_kpp::{DialectId, RequestKind};
+use kaeso_store::StoreError;
+use kaeso_store::clickhouse::logs::{self as ch, ContentRow, LogRow};
+use kaeso_store::pg::log_jobs::{self, LogSettings};
+use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
+use time::OffsetDateTime;
+use tokio::sync::Notify;
+use tokio_util::sync::CancellationToken;
+use uuid::Uuid;
+
+use crate::model_api::hooks::{Outcome, Sink};
+use crate::state::AppState;
+
+struct Entry {
+    log: LogRow,
+    content: Option<ContentRow>,
+    size: u64,
+}
+
+#[derive(Default)]
+pub struct Buffer {
+    queue: Mutex<VecDeque<Entry>>,
+    bytes: AtomicU64,
+    dropped: AtomicU64,
+    wake: Notify,
+}
+
+impl std::fmt::Debug for Buffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Buffer")
+            .field("bytes", &self.bytes.load(Ordering::Relaxed))
+            .finish_non_exhaustive()
+    }
+}
+
+impl Buffer {
+    fn push(&self, entry: Entry, cap: u64, flush_rows: usize) {
+        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
+        self.bytes.fetch_add(entry.size, Ordering::Relaxed);
+        q.push_back(entry);
+        self.trim(&mut q, cap);
+        let len = q.len();
+        drop(q);
+        self.gauges(len);
+        if len >= flush_rows {
+            self.wake.notify_one();
+        }
+    }
+
+    fn trim(&self, q: &mut VecDeque<Entry>, cap: u64) {
+        while self.bytes.load(Ordering::Relaxed) > cap {
+            let Some(old) = q.pop_front() else { break };
+            self.bytes.fetch_sub(old.size, Ordering::Relaxed);
+            self.dropped.fetch_add(1, Ordering::Relaxed);
+            metrics::counter!(crate::metrics::LOG_ROWS_DROPPED).increment(1);
+        }
+    }
+
+    fn gauges(&self, len: usize) {
+        metrics::gauge!(crate::metrics::LOG_BUFFER_ROWS).set(len as f64);
+        metrics::gauge!(crate::metrics::LOG_BUFFER_BYTES)
+            .set(self.bytes.load(Ordering::Relaxed) as f64);
+    }
+
+    fn take(&self, max: usize) -> Vec<Entry> {
+        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
+        let n = q.len().min(max);
+        let batch: Vec<Entry> = q.drain(..n).collect();
+        for e in &batch {
+            self.bytes.fetch_sub(e.size, Ordering::Relaxed);
+        }
+        let len = q.len();
+        drop(q);
+        self.gauges(len);
+        batch
+    }
+
+    fn put_back(&self, batch: Vec<Entry>, cap: u64) {
+        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
+        for e in batch.into_iter().rev() {
+            self.bytes.fetch_add(e.size, Ordering::Relaxed);
+            q.push_front(e);
+        }
+        self.trim(&mut q, cap);
+        let len = q.len();
+        drop(q);
+        self.gauges(len);
+    }
+
+    pub fn len(&self) -> usize {
+        self.queue
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn dropped(&self) -> u64 {
+        self.dropped.load(Ordering::Relaxed)
+    }
+}
+
+pub async fn flush_once(state: &AppState) -> Result<usize, StoreError> {
+    let cfg = &state.config.logs;
+    let batch = state.logs.take(cfg.flush_rows as usize);
+    if batch.is_empty() {
+        return Ok(0);
+    }
+    let logs: Vec<LogRow> = batch.iter().map(|e| e.log.clone()).collect();
+    let contents: Vec<ContentRow> = batch.iter().filter_map(|e| e.content.clone()).collect();
+    match ch::insert(&state.clickhouse, &logs, &contents).await {
+        Ok(()) => Ok(batch.len()),
+        Err(e) => {
+            metrics::counter!(crate::metrics::CLICKHOUSE_WRITE_FAILURES).increment(1);
+            state.logs.put_back(batch, cfg.buffer_size.0);
+            Err(e)
+        }
+    }
+}
+
+pub async fn flush_all(state: &AppState, timeout: Duration) -> usize {
+    let deadline = tokio::time::Instant::now() + timeout;
+    let mut written = 0;
+    while !state.logs.is_empty() && tokio::time::Instant::now() < deadline {
+        match tokio::time::timeout_at(deadline, flush_once(state)).await {
+            Ok(Ok(n)) => written += n,
+            Ok(Err(e)) => {
+                tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs at shutdown");
+                break;
+            }
+            Err(_) => break,
+        }
+    }
+    written
+}
+
+pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
+    tokio::spawn(async move {
+        let interval = state.config.logs.flush_interval;
+        loop {
+            tokio::select! {
+                () = shutdown.cancelled() => return,
+                () = tokio::time::sleep(interval) => {}
+                () = state.logs.wake.notified() => {}
+            }
+            loop {
+                match flush_once(&state).await {
+                    Ok(n) if n >= state.config.logs.flush_rows as usize => continue,
+                    Ok(_) => break,
+                    Err(e) => {
+                        tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs; keeping them in memory");
+                        tokio::select! {
+                            () = shutdown.cancelled() => return,
+                            () = tokio::time::sleep(Duration::from_secs(2)) => {}
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    });
+}
+
+pub async fn settings(state: &AppState, project: Uuid) -> Option<LogSettings> {
+    let pg = state.pg.clone();
+    let found = state
+        .caches
+        .log_settings
+        .get_or_load(&project.to_string(), || async move {
+            log_jobs::settings(&pg, project)
+                .await
+                .map(|s| s.map(Cached::from))
+        })
+        .await
+        .ok()
+        .flatten()?;
+    Some((*found).into())
+}
+
+pub async fn forget(state: &AppState, project: Uuid) {
+    state
+        .caches
+        .log_settings
+        .invalidate(&project.to_string())
+        .await;
+}
+
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+pub struct Cached {
+    org_content: bool,
+    project_content: bool,
+    metadata_days: i32,
+    content_days: i32,
+}
+
+impl From<LogSettings> for Cached {
+    fn from(s: LogSettings) -> Self {
+        Cached {
+            org_content: s.org_content,
+            project_content: s.project_content,
+            metadata_days: s.metadata_days,
+            content_days: s.content_days,
+        }
+    }
+}
+
+impl From<Cached> for LogSettings {
+    fn from(c: Cached) -> Self {
+        LogSettings {
+            org_content: c.org_content,
+            project_content: c.project_content,
+            metadata_days: c.metadata_days,
+            content_days: c.content_days,
+        }
+    }
+}
+
+pub fn endpoint(ingress: DialectId, kind: RequestKind) -> &'static str {
+    match (ingress, kind) {
+        (DialectId::AnthropicMessages, RequestKind::CountTokens) => "messages/count_tokens",
+        (DialectId::AnthropicMessages, _) => "messages",
+        (DialectId::OpenAiResponses, RequestKind::CountTokens) => "responses/input_tokens",
+        (DialectId::OpenAiResponses, _) => "responses",
+        (DialectId::OpenAiEmbeddings, _) => "embeddings",
+        _ => "chat/completions",
+    }
+}
+
+pub fn cost_raw(cost: Decimal) -> i128 {
+    (cost * Decimal::from(1_000_000_000_000_i64))
+        .round()
+        .to_i128()
+        .unwrap_or(0)
+}
+
+pub fn cost_from_raw(raw: i128) -> Decimal {
+    Decimal::from_i128_with_scale(raw, 12).normalize()
+}
+
+fn days(at: OffsetDateTime, days: i32) -> OffsetDateTime {
+    at + time::Duration::days(i64::from(days))
+}
+
+fn ms(d: Duration) -> u32 {
+    u32::try_from(d.as_millis()).unwrap_or(u32::MAX)
+}
+
+pub async fn record(state: &AppState, o: &Outcome) {
+    let Some(caller) = &o.caller else { return };
+    let Some(cfg) = settings(state, caller.project_id).await else {
+        return;
+    };
+    let usage = o.usage.clone().unwrap_or_default();
+    let (_, cost) = crate::services::usage::costed(o);
+    let progress = o.stream_progress.unwrap_or_default();
+    let content = cfg.org_content && cfg.project_content;
+    let request_body = o
+        .request_body
+        .as_ref()
+        .filter(|_| content)
+        .map(|b| String::from_utf8_lossy(b).into_owned())
+        .unwrap_or_default();
+    let reply = o
+        .reply
+        .as_ref()
+        .filter(|_| content)
+        .and_then(|r| serde_json::to_string(r).ok())
+        .unwrap_or_default();
+    let logical = if content {
+        (request_body.len() + reply.len()) as u64
+    } else {
+        0
+    };
+    let principal = caller
+        .user_id
+        .or(caller.service_account_id)
+        .unwrap_or(Uuid::nil());
+    let log = LogRow {
+        request_id: o.request_id.uuid(),
+        org_id: caller.org_id,
+        project_id: caller.project_id,
+        key_id: caller.key_id.unwrap_or(Uuid::nil()),
+        principal_kind: if caller.user_id.is_some() {
+            "user"
+        } else {
+            "service_account"
+        }
+        .into(),
+        principal_id: principal,
+        started_at: o.started_at,
+        finished_at: o.started_at + o.duration,
+        duration_ms: ms(o.duration),
+        ttfb_ms: o.ttfb.map(ms),
+        endpoint: endpoint(o.ingress, o.kind).into(),
+        ingress_dialect: o.ingress.as_str().into(),
+        egress_dialect: o.egress.map(|d| d.as_str().to_owned()).unwrap_or_default(),
+        provider: o.provider.unwrap_or_default().into(),
+        requested_model: o.requested_model.clone().unwrap_or_default(),
+        resolved_model: o.model_id.clone().unwrap_or_default(),
+        stream: o.stream,
+        status: o.status,
+        error_kind: o.error_kind.clone().unwrap_or_default(),
+        error_message: o.error_message.clone().unwrap_or_default(),
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_read_tokens: usage.cache_read_tokens,
+        cache_write_tokens: usage.cache_write_tokens,
+        reasoning_tokens: usage.reasoning_tokens.unwrap_or(0),
+        cost: cost_raw(cost),
+        user_agent: o.user_agent.clone().unwrap_or_default(),
+        client_ip: o.client_ip.map(|i| i.to_string()).unwrap_or_default(),
+        upstream_request_id: o.upstream_request_id.clone().unwrap_or_default(),
+        has_content: content,
+        logical_bytes: logical,
+        expires_at: days(o.started_at, cfg.metadata_days),
+        stream_events: progress.events,
+        stream_bytes: progress.bytes,
+        stream_first_byte_ms: progress.first_byte.map(ms),
+        stream_keepalives: progress.keepalives,
+        usage_estimated: o.usage_estimated,
+        source: o.source.as_str().into(),
+    };
+    let content = content.then(|| ContentRow {
+        request_id: log.request_id,
+        org_id: log.org_id,
+        project_id: log.project_id,
+        started_at: log.started_at,
+        request_body,
+        reply,
+        expires_at: days(o.started_at, cfg.content_days.min(cfg.metadata_days)),
+    });
+    let size = 512 + logical;
+    let cfg = &state.config.logs;
+    state.logs.push(
+        Entry { log, content, size },
+        cfg.buffer_size.0,
+        cfg.flush_rows as usize,
+    );
+}
+
+#[derive(Debug, Default)]
+pub struct Recorder;
+
+impl Sink for Recorder {
+    fn finish<'a>(&'a self, state: &'a AppState, outcome: Outcome) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            crate::services::usage::account(state, &outcome).await;
+            record(state, &outcome).await;
+        })
+    }
+}
+
+pub async fn run_jobs(state: &AppState) -> Result<String, String> {
+    let jobs = log_jobs::pending(&state.pg, 20)
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut done = 0;
+    for job in jobs {
+        let result = ch::delete_range(
+            &state.clickhouse,
+            job.org_id,
+            job.project_id,
+            job.from_at,
+            job.to_at,
+            job.kind == "shrink_content",
+        )
+        .await;
+        let error = result.as_ref().err().map(ToString::to_string);
+        log_jobs::finish(&state.pg, job.id, state.clock.now(), error.as_deref())
+            .await
+            .map_err(|e| e.to_string())?;
+        if error.is_none() {
+            done += 1;
+        }
+    }
+    Ok(format!("{done} log jobs done"))
+}

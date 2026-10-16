@@ -1,0 +1,16 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 1024,
+  "temperature": 0.2,
+  "top_k": 40,
+  "stop_sequences": [
+    "END",
+    "STOP"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from one to five in words, then write END."
+    }
+  ]
+}

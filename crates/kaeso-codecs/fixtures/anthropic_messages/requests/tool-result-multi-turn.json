@@ -1,0 +1,143 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 1024,
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ],
+            "description": "The unit of temperature, either 'celsius' or 'fahrenheit'"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      }
+    },
+    {
+      "name": "get_time",
+      "description": "Get the current time in a given time zone",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The IANA time zone name, e.g. America/Los_Angeles"
+          }
+        },
+        "required": [
+          "timezone"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "What's the weather and the local time in Paris and in Tokyo?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll look up the weather and local time for both cities."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+          "name": "get_weather",
+          "input": {
+            "location": "Paris, France",
+            "unit": "celsius"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+          "name": "get_weather",
+          "input": {
+            "location": "Tokyo, Japan",
+            "unit": "celsius"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+          "name": "get_time",
+          "input": {
+            "timezone": "Europe/Paris"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+          "name": "get_time",
+          "input": {
+            "timezone": "Asia/Tokyo"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+          "content": "18°C, light rain"
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+          "content": [
+            {
+              "type": "text",
+              "text": "24°C, clear skies. Radar image attached."
+            },
+            {
+              "type": "image",
+              "source": {
+                "type": "base64",
+                "media_type": "image/png",
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+              }
+            }
+          ]
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+          "content": "ConnectionError: the time service is not available (HTTP 503)",
+          "is_error": true
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+          "content": [
+            {
+              "type": "text",
+              "text": "2026-10-11T22:14:05+09:00"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Keep the answer short."
+        }
+      ]
+    }
+  ]
+}

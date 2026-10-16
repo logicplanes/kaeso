@@ -1,0 +1,19 @@
+{
+  "model": "gpt-6-astra",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "what is in this file?"
+        },
+        {
+          "type": "input_file",
+          "file_url": "https://www.berkshirehathaway.com/letters/2024ltr.pdf",
+          "detail": "auto"
+        }
+      ]
+    }
+  ]
+}

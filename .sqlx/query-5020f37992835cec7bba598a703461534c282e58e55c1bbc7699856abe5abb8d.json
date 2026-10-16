@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id, ma.catalogue_model_id AS \"model?\" FROM service_accounts s LEFT JOIN model_access ma ON ma.service_account_id = s.id WHERE s.project_id = $1 AND s.models_restricted",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "model?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "model_access",
+            "name": "catalogue_model_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "5020f37992835cec7bba598a703461534c282e58e55c1bbc7699856abe5abb8d"
+}

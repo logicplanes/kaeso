@@ -1,0 +1,141 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "items-image-reasoning": {
+    "body": {
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is in this image? Then check the weather there.",
+              "type": "text"
+            },
+            {
+              "source": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                "media_type": "image/png",
+                "type": "base64"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_6v3KumY0FEJrhOl9MXhb3Pep",
+              "input": {
+                "city": "Lisbon",
+                "unit": "celsius"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"temperature_c\":21,\"sky\":\"clear\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_6v3KumY0FEJrhOl9MXhb3Pep",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "answer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "answer"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages/count_tokens"
+  },
+  "response:items-image-reasoning": {
+    "input_tokens": 412
+  },
+  "response:recorded-string-input": {
+    "input_tokens": 11
+  },
+  "response:recorded-tools-and-instructions": {
+    "input_tokens": 84
+  },
+  "response:string-input": {
+    "input_tokens": 11
+  },
+  "response:tools-and-instructions": {
+    "input_tokens": 98
+  },
+  "string-input": {
+    "body": {
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Tell me a joke.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/messages/count_tokens"
+  },
+  "tools-and-instructions": {
+    "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "text.verbosity"
+  }
+}

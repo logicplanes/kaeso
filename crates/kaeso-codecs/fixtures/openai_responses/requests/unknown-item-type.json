@@ -1,0 +1,16 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "role": "user",
+      "content": "Continue."
+    },
+    {
+      "type": "future_item",
+      "id": "fi_0b233ac71e2c84d8cf1980e31ccf9a9ab038bb1046a8cc1e36",
+      "x_future_field": {
+        "payload": "made-up item type"
+      }
+    }
+  ]
+}

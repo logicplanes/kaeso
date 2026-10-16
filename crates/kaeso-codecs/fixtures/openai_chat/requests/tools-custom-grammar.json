@@ -1,0 +1,31 @@
+{
+  "model": "gpt-5.6-terra",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a query for the ids of orders placed after 2026-01-01."
+    }
+  ],
+  "tools": [
+    {
+      "type": "custom",
+      "custom": {
+        "name": "sql_query",
+        "description": "Run a read-only SQL query against the orders table.",
+        "format": {
+          "type": "grammar",
+          "grammar": {
+            "syntax": "lark",
+            "definition": "start: \"SELECT \" COLUMNS \" FROM orders WHERE \" COND\nCOLUMNS: /[a-z_, ]+/\nCOND: /[a-z_ =<>'0-9-]+/"
+          }
+        }
+      }
+    }
+  ],
+  "tool_choice": {
+    "type": "custom",
+    "custom": {
+      "name": "sql_query"
+    }
+  }
+}

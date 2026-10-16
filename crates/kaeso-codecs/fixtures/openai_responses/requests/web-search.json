@@ -1,0 +1,13 @@
+{
+  "model": "gpt-5.5",
+  "input": "What are the opening hours of the Lisbon Oceanarium? Cite the official site.",
+  "tools": [
+    {
+      "type": "web_search"
+    }
+  ],
+  "include": [
+    "web_search_call.action.sources"
+  ],
+  "max_tool_calls": 2
+}

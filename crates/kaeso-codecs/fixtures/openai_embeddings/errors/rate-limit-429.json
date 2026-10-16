@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Rate limit reached for text-embedding-3-small in organization org-Kq3Zt7pLm2Vx9RfYb4Nc8sDw on tokens per min (TPM): Limit 1000000, Used 999120, Requested 2048. Please try again in 70ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+    "type": "tokens",
+    "param": null,
+    "code": "rate_limit_exceeded"
+  }
+}

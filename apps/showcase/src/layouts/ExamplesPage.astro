@@ -1,0 +1,21 @@
+---
+import Base from "./Base.astro";
+interface Props {
+  page: any;
+}
+const { page } = Astro.props;
+---
+
+<Base title={`${page.title} examples`} description={`Every example of ${page.title}.`}>
+  <main class="min-h-dvh bg-panel text-fg" data-examples-page={page.slug}>
+    <header class="flex h-52 items-center gap-12 px-24 hairline-b">
+      <a href={`/components/${page.slug}`} class="text-body font-medium text-fg-secondary hover:text-fg">
+        ‹ {page.title}
+      </a>
+      <h1 class="text-small font-regular text-fg-tertiary">All examples</h1>
+    </header>
+    <div class="mx-auto flex w-full max-w-960 flex-col gap-48 px-24 py-48">
+      <slot />
+    </div>
+  </main>
+</Base>

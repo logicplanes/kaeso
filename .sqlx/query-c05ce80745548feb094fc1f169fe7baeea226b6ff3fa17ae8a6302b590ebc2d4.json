@@ -1,0 +1,173 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id, s.project_id, s.name, s.preset, s.role_id, s.rights_added, s.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", s.created_by, s.archived_at, s.created_at FROM service_accounts s LEFT JOIN org_roles r ON r.id = s.role_id WHERE s.project_id = $1 AND s.id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "preset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "role_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "role_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "rights_added",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "rights_added"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "rights_removed",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "rights_removed"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "role_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "role_project_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_by",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "archived_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "archived_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "c05ce80745548feb094fc1f169fe7baeea226b6ff3fa17ae8a6302b590ebc2d4"
+}

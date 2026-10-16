@@ -1,0 +1,108 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_0b144ec0e91b9159006acb6e6ee52d81904ed80b04912357e3","object":"response","access_programs":null,"created_at":1791716974,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":2,"model":"gpt-5.5-2026-04-23","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"medium","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"web_search","filters":null,"search_context_size":"medium","user_location":{"type":"approximate","city":null,"country":"US","region":null,"timezone":null}}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_0b144ec0e91b9159006acb6e6ee52d81904ed80b04912357e3","object":"response","access_programs":null,"created_at":1791716974,"status":"in_progress","background":false,"completed_at":null,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":2,"model":"gpt-5.5-2026-04-23","output":[],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"medium","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"web_search","filters":null,"search_context_size":"medium","user_location":{"type":"approximate","city":null,"country":"US","region":null,"timezone":null}}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"id":"rs_0b144ec0e91b9159006acb6e6eeab78194ac654c6dd85ea6d7","type":"reasoning","summary":[]}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":3,"output_index":0,"item":{"id":"rs_0b144ec0e91b9159006acb6e6eeab78194ac654c6dd85ea6d7","type":"reasoning","summary":[]}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":4,"output_index":1,"item":{"id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1","type":"web_search_call","status":"in_progress","action":{"type":"search"}}}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","sequence_number":5,"output_index":1,"item_id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1"}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","sequence_number":6,"output_index":1,"item_id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1"}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","sequence_number":7,"output_index":1,"item_id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1"}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":8,"output_index":1,"item":{"id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1","type":"web_search_call","status":"completed","action":{"type":"search","query":"Oceanário de Lisboa opening hours","queries":["Oceanário de Lisboa opening hours"],"sources":[{"type":"url","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours"},{"type":"url","url":"https://www.visitlisboa.com/en/places/oceanario-de-lisboa"}]}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":9,"output_index":2,"item":{"id":"rs_0b144ec0e91b9159006acb6e6e286a81a2892f77bc27046540","type":"reasoning","summary":[]}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":10,"output_index":2,"item":{"id":"rs_0b144ec0e91b9159006acb6e6e286a81a2892f77bc27046540","type":"reasoning","summary":[]}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":11,"output_index":3,"item":{"id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","type":"message","status":"in_progress","content":[],"role":"assistant"}}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","sequence_number":12,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":13,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"The","logprobs":[],"obfuscation":"korWMaoxsyf9P"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":14,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" Lisbon","logprobs":[],"obfuscation":"jqjlcfp84"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":15,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" Oceanarium is open","logprobs":[],"obfuscation":"l94H"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":16,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" every day","logprobs":[],"obfuscation":"lIg9d0"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":17,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" from 10","logprobs":[],"obfuscation":"MlqgxhV1"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":18,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":":00","logprobs":[],"obfuscation":"LwGOy70j3ANMc"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":19,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" to 19","logprobs":[],"obfuscation":"9NDHjvTyvT"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":20,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":":00,","logprobs":[],"obfuscation":"39fAwEWnFaD5"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":21,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" with","logprobs":[],"obfuscation":"iqjfJ4a0DYd"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":22,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" last entry","logprobs":[],"obfuscation":"XoDI3"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":23,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" at 18","logprobs":[],"obfuscation":"zUju6btixP"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":24,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":":00.","logprobs":[],"obfuscation":"j0ggXyowYYR1"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":25,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":" ","logprobs":[],"obfuscation":"aUUxRsRzuPPC1zj"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":26,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"([","logprobs":[],"obfuscation":"VRM3BuCA3eGshZ"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":27,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"oceanario.pt","logprobs":[],"obfuscation":"ivnN"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":28,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"](https://www.oceanario.pt/en/pl","logprobs":[],"obfuscation":"bNR2"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":29,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"an-your-visit/opening-hours?utm_source=openai","logprobs":[],"obfuscation":"ad"}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","sequence_number":30,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"delta":"))","logprobs":[],"obfuscation":"eDP6XAbm1FKdkX"}
+
+event: response.output_text.annotation.added
+data: {"type":"response.output_text.annotation.added","sequence_number":31,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"annotation_index":0,"annotation":{"type":"url_citation","end_index":180,"start_index":87,"title":"Opening hours | Oceanário de Lisboa","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai"}}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","sequence_number":32,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"text":"The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))","logprobs":[]}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","sequence_number":33,"item_id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","output_index":3,"content_index":0,"part":{"type":"output_text","annotations":[{"type":"url_citation","end_index":180,"start_index":87,"title":"Opening hours | Oceanário de Lisboa","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai"}],"logprobs":[],"text":"The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))"}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":34,"output_index":3,"item":{"id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","type":"message","status":"completed","content":[{"type":"output_text","annotations":[{"type":"url_citation","end_index":180,"start_index":87,"title":"Opening hours | Oceanário de Lisboa","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai"}],"logprobs":[],"text":"The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))"}],"role":"assistant"}}
+
+event: response.completed
+data: {"type":"response.completed","sequence_number":35,"response":{"id":"resp_0b144ec0e91b9159006acb6e6ee52d81904ed80b04912357e3","object":"response","access_programs":null,"created_at":1791716974,"status":"completed","background":false,"completed_at":1791716983,"error":null,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":2,"model":"gpt-5.5-2026-04-23","output":[{"id":"rs_0b144ec0e91b9159006acb6e6eeab78194ac654c6dd85ea6d7","type":"reasoning","summary":[]},{"id":"ws_0b144ec0e91b9159006acb6e6e072b81a2a4b12699fd5955b1","type":"web_search_call","status":"completed","action":{"type":"search","query":"Oceanário de Lisboa opening hours","queries":["Oceanário de Lisboa opening hours"],"sources":[{"type":"url","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours"},{"type":"url","url":"https://www.visitlisboa.com/en/places/oceanario-de-lisboa"}]}},{"id":"rs_0b144ec0e91b9159006acb6e6e286a81a2892f77bc27046540","type":"reasoning","summary":[]},{"id":"msg_0b144ec0e91b9159006acb6e6ef2d28194c24c5846ff86968a","type":"message","status":"completed","content":[{"type":"output_text","annotations":[{"type":"url_citation","end_index":180,"start_index":87,"title":"Opening hours | Oceanário de Lisboa","url":"https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai"}],"logprobs":[],"text":"The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))"}],"role":"assistant"}],"parallel_tool_calls":true,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"medium","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"web_search","filters":null,"search_context_size":"medium","user_location":{"type":"approximate","city":null,"country":"US","region":null,"timezone":null}}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":8125,"input_tokens_details":{"cached_tokens":4864,"cache_write_tokens":0},"output_tokens":412,"output_tokens_details":{"reasoning_tokens":256},"total_tokens":8537},"user":null,"metadata":{}}}
+

@@ -1,0 +1,13 @@
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-dbg-in-tests = true
+allow-print-in-tests = true
+
+disallowed-types = [
+    { path = "axum::extract::Query", reason = "use `platform::params::Query`: its rejections are JSON errors" },
+    { path = "axum::extract::Path", reason = "use `platform::params::Path`: its rejections are JSON errors" },
+    { path = "axum::extract::Form", reason = "the Platform API takes JSON bodies through `platform::json::Body`" },
+    { path = "axum_extra::TypedHeader", reason = "read headers from `HeaderMap` and answer with an `ApiError`" },
+]

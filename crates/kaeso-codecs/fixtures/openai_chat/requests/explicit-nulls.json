@@ -1,0 +1,22 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "temperature": null,
+  "top_p": null,
+  "max_completion_tokens": null,
+  "stop": null,
+  "metadata": null,
+  "service_tier": null,
+  "stream": null,
+  "stream_options": null,
+  "logprobs": null,
+  "seed": null,
+  "reasoning_effort": null,
+  "user": null,
+  "safety_identifier": null
+}

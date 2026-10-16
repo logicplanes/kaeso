@@ -1,0 +1,31 @@
+[package]
+name = "kaeso-mail"
+description = "Kaeso gateway email: SMTP delivery, templates and development sinks."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+lettre.workspace = true
+maud.workspace = true
+secrecy.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+metrics.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tokio.workspace = true
+url.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+serde_json.workspace = true
+resvg.workspace = true
+
+[lints]
+workspace = true

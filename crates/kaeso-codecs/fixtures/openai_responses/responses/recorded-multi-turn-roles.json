@@ -1,0 +1,102 @@
+{
+  "id": "resp_02b7dd8dae68d16e006acbb3f0a3148190ad5ac33242a66d98",
+  "object": "response",
+  "created_at": 1791734768,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1791734770,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.5-2026-04-23",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_02b7dd8dae68d16e006acbb3f160ec81909bab103d9e1f71c2",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqy7PyaELCurnCMO3cnE2v_bgFHZhc30bAUoBrZHOUiEXa_QoJ3NqZGSVSWIJmCtT1oZsM_ho8adQJ8DS7yHqxA2vod7XvCrI_a8CqG3tBceBQR9S99UIuYI-Pun1-qh36WIFd-e2kqzOpLZQfQnrABe81BeG78SbrDvcBo4aVj11_EUQRJc3ni7fCHNCpjVeDQAM3FDe6jQtv2oitytBYub9ov3xBFkcXub1RNkutdNRZtLsvZXQRj-OwaFd6eINEKCupspnliamuz9T1PsK9DcbDAh7LEFclULqxlxb-8VpTT8we-xMMsdk8wyHnUro7WsLa4hQKugVaeXVN5cBnbFoeFydsuuuKcqx0B_AIIIXQQsZaig1hdWYwkYA8dzZ5WRLF0v06Urywkc-hpdhrrprvBeT7rqS4REb54B0XfMt6k4ZNI0dj3lan5ATrPfKydemXe1kfFS-wbZftPpcosEet7IOtZCFSYCDJVNUXzLW7KRJPVEneH8--t2xwg8yvmm3g7xjGM5zKFnSTL_nh1u8Eob6CMQgegqlVoz5eDU6a5xZZY99t0XCbD5aNIlBbR5tH5P5DKjMSbq3cT-jn9NcFGNW-FOpC2wqDB64FHStXnsw7YAI1Sq0CAUYsohJKhm1yQ2P2mVPCRB1gfXzda0nsp1PkcMCYzcyJsOTJcr63B6W458QEaHpbSaqMJv1K7ybzcNRGurhETB7f-Ur1kUlwF5DYGyhAjfGMcgClkgaxo4mV1GeQuvbP_3zZ7SDQR26Zsuahfn3F2bTD1O7kAPVkrwcCZhZP0K5iNzL1dgsY9-rabluLItHWmfBGpUVlrlWeuQJvqV0X3qKXxP2eTf5ej2B6b_Ti3AxT-ANi8XYJXd9ke3-IW-9qPoqbRDq8FIWGL7u3vTVsfZljUidlz8tnWB432iEln9U_zfYd2jkUFxlLiH253BQ8rFvA3MsbcgbRyxM_colqu62xwIHtgx3SivaSVvIwuPBhWXO6pmXAqXyG94-DHh9EsZyQO6ctkhE3wqz4k11wrLql4VVLRcajnbHHcsb0Alm1m5fpuQOTLZFZULFbFCSlIcc4GrTVJM01rIAuorNNZ-34tscfVjCEDjAiQU3QKTlvu-5gbPd2WqwnJZMdFolEBg18U1KtxrivtS7oBgwok8xGVtd8HPTxzHEYIZ3ACVB5hmGRSiCp3KWyjfele1xp-bN4c0EalCSnnNe3MntJih_uSdloza8Q4iR952uR7Q8AjKFboIFDyE9fmLkTng21Bbm0D1avczjoiyaNnhjlgI-rGkIDuY8RnbjffKxP_fn_zoGW4qjItrbaXuRbX-TDHN1-sRMlAEFXvj0-83htr-m0m3B9wL8beGpGmw52o3nGA1bzJFZUd2bGzlTjw4YHoEjfUzmKm4Q0b-T3gIw5NZfJVUMrZgqgqGwz-jPqRpqNlgntmPKUX_WAYgUlYDE5YCTUHPEYPaRGSDh3P-MvizgEUSk2ZBMcZ0xZBSghEe6kJAtp5p5WABBpWyLKW7wYGmhEDVNh5TAotlG18ACcD_pHz-DzjjbCmokNE47TLxIeZa2kC7ntjaXmki67el7szQXzgGKAA07A0UwoqAitoiQecG53nXYxWckwj2e6Qn_kF2cDzZTxVZzpvlcJvMhUe7bRC12W_50HgVzvsl9b-z48f4w8ABWUaDpsYxYUnWz7R6QgvELxYrqoiAlrmUMT3JNWafv6ceE0wuwhpj3ms3GS4nb9cRP_4UadytnRdMql2iAvyJo0dk0vD9Nwr4q6qxx5LmILvq94Au7lTHIBxBYyM8IzNoMLxFyCwsG7Khk2UCMgNi6Vdf6e5rPphr58bA-2c5yciDsL",
+      "summary": []
+    },
+    {
+      "id": "msg_02b7dd8dae68d16e006acbb3f20a1c819088a92705147c9d14",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "Usually no—the Atlantic near Lisbon is around 15–16°C in March, which feels quite cold for swimming. A wetsuit is recommended if you plan to surf or spend much time in the water."
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "low"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 118,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 84,
+    "output_tokens_details": {
+      "reasoning_tokens": 37
+    },
+    "total_tokens": 202
+  },
+  "user": null,
+  "metadata": {}
+}

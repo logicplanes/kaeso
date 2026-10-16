@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_platform_keys SET archived_at = $3, updated_at = now() WHERE org_id = $1 AND id = $2 AND archived_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "436811b92265baf88a5c3043af021aff1b2e881dbc98671e1f8d3ca4d43a646f"
+}

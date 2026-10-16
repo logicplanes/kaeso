@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE models_dev_snapshot SET last_attempt_at = $1, last_error = $2, updated_at = now() WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a5e7844fb57a2dc37543a4a1bb474d74501da82a513fe48960f283a76e1d942d"
+}

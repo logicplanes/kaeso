@@ -1,0 +1,21 @@
+{
+  "model": "claude-sonnet-5-5",
+  "max_tokens": 512,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Use the tool."
+    }
+  ],
+  "tool_choice": {
+    "type": "tool"
+  },
+  "tools": [
+    {
+      "name": "book",
+      "input_schema": {
+        "type": "object"
+      }
+    }
+  ]
+}

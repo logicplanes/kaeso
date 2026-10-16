@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@logicplanes/kaeso-tokens/tokens.css";
+@import "@logicplanes/kaeso-tokens/theme.css";
+@import "./fonts.css";
+@import "./kaeso.css";
+@source "../components";
+@source "../blocks";
+@source "../theme";

@@ -1,0 +1,160 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, org_id, project_id, kind, from_at, to_at, requested_by_kind, requested_by_id, created_at, attempts, last_error, done_at FROM log_jobs WHERE done_at IS NULL ORDER BY created_at LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "from_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "from_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "to_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "to_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "requested_by_kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "requested_by_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "requested_by_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "requested_by_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "attempts"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "last_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "last_error"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "done_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "log_jobs",
+            "name": "done_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "448c88dd18a69e904c33034ada9f8ebeeaa8d04565c0da4203980fd4cf6a7504"
+}

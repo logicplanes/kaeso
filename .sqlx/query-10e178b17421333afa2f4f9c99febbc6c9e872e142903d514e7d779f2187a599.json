@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE limits SET amount = $3, hard = $4, alert_thresholds = $5, updated_at = now() WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Numeric",
+        "Bool",
+        "Int2Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "10e178b17421333afa2f4f9c99febbc6c9e872e142903d514e7d779f2187a599"
+}

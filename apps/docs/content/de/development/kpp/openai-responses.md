@@ -1,0 +1,279 @@
+---
+title: OpenAI Responses
+description: Wie jedes Feld des OpenAI-Responses-Formats auf KPP abgebildet wird und wieder zurück.
+order: 6
+---
+
+OpenAI Responses, `POST /v1/responses` (einschließlich Streaming) und `POST /v1/responses/input_tokens`. Codec: `kaeso_codecs::openai_responses::OpenAiResponses`.
+
+Quellen: die OpenAPI-Spezifikation von OpenAI im Commit `e95c0fe615f45a19e8878af923a729948445a6bd` (daher die Schemanamen unten), die [Referenz zum Erstellen](https://developers.openai.com/api/reference/resources/responses/methods/create), die [Referenz der Streaming-Events](https://developers.openai.com/api/reference/resources/responses/streaming-events), die [Referenz zum Zählen der Eingabe-Token](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count) und der [Leitfaden zu Fehlercodes](https://developers.openai.com/api/docs/guides/error-codes).
+
+Die Tabellen verwenden diese Begriffe:
+
+- **typisiert**: ein typisiertes KPP-Feld.
+- **Extras**: `Extras::fields` des genannten Elements, gebunden an `openai_responses`. Sie gelten nur im selben Dialekt: Ein anderer Dialekt lehnt sie mit `Unsupported` ab ([Extras](cross-format.md#extras)). Verschachtelte Schlüssel verwenden Schlüsselpfade (`text.verbosity`, `summary.0.x`).
+- **Form**: eine codec-eigene `Extras::form`-Markierung. Sie betrifft nur die Darstellung, und andere Dialekte ignorieren sie.
+- **Unsupported**: Das Dekodieren oder `check()` schlägt mit `ErrorKind::Unsupported { feature }` fehl.
+
+## Wie genaue Schreibweisen erhalten bleiben
+
+Jedes Wire-Objekt hat eine *kanonische* Kodierung, die nur aus typisierten KPP-Feldern und den strukturellen Form-Markierungen unter [Form-Markierungen](#form-markierungen) entsteht. Anfragen und Antworten aus anderen Dialekten bekommen genau diese Kodierung. Beim Dekodieren baut der Codec die kanonische Kodierung dessen, was er dekodiert hat, und hält jeden Unterschied zum empfangenen JSON als Override in den Extras des KPP-Elements fest, zu dem das Objekt gehört:
+
+- `fields["<path>"]`: ein Schlüssel, den die kanonische Kodierung nicht schreibt oder mit einem anderen Wert schreibt. Das sind unbekannte Schlüssel und bekannte Schlüssel, die KPP nicht modelliert (`metadata`, `text.verbosity`, `detail: "low"`, …), Byte für Byte erhalten. In den Tabellen unten heißen sie **Extras**.
+- `form["set"]["<path>"]`: dasselbe für die Darstellung. Das sind `null`-Werte, ausdrücklich ausgeschriebene Standardwerte (`store: false`, `background: false`, `stream: false`, `tools: []`, `include: []`, `metadata: {}`, `text: {}`, `detail: "auto"`, `truncation: "disabled"`, `service_tier: "auto"`, `text.format: {type: text}`, `stream_options.include_obfuscation`, leere `annotations`/`logprobs`/`summary`/`content`) sowie die Schlüssel `type`, `id`, `item_id`, `status`, `role`, `object`, `filename`, `obfuscation`, `sequence_number`. In den Tabellen unten heißen sie **Form**.
+- `form["unset"]`: Pfade, die die kanonische Kodierung schreibt, die im Original aber fehlten.
+
+Beim Kodieren werden die Overrides nur angewendet, wenn die Extras aus `openai_responses` stammen. Typisierte Felder haben immer Vorrang. Für einen Wert, den die kanonische Kodierung reproduziert, wird nie ein Override festgehalten, und ein Test prüft, dass kein typisierter Schlüssel je als Extras-Feld gespeichert wird. Jeder Override merkt sich außerdem, was die kanonische Kodierung beim Dekodieren an seinem Pfad hatte (`form["canon"]`). Hat sich ein typisiertes Feld nach dem Dekodieren geändert (das Gateway hat `max_output_tokens` gesetzt, einer Anfrage, die nur aus einem Prompt bestand, Nachrichten hinzugefügt, eine Reasoning-Aufwandsstufe gesetzt, …), weicht der kanonische Wert an diesem Pfad ab und der veraltete Override wird übersprungen.
+
+Ein `type` betrifft nur die Darstellung, wo die kanonische Kodierung an diesem Pfad ein `type` hat (Schreibweisen von Part- und Item-Typen), und beim optionalen `type: "message"` einer Eingabenachricht. Ein Objekt, das die kanonische Kodierung nicht hat und das einen anderen `type` trägt (zum Beispiel `text.format: {type: "grammar", …}`), wird als Ganzes in einem Extras-Feld aufbewahrt, sodass ein anderer Dialekt es ablehnt.
+
+## Anfrage: `CreateResponse` / `TokenCountsBody`
+
+| Wire-Feld | KPP | Anmerkungen |
+| --- | --- | --- |
+| `model` | `model` typisiert | Pflicht für `/v1/responses`; optional für `/v1/responses/input_tokens` (fehlt es, ist das KPP-`model` leer und wird wieder weggelassen). |
+| `input` (String) | eine `Role::User`-Nachricht mit einem Textblock, typisiert | Form `input: "string"`. Andere Dialekte bekommen immer eine Item-Liste. |
+| `input` (Items) | `system` + `messages` typisiert | Siehe [Eingabe-Items](#eingabe-items-inputitem). Fehlendes `input` (mit `prompt` erlaubt): keine Nachrichten; Form `unset input`. |
+| `instructions` | Textblock `system[0]` typisiert | Aus anderen Dialekten wird ein einzelner Textblock zu `instructions`; mehrere Blöcke werden zu einem führenden `developer`-Nachrichten-Item mit `input_text`-Parts. Das erhält die Blockgrenzen, aber nicht den Unterschied zwischen `instructions` und einer Systemnachricht (die API behandelt beide als Developer-Anweisungen). `null`: Form. |
+| `tools[]` `{type: function, name, description, parameters, strict}` (`FunctionTool`) | `ToolDef::Function` typisiert (`parameters` roh) | Andere Schlüssel (`defer_loading`, `allowed_callers`, `output_schema`, …) sind Extras des Tools. Cache-Hinweise an Tools aus anderen Dialekten werden verworfen ([Cache-Hinweise](cross-format.md#cache-hinweise)). Namen aus anderen Dialekten außerhalb von `^[a-zA-Z0-9_-]{1,64}$` werden deterministisch umgeschrieben (`EgressCtx::tool_names`) und beim Dekodieren zurückübersetzt. |
+| `tools[]` andere Typen (`web_search`, `file_search`, `mcp`, `custom`, …) | `ToolDef::Unknown` | Nur im selben Dialekt. |
+| `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` typisiert | |
+| `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` typisiert | Mit weiteren Schlüsseln: `ToolChoice::Unknown`. |
+| `tool_choice` `allowed_tools`, gehostete Tools, `mcp`, `custom`, andere Strings | `ToolChoice::Unknown` | Nur im selben Dialekt. |
+| `parallel_tool_calls` | `parallel_tool_calls` typisiert | |
+| `text.format` `{type: text}` | `output = Text` | Fehlen ist die kanonische Form; ein ausdrückliches `{type: text}` ist Form. |
+| `text.format` `{type: json_object}` | `output = JsonObject` typisiert | |
+| `text.format` `{type: json_schema, name, description, schema, strict}` | `output = JsonSchema` typisiert (`schema` roh) | Andere Schlüssel: Extras der `JsonSchemaSpec`. Ein Schema ohne Namen (Anthropic) wird mit `name: "response"` gesendet. |
+| `text.format` andere Typen | Extras `text.format` | |
+| `text.verbosity` | `"medium"`, der Standardwert, den GPT-5- und Codex-Clients bei jeder Anfrage senden: Form, damit solche Anfragen an andere Dialekte gehen können. `low`/`high` ändern die Ausgabe: Extras `text.verbosity`, von anderen Dialekten abgelehnt ([Extras](cross-format.md#extras)). | `null`: Form. |
+| `reasoning.effort` | `reasoning.effort` typisiert | Aus anderen Dialekten ([Reasoning](cross-format.md#reasoning)): eine ausdrückliche Aufwandsstufe unverändert; Anthropic `thinking.disabled` → `none`; ein Budget → `low` (unter 4.096), `medium` (4.096 bis 16.383), `high` (16.384 und mehr), wie unter [Aufwand und Budget](cross-format.md#aufwand-und-budget). Werte von `none` bis `max`; unbekannte Werte sind `ReasoningEffort::Other`. |
+| `reasoning.summary` | `reasoning.summary` typisiert | `auto`/`concise`/`detailed`/andere. Anthropic-Messages-Anfragen mit eingeschaltetem Thinking und einem `display` außer `omitted` bekommen `summary: "auto"`, weil OpenAI lesbares Reasoning nur auf Nachfrage zurückgibt ([Lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). Nicht für `/v1/responses/input_tokens`. OpenAI verlangt von manchen Organisationen eine Verifizierung, bevor sie Reasoning-Zusammenfassungen bekommen; bei einem solchen Anbieterschlüssel erreicht der Fehler von OpenAI die App unverändert. |
+| `reasoning.mode` (`standard`/`pro`), `reasoning.context`, `reasoning.generate_summary` (veraltet) | Extras der `ReasoningConfig` | Nicht dasselbe Konzept wie KPP-`ReasoningMode` (Anthropic-Thinking an oder aus). |
+| `reasoning` `{}` | `reasoning` = leere Konfiguration | Form `object`. |
+| `include[]` `"reasoning.encrypted_content"` | `reasoning.include_encrypted` typisiert | Ohne `reasoning`-Objekt: Form `no_object` an der Konfiguration. Anfragen aus anderen Dialekten fordern es immer an, wenn sie (nach der Umrechnung der Aufwandsstufe) eine Aufwandsstufe außer `none` senden, ebenso Anthropic-Thinking `adaptive` oder `enabled` ohne Aufwandsstufe, wenn `EgressCtx::reasoning = Some(true)` gilt ([Lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). Mit `store: false` ist das der einzige Weg, das Reasoning in der nächsten Runde zurückzugeben ([Reasoning-Blobs](cross-format.md#reasoning-blobs)). |
+| `include[]` andere Werte | Extras `include` (die ganze Liste) | `message.output_text.logprobs`, `web_search_call.action.sources`, … |
+| `max_output_tokens` | `sampling.max_output_tokens` typisiert | |
+| `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typisiert | |
+| `safety_identifier` | `user` typisiert | KPP-`user` aus anderen Dialekten wird als `safety_identifier` gesendet. |
+| `user` (veraltet) | `user` typisiert, wenn `safety_identifier` fehlt (Form `user_key`); sonst Extras `user` | |
+| `stream: true` | `StreamMode::On { include_usage: true }` | Responses-Streams melden die Nutzung immer. `false`/`null`: Form. |
+| `stream_options` | `include_obfuscation`: Form; andere Schlüssel: Extras | Obfuscation ist Füllmaterial, kein Inhalt. |
+| `store` | `false`/`null`: Form; `true`: **Unsupported** (`store`, [Zustandsbehaftete Responses-Funktionen](cross-format.md#zustandsbehaftete-responses-funktionen)) | Anfragen aus anderen Dialekten werden mit `store: false` gesendet ([Speicherung und IDs bei Responses](cross-format.md#speicherung-und-ids-bei-responses)). Anfragen dieses Dialekts behalten ihre Schreibweise, ein fehlendes `store` bedeutet also weiterhin, dass OpenAI die Antwort speichert. Die Form `native` kennzeichnet eine aus diesem Dialekt dekodierte Anfrage. |
+| `previous_response_id`, `conversation` | `null`: Form; jeder Wert: **Unsupported** ([Zustandsbehaftete Responses-Funktionen](cross-format.md#zustandsbehaftete-responses-funktionen)) | |
+| `background` | `false`/`null`: Form; `true`: **Unsupported** ([Zustandsbehaftete Responses-Funktionen](cross-format.md#zustandsbehaftete-responses-funktionen)) | |
+| `metadata`, `truncation`, `service_tier`, `top_logprobs`, `max_tool_calls`, `prompt_cache_key`, `prompt_cache_retention`, `prompt_cache_options`, `prompt`, `context_management`, `moderation`, `access_programs`, `personality` (nur Zählung), unbekannte Schlüssel | Extras | Ausgeschriebene Standardwerte und `null` sind Form ([Wie genaue Schreibweisen erhalten bleiben](#wie-genaue-schreibweisen-erhalten-bleiben)). |
+| Header `openai-beta` | Extras `header:openai-beta` | Wird nur an Responses weitergegeben. |
+
+`check()` lehnt außerdem bei Anfragen aus jedem Dialekt ab: `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](cross-format.md#sampling)); unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert; Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen; und alles, was `cross::check_foreign` ablehnt (fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, fremde Datei-IDs, fremde Zitate; siehe [Anfragen](cross-format.md#anfragen)). Reasoning-Blöcke, die sich nicht wiedergeben lassen, werden verworfen ([Reasoning](cross-format.md#reasoning)), ebenso Cache-Hinweise aus anderen Dialekten ([Cache-Hinweise](cross-format.md#cache-hinweise)). Auch `ToolResult::is_error` wird verworfen: Es ist ein Hinweis, und der Inhalt beschreibt den Fehler ([Tool-Fehler](cross-format.md#tool-fehler)). Eine Reasoning-Konfiguration aus einem anderen Dialekt wird als ihre Aufwandsstufe gesendet: eine ausdrückliche Aufwandsstufe unverändert, ein Budget nach der [Aufwandstabelle](cross-format.md#aufwand-und-budget), `disabled` als `none`; `adaptive` oder `enabled` ohne beides wird ohne `reasoning` gesendet, sodass das Modell seine Standard-Aufwandsstufe nutzt. Embeddings-Anfragen sind `Unsupported`.
+
+### Eingabe-Items (`InputItem`)
+
+| Wire | KPP | Anmerkungen |
+| --- | --- | --- |
+| führende `system`- / `developer`-Nachrichten-Items, die nur Text und außer `type`/`role` keine Item-Daten enthalten | Blöcke von `GenerateRequest.system` | Die Form `system_items` (`[{n, role, type, parts}]`) und `instructions` an der Anfrage halten die Aufteilung fest. Ein führendes Item mit `id`, `status`, einem Bild oder einem unbekannten Schlüssel bleibt eine `Role::System`-Nachricht. |
+| `message`-Item, Rolle `user` / `assistant` | Inhaltsblöcke von `Message { role: User / Assistant }` | Formen `EasyInputMessage`, `InputMessage` und `OutputMessage`. Item-`type`, `id`, `status` und die Schreibweise von `role`: Form an der Nachricht; `phase` und unbekannte Schlüssel: Extras der Nachricht. Eine KPP-Nachricht enthält höchstens ein Nachrichten-Item. |
+| `message`-Item, Rolle `system` / `developer` (nicht führend) | `Message { role: System }` ([Systemnachrichten](cross-format.md#systemnachrichten)) | Kanonische Rolle `developer`; `system`: Form. |
+| `content` als String oder Parts | Form `parts` an der Nachricht | Der String ist kanonisch für einen einfachen Textblock. Leere Part-Liste: Form `empty_at`. |
+| `function_call` (`FunctionToolCall`) | `Block::ToolCall` in der aktuellen Assistant-Nachricht | `call_id` → `id`, `name`, `arguments` (ein JSON-String) → rohes JSON. Argumente, die kein JSON sind, bleiben als JSON-String mit der Form `args_string` erhalten, nach der KPP-Konvention; ein `arguments`-Wert aus einem anderen Dialekt, der ein JSON-String ist, wird als sein Text gesendet. `id`, `status`: Form; `namespace`, `caller`, unbekannte Schlüssel: Extras des Blocks. |
+| `function_call_output` (`FunctionCallOutputItemParam`) | `Block::ToolResult` in der aktuellen User-Nachricht | `call_id`; ein `output`-String → ein Textblock, Parts → Text-, Bild- und Dokumentblöcke (Form `parts`, wenn ein String genügen würde). `id`, `status`: Form; `name`, `namespace`, unbekannte Schlüssel: Extras. `is_error` aus anderen Dialekten wird verworfen. Leerer Inhalt aus anderen Dialekten: `output: ""`. |
+| `reasoning` (`ReasoningItem`) | `Block::Reasoning` (Herkunft `openai_responses`) in der aktuellen Assistant-Nachricht | Eine von Kaeso erfundene ID (`rs_kaeso_…`) wird nicht behalten (Form `kaeso_id`); ein solches Item ohne `encrypted_content` wird gar nicht an den Anbieter gesendet, weil es weder eine `id` noch Inhalt hätte, mit dem OpenAI etwas anfangen kann. `id` → opake `OpenAiReasoningItemId`, `encrypted_content` → opakes `OpenAiEncryptedReasoning`, `summary[].text` → `summary`, `content[].text` → `text`; `status` und die `type`s der Parts: Form; unbekannte Schlüssel: Extras. Wird nur an `openai_responses` beim selben Anbieter wiedergegeben ([Reasoning](cross-format.md#reasoning)). Ein Item, dessen `encrypted_content` ein Reasoning-Blob ist (`kpp:reasoning:v1:…`, Reasoning eines anderen Dialekts, das Kaeso der App gegeben hat, siehe [Reasoning-Blobs](cross-format.md#reasoning-blobs)), wird zum ursprünglichen Block darin dekodiert, einschließlich Herkunft (zum Beispiel Claudes signiertes Thinking), egal was der Rest des Items sagt. In Anfragen, die Kaeso mit `store: false` sendet (aus anderen Dialekten, siehe [Speicherung und IDs bei Responses](cross-format.md#speicherung-und-ids-bei-responses)), wird Reasoning ohne verschlüsselten Inhalt nicht gesendet, weil OpenAI die Item-ID nicht auflösen kann. |
+| `item_reference` und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt. |
+| Items, die sich nicht als ihr Typ parsen lassen (zum Beispiel ein `function_call_output` mit `call_id: null`) | `Block::Unknown` (wie oben) | Verlustfrei; der Anbieter beurteilt sie. |
+
+Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen in die aktuelle Assistant-Nachricht, aufeinanderfolgende `function_call_output`-Items in die aktuelle User-Nachricht, und ein Nachrichten-Item kommt in eine Nachricht seiner Rolle, die noch kein Nachrichten-Item enthält. Beim Kodieren wird jede KPP-Nachricht wieder aufgeteilt: Jede Folge von Inhaltsblöcken wird ein Nachrichten-Item, jeder andere Block ein eigenes Item. Eine Nachricht aus einem anderen Dialekt wie Anthropics `[thinking, text, tool_use, tool_use]` wird zu einem `message`-Item und zwei `function_call`-Items. Das Thinking wird verworfen ([Reasoning](cross-format.md#reasoning)), außer es ist OpenAI-Reasoning, das eine Anthropic-App in einem [Reasoning-Blob](cross-format.md#reasoning-blobs) zurückgebracht hat.
+
+`id` und `status` von Nachrichten- und Funktionsaufruf-Items (`msg_…`, `fc_…`) betreffen nur die Darstellung, sodass eine Unterhaltung mit zurückgeschickten Ausgabe-Items trotzdem an einen anderen Anbieter gehen kann. IDs von Reasoning-Items sind semantisch (opake `OpenAiReasoningItemId`), weil OpenAI sie auflöst.
+
+### Inhaltsteile
+
+| Wire-Part | KPP | Anmerkungen |
+| --- | --- | --- |
+| `input_text` (User, System, Developer, Tool-Ausgabe) | `Block::Text` | |
+| `output_text` (Assistant) | `Block::Text`, `annotations[]` → `citations` (roh, an die Herkunft gebunden) | Kanonisch in Anfragen: `{type, text, annotations}`; `logprobs` im Eingabeverlauf: Extras. Der Texttyp, der nicht der Standard der Rolle ist: Form. |
+| `refusal` | `Block::Refusal` | |
+| `input_image` `image_url` (Data-URL `data:<type>;base64,…`) | `Block::Image`, `Source::Base64` | Data-URLs mit weiteren Parametern bleiben `Source::Url`. |
+| `input_image` `image_url` (URL) / `file_id` | `Source::Url` / `Source::FileId` (an die Herkunft gebunden, nutzbar von OpenAI-Dialekten desselben Anbieters) | Beide oder keins gesetzt: `Block::Unknown`. |
+| `input_image.detail`, `input_file.detail` | `"auto"`: Form; andere Werte: Extras `detail` | Bei Bildern ist `detail` ein Auflösungshinweis auf der [Extras-Allowlist](extras-allowlist.md) und wird für andere Dialekte verworfen. Bei Dateien steuert es, wie PDFs gerendert werden, und andere Dialekte lehnen es ab. |
+| `input_file` `file_data` / `file_url` / `file_id` | `Block::Document`, `Source::Base64` / `Url` / `FileId` | Genau eine Quelle, und `file_data` muss eine Data-URL sein; sonst `Block::Unknown`. |
+| `input_file.filename` | Form | KPP hat kein Feld für einen Dateinamen (`DocumentBlock::title` ist ein Titel), so können PDFs den Dialekt wechseln. OpenAI verlangt bei `file_data` einen Dateinamen: Dokumente aus anderen Dialekten, die als `file_data` gesendet werden, bekommen `filename: "document.<ext>"`, mit der Endung `pdf`, `txt`, `md`, `csv` oder `json` je nach Medientyp und sonst `bin`. |
+| `prompt_cache_breakpoint` (`PromptCacheBreakpointConfig`) | `cache: CacheHint` (Form `breakpoint`) | Wird nur an diesen Dialekt wieder ausgegeben; Hinweise aus anderen Dialekten werden verworfen ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
+| andere Part-Typen | `Block::Unknown` | |
+
+## Antwort: `Response`
+
+| Wire-Feld | KPP | Anmerkungen |
+| --- | --- | --- |
+| `id`, `model` | `Response.id`, `.model` typisiert | |
+| `status` `completed` | `stop = EndTurn`, oder `ToolUse`, wenn `output` einen `function_call` enthält | |
+| `status` `incomplete` + `incomplete_details.reason` `max_output_tokens` / `content_filter` / anderer | `stop = MaxTokens` / `ContentFilter` / `Other(reason)` | Andere Status (`in_progress`, `cancelled`, `queued`): `Other(status)`; das genaue `status` und `incomplete_details` kommen aus den Overrides zurück. |
+| `status` `failed` + `error {code, message}` | `decode_response` gibt den Fehler zurück | Art aus `error.code` (`ResponseErrorCode`): `server_error` → `ProviderError`, `rate_limit_exceeded` → `RateLimited`, `vector_store_timeout` → `Timeout`, Bild-Codes und `invalid_prompt` → `InvalidRequest`, Richtlinien-Codes → `ContentFiltered`, nicht aufgeführte Codes → `ProviderError`. Das ganze Objekt bleibt in `raw` und wird Responses-Apps genau so wiedergegeben. |
+| `output[]` `message` (Rolle `assistant`) | Inhaltsblöcke (`output_text` → `Text` mit Zitaten, `refusal` → `Refusal`, andere Parts → `Unknown`) | Item-Grenzen: Form `messages` = `[[erster Block, Blockanzahl], …]` und `blocks` (Blockanzahl) an der Antwort, dazu Form `item` (Ausgabeindex) an jedem dekodierten Block. Die Bereiche werden nur genutzt, solange die Blockliste unverändert ist. Hat das Gateway Blöcke entfernt oder hinzugefügt, werden die Blöcke nach ihren `item`-Markierungen gruppiert, sodass IDs und Item-Overrides (Geltungsbereich `@out<i>`) bei ihrem Item bleiben und kein falsches Item entsteht. `logprobs` eines Parts: Extras des Blocks. |
+| `output[]` `function_call` | `Block::ToolCall` | `id` (`fc_…`): Form am Block; auf dem Hinweg umgeschriebene Namen und IDs werden zurückübersetzt. |
+| `output[]` `reasoning` | `Block::Reasoning` | Wie bei Eingabe-Items. |
+| `output[]` andere Typen (`web_search_call`, …) | `Block::Unknown` | |
+| `usage` (`ResponseUsage`) | `usage` typisiert | Wie unter [Nutzung](cross-format.md#nutzung) beschrieben: `input_tokens` = Wire-`input_tokens` − `cached_tokens` − `cache_write_tokens`, weil das Wire-`input_tokens` Cache-Lesezugriffe und Cache-Schreibzugriffe mitzählt; `cache_read_tokens` = `cached_tokens`; `cache_write_tokens`; `output_tokens` (einschließlich Reasoning); `reasoning_tokens`; das Objekt in `raw`. Beim Kodieren werden die typisierten Felder geschrieben und `raw` aus diesem Dialekt darübergelegt. `null`: Form. |
+| `object`, `created_at`, `completed_at`, `error: null`, zurückgegebene Anfrageparameter (`instructions`, `tools`, `tool_choice`, `text`, `reasoning`, `temperature`, `top_p`, `store`, `truncation`, `metadata`, `service_tier`, …), unbekannte Schlüssel | Extras der Antwort (Overrides) | Die Form `native` kennzeichnet eine aus diesem Dialekt dekodierte Antwort. |
+
+Eine Antwort aus einem anderen Dialekt wird als vollständiges `Response`-Objekt geschrieben:
+
+- `object: "response"`, `created_at` (`EncodeCtx::created_at`), `background: false`, `completed_at` (derselbe Zeitpunkt, wenn abgeschlossen, sonst `null`) und `error: null`.
+- Die zurückgegebenen Anfrageparameter stammen aus der Anfrage der App (`EncodeCtx::request`, so kodiert, wie dieser Codec sie sendet), mit den Standardwerten von OpenAI, wo nichts gesetzt ist: `instructions`, `max_output_tokens`, `max_tool_calls`, `prompt_cache_key`, `safety_identifier`, `user` und `previous_response_id` sind `null`, `parallel_tool_calls: true`, `reasoning: {effort, summary}`, `service_tier: "default"`, `store: false` (Kaeso speichert nichts), `temperature: 1`, `top_p: 1`, `top_logprobs: 0`, `text: {format: {type: text}}`, `tool_choice: "auto"`, `tools: []`, `truncation: "disabled"`, `metadata: {}`.
+- Stoppgründe ohne Entsprechung (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) werden als `completed` gemeldet, wobei Information verloren geht: Ein Anthropic-`pause_turn` fordert die App zum Fortsetzen auf, und eine Responses-App kann das nicht erkennen. Nachrichten-Items sind `incomplete`, wenn die Antwort es ist.
+- Reasoning eines anderen Dialekts wird zu einem Reasoning-Item ([Reasoning-Blobs](cross-format.md#reasoning-blobs)): ID `rs_kaeso_…`, sein Reasoning-Text als ein `summary_text`, gefolgt von seinen Zusammenfassungen, und ein Reasoning-Blob des ursprünglichen Blocks als `encrypted_content`. Der Blob wird gesendet, egal ob die App ihn in `include` angefordert hat, weil Kaeso nichts speichert und die Agent-Schleifen der SDKs Ausgabe-Items so zurückschicken, wie sie sie bekommen haben.
+- Antwortdaten, die dieser Dialekt nicht darstellen kann, werden weggelassen ([Antworten](cross-format.md#antworten)): fremde `Unknown`-Blöcke, fremde Zitate und Extras, Bilder, Dokumente und Tool-Ergebnisse.
+- Nachrichten- und Funktionsaufruf-Items bekommen die IDs `msg_kaeso_…` und `fc_kaeso_…`. Anfragen erkennen diese von Kaeso erfundenen IDs und senden sie nie an einen Anbieter.
+
+## Zählung der Eingabe-Token: `TokenCountsResource`
+
+| Wire | KPP | Anmerkungen |
+| --- | --- | --- |
+| `{object: "response.input_tokens", input_tokens}` | `CountTokensResponse.input_tokens` typisiert | Andere Schlüssel: Extras. |
+
+Die Anfrage ist `TokenCountsBody` und wird wie `CreateResponse` in `Request::CountTokens` dekodiert; der Pfad ist `/v1/responses/input_tokens`. `include`, `max_output_tokens`, `temperature`, `top_p`, `user`, `safety_identifier`, `stream` und `store` gehören nicht zu `TokenCountsBody`. Sendet eine App sie, bleiben sie Extras der Anfrage (nur im selben Dialekt). KPP-Zählanfragen aus anderen Dialekten werden ohne sie kodiert, da sie die Zahl der Eingabe-Token nicht ändern.
+
+## Streams: `ResponseStreamEvent`
+
+Es gibt einen KPP-Block pro Inhaltsteil einer Nachricht, Funktionsaufruf, Reasoning-Item und sonstigem Item. Abweichungen bei `sequence_number` und `obfuscation` sind Form. Alles andere, was von den kanonischen Events abweicht, ist ein Extras-Override, dessen Geltungsbereich das angehängte Event angibt (`@open`, `@close`, `@done`, `@in_progress`, `@sdone`, `@spdone`, `@rdone`, `@rpdone`, `@a<index>-…`).
+
+| SSE-Event | KPP |
+| --- | --- |
+| `response.created` | `ResponseStart` (`id`, `model`, `usage`, wenn nicht null; Form `native`) |
+| `response.in_progress` | an `ResponseStart` angehängt |
+| `response.output_item.added` (`message`) | an den `BlockStart` des ersten Parts angehängt (`@open`) |
+| `response.content_part.added` (Nachricht: `output_text` / `refusal` / anderer) | `BlockStart` `Text` / `Refusal` / `Unknown` (Form `part`; Form `new_item`, wenn es ein Nachrichten-Item öffnet, während ein anderes offen ist) |
+| `response.output_text.delta` | `BlockDelta` `Text`; `logprobs` Extras |
+| `response.output_text.annotation.added` | `BlockDelta` `Citation` |
+| `response.refusal.delta` | `BlockDelta` `Refusal` |
+| `response.output_text.done`, `response.refusal.done` | an den `BlockStop` des Parts angehängt (`@done`) |
+| `response.content_part.done` (Nachricht) | `BlockStop` |
+| `response.output_item.done` (`message`) | an das nächste Lebenszyklus-Event angehängt (`@close`) |
+| `response.output_item.added` (`function_call`) | `BlockStart` `ToolCall` (`call_id`, `name`) |
+| `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
+| `response.function_call_arguments.done` | an den `BlockStop` angehängt (`@done`) |
+| `response.output_item.done` (`function_call`) | `BlockStop` |
+| `response.output_item.added` (`reasoning`) | `BlockStart` `Reasoning` (Item-ID als opake `OpenAiReasoningItemId`) |
+| `response.reasoning_summary_part.added` | `BlockDelta` `ReasoningSummary` mit leerem Text (öffnet die Zusammenfassung `summary_index`) |
+| `response.reasoning_summary_text.delta` | `BlockDelta` `ReasoningSummary` |
+| `response.reasoning_summary_text.done`, `response.reasoning_summary_part.done` | an den nächsten Zusammenfassungs-Part oder den `BlockStop` angehängt (`@sdone`, `@spdone`) |
+| `response.content_part.added` (Reasoning, `reasoning_text`) | `BlockDelta` `ReasoningText` mit leerem Text, Form `new_part` |
+| `response.reasoning_text.delta` | `BlockDelta` `ReasoningText` |
+| `response.reasoning_text.done`, `response.content_part.done` (Reasoning) | an den nächsten Part oder den `BlockStop` angehängt (`@rdone`, `@rpdone`) |
+| `response.output_item.done` (`reasoning`) | `BlockDelta` `Opaque` (`encrypted_content`, falls vorhanden) + `BlockStop` |
+| `response.output_item.added` / `.done` (andere Item-Typen) | `BlockStart` `Unknown` / `BlockDelta` `Unknown` (das fertige Item) + `BlockStop` |
+| `response.completed`, `response.incomplete` | `ResponseDelta` (`stop`, `usage`) + `ResponseStop` (Overrides des fertigen Antwortobjekts, zum Beispiel `completed_at`) |
+| `response.failed` | `StreamEvent::Error` (Art aus `error.code`; das Event in `raw`, unverändert wiedergegeben) |
+| `error` (`ResponseErrorEvent`, flaches `code`/`message`/`param`) | `StreamEvent::Error` (Art aus `code`; das Event in `raw`, unverändert wiedergegeben). Ein Event ohne flaches `code` und `message`, etwa mit einem verschachtelten `error`-Objekt, wird zu einem `ProviderError` mit einer allgemeinen Meldung und aus `raw` wiedergegeben. |
+| kein `response.created` vor dem Inhalt | ein erzeugter `ResponseStart` (leere ID und leeres Modell, Form `skip`, damit er nie zurückgeschrieben wird; das fertige Antwortobjekt trägt weiterhin die echte ID) |
+| ein bekanntes Event für ein Ausgabe-Item oder einen Part, den der Stream nie angekündigt hat, oder ohne seine Pflichtfelder | `StreamEvent::Error` (`ProviderError`); danach wird nichts mehr dekodiert |
+| `error`, unmittelbar gefolgt von `response.failed` | ein `StreamEvent::Error` (beide Events in `raw`, beide wiedergegeben) |
+| alles nach `response.completed`/`.incomplete`, `response.failed` oder `error` | wird nicht dekodiert |
+| alles andere (`response.queued`, `response.web_search_call.*`, `response.file_search_call.*`, `response.mcp_*`, `response.image_generation_call.*`, `response.audio.*`, künftige Events), SSE-Kommentare, Frames mit `id:`- oder `retry:`-Feldern oder ohne JSON-Daten | `StreamEvent::Extra` (`{event, data}` / `{comment}`), nur im selben Dialekt |
+| redundante Events an ungewöhnlicher Stelle | `StreamEvent::Extra`, und das Lebenszyklus-Event, das sie erzeugt hätte, bekommt die Form `skip` |
+
+Das Kodieren von KPP-Events aus einem anderen Dialekt erzeugt die vollständige kanonische Folge:
+
+- `response.created` und `response.in_progress`, jeweils mit dem Antwortobjekt samt zurückgegebenen Feldern und `usage: null`;
+- `output_item.added` und `content_part.added` vor dem ersten Delta eines Nachrichten-Items;
+- die `.done`-Events und `content_part.done` bei jedem `BlockStop`;
+- `output_item.done` für eine Nachricht, wenn der nächste Block, der kein Text ist, beginnt oder die Antwort endet;
+- `reasoning_summary_*`-Part-Events um Zusammenfassungen herum, und `content_part.*` und `reasoning_text.*` um Reasoning-Text herum;
+- dann `response.completed`, oder `response.incomplete` bei `MaxTokens` und `ContentFilter`, mit allen Ausgabe-Items und der Nutzung.
+
+`sequence_number` zählt ab 0. Item-IDs werden erzeugt (`msg_…`, `fc_…`, `rs_…` aus der Antwort-ID und dem Ausgabeindex). `obfuscation` wird nie erzeugt. Blöcke, die bei `ResponseStop` noch offen sind, werden zuerst geschlossen. Ein Stream ohne `ResponseStart` bekommt einen, mit der ID `resp_kaeso_<created_at>` aus `EncodeCtx::created_at`. Reasoning-Blöcke anderer Dialekte werden zu Reasoning-Items mit einer `rs_kaeso_…`-ID ([Reasoning-Blobs](cross-format.md#reasoning-blobs)): Der Reasoning-Text wird als `reasoning_summary_text` der Zusammenfassung 0 gestreamt (Zusammenfassungen behalten ihren Index), und `output_item.done` trägt den Reasoning-Blob des ganzen Blocks in `encrypted_content`. Nach `ResponseStop` oder `Error` lehnt der Encoder weitere Lebenszyklus-Events ab. Fremde Fehler werden zu einem `error`-Event, mit dem `code` aus der Fehlerart (siehe [Fehler](#fehler-errorresponse)).
+
+Was ein anderer Dialekt sendet und dieser Dialekt nicht darstellen kann (zusätzliche Events wie Anthropic-`ping`, fremde unbekannte Blöcke), bringt dosierte SSE-Kommentare ein, `: keepalive` ([Keepalives](cross-format.md#keepalives)): einen pro zusätzlichem Event und einen pro 1.024 Byte verborgenem Text. `StreamEncoder::keepalive` gibt dem Gateway denselben Frame. Es gibt kein Endsignal für den Stream.
+
+## Schema-Eigenschaften ohne eigene Zeile
+
+Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
+
+| Eigenschaft | KPP-Ziel |
+| --- | --- |
+| `FunctionTool.async` | Extras des `FunctionTool` (`async`) |
+| `FunctionTool.defer_loading`, `.allowed_callers`, `.output_schema` | Extras des `FunctionTool` |
+| `FunctionToolCall.async`, `.namespace`, `.caller` (Eingabe- und Ausgabe-Items) | Extras des `ToolCallBlock` (`async`, …) |
+| `FunctionToolCallOutputResource.created_by` (und `id`, `status`) | `created_by`: Extras des `ToolResultBlock`; `id`, `status`: Form |
+| `Response.prompt_cache_diagnostics` | Extras der `Response` (`prompt_cache_diagnostics`, das ganze Objekt) |
+| `Response.prompt_cache_options`, `.moderation`, `.conversation`, `.output_text` | Extras der `Response` |
+| `ResponseUsage.input_tokens` | `usage.input_tokens` + `usage.cache_read_tokens` + `usage.cache_write_tokens` ([Nutzung](cross-format.md#nutzung)) |
+| `ResponseUsage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` |
+| `ResponseUsage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` |
+| `ResponseUsage.output_tokens` | `usage.output_tokens` |
+| `ResponseUsage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` |
+| `ResponseUsage.total_tokens` | abgeleitet (Eingabe + Ausgabe); das Originalobjekt liegt in `usage.raw` und hat für diesen Dialekt Vorrang |
+| `output_index` der Stream-Events | der KPP-Block des Items (Zustand des Decoders; Nachrichten-Parts über `output_index` + `content_index`); geschrieben aus dem eigenen Zähler des Encoders, Abweichungen sind `fields`-Overrides des Events |
+| `content_index` der Stream-Events | der KPP-Block des Inhaltsteils (Nachrichten-Parts) oder der Reasoning-Text-Part (`new_part`-Deltas); geschrieben aus dem Zähler des Encoders |
+| `item_id` der Stream-Events | die Item-ID (Form-Overrides für IDs dieses Dialekts, sonst erzeugte IDs) |
+| `sequence_number` der Stream-Events | Form-Overrides, wenn sie von 0, 1, 2, … abweichen |
+| `obfuscation` der Stream-Events | Form-Override am Delta |
+| `logprobs` der Stream-Events (`output_text.delta`/`.done`) | `fields`-Override am Delta / Stop-Event |
+| `prompt.id`, `prompt.version`, `prompt.variables` (`Prompt`) | Extras `prompt` (das ganze Objekt; wiederverwendbare Prompts liegen auf dem Server) |
+| `prompt_cache_options.ttl`, `prompt_cache_options.mode` | Extras `prompt_cache_options` (das ganze Objekt) |
+| `context_management[].type`, `context_management[].compact_threshold` | Extras `context_management` (die ganze Liste) |
+| `Error.misalignment` (`MisalignmentErrorDetailsResource`: `review_target`, `error_type`, `detailed_explanation`, `steer`) | `KppError.raw` (der ganze Body), wiedergegeben an Apps eines OpenAI-Dialekts |
+| `ResponseError.misalignment` (fehlgeschlagene Antworten, `response.failed`) | `KppError.raw` (die ganze Antwort oder das ganze Event), wiedergegeben an Responses-Apps |
+| `ResponseError.code` / `.message` | `KppError.kind` (über `ResponseErrorCode`) / `.message` |
+| `Error.type`, `.code`, `.param`, `.message` | `KppError.kind` (mit dem Status), `.param`, `.message`; der Body in `raw` |
+
+## Fehler: `ErrorResponse`
+
+`{"error": {"message", "type", "param", "code"}}` ⇄ `KppError` (`message`, `param`, `status`, `retry_after` aus `retry-after-ms` / `retry-after`, der Body in `raw`).
+
+| Dekodieren: Status / `type` / `code` | `ErrorKind` |
+| --- | --- |
+| `code` `context_length_exceeded` | `ContextTooLong` |
+| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active` | `Billing` |
+| 503, `service_unavailable_error`, `server_is_overloaded` | `Overloaded` |
+| `content_policy_violation`, `content_filter` | `ContentFiltered` |
+| 400, 409, 422 | `InvalidRequest` |
+| 401 | `Authentication` |
+| 403 | `PermissionDenied` |
+| 404 | `NotFound` |
+| 413 | `RequestTooLarge` |
+| 429 | `RateLimited` |
+| 408, 504 | `Timeout` |
+| andere, oder ein Body, der kein OpenAI-Fehler ist | `ProviderError` (Status und roher Body bleiben erhalten) |
+
+Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (Chat, Responses, Embeddings) stammen, wiedergegeben, solange sie unverändert sind, also solange die aus dem Body erneut dekodierte Art der Art des Fehlers entspricht und die Meldung dieselbe ist. Andere Fehler bekommen:
+
+| `ErrorKind` | Status | `type` | `code` |
+| --- | --- | --- | --- |
+| `InvalidRequest`, `Unsupported` | 400 | `invalid_request_error` | `null` |
+| `ContextTooLong` | 400 | `invalid_request_error` | `context_length_exceeded` |
+| `ContentFiltered` | 400 | `invalid_request_error` | `content_policy_violation` |
+| `Authentication` | 401 | `invalid_request_error` | `null` |
+| `PermissionDenied` | 403 | `request_forbidden` | `null` |
+| `NotFound` | 404 | `invalid_request_error` | `null` |
+| `RequestTooLarge` | 413 | `invalid_request_error` | `null` |
+| `RateLimited` | 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| `Billing` | 429 | `insufficient_quota` | `insufficient_quota` |
+| `Overloaded` | 503 | `service_unavailable_error` | `server_is_overloaded` |
+| `Timeout` | 504 | `server_error` | `timeout` |
+| `ProviderError` | sein 5xx-Status, sonst 500 | `server_error` | `null` |
+
+`retry_after` wird als `retry-after` geschrieben (ganze Sekunden, aufgerundet), dazu `retry-after-ms`, wenn es keine ganze Zahl von Sekunden ist. In Streams ist ein fremder Fehler `{"type": "error", "code": <code, or type when null>, "message", "param"}`; `code` ist dort der Code oder, wenn er `null` ist, der `type`.
+
+## Form-Markierungen
+
+| Markierung | An | Bedeutung |
+| --- | --- | --- |
+| `set`, `unset` | jedem Element | Overrides der Darstellung ([Wie genaue Schreibweisen erhalten bleiben](#wie-genaue-schreibweisen-erhalten-bleiben)). |
+| `input` | Anfrage | `input` war ein String. |
+| `system_items`, `instructions` | Anfrage | Wie sich `system` auf `instructions` und führende System- und Developer-Items aufteilt. |
+| `user_key` | Anfrage | Die ID des Endnutzers kam aus `user`. |
+| `object`, `no_object` | Reasoning-Konfiguration | Das `reasoning`-Objekt war leer / fehlte. |
+| `parts` | Nachricht, Tool-Ergebnis | Der Inhalt war eine Part-Liste, obwohl ein String genügt hätte. |
+| `empty_at` | Nachricht | Blockindex eines leeren Nachrichten-Items. |
+| `raw_item` | Nachricht | Die Nachricht ist ein einzelnes unbekanntes Item. |
+| `args_string` | Tool-Aufruf | `arguments` war kein JSON; der rohe Wert ist ein JSON-String. |
+| `breakpoint` | Cache-Hinweis | Es war ein ausdrücklicher `prompt_cache_breakpoint`. |
+| `native` | Anfrage | Aus diesem Dialekt dekodiert (es wird kein `store: false` hinzugefügt). |
+| `canon` | jedem Element | Kanonische Werte an den Override-Pfaden beim Dekodieren, für die Prüfung auf veraltete Overrides. |
+| `native`, `messages`, `blocks` | Antwort | Aus diesem Dialekt dekodiert; Blockbereiche der Nachrichten-Items; Blockanzahl. |
+| `item` | Block einer Antwort | Index des Ausgabe-Items, aus dem der Block stammt. |
+| `kaeso_id` | Reasoning-Block | Seine von Kaeso erfundene Item-ID wurde verworfen. |
+| `new_item`, `part`, `new_part`, `skip`, `~event` | Stream-Events | Siehe [Streams](#streams-responsestreamevent). |
+
+## Modelle
+
+`GET /v1/models` und `GET /v1/models/{model}` haben in jeder OpenAI-API dieselbe Form. Dieser Codec kodiert und dekodiert sie mit der gemeinsamen Implementierung, die auf der Seite [OpenAI Chat Completions](openai-chat.md) beschrieben ist (Fixtures `fixtures/openai_chat/models/`). Dekodierte Extras tragen die Herkunft `openai_responses`.

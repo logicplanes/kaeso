@@ -1,0 +1,61 @@
+---
+title: Theming
+description: Hell auf reinem Weiß, dunkel auf reinem Schwarz oder nach Wahl des Systems. Themes wechseln mit einem Attribut und brauchen keine Dark-Varianten.
+---
+
+import CodeView from "~/components/CodeView.astro";
+
+## Wie Themes funktionieren
+
+Jede Farbe ist eine CSS-Variable mit einem hellen und einem dunklen Wert. Die dunklen Werte gelten, wenn das System Dunkel bevorzugt oder ein Element `data-theme="dark"` trägt; `data-theme="light"` erzwingt Hell. Komponenten verwenden nie `dark:`-Varianten: Die Tokens wechseln selbst.
+
+## Ein Theme wählen
+
+`ThemeProvider` merkt sich die Wahl der Person (System, Hell oder Dunkel) und setzt `data-theme` am Dokument. `ThemeMenu` ist das Steuerelement dafür; `useTheme()` liest und setzt sie (`theme` ist die Wahl, `resolvedTheme` das, was angezeigt wird).
+
+<CodeView
+  code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";
+
+export function ThemeControl() {
+  return <ThemeMenu />;
+}
+
+export function DarkModeOffer() {
+  const { resolvedTheme, setTheme } = useTheme();
+  if (resolvedTheme === "dark") return null;
+  return <Button onClick={() => setTheme("dark")}>Use dark mode</Button>;
+}`}
+/>
+
+## Ein Bereich im anderen Theme
+
+Jedes Element kann seinen Teilbaum umschalten. Overlays, die in einem Bereich mit eigenem Theme geöffnet werden, müssen in diesen Bereich portalen, sonst übernehmen sie das Theme der Seite; den Bereich dazu in `PortalContainer` einschließen.
+
+<CodeView
+  code={`import { Button, Menu, PortalContainer } from "@logicplanes/kaeso-ui";
+
+export function DarkPreview() {
+  return (
+    <div data-theme="dark" className="bg-panel text-fg">
+      <PortalContainer>
+        <Menu>
+          <Menu.Trigger>
+            <Button>Actions</Button>
+          </Menu.Trigger>
+          <Menu.Content>
+            <Menu.Item>Rename</Menu.Item>
+          </Menu.Content>
+        </Menu>
+      </PortalContainer>
+    </div>
+  );
+}`}
+/>
+
+## Kontrast und Bewegung
+
+Mit `prefers-contrast: more` wechseln Ringe zur kräftigen Linie, und sekundärer Text wird primär. Mit `prefers-reduced-motion` entfallen Transformationen, und nur Übergänge der Deckkraft bleiben.
+
+## Was sich nicht anpassen lässt
+
+Es gibt keine Akzentfarbe zum Ändern und keinen Radius zum Einstellen: Die Identität steht in den Tokens fest. Ein Produkt, das anders aussehen soll, forkt die Tokens, nicht die Komponenten.

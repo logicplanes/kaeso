@@ -1,0 +1,38 @@
+---
+import "~/styles/docs.css";
+import { themeScript } from "@logicplanes/kaeso-ui";
+import { docsLangScript } from "~/lib/locale";
+import { ClientRouter } from "astro:transitions";
+interface Props {
+  title: string;
+  description?: string;
+  bodyClass?: string;
+}
+const { title, description = "Kaeso's UI library: every component in every state, in light and dark.", bodyClass } = Astro.props;
+const fullTitle = title === "Kaeso UI" ? title : `${title} · Kaeso UI`;
+---
+
+<!doctype html>
+<html lang="en" data-docs-page={title}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="https://ui.kaeso.app/og.png" />
+    <script is:inline set:html={themeScript} />
+    <script is:inline set:html={docsLangScript} />
+    <ClientRouter fallback="swap" />
+  </head>
+  <body class={bodyClass} transition:animate="none">
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "id": "chatcmpl-ABfvyvfNWKcl7Ohqos4UFrmMs1v4C",
+  "object": "chat.completion",
+  "created": 1727346166,
+  "model": "gpt-4o-2024-08-06",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fdNz3vOBKYgOIpMdWotB9MjY",
+            "type": "function",
+            "function": {
+              "name": "GetWeatherArgs",
+              "arguments": "{\"city\": \"Edinburgh\", \"country\": \"GB\", \"units\": \"c\"}"
+            }
+          },
+          {
+            "id": "call_h1DWI1POMJLb0KwIyQHWXD4p",
+            "type": "function",
+            "function": {
+              "name": "get_stock_price",
+              "arguments": "{\"ticker\": \"AAPL\", \"exchange\": \"NASDAQ\"}"
+            }
+          }
+        ],
+        "refusal": null
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 149,
+    "completion_tokens": 60,
+    "total_tokens": 209,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "system_fingerprint": "fp_b40fb1c6fb"
+}

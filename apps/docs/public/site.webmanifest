@@ -1,0 +1,13 @@
+{
+  "name": "Kaeso documentation",
+  "short_name": "Kaeso docs",
+  "description": "Guides and reference for Kaeso, the AI gateway you run yourself.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/android-chrome-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/android-chrome-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

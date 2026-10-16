@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: The API key ci-deploy expires on 2026-10-18
+
+API key ci-deploy expires on 2026-10-18
+
+Requests with this key in Default project fail after that day.
+
+Open API keys:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+To rotate it, create a new key, deploy it, then disable the old one.
+
+-- 
+Sent by Kaeso at kaeso.example.com; turn alerts off in your account's notification settings.

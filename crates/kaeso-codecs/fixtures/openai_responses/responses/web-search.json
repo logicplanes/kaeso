@@ -1,0 +1,121 @@
+{
+  "id": "resp_0d9d96706c3569bb006acb6c7dfc578190a5c4b1441a09cf00",
+  "object": "response",
+  "access_programs": null,
+  "created_at": 1791716477,
+  "status": "completed",
+  "background": false,
+  "completed_at": 1791716486,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": 2,
+  "model": "gpt-5.5-2026-04-23",
+  "output": [
+    {
+      "id": "rs_0d9d96706c3569bb006acb6c7d744081931d0ba730dc4a1035",
+      "type": "reasoning",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9d96706c3569bb006acb6c7d6efa8193867ed07f653a8be4",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "Oceanário de Lisboa opening hours",
+        "queries": [
+          "Oceanário de Lisboa opening hours"
+        ],
+        "sources": [
+          {
+            "type": "url",
+            "url": "https://www.oceanario.pt/en/plan-your-visit/opening-hours"
+          },
+          {
+            "type": "url",
+            "url": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rs_0d9d96706c3569bb006acb6c7d893d819408af58626b52cfba",
+      "type": "reasoning",
+      "summary": []
+    },
+    {
+      "id": "msg_0d9d96706c3569bb006acb6c7d9d698190217eb9d7e719a0f5",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 180,
+              "start_index": 87,
+              "title": "Opening hours | Oceanário de Lisboa",
+              "url": "https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": "medium",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "web_search",
+      "filters": null,
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 8125,
+    "input_tokens_details": {
+      "cached_tokens": 4864,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 412,
+    "output_tokens_details": {
+      "reasoning_tokens": 256
+    },
+    "total_tokens": 8537
+  },
+  "user": null,
+  "metadata": {}
+}

@@ -1,0 +1,10 @@
+{
+  "model": "gpt-5.5",
+  "previous_response_id": "resp_00fc01e19b690adf006acad568289c81938a8f96f5eacb7c9a",
+  "input": [
+    {
+      "role": "user",
+      "content": "And what about tomorrow?"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertDialog, Badge, Button, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { toast } from "~/shell/toast";
+import { formatRelative } from "@logicplanes/kaeso-ui/format";
+import { api, data } from "~/api/client";
+import type { SessionListItem } from "~/api/generated/types";
+import { useApiMutation } from "~/auth/mutation";
+import { sessionMethodLabel } from "~/format/labels";
+import { describeUserAgent } from "~/format/user-agent";
+import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
+import { t } from "~/i18n";
+
+const sessionsQuery = {
+  queryKey: ["me", "sessions"],
+  queryFn: async (): Promise<SessionListItem[]> => data(await api.GET("/platform/v1/me/sessions")).data,
+};
+
+export function SessionsPage() {
+  const sessions = useQuery(sessionsQuery);
+  const [ending, setEnding] = useState<SessionListItem | null>(null);
+  const [all, setAll] = useState(false);
+  const end = useApiMutation({
+    mutationFn: async (s: SessionListItem) => {
+      await api.DELETE("/platform/v1/me/sessions/{session}", { params: { path: { session: s.id } } });
+    },
+    invalidates: [["me", "sessions"]],
+    onSuccess: () => {
+      setEnding(null);
+      toast(t("account.sessionEnded", "Session ended"));
+    },
+  });
+  const revokeAll = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/me/sessions/revoke-all")),
+    invalidates: [["me", "sessions"]],
+    onSuccess: (r) => {
+      setAll(false);
+      toast(t("account.signedOutOthers", "{count, plural, one {Signed out of # other session} other {Signed out of # other sessions}}", { count: r.revoked }));
+    },
+  });
+  const list = [...(sessions.data ?? [])].sort((a, b) => Number(b.current) - Number(a.current) || b.last_used_at.localeCompare(a.last_used_at));
+  const others = list.filter((s) => !s.current).length;
+  return (
+    <SettingsPage
+      title={t("account.sessions", "Sessions")}
+      context={t("account.title", "Account")}
+      description={t("account.sessionsHint", "Browsers signed in to your account.")}
+      actions={
+        <Button size="sm" disabled={!others} onClick={() => setAll(true)}>
+          {t("account.signOutEverywhere", "Sign out everywhere")}
+        </Button>
+      }
+    >
+      {sessions.isPending ? (
+        <SettingsLoading rows={3} />
+      ) : (
+        <SettingsSection>
+          <SettingsGroup>
+            {list.map((s) => (
+              <SettingsRow
+                key={s.id}
+                title={
+                  <span className="flex flex-wrap items-center gap-8">
+                    {describeUserAgent(s.user_agent)}
+                    {s.current && <Badge tone="success">{t("account.thisDevice", "This device")}</Badge>}
+                    <Badge>{sessionMethodLabel(s.method)}</Badge>
+                    {s.second_factor && <Badge>{t("account.twoFactorBadge", "Two-factor")}</Badge>}
+                  </span>
+                }
+                description={t("account.sessionDetail", "{address} · signed in {signedIn} · used {used}", {
+                  address: s.ip ?? t("account.unknownAddress", "Unknown address"),
+                  signedIn: formatRelative(s.signed_in_at),
+                  used: formatRelative(s.last_used_at),
+                })}
+                control={
+                  s.current ? undefined : (
+                    <Button size="sm" variant="ghost" onClick={() => setEnding(s)}>
+                      {t("account.endSession", "End session")}
+                    </Button>
+                  )
+                }
+              />
+            ))}
+          </SettingsGroup>
+        </SettingsSection>
+      )}
+      <AlertDialog
+        open={!!ending}
+        onOpenChange={(o) => !o && setEnding(null)}
+        tone="danger"
+        title={t("account.endSessionConfirm", "End this session?")}
+        description={t("account.endSessionConfirmHint", "{device} is signed out at once.", { device: describeUserAgent(ending?.user_agent) })}
+        confirmLabel={t("account.endSession", "End session")}
+        loading={end.isPending}
+        onConfirm={() => {
+          if (ending) end.mutate(ending);
+        }}
+      />
+      <AlertDialog
+        open={all}
+        onOpenChange={setAll}
+        tone="danger"
+        title={t("account.signOutEverywhereConfirm", "Sign out everywhere else?")}
+        description={t("account.signOutEverywhereConfirmHint", "Every other browser signed in to your account is signed out; this one stays signed in.")}
+        confirmLabel={t("account.signOutEverywhere", "Sign out everywhere")}
+        loading={revokeAll.isPending}
+        onConfirm={() => revokeAll.mutate()}
+      />
+    </SettingsPage>
+  );
+}

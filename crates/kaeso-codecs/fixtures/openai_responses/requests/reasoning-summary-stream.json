@@ -1,0 +1,13 @@
+{
+  "model": "gpt-5.5",
+  "input": "What is 17 * 24? Answer with the number only.",
+  "reasoning": {
+    "effort": "medium",
+    "summary": "auto"
+  },
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "store": false,
+  "stream": true
+}

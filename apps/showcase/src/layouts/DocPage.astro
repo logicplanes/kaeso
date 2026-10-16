@@ -1,0 +1,102 @@
+---
+import Shell from "./Shell.astro";
+import CodeView from "~/components/CodeView.astro";
+import CopyPage from "~/components/CopyPage";
+import { inlineCode } from "~/lib/locale";
+import { GITHUB } from "~/lib/nav";
+import registry from "../../../../packages/ui/ai/component-registry.json";
+interface Props {
+  page: any;
+}
+const { page } = Astro.props;
+const entry = page.entry ?? page.slug;
+const names: string = page.import ?? page.title.replace(/\s+/g, "");
+const from = page.barrel === false ? `@logicplanes/kaeso-ui/${entry}` : "@logicplanes/kaeso-ui";
+type Prop = { name: string; type: string; default: string | null; description: string; deprecated?: boolean };
+type Reg = { components: { entry: string; components: { name: string; props: Prop[] }[] }[] };
+const main = names.split(",")[0]!.trim();
+const own = (registry as Reg).components.find((c) => c.entry === entry)?.components.find((c) => c.name === main);
+const HIDDEN = new Set(["className", "data-force", "style"]);
+const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+const props = (own?.props ?? [])
+  .filter((p) => !HIDDEN.has(p.name) && !p.deprecated)
+  .map((p) => ({ ...p, description: norm(p.description) }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+const description = norm(page.description);
+const typeOf = (t: string) =>
+  t
+    .replace(/\s*\|\s*undefined\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+const markdown = [
+  `# ${page.title}`,
+  "",
+  page.description,
+  "",
+  "```tsx",
+  `import { ${names} } from "${from}";`,
+  "```",
+  "",
+  ...page.examples.flatMap((e: any) => [`## ${e.title}`, "", ...(e.description ? [e.description, ""] : []), "```tsx", e.code, "```", ""]),
+].join("\n");
+---
+
+<Shell title={page.title} description={page.description}>
+  <article class="mx-auto w-full max-w-960 px-24 pt-48 pb-96 md:px-40">
+    <header class="flex flex-col gap-12">
+      <h1 class="text-title-lg font-semibold text-fg text-balance">{page.title}</h1>
+      <p
+        class="max-w-prose text-body-lg font-regular text-fg-secondary text-pretty"
+        data-docs-text={description}
+        data-docs-code
+        set:html={inlineCode(description)}
+      />
+      <div class="mt-4 flex flex-wrap items-center gap-8">
+        <CopyPage client:idle markdown={markdown} />
+        <a
+          href={`${GITHUB}/tree/dev/packages/ui/src/${page.source ?? `components/${page.slug}`}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex h-32 items-center gap-6 rounded-pill px-12 text-body font-medium material-ghost transition-control focus-ring"
+        >
+          <span data-docs-text="View source">View source</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="mt-40">
+      <slot name="primary" />
+    </div>
+    <CodeView class="mt-12" code={`import { ${names} } from "${from}";`} />
+
+    {props.length > 0 && (
+      <section class="mt-64">
+        <h2 id="props" class="scroll-mt-24 text-title-sm font-semibold text-fg" data-docs-text="Props">
+          Props
+        </h2>
+        <ul class="mt-12 flex flex-col">
+          {props.map((p) => (
+            <li class="flex flex-col gap-4 py-12 hairline-b md:flex-row md:gap-24">
+              <code class="w-200 shrink-0 text-small font-medium text-fg mono">{p.name}</code>
+              <div class="flex min-w-0 flex-1 flex-col gap-4">
+                <span class="text-small text-fg-secondary mono break-words">
+                  {typeOf(p.type)}
+                  {p.default && <span class="text-fg-tertiary"> = {p.default}</span>}
+                </span>
+                {p.description && (
+                  <p
+                    class="max-w-prose text-body text-fg-secondary text-pretty"
+                    data-docs-text={p.description}
+                    data-docs-code
+                    set:html={inlineCode(p.description)}
+                  />
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</Shell>

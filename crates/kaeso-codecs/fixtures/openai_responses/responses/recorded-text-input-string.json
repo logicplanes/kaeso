@@ -1,0 +1,102 @@
+{
+  "id": "resp_07f95bbe5483eed2006acbb422d8cc87d1ad002a1065c5d9ae",
+  "object": "response",
+  "created_at": 1791734818,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1791734822,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-6-astra",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_07f95bbe5483eed2006acbb42486b087d1af98b6bfdb93f6ba",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqy7QnYsYGjWFXaVcu5pvOZZVvb7_MX3WX4BfpHgb_FGDUYDN6ruOdS9aiXL5U3vfA-RGYfBwlDmPZygawdRZKCrKQ8GYCLAt6KvqJBeonBIhKWJUsoSaJPlimsszw-l-t-m1c_5uiPAhpOSHH4T69tU03f2WmdzEYXq5oQjgBIaIjMDhVEURV3c6X36BqJLBzefsOnPxM6lOM5aQcsZT-e8C9iYwQBWPC_kMxixjy7QSe8bt8Dd8MI6EPRe2MDGwYtwPomJHP-Tlg5N7PLfipNqLHi1NtwOHQTxzVQ_g76InK3dZaeFjxuLbtmrXRKDc5q8hMb3E4UCHAVdePnKrv05tJMqljLEPM7nhPGitZ0yxsZ2ETFkrZ7pTQ0c89Eaoh9YeDLlw9uFsBw3I8nlxEirslRgCmcJ_m09a_twYHMv7RrMhVXjuKOoOfSnC1wSUALxClhjh0Nz4a97EKeNbqyobJ4OM8Ned_ycXV3v-V6zRQg6dFt27DeyBBmbWlx2qoFsl36GDK2Tiix5gbvRxqfsVsnmDMO4KmeeMlGUs6nW2mHCrqAHIgFiYfih4Ry-OkbRBIaUYfGzSZBEqOLkqBHMx6CZGvWswDwPLoVCm-UkoR6WicUiztThJHlRMY6pqAyp0QPiVoE_n6MmALpAq7jfXtSCByC0dwFhIxAo9InlH1gNkraX0Rt_ayCN4l4mJFKo-xT_4-BUluU7DN7d-NDHj6yHn3_BhST-zUN4IPdB_pFOZAWuY__faRVUgivt24q3mRXfYydcjAGvAZ6UfHebC23CE-b8naJdSoGMh_kbV-HFYk2bQWy64sgY-F_h4ivz4t3OYl0y-CVFUfHSeA7B8mVgMU2fOi3pmqhf6MSUyYF6nnk5siRFoP3T7j-s85iF4KKPy_lmneiiK82vhHaBJrE1vU1KjZIT2uGapLomX0_3TnQO93yCkKTZ-ZtRyLdCDubUf-_9QlW00jgFy44p9dBrt8WISxWA2l87gYgBCy374HddseOM7O89ejg_NYwhePjRbG0uNmLk4k-2cTsLVuCOq_w7IdcAEmgyFpS40a1bRp8kOtONVjTxp4K5uIMEtpUeoNsVqagkPDBkvlLsm3bsBvbqhwDEY3fKJgPDOgCEycgBttmPTiFzOt6NUfCeXbfRgC0LxoLaznaa4l7UZ-nWxD9-ylO_NzwBpmTplEy5p0MgfDCtAixpsA4Bwa02BsVz4sjaEaM08ujiiazhAj7y1XOPCj_qXtDBbL9GTqIHuG0KKbt9_mv0-ZBVt8gg5lwXsrOCzO8_y5ppZgJskN9zTYOCxMpsTSPj-udsNyFcses2PQLGJNnoyIQA7Ukxb0TcRaOR3vdr-rUh9itsjjMPxkSFchxBYFvGQLsv9pIOOHwm_rKr8dlI_0V2elIA7dXjVTxiJqj5yFlKT6ilKWEfMMwtliEkCVtjinI8AgK5pNpSTAYYgkXv6PZHcxIeGwH0UgSs8tUycHxM5fQvyQiPYDsrsCYHQEVATpi1aW0nupvTgIwZV5JNcbH4IUGqQSiN9tthDL6jsQCl1UuynEgVM7_rZZu2ZXE2oIajaRCss=",
+      "summary": []
+    },
+    {
+      "id": "msg_07f95bbe5483eed2006acbb424af7887d18a4dd7f16cefc78c",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "A little unicorn named Luna followed a trail of glowing fireflies to a meadow where the flowers hummed lullabies. She curled beneath a willow tree, tucked her silver hooves into the soft grass, and wished every creature in the forest sweet dreams. As the moon wrapped the meadow in gentle light, Luna closed her eyes and dreamed of dancing among the stars."
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 17,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 91,
+    "output_tokens_details": {
+      "reasoning_tokens": 13
+    },
+    "total_tokens": 108
+  },
+  "user": null,
+  "metadata": {}
+}

@@ -1,0 +1,129 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT org_creation, COALESCE(account_creation, 'invitation_only') AS \"account_creation!\",\n         allowed_domains, metadata_retention_days, content_retention_days,\n         max_metadata_retention_days, max_content_retention_days, org_deletion,\n         org_deletion_grace_days, setup_completed_at FROM instance_settings",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "org_creation",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "org_creation"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "account_creation!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "allowed_domains",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "allowed_domains"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "metadata_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "metadata_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "content_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "content_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "max_metadata_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "max_metadata_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "max_content_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "max_content_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "org_deletion",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "org_deletion"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "org_deletion_grace_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "org_deletion_grace_days"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "setup_completed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "setup_completed_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "20b424ca4e7192e37b281f4dd376c7c937a372ecf77f0465615f7f6c3670064c"
+}

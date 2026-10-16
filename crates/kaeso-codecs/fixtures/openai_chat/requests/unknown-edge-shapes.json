@@ -1,0 +1,115 @@
+{
+  "model": "gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer briefly.",
+          "prompt_cache_breakpoint": {
+            "mode": "x_future_mode"
+          }
+        },
+        {
+          "type": "text",
+          "text": "Use metric units.",
+          "prompt_cache_breakpoint": {}
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Summarize both files."
+        },
+        {
+          "type": "file",
+          "file": {
+            "file_data": "data:application/pdf;base64,JVBERi0xLjQKJcOkw7zDtsOfCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nPj4KZW5kb2JqCnRyYWlsZXIKPDwvUm9vdCAxIDAgUj4+CiUlRU9G",
+            "file_id": "file-abc123",
+            "filename": "a.pdf"
+          }
+        },
+        {
+          "type": "file",
+          "file": {
+            "file_data": "JVBERi0xLjQKJcOkw7zDtsOfCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nPj4KZW5kb2JqCnRyYWlsZXIKPDwvUm9vdCAxIDAgUj4+CiUlRU9G",
+            "filename": "b.pdf"
+          }
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Here is a draft.",
+      "refusal": "I cannot share the second file.",
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": {
+            "name": "lookup",
+            "arguments": " {\"q\": \"units\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": "metric"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "annotations": [
+        {
+          "type": "url_citation",
+          "url_citation": {
+            "start_index": 0,
+            "end_index": 4,
+            "url": "https://example.com",
+            "title": "Example"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Go on."
+    }
+  ],
+  "stop": [],
+  "stream": true,
+  "stream_options": {},
+  "response_format": {
+    "type": "x_future_format",
+    "x_future_option": true
+  },
+  "tool_choice": {
+    "type": "function",
+    "function": {
+      "name": "lookup"
+    },
+    "x_future_choice": 1
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "lookup",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "q": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

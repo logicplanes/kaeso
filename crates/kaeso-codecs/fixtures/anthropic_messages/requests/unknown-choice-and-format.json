@@ -1,0 +1,30 @@
+{
+  "model": "claude-sonnet-5-5",
+  "max_tokens": 512,
+  "system": [],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Plan a short trip."
+    }
+  ],
+  "output_config": {
+    "format": {
+      "type": "x_future_format",
+      "grammar": "trip"
+    }
+  },
+  "tool_choice": {
+    "type": "x_future_choice",
+    "disable_parallel_tool_use": true
+  },
+  "tools": [
+    {
+      "name": "book",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

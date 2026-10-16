@@ -1,0 +1,87 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { checkContent } from "./check.ts";
+import { buildDocs } from "./docs.ts";
+
+let root = "";
+afterEach(() => root && rmSync(root, { recursive: true, force: true }));
+
+function repo(files: Record<string, string>) {
+  root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
+  for (const [name, text] of Object.entries(files)) {
+    const file = join(root, "content", name);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, text);
+  }
+  return root;
+}
+const page = (title: string, extra = "") => `---\ntitle: ${title}\ndescription: About ${title.toLowerCase()}.\n${extra}---\n\nText.\n`;
+const everyLanguage = (files: Record<string, string>) =>
+  Object.fromEntries(["en", "de", "zh-CN"].flatMap((l) => Object.entries(files).map(([name, text]) => [`${l}/${name}`, text])));
+
+describe("buildDocs", () => {
+  it("builds one site per language with the language's prefix and labels", () => {
+    const docs = buildDocs(join(repo(everyLanguage({ "index.md": page("Start"), "guides/index.md": page("Guides", "order: 1\n") })), "content"), root);
+    expect(docs.problems).toEqual([]);
+    expect(docs.sites.en.metas.map((m) => m.path)).toEqual(["/", "/guides"]);
+    expect(docs.sites.de.metas.map((m) => m.path)).toEqual(["/de", "/de/guides"]);
+    expect(docs.sites["zh-CN"].nav[0]?.items[0]).toEqual({ path: "/zh-CN", label: "简介", depth: 0 });
+    expect(docs.sites.de.nav[1]?.items[0]?.label).toBe("Übersicht");
+  });
+
+  it("requires the same pages, in the same order, in every language", () => {
+    const docs = buildDocs(
+      join(
+        repo({
+          ...everyLanguage({ "index.md": page("Start") }),
+          "en/keys.md": page("Keys", "order: 2\n"),
+          "de/keys.md": page("Schlüssel", "order: 3\n"),
+          "zh-CN/extra.md": page("Extra"),
+        }),
+        "content",
+      ),
+      root,
+    );
+    expect(docs.problems).toEqual([
+      "content/de/keys.md: its order is 3, but content/en/keys.md has 2; a translation keeps the English order",
+      "content/zh-CN/keys.md: missing; translate content/en/keys.md",
+      "content/zh-CN/extra.md: has no English page; add content/en/extra.md or remove it",
+    ]);
+  });
+
+  it("keeps every page inside a language folder, and language folders out of English addresses", () => {
+    const docs = buildDocs(
+      join(repo({ ...everyLanguage({ "index.md": page("Start") }), "notes.md": page("Notes"), "en/de/index.md": page("Deutsch") }), "content"),
+      root,
+    );
+    expect(docs.problems).toContain("content/notes.md: put every page in a language folder (en, de, zh-CN)");
+    expect(docs.problems.some((p) => p.startsWith("content/en/de/index.md: its address /de is where the Deutsch pages live"))).toBe(true);
+  });
+
+  it("names a missing content folder", () => {
+    root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
+    expect(buildDocs(join(root, "content"), root).problems).toEqual(["content does not exist"]);
+  });
+});
+
+describe("checkContent", () => {
+  it("counts the pages and languages when everything is in order", () => {
+    repo(everyLanguage({ "index.md": page("Start"), "keys.md": page("Keys") }));
+    expect(checkContent(root, "content")).toEqual({ ok: true, lines: ["content: 2 pages in 3 languages, every link checked"] });
+  });
+
+  it("lists every problem with its file", () => {
+    repo({ "en/index.md": page("Start") });
+    const result = checkContent(root, "content");
+    expect(result.ok).toBe(false);
+    expect(result.lines).toEqual([
+      "content: 4 to fix in content/",
+      "  content/de does not exist",
+      "  content/zh-CN does not exist",
+      "  content/de/index.md: missing; translate content/en/index.md",
+      "  content/zh-CN/index.md: missing; translate content/en/index.md",
+    ]);
+  });
+});

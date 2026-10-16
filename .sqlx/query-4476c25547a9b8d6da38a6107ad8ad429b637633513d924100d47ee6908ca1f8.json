@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (SELECT count(*) FROM org_memberships WHERE org_id = $1) AS \"members!\", (SELECT count(*) FROM projects WHERE org_id = $1 AND archived_at IS NULL) AS \"projects!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "members!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "projects!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "4476c25547a9b8d6da38a6107ad8ad429b637633513d924100d47ee6908ca1f8"
+}

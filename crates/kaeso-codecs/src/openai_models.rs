@@ -1,0 +1,166 @@
+use kaeso_kpp::{DialectId, Extras, KppError, ModelInfo, ModelList, ModelsQuery, Origin};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::models::{
+    add_query_extra, bad_listing, decode_date, encode_date, format_date, none_or, parse_date,
+    query_pairs, record_none,
+};
+use crate::wire::{
+    Ext, Maybe, extra_for, extras_from, to_body, verbatim_from_form, without_position,
+};
+
+pub(crate) const DEFAULT_OWNED_BY: &str = "kaeso";
+
+const OPENAI: [DialectId; 3] = [
+    DialectId::OpenAiChat,
+    DialectId::OpenAiResponses,
+    DialectId::OpenAiEmbeddings,
+];
+
+const OBJECT: &str = "object";
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ModelWire {
+    pub id: String,
+    pub object: String,
+    #[serde(default, skip_serializing_if = "Maybe::is_absent")]
+    pub created: Maybe<u64>,
+    #[serde(default, skip_serializing_if = "Maybe::is_absent")]
+    pub owned_by: Maybe<String>,
+    #[serde(default, skip_serializing_if = "Maybe::is_absent")]
+    pub shutdown_date: Maybe<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ListModelsResponse {
+    pub object: String,
+    pub data: Vec<Ext<ModelWire>>,
+}
+
+fn source(extras: &Extras) -> Option<DialectId> {
+    OPENAI.into_iter().find(|d| extras.is_from(*d))
+}
+
+pub(crate) fn decode_query(dialect: DialectId, query: &str) -> Result<ModelsQuery, KppError> {
+    let mut q = ModelsQuery::default();
+    q.extras = Extras::new(Origin::new(dialect));
+    for (name, value) in query_pairs(query)? {
+        add_query_extra(&mut q.extras, &name, &value);
+    }
+    Ok(q)
+}
+
+fn decode_info(dialect: DialectId, w: Ext<ModelWire>) -> Result<ModelInfo, KppError> {
+    let Ext {
+        known: w,
+        extra,
+        verbatim,
+    } = w;
+    let mut m = ModelInfo::new(w.id);
+    let mut extras = extras_from(&Origin::new(dialect), extra, verbatim);
+    if w.object != "model" {
+        extras.form.insert(OBJECT.to_owned(), Value::from(w.object));
+    }
+    record_none(&mut extras, "created", &w.created, false);
+    record_none(&mut extras, "owned_by", &w.owned_by, false);
+    record_none(&mut extras, "shutdown_date", &w.shutdown_date, true);
+    m.created_at = w.created.into_option();
+    m.owned_by = w.owned_by.into_option();
+    if let Maybe::Value(date) = &w.shutdown_date {
+        m.retires_at = Some(
+            decode_date(&mut extras, "shutdown_date", date, parse_date, format_date).ok_or_else(
+                || {
+                    bad_listing(
+                        dialect,
+                        &format!("`shutdown_date` `{date}` is not a date (YYYY-MM-DD)"),
+                    )
+                },
+            )?,
+        );
+    }
+    m.extras = extras;
+    Ok(m)
+}
+
+fn encode_info(m: &ModelInfo) -> Ext<ModelWire> {
+    let ex = &m.extras;
+    let Some(d) = source(ex) else {
+        return Ext::new(ModelWire {
+            id: m.id.clone(),
+            object: "model".to_owned(),
+            created: Maybe::Value(m.created_at.unwrap_or(0)),
+            owned_by: Maybe::Value(
+                m.owned_by
+                    .clone()
+                    .unwrap_or_else(|| DEFAULT_OWNED_BY.to_owned()),
+            ),
+            shutdown_date: Maybe::from_option(m.retires_at.and_then(format_date), Maybe::Null),
+        });
+    };
+    let w = ModelWire {
+        id: m.id.clone(),
+        object: ex.form_str(d, OBJECT).unwrap_or("model").to_owned(),
+        created: Maybe::from_option(m.created_at, none_or(ex, d, "created", Maybe::Value(0))),
+        owned_by: Maybe::from_option(
+            m.owned_by.clone(),
+            none_or(ex, d, "owned_by", Maybe::Value(DEFAULT_OWNED_BY.to_owned())),
+        ),
+        shutdown_date: match m.retires_at {
+            Some(s) => encode_date(ex, d, "shutdown_date", s, parse_date, format_date)
+                .map_or(Maybe::Null, Maybe::Value),
+            None => none_or(ex, d, "shutdown_date", Maybe::Null),
+        },
+    };
+    Ext::with(w, extra_for(ex, d), verbatim_from_form(ex, d, ""))
+}
+
+pub(crate) fn encode_model(m: &ModelInfo) -> Result<Vec<u8>, KppError> {
+    to_body(&encode_info(m))
+}
+
+pub(crate) fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError> {
+    let ex = &list.extras;
+    let w = ListModelsResponse {
+        object: source(ex)
+            .and_then(|d| ex.form_str(d, OBJECT))
+            .unwrap_or("list")
+            .to_owned(),
+        data: list.models.iter().map(encode_info).collect(),
+    };
+    match source(ex) {
+        Some(d) => to_body(&Ext::with(
+            w,
+            extra_for(ex, d),
+            verbatim_from_form(ex, d, ""),
+        )),
+        None => to_body(&w),
+    }
+}
+
+pub(crate) fn decode_model(dialect: DialectId, body: &[u8]) -> Result<ModelInfo, KppError> {
+    let w = Ext::<ModelWire>::from_slice(body)
+        .map_err(|e| bad_listing(dialect, &without_position(&e)))?;
+    decode_info(dialect, w)
+}
+
+pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppError> {
+    let Ext {
+        known: w,
+        extra,
+        verbatim,
+    } = Ext::<ListModelsResponse>::from_slice(body)
+        .map_err(|e| bad_listing(dialect, &without_position(&e)))?;
+    let models = w
+        .data
+        .into_iter()
+        .map(|m| decode_info(dialect, m))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut list = ModelList::new(models);
+    let mut extras = extras_from(&Origin::new(dialect), extra, verbatim);
+    if w.object != "list" {
+        extras.form.insert(OBJECT.to_owned(), Value::from(w.object));
+    }
+    list.extras = extras;
+    Ok(list)
+}

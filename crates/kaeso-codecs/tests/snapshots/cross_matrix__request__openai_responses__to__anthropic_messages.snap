@@ -1,0 +1,968 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "error-mid-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a haiku about the sea.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "explicit-nulls": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tool_choice": {
+        "type": "auto"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "failed-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Summarize the plot of Hamlet in three sentences.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "file-input-base64-file-id": {
+    "message": "`file id` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Provider file ids (here `file-Xb7RkqzW3d2LmP9TnV4cYe`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "unsupported": "file id"
+  },
+  "file-input-url": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "what is in this file?",
+              "type": "text"
+            },
+            {
+              "source": {
+                "type": "url",
+                "url": "https://www.berkshirehathaway.com/letters/2024ltr.pdf"
+              },
+              "type": "document"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/messages"
+  },
+  "function-call-output-array": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Plot 3, 5, 4, 8 as a chart titled Weekly signups and tell me the trend.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_i4rean9cQaAAMNtPW0tQupGs",
+              "input": {
+                "title": "Weekly signups",
+                "values": [
+                  3,
+                  5,
+                  4,
+                  8
+                ]
+              },
+              "name": "render_chart",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Chart rendered (1 image).",
+                  "type": "text"
+                },
+                {
+                  "source": {
+                    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                    "media_type": "image/png",
+                    "type": "base64"
+                  },
+                  "type": "image"
+                },
+                {
+                  "source": {
+                    "data": "JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAyMDAgNTBdL0NvbnRlbnRzIDQgMCBSL1Jlc291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUj4+Pj4+PgplbmRvYmoKNCAwIG9iago8PC9MZW5ndGggMzk+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDEwIDIwIFRkIChIZWxsbyBQREYpIFRqIEVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAwMDEwNSAwMDAwMCBuIAowMDAwMDAwMjE2IDAwMDAwIG4gCjAwMDAwMDAzMDMgMDAwMDAgbiAKdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozNjYKJSVFT0YK",
+                    "media_type": "application/pdf",
+                    "type": "base64"
+                  },
+                  "type": "document"
+                }
+              ],
+              "tool_use_id": "call_i4rean9cQaAAMNtPW0tQupGs",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tools": [
+        {
+          "description": "Render a line chart of a numeric series and return the image.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "values": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "title",
+              "values"
+            ],
+            "type": "object"
+          },
+          "name": "render_chart",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "function-call-stream": {
+    "message": "`reasoning effort `minimal`` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "image-base64-file-id": {
+    "message": "`file id` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Provider file ids (here `file-6F2ksmvXxt4VdoqmHRw6kL`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "unsupported": "file id"
+  },
+  "image-url": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "what is in this image?",
+              "type": "text"
+            },
+            {
+              "source": {
+                "type": "url",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/messages"
+  },
+  "item-reference-breakpoint": {
+    "message": "`prompt_cache_options` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "prompt_cache_options"
+  },
+  "json-object-mode": {
+    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
+    "unsupported": "json_object output"
+  },
+  "logprobs-no-obfuscation-stream": {
+    "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "top_logprobs"
+  },
+  "max-output-tokens-incomplete": {
+    "body": {
+      "max_tokens": 16,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a detailed history of the printing press.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1"
+    },
+    "path": "/v1/messages"
+  },
+  "max-output-tokens-incomplete-stream": {
+    "body": {
+      "max_tokens": 16,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a detailed history of the printing press.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "multi-turn-roles": {
+    "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "text.verbosity"
+  },
+  "reasoning-effort-high": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "How much wood would a woodchuck chuck?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "output_config": {
+        "effort": "high"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "reasoning-encrypted": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Should I bring an umbrella in Paris today?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_5GXBuXmucGIkbFfAryp6wDbC",
+              "input": {
+                "city": "Paris",
+                "unit": "celsius"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"city\":\"Paris\",\"forecast\":\"rain\",\"precip_probability\":0.8,\"temperature_c\":14}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_5GXBuXmucGIkbFfAryp6wDbC",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "effort": "high"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "reasoning-summary-sampling-forced-tool": {
+    "body": {
+      "max_tokens": 800,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Look up the weather in Oslo, then tell me whether to bring a coat.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "type": "any"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "reasoning-summary-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is 17 * 24? Answer with the number only.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "reasoning-text-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the boiling point of water at sea level?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "refusal": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "subject",
+              "body"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "refusal-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "subject",
+              "body"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "sampling-and-ids": {
+    "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "top_logprobs"
+  },
+  "stateful-background": {
+    "rejected_by_source": "background"
+  },
+  "stateful-conversation": {
+    "rejected_by_source": "conversation"
+  },
+  "stateful-conversation-id-string": {
+    "rejected_by_source": "conversation"
+  },
+  "stateful-previous-response-id": {
+    "rejected_by_source": "previous_response_id"
+  },
+  "structured-output-json-schema": {
+    "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
+    "unsupported": "output schema description"
+  },
+  "text-basic-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "text-input-string": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Tell me a three sentence bedtime story about a unicorn.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra"
+    },
+    "path": "/v1/messages"
+  },
+  "tool-choice-allowed-tools": {
+    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "unsupported": "web_search tool"
+  },
+  "tool-choice-none": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Just say hi, do not call tools.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tool_choice": {
+        "type": "none"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tool-result-error": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Atlantis?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_vo7VMxMVy7xer74L0nymKZaV",
+              "input": {
+                "city": "Atlantis",
+                "unit": "celsius"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"error\":\"city_not_found\",\"message\":\"No weather station found for 'Atlantis'.\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_vo7VMxMVy7xer74L0nymKZaV",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-function": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather like in Boston today?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-6-astra",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-parallel": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris and in Tokyo right now? Use celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "any"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        },
+        {
+          "description": "Get the current local time in an IANA time zone.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "timezone": {
+                "description": "IANA time zone, e.g. Europe/Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "name": "get_local_time",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-parallel-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris and in Tokyo right now? Use celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true,
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "any"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, e.g. Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        },
+        {
+          "description": "Get the current local time in an IANA time zone.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "timezone": {
+                "description": "IANA time zone, e.g. Europe/Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "timezone"
+            ],
+            "type": "object"
+          },
+          "name": "get_local_time",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "unknown-event-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "unknown-item-type": {
+    "message": "`future_item content block` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "unsupported": "future_item content block"
+  },
+  "unknown-top-level-field": {
+    "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "x_future_field"
+  },
+  "web-search": {
+    "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "include"
+  },
+  "web-search-stream": {
+    "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "unsupported": "include"
+  }
+}

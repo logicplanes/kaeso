@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 您的 Kaeso 账户已停用
+
+账户已停用
+
+管理员已让您退出登录，您的 API 密钥也已停止工作。
+
+如果您认为这是误操作，请联系管理员。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送；安全通知总会发送。

@@ -1,0 +1,73 @@
+{
+  "id": "resp_0007746be9048db6006acb516f7b3581942faab9ae7713707c",
+  "object": "response",
+  "access_programs": null,
+  "created_at": 1791709551,
+  "status": "completed",
+  "background": false,
+  "completed_at": 1791709555,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.5-2026-04-23",
+  "output": [
+    {
+      "id": "rs_0007746be9048db6006acb516f5b9981a2a6cbd832bf26a85e",
+      "type": "reasoning",
+      "summary": []
+    },
+    {
+      "id": "msg_0007746be9048db6006acb516f3da68190cf3a4aeb0c6e9901",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "The first image is a single pixel and shows no recognizable subject. The second image is a photo of a gray tabby cat sitting on a windowsill. The third image shows two dice rendered with a semi-transparent background."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": "medium",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 1387,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 214,
+    "output_tokens_details": {
+      "reasoning_tokens": 166
+    },
+    "total_tokens": 1601
+  },
+  "user": null,
+  "metadata": {}
+}

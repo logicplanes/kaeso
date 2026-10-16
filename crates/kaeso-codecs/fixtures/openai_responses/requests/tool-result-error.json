@@ -1,0 +1,51 @@
+{
+  "model": "gpt-5.5",
+  "input": [
+    {
+      "role": "user",
+      "content": "What's the weather in Atlantis?"
+    },
+    {
+      "type": "function_call",
+      "id": "fc_08fb149d49a358a9006acb5f529bc0819411c8b47bc1fc17a2",
+      "call_id": "call_vo7VMxMVy7xer74L0nymKZaV",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Atlantis\",\"unit\":\"celsius\"}",
+      "status": "completed"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_vo7VMxMVy7xer74L0nymKZaV",
+      "output": "{\"error\":\"city_not_found\",\"message\":\"No weather station found for 'Atlantis'.\"}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "get_weather",
+      "description": "Get the current weather for a city.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name, e.g. Paris"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ]
+          }
+        },
+        "required": [
+          "city",
+          "unit"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  ]
+}

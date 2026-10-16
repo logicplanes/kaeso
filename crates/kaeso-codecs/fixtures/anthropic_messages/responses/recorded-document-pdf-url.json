@@ -1,0 +1,37 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_011CfvjcrFNTFbXeMGYyjMkX",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "",
+      "signature": "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"
+    },
+    {
+      "type": "text",
+      "text": "# Key Findings: Claude 3.5 Haiku and Upgraded Claude 3.5 Sonnet Model Card Addendum\n\n## Overview\nThe addendum introduces two models: an **upgraded Claude 3.5 Sonnet** (knowledge cutoff April 2024) and the new **Claude 3.5 Haiku** (knowledge cutoff July 2024).\n\n## 1. New Capability: Computer Use\nThe upgraded Sonnet can interpret screenshots and generate GUI"
+    }
+  ],
+  "container": null,
+  "stop_reason": "max_tokens",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 36570,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 1024,
+    "output_tokens_details": {
+      "thinking_tokens": 857
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

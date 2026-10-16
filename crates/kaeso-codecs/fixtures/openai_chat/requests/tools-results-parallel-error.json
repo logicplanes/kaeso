@@ -1,0 +1,109 @@
+{
+  "model": "gpt-5.6-terra",
+  "reasoning_effort": "none",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "You are a concise travel assistant. Use the tools for live data."
+    },
+    {
+      "role": "user",
+      "content": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "refusal": null,
+      "tool_calls": [
+        {
+          "id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Paris, France\",\"unit\":null}"
+          }
+        },
+        {
+          "id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+          "type": "function",
+          "function": {
+            "name": "get_local_time",
+            "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+      "content": "{\"temperature\":18,\"unit\":\"celsius\",\"conditions\":\"cloudy\"}"
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: time service unavailable (HTTP 503). Try again later."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "City and country, e.g. Paris, France"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "celsius",
+                "fahrenheit",
+                null
+              ]
+            }
+          },
+          "required": [
+            "location",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_local_time",
+        "description": "Get the current local time for an IANA time zone.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "timezone": {
+              "type": "string",
+              "description": "IANA time zone, e.g. Asia/Tokyo"
+            }
+          },
+          "required": [
+            "timezone"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    }
+  ],
+  "parallel_tool_calls": true
+}

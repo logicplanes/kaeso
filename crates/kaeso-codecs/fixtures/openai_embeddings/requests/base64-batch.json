@@ -1,0 +1,10 @@
+{
+  "model": "text-embedding-3-large",
+  "input": [
+    "first passage",
+    "second passage",
+    "third passage"
+  ],
+  "dimensions": 8,
+  "encoding_format": "base64"
+}

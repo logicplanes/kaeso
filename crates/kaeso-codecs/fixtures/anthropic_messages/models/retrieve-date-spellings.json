@@ -1,0 +1,83 @@
+{
+  "id": "claude-opus-4-1-20250805",
+  "capabilities": {
+    "batch": {
+      "supported": true
+    },
+    "citations": {
+      "supported": true
+    },
+    "code_execution": {
+      "supported": false
+    },
+    "context_management": {
+      "clear_thinking_20251015": {
+        "supported": false
+      },
+      "clear_tool_uses_20250919": {
+        "supported": true
+      },
+      "compact_20260112": {
+        "supported": false
+      },
+      "supported": true
+    },
+    "effort": {
+      "high": {
+        "supported": false
+      },
+      "low": {
+        "supported": false
+      },
+      "max": {
+        "supported": false
+      },
+      "medium": {
+        "supported": false
+      },
+      "supported": false,
+      "xhigh": null
+    },
+    "image_input": {
+      "supported": true
+    },
+    "pdf_input": {
+      "supported": true
+    },
+    "server_tools": {
+      "code_execution": {
+        "supported": true
+      },
+      "supported": true,
+      "web_search": {
+        "supported": true
+      }
+    },
+    "structured_outputs": {
+      "supported": true
+    },
+    "thinking": {
+      "supported": true,
+      "types": {
+        "adaptive": {
+          "supported": false
+        },
+        "disabled": {
+          "supported": true
+        },
+        "enabled": {
+          "supported": true
+        }
+      }
+    }
+  },
+  "created_at": "2025-08-05T09:30:00.250-07:00",
+  "deprecated_at": "2026-01-05t00:00:00+00:00",
+  "display_name": "Claude Opus 4.1",
+  "lifecycle": "retired",
+  "line": "opus",
+  "max_input_tokens": 200000,
+  "max_tokens": 32000,
+  "retires_at": "2026-05-05T00:00:00.000Z",
+  "type": "model"
+}

@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Kaeso-Konto fertig erstellen
+
+Kaeso-Konto erstellen
+
+Der Link funktioniert einmal und läuft in 24 Stunden ab.
+
+Konto erstellen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Wenn Sie sich nicht registriert haben, können Sie diese E-Mail ignorieren.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.

@@ -1,0 +1,43 @@
+[package]
+name = "kaeso-codecs"
+description = "Sans-IO codecs between KPP and the wire formats Kaeso speaks (Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, OpenAI Embeddings)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/kaeso-codecs"
+readme = "README.md"
+keywords = ["llm", "openai", "anthropic", "gateway", "protocol"]
+categories = ["api-bindings", "encoding", "parser-implementations"]
+include = [
+  "/src/**/*.rs",
+  "!/src/**/tests.rs",
+  "!/src/**/tests/**",
+  "!/src/**/tests_*.rs",
+  "!/src/models_tests.rs",
+  "!/src/test_support.rs",
+  "/README.md",
+  "/LICENSE",
+]
+
+[dependencies]
+kaeso-kpp.workspace = true
+base64.workspace = true
+indexmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+insta.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "codecs"
+harness = false
+
+[lints]
+workspace = true

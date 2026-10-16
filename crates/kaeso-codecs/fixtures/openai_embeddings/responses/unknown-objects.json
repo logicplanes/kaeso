@@ -1,0 +1,15 @@
+{
+  "object": "x_future_list",
+  "data": [
+    {
+      "object": "x_future_embedding",
+      "index": 0,
+      "embedding": "AAAAAAAAgD8="
+    }
+  ],
+  "model": "text-embedding-3-small",
+  "usage": {
+    "prompt_tokens": 2,
+    "total_tokens": 2
+  }
+}

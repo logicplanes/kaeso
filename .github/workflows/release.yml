@@ -1,0 +1,408 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, for example 0.2.0 or 0.2.0-rc.1
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  SQLX_OFFLINE: "true"
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - id: version
+        name: Check version, branch and changelog
+        env:
+          INPUT: ${{ inputs.version }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${INPUT#v}"
+          if [[ "$BRANCH" != dev && "$BRANCH" != hotfix/* ]]; then
+            echo "::error::Releases run from dev or a hotfix/* branch, not from $BRANCH."
+            exit 1
+          fi
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "::error::$version is not a version like 1.4.0 or 1.4.0-rc.1."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::v$version already exists."
+            exit 1
+          fi
+          latest="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          if [[ -n "$latest" ]] && ! pnpm dlx semver@7.8.5 --include-prerelease --range ">${latest#v}" "$version" >/dev/null; then
+            echo "::error::$version is not newer than $latest."
+            exit 1
+          fi
+          pending="$(awk '/^## \[Unreleased\]/ {f=1; next} /^## \[/ {f=0} f && NF' CHANGELOG.md | wc -l)"
+          if ! grep -qF "## [$version]" CHANGELOG.md && [[ "$pending" -eq 0 ]]; then
+            echo "::error::CHANGELOG.md has nothing under [Unreleased]."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
+          echo "Releasing **$version** from \`$BRANCH\`${latest:+ after $latest}." >> "$GITHUB_STEP_SUMMARY"
+
+  checks:
+    name: Checks
+    needs: validate
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      all: true
+
+  tag:
+    name: Tag
+    needs: [validate, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: openapi
+          save-if: false
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Set the version
+        run: |
+          set -euo pipefail
+          cargo set-version --workspace "$VERSION"
+          cargo update --workspace
+          cargo update --manifest-path fuzz/Cargo.toml kaeso-kpp kaeso-codecs
+          node -e '
+            const fs = require("node:fs");
+            for (const file of process.argv.slice(1)) {
+              const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+              manifest.version = process.env.VERSION;
+              fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + "\n");
+            }
+          ' package.json apps/*/package.json packages/*/package.json
+          cargo run -q -p kaeso -- openapi > openapi.json
+          sed -E -i "s#(ghcr\.io/logicplanes/kaeso-(gateway|console)):[0-9A-Za-z.+-]+#\1:$VERSION#g" deploy/compose.yaml
+      - name: Move the changelog
+        run: |
+          if ! grep -qF "## [$VERSION]" CHANGELOG.md; then
+            awk -v v="$VERSION" -v d="$(date -u +%F)" -v r="$GITHUB_REPOSITORY" '
+              /^## \[Unreleased\]/ && !h { print; print ""; print "## [" v "] - " d; h = 1; next }
+              /^\[Unreleased\]: / { print "[Unreleased]: https://github.com/" r "/compare/v" v "...HEAD"; print "[" v "]: https://github.com/" r "/releases/tag/v" v; next }
+              { print }
+            ' CHANGELOG.md > "$RUNNER_TEMP/CHANGELOG.md"
+            mv "$RUNNER_TEMP/CHANGELOG.md" CHANGELOG.md
+          fi
+      - name: Commit, tag and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git status --short
+          refs=()
+          if ! git diff --quiet; then
+            git commit --all --message "Release $VERSION"
+            refs+=("HEAD:refs/heads/$BRANCH")
+          fi
+          if git ls-remote --exit-code --heads origin prod >/dev/null; then
+            git fetch origin prod
+            if ! git merge-base --is-ancestor origin/prod HEAD; then
+              echo "::error::prod has commits that $BRANCH does not have. Merge prod into $BRANCH first."
+              exit 1
+            fi
+          fi
+          git tag --annotate "v$VERSION" --message "Kaeso $VERSION"
+          git push --atomic origin "${refs[@]}" "HEAD:refs/heads/prod" "refs/tags/v$VERSION"
+          echo "Tagged [v$VERSION](https://github.com/$GITHUB_REPOSITORY/tree/v$VERSION) and moved \`prod\`." >> "$GITHUB_STEP_SUMMARY"
+
+  image:
+    name: Image ${{ matrix.image }} (${{ matrix.arch }})
+    needs: [validate, tag]
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [gateway, console]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - image: gateway
+            target: gateway
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/${{ matrix.image }}.Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: VERSION=${{ needs.validate.outputs.version }}
+          outputs: type=image,name=ghcr.io/logicplanes/kaeso-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=release-${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.image }}-${{ matrix.arch }}
+      - name: Keep the digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  manifest:
+    name: Image manifest ${{ matrix.image }}
+    needs: [validate, image]
+    strategy:
+      matrix:
+        image: [gateway, console]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+      IMAGE: ghcr.io/logicplanes/kaeso-${{ matrix.image }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digest-${{ matrix.image }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: push
+        name: Tag the image
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          tags=(-t "$IMAGE:$VERSION")
+          if [[ "$PRERELEASE" == false ]]; then
+            major="${VERSION%%.*}"
+            minor="${VERSION#*.}"
+            minor="${minor%%.*}"
+            tags+=(-t "$IMAGE:$major.$minor" -t "$IMAGE:latest")
+            if [[ "$major" != 0 ]]; then tags+=(-t "$IMAGE:$major"); fi
+          fi
+          sources=()
+          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+          digest="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' | jq -r .digest)"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Published \`$IMAGE:$VERSION\` ($digest)." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  pack:
+    name: Pack npm packages
+    needs: [validate, tag]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:packages
+      - run: pnpm --filter kaeso-showcase gen
+      - run: node scripts/check-pack.mjs --out "$RUNNER_TEMP/pack" --version "${{ needs.validate.outputs.version }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/pack/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  npm:
+    name: npm
+    needs: [validate, pack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/pack
+      - name: Publish @logicplanes/kaeso-tokens and @logicplanes/kaeso-ui
+        run: |
+          set -euo pipefail
+          channel=latest
+          if [[ "$PRERELEASE" == true ]]; then channel=next; fi
+          for package in tokens ui; do
+            name="@logicplanes/kaeso-$package"
+            if [[ -n "$(pnpm view "$name@$VERSION" version 2>/dev/null || true)" ]]; then
+              echo "$name@$VERSION is already on npm."
+              continue
+            fi
+            pnpm publish "$RUNNER_TEMP/pack/logicplanes-kaeso-$package-$VERSION.tgz" --access public --provenance --tag "$channel" --no-git-checks
+            echo "Published [$name@$VERSION](https://www.npmjs.com/package/$name/v/$VERSION) with the \`$channel\` tag." >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  crates:
+    name: crates.io
+    needs: [validate, tag]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+      - run: rustup toolchain install
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - name: Publish kaeso-kpp and kaeso-codecs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          set -euo pipefail
+          for crate in kaeso-kpp kaeso-codecs; do
+            if curl -fsSL "https://index.crates.io/ka/es/$crate" 2>/dev/null | grep -qF "\"vers\":\"$VERSION\""; then
+              echo "$crate $VERSION is already on crates.io."
+              continue
+            fi
+            cargo publish --locked -p "$crate"
+            echo "Published [$crate $VERSION](https://crates.io/crates/$crate/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  github-release:
+    name: GitHub release
+    needs: [validate, manifest, npm, crates]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Collect the assets
+        run: |
+          set -euo pipefail
+          assets="$RUNNER_TEMP/assets"
+          mkdir -p "$assets"
+          cp deploy/compose.yaml deploy/kaeso.example.toml "$assets/"
+          cp deploy/.env.example "$assets/env.example"
+          for package in tokens ui; do
+            url="$(pnpm view "@logicplanes/kaeso-$package@$VERSION" dist.tarball)"
+            curl -fsSL --retry 5 --retry-all-errors -o "$assets/logicplanes-kaeso-$package-$VERSION.tgz" "$url"
+          done
+          for crate in kaeso-kpp kaeso-codecs; do
+            curl -fsSL --retry 5 --retry-all-errors -o "$assets/$crate-$VERSION.crate" "https://static.crates.io/crates/$crate/$crate-$VERSION.crate"
+          done
+          ls -l "$assets"
+      - name: Create the release
+        run: |
+          set -euo pipefail
+          awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 { f = 1; next } /^## \[/ || /^\[[^]]+\]: / { f = 0 } f' CHANGELOG.md \
+            | sed -e '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          flags=(--latest)
+          if [[ "$PRERELEASE" == true ]]; then flags=(--prerelease --latest=false); fi
+          gh release create "v$VERSION" "$RUNNER_TEMP"/assets/* --verify-tag --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+          echo "Released [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION)." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ihre Zwei-Faktor-Authentifizierung wurde zurückgesetzt
+
+Zwei-Faktor-Authentifizierung zurückgesetzt
+
+Ein Admin hat sie zurückgesetzt und Sie abgemeldet; richten Sie sie bei der nächsten Anmeldung neu ein.
+
+Wenn Sie das nicht angefordert haben, wenden Sie sich an den Admin Ihrer Organisation.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

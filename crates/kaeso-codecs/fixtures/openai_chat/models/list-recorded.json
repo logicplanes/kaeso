@@ -1,0 +1,47 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "tts-1",
+      "object": "model",
+      "created": 1681940951,
+      "owned_by": "openai-internal",
+      "shutdown_date": null
+    },
+    {
+      "id": "gpt-5-mini",
+      "object": "model",
+      "created": 1754425928,
+      "owned_by": "system",
+      "shutdown_date": null
+    },
+    {
+      "id": "gpt-5-mini-2025-08-07",
+      "object": "model",
+      "created": 1754425867,
+      "owned_by": "system",
+      "shutdown_date": "2026-12-11"
+    },
+    {
+      "id": "omni-moderation-2024-09-26",
+      "object": "model",
+      "created": 1732734466,
+      "owned_by": "system",
+      "shutdown_date": null
+    },
+    {
+      "id": "gpt-live-transcribe",
+      "object": "model",
+      "created": 1785168034,
+      "owned_by": "system",
+      "shutdown_date": null
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "object": "model",
+      "created": 1782228658,
+      "owned_by": "system",
+      "shutdown_date": null
+    }
+  ]
+}

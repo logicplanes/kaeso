@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Der API-Schlüssel ci-deploy läuft am 18. Okt. 2026 ab
+
+API-Schlüssel ci-deploy läuft am 18. Okt. 2026 ab
+
+Anfragen mit diesem Schlüssel in Default project schlagen nach diesem Tag fehl.
+
+API-Schlüssel öffnen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Zum Rotieren erstellen Sie einen neuen Schlüssel, setzen ihn ein und deaktivieren den alten.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Warnungen schalten Sie in den Benachrichtigungseinstellungen Ihres Kontos ab.

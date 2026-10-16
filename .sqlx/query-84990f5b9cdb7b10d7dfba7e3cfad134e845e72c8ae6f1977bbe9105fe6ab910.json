@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects SET is_default = false, updated_at = now() WHERE org_id = $1 AND is_default AND id <> $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "84990f5b9cdb7b10d7dfba7e3cfad134e845e72c8ae6f1977bbe9105fe6ab910"
+}

@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO audit_events (id, scope, org_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, user_agent, request_id, at, project_id) VALUES ($1, CASE WHEN $2::uuid IS NULL THEN 'instance' ELSE 'org' END, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Jsonb",
+        "Inet",
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ed0f44dc35ee7f1e5c4b3c7a634176863782d2d81cbb35ef913a16bb7cc4e451"
+}

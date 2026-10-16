@@ -1,0 +1,51 @@
+[workspace]
+
+[package]
+name = "kpp-fuzz"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+kaeso-kpp = { path = "../crates/kaeso-kpp" }
+kaeso-codecs = { path = "../crates/kaeso-codecs" }
+
+[[bin]]
+name = "sse"
+path = "fuzz_targets/sse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_anthropic_messages"
+path = "fuzz_targets/decode_anthropic_messages.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openai_chat"
+path = "fuzz_targets/decode_openai_chat.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openai_responses"
+path = "fuzz_targets/decode_openai_responses.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openai_embeddings"
+path = "fuzz_targets/decode_openai_embeddings.rs"
+test = false
+doc = false
+bench = false

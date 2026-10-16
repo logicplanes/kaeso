@@ -1,0 +1,44 @@
+# Model data
+
+Data shipped with every gateway release.
+
+## `models-dev.json`
+
+A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model database, so a fresh install works without network access.
+
+| | |
+|---|---|
+| Source | `https://models.dev/api.json` |
+| Fetched | 2026-10-11T20:44:44Z |
+| Content | the providers Kaeso calls (`anthropic`, `openai`), unchanged otherwise; 70 models |
+| SHA-256 | `0246e4e08bb65cef6fbd3d49cd106f75a493916e2a526eb8bf523252f8492ef9` |
+| License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
+
+The file keeps models.dev's shape (`{provider: {id, name, models: {id: model}}}`), pretty-printed with sorted keys. Only providers in `crates/kaeso-core/src/provider.rs` are kept; the full file lists over 200 providers Kaeso cannot call. When the gateway syncs (every 24 hours by default, `KAESO_MODELS_DEV_SYNC`), it applies the same filter and stores the result in PostgreSQL; the newer of the stored and the built-in snapshot wins at startup.
+
+To refresh the snapshot for a release:
+
+```sh
+cargo xtask models-dev
+```
+
+It downloads `api.json` (`MODELS_DEV_URL` overrides the address), filters it, checks that the gateway can read the result, rewrites this file's table and `EMBEDDED_FETCHED_AT` in `crates/kaeso-core/src/models_dev.rs`, and prints the new hash. Tests check that the snapshot, this table and the constant agree.
+
+## `supplement.toml`
+
+Fields models.dev does not have. A catalogue entry's effective value is its override, else models.dev, else this file, else empty.
+
+| Field | Meaning |
+|---|---|
+| `adaptive_thinking` | Anthropic models: whether `thinking: {type: "adaptive"}` is accepted. `false` makes kpp turn an effort from another format into a thinking budget. |
+| `efforts` | Supported effort levels, used when models.dev lists none. |
+| `egress_dialect` | The format Kaeso sends: for OpenAI models `openai_responses` (the default), `openai_chat` or `openai_embeddings`. |
+
+Every entry comes from one of these sources, checked on 2026-10-11:
+
+| Entries | Values | Source |
+|---|---|---|
+| Claude 4.5 models | budget thinking only; no effort except on Claude Opus 4.5 | Anthropic, [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) and [Effort](https://platform.claude.com/docs/en/build-with-claude/effort); live check: `claude-haiku-4-5` answers `thinking: {type: adaptive}` with 400 |
+| Claude 4.6 and later | adaptive thinking and their effort levels | the same pages; live check: `claude-sonnet-4-6` accepts adaptive thinking |
+| `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
+| `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |

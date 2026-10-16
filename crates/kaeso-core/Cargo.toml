@@ -1,0 +1,39 @@
+[package]
+name = "kaeso-core"
+description = "Kaeso gateway domain logic without I/O: rights, tenancy, keys, model resolution, catalogue, limits, costs, stream assembly."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+kaeso-kpp.workspace = true
+kaeso-codecs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+time.workspace = true
+rust_decimal.workspace = true
+sha2.workspace = true
+subtle.workspace = true
+toml.workspace = true
+secrecy.workspace = true
+idna.workspace = true
+utoipa = { workspace = true, optional = true }
+
+[features]
+openapi = ["dep:utoipa"]
+
+[dev-dependencies]
+rust_decimal_macros.workspace = true
+insta.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

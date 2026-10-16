@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Rate limit reached for gpt-5.5 in organization org-Kq3Zt7pLm2Vx9RfYb4Nc8sDw on tokens per min (TPM): Limit 500000, Used 498211, Requested 4096. Please try again in 274ms. Visit https://platform.openai.com/account/rate-limits to learn more.",
+    "type": "tokens",
+    "param": null,
+    "code": "rate_limit_exceeded"
+  }
+}

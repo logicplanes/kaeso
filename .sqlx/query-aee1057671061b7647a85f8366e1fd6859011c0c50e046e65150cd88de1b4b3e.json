@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.id, m.project_id, m.user_id, u.email, u.name, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", m.created_at, u.avatar FROM project_memberships m JOIN users u ON u.id = m.user_id LEFT JOIN org_roles r ON r.id = m.role_id WHERE m.project_id = $1 ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "preset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "role_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "role_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "rights_added",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "rights_added"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rights_removed",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "rights_removed"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "role_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "role_project_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "project_memberships",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "avatar",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "aee1057671061b7647a85f8366e1fd6859011c0c50e046e65150cd88de1b4b3e"
+}

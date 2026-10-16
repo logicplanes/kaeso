@@ -1,0 +1,1066 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "failed": {
+    "rejected_by_source": "An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID req_bf10eaf02b4ca9756d8cbfc05a244acb in your message."
+  },
+  "file-input-base64-file-id": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "hello.pdf is a one-page document that contains only the words \"Hello PDF\". The second document is a quarterly sales report showing revenue growth of 12% over the previous quarter.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0efefb63ea816998006acb51b460fb81909aa1bfd4cb4e482f",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 98,
+      "completion_tokens_details": {
+        "reasoning_tokens": 52
+      },
+      "prompt_tokens": 2215,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 2313
+    }
+  },
+  "file-input-url": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The file seems to contain excerpts from a letter to the shareholders of Berkshire Hathaway Inc., likely written by Warren Buffett. It covers several topics:\n\n1. **Communication Philosophy**: Buffett emphasizes the importance of transparency and candidness in reporting mistakes and successes to shareholders.\n\n2. **Mistakes and Learnings**: The letter acknowledges past mistakes in business assessments and management hires, highlighting the importance of correcting errors promptly.\n\n3. **CEO Succession**: Mention of Greg Abel stepping in as the new CEO and continuing the tradition of honest communication.\n\n4. **Pete Liegl Story**: A detailed account of acquiring Forest River and the relationship with its founder, highlighting trust and effective business decisions.\n\n5. **2024 Performance**: Overview of business performance, particularly in insurance and investment activities, with a focus on GEICO's improvement.\n\n6. **Tax Contributions**: Discussion of significant tax payments to the U.S. Treasury, credited to shareholders' reinvestments.\n\n7. **Investment Strategy**: A breakdown of Berkshire’s investments in both controlled subsidiaries and marketable equities, along with a focus on long-term holding strategies.\n\n8. **American Capitalism**: Reflections on America’s economic development and Berkshire’s role within it.\n\n9. **Property-Casualty Insurance**: Insights into the P/C insurance business model and its challenges and benefits.\n\n10. **Japanese Investments**: Information about Berkshire’s investments in Japanese companies and future plans.\n\n11. **Annual Meeting**: Details about the upcoming annual gathering in Omaha, including schedule changes and new book releases.\n\n12. **Personal Anecdotes**: Light-hearted stories about family and interactions, conveying Buffett's personable approach.\n\n13. **Financial Performance Data**: Tables comparing Berkshire’s annual performance to the S&P 500, showing impressive long-term gains.\n\nOverall, the letter reinforces Berkshire Hathaway's commitment to transparency, investment in both its businesses and the wider economy, and emphasizes strong leadership and prudent financial management.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_686eef60237881a2bd1180bb8b13de430e34c516d176ff86",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 398,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 8438,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 8836
+    }
+  },
+  "image-base64-file-id": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The first image is a single pixel and shows no recognizable subject. The second image is a photo of a gray tabby cat sitting on a windowsill. The third image shows two dice rendered with a semi-transparent background.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0007746be9048db6006acb516f7b3581942faab9ae7713707c",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 214,
+      "completion_tokens_details": {
+        "reasoning_tokens": 166
+      },
+      "prompt_tokens": 1387,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1601
+    }
+  },
+  "image-url": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The image depicts a scenic landscape with a wooden boardwalk or pathway leading through lush, green grass under a blue sky with some clouds. The setting suggests a peaceful natural area, possibly a park or nature reserve. There are trees and shrubs in the background.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_67ccd3a9da748190baa7f1570fe91ac604becb25c45c1d41",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 52,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 328,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 380
+    }
+  },
+  "json-object-mode": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0a99caf81f824eba006acb699055e381a2da7a8c61a2e6bd2c",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 17,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 26,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 43
+    }
+  },
+  "max-output-tokens-incomplete": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The printing press, invented by Johannes Gutenberg around 1440, revolutionized the",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0effd1ac380390cd006acb712ee1078193b5d06e53c0a24158",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 16,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 33
+    }
+  },
+  "multi-turn-roles": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Not really: the Atlantic off Lisbon is about 15 °C in March, so only brief, brave dips.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0a15f07ef0b26171006acb565dc15b819044c994fdbf18b02a",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 87,
+      "completion_tokens_details": {
+        "reasoning_tokens": 64
+      },
+      "prompt_tokens": 164,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 251
+    }
+  },
+  "reasoning-effort-high": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The classic tongue twister...",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_67ccd7eca01881908ff0b5146584e408072912b2993db808",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1035,
+      "completion_tokens_details": {
+        "reasoning_tokens": 832
+      },
+      "prompt_tokens": 81,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1116
+    }
+  },
+  "reasoning-encrypted": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Yes, bring an umbrella: Paris has an 80% chance of rain today with temperatures around 14 °C.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0db479fca4114c50006acb66d23eb98190c29d430d0790fb60",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 241,
+      "completion_tokens_details": {
+        "reasoning_tokens": 192
+      },
+      "prompt_tokens": 912,
+      "prompt_tokens_details": {
+        "cached_tokens": 768
+      },
+      "total_tokens": 1153
+    }
+  },
+  "recorded-file-input-url": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "This is **Warren Buffett’s 2024 annual letter to Berkshire Hathaway shareholders**, dated **February 22, 2025**. The 15-page file contains the letter plus two pages comparing Berkshire’s stock performance with the S&P 500—not the full annual report.\n\n### What’s inside\n\n- **2024 financial results:** Berkshire reported **$47.4 billion in operating earnings**, up from **$37.4 billion in 2023**, driven largely by stronger insurance results and investment income. Nevertheless, 53% of its 189 operating businesses reported lower earnings.\n- **Investment strategy:** Buffett explains Berkshire’s preference for owning good businesses over holding cash, despite its large cash position. Its marketable equity holdings ended the year at **$272 billion**, down from $354 billion.\n- **Insurance operations:** A discussion of GEICO’s improvement, catastrophe risks, disciplined pricing, and Berkshire’s **$171 billion in insurance “float”**—money held before claims are paid.\n- **Japanese investments:** Berkshire’s stakes in **ITOCHU, Marubeni, Mitsubishi, Mitsui, and Sumitomo** cost $13.8 billion and were worth **$23.5 billion** at year-end. Buffett expects these to remain long-term holdings.\n- **Management and succession:** Reflections on admitting and correcting mistakes, selecting managers, and **Greg Abel’s expected succession as CEO**.\n- **A tribute to Pete Liegl:** The story of Berkshire’s acquisition of Forest River and its founder’s contributions.\n- **Taxes and reinvestment:** Buffett reports **$26.8 billion in U.S. federal income-tax payments** for 2024 and discusses how retained earnings and compounding helped build Berkshire.\n- **Annual meeting information:** Plans for the **May 3, 2025 gathering in Omaha**, including the Q&A schedule and shareholder shopping events.\n\n### Performance tables at the end\n\n| Measure | Berkshire | S&P 500, including dividends |\n|---|---:|---:|\n| 2024 return | 25.5% | 25.0% |\n| Compounded annual gain, 1965–2024 | 19.9% | 10.4% |\n\n**Overall:** It combines a business update with Buffett’s lessons on long-term investing, honest management, risk, and reinvesting profits.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0b6eda942bd25154006acbb3dbf33887d1845901b653897565",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 486,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 11542,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 11539,
+        "cached_tokens": 0
+      },
+      "total_tokens": 12028
+    }
+  },
+  "recorded-function-call-output-array": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The chart **“Weekly signups”** has been plotted.\n\nTrend: signups generally increased over the period, rising from **3 → 5**, dipping slightly to **4**, then jumping to **8**. Overall, the trend is **upward**.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_01f0d3ff832da1a2006acbb3e631d88190a3c03bc1050a0a18",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 58,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 156,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 214
+    }
+  },
+  "recorded-json-object-mode": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_05a5286721ef2aa5006acbb3ebc12c87d19a80d34780deefc6",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 17,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 39
+    }
+  },
+  "recorded-max-output-tokens-incomplete": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Certainly! Here is a **detailed history of the printing press**, tracing its",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_07145f6a6801ac3c006acbb3ef1e8887d1893f921a83026009",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 16,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 16,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 32
+    }
+  },
+  "recorded-multi-turn-roles": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Usually no—the Atlantic near Lisbon is around 15–16°C in March, which feels quite cold for swimming. A wetsuit is recommended if you plan to surf or spend much time in the water.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_02b7dd8dae68d16e006acbb3f0a3148190ad5ac33242a66d98",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 84,
+      "completion_tokens_details": {
+        "reasoning_tokens": 37
+      },
+      "prompt_tokens": 118,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 202
+    }
+  },
+  "recorded-reasoning-effort-high": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "A woodchuck would chuck as much wood as a woodchuck could chuck, if a woodchuck could chuck wood! 🪵",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_026cfb60ed863a01006acbb3f36c8087d1a6030409e218c09c",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 87,
+      "completion_tokens_details": {
+        "reasoning_tokens": 52
+      },
+      "prompt_tokens": 16,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 103
+    }
+  },
+  "recorded-sampling-and-ids": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Paris",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_01a4329af5a833e1016acbb41e9d3887d182a327663cb1244d",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 2,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 21
+    }
+  },
+  "recorded-structured-output-json-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"name\":\"science fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0f013f71713eb783006acbb41f6a9487d1b97b25bc1287fd49",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 55,
+      "completion_tokens_details": {
+        "reasoning_tokens": 28
+      },
+      "prompt_tokens": 77,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 132
+    }
+  },
+  "recorded-text-input-string": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "A little unicorn named Luna followed a trail of glowing fireflies to a meadow where the flowers hummed lullabies. She curled beneath a willow tree, tucked her silver hooves into the soft grass, and wished every creature in the forest sweet dreams. As the moon wrapped the meadow in gentle light, Luna closed her eyes and dreamed of dancing among the stars.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_07f95bbe5483eed2006acbb422d8cc87d1ad002a1065c5d9ae",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 91,
+      "completion_tokens_details": {
+        "reasoning_tokens": 13
+      },
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 108
+    }
+  },
+  "recorded-tool-choice-allowed-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Oslo\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_WEMfKAvtjJj6qGZSiZ6Aqaqs",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_05133bdef2bdf91f006acbb427710087d1ba6d97601e35011c",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 24,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 4627,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 4651
+    }
+  },
+  "recorded-tool-choice-none": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hi",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_035fcc6380ddfdd9006acbb428ead487d18cb9006686eb8b16",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 5,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 73,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 78
+    }
+  },
+  "recorded-tool-result-error": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I couldn’t find weather data for “Atlantis” — no weather station was found for that location. If you meant a real place with a similar name, tell me the city/country and I can check again.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_08fb149d49a358a9006acbb429fec881909ef71d270603a548",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 48,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 125,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 173
+    }
+  },
+  "recorded-tools-function": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"location\":\"Boston, MA\",\"unit\":\"fahrenheit\"}",
+                "name": "get_current_weather"
+              },
+              "id": "call_wdEvTxRQoNKByBADWmlV9V9W",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0670e38760b32901006acbb42c122487d1a87bb2191281014d",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 26,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 80,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 106
+    }
+  },
+  "recorded-tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_peWI0zFuctZgf1VZUhn6yqGb",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\"city\":\"Tokyo\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_SBNzcERC8STz8ZRqkfh9xetf",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0b1ef656b6db58a8006acbb42ff59887d18e177f69e1660be5",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 58,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 119,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 177
+    }
+  },
+  "recorded-web-search": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "According to the **official Oceanário de Lisboa site**, the Lisbon Oceanarium is open:\n\n- **Daily:** **10:00 AM – 8:00 PM**\n- **Last entry:** **7:00 PM**\n- **24 and 31 December:** **10:00 AM – 7:00 PM**; last entry **6:00 PM**\n- **25 December and 1 January:** **11:00 AM – 8:00 PM**; last entry **7:00 PM** ([oceanario.pt](https://oceanario.pt/en/?utm_source=openai))",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0ab39bd8f52ec563006acbb435d3a087d1aea84fe88ecc91e4",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 168,
+      "completion_tokens_details": {
+        "reasoning_tokens": 46
+      },
+      "prompt_tokens": 8351,
+      "prompt_tokens_details": {
+        "cached_tokens": 3712
+      },
+      "total_tokens": 8519
+    }
+  },
+  "refusal": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": "I'm sorry, but I can't help with creating phishing emails.",
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_069573900de991fb006acb7607465781a2efed98d8aa4e11a5",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 52,
+      "completion_tokens_details": {
+        "reasoning_tokens": 38
+      },
+      "prompt_tokens": 71,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 123
+    }
+  },
+  "sampling-and-ids": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Paris.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0cf08dd747ce803c006acb6fc39dd581a24f15975d75c78306",
+    "model": "gpt-4.1-2025-04-14",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 2,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 21,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 23
+    }
+  },
+  "structured-output-json-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"name\":\"Science Fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0bdb7f67f78d8b4b006acb685311aa81a25ce033401d6e81ad",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 46,
+      "completion_tokens_details": {
+        "reasoning_tokens": 24
+      },
+      "prompt_tokens": 78,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 124
+    }
+  },
+  "text-input-string": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "In a peaceful grove beneath a silver moon, a unicorn named Lumina discovered a hidden pool that reflected the stars. As she dipped her horn into the water, the pool began to shimmer, revealing a pathway to a magical realm of endless night skies. Filled with wonder, Lumina whispered a wish for all who dream to find their own hidden magic, and as she glanced back, her hoofprints sparkled like stardust.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_67ccd2bed1ec8190b14f964abc0542670bb6a6b452d3795b",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 87,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 36,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 123
+    }
+  },
+  "tool-result-error": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I couldn't find any weather data for Atlantis. It isn't a real city, so there's no weather station to ask. Is there another place you'd like the forecast for?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0725216c59454ac2006acb6212ee8481901217df6b349c0411",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 71,
+      "completion_tokens_details": {
+        "reasoning_tokens": 28
+      },
+      "prompt_tokens": 176,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 247
+    }
+  },
+  "tools-function": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"location\":\"Boston, MA\",\"unit\":\"celsius\"}",
+                "name": "get_current_weather"
+              },
+              "id": "call_unLAR8MvFNptuiZK6K6HCy5k",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_67ca09c5efe0819096d0511c92b8c890096610f474011cc0",
+    "model": "gpt-6-astra",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 23,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 291,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 314
+    }
+  },
+  "tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_ZhPaNDVL6V7jzIneVoHYEMoQ",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\"city\":\"Tokyo\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call_pwCM918E1HFqBn52cfr654wv",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_00636e4c8fc87d8c006acb59d707e68193d289d5d3e535bb23",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 108,
+      "completion_tokens_details": {
+        "reasoning_tokens": 64
+      },
+      "prompt_tokens": 142,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 250
+    }
+  },
+  "unknown-output-item": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_05a05f5f82977baf006acb7f8a3e7b8194916fd6ab0a37d004",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 11,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 8,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 19
+    }
+  },
+  "web-search": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "resp_0d9d96706c3569bb006acb6c7dfc578190a5c4b1441a09cf00",
+    "model": "gpt-5.5-2026-04-23",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 412,
+      "completion_tokens_details": {
+        "reasoning_tokens": 256
+      },
+      "prompt_tokens": 8125,
+      "prompt_tokens_details": {
+        "cached_tokens": 4864
+      },
+      "total_tokens": 8537
+    }
+  }
+}

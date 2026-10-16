@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM org_memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = $1 AND m.preset = 'owner' AND u.state <> 'deleted'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c4049c6dcb576c575d49375d63cce876fbea2a4ce0591c3d24b5e1e9f3ac5ba4"
+}

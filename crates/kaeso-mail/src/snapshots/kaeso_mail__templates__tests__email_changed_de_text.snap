@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ihre E-Mail-Adresse für Kaeso wurde geändert
+
+Ihre E-Mail-Adresse wurde geändert
+
+Ihr Konto verwendet jetzt new@example.com; Kaeso sendet keine E-Mails mehr an diese Adresse.
+
+Waren Sie das nicht, setzen Sie Ihr Passwort zurück und informieren Sie den Admin Ihrer Organisation.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

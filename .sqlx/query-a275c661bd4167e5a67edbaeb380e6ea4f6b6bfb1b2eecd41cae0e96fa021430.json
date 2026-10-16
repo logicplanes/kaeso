@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT o.id AS org_id, o.name AS org_name, o.state AS org_state, o.deletion_due_at AS org_deletion_due_at, o.require_2fa, o.require_sso, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", o.avatar AS org_avatar FROM org_memberships m JOIN organizations o ON o.id = m.org_id LEFT JOIN org_roles r ON r.id = m.role_id WHERE m.user_id = $1 ORDER BY o.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "org_state",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "org_deletion_due_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "deletion_due_at"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "require_2fa",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "require_2fa"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "require_sso",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "require_sso"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "preset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "role_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "role_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rights_added",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "rights_added"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "rights_removed",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "rights_removed"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "role_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "role_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "role_project_rights?",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "org_roles",
+            "name": "project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "org_avatar",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "avatar"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a275c661bd4167e5a67edbaeb380e6ea4f6b6bfb1b2eecd41cae0e96fa021430"
+}

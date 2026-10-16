@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO budget_alerts_sent (limit_id, period_start, threshold) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "14e6d5d0065c3114d4954856bfd88804422a4751ddc0b5c20049920f2bf92ca5"
+}

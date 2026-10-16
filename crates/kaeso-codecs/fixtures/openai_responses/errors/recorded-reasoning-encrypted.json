@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "The encrypted content for item rs_04300c408ad3cbe0006acb64b9d3468194c36baf7c7f5c9ee3 could not be verified. Reason: Encrypted content could not be decrypted or parsed.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_encrypted_content"
+  }
+}

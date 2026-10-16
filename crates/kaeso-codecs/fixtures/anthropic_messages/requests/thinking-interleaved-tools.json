@@ -1,0 +1,85 @@
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 16000,
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 20000
+  },
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ],
+            "description": "The unit of temperature, either 'celsius' or 'fahrenheit'"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      }
+    },
+    {
+      "name": "get_time",
+      "description": "Get the current time in a given time zone",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The IANA time zone name, e.g. America/Los_Angeles"
+          }
+        },
+        "required": [
+          "timezone"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is it a good moment for a picnic in Paris right now?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "I need the weather in Paris first, then the time, to answer whether a picnic at noon works.",
+          "signature": "EqEn1x2HmwMCYujqI9ICRIBQmmmBnsrBy+vlGmRddAUH5oHHblHGMVMLgIspBXwVakZhPOtYdAdwtqbl4brGt23JsZgcziQ132mbYIofvcI3XlOE4XuxOGI/eOQtYUlw5vd1GmeFZ0/SWc/Vs5wo628Ob4/caYXYvzaMfoyTxuS5LAGjPNTh4r/cI4rf3wy4QssO/sZBWvV79GXKragiQLOKUfX9OtBgL/7ervWr5fma5+j3rgpB1wvvEllgNm70tdeQ/8d1T0mDyyZawd6QRJhPMNceP0eaaX3Llg8V34IIIK3yzE+gd2g90Rz2SI41"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+          "name": "get_weather",
+          "input": {
+            "location": "Paris, France",
+            "unit": "celsius"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+          "content": "21°C, sunny"
+        }
+      ]
+    }
+  ]
+}

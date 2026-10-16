@@ -1,0 +1,41 @@
+---
+import Shell from "~/layouts/Shell.astro";
+import ComponentGrid from "~/components/ComponentGrid";
+import demos from "~/generated/demos.json";
+import { GITHUB } from "~/lib/nav";
+import ui from "../../../../packages/ui/package.json";
+const count = Object.keys(demos).length;
+---
+
+<Shell title="Kaeso UI" description="Kaeso's UI library: pure white and pure black, pill controls, a monochrome interface.">
+  <header class="sticky top-0 z-10 flex h-52 items-center justify-between gap-16 bg-panel pr-16 pl-24 hairline-b-strong k-bar">
+    <h1 class="flex min-w-0 items-baseline gap-8 text-body font-medium text-fg">
+      <span data-docs-text="Components">Components</span>
+      <span class="text-caption font-regular text-fg-tertiary tabular">{count}</span>
+    </h1>
+    <div class="flex items-center gap-4">
+      <a
+        href={`${GITHUB}/blob/dev/CHANGELOG.md`}
+        class="hidden h-32 items-center rounded-pill px-10 mono text-small text-fg-secondary transition-control hover:text-fg focus-ring sm:inline-flex"
+      >
+        @logicplanes/kaeso-ui v{ui.version}
+      </a>
+      <a
+        href="/installation"
+        class="inline-flex h-32 items-center rounded-pill px-12 text-body font-medium material-ghost transition-control focus-ring"
+        data-docs-text="Get started"
+      >
+        Get started
+      </a>
+      <a
+        href={GITHUB}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex h-32 items-center gap-6 rounded-pill px-12 text-body font-medium material-ghost transition-control focus-ring"
+      >
+        GitHub<span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </header>
+  <ComponentGrid client:load />
+</Shell>

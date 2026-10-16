@@ -1,0 +1,61 @@
+{
+  "model": "claude-opus-5-5",
+  "max_tokens": 4096,
+  "tools": [
+    {
+      "type": "web_search_20250305",
+      "name": "web_search"
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Who won the 2026 Nobel Prize in Physics?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me look up this year's laureates."
+        },
+        {
+          "type": "server_tool_use",
+          "id": "srvtoolu_01zVL42JFqsXijYWxmU5SW9v",
+          "name": "web_search",
+          "input": {
+            "query": "Nobel Prize in Physics 2026"
+          }
+        },
+        {
+          "type": "web_search_tool_result",
+          "tool_use_id": "srvtoolu_01zVL42JFqsXijYWxmU5SW9v",
+          "content": [
+            {
+              "type": "web_search_result",
+              "url": "https://www.nobelprize.org/prizes/physics/",
+              "title": "The Nobel Prize in Physics",
+              "encrypted_content": "Eqh6fV8NCc+HaBAI0XsoXN/XBP00G4h2uYalWp3IuoxPu9Hx+Q+HoGUWTpNsIRsHh24G1eY9jNBNBa55WDeOAeE73YWWA0oRrI2OVPlCDxD5KNJlRNuBHkDv4fpnB0HAHmRkNAU/AQXYRz0VF5KwKMlvvC9WsLqf+NU5VSS/0kRg/hIfs7/bJrQxakUftvMZEwdDJX/ETdNuqH53bG+V9Q==",
+              "page_age": "October 7, 2026"
+            }
+          ],
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "text",
+          "text": "The first result is the prize overview page; I'll search for the announcement itself."
+        },
+        {
+          "type": "server_tool_use",
+          "id": "srvtoolu_01sbtz82jM8vRXYuVK4x3FuN",
+          "name": "web_search",
+          "input": {
+            "query": "2026 Nobel Prize in Physics laureates"
+          }
+        }
+      ]
+    }
+  ]
+}

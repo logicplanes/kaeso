@@ -1,0 +1,14 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Zwei-Faktor-Authentifizierung ist deaktiviert
+
+Zwei-Faktor-Authentifizierung ist deaktiviert
+
+Bei der Anmeldung an Ihrem Konto wird kein Code mehr abgefragt.
+
+Waren Sie das nicht, setzen Sie Ihr Passwort zurück und informieren Sie den Admin Ihrer Organisation.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

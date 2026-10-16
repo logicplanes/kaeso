@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE invites SET token_hash = $3, expires_at = $4, updated_at = now() WHERE id = $2 AND org_id IS NOT DISTINCT FROM $1 AND accepted_at IS NULL AND revoked_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "86a38edb3dbb1dc7518a0ef438683a10c2e6f0a0d80a3591eeec1a0c114d5a90"
+}

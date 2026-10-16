@@ -1,0 +1,26 @@
+---
+import Base from "./Base.astro";
+interface Props {
+  page: any;
+}
+const { page } = Astro.props;
+---
+
+<Base title={`${page.title} states`} description={`Every state of ${page.title}, in light and dark.`}>
+  <main class="min-h-dvh bg-panel" data-states-page={page.slug}>
+    <header class="flex h-52 items-center gap-12 px-24 hairline-b">
+      <a href={`/components/${page.slug}`} class="text-body font-medium text-fg-secondary hover:text-fg">
+        ‹ {page.title}
+      </a>
+      <span class="text-small text-fg-tertiary">All states · light and dark</span>
+    </header>
+    <div class="grid w-max min-w-full grid-cols-[max-content_max-content]">
+      <section data-theme="light" data-states-theme="light" class="bg-panel p-32 text-fg" aria-label="Light">
+        <slot name="light" />
+      </section>
+      <section data-theme="dark" data-states-theme="dark" class="bg-panel p-32 text-fg" aria-label="Dark">
+        <slot name="dark" />
+      </section>
+    </div>
+  </main>
+</Base>

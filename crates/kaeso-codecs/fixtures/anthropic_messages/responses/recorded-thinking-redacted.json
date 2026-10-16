@@ -1,0 +1,48 @@
+{
+  "model": "claude-sonnet-4-6",
+  "id": "msg_011CfvjhcgBhAwtq9MuWqne5",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user wants to know if it's a good day to see the northern lights in Reykjavik. To see the northern lights, weather conditions matter (clear skies, no clouds). Let me get the current weather in Reykjavik to help answer this question.",
+      "signature": "EvgDCqgBCBIYAipApJobAcYGv23RMZ2n5lSZgi9yOmYw7lK3v6hpJYQL3P7cehHyrDOw7IEKrpBelrjZY8bEL3efW6ASftWmSYpfPDIRY2xhdWRlLXNvbm5ldC00LTY4AEIIdGhpbmtpbmdaJDdmMjE1NTkxLTc1YjMtNDE1NS04NmQ1LTQ4MzU3ODMxMTMzM5oBEwoRY2xhdWRlLXNvbm5ldC00LTaoAZ3ortYGEgwDwiYW2XBr8HM2mKEaDMaXi7WQQgEU3whWZSIwt3DHT+8XVCjJBdQKBCokABqQhp3ZpoP34NSgnPPJ/is4P/REzV5j8bHv5RFE0NYqKvwBIpoZNhakqVel6jEhwjXYUYLQ2o8NJjMQekctuTql1K7TD7LoyCwnqh49jiVr1EIa+eIFFh2qLhmFlnudLd5eyrlsVGQvLzGbB3+8l3jZbNAuSdHpOAwAlYZbQMMjuilbhrlbt2Pc0OO23hu3mgyHuMvexR53oDWWL3TjT1PfDBPPPk9Of3EBVVdaQ/H+7S9f/zKyN6vNWNUeOgw/hXJ65BsUlQxGy7Z+0CcAXknbIim4uE7dOZJ46vKPtIpn1mQhWhqHWHZYiOwZ3qzdTaJDK67OM7EPTGDpmzG2SZuVYxi1vpHNqojYF1tKXPs5vacqgjxexqLgL/DYDPtIGAE="
+    },
+    {
+      "type": "text",
+      "text": "To help determine if it's a good day to see the northern lights, let me first check the current weather in Reykjavik!"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01TBRejuaYu94Z9EKo4UJ6GP",
+      "name": "get_weather",
+      "input": {
+        "location": "Reykjavik, Iceland"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 665,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 155,
+    "output_tokens_details": {
+      "thinking_tokens": 63
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

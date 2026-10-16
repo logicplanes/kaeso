@@ -1,0 +1,63 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-6","id":"msg_01ZYJXVVjfNgLCKjtMKPUDV1","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":689,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":1,"service_tier":"standard","inference_geo":"global"}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}}
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Aurora visibility depends mostly on cloud "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"cover, so I should check the current weather "}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"in Reykjavik first."}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EqHaZqM+1YDkvalKNOnZ5/EQlJ+s2f0BlDPKMbLuAiyLLjALt45++i4czGG9OGd9qjisZ0gZolekhR7yzz+mPnAHk053H67U9M8Ei8XjtotXyySn2cKD8AtC1gmrupIdPx8UOzIc7fiQWLL2/mNW6RatmtXLVn8c40IDxK+xCm+Su7EVKhTfZraqGwEAmfKjTYmqlAhDy//9GaNe/9nw1N3iJ1UVBGGBo+VsFv4v+vp890Bgci92jNc5JIlEGOlr5XqQ/6nMFCUzJCG0gSarvZWDvp6QlWE92aF2Rc/C4Az/Ca7Xmjmisg8PtO6151+Y"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"redacted_thinking","data":"ErneVYdJ2IVClLcLfWctFIggiLPtE2Kooo+ZSShUpwewdyoTtkepfV0NIIBIbiVI4FTh2hwslkNWSIFWOe28m12YvGHsXRFG7+OW0fo1YjKSzfoDvkhZ1mfKxZQAdQ+wDmBE7F8mPYT7WNWsZg58zo77p+2zYQk8VBWzPhcvFYbQzwg0ZOHnyd0rSiMsJVT5ZRGm/vvzj6102na2wYmDwUIh9hiP0tcKEs0Luok6m4++aHk0XxggupXlS/JhBuknCw1fe6MCpC+uu9dmpxCPfOcpbyjKho4bpP5CXkXKFe2w1/ooIS/iR05MOKeKlrsxVn9ZWdezQy8bA4WGz7QUm1feXpFJpkP81yDDtfyiOuVbS7BzwBcM/ngEx28dfbl6ROEbFKNqVdCVx7uHxAzn4ZBQF44g4EcSADX1CKgDa2k="}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}
+
+event: content_block_start
+data: {"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"toolu_01fgLiquLjMGZKmcjSKWM1vg","name":"get_weather","input":{}}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"location"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"\": \"Reykja"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"vik, Icela"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"nd\", \"unit"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"\": \"celsiu"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"s\"}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":2}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":689,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":254,"output_tokens_details":{"thinking_tokens":181}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+
