@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { forwardRef } from "react";
@@ -46,6 +48,18 @@ describe("Sidebar", () => {
     fireEvent.keyDown(edge, { key: "Enter" });
     expect(screen.getByTestId("state")).toHaveTextContent("collapsed");
     expect(screen.queryByRole("separator", { name: "Resize sidebar; click to collapse" })).toBeNull();
+  });
+  it("clips the column while it animates without a scroll position of its own, so focusing a link inside never shifts the sidebar sideways", () => {
+    const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
+    const motion = css.slice(css.indexOf("@utility sidebar-motion {"), css.indexOf("}", css.indexOf("@utility sidebar-motion {")));
+    expect(motion).toContain("overflow: clip;");
+    expect(motion).not.toMatch(/overflow: (hidden|auto|scroll)/);
+    render(
+      <Sidebar.Provider>
+        <Sidebar aria-label="Console" />
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByRole("navigation", { name: "Console" }).closest(".sidebar-motion")).not.toBeNull();
   });
   it("marks the current page", () => {
     render(

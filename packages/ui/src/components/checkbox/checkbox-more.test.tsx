@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
@@ -83,6 +85,20 @@ describe("Collapsible and Accordion", () => {
     await userEvent.click(screen.getByRole("button", { name: /Advanced/ }));
     expect(onOpenChange).toHaveBeenCalledWith(true);
     expect(screen.getByText("Visible")).toBeInTheDocument();
+  });
+
+  it("clips an opening panel without a scroll position of its own, so moving to a control inside never shifts the content under the pointer", async () => {
+    const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
+    const motion = css.slice(css.indexOf("@utility collapse-motion {"), css.indexOf("}", css.indexOf("@utility collapse-motion {")));
+    expect(motion).toContain("overflow: clip;");
+    expect(motion).not.toMatch(/overflow: (hidden|auto|scroll)/);
+    render(
+      <Collapsible title="Notifications">
+        <p>Budget reached</p>
+      </Collapsible>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Notifications" }));
+    expect(screen.getByText("Budget reached").closest(".collapse-motion")).not.toBeNull();
   });
 
   it("opens several panels when multiple", async () => {

@@ -114,3 +114,8 @@ export async function growToContent(page: Page, width: number) {
 export async function nextFrame(page: Page) {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
+
+export async function slowMachine(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+}

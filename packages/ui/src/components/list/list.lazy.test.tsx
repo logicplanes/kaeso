@@ -69,6 +69,24 @@ describe("List, loading what it needs", () => {
     await userEvent.keyboard("j");
     await waitFor(() => expect(document.activeElement).toHaveAttribute("data-index", "1"));
   });
+  it("selects with Space and x on a row while the checkbox is still on its way, and shows it on the stand-in box", async () => {
+    const user = userEvent.setup();
+    render(<List aria-label="Keys" items={items} selectable selectionBar={false} />);
+    const box = (name: string) => screen.getByRole("checkbox", { name: `Select ${name}` });
+    const cell = (i: number) => screen.getAllByRole("gridcell")[i]!;
+    expect(box("checkout-web")).not.toHaveAttribute("data-unchecked");
+    cell(0).focus();
+    await user.keyboard(" ");
+    expect(cell(0)).toHaveAttribute("aria-selected", "true");
+    expect(box("checkout-web")).toHaveAttribute("aria-checked", "true");
+    await user.keyboard("j");
+    await user.keyboard("x");
+    expect(cell(1)).toHaveAttribute("aria-selected", "true");
+    expect(box("checkout-worker")).toHaveAttribute("aria-checked", "true");
+    await user.keyboard("x");
+    expect(cell(1)).toHaveAttribute("aria-selected", "false");
+    expect(box("checkout-worker")).toHaveAttribute("aria-checked", "false");
+  });
   it("stands a box in for the checkbox until it loads, which toggles the row the same way", async () => {
     const user = userEvent.setup();
     render(<List aria-label="Keys" items={items} selectable selectionBar={false} />);
