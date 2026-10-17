@@ -4,11 +4,13 @@ description: How every field of the OpenAI Embeddings format maps to KPP and bac
 order: 7
 ---
 
-OpenAI Embeddings, `POST /v1/embeddings`. Codec: `kaeso_codecs::openai_embeddings::OpenAiEmbeddings`.
+- **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)
+- **Endpoints:** `POST /v1/embeddings`, and the [models](#models) endpoints shared by every OpenAI codec
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_embeddings/`
 
-Sources: the OpenAI OpenAPI spec at commit `e95c0fe615f45a19e8878af923a729948445a6bd` (`CreateEmbeddingRequest`, `CreateEmbeddingResponse`, `Embedding`, `ErrorResponse`), the [create reference](https://developers.openai.com/api/reference/resources/embeddings/methods/create) and the [error codes guide](https://developers.openai.com/api/docs/guides/error-codes).
+**Sources.** The OpenAI OpenAPI spec at commit `e95c0fe615f45a19e8878af923a729948445a6bd` (`CreateEmbeddingRequest`, `CreateEmbeddingResponse`, `Embedding`, `ErrorResponse`), the [create reference](https://developers.openai.com/api/reference/resources/embeddings/methods/create) and the [error codes guide](https://developers.openai.com/api/docs/guides/error-codes).
 
-The tables use these terms:
+## How to read the tables
 
 - **typed**: a typed KPP field.
 - **extras**: `Extras::fields`, bound to `openai_embeddings`; another dialect refuses them ([extras](cross-format.md#extras)).

@@ -6,16 +6,26 @@ order: 1
 
 Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht. Für diesen Fall gelten die folgenden Regeln der Codecs, jeweils mit ihrem Grund. Eine Anfrage, die in ihrem eigenen Format bleibt, wird exakt reproduziert, und keine dieser Regeln greift.
 
+| Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
+| --- | --- | --- |
+| Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](extras-allowlist.md) | Weggelassen |
+| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported` | Unbekannte Blöcke weggelassen |
+| Zitate | `Unsupported` | Weggelassen |
+| Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |
+| Lesbares Reasoning | Weggelassen; der [Reasoning-Blob](#reasoning-blobs) stellt es beim Ursprung wieder her | In der Reasoning-Form der App gezeigt, wo sie eine hat |
+| Opakes Reasoning | Nur an den Dialekt und Anbieter zurückgespielt, die es ausgegeben haben | In einen Reasoning-Blob verpackt |
+| Cache-Hinweise | Weggelassen, wo das Ziel selbst cacht | — |
+| Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported` | — |
+| Stoppgründe, die das Format der App nicht hat | — | Der nächstliegende, den es hat |
+
 ## Anfragen
 
 `cross::check_foreign` durchläuft eine Anfrage und lehnt mit `Unsupported` ab, was das Ziel nicht verwenden kann:
 
-- Extras-Felder aus einem anderen Dialekt, außer das Feld steht auf der [Allowlist](extras-allowlist.md) oder darf aufgrund seines Werts das Format wechseln (`cross::is_droppable_value`); Extras, die Felder, aber keinen Ursprung haben, werden stattdessen mit `InvalidRequest` abgelehnt, weil niemand sie zurückschreiben könnte;
-- unbekannte Blöcke, Tools und Tool-Auswahlen aus einem anderen Dialekt; ein unbekannter Block ohne `type`, aber mit `role` enthält eine ganze Nachricht, etwa eine `function`-Nachricht von OpenAI Chat, und wird `` `<role>` message `` genannt, mit dem Hinweis „Remove the message, or send the request to a model served through its original format.“;
-- Datei-IDs eines Anbieters, die der Zielanbieter nicht auflösen kann ([Dateien](#dateien));
-- Zitate aus einem anderen Dialekt: Kein Ziel dokumentiert, was Zitate in früheren Runden bewirken, und die Formate lassen sich nicht aufeinander abbilden.
-
-Das veraltete Function Calling von OpenAI Chat übersteht den Round Trip innerhalb von Chat und wechselt in keinen anderen Dialekt. Legacy-Aufrufe haben keine Aufruf-IDs, daher sind sie keine KPP-Tool-Aufrufe: `functions` und `function_call` auf oberster Ebene sind Extras der Anfrage (`` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. ``), das `function_call` einer Assistentennachricht ist ein Extra der Nachricht und wird als `messages[i].function_call` abgelehnt, und eine `function`-Nachricht wird zu einer Benutzernachricht mit einem unbekannten Block und als `` `function` message `` abgelehnt.
+- **Extras-Felder aus einem anderen Dialekt**, außer das Feld steht auf der [Allowlist](extras-allowlist.md) oder darf aufgrund seines Werts das Format wechseln (`cross::is_droppable_value`). Extras, die Felder, aber keinen Ursprung haben, werden stattdessen mit `InvalidRequest` abgelehnt, weil niemand sie zurückschreiben könnte.
+- **Unbekannte Blöcke, Tools und Tool-Auswahlen aus einem anderen Dialekt.** Ein unbekannter Block ohne `type`, aber mit `role` enthält eine ganze Nachricht, etwa eine `function`-Nachricht von OpenAI Chat, und wird `` `<role>` message `` genannt, mit dem Hinweis „Remove the message, or send the request to a model served through its original format.“
+- **Datei-IDs eines Anbieters**, die der Zielanbieter nicht auflösen kann ([Dateien](#dateien)).
+- **Zitate aus einem anderen Dialekt:** Kein Ziel dokumentiert, was Zitate in früheren Runden bewirken, und die Formate lassen sich nicht aufeinander abbilden.
 
 Nicht abgelehnt wird, was die Encoder stattdessen weglassen: Reasoning-Blöcke, die das Ziel nicht zurückspielen kann ([Reasoning](#reasoning)), und Cache-Hinweise, wo das Ziel selbst cacht ([Cache-Hinweise](#cache-hinweise)).
 
@@ -23,20 +33,26 @@ Nicht abgelehnt wird, was die Encoder stattdessen weglassen: Reasoning-Blöcke, 
 
 Eine Ablehnung nennt das Feld, das die App gesendet hat, nie das des Ziels, in `param` und beim Ausgabelimit auch in der Meldung: `cross::app_field` liest den Ursprung der Anfrage und bei OpenAI Chat, welches von `max_completion_tokens` und `max_tokens` sie enthielt (`max_completion_tokens`, wenn sie beide gesendet hat). Ein Ausgabelimit unter 16 für OpenAI Responses ist `max_completion_tokens` oder `max_tokens` aus einer Chat-App und `max_tokens` aus einer Anthropic-App; ein fehlendes für Anthropic ist `max_completion_tokens` aus Chat und `max_output_tokens` aus Responses. Stoppsequenzen sind `stop_sequences` aus Anthropic und `stop` aus Chat; das Ausgabeformat ist `response_format`, `text.format` oder `output_config.format`; der Reasoning-Aufwand ist `reasoning_effort`, `reasoning.effort` oder `output_config.effort`, und andere Reasoning-Einstellungen sind `reasoning_effort`, `reasoning` oder `thinking`. Eine im Code gebaute Anfrage ohne Ursprung bekommt die Namen des Ziels. Inhalte werden nach ihrer Stelle in KPP benannt (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
 
+Das veraltete Function Calling von OpenAI Chat übersteht den Round Trip innerhalb von Chat und wechselt in keinen anderen Dialekt. Legacy-Aufrufe haben keine Aufruf-IDs, daher sind sie keine KPP-Tool-Aufrufe:
+
+- `functions` und `function_call` auf oberster Ebene sind Extras der Anfrage und werden etwa so abgelehnt: `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. ``;
+- das `function_call` einer Assistentennachricht ist ein Extra der Nachricht und wird als `messages[i].function_call` abgelehnt;
+- eine `function`-Nachricht wird zu einer Benutzernachricht mit einem unbekannten Block und als `` `function` message `` abgelehnt.
+
 ## Antworten
 
 Antworten fließen von einem Anbieter zu einer App, und eine fertige, bereits bezahlte Antwort abzulehnen wäre schlimmer, als weniger davon zu zeigen. Daten eines anderen Dialekts werden daher in dieser Rangfolge behandelt (`cross::reply_policy`, `cross::reasoning_reply_policy`):
 
-1. **abgebildet**, wo der Dialekt der App sie darstellen kann: Reasoning eines anderen Dialekts wird zu einem Reasoning-Item von OpenAI Responses oder einem Anthropic-`thinking`-Block, mit dem Originalblock verpackt in einem [Reasoning-Blob](#reasoning-blobs), den die App unverändert zurücksendet;
-2. **weggelassen**, wo er das nicht kann, und in Streams durch [Keepalive](#keepalives)-Frames ersetzt, damit die Verbindung nie verstummt: Reasoning für Apps von OpenAI Chat (das Gateway [bewahrt es](#vom-gateway-aufbewahrtes-reasoning) zwischen den Runden auf), unbekannte Blöcke und Stream-Extras aus einem anderen Dialekt, fremde Zitate und Extras.
+1. **Abgebildet**, wo der Dialekt der App sie darstellen kann: Reasoning eines anderen Dialekts wird zu einem Reasoning-Item von OpenAI Responses oder einem Anthropic-`thinking`-Block, mit dem Originalblock verpackt in einem [Reasoning-Blob](#reasoning-blobs), den die App unverändert zurücksendet.
+2. **Weggelassen**, wo er das nicht kann, und in Streams durch [Keepalive](#keepalives)-Frames ersetzt, damit die Verbindung nie verstummt: Reasoning für Apps von OpenAI Chat (das Gateway [bewahrt es](#vom-gateway-aufbewahrtes-reasoning) zwischen den Runden auf), unbekannte Blöcke und Stream-Extras aus einem anderen Dialekt, fremde Zitate und Extras.
 
 Das Gateway protokolliert die KPP-Antwort vollständig, daher geht in Kaesos Aufzeichnungen nichts verloren. Unbekannte Blöcke, Zitate und Extras erreichen einen anderen Dialekt nur, wenn der Anbieter etwas sendet, worum die Anfrage nicht gebeten hat, weil die Anfrageseite fremde Server-Tools, Zitate und ähnliche Funktionen ablehnt.
 
-Stoppgründe, die das Format der App nicht kennt, werden auf den nächstliegenden abgebildet, den es kennt; jede [Mapping-Seite](index.md) listet sie auf.
+Stoppgründe, die das Format der App nicht kennt, werden auf den nächstliegenden abgebildet, den es kennt; die Mapping-Seite jedes Dialekts listet sie auf.
 
 ## Extras
 
-Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. Geht eine Anfrage mit Extras an einen anderen Dialekt, gibt `check()` des Ziels `Unsupported` zurück und nennt das Feld, außer das Feld steht auf der [Extras-Allowlist](extras-allowlist.md): Dann wird es stillschweigend weggelassen. Die Allowlist enthält nur Felder, von denen bekannt ist, dass sie keinen Einfluss darauf haben, was das Modell schreibt, etwa Beta-Header und Hinweise zur Auflösung, jeweils mit dem echten Client, der sie sendet.
+Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. `check()` eines anderen Dialekts lehnt sie mit `Unsupported` ab und nennt das Feld, außer die [Extras-Allowlist](extras-allowlist.md) lässt das Feld weg: Sie enthält nur Felder, die bekanntermaßen nicht ändern, was das Modell schreibt, etwa Beta-Header und Hinweise zur Auflösung.
 
 ## Nutzung
 
@@ -46,9 +62,9 @@ Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. Geht eine Anfra
 
 Eine Systemnachricht nach dem Beginn einer Unterhaltung bleibt als `Role::System`-Nachricht erhalten.
 
-- An Anthropic werden die Systemnachrichten einer aus Anthropic Messages dekodierten Anfrage unverändert gesendet, und die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
-- Systemnachrichten aus anderen Dialekten sind für Anthropic `Unsupported`: Anthropic erlaubt sie nur für einige Modelle und nur nach einem Benutzerzug, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
-- An OpenAI werden sie zu späteren `system`- oder `developer`-Nachrichten.
+- **An Anthropic, aus Anthropic Messages:** unverändert gesendet; die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
+- **An Anthropic, aus anderen Dialekten:** `Unsupported`. Anthropic erlaubt sie nur für einige Modelle und nur nach einem Benutzerzug, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
+- **An OpenAI:** spätere `system`- oder `developer`-Nachrichten.
 
 ## Reasoning
 
@@ -57,7 +73,8 @@ Anthropic signiert seine Thinking-Blöcke, und OpenAI verschlüsselt seine Reaso
 - **In Anfragen** werden lesbarer Reasoning-Text und Zusammenfassungen, die an einen anderen Dialekt gehen, als Hinweis weggelassen; der [Reasoning-Blob](#reasoning-blobs) daneben stellt den Originalblock wieder her, wenn die Unterhaltung zu ihrem Anbieter zurückkehrt.
 - **Ohne Signatur** geht ein Anthropic-`thinking`-Block, der aus Anthropic Messages gelesen wurde, so an Anthropic zurück, wie er ankam, in Anfragen und Antworten: Eine fehlende `signature` bleibt fehlend, und `signature: ""` bleibt `""`. Unsigniertes Anthropic-Reasoning, das nicht aus Anthropic Messages gelesen wurde, etwa ein von Code gebauter Block, hat nichts zum Zurückspielen und wird weggelassen.
 - **In Antworten** wird Reasoning eines anderen Dialekts in der Reasoning-Form der App gezeigt, wo diese eine hat, mit dem Originalblock in einem Reasoning-Blob, sodass es in der nächsten Runde wieder seinen Ursprung erreicht. Apps von OpenAI Chat haben keine solche Form, daher bewahrt das Gateway ihr Reasoning zwischen den Runden auf.
-- **Reasoning-Einstellungen** werden zwischen einer Aufwandsstufe und einem Token-Budget umgerechnet:
+
+Reasoning-Einstellungen werden zwischen einer Aufwandsstufe und einem Token-Budget umgerechnet:
 
 | Von | Nach | Wird zu |
 | --- | --- | --- |
@@ -88,7 +105,9 @@ Ein ausdrücklicher Aufwand in derselben Anfrage hat Vorrang vor dem Budget.
 | `medium` | 8.192 |
 | `high`, `xhigh`, `max` | 24.576 |
 
-Diese Tabelle gilt nur, wenn das Zielmodell kein adaptives Thinking hat (Claude 4.5 und älter), was das Gateway mit `EgressCtx::adaptive_thinking = Some(false)` aus dem Feld `adaptive_thinking` des Katalogs angibt; Claude 4.7 und neuer lehnen `enabled`-Thinking ab und bekommen stattdessen adaptives Thinking mit dem Aufwand. Das Budget wird dann an die Regeln von Anthropic angepasst: mindestens 1.024 und kleiner als `max_tokens`, also `max_tokens − 1`, wenn das kleiner ist. Ist `max_tokens` 1.024 oder kleiner, gibt es kein gültiges Budget, daher wird `max_tokens` um 1.024 erhöht und das Budget ist 1.024: Die App behält ihr eigenes `max_tokens` für die Antwort. `reasoning_map::budget_within` übernimmt Anpassen und Erhöhen, `reasoning_map::fit_budget` nur das Anpassen.
+Diese Tabelle gilt nur, wenn das Zielmodell kein adaptives Thinking hat (Claude 4.5 und älter), was das Gateway mit `EgressCtx::adaptive_thinking = Some(false)` aus dem Feld `adaptive_thinking` des Katalogs angibt; Claude 4.7 und neuer lehnen `enabled`-Thinking ab und bekommen stattdessen adaptives Thinking mit dem Aufwand.
+
+Das Budget wird dann an die Regeln von Anthropic angepasst: mindestens 1.024 und kleiner als `max_tokens`, also `max_tokens − 1`, wenn das kleiner ist. Ist `max_tokens` 1.024 oder kleiner, gibt es kein gültiges Budget, daher wird `max_tokens` um 1.024 erhöht und das Budget ist 1.024: Die App behält ihr eigenes `max_tokens` für die Antwort. `reasoning_map::budget_within` übernimmt Anpassen und Erhöhen, `reasoning_map::fit_budget` nur das Anpassen.
 
 Die Quellen sind das Enum `ReasoningEffort` von OpenAI in der OpenAPI-Spezifikation (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`; nicht jedes Modell unterstützt jeden Wert) und die Seite [Extended Thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) von Anthropic: `budget_tokens` ist mindestens 1.024 und kleiner als `max_tokens`, und adaptives Thinking gibt es nicht bei Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 und früheren Claude-4-Modellen.
 
@@ -96,12 +115,17 @@ Die Quellen sind das Enum `ReasoningEffort` von OpenAI in der OpenAPI-Spezifikat
 
 `reasoning.summary` und `reasoning.include_encrypted` sind über Dialekte hinweg Hinweise: Sie steuern nur, welches Reasoning zurückkommt, und werden daher weggelassen, wo das Ziel keine Entsprechung hat. Codex sendet beide bei jeder Anfrage.
 
-OpenAI liefert lesbares Reasoning nur, wenn die Anfrage `reasoning.summary` setzt, und Claude Opus 4.7 und neuer liefern Thinking-Blöcke mit leerem Text, außer die Anfrage setzt `thinking.display: "summarized"`. Daher gilt:
+OpenAI liefert lesbares Reasoning nur, wenn die Anfrage `reasoning.summary` setzt, und Claude Opus 4.7 und neuer liefern Thinking-Blöcke mit leerem Text, außer die Anfrage setzt `thinking.display: "summarized"`. Daher gilt, außer bei der Token-Zählung:
 
-- Eine Anfrage aus einem anderen Dialekt mit Reasoning-Zusammenfassung (`auto`, `concise`, `detailed`) und eingeschaltetem Thinking geht mit `display: "summarized"` an Anthropic, außer bei der Token-Zählung.
-- Eine Anfrage im Format Anthropic Messages mit eingeschaltetem Thinking (`enabled`, `adaptive` oder ein Aufwand außer `none`) und einem `display` außer `omitted` geht mit `summary: "auto"` an OpenAI Responses, außer bei der Token-Zählung.
+- eine Anfrage aus einem anderen Dialekt mit Reasoning-Zusammenfassung (`auto`, `concise`, `detailed`) und eingeschaltetem Thinking geht mit `display: "summarized"` an Anthropic;
+- eine Anfrage im Format Anthropic Messages mit eingeschaltetem Thinking (`enabled`, `adaptive` oder ein Aufwand außer `none`) und einem `display` außer `omitted` geht mit `summary: "auto"` an OpenAI Responses.
 
-Das Gateway teilt den Encodern außerdem mit, ob das Zielmodell Reasoning beherrscht (`EgressCtx::reasoning`, aus dem Feld `reasoning` des Katalogs). Bei `Some(true)` schaltet eine Zusammenfassung ohne Aufwand, Modus oder Budget (OpenAI `reasoning: {summary: "auto"}`) das Thinking von Anthropic in der Standardtiefe des Modells ein: adaptiv ohne Aufwand oder mit dem Budget für `medium`, dem Standardaufwand von OpenAI. Ebenfalls bei `Some(true)` zählt Anthropic-Thinking `adaptive` ohne Aufwand für OpenAI Responses als Reasoning: Es fordert `include: ["reasoning.encrypted_content"]` an und, wie oben, eine Zusammenfassung. Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Apps von OpenAI Chat, deren Format kein Reasoning zeigt, fordern keine Zusammenfassungen an.
+Das Gateway teilt den Encodern außerdem mit, ob das Zielmodell Reasoning beherrscht (`EgressCtx::reasoning`, aus dem Feld `reasoning` des Katalogs). Bei `Some(true)`:
+
+- schaltet eine Zusammenfassung ohne Aufwand, Modus oder Budget (OpenAI `reasoning: {summary: "auto"}`) das Thinking von Anthropic in der Standardtiefe des Modells ein: adaptiv ohne Aufwand oder mit dem Budget für `medium`, dem Standardaufwand von OpenAI;
+- zählt Anthropic-Thinking `adaptive` ohne Aufwand für OpenAI Responses als Reasoning: Es fordert `include: ["reasoning.encrypted_content"]` an und, wie oben, eine Zusammenfassung.
+
+Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Apps von OpenAI Chat, deren Format kein Reasoning zeigt, fordern keine Zusammenfassungen an.
 
 ### Thinking und Sampling
 
@@ -120,26 +144,29 @@ Da Reasoning mit der Unterhaltung mitreist, ist das selten. Es kommt trotzdem vo
 
 ## Reasoning über Runden hinweg
 
-Ohne Hilfe würde jede Runde einer Tool-Schleife, in der eine App das Modell eines anderen Anbieters nutzt, das Reasoning dieses Modells verlieren: Budget-Thinking würde in jeder Folgerunde abgeschaltet, und adaptives Thinking würde verlieren, was es zuvor überlegt hat. `kaeso_codecs::continuity` lässt Reasoning mit der Unterhaltung mitreisen.
+Ohne Hilfe würde jede Runde einer Tool-Schleife, in der eine App das Modell eines anderen Anbieters nutzt, das Reasoning dieses Modells verlieren: Budget-Thinking würde in jeder Folgerunde abgeschaltet, und adaptives Thinking würde verlieren, was es zuvor überlegt hat. `kaeso_codecs::continuity` lässt Reasoning mit der Unterhaltung mitreisen, für Responses- und Anthropic-Apps in einem Blob, für Chat-Apps im Gateway.
 
 ### Reasoning-Blobs
 
 Für Apps von OpenAI Responses und Anthropic Messages verpackt KPP den ganzen Reasoning-Block eines anderen Dialekts (lesbarer Text, Zusammenfassungen, Signatur, verschlüsselter Inhalt, redigierte Daten, Item-ID) in einen Reasoning-Blob: `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`), gefolgt vom KPP-JSON des Blocks ohne Form-Markierungen, in base64url ohne Padding.
 
-- Apps von OpenAI Responses bekommen ein Reasoning-Item mit einer ID `rs_kaeso_…`, das Thinking als einen einzigen Zusammenfassungstext und den Blob in `encrypted_content`; Streams tragen es als `response.reasoning_summary_*`-Events.
-- Apps von Anthropic Messages bekommen einen `thinking`-Block mit den Zusammenfassungen und dem Reasoning-Text als Thinking, Absätze durch eine Leerzeile getrennt, und dem Blob als `signature`, gestreamt als ein einziges `signature_delta`, wenn der Block stoppt.
+| App | Bekommt | Blob steckt in |
+| --- | --- | --- |
+| OpenAI Responses | Ein Reasoning-Item mit einer ID `rs_kaeso_…` und dem Thinking als einem einzigen Zusammenfassungstext, gestreamt als `response.reasoning_summary_*`-Events | `encrypted_content` |
+| Anthropic Messages | Einen `thinking`-Block mit den Zusammenfassungen und dem Reasoning-Text als Thinking, Absätze durch eine Leerzeile getrennt | `signature`, gestreamt als ein einziges `signature_delta`, wenn der Block stoppt |
 
 Beide Anfrage-Decoder erkennen einen Blob, wo immer er steht (`continuity::unwrap_reasoning`), und stellen den Originalblock mit seinem Ursprung wieder her, sodass die Encoder ihn wie jedes andere Reasoning an seinen eigenen Dialekt und Anbieter zurückspielen.
 
-Der Blob wird gesendet, ob die App `include: ["reasoning.encrypted_content"]` angefordert hat oder nicht, und unabhängig von ihrer Einstellung für `store`: Kaeso speichert nichts, und die Agent-Schleifen der SDKs (`to_input_list()` von openai-agents, Codex, Claude Code, der Tool Runner von Anthropic) senden Ausgabe-Items und Content-Blöcke so zurück, wie sie ankamen. Der Blob enthält den lesbaren Text ein zweites Mal, weil er den Block exakt wiederherstellen muss (Anthropic prüft den Thinking-Text gegen seine Signatur), während Apps die lesbare Kopie bearbeiten oder weglassen können; sendet eine App beides zurück, hat der Blob Vorrang.
+- **Immer gesendet.** Der Blob wird gesendet, ob die App `include: ["reasoning.encrypted_content"]` angefordert hat oder nicht, und unabhängig von ihrer Einstellung für `store`: Kaeso speichert nichts, und die Agent-Schleifen der SDKs (`to_input_list()` von openai-agents, Codex, Claude Code, der Tool Runner von Anthropic) senden Ausgabe-Items und Content-Blöcke so zurück, wie sie ankamen.
+- **Der Blob hat Vorrang.** Er enthält den lesbaren Text ein zweites Mal, weil er den Block exakt wiederherstellen muss (Anthropic prüft den Thinking-Text gegen seine Signatur), während Apps die lesbare Kopie bearbeiten oder weglassen können. Sendet eine App beides zurück, hat der Blob Vorrang.
+- **Nie mit Daten des Anbieters verwechselt.** Das Präfix enthält `:`, das weder im base64-Alphabet der Anthropic-Signaturen noch im base64url-Alphabet des verschlüsselten Inhalts von OpenAI vorkommt. Ein Wert mit dem Präfix, der sich nicht dekodieren lässt, bleibt als opake Daten des Anbieters erhalten, und der Anbieter lehnt ihn dann ab, sodass nichts stillschweigend wegfällt.
+- **Von Kaeso weder verschlüsselt noch signiert.** Er enthält, was die App schon gesehen hat, und Daten, die nur der ausgebende Anbieter prüfen kann.
 
-Das Präfix enthält `:`, das weder im base64-Alphabet der Anthropic-Signaturen noch im base64url-Alphabet des verschlüsselten Inhalts von OpenAI vorkommt, daher wird ein Blob nie mit den eigenen Daten der Anbieter verwechselt. Ein Wert mit dem Präfix, der sich nicht dekodieren lässt, bleibt als opake Daten des Anbieters erhalten, und der Anbieter lehnt ihn dann ab, sodass nichts stillschweigend wegfällt. Kaeso verschlüsselt oder signiert den Blob nicht: Er enthält, was die App schon gesehen hat, und Daten, die nur der ausgebende Anbieter prüfen kann.
-
-Anfragen aus anderen Dialekten fordern bei OpenAI Responses `include: ["reasoning.encrypted_content"]` an, wenn sie einen Aufwand außer `none` oder ein Thinking-Budget setzen oder das Thinking für ein Modell einschalten, von dem das Gateway weiß, dass es Reasoning beherrscht ([Lesbares Reasoning und Zusammenfassungen](#lesbares-reasoning-und-zusammenfassungen)); sonst kann Kaeso nicht erkennen, ob das Modell Reasoning beherrscht, und OpenAI lehnt verschlüsseltes Reasoning für Modelle ab, die keines beherrschen. Da diese Anfragen `store: false` tragen ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)), wird Reasoning ohne verschlüsselten Inhalt nicht an OpenAI gesendet, das seine Item-ID nicht auflösen könnte.
+Anfragen aus anderen Dialekten fordern bei OpenAI Responses `include: ["reasoning.encrypted_content"]` an, wenn sie einen Aufwand außer `none` oder ein Thinking-Budget setzen oder das Thinking für ein Modell einschalten, von dem das Gateway weiß, dass es Reasoning beherrscht ([Lesbares Reasoning und Zusammenfassungen](#lesbares-reasoning-und-zusammenfassungen)). Sonst kann Kaeso nicht erkennen, ob das Modell Reasoning beherrscht, und OpenAI lehnt verschlüsseltes Reasoning für Modelle ab, die keines beherrschen. Da diese Anfragen `store: false` tragen ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)), wird Reasoning ohne verschlüsselten Inhalt nicht an OpenAI gesendet, das seine Item-ID nicht auflösen könnte.
 
 ### Vom Gateway aufbewahrtes Reasoning
 
-Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antwort lässt das Reasoning weg, und das Gateway bewahrt es auf, mit den Tool-Aufrufen als Schlüssel, denen es vorausging; Tool-Call-IDs sind eindeutig, werden vom Anbieter vergeben und von jedem Chat-Client zurückgesendet, daher eignen sie sich als Schlüssel für das Reasoning, ohne das Format der App zu ändern.
+Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antwort lässt das Reasoning weg, und das Gateway bewahrt es auf, mit den Tool-Aufrufen als Schlüssel, denen es vorausging. Tool-Call-IDs sind eindeutig, werden vom Anbieter vergeben und von jedem Chat-Client zurückgesendet, daher eignen sie sich als Schlüssel für das Reasoning, ohne das Format der App zu ändern.
 
 1. Nach einer Antwort liefern `continuity::reasoning_for_tool_calls` (bei einer vollständigen Antwort) oder ein `continuity::ReasoningCollector` (bei einem Stream) ein `CarriedReasoning` pro Tool-Aufruf, dem zurückspielbares Reasoning vorausging: signiertes oder redigiertes Thinking von Anthropic, verschlüsseltes Reasoning von OpenAI. Reasoning nach dem letzten Tool-Aufruf wird nicht aufbewahrt.
 2. Das Gateway speichert die Einträge in Valkey, verschlüsselt mit dem Hauptschlüssel und nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, für `KAESO_CONTINUITY_REASONING_TTL` (standardmäßig eine Stunde).
@@ -151,8 +178,10 @@ Die Encoder spielen wiederhergestellte Blöcke nur an ihren eigenen Anbieter zur
 
 Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format der App zeigen kann: Claudes Thinking für eine App von OpenAI Chat, `ping`-Events von Anthropic, unbekannte Blöcke eines anderen Dialekts oder ein Reasoning-Modell von OpenAI, das während des Reasonings nichts sendet. Proxys mit Leerlauf-Timeouts (nginx und AWS ALB nach 60 Sekunden, Cloudflare nach 100) würden die Verbindung trennen, und die Zeit bis zum ersten Byte entspräche der gesamten Denkzeit. Daher verstummt ein laufender Stream nie wegen der Übersetzung: Jeder Stream-Encoder hat einen Keepalive-Frame, der in seinem Dialekt gültig ist und von den offiziellen SDKs ignoriert wird.
 
-- **OpenAI Chat Completions und Responses:** der SSE-Kommentar `: keepalive`, gefolgt von einer Leerzeile. Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und die Parser der OpenAI-SDKs überspringen sie.
-- **Anthropic Messages:** `event: ping` mit `data: {"type": "ping"}`, genau wie Anthropic es sendet; die Anthropic-SDKs überspringen Ping-Events.
+| Dialekt | Keepalive-Frame | Warum die SDKs ihn ignorieren |
+| --- | --- | --- |
+| OpenAI Chat Completions und Responses | Der SSE-Kommentar `: keepalive` und eine Leerzeile | Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und die Parser der OpenAI-SDKs überspringen sie |
+| Anthropic Messages | `event: ping` mit `data: {"type": "ping"}`, genau wie Anthropic es sendet | Die Anthropic-SDKs überspringen Ping-Events |
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 
@@ -163,7 +192,11 @@ Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die An
 
 ## Strukturierte Ausgabe
 
-Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anthropic, nie eine Nachbildung über ein erzwungenes Tool. Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`. Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` sind. Schemas, die von Anthropic an OpenAI Chat gehen, bekommen den Namen `response`, weil Chat einen verlangt.
+Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anthropic, nie eine Nachbildung über ein erzwungenes Tool.
+
+- Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`.
+- Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` ist.
+- Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
 
 ## Sampling
 
@@ -181,7 +214,7 @@ KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren a
 
 ## Zustandsbehaftete Responses-Funktionen
 
-`previous_response_id`, `conversation`, `store: true` und `background: true` brauchen Zustand bei OpenAI, und der Codec lehnt sie mit `Unsupported` ab; das Gateway, nicht der Codec, müsste sie vor KPP auflösen.
+`previous_response_id`, `conversation`, `store: true` und `background: true` brauchen Zustand bei OpenAI, und der Codec lehnt sie mit `Unsupported` ab. Auflösen könnte sie nur das Gateway, vor KPP.
 
 ## IDs von Antworten
 
@@ -189,8 +222,8 @@ Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die Ap
 
 ## Speicherung und IDs bei Responses
 
-- Anfragen aus anderen Dialekten, die für OpenAI Responses kodiert werden, tragen `"store": false`. Kaeso ist zustandslos, und ohne dieses Feld würde OpenAI jede übersetzte Unterhaltung speichern. Aus Responses dekodierte Anfragen behalten die Schreibweise der App, daher bedeutet ein fehlendes `store` weiterhin, dass OpenAI die Antwort speichert.
-- Ausgabe-Items von Responses brauchen IDs, die Antworten aus anderen Dialekten nicht haben. Kaeso gibt ihnen IDs, die mit `msg_kaeso_`, `fc_kaeso_` und `rs_kaeso_` beginnen; sendet eine App sie zurück, entfernt der Anfrage-Decoder sie, sodass OpenAI nie eine ID erhält, die es nicht selbst vergeben hat.
+- **`store: false`.** Anfragen aus anderen Dialekten, die für OpenAI Responses kodiert werden, tragen `"store": false`: Kaeso ist zustandslos, und ohne dieses Feld würde OpenAI jede übersetzte Unterhaltung speichern. Aus Responses dekodierte Anfragen behalten die Schreibweise der App, daher bedeutet ein fehlendes `store` weiterhin, dass OpenAI die Antwort speichert.
+- **Item-IDs.** Ausgabe-Items von Responses brauchen IDs, die Antworten aus anderen Dialekten nicht haben. Kaeso gibt ihnen IDs, die mit `msg_kaeso_`, `fc_kaeso_` und `rs_kaeso_` beginnen; sendet eine App sie zurück, entfernt der Anfrage-Decoder sie, sodass OpenAI nie eine ID erhält, die es nicht selbst vergeben hat.
 
 ## Cache-Hinweise
 
@@ -202,7 +235,7 @@ Cache-Hinweise sind Hinweise. OpenAI cacht selbst, daher werden Hinweise aus and
 
 ## Dateien
 
-Eine Datei-ID eines Anbieters (`file-…`) ist im Dateispeicher dieses Anbieters nutzbar, und die beiden OpenAI-Dialekte für Generierung teilen sich einen, daher nimmt `cross::check_foreign` den `Origin` des Ziels entgegen, also seinen Dialekt und Anbieter. Datei-IDs, die zu einem anderen Anbieter wechseln, sind `Unsupported`.
+Eine Datei-ID eines Anbieters (`file-…`) ist nur im Dateispeicher dieses Anbieters nutzbar, und die beiden OpenAI-Dialekte für Generierung teilen sich einen, daher nimmt `cross::check_foreign` den `Origin` des Ziels entgegen, also seinen Dialekt und Anbieter. Datei-IDs, die zu einem anderen Anbieter wechseln, sind `Unsupported`.
 
 ## Die Anthropic-Version
 

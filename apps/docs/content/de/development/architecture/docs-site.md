@@ -4,7 +4,7 @@ description: Wie aus den Markdown-Seiten in apps/docs/content die statische Webs
 order: 3
 ---
 
-Die Dokumentation ist das Paket `kaeso-docs` in `apps/docs`: Markdown-Seiten in drei Sprachen, gebaut zu einer statischen Website, die aussieht und funktioniert wie die Konsole und nur mit `@logicplanes/kaeso-ui` gezeichnet wird. Wie man eine Seite schreibt, steht unter [Dokumentation schreiben](../documentation.md); diese Seite beschreibt, wie die Website funktioniert.
+Die Dokumentation ist das Paket `kaeso-docs` in `apps/docs`: Markdown-Seiten in drei Sprachen, gebaut zu einer statischen Website, die aussieht und funktioniert wie die Konsole und nur mit `@logicplanes/kaeso-ui` gezeichnet ist. [Dokumentation schreiben](../documentation.md) erklärt, wie eine Seite geschrieben wird; diese Seite erklärt, wie die Website funktioniert.
 
 ```text
 content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─▶ virtual modules ─▶ src/ (React, @logicplanes/kaeso-ui) ─▶ dist/
@@ -15,19 +15,19 @@ content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─�
 
 ## Inhaltsmodell
 
-| Baustein | Ort | Regel |
+| Element | Ort | Regel |
 | --- | --- | --- |
 | Eine Sprache | `content/en`, `content/de`, `content/zh-CN` | Englisch unter `/`, die anderen unter `/de` und `/zh-CN`; jede Sprache hat dieselben Dateien mit derselben `order` |
 | Eine Seite | `content/<language>/<folders>/<name>.md` | Ihre Adresse ist ihr Pfad: `content/en/console/api-keys.md` ist `/console/api-keys`; `index.md` ist die Seite ihres Ordners |
 | Die Startseite | `content/<language>/index.md` | Pflicht |
-| Eine Gruppe in der Seitenleiste | Ein Ordner in einer Sprache | Benannt nach dem `title` seiner `index.md` oder nach dem Ordnernamen; platziert nach der `order` dieser `index.md` |
-| Eine verschachtelte Seite | Ein Ordner innerhalb einer Gruppe, mit `index.md` | Ihre Seiten werden darunter eingerückt; höchstens drei Ordnerebenen |
-| Reihenfolge innerhalb eines Ordners | Frontmatter `order` | Zuerst die `index.md` des Ordners, dann nach `order`, dann nach Beschriftung |
-| Die Beschriftung einer Seite in der Seitenleiste | Frontmatter `nav` | Standard ist der Titel; für `index.md` das „Übersicht“ der Sprache (auf der Startseite „Einführung“) |
-| Bilder und Dateien | Überall in `content/` | Nur veröffentlicht, wenn eine Seite sie zeigt oder verlinkt, mit ihrer zur Build-Zeit gelesenen Größe |
+| Eine Gruppe in der Seitenleiste | Ein Ordner in einer Sprache | Benannt nach dem `title` ihrer `index.md` oder nach dem Ordnernamen; platziert nach der `order` dieser `index.md` |
+| Eine verschachtelte Seite | Ein Ordner in einer Gruppe, mit `index.md` | Ihre Seiten erscheinen eingerückt darunter; höchstens drei Ordnerebenen |
+| Reihenfolge in einem Ordner | Frontmatter `order` | Zuerst die `index.md` des Ordners, dann nach `order`, dann nach Beschriftung |
+| Beschriftung einer Seite in der Seitenleiste | Frontmatter `nav` | Standard ist der Titel; für `index.md` das „Übersicht“ der Sprache (für die Startseite „Einführung“) |
+| Bilder und Dateien | Überall in `content/` | Nur veröffentlicht, wenn eine Seite sie zeigt oder verlinkt; ihre Größe wird beim Build gelesen |
 | Entwürfe und private Notizen | Namen, die mit `_` oder `.` beginnen | Nicht Teil der Website |
 
-Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Satz, höchstens 140 Zeichen) sind Pflicht, `order` und `nav` optional. Jedes andere Feld ist ein Fehler, sodass ein Tippfehler nie stillschweigend wirkungslos bleibt.
+Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Satz, höchstens 140 Zeichen) sind Pflicht, `order` und `nav` optional. Jedes andere Feld ist ein Fehler, damit ein Tippfehler nie stillschweigend wirkungslos bleibt.
 
 ## Der Build
 
@@ -35,63 +35,102 @@ Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Sat
 
 | Datei | Aufgabe |
 | --- | --- |
-| `frontmatter.ts` | Die vier Felder, mit einer Meldung für jeden Fehler; ein Satz pro Beschreibung, mit lateinischer und chinesischer Interpunktion |
-| `slug.ts` | GitHubs Überschriften-Anker (`## Rate limits` ist `#rate-limits`, Wiederholungen bekommen `-1`, `-2`) und Adressen aus Dateinamen |
+| `frontmatter.ts` | Die vier Felder, mit einer Meldung für jeden Fehler; ein Satz pro Beschreibung, mit lateinischer und chinesischer Zeichensetzung |
+| `slug.ts` | Die Überschriften-Anker von GitHub (`## Rate limits` ist `#rate-limits`, Wiederholungen bekommen `-1`, `-2`) und Adressen aus Dateinamen |
 | `compile.ts` | Eine Seite: der Lexer von marked mit abgeschaltetem Roh-HTML, dann das Seitenformat aus `src/markdown/ast.ts`; geprüfte Links; Callouts; Suchwörter |
-| `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links so aufgelöst, wie GitHub sie auflöst, Bilder und ihre Größen, Suche |
-| `docs.ts` | Alle Sprachen: je eine Website mit ihrem Präfix und ihren Beschriftungen, und die Prüfungen, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
-| `changelog.ts` | Die Seite Änderungen, in jeder Sprache aus `CHANGELOG.md` erzeugt ([das Changelog](#das-changelog)) |
-| `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen bei einer Änderung in der Entwicklung, eine HTML-Datei pro Seite und Sprache mit ihrem Kopf für Suchmaschinen und Linkvorschauen, `404.html`-Dateien und die Sitemap |
+| `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links aufgelöst wie auf GitHub, Bilder und ihre Größen, die Suche |
+| `docs.ts` | Alle Sprachen: je eine Website mit Präfix und Beschriftungen, und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
+| `changelog.ts` | Die Changelog-Seite, in jeder Sprache aus `CHANGELOG.md` erzeugt ([das Changelog](#das-changelog)) |
+| `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen bei Änderungen in der Entwicklung, eine HTML-Datei pro Seite und Sprache mit ihrem Head für Suchmaschinen und Linkvorschauen, `404.html`-Dateien und die Sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: dieselben Prüfungen, ohne die App zu bauen |
 
-Jedes Problem nennt seine Datei: ein Link auf eine Seite oder Überschrift, die es nicht gibt, ein Bild ohne Alternativtext oder von außerhalb von `content/`, ein Link mit einem anderen Schema als http, https oder mailto, eine zweite `#`-Überschrift, zwei Dateien mit derselben Adresse, eine Seite, die in einer Sprache fehlt oder dort eine andere `order` hat. In der Entwicklung werden sie ausgegeben und die Seite rendert trotzdem; der Build und `check:content` schlagen damit fehl.
+Jedes Problem nennt seine Datei:
+
+- ein Link auf eine Seite oder Überschrift, die es nicht gibt;
+- ein Bild ohne Alternativtext oder von außerhalb von `content/`;
+- ein Link mit einem anderen Schema als http, https oder mailto;
+- eine zweite `#`-Überschrift oder zwei Dateien mit derselben Adresse;
+- eine Seite, die in einer Sprache fehlt oder dort eine andere `order` hat.
+
+In der Entwicklung werden sie ausgegeben, und die Seite wird trotzdem gerendert; der Build und `check:content` schlagen bei ihnen fehl.
 
 ### Sicherheit
 
-Seiten werden im Browser auf GitHub bearbeitet, daher behandelt der Build sie als nicht vertrauenswürdigen Text. marked tokenisiert nur, mit abgeschalteten HTML-Tokenizern: `<script>`, `<img onerror>` und jedes andere Tag bleiben wörtlicher Text. Link-Referenzen sind abgeschaltet, und Links behalten nur http, https und mailto, nachdem Leerraum und Steuerzeichen entfernt wurden, sodass `java\nscript:` erkannt wird. Bilder kommen nur aus `content/`. Der Browser erhält einfache Objekte, nie HTML, und nichts setzt `innerHTML`. `scripts/content/compile.test.ts` enthält die Fälle.
+Seiten werden im Browser auf GitHub bearbeitet, daher behandelt der Build sie als nicht vertrauenswürdigen Text:
+
+- marked zerlegt nur in Tokens, mit abgeschalteten HTML-Tokenizern: `<script>`, `<img onerror>` und jedes andere Tag bleiben wörtlicher Text;
+- Link-Referenzen sind abgeschaltet, und Links behalten nur http, https und mailto, geprüft nach dem Entfernen von Leer- und Steuerzeichen, sodass `java\nscript:` auffällt;
+- Bilder kommen nur aus `content/`;
+- der Browser erhält einfache Objekte, nie HTML, und nichts setzt `innerHTML`.
+
+`scripts/content/compile.test.ts` enthält die Fälle.
 
 ### Links, die auf GitHub und auf der Website funktionieren
 
-Ein Link wird zwischen Dateien geschrieben, so wie GitHub ihm folgt: `[keys](../console/api-keys.md#create-a-key)`. Der Build löst ihn relativ zum Ordner der Datei auf, prüft, dass Seite und Überschrift existieren, und schreibt die Adresse der Website in der Sprache der Seite (`/de/console/api-keys#schlüssel-erstellen`). Überschriften verwenden GitHubs Anker, sodass derselbe Anker an beiden Orten funktioniert; eine übersetzte Seite verlinkt auf den Anker der übersetzten Überschrift.
+Ein Link wird zwischen Dateien geschrieben, so wie GitHub ihm folgt: `[keys](../console/api-keys.md#create-a-key)`. Der Build löst ihn relativ zum Ordner der Datei auf, prüft, dass Seite und Überschrift existieren, und schreibt die Adresse der Website in der Sprache der Seite (`/de/console/api-keys#schlüssel-erstellen`). Überschriften verwenden die Anker von GitHub, daher funktioniert derselbe Anker an beiden Orten; eine übersetzte Seite verlinkt auf den Anker der übersetzten Überschrift.
 
 ### Das Changelog
 
-`/changelog` ist in jeder Sprache die eine Seite, die keine Datei in `content/` ist: Der Build erzeugt sie aus `CHANGELOG.md` im Wurzelverzeichnis des Repositorys, sodass das Changelog eine einzige Quelle hat und nie von Hand übersetzt wird. `history` in `scripts/changelog.mjs`, derselbe Code, der das Changelog bei einem Release verschiebt, teilt die Datei in Releases, Abschnitte wie `### Added` und Themen wie `#### Model API`; `changelog.ts` kompiliert jeden Teil wie eine Seite und folgt dabei den Linkreferenzen der Datei. Ein Link auf etwas anderes als eine vollständige Adresse oder eine Version auf der Seite lässt den Build scheitern, wie ein kaputter Link in einer Seite.
+`/changelog` ist in jeder Sprache die einzige Seite, die keine Datei in `content/` ist. Der Build erzeugt sie aus `CHANGELOG.md` im Wurzelverzeichnis des Repositorys, daher hat das Changelog eine einzige Quelle und wird nie von Hand übersetzt.
 
-Die Seite folgt in der Seitenleiste auf die Einführung. Ihre eigenen Wörter, die Namen der Abschnitte eingeschlossen, gehören der Website und sind übersetzt; die Einträge bleiben auf Englisch, auf den deutschen und chinesischen Seiten mit `lang="en"` markiert, und diese sagen es unter ihrer Beschreibung. Der Anker jeder Version ist `v` und die Version, wie ihr Git-Tag, in jeder Sprache: `/de/changelog#v{{version}}`. Das neueste stabile Release ist als Aktuell markiert, wie auf GitHub, Pre-Releases sind als solche markiert, und jedes Release zeigt sein Datum in der Sprache der Seite und verlinkt sein GitHub-Release und die Änderungen seit dem Release davor. `[Unreleased]` entfällt, wenn darunter nichts steht, wie an den Release-Tags, aus denen die Websites gebaut werden; mit Einträgen steht es zuerst und sagt, dass sie noch in keinem Release sind. Die Seite nennt Feedreadern den Feed der Releases auf GitHub, und ihre Wörter sind in der Suche, nach allen anderen Seiten. Die Unit-Tests und die E2E-Suite lesen `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_CHANGELOG` wählt eine andere Datei.
+- **Zerlegen.** `history` in `scripts/changelog.mjs`, das auch bei einem Release das Changelog fortschreibt, teilt die Datei in Releases, Abschnitte wie `### Added` und Themen wie `#### Model API`. `changelog.ts` kompiliert jeden Teil wie eine Seite und folgt dabei den Link-Referenzen der Datei. Ein Link auf etwas anderes als eine vollständige Adresse oder eine Version auf der Seite lässt den Build scheitern.
+- **Sprachen.** Die eigenen Wörter der Seite, auch die Abschnittsnamen, gehören zur Website und sind übersetzt. Die Einträge bleiben Englisch, auf den deutschen und chinesischen Seiten mit `lang="en"` markiert, die das unter ihrer Beschreibung sagen.
+- **Releases.** Der Anker jeder Version ist `v` und die Version, wie ihr Git-Tag, in jeder Sprache: `/de/changelog#v{{version}}`. Das neueste stabile Release ist wie auf GitHub als Latest markiert, Pre-Releases als solche. Jedes Release zeigt sein Datum in der Sprache der Seite und verlinkt auf sein GitHub-Release und die Änderungen seit dem vorherigen Release.
+- **Unreleased.** `[Unreleased]` entfällt, wenn es keine Zeilen hat, wie auf den Release-Tags, aus denen die Websites gebaut werden. Mit Zeilen steht es zuerst und sagt, dass sie noch in keinem Release sind.
+- **Platzierung.** Die Seite folgt in der Seitenleiste auf die Einführung, nennt den Release-Feed von GitHub für Feedreader und erscheint in den Suchergebnissen zuletzt.
+
+Die Unit-Tests und die E2E-Suite lesen `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_CHANGELOG` wählt eine andere Datei.
 
 ## Die App
 
 | Ordner | Aufgabe |
 | --- | --- |
 | `src/router.tsx` | Ein Routenbaum pro Sprache: ein Layout, das das Website-Modul der Sprache und die Texte der Bibliothek lädt, und eine Route pro Adresse |
-| `src/site/` | Lädt das Site-Modul einer Sprache, ihren Suchindex und die Texte der Bibliothek, jeweils einmal |
-| `src/page/` | Die Seite (Titel, Beschreibung, Inhalt, vorherige und nächste Seite, „Auf GitHub bearbeiten“, „Auf dieser Seite“), „Nicht gefunden“ und eine Seite, die nicht laden kann |
+| `src/site/` | Lädt das Website-Modul einer Sprache, ihren Suchindex und die Texte der Bibliothek, jeweils einmal |
+| `src/page/` | Die Seite (Titel, Beschreibung, Inhalt, vorherige und nächste Seite, Auf GitHub bearbeiten, „Auf dieser Seite“), „nicht gefunden“ und eine Seite, die nicht laden kann |
 | `src/markdown/` | Das Seitenformat (`ast.ts`) und seine Darstellung mit Komponenten der Bibliothek (`render.tsx`) |
-| `src/shell/` | `AppFrame` mit der Seitenleiste, der Suche, der Sprach- und Theme-Auswahl, Links über den Router, Toasts |
-| `src/i18n/` | Die Sprachen und ihre Adressen, die gespeicherte Präferenz und die eigenen Texte der Website in `messages/` |
+| `src/shell/` | `AppFrame` mit Seitenleiste, Suche, Sprach- und Theme-Auswahl, Links über den Router, Toasts |
+| `src/i18n/` | Die Sprachen und ihre Adressen, die gespeicherte Präferenz und die eigenen Wörter der Website in `messages/` |
 
-Der Rahmen ist der der Konsole: `AppFrame` mit seinem Link „Zum Inhalt springen“ und `Sidebar`, die Wortmarke allein oben links, 28px nach innen und 28px nach unten, das Panel eingerückt im Chrome, und unter 1024px die Leiste für Telefone und das Navigations-Sheet; die Leiste für Telefone trägt den Such-Button neben dem Navigationsschalter. Eine Seite ist aufgebaut wie die Einstellungsseiten der Konsole: ein Titel in `title-lg` und eine Beschreibung in `body-lg` in einer Spalte von 640px; Text ist `body-lg`, Überschriften `title` (`##`) und `title-sm` (`###`), Code in `CodeBlock`, Callouts in `Banner`, Tabellen in `Table` innerhalb einer horizontalen `ScrollArea`. Ab 1280px steht „Auf dieser Seite“ (`TableOfContents`) rechts; seine Spalte bleibt auch auf Seiten ohne es erhalten, sodass sich der Text zwischen Seiten nie verschiebt.
+**Der Rahmen** ist der der Konsole: `AppFrame` mit dem Link „Zum Inhalt springen“ und `Sidebar`, die Wortmarke allein oben links (28px nach innen und 28px nach unten), das Panel eingerückt im Chrome und unter 1024px die Handyleiste und das Navigations-Sheet; die Handyleiste enthält den Suchbutton neben dem Navigationsschalter.
 
-Wenn ein Link mit der Maus berührt oder fokussiert wird, lädt der Chunk der Seite (`defaultPreload: "intent"`), sodass Seiten sofort öffnen. Die Suche (`CommandPalette`) und ihr Index laden einen Moment nach dem ersten Rendern; der Such-Button in der Seitenleiste oder in der Leiste für Telefone, ⌘K oder Strg+K öffnet sie, und was vor dem Laden getippt wurde, wird zu ihrer Suchanfrage. Sie findet Seiten nach Titel, Beschreibung und Wörtern, Überschriften nach ihren eigenen Wörtern, und bietet das Theme und die anderen Sprachen an.
+**Eine Seite** ist aufgebaut wie die Einstellungsseiten der Konsole: ein Titel in `title-lg` und eine Beschreibung in `body-lg` in einer 640px breiten Spalte. Fließtext ist `body-lg`, Überschriften sind `title` (`##`) und `title-sm` (`###`), Code steht in `CodeBlock`, Callouts sind `Banner`, Tabellen sind `Table` in einer horizontalen `ScrollArea`. Ab 1280px steht „Auf dieser Seite“ (`TableOfContents`) rechts daneben; seine Spalte bleibt auch auf Seiten ohne ihn erhalten, sodass sich der Text zwischen Seiten nie verschiebt.
 
-Der erste Besuch einer englischen Adresse folgt den Sprachen des Browsers und wechselt ohne Navigation nach `/de` oder `/zh-CN`; die Wahl einer Sprache im Menü oder in der Suche öffnet dieselbe Seite in dieser Sprache und wird als `kaeso-docs:locale` gespeichert. Das Theme ist das der Bibliothek: System, hell oder dunkel, vom Theme-Skript vor dem ersten Rendern angewendet.
+**Laden.** Hovern oder Fokussieren eines Links lädt den Chunk der Seite (`defaultPreload: "intent"`), sodass Seiten sofort öffnen. Die Suche (`CommandPalette`) und ihr Index laden kurz nach dem ersten Zeichnen. Der Suchbutton in der Seitenleiste oder der Handyleiste, ⌘K oder Strg+K öffnet sie, und was vor dem Laden getippt wurde, wird ihre Suchanfrage. Sie findet Seiten über Titel, Beschreibung und Wörter, Überschriften über ihre eigenen Wörter, und bietet das Theme und die anderen Sprachen an.
 
-Jeder Fehler ist ein Toast: Eine Seite, deren Chunk nicht laden kann, behält den Rahmen, zeigt einen leeren Zustand mit „Erneut versuchen“ und sagt in einem Toast, was passiert ist; eine Suche, die nicht laden kann, schließt sich mit einem Toast.
+**Sprache und Theme.** Der erste Besuch einer englischen Adresse folgt den Sprachen des Browsers und wechselt ohne Navigation nach `/de` oder `/zh-CN`. Eine Sprache im Menü oder in der Suche zu wählen, öffnet dieselbe Seite in dieser Sprache und wird als `kaeso-docs:locale` gespeichert. Das Theme ist das der Bibliothek: System, hell oder dunkel, vor dem ersten Zeichnen vom Theme-Skript angewendet.
+
+**Fehler** sind Toasts. Eine Seite, deren Chunk nicht lädt, behält den Rahmen, zeigt einen leeren Zustand mit „Erneut versuchen“ und erklärt in einem Toast, was passiert ist; eine Suche, die nicht lädt, schließt sich mit einem Toast.
 
 ## Designentscheidungen
 
-- **Frontmatter statt einer Datei für die Seitenleiste.** Der Platz einer Seite ergibt sich aus ihrem Ordner und ihrer `order`; Name und Platz eines Abschnitts aus seiner `index.md`. Eine Seite auf GitHub zu verschieben oder hinzuzufügen betrifft eine Datei pro Sprache, nie eine zweite Datei, die dazu passen muss.
-- **Ein führendes `# Title`.** GitHub zeigt das Frontmatter als kleine Tabelle, daher darf eine Seite mit `# ` und ihrem Titel beginnen, damit sie sich dort gut liest; die Website lässt diese Überschrift weg. Jede andere `#`-Überschrift ist ein Fehler.
-- **Callouts.** GitHubs fünf Alerts werden zu `Banner`s: Note neutral, Tip success, Important info, Warning und Caution warning. Caution bekommt nicht den Ton danger, weil das Danger-Banner `role="alert"` hat, das ein Screenreader beim Öffnen der Seite ansagt.
-- **Tabellen** sind mindestens 640px breit innerhalb einer horizontalen `ScrollArea`: Auf einem Telefon scrollen sie seitwärts, statt jede Spalte auf ein Wort pro Zeile zusammenzudrücken.
+- **Frontmatter statt einer Datei für die Seitenleiste.** Der Platz einer Seite ist ihr Ordner und ihre `order`; Name und Platz eines Abschnitts sind die seiner `index.md`. Eine Seite auf GitHub zu verschieben oder hinzuzufügen, betrifft eine Datei pro Sprache, nie eine zweite Datei, die übereinstimmen muss.
+- **Ein führendes `# Titel`.** GitHub zeigt das Frontmatter als kleine Tabelle, daher darf eine Seite mit `# ` und ihrem Titel beginnen, damit sie dort gut lesbar ist; die Website lässt diese Überschrift weg. Jede andere `#`-Überschrift ist ein Fehler.
+- **Callouts.** Die fünf Hinweise von GitHub werden zu `Banner`: Note neutral, Tip success, Important info, Warning und Caution warning. Caution nimmt nicht den Ton danger, weil das Danger-Banner `role="alert"` hat, das ein Screenreader beim Öffnen der Seite vorliest.
+- **Tabellen** halten Wörter ganz. Eine Spalte, deren Zellen alle kurz sind (höchstens 20 Zeichen), bleibt einzeilig, andere Spalten sind mindestens 140px breit, und eine Tabelle, die breiter als die Seite ist, scrollt seitwärts, statt ihre Spalten zu stauchen.
 - **Kein TanStack Query.** Die Website lädt nichts außer ihren eigenen Chunks, die die Loader des Routers laden und behalten (`defaultStaleTime: Infinity`).
-- **Absichtlich nicht unterstützt:** Roh-HTML, MDX oder Komponenten in Seiten, Fußnoten, Bilder von anderen Websites, Definitionen von Link-Referenzen.
-- **Code** wird für die Sprachen der Bibliothek hervorgehoben (TypeScript, TSX, JavaScript, JSON, Bash, Python, YAML, diff und ihre Aliasse); alles andere ist einfacher Text im selben Block.
+- **Bewusst nicht unterstützt:** Roh-HTML, MDX oder Komponenten in Seiten, Fußnoten, Bilder von anderen Websites, Definitionen von Link-Referenzen.
+- **Code** wird für die Sprachen der Bibliothek hervorgehoben (TypeScript, TSX, JavaScript, JSON, Bash, Python, YAML, diff und ihre Aliasse); alles andere ist Klartext im selben Block.
 - **Eine Version.** Die Seiten beschreiben das neueste Release; es gibt keine versionierten Kopien.
 
 ## Die Build-Ausgabe
 
-`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`: die App, eine `<path>.html` für jede Seite in jeder Sprache (`/de/console/api-keys` ist `de/console/api-keys.html`), eine `404.html` pro Sprache mit `noindex`, `sitemap.xml` mit jeder Seite in jeder Sprache und ihren `hreflang`-Alternativen, `robots.txt`, die alles erlaubt und die Sitemap nennt, `site.webmanifest`, die Icons, `og.png`, `CNAME` sowie `csp.txt` und `_headers` mit der [Content Security Policy](../releasing.md#content-security-policy) der Website, die jede Seite auch in einem `<meta>` trägt. Der Kopf einer Seite enthält ihr `lang`, `<title>` und ihre Beschreibung, ihre kanonische Adresse, ihre `hreflang`-Alternativen in den drei Sprachen und `x-default`, Open-Graph- und Twitter-Tags mit `og.png`, ihr `og:locale` mit den beiden anderen als Alternativen und strukturierte Daten: `WebSite` auf der Startseite einer Sprache, `TechArticle` auf jeder anderen Seite. Die Sitemap hat kein `lastmod`, weil der Build nicht weiß, wann sich eine Seite zuletzt geändert hat. Jeder statische Host kann sie ausliefern: Eine Anfrage nach `/console/api-keys` bekommt `console/api-keys.html`, und eine unbekannte Adresse bekommt `404.html`, die „Nicht gefunden“ im Rahmen zeigt. Der Maintainer veröffentlicht sie unter docs.kaeso.app.
+`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`:
 
-`vite.config.ts` macht, was die der Konsole macht: Es schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten der Bibliothek um (`uiEntryImports`) und liefert das Theme-Skript als `/theme-init.js` aus; außerdem fügt es die `theme-color`-Meta-Tags hinzu und lädt die Schrift der Oberfläche vor. Der Build endet mit `scripts/budget.ts`, das den Rahmen und jede Seite gegen ihre [Bundle-Budgets](../performance.md#die-dokumentations-website) prüft, und mit der Prüfung der Website (`scripts/check-site.mjs`, beschrieben unter [die Websites](../releasing.md#die-websites)); `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) prüft danach die Lizenz jedes Pakets darin.
+| Ausgabe | Was sie ist |
+| --- | --- |
+| Die App | Die JavaScript- und CSS-Chunks |
+| `<path>.html` | Eine Datei für jede Seite in jeder Sprache: `/de/console/api-keys` ist `de/console/api-keys.html` |
+| `404.html` | Eine pro Sprache, als `noindex` markiert; zeigt „nicht gefunden“ im Rahmen |
+| `sitemap.xml` | Jede Seite in jeder Sprache mit ihren `hreflang`-Alternativen, ohne `lastmod`, da der Build nicht weiß, wann sich eine Seite zuletzt geändert hat |
+| `robots.txt` | Erlaubt alles und nennt die Sitemap |
+| `site.webmanifest`, die Icons, `og.png`, `CNAME` | Statische Dateien aus `public/` |
+| `csp.txt`, `_headers` | Die [Content Security Policy](../releasing.md#content-security-policy) der Website, die jede Seite auch in einem `<meta>` trägt |
+
+Der Head einer Seite enthält ihr `lang`, `<title>` und ihre Beschreibung, ihre kanonische Adresse, `hreflang`-Alternativen in den drei Sprachen und `x-default`, Open-Graph- und Twitter-Tags mit `og.png`, ihr `og:locale` mit den anderen beiden als Alternativen sowie strukturierte Daten: `WebSite` auf der Startseite einer Sprache, `TechArticle` auf jeder anderen Seite.
+
+Jeder statische Host kann die Ausgabe ausliefern: Eine Anfrage nach `/console/api-keys` bekommt `console/api-keys.html`, eine unbekannte Adresse `404.html`. Der Maintainer veröffentlicht sie unter docs.kaeso.app.
+
+`vite.config.ts` macht, was die der Konsole macht: Es schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten um (`uiEntryImports`) und liefert das Theme-Skript als `/theme-init.js` aus. Außerdem fügt es die Meta-Tags `theme-color` hinzu und lädt die Schrift der Oberfläche vorab.
+
+Der Build endet mit zwei Prüfungen: `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre [Bundle-Budgets](../performance.md#die-dokumentations-website), und `scripts/check-site.mjs` prüft die Ausgabe ([die Websites](../releasing.md#die-websites)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) prüft danach die Lizenz jedes Pakets im Build.

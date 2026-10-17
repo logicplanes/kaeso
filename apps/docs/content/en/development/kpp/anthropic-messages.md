@@ -4,21 +4,26 @@ description: How every field of the Anthropic Messages format maps to KPP and ba
 order: 4
 ---
 
-Codec: `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`). Endpoints: `POST /v1/messages` (JSON and SSE) and `POST /v1/messages/count_tokens`.
+- **Codec:** `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`)
+- **Endpoints:** `POST /v1/messages` (JSON and SSE), `POST /v1/messages/count_tokens`, and the [models](#models) endpoints
+- **Fixtures:** `crates/kaeso-codecs/fixtures/anthropic_messages/`
 
-Sources: the Anthropic OpenAPI spec `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml` (the last `openapi_spec_url` in `anthropic-sdk-python/.stats.yml`, SDK commit `41aa7674`), the SDK types at `anthropic-sdk-python@b4b7916d` (1.13.0), and the [Claude documentation](https://platform.claude.com/docs/en/) (`api/messages/create`, `api/messages/count_tokens`, `api/errors`, `api/versioning`, `build-with-claude/streaming`, `…/thinking`, `…/extended-thinking`, `…/effort`, `…/prompt-caching`, `…/structured-outputs`, `…/citations`, `…/pdf-support`, `…/vision`, `agents-and-tools/tool-use/*`, `…/handling-stop-reasons`). Where the SDK types are newer than the spec, they win, and a field found only in the SDK types is cited as such. Schema names below refer to the spec.
+**Sources.** The Anthropic OpenAPI spec `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml` (the last `openapi_spec_url` in `anthropic-sdk-python/.stats.yml`, SDK commit `41aa7674`), the SDK types at `anthropic-sdk-python@b4b7916d` (1.13.0), and the [Claude documentation](https://platform.claude.com/docs/en/) (`api/messages/create`, `api/messages/count_tokens`, `api/errors`, `api/versioning`, `build-with-claude/streaming`, `…/thinking`, `…/extended-thinking`, `…/effort`, `…/prompt-caching`, `…/structured-outputs`, `…/citations`, `…/pdf-support`, `…/vision`, `agents-and-tools/tool-use/*`, `…/handling-stop-reasons`). Where the SDK types are newer than the spec, they win, and a field found only in the SDK types is cited as such. Schema names below refer to the spec.
 
 ## How to read the tables
 
 - **KPP**: the typed field the wire value maps to.
-- **fields**: kept raw in `Extras::fields`. These are semantic: they are written back only to Anthropic, refused with `Unsupported` for other dialects ([extras](cross-format.md#extras)) unless the [allowlist](extras-allowlist.md) lets them drop, and left out of replies to other dialects ([replies](cross-format.md#replies)). Nested objects use dotted key paths (`metadata.x`).
+- **fields**: kept raw in `Extras::fields`. These are semantic: written back only to Anthropic, refused with `Unsupported` by other dialects ([extras](cross-format.md#extras)) unless the [allowlist](extras-allowlist.md) lets them drop, and left out of replies to other dialects ([replies](cross-format.md#replies)). Nested objects use dotted key paths (`metadata.x`).
 - **form**: a codec-private presentation marker in `Extras::form`, ignored by other dialects. `verbatim` means the generic `wire::Ext` mechanism (`null`, `false` and `[]` spellings).
 - **raw**: kept whole in a `RawItem`, `Citation` or `RawUsage`.
-- "Own" means data whose extras or origin is `anthropic_messages`; "foreign" means data from another dialect.
+- **Own** data has extras or an origin of `anthropic_messages`; **foreign** data comes from another dialect.
 
-Typed numeric fields are read as `u32` or `u64`, and `temperature` and `top_p` as JSON numbers that KPP holds as `f64`. A value outside their range is never changed: it fails to decode, with `InvalidRequest` in a request (`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``) and `ProviderError` in a provider reply.
+**Numbers.** Typed numeric fields are read as `u32` or `u64`, and `temperature` and `top_p` as JSON numbers that KPP holds as `f64`. A value outside their range is never changed: it fails to decode, as `InvalidRequest` in a request (`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``) and `ProviderError` in a provider reply.
 
-Every object Kaeso reads field by field keeps its unknown keys as fields, except a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path, so the object is refused ([wire structs](index.md#wire-structs)). In a request that is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``), in a reply, a stream or a model listing `ProviderError`. These objects are the body, messages, `metadata`, `output_config`, `thinking`, `tool_choice`, function tools, the known block types of the [content blocks](#content-blocks) table with their `source`, `cache_control` and `citations` objects, replies, token counts, stream events and their deltas, model info and model lists. What is kept whole is not checked: unknown blocks and tools, `input_schema`, tool input, citations, `usage` and `output_config.format`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
+**Keys Kaeso can't carry.** Every object Kaeso reads field by field keeps its unknown keys as fields, except a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path, so the object is refused ([wire structs](index.md#wire-structs)). In a request that is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``); in a reply, a stream or a model listing it is `ProviderError`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
+
+- **Read field by field:** the body, messages, `metadata`, `output_config`, `thinking`, `tool_choice`, function tools, the known block types of the [content blocks](#content-blocks) table with their `source`, `cache_control` and `citations` objects, replies, token counts, stream events and their deltas, model info and model lists.
+- **Kept whole, not checked:** unknown blocks and tools, `input_schema`, tool input, citations, `usage` and `output_config.format`.
 
 ## Requests
 
@@ -96,7 +101,7 @@ What `encode_request` writes for a KPP request that did not come from Anthropic 
 | `Block::Refusal` | `Unsupported` (`refusal block`) | |
 | `Text.cache`, any `CacheHint` | `cache_control {type: ephemeral, ttl?}` | Foreign hint extras are dropped. |
 | `ToolCall.id` or `ToolResult.call_id` not matching `^[a-zA-Z0-9_-]+$` | rewritten (other characters become `_`, then `_` and a 16-digit hexadecimal FNV-1a hash are appended) and recorded in `EgressCtx::tool_ids` | Mapped back in replies and streams. |
-| tool names not matching `^[a-zA-Z0-9_-]{1,128}$` | rewritten the same way, cut to 128 characters, and recorded in `EgressCtx::tool_names` | Applied to `tools[].name`, `tool_choice.name` and `tool_use.name`. |
+| tool names not matching `^[a-zA-Z0-9_-]{1,128}$` | rewritten the same way, at most 128 characters including the hash, and recorded in `EgressCtx::tool_names` | Applied to `tools[].name`, `tool_choice.name` and `tool_use.name`. |
 | `FunctionTool.parameters: None` | `input_schema: {"type":"object","properties":{}}` | For OpenAI, no parameters means an empty parameter list. |
 | `parallel_tool_calls: Some(false)` without `tool_choice` | `tool_choice: {type: auto, disable_parallel_tool_use: true}` | Not added to `none`, whose schema has no such key. |
 | `reasoning.effort` `low` to `max` without mode or budget | `thinking: {type: adaptive}` plus `output_config.effort`; on models without adaptive thinking (`EgressCtx::adaptive_thinking = Some(false)`), `thinking: {type: enabled, budget_tokens}` from the [effort and budget](cross-format.md#effort-and-budget) table (`low` 2,048, `medium` 8,192, `high`, `xhigh` and `max` 24,576, fitted to at least 1,024 and less than `max_tokens`; when `max_tokens` is 1,024 or less it is raised by 1,024 and the budget is 1,024) | [Reasoning](cross-format.md#reasoning). |

@@ -14,38 +14,40 @@ console ─▶ /platform/v1 ─┘    └─▶ openapi.json ─▶ the console'
 packages/ui, packages/tokens ─▶ apps/console, apps/docs, apps/showcase
 ```
 
-- **Das Gateway nutzt KPP** für jede Modellanfrage. KPP dekodiert das Format der App in sein kanonisches Format und kodiert es für den Anbieter, und auf dem Rückweg ebenso. Das Gateway parst oder baut nie selbst das JSON eines Anbieters, und es hängt per Pfad innerhalb des Cargo-Workspaces von KPP ab, sodass eine Änderung an beiden ein einziger Pull Request ist.
-- **Die Konsole nutzt die Platform API** und sonst nichts, sodass alles, was sie tut, auch ein Skript tun kann. Ihr API-Client wird aus `openapi.json` generiert, das das Gateway aus seinem Code erzeugt, sodass sich beide gemeinsam ändern.
-- **Konsole, Dokumentation und Showcase werden mit der UI-Bibliothek gezeichnet.** Jedes sichtbare Element stammt aus `@logicplanes/kaeso-ui`, aufgebaut auf `@logicplanes/kaeso-tokens`, beide aus dem Workspace genutzt (`workspace:*`). Die E-Mails des Gateways verwenden dieselben Token-Werte.
-- **Eine Version.** Alle Teile teilen die Versionsnummer des Releases, und die `compose.yaml` des Releases pinnt die Gateway- und Konsolen-Images genau dieses Releases.
+Vier Verbindungen halten die Teile zusammen:
+
+- **Das Gateway nutzt KPP für jede Modellanfrage.** KPP dekodiert das Format der App in seine kanonische Form und kodiert diese für den Anbieter; die Antwort nimmt denselben Weg zurück. Das Gateway liest und schreibt nie selbst das JSON eines Anbieters. Es bindet KPP per Pfad im Cargo-Workspace ein, daher ist eine Änderung an beiden ein einziger Pull Request.
+- **Die Konsole nutzt die Platform API und nichts sonst**, sodass ein Skript alles kann, was die Konsole kann. Ihr API-Client wird aus `openapi.json` erzeugt, das das Gateway aus seinem eigenen Code erzeugt; beide ändern sich also gemeinsam.
+- **Konsole, Dokumentation und Showcase sind mit der UI-Bibliothek gezeichnet.** Jedes sichtbare Element stammt aus `@logicplanes/kaeso-ui`, aufgebaut auf `@logicplanes/kaeso-tokens`, beide aus dem Workspace eingebunden (`workspace:*`). Die E-Mails des Gateways verwenden dieselben Token-Werte.
+- **Alles teilt eine Version.** Die `compose.yaml` eines Releases pinnt die Gateway- und Konsolen-Images genau dieses Releases.
 
 ## Seiten
 
 | Seite | Inhalt |
 | --- | --- |
-| [Gateway](gateway.md) | Der Anfrageweg, die Crates, die Konfiguration und die Regeln, denen der Code des Gateways folgt |
-| [Konsole](console.md) | Daten, Styling, Bundles und Fehler in der Web-Konsole |
+| [Gateway](gateway.md) | Der Anfrageweg, die Konfiguration, die Modelldaten und die Regeln für den Code des Gateways |
+| [Konsole](console.md) | Wie die Web-Konsole Daten liest, Seiten zeichnet, Code lädt und Fehler zeigt |
 | [Dokumentations-Website](docs-site.md) | Wie aus den Markdown-Seiten docs.kaeso.app wird |
 | [E-Mails](emails.md) | Wie das Gateway die E-Mails baut, die es sendet |
-| [KPP-Interna](../kpp/index.md) | Das kanonische Format und die Codecs |
+| [KPP-Interna](../kpp/index.md) | Das kanonische Format, die Codecs und jedes Wire-Mapping |
 
 ## Der Rust-Workspace
 
 | Crate | Aufgabe |
 | --- | --- |
-| `kaeso` | Das Binary des Gateways: seine Kommandozeile (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` verwenden darf. |
-| `kaeso-server` | Die HTTP-Oberflächen: Router für `/v1`, `/platform/v1`, Health und Metriken; Extraktoren, Fehlerzuordnung, das OpenAPI-Dokument, CSRF-Prüfungen, Request-IDs, Body-Limits; die Dienste hinter beiden APIs, darunter die Limit-Zähler als Lua-Skripte für Valkey; Konfiguration, Hintergrundjobs und Telemetrie. |
-| `kaeso-core` | Domänenregeln ohne I/O: IDs, Rechte und Rollen, Schlüsselformat, Modellauflösung, der Katalog, Fähigkeitsprüfungen, Limits, Kosten, der Assembler für Stream-Antworten. Ohne Datenbanken getestet. Sein Ordner `data/` enthält den models.dev-Snapshot, der mit jedem Release ausgeliefert wird. |
-| `kaeso-store` | Speicherung: PostgreSQL über sqlx, mit den Offline-Abfragedaten in `.sqlx/` im Wurzelverzeichnis des Repositorys, ClickHouse und die Verbindung zu Valkey mit ihrer Cache-Invalidierung; die Migrationen für PostgreSQL und ClickHouse, unter einer Sperre ausgeführt. |
-| `kaeso-upstream` | Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, streamende Bodies und Abbruch. |
-| `kaeso-crypto` | Envelope-Verschlüsselung (AES-256-GCM), der Master-Key-Ring, Passwörter, TOTP und Wrapper-Typen für Geheimnisse. |
-| `kaeso-mail` | E-Mail: Zustellung per SMTP und jede E-Mail in einem Layout, in drei Sprachen ([E-Mails](emails.md)). |
-| `kaeso-testkit` | Nur für Tests: Entwicklungs- und Testdatenbanken, der aus KPPs Fixtures gebaute Mock-Anbieter, ein Mock-Identitätsanbieter. |
-| `kaeso-kpp`, `kaeso-codecs` | KPPs Typen und Codecs, auf crates.io veröffentlicht ([KPP-Interna](../kpp/index.md)). |
-| `kpp-conformance` | Ein Server, der KPPs Encoder den offiziellen Python-SDKs für die [Konformitätssuite](../testing.md#sdk-konformität) bereitstellt. |
-| `xtask` | Aufgaben im Repository: `cargo xtask models-dev` aktualisiert den models.dev-Snapshot, `cargo xtask record` [zeichnet Antworten von Anbietern auf](../kpp/fixtures.md#live-antworten-aufzeichnen). |
+| `kaeso` | Das Gateway-Binary: seine Kommandozeile (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` verwenden darf. |
+| `kaeso-server` | Die HTTP-Schnittstellen: Router für `/v1`, `/platform/v1`, Health und Metriken; Extraktoren, Fehlerabbildung, das OpenAPI-Dokument, CSRF-Prüfungen, Request-IDs und Body-Limits. Dazu die Services hinter beiden APIs (darunter die Limit-Zähler als Lua-Skripte für Valkey), die Konfiguration, Hintergrundjobs und Telemetrie. |
+| `kaeso-core` | Fachregeln ohne I/O: IDs, Rechte und Rollen, das Schlüsselformat, die Modellauflösung, der Katalog, Fähigkeitsprüfungen, Limits, Kosten und der Assembler für Stream-Antworten. Ohne Datenbanken getestet. `data/` enthält den models.dev-Snapshot, den jedes Release mitliefert. |
+| `kaeso-store` | PostgreSQL über sqlx (Offline-Abfragedaten in `.sqlx/` im Repository-Wurzelverzeichnis), ClickHouse, die Valkey-Verbindung mit ihrer Cache-Invalidierung und die Migrationen beider Datenbanken, ausgeführt unter einer Sperre. |
+| `kaeso-upstream` | Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodys und Abbruch. |
+| `kaeso-crypto` | Envelope-Verschlüsselung (AES-256-GCM), der Hauptschlüssel-Ring, Passwörter, TOTP und die schwärzenden Typen für Geheimnisse. |
+| `kaeso-mail` | SMTP-Versand und jede E-Mail in einem Layout, in drei Sprachen ([E-Mails](emails.md)). |
+| `kaeso-testkit` | Nur für Tests: Entwicklungs- und Testdatenbanken, der Mock-Anbieter aus den Fixtures von KPP und ein Mock-Identitätsanbieter. |
+| `kaeso-kpp`, `kaeso-codecs` | Die Typen und Codecs von KPP, auf crates.io veröffentlicht ([KPP-Interna](../kpp/index.md)). |
+| `kpp-conformance` | Ein Server, der die Ausgabe der KPP-Encoder an die offiziellen Python-SDKs für die [Konformitätssuite](../testing.md#sdk-konformität) gibt. |
+| `xtask` | Repository-Aufgaben: `cargo xtask models-dev` aktualisiert den models.dev-Snapshot, und `cargo xtask record` [zeichnet Anbieterantworten auf](../kpp/fixtures.md#live-antworten-aufzeichnen). |
 
-Alle Crates teilen Version, Edition und Lints des Workspaces in der `Cargo.toml` im Wurzelverzeichnis. Nur `kaeso-kpp` und `kaeso-codecs` werden veröffentlicht; die anderen setzen `publish = false`.
+Jedes Crate übernimmt Version, Edition und Lints aus der `Cargo.toml` im Wurzelverzeichnis. Nur `kaeso-kpp` und `kaeso-codecs` werden veröffentlicht; die übrigen setzen `publish = false`.
 
 ## Der TypeScript-Workspace
 
@@ -53,11 +55,11 @@ Alle Crates teilen Version, Edition und Lints des Workspaces in der `Cargo.toml`
 | --- | --- | --- |
 | `kaeso-console` | `apps/console` | Die Web-Konsole, eine statische React-App, die neben dem Gateway ausgeliefert wird ([Konsole](console.md)) |
 | `kaeso-docs` | `apps/docs` | Diese Dokumentation ([Dokumentations-Website](docs-site.md)) |
-| `kaeso-showcase` | `apps/showcase` | Jede Komponente der UI-Bibliothek in jedem Zustand, mit ihren Anleitungen; läuft lokal mit `pnpm --filter kaeso-showcase dev` |
+| `kaeso-showcase` | `apps/showcase` | Jede Komponente der UI-Bibliothek in jedem Zustand, mit ihren Leitfäden; `pnpm --filter kaeso-showcase dev` startet sie lokal |
 | `@logicplanes/kaeso-ui` | `packages/ui` | Die Komponentenbibliothek: React-Komponenten auf Base UI, gestaltet mit Tailwind CSS und den Tokens |
-| `@logicplanes/kaeso-tokens` | `packages/tokens` | Die Design-Tokens als CSS-Variablen, ein Tailwind-Theme, TypeScript-Konstanten und JSON |
+| `@logicplanes/kaeso-tokens` | `packages/tokens` | Die Design-Tokens als CSS-Variablen, Tailwind-Theme, TypeScript-Konstanten und JSON |
 
-Die Apps lesen die Builds der Bibliotheken, daher läuft `pnpm build:packages` vor allem, was sie braucht. Die UI-Bibliothek liefert eigene Regeln und eine Komponenten-Registry für die Personen und Werkzeuge mit, die sie nutzen (`packages/ui/AGENTS.md`, `packages/ui/foundations/`, `packages/ui/ai/`); ihr Showcase dokumentiert jede Komponente.
+Die Apps lesen die Builds der Bibliotheken, daher vor allem, was sie braucht, `pnpm build:packages` ausführen. Die UI-Bibliothek liefert eigene Regeln und eine Komponenten-Registry für die Menschen und Werkzeuge, die mit ihr bauen (`packages/ui/AGENTS.md`, `packages/ui/foundations/`, `packages/ui/ai/`).
 
 ## Im Produktivbetrieb
 
@@ -67,4 +69,4 @@ browser, apps ─▶ https://kaeso.example.com ─▶ Caddy ─▶ /v1/*, /platf
 gateway ─▶ PostgreSQL (state), ClickHouse (request logs), Valkey (counters, caches)
 ```
 
-Die Konsole ist eine Sammlung statischer Dateien, ausgeliefert von einem eigenen kleinen Container auf derselben Domain wie das Gateway, sodass das Sitzungscookie ein First-Party-Cookie ist und kein CORS nötig ist. [Selbst hosten](../../self-hosting/index.md) beschreibt eine Installation.
+Die Konsole besteht aus statischen Dateien in einem eigenen kleinen Container und wird unter der Domain des Gateways ausgeliefert. Ihr Sitzungs-Cookie ist daher First-Party, und sie braucht kein CORS; nur Web-Apps, die die Modell-API aus dem Browser aufrufen, brauchen ihre Origins in `KAESO_CORS_ALLOWED_ORIGINS`. [Self-Hosting](../../self-hosting/index.md) beschreibt eine Installation.

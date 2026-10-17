@@ -4,16 +4,20 @@ description: OpenAI Responses 格式的每个字段如何映射到 KPP，又如�
 order: 6
 ---
 
-OpenAI Responses，即 `POST /v1/responses`（含流式）和 `POST /v1/responses/input_tokens`。编解码器：`kaeso_codecs::openai_responses::OpenAiResponses`。
+- **编解码器：**`kaeso_codecs::openai_responses::OpenAiResponses`（`crates/kaeso-codecs/src/openai_responses/`）
+- **端点：**`POST /v1/responses`（JSON 和 SSE）、`POST /v1/responses/input_tokens`，以及所有 OpenAI 编解码器共用的[模型端点](#模型)
+- **Fixture：**`crates/kaeso-codecs/fixtures/openai_responses/`
 
-来源：OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（下文的 schema 名称出自这里）、[创建接口参考](https://developers.openai.com/api/reference/resources/responses/methods/create)、[流式事件参考](https://developers.openai.com/api/reference/resources/responses/streaming-events)、[输入 Token 计数参考](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count)以及[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
+**来源。** OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（下文的 schema 名称出自这里）、[创建接口参考](https://developers.openai.com/api/reference/resources/responses/methods/create)、[流式事件参考](https://developers.openai.com/api/reference/resources/responses/streaming-events)、[输入 Token 计数参考](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count)以及[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
 
-表格中使用以下术语：
+## 表格的读法
 
 - **类型化**：一个类型化的 KPP 字段。
 - **Extras**：所指元素的 `Extras::fields`，绑定到 `openai_responses`。它们只在同一方言内有效：其他方言会以 `Unsupported` 拒绝（参见 [Extras](cross-format.md#extras)）。嵌套的键使用键路径（`text.verbosity`、`summary.0.x`）。
 - **形式**：编解码器私有的 `Extras::form` 形式标记。它只关乎呈现方式，其他方言会忽略它。
 - **Unsupported**：解码或 `check()` 以 `ErrorKind::Unsupported { feature }` 失败。
+
+与其他编解码器不同，这个编解码器不使用 `wire::Ext`；下一节说明它如何以另一种方式保留原始写法。
 
 ## 原始写法如何保留
 
@@ -37,7 +41,7 @@ OpenAI Responses，即 `POST /v1/responses`（含流式）和 `POST /v1/response
 | `input`（字符串） | 一条 `Role::User` 消息，含一个文本块，类型化 | 形式 `input: "string"`。其他方言总是得到 item 列表。 |
 | `input`（item 列表） | `system` + `messages` 类型化 | 参见[输入项](#输入项inputitem)。没有 `input`（配合 `prompt` 时允许）：没有消息；形式 `unset input`。 |
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` part。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式。 |
-| `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，截短到 55 个字符，再追加 `_` 和 FNV-1a 哈希的 8 位十六进制数），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
+| `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` 其他类型（`web_search`、`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
@@ -78,7 +82,7 @@ OpenAI Responses，即 `POST /v1/responses`（含流式）和 `POST /v1/response
 | `message` item，角色 `user` / `assistant` | `Message { role: User / Assistant }` 的内容块 | 支持 `EasyInputMessage`、`InputMessage` 和 `OutputMessage` 三种结构。item 的 `type`、`id`、`status` 和 `role` 的写法：消息上的形式；`phase` 和未知键：消息的 extras。一条 KPP 消息最多包含一个消息 item。 |
 | `message` item，角色 `system` / `developer`（不在开头） | `Message { role: System }`（参见[系统消息](cross-format.md#系统消息)） | 规范角色为 `developer`；`system`：形式。 |
 | `content` 为字符串或 part 列表 | 消息上的形式 `parts` | 对单个纯文本块而言，字符串是规范写法。空的 part 列表：形式 `empty_at`。 |
-| `function_call`（`FunctionToolCall`） | 当前助手消息中的 `Block::ToolCall` | `call_id` → `id`，`name`，`arguments`（一个 JSON 字符串）→ 原始 JSON。不是 JSON 的参数按 KPP 约定保存为 JSON 字符串，并带形式 `args_string`；来自其他方言、本身是 JSON 字符串的 `arguments` 值以其文本发送。`id`、`status`：形式；`namespace`、`caller`、未知键：该块的 extras。来自其他方言、超过 64 个字符的调用 ID 会像工具名称一样被缩短（`EgressCtx::tool_ids`），并在解码时映射回原值。 |
+| `function_call`（`FunctionToolCall`） | 当前助手消息中的 `Block::ToolCall` | `call_id` → `id`，`name`，`arguments`（一个 JSON 字符串）→ 原始 JSON。不是 JSON 的参数按 KPP 约定保存为 JSON 字符串，并带形式 `args_string`；来自其他方言、本身是 JSON 字符串的 `arguments` 值以其文本发送。`id`、`status`：形式；`namespace`、`caller`、未知键：该块的 extras。来自其他方言、超过 64 个字符的调用 ID 会缩短为前 55 个字符加 `_` 和 FNV-1a 哈希的 8 位十六进制数，记录在 `EgressCtx::tool_ids` 中，并在解码时映射回原值。 |
 | `function_call_output`（`FunctionCallOutputItemParam`） | 当前用户消息中的 `Block::ToolResult` | `call_id`；`output` 字符串 → 一个文本块，part 列表 → 文本、图像和文档块（本可用字符串表示时带形式 `parts`）。`id`、`status`：形式；`name`、`namespace`、未知键：extras。来自其他方言的 `is_error` 会被丢弃。来自其他方言的空内容：`output: ""`。 |
 | `reasoning`（`ReasoningItem`） | 当前助手消息中的 `Block::Reasoning`（来源 `openai_responses`） | Kaeso 生成的 ID（`rs_kaeso_…`）不会保留（形式 `kaeso_id`）；这类 item 如果没有 `encrypted_content`，根本不会发给服务商，因为它既没有 `id`，也没有 OpenAI 能用的内容。`id` → 不透明的 `OpenAiReasoningItemId`，`encrypted_content` → 不透明的 `OpenAiEncryptedReasoning`，`summary[].text` → `summary`，`content[].text` → `text`；`status` 和各 part 的 `type`：形式；未知键：extras。只重放给同一服务商的 `openai_responses`（参见[推理](cross-format.md#推理)）。如果 item 的 `encrypted_content` 是一个推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，参见[推理数据块](cross-format.md#推理数据块)），无论 item 其余部分写了什么，都会解码为其中的原始块，连同来源（例如 Claude 的签名思考）。在 Kaeso 以 `store: false` 发送的请求中（来自其他方言的请求，参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发送，因为 OpenAI 无法解析该 item ID。 |
 | `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言。 |

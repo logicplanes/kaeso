@@ -4,11 +4,13 @@ description: OpenAI Embeddings 格式的每个字段如何映射到 KPP 以及�
 order: 7
 ---
 
-OpenAI Embeddings，`POST /v1/embeddings`。编解码器：`kaeso_codecs::openai_embeddings::OpenAiEmbeddings`。
+- **编解码器：**`kaeso_codecs::openai_embeddings::OpenAiEmbeddings`（`crates/kaeso-codecs/src/openai_embeddings/`）
+- **端点：**`POST /v1/embeddings`，以及所有 OpenAI 编解码器共用的[模型端点](#模型)
+- **Fixture：**`crates/kaeso-codecs/fixtures/openai_embeddings/`
 
-来源：OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（`CreateEmbeddingRequest`、`CreateEmbeddingResponse`、`Embedding`、`ErrorResponse`）、[创建接口参考](https://developers.openai.com/api/reference/resources/embeddings/methods/create)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
+**来源。** OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（`CreateEmbeddingRequest`、`CreateEmbeddingResponse`、`Embedding`、`ErrorResponse`）、[创建接口参考](https://developers.openai.com/api/reference/resources/embeddings/methods/create)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
 
-表格中使用以下术语：
+## 表格的读法
 
 - **类型化**：一个类型化的 KPP 字段。
 - **extras**：`Extras::fields`，绑定到 `openai_embeddings`；其他方言会拒绝它们（[Extras](cross-format.md#extras)）。
