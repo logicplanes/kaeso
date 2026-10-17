@@ -341,6 +341,74 @@ async fn custom_roles_are_created_assigned_changed_and_deleted() {
 }
 
 #[tokio::test]
+async fn a_change_never_drops_a_needed_right_beside_one_already_missing() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (_, dev_id) = join(&app, &owner, "dev@example.com", "member", json!([])).await;
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Org reader", "rights": ["org.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{:?}", created.body);
+    let role = created.body["id"].as_str().unwrap().to_owned();
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{org}/members/{dev_id}"),
+            Some(json!({ "role": role, "rights_added": ["members.view", "members.invite"] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{org}/roles/{role}"),
+            Some(json!({ "rights": [] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{org}/members/{dev_id}"),
+            Some(json!({ "role": role, "rights_added": ["members.invite"] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view`; remove `members.invite` too."
+    );
+    assert_eq!(r.body["error"]["param"], "rights");
+    let rights = app
+        .get(
+            &format!("/orgs/{org}/members/{dev_id}/rights"),
+            &owner.cookie,
+        )
+        .await;
+    assert!(held(&rights.body["org"]["rights"], "members.view").is_some());
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{org}/members/{dev_id}"),
+            Some(json!({ "role": role, "rights_added": [] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+}
+
+#[tokio::test]
 async fn custom_project_roles_work_for_members_service_accounts_and_invites() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;

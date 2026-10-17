@@ -240,6 +240,59 @@ fn peers_and_changes_follow_the_grant_rules() {
 }
 
 #[test]
+fn a_need_already_missing_does_not_hide_one_being_removed() {
+    let before = OrgRights::parse([
+        "org.update",
+        "org.delete",
+        "members.view",
+        "members.invites.revoke",
+        "members.rights.update",
+        "projects.view.all",
+        "provider_credentials.view",
+        "provider_credentials.create",
+        "provider_credentials.replace",
+        "provider_credentials.delete",
+        "security.sso.require",
+        "security.2fa.require",
+        "platform_keys.view",
+        "platform_keys.create",
+        "platform_keys.revoke",
+        "logs.settings.manage",
+        "logs.storage.view",
+        "billing.view",
+        "audit_log.export",
+    ])
+    .unwrap();
+    let after = OrgRights::parse([
+        "projects.view.all",
+        "provider_credentials.view",
+        "provider_credentials.create",
+        "provider_credentials.delete",
+        "security.2fa.require",
+        "platform_keys.create",
+        "platform_keys.revoke",
+        "logs.settings.manage",
+        "logs.storage.view",
+        "billing.view",
+    ])
+    .unwrap();
+    assert_eq!(
+        check_org_needs(before, after).unwrap_err().to_string(),
+        "`platform_keys.create` needs `platform_keys.view`; remove `platform_keys.create` too."
+    );
+    let kept = after.with(OrgRight::PlatformKeysView);
+    assert!(check_org_needs(before, kept).is_ok());
+
+    let before = ProjectRights::parse(["models.view", "models.manage"]).unwrap();
+    let after = ProjectRights::parse(["models.manage"]).unwrap();
+    assert_eq!(
+        check_project_needs(before, after).unwrap_err().to_string(),
+        "`models.manage` needs `models.view`; remove `models.manage` too."
+    );
+    assert!(check_project_needs(before, before).is_ok());
+}
+
+#[test]
 fn deviations_add_and_remove() {
     let grant = ProjectGrant {
         added: [ProjectRight::LogsExport].into_iter().collect(),
