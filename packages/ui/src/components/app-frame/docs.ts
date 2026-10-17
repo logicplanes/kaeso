@@ -9,6 +9,7 @@ export const docs = {
       children: "The page, inside the inset panel.",
       corner: "A bottom-right status area. Unused by default.",
       fill: "`screen` fills the viewport (default); `parent` fills its container (previews, embedded tools).",
+      phoneActions: "Icon buttons in the phone bar before the navigation toggle, such as search, so it is one tap away; pass `tooltip={false}` to each.",
       sidebar: "The Sidebar.",
     },
   },

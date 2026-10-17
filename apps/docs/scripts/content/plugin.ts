@@ -1,9 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { Plugin, Rollup } from "vite";
-import { DEFAULT_LOCALE, LOCALES, isLocale, localeOfPath, pathWithinLocale, type Locale } from "../../src/i18n/locales.ts";
+import { DEFAULT_LOCALE, LOCALES, homePath, isLocale, localeOfPath, pathWithinLocale, type Locale } from "../../src/i18n/locales.ts";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
-import type { Block, Inline, PageContent } from "../../src/markdown/ast.ts";
+import type { Block, Inline, PageContent, PageMeta } from "../../src/markdown/ast.ts";
 import { documentTitle } from "../../src/page/document-title.ts";
 import { buildDocs, type Docs } from "./docs.ts";
 import type { Site, SitePage } from "./site.ts";
@@ -23,7 +23,14 @@ export interface PageHead {
   url: string;
   alternates: { hreflang: string; href: string }[];
   preloads: string[];
+  image: string;
+  indexed: boolean;
+  structured: object | null;
 }
+
+export const OG_IMAGE = { path: "/og.png", width: 1200, height: 630, alt: "Kaeso" } as const;
+
+export const OG_LOCALES: Readonly<Record<Locale, string>> = { en: "en_US", de: "de_DE", "zh-CN": "zh_CN" };
 
 const VIRTUAL = "virtual:kaeso-docs/";
 const RESOLVED = "\0kaeso-docs:";
@@ -40,12 +47,28 @@ export function absoluteUrl(siteUrl: string, path: string): string {
 
 const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+const meta = (key: "name" | "property", name: string, content: string | number) => `<meta ${key}="${name}" content="${escapeHtml(String(content))}" />`;
+
+const scriptJson = (value: object) => JSON.stringify(value).replace(/</g, "\\u003c");
+
 export function pageHtml(template: string, head: PageHead): string {
   const title = escapeHtml(head.title);
   const description = escapeHtml(head.description);
   const links = [
-    ...(head.url ? [`<link rel="canonical" href="${escapeHtml(head.url)}" />`, `<meta property="og:url" content="${escapeHtml(head.url)}" />`] : []),
+    ...(head.indexed ? [] : [meta("name", "robots", "noindex")]),
+    ...(head.url ? [`<link rel="canonical" href="${escapeHtml(head.url)}" />`, meta("property", "og:url", head.url)] : []),
     ...head.alternates.map((a) => `<link rel="alternate" hreflang="${a.hreflang}" href="${escapeHtml(a.href)}" />`),
+    meta("property", "og:locale", OG_LOCALES[head.lang]),
+    ...LOCALES.filter((l) => l !== head.lang).map((l) => meta("property", "og:locale:alternate", OG_LOCALES[l])),
+    meta("property", "og:image", head.image),
+    meta("property", "og:image:type", "image/png"),
+    meta("property", "og:image:width", OG_IMAGE.width),
+    meta("property", "og:image:height", OG_IMAGE.height),
+    meta("property", "og:image:alt", OG_IMAGE.alt),
+    meta("name", "twitter:title", head.title),
+    meta("name", "twitter:description", head.description),
+    meta("name", "twitter:image", head.image),
+    ...(head.structured ? [`<script type="application/ld+json">${scriptJson(head.structured)}</script>`] : []),
     ...head.preloads.map((file) => `<link rel="modulepreload" crossorigin href="/${file}" />`),
   ];
   return template
@@ -56,6 +79,20 @@ export function pageHtml(template: string, head: PageHead): string {
     .replace(/(<meta property="og:description" content=")[^"]*(")/, (_, open: string, close: string) => `${open}${description}${close}`)
     .replace(/(<meta property="og:site_name" content=")[^"]*(")/, (_, open: string, close: string) => `${open}${escapeHtml(head.siteName)}${close}`)
     .replace("</head>", () => `    ${links.join("\n    ")}\n  </head>`);
+}
+
+export function structuredData(siteUrl: string, siteName: string, locale: Locale, page: Pick<PageMeta, "path" | "title" | "description">): object {
+  const website = { "@type": "WebSite", name: siteName, url: absoluteUrl(siteUrl, homePath(locale)), inLanguage: locale };
+  if (pathWithinLocale(page.path) === "/") return { "@context": "https://schema.org", ...website, description: page.description };
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: page.title,
+    description: page.description,
+    inLanguage: locale,
+    url: absoluteUrl(siteUrl, page.path),
+    isPartOf: website,
+  };
 }
 
 export function alternatesFor(siteUrl: string, path: string): PageHead["alternates"] {
@@ -262,6 +299,9 @@ export function kaesoDocs(options: DocsOptions): Plugin {
           url: path === null ? "" : absoluteUrl(options.siteUrl, path),
           alternates: path === null ? [] : alternatesFor(options.siteUrl, path),
           preloads: [...new Set([...shared, ...extra])],
+          image: absoluteUrl(options.siteUrl, OG_IMAGE.path),
+          indexed: path !== null,
+          structured: path === null ? null : structuredData(options.siteUrl, siteName, locale, { path, title, description }),
         });
         const site = d.sites[locale];
         for (const meta of site.metas) {

@@ -957,5 +957,8 @@
   "The error message: it marks the field invalid and is read out with the description, but isn't drawn under the field, so show it in a toast too.": "Die Fehlermeldung: Sie markiert das Feld als ungültig und wird mit der Beschreibung vorgelesen, aber nicht unter dem Feld angezeigt; zeigen Sie sie deshalb auch als Toast.",
   "The accessible name of the diagram: what it shows, such as \"Route of checkout requests\". Defaults to \"Flow diagram\"; screen readers hear each node and each connection after it.": "Der zugängliche Name des Diagramms: was es zeigt, etwa „Weg der Checkout-Anfragen“. Standardmäßig „Flussdiagramm“; Screenreader hören danach jeden Knoten und jede Verbindung.",
   "A filled field (`default`), a quiet one for toolbars (`ghost`), or a quiet one in full text colour for column headers (`header`).": "Ein gefülltes Feld (`default`), ein zurückhaltendes für Werkzeugleisten (`ghost`) oder ein zurückhaltendes in voller Textfarbe für Spaltenköpfe (`header`).",
-  "Draggable right edge (232–280px), remembered.": "Ziehbarer rechter Rand (232–280 px), wird gespeichert."
+  "Draggable right edge (232–280px), remembered.": "Ziehbarer rechter Rand (232–280 px), wird gespeichert.",
+  "Icon buttons in the phone bar before the navigation toggle, such as search, so it is one tap away; pass `tooltip={false}` to each.": "Icon-Buttons in der Telefonleiste vor dem Navigationsschalter, etwa die Suche, damit sie einen Tipp entfernt ist; jedem `tooltip={false}` übergeben.",
+  "Kaeso's UI library: pure white and pure black, pill controls, a monochrome interface.": "Kaesos UI-Bibliothek: reines Weiß und reines Schwarz, Pill-Steuerelemente, eine monochrome Oberfläche.",
+  "Every user-visible change to Kaeso, including @logicplanes/kaeso-ui and @logicplanes/kaeso-tokens. Versions follow Semantic Versioning.": "Jede sichtbare Änderung an Kaeso, auch an @logicplanes/kaeso-ui und @logicplanes/kaeso-tokens. Die Versionen folgen Semantic Versioning."
 }

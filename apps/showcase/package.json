@@ -18,7 +18,7 @@
   "scripts": {
     "gen": "node scripts/gen-pages.mjs",
     "dev": "node scripts/gen-pages.mjs && astro dev",
-    "build": "node scripts/gen-pages.mjs && astro build",
+    "build": "node scripts/gen-pages.mjs && astro build && node ../../scripts/check-site.mjs dist https://ui.kaeso.app",
     "preview": "astro preview",
     "lint": "oxlint --deny-warnings .",
     "typecheck": "node scripts/gen-pages.mjs && tsc -p tsconfig.json && tsc -p tsconfig.e2e.json",

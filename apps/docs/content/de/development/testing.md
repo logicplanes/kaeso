@@ -49,7 +49,7 @@ Dann die Suiten der geänderten Teile ausführen: die [End-to-End-Tests](#end-to
 | `pnpm test` | Vitest mit Coverage-Schwellen, in beiden Bibliotheken, der Konsole und der Dokumentation, danach die Tests der Skripte des Repositorys in `scripts/`, etwa die des Changelogs, mit `node --test` |
 | `pnpm i18n` | Jeden Text der Konsole auf Deutsch und Chinesisch, mit denselben Platzhaltern und ohne Überbleibsel ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
-| `pnpm build` | Jeden Produktions-Build, am Ende mit seinen Bundle-Budgets ([Performance](performance.md)) |
+| `pnpm build` | Jeden Produktions-Build, am Ende mit seinen Bundle-Budgets ([Performance](performance.md)); die Builds beider Websites führen danach die Prüfung der Website aus ([die Websites](releasing.md#die-websites)) |
 | `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Abhängigkeiten](dependencies.md#lizenzrichtlinie)) |
 | `pnpm release:check` | Nach einem Build: packt beide Bibliotheken wie npm und prüft, dass jede Datei, die sie ausliefern müssen, enthalten ist, in einer Version |
 | `pnpm e2e` | Playwright in der Konsole, der Dokumentation und dem Showcase, nacheinander; die Suite des Showcase läuft gegen seinen Build, daher zuerst `pnpm build` |
@@ -79,11 +79,11 @@ Ein Test schlägt bei jedem Fehler fehl, den der Browser während seines Laufs m
 
 ### Die Dokumentations-Website
 
-Die Unit-Tests und die End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixtures/content`, nie die echten Seiten, sodass eine Änderung an der Dokumentation nie einen Test bricht. `pnpm --filter kaeso-docs e2e` führt Playwright samt axe gegen einen Produktions-Build dieser Seiten aus. Die echten Seiten prüfen `pnpm --filter kaeso-docs check:content` und der Build.
+Die Unit-Tests und die End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixtures/content`, nie die echten Seiten, sodass eine Änderung an der Dokumentation nie einen Test bricht. `pnpm --filter kaeso-docs e2e` führt Playwright samt axe gegen einen Produktions-Build dieser Seiten aus. Die echten Seiten prüfen `pnpm --filter kaeso-docs check:content` und der Build. Die Suite führt außerdem die Prüfung der Website auf ihrem Build aus und öffnet die Suche aus der Leiste für Telefone bei 375 mal 812 Pixeln in jeder Sprache; die Tests der Prüfung selbst stehen in `scripts/check-site.test.mjs`.
 
 ### Die UI-Bibliothek und der Showcase
 
-Komponententests laufen in happy-dom mit Testing Library und prüfen, was eine Person sieht. Der Showcase hat keine Unit-Tests; seine End-to-End-Suite führt Playwright gegen seinen Produktions-Build aus, daher zuerst `pnpm build`: axe im hellen und dunklen Theme, Tastatur und Fokusringe, Schriftskala, Bewegung und Geometrie gegen die Tokens, Menüs, die an Ort und Stelle öffnen, jede Komponentenseite in Telefonbreite ohne seitliches Scrollen und die deutschen und chinesischen Seiten, die schon vor jedem Skript in ihrer Sprache geschrieben sind und ohne Abweichung hydrieren.
+Komponententests laufen in happy-dom mit Testing Library und prüfen, was eine Person sieht. Der Showcase hat keine Unit-Tests; seine End-to-End-Suite führt Playwright gegen seinen Produktions-Build aus, daher zuerst `pnpm build`: axe im hellen und dunklen Theme, Tastatur und Fokusringe, Schriftskala, Bewegung und Geometrie gegen die Tokens, Menüs, die an Ort und Stelle öffnen, jede Komponentenseite in Telefonbreite ohne seitliches Scrollen die deutschen und chinesischen Seiten, die schon vor jedem Skript in ihrer Sprache geschrieben sind und ohne Abweichung hydrieren, die Suche, geöffnet aus der Kopfleiste für Telefone bei 375 mal 812 Pixeln in jeder Sprache, die Sitemap und den Kopf jeder Art von Seite sowie Links ins Repository, die den Tag des Releases nennen.
 
 ## Rust
 

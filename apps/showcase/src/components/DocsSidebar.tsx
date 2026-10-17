@@ -25,11 +25,14 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
       opener.current = document.querySelector<HTMLElement>("[data-open-nav]");
       setNavOpen(true);
     };
+    const onSearch = () => setSearchOpen(true);
     document.addEventListener("astro:page-load", onLoad);
     window.addEventListener("kaeso:open-nav", onOpen);
+    window.addEventListener("kaeso:open-search", onSearch);
     return () => {
       document.removeEventListener("astro:page-load", onLoad);
       window.removeEventListener("kaeso:open-nav", onOpen);
+      window.removeEventListener("kaeso:open-search", onSearch);
     };
   }, []);
 

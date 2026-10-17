@@ -3,6 +3,7 @@ import Guide from "~/layouts/Guide.astro";
 import md from "../../../../../CHANGELOG.md?raw";
 import { prepareDocsPage } from "~/lib/locale";
 import { languagePaths } from "~/lib/languages";
+import { pinToRelease } from "~/lib/release";
 
 export const getStaticPaths = languagePaths;
 await prepareDocsPage(Astro.params.lang);
@@ -50,5 +51,5 @@ if (list) html.push("</ul>");
   description="Every user-visible change to Kaeso, including @logicplanes/kaeso-ui and @logicplanes/kaeso-tokens. Versions follow Semantic Versioning."
   toc={toc}
 >
-  <Fragment set:html={html.join("\n")} />
+  <Fragment set:html={pinToRelease(html.join("\n"))} />
 </Guide>
