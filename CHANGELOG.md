@@ -7,6 +7,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 ### Fixed
 
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
+- Tables in the documentation keep their words whole and scroll inside a named region when they are wider than the screen, and the previous and next links show their label above the page title; a ScrollArea with an `aria-label` is now a region screen readers announce.
 
 ## [0.1.0] - 2026-10-16
 

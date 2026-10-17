@@ -40,8 +40,12 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
     <footer className="mt-64 flex flex-col gap-24">
       {(meta.prev || meta.next) && (
         <nav aria-label={t("page.steps")} className="grid grid-cols-2 gap-16">
-          <div className="flex min-w-0">{meta.prev && <Step to={meta.prev} label={t("page.previous")} />}</div>
-          <div className="flex min-w-0 justify-end">{meta.next && <Step to={meta.next} label={t("page.next")} end />}</div>
+          <div className="flex min-w-0">
+            {meta.prev && <Step to={meta.prev} label={t("page.previous")} name={t("page.previousStep").replace("{title}", meta.prev.title)} />}
+          </div>
+          <div className="flex min-w-0 justify-end">
+            {meta.next && <Step to={meta.next} label={t("page.next")} name={t("page.nextStep").replace("{title}", meta.next.title)} end />}
+          </div>
         </nav>
       )}
       <Separator />
@@ -54,9 +58,14 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
   );
 }
 
-function Step({ to, label, end = false }: { to: { path: string; title: string }; label: string; end?: boolean }) {
+function Step({ to, label, name, end = false }: { to: { path: string; title: string }; label: string; name: string; end?: boolean }) {
   return (
-    <Link href={to.path} variant="standalone" className={`min-w-0 flex-col gap-2 ${end ? "items-end text-right" : "items-start"}`}>
+    <Link
+      href={to.path}
+      variant="standalone"
+      aria-label={name}
+      className={`flex max-w-full min-w-0 flex-col gap-2 ${end ? "items-end text-right" : "items-start"}`}
+    >
       <Text variant="small" tone="secondary">
         {label}
       </Text>

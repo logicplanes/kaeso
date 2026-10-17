@@ -35,7 +35,7 @@ describe("the site", () => {
       "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/e2e/fixtures/content/en/guides/keys-and-limits.md",
     );
     const steps = screen.getByRole("navigation", { name: "Previous and next page" });
-    expect(within(steps).getByRole("link", { name: /Next/ })).toHaveAttribute("href", "/guides/provider-keys");
+    expect(within(steps).getByRole("link", { name: "Next: Provider keys" })).toHaveAttribute("href", "/guides/provider-keys");
     await waitFor(() => expect(document.title).toBe("Keys and limits · Kaeso documentation"));
   });
 
@@ -63,6 +63,26 @@ describe("the site", () => {
     expect(await screen.findByText("Diese Seite gibt es nicht.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Zur Startseite" })).toHaveAttribute("href", "/de");
   });
+});
+
+describe("previous and next", () => {
+  for (const [path, previous, next] of [
+    ["/guides/keys-and-limits", ["Previous", "Guides", "Previous: Guides"], ["Next", "Provider keys", "Next: Provider keys"]],
+    ["/de/guides/keys-and-limits", ["Zurück", "Anleitungen", "Zurück: Anleitungen"], ["Weiter", "Anbieter-Schlüssel", "Weiter: Anbieter-Schlüssel"]],
+    ["/zh-CN/guides/keys-and-limits", ["上一页", "指南", "上一页：指南"], ["下一页", "服务商密钥", "下一页：服务商密钥"]],
+  ] as const) {
+    it(`shows the label above the title and names the link after both, at ${path}`, async () => {
+      app(path);
+      const steps = await screen.findByRole("navigation", { name: /Previous and next page|Vorherige und nächste Seite|上一页和下一页/ });
+      for (const [label, title, name] of [previous, next]) {
+        const link = within(steps).getByRole("link", { name });
+        expect(link).toHaveClass("flex", "flex-col");
+        expect([...link.children].map((child) => child.textContent)).toEqual([label, title]);
+      }
+      expect(within(steps).getByRole("link", { name: next[2] })).toHaveClass("items-end", "text-right");
+      expect(within(steps).getByRole("link", { name: previous[2] })).toHaveClass("items-start");
+    });
+  }
 });
 
 describe("search", () => {

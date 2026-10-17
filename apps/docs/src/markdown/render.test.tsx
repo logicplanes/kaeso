@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Block } from "./ast";
+import { TextProvider } from "~/i18n/text";
 import { Markdown } from "./render";
 
 const draw = (blocks: Block[]) => render(<Markdown blocks={blocks} />).container;
@@ -122,7 +123,64 @@ describe("Markdown", () => {
         rows: [[[{ t: "text", v: "Key" }], [{ t: "text", v: "60" }]]],
       },
     ]);
+    expect(screen.getByRole("region", { name: "Table: Level, Requests" })).toHaveAttribute("tabindex");
     expect(screen.getByRole("columnheader", { name: "Requests" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "60" })).toBeInTheDocument();
+  });
+
+  it("keeps the words of a table whole: short columns on one line, long ones wrapping only between words", () => {
+    const summary = "Start the gateway, the console and the databases with Docker Compose, then send the first request";
+    draw([
+      {
+        t: "table",
+        align: ["start", "start", "start"],
+        head: [[{ t: "text", v: "Page" }], [{ t: "text", v: "Setting" }], [{ t: "text", v: "What to do" }]],
+        rows: [
+          [
+            [{ t: "link", kind: "page", href: "/get-started/quick-start", c: [{ t: "text", v: "Quick start" }] }],
+            [{ t: "code", v: "metrics_listen" }],
+            [{ t: "text", v: summary }],
+          ],
+          [
+            [{ t: "link", kind: "page", href: "/get-started/coding-tools", c: [{ t: "text", v: "Coding tools" }] }],
+            [{ t: "code", v: "KAESO_METRICS_LISTEN" }],
+            [{ t: "link", kind: "external", href: "https://kaeso.app/", c: [{ t: "text", v: "Point Claude Code, Codex and other tools at the install" }] }],
+          ],
+        ],
+      },
+    ]);
+    const quick = screen.getByRole("link", { name: "Quick start" });
+    expect(quick).not.toHaveClass("wrap-anywhere");
+    expect(quick.closest("td")).toHaveClass("whitespace-nowrap");
+    expect(screen.getByRole("cell", { name: summary })).not.toHaveClass("whitespace-nowrap");
+    expect(screen.getByRole("cell", { name: summary })).toHaveClass("min-w-140");
+    expect(screen.getByRole("link", { name: /Point Claude Code/ })).not.toHaveClass("wrap-anywhere");
+    const short = screen.getByText("metrics_listen");
+    expect(short).toHaveClass("whitespace-nowrap");
+    expect(short.querySelector("wbr")).toBeNull();
+    expect(screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN").querySelectorAll("wbr")).toHaveLength(2);
+  });
+
+  it("measures Chinese by its width, so a short Chinese column stays on one line too", () => {
+    render(
+      <TextProvider locale="zh-CN">
+        <Markdown
+          blocks={[
+            {
+              t: "table",
+              align: ["start", "start"],
+              head: [[{ t: "text", v: "页面" }], [{ t: "text", v: "内容" }]],
+              rows: [
+                [[{ t: "text", v: "快速开始" }], [{ t: "text", v: "启动网关控制台和数据库" }]],
+                [[{ t: "text", v: "调用模型" }], [{ t: "text", v: "在本机调用模型并查看日志" }]],
+              ],
+            },
+          ]}
+        />
+      </TextProvider>,
+    );
+    expect(screen.getByRole("region", { name: "表格：页面、内容" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "快速开始" })).toHaveClass("whitespace-nowrap");
+    expect(screen.getByRole("cell", { name: /启动网关/ })).toHaveClass("min-w-140");
   });
 });
