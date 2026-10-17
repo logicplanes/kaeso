@@ -4,9 +4,19 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `ThemeSelect`, a select for the system, light or dark theme with its label and choices in the provider's language, beside `ThemeMenu`.
+
+### Changed
+
+- The documentation site's sidebar shows the same language and theme selects, side by side at its foot, as the UI library's showcase.
+- Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
+
 ### Fixed
 
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
+- Tables in the documentation keep their words whole and scroll inside a named region when they are wider than the screen, and the previous and next links show their label above the page title; a ScrollArea with an `aria-label` is now a region screen readers announce.
 - Turning two-factor authentication on or off, or changing your password, no longer signs you out when the console was loading something at the same moment.
 
 ## [0.1.0] - 2026-10-16

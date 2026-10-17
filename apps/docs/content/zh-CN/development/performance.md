@@ -20,10 +20,10 @@ order: 8
 
 | 路由 | 文件 | 目标 | 上限 | gzip 后实测 |
 | --- | --- | --: | --: | --: |
-| 登录 | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 125.9 kB |
-| 项目概览 | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205.8 kB |
+| 登录 | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 126.0 kB |
+| 项目概览 | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205.9 kB |
 
-1 kB 为 1,024 字节。两个路由目前都未达到目标。在登录页的 125.9 kB 中，`framework` chunk（带调度器的 React 和 React DOM、TanStack Router 和 Query、openapi-fetch，以及控制台的 API 客户端、会话和格式化）占 98.1 kB，`ui` chunk（库的 `cn` 及其专门配置的 `tailwind-merge`、其按钮、文本、字段、输入框和标志、页面标题以及公开页面的布局）占 14.3 kB，带路由树及其预加载列表的入口占 9.4 kB，其余为登录页自己的 chunk。项目概览在此基础上增加了控制台的框架（侧边栏及其 Base UI 和 Floating UI 部件；其菜单在页面空闲时或首次悬停、聚焦或按下时加载，库的日期选择器也是如此）、统计卡片和图表及其 d3 模块，以及页面本身。
+1 kB 为 1,024 字节。两个路由目前都未达到目标。在登录页的 126.0 kB 中，`framework` chunk（带调度器的 React 和 React DOM、TanStack Router 和 Query、openapi-fetch，以及控制台的 API 客户端、会话和格式化）占 98.1 kB，`ui` chunk（库的 `cn` 及其专门配置的 `tailwind-merge`、其按钮、文本、字段、输入框和标志、页面标题以及公开页面的布局）占 14.3 kB，带路由树及其预加载列表的入口占 9.5 kB，其余为登录页自己的 chunk。项目概览在此基础上增加了控制台的框架（侧边栏及其 Base UI 和 Floating UI 部件；其菜单在页面空闲时或首次悬停、聚焦或按下时加载，库的日期选择器也是如此）、统计卡片和图表及其 d3 模块，以及页面本身。
 
 ### 影响这些数字的因素
 
@@ -52,18 +52,19 @@ order: 8
 
 | 预算 | 计入的内容 | 实测 | 上限 |
 | --- | --- | --: | --: |
-| 每种语言的框架 | 入口及其静态导入和样式表、该语言的站点模块，以及库的文案 | 205.1 kB（英语），210.6 kB（德语），211.1 kB（中文） | 216 kB |
+| 每种语言的框架 | 入口及其静态导入和样式表、该语言的站点模块，以及库的文案 | 202.1 kB（英语），207.6 kB（德语），208.1 kB（中文） | 216 kB |
 | 单个页面的内容 | 每个页面自己的 chunk：其内容块和目录 | 最多 17.3 kB（`zh-CN/development/kpp/anthropic-messages`） | 每页 24 kB |
 
 框架随代码变化，并随每个页面略有增长，因为站点模块携带侧边栏以及每个页面的标题和描述，从而让侧边栏与框架一同绘制、从不发生位移。德语和中文还会加载库中对应语言的文案，约 5 kB。上限是最大框架的实测大小再留出少许余量。页面内容有自己的预算，因此无论谁编辑，过长的页面都会连同其地址一起报错失败；解决办法是拆成两个页面。
 
-带索引的搜索、提示消息容器和代码高亮器的语法在首次绘制之后加载，不计入预算。构建会打印搜索的大小，不含索引为 3.3 kB。
+带索引的搜索、提示消息容器和代码高亮器的语法在首次绘制之后加载，不计入预算。构建会打印搜索的大小，不含索引为 3.5 kB。
 
 | 框架的组成部分 | 存在的原因 |
 | --- | --- |
 | React 和 TanStack Router（`framework`） | 每个页面 |
-| `AppFrame`、`Sidebar`、导航侧滑面板 | 框架；`Sidebar` 带入了 Base UI 的菜单，主题菜单和语言菜单也会用到它 |
-| 提示框、`IconButton` | 搜索、折叠和主题控件 |
+| `AppFrame`、`Sidebar`、导航侧滑面板 | 框架；`Sidebar` 带入了 Base UI 的菜单 |
+| `Select` | 侧边栏底部的语言和主题选择框 |
+| 提示框、`IconButton` | 搜索和折叠控件 |
 | 页面及其渲染器 | `Text`、`Link`、`Code`、`CodeBlock`（其高亮器只在有代码块时加载）、`Banner`、`Table`、`ScrollArea`、`Checkbox`、`Separator`、`TableOfContents` |
 | 侧边栏以及每个页面的标题和描述 | 该语言的 `site` 模块，从而让侧边栏与框架一同绘制、从不发生位移 |
 

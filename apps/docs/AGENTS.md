@@ -69,7 +69,7 @@ pnpm --filter kaeso-docs e2e
 | `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                  |
 | `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                        |
 | `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                |
-| `src/shell/`          | `AppFrame` and the sidebar, the search, the language menu, links through the router, toasts, the document title            |
+| `src/shell/`          | `AppFrame` and the sidebar, the search, the language select, links through the router, toasts, the document title          |
 | `src/i18n/`           | The three languages, the preference and the site's own words                                                               |
 | `src/router.tsx`      | One route tree per language; every address loads its page's chunk                                                          |
 | `eslint/`             | The layout-only and no-colour lint rules, with tests                                                                       |

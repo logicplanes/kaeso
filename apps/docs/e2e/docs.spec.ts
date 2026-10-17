@@ -75,8 +75,8 @@ test("a link to a heading opens there on first load too", async ({ page }) => {
 test("previous and next follow the sidebar", async ({ page }) => {
   await page.goto("/guides/keys-and-limits");
   const steps = page.getByRole("navigation", { name: "Previous and next page" });
-  await expect(steps.getByRole("link", { name: /Previous\s*Guides/ })).toHaveAttribute("href", "/guides");
-  await steps.getByRole("link", { name: /Next\s*Provider keys/ }).click();
+  await expect(steps.getByRole("link", { name: "Previous: Guides" })).toHaveAttribute("href", "/guides");
+  await steps.getByRole("link", { name: "Next: Provider keys" }).click();
   await expect(page).toHaveURL("/guides/provider-keys");
 });
 
@@ -117,18 +117,21 @@ test("what is typed right after ⌘K, before the search has loaded, becomes its 
 
 test("the theme switches and stays switched", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Theme" }).click();
-  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  const theme = page.getByRole("combobox", { name: "Theme" });
+  await expect(theme).toHaveText("System");
+  await theme.click();
+  await page.getByRole("option", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "Theme" }).click();
-  await page.getByRole("menuitemradio", { name: "System" }).click();
+  await expect(theme).toHaveText("Dark");
+  await theme.click();
+  await page.getByRole("option", { name: "System" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
 });
 
 test.describe("on a phone", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
   test("the navigation is a sheet that closes when a page opens", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
@@ -137,6 +140,8 @@ test.describe("on a phone", () => {
     await toggle.click();
     const sheet = page.getByRole("dialog", { name: "Navigation" });
     await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole("combobox", { name: "Language" })).toHaveText("English");
+    await expect(sheet.getByRole("combobox", { name: "Theme" })).toHaveText("System");
     await sheet.getByRole("link", { name: "Models" }).click();
     await expect(page).toHaveURL("/reference/models");
     await expect(sheet).toBeHidden();
@@ -145,28 +150,94 @@ test.describe("on a phone", () => {
 
   test("a wide table scrolls inside the page, which never scrolls sideways", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-    const region = page.locator("[aria-label=Table]");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+    const region = page.getByRole("region", { name: "Table: Level, Requests per minute, Tokens per day, Spend per month, Applies to" });
     await expect(region).toHaveAttribute("tabindex", "0");
     await region.scrollIntoViewIfNeeded();
     const { inner, outer } = await region.evaluate((el) => ({ inner: el.scrollWidth, outer: el.clientWidth }));
     expect(inner).toBeGreaterThan(outer);
   });
+
+  for (const path of ["/guides", "/de/guides", "/zh-CN/guides", "/guides/keys-and-limits", "/de/guides/keys-and-limits", "/zh-CN/reference/models"]) {
+    test(`no word in a table at ${path} breaks inside itself, and the page never scrolls sideways`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const split = await page.locator("article table").evaluateAll((tables) => {
+        const broken: string[] = [];
+        const han = /\p{Script=Han}/u;
+        for (const table of tables) {
+          const walker = document.createTreeWalker(table, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            for (const word of (node.nodeValue ?? "").matchAll(/[\p{L}\p{N}]+/gu)) {
+              if (han.test(word[0])) continue;
+              const range = document.createRange();
+              range.setStart(node, word.index);
+              range.setEnd(node, word.index + word[0].length);
+              const lines = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+              if (lines.size > 1) broken.push(word[0]);
+            }
+          }
+        }
+        return broken;
+      });
+      expect(split).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+    });
+  }
+
+  for (const path of ["/guides", "/de/guides", "/zh-CN/guides"]) {
+    test(`the pages a table at ${path} links to stay on one line each`, async ({ page }) => {
+      await page.goto(path);
+      const links = page.locator("article tbody tr td:first-child a");
+      await expect(links).toHaveCount(2);
+      for (const link of await links.all()) {
+        const { height, line } = await link.evaluate((el) => ({ height: el.getBoundingClientRect().height, line: parseFloat(getComputedStyle(el).lineHeight) }));
+        expect(height).toBeLessThanOrEqual(line);
+      }
+      const region = page.getByRole("region", { name: /Table|Tabelle|表格/ });
+      expect(await region.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+    });
+  }
+
+  for (const [path, previous, next] of [
+    ["/guides/keys-and-limits", "Previous: Guides", "Next: Provider keys"],
+    ["/de/guides/keys-and-limits", "Zurück: Anleitungen", "Weiter: Anbieter-Schlüssel"],
+    ["/zh-CN/guides/keys-and-limits", "上一页：指南", "下一页：服务商密钥"],
+  ] as const) {
+    test(`previous and next show their label above the title at ${path}`, async ({ page }) => {
+      await page.goto(path);
+      for (const [name, edge] of [
+        [previous, "left"],
+        [next, "right"],
+      ] as const) {
+        const link = page.getByRole("link", { name, exact: true });
+        await expect(link).toBeVisible();
+        const box = await link.evaluate((el, side) => {
+          const [label, title] = [...el.children].map((c) => c.getBoundingClientRect());
+          const nav = el.closest("nav")?.getBoundingClientRect();
+          return { stacked: !!label && !!title && label.bottom <= title.top, aligned: !!nav && !!label && !!title && Math.abs(label[side] - title[side]) < 1 && Math.abs(title[side] - nav[side]) < 1 };
+        }, edge);
+        expect(box).toEqual({ stacked: true, aligned: true });
+      }
+    });
+  }
 });
 
 test.describe("languages", () => {
-  test("the language menu opens the same page in another language, which the next visit remembers", async ({ page }) => {
+  test("the language select opens the same page in another language, which the next visit remembers", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
-    await page.getByRole("button", { name: "Language: English" }).click();
-    await page.getByRole("menuitemradio", { name: "Deutsch" }).click();
+    await expect(page.getByRole("combobox", { name: "Language" })).toHaveText("English");
+    await page.getByRole("combobox", { name: "Language" }).click();
+    await page.getByRole("option", { name: "Deutsch" }).click();
     await expect(page).toHaveURL("/de/guides/keys-and-limits");
     await expect(page.getByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "de");
     await expect(page).toHaveTitle("Schlüssel und Limits · Kaeso-Dokumentation");
     await page.goto("/reference/models");
     await expect(page).toHaveURL("/de/reference/models");
-    await page.getByRole("button", { name: "Sprache: Deutsch" }).click();
-    await page.getByRole("menuitemradio", { name: "简体中文" }).click();
+    await expect(page.getByRole("combobox", { name: "Sprache" })).toHaveText("Deutsch");
+    await page.getByRole("combobox", { name: "Sprache" }).click();
+    await page.getByRole("option", { name: "简体中文" }).click();
     await expect(page).toHaveURL("/zh-CN/reference/models");
     await expect(page.getByRole("navigation", { name: "文档" })).toBeVisible();
   });
@@ -203,7 +274,7 @@ test.describe("accessibility", () => {
   for (const theme of ["light", "dark"] as const) {
     test(`pages in every language pass axe in the ${theme} theme`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme });
-      for (const path of ["/", "/guides/keys-and-limits", "/de/reference/models", "/zh-CN/guides/provider-keys"]) {
+      for (const path of ["/", "/guides/keys-and-limits", "/de/guides", "/de/reference/models", "/zh-CN/guides/provider-keys"]) {
         await page.goto(path);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();

@@ -61,7 +61,7 @@ Ein Link wird zwischen Dateien geschrieben, so wie GitHub ihm folgt: `[keys](../
 | `src/site/` | Lädt das Site-Modul einer Sprache, ihren Suchindex und die Texte der Bibliothek, jeweils einmal |
 | `src/page/` | Die Seite (Titel, Beschreibung, Inhalt, vorherige und nächste Seite, „Auf GitHub bearbeiten“, „Auf dieser Seite“), „Nicht gefunden“ und eine Seite, die nicht laden kann |
 | `src/markdown/` | Das Seitenformat (`ast.ts`) und seine Darstellung mit Komponenten der Bibliothek (`render.tsx`) |
-| `src/shell/` | `AppFrame` mit der Seitenleiste, der Suche, dem Sprachmenü, dem Theme, Links über den Router, Toasts |
+| `src/shell/` | `AppFrame` mit der Seitenleiste, der Suche, der Sprach- und Theme-Auswahl, Links über den Router, Toasts |
 | `src/i18n/` | Die Sprachen und ihre Adressen, die gespeicherte Präferenz und die eigenen Texte der Website in `messages/` |
 
 Der Rahmen ist der der Konsole: `AppFrame` mit seinem Link „Zum Inhalt springen“ und `Sidebar`, die Wortmarke allein oben links, 28px nach innen und 28px nach unten, das Panel eingerückt im Chrome, und unter 1024px die Leiste für Telefone und das Navigations-Sheet. Eine Seite ist aufgebaut wie die Einstellungsseiten der Konsole: ein Titel in `title-lg` und eine Beschreibung in `body-lg` in einer Spalte von 640px; Text ist `body-lg`, Überschriften `title` (`##`) und `title-sm` (`###`), Code in `CodeBlock`, Callouts in `Banner`, Tabellen in `Table` innerhalb einer horizontalen `ScrollArea`. Ab 1280px steht „Auf dieser Seite“ (`TableOfContents`) rechts; seine Spalte bleibt auch auf Seiten ohne es erhalten, sodass sich der Text zwischen Seiten nie verschiebt.

@@ -105,7 +105,8 @@ describe("small parts", () => {
     expect(screen.getByRole("heading", { name: "Default level" }).tagName).toMatch(/^H\d$/);
     expect(screen.getByText("09:00")).toHaveAttribute("dateTime", "2026-10-15T09:00:00Z");
     expect(screen.getByText("R")).toBeInTheDocument();
-    expect(screen.getByText("Lines")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Logs" })).toHaveTextContent("Lines");
+    expect(screen.getByText("Wide").closest("[role=region]")).toBeNull();
     expect(screen.getByTestId("lines").children).toHaveLength(3);
     expect(screen.getByTestId("lines").lastElementChild).toHaveClass("w-3/5");
     expect(screen.getByTestId("one").firstElementChild).toHaveClass("w-full");

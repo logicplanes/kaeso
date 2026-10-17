@@ -11,7 +11,7 @@ Every color is a CSS variable with a light and a dark value. The dark values app
 
 ## Choosing a theme
 
-`ThemeProvider` remembers the person's choice (system, light or dark) and sets `data-theme` on the document. `ThemeMenu` is the control for it; `useTheme()` reads and sets it (`theme` is the choice, `resolvedTheme` what is shown).
+`ThemeProvider` remembers the person's choice (system, light or dark) and sets `data-theme` on the document. `ThemeMenu` (an icon button with a menu) and `ThemeSelect` (a select with the choice in words) are the controls for it; `useTheme()` reads and sets it (`theme` is the choice, `resolvedTheme` what is shown). Every `ThemeProvider` on the page follows the same choice.
 
 <CodeView
   code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";
