@@ -238,6 +238,15 @@ impl Engine {
             Ok(p) => p,
             Err(f) => return self.end(JobState::Failed, Some(f)).await,
         };
+        if let Err(e) = self.settings.maintenance.set(Step::Switching) {
+            let f = fail(
+                Reason::StateUnwritable,
+                format!(
+                    "cannot write the maintenance flag, so Caddy would keep sending requests to the containers being replaced: {e}"
+                ),
+            );
+            return self.end(JobState::Failed, Some(f)).await;
+        }
         self.step(Step::Switching);
         for target in &prepared.targets {
             if let Err(f) = self.switch(target).await {

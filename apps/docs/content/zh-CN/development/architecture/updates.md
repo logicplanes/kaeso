@@ -54,7 +54,7 @@ flowchart LR
 
 ## 更新器
 
-`crates/kaeso-updater` 是一个监听 8081 端口的小型 axum 服务器：`GET /healthz` 无需令牌；`GET /v1/status`、`POST /v1/updates`（`{ "id", "version" }`）和 `GET /v1/updates/{id}` 需要带有共享令牌的 `Authorization: Bearer`。它同一时间只运行一个更新，并把它保存在 `/state/job.json` 中，每次变化之后以原子方式写入；无法写入初始状态的更新会以 `503` 拒绝；在操作容器之前无法保存进度的更新会就此停止并回退。恢复之前的容器时，如果它拿不回自己的名称则视为失败，其健康检查也会忽略更新之前的重启。之前的容器会带重试地删除；如果仍有残留，更新以 `needs_attention` 结束并写明要运行的 `docker rm`，因为只要它还在，就不会开始新的更新。如果重试十次后仍无法删除维护标记，更新以 `needs_attention` 结束，因为否则 Caddy 会一直回答 Kaeso 正在更新。
+`crates/kaeso-updater` 是一个监听 8081 端口的小型 axum 服务器：`GET /healthz` 无需令牌；`GET /v1/status`、`POST /v1/updates`（`{ "id", "version" }`）和 `GET /v1/updates/{id}` 需要带有共享令牌的 `Authorization: Bearer`。它同一时间只运行一个更新，并把它保存在 `/state/job.json` 中，每次变化之后以原子方式写入；无法写入初始状态的更新会以 `503` 拒绝；在操作容器之前无法保存进度的更新会就此停止并回退。恢复之前的容器时，如果它拿不回自己的名称则视为失败，其健康检查也会忽略更新之前的重启。之前的容器会带重试地删除；如果仍有残留，更新以 `needs_attention` 结束并写明要运行的 `docker rm`，因为只要它还在，就不会开始新的更新。无法写入维护标记的更新会在操作任何容器之前以 `failed` 结束，因为否则 Caddy 会继续把请求发给正在被替换的容器。如果重试十次后仍无法删除维护标记，更新以 `needs_attention` 结束，因为否则 Caddy 会一直回答 Kaeso 正在更新。
 
 一次更新（`engine.rs`）：
 

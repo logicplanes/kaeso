@@ -498,9 +498,26 @@ async fn previous_containers_that_cannot_be_removed_are_left_for_a_person() {
 }
 
 #[tokio::test]
+async fn no_container_is_touched_when_the_maintenance_flag_cannot_be_written() {
+    let world = World::new("flag-unwritable", Daemon::install(), Verifier::default()).await;
+    std::fs::remove_dir_all(world.dir.join("maintenance")).unwrap();
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Failed, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::StateUnwritable));
+    assert!(world.calls("POST containers/").is_empty());
+    assert_eq!(world.compose(), compose_text(FROM));
+}
+
+#[tokio::test]
 async fn a_maintenance_flag_that_stays_is_left_for_a_person() {
-    let world = World::new("flag-stuck", Daemon::install(), Verifier::default()).await;
-    std::fs::create_dir_all(world.dir.join("maintenance/active/stuck")).unwrap();
+    let dir = fresh("flag-stuck");
+    let mut daemon = Daemon::install();
+    on_start(&mut daemon, &dir, |dir| {
+        let flag = dir.join("maintenance/active");
+        let _ = std::fs::remove_file(&flag);
+        std::fs::create_dir_all(flag.join("stuck")).unwrap();
+    });
+    let world = World::with(dir, daemon, Releases::standard(), Verifier::default()).await;
     let job = update(&world, TO).await;
     assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
     let detail = job.detail.unwrap();
