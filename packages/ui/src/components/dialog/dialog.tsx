@@ -235,7 +235,7 @@ export interface AlertDialogProps {
   description: ReactNode;
   confirmLabel: string;
   cancelLabel?: string | undefined;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: () => void | Promise<unknown>;
   tone?: keyof typeof KAESO_ALERT_DIALOG_VARIANTS.tone | undefined;
   confirmText?: string | undefined;
   loading?: boolean | undefined;
@@ -395,6 +395,7 @@ export function LayerDialog({ layers, layer, onLayerChange, ...props }: LayerDia
     focusDialogSection(section, back ? focused.current[index] : null);
   }, [index]);
   const go = (i: number) => {
+    if (props.busy) return;
     if (layer === undefined) setInner(i);
     onLayerChange?.(i);
   };
@@ -422,7 +423,14 @@ export function LayerDialog({ layers, layer, onLayerChange, ...props }: LayerDia
       }
       headerStart={
         index > 0 ? (
-          <IconButton key="back" icon={icons.chevronLeft} aria-label={t("dialog.back", "Back")} onClick={() => go(index - 1)} className="animate-layer-in" />
+          <IconButton
+            key="back"
+            icon={icons.chevronLeft}
+            aria-label={t("dialog.back", "Back")}
+            onClick={() => go(index - 1)}
+            disabled={!!props.busy}
+            className="animate-layer-in"
+          />
         ) : null
       }
     >

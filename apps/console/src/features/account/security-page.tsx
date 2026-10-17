@@ -225,7 +225,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         description={t("account.turnOffConfirmHint", "Password sign-ins need only the password; organizations that require it close to you.")}
         confirmLabel={t("account.turnOff", "Turn off")}
         loading={off.isPending}
-        onConfirm={() => off.mutate()}
+        onConfirm={() => off.mutateAsync()}
       />
       <AlertDialog
         open={regenerating}
@@ -235,7 +235,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         description={t("account.regenerateConfirmHint", "Your current recovery codes stop working; you get ten new ones to store.")}
         confirmLabel={t("account.regenerate", "Regenerate")}
         loading={regenerate.isPending}
-        onConfirm={() => regenerate.mutate()}
+        onConfirm={() => regenerate.mutateAsync()}
       />
     </SettingsSection>
   );

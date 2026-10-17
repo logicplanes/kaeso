@@ -202,7 +202,7 @@ function DeleteAccount({ email }: { email: string }) {
         confirmLabel={t("account.deleteAccount", "Delete account")}
         confirmText={email}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </SettingsSection>
   );

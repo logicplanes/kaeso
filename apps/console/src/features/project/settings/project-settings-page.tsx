@@ -363,7 +363,7 @@ function Archive({ org, project, name, isDefault }: { org: string; project: stri
         confirmLabel={t("project.settings.archiveProject", "Archive project")}
         confirmText={name}
         loading={archive.isPending}
-        onConfirm={() => archive.mutate()}
+        onConfirm={() => archive.mutateAsync()}
       />
     </SettingsSection>
   );

@@ -170,9 +170,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         description={t("org.platformKeys.archiveHint", "Scripts using it stop authenticating; archiving can't be undone, and its history stays.")}
         confirmLabel={t("org.platformKeys.archiveKey", "Archive key")}
         loading={act.isPending}
-        onConfirm={() => {
-          if (archiving) act.mutate({ key: archiving, action: "archive" });
-        }}
+        onConfirm={() => (archiving ? act.mutateAsync({ key: archiving, action: "archive" }) : undefined)}
       />
     </OrgPage>
   );

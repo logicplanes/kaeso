@@ -293,7 +293,7 @@ export function RemoveLimitDialog({
       description={t("kaeso.limits.removeHint", "The {limit} stops applying; the levels above it still do.", { limit: limitDescription(limit) })}
       confirmLabel={t("kaeso.limits.remove", "Remove limit")}
       loading={remove.isPending}
-      onConfirm={() => remove.mutate()}
+      onConfirm={() => remove.mutateAsync()}
     />
   );
 }

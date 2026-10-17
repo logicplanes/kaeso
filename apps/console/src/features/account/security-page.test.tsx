@@ -294,6 +294,26 @@ describe("with two-factor authentication on", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
   });
 
+  it("keeps the confirmation open while new codes are made, so two regenerations can't race", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    let respond: (body: unknown) => void = () => undefined;
+    on("POST", "me/recovery-codes", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Regenerate recovery codes?" });
+    await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
+    await waitFor(() => expect(requests("POST", "me/recovery-codes")).toHaveLength(1));
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("alertdialog", { name: "Regenerate recovery codes?" })).toBe(confirm);
+    await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
+    expect(requests("POST", "me/recovery-codes")).toHaveLength(1);
+    respond({ recovery_codes: ["eeee-ffff"] });
+    const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
+    expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
+  });
+
   it("shows only the new recovery codes when they are regenerated again", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true }));

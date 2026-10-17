@@ -300,6 +300,27 @@ describe("busy dialogs", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+  it("include a layer dialog, whose Back waits so no other layer can start a second request", async () => {
+    const onLayerChange = vi.fn();
+    render(
+      <LayerDialog
+        open
+        busy
+        layer={1}
+        onLayerChange={onLayerChange}
+        layers={[
+          { title: "Add models", content: <p>Search</p> },
+          { title: "Review values", content: <p>Prices</p> },
+        ]}
+      />,
+    );
+    await frames();
+    const back = screen.getByRole("button", { name: "Back" });
+    expect(back).toBeDisabled();
+    await userEvent.click(back);
+    expect(onLayerChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Review values");
+  });
   it("keep an uncontrolled dialog open too", async () => {
     render(
       <Dialog defaultOpen busy title="Rename key">

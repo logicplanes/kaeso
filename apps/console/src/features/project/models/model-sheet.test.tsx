@@ -281,6 +281,9 @@ describe("ModelSheet", () => {
     const confirm = await screen.findByRole("alertdialog", { name: "Remove Sonnet?" });
     await user.click(within(confirm).getByRole("button", { name: "Remove from catalogue" }));
     expect(await notifications().findByText("An alias still names this model; remove the alias first.")).toBeInTheDocument();
+    expect(screen.getByRole("alertdialog", { name: "Remove Sonnet?" })).toBe(confirm);
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "Remove Sonnet?" })).not.toBeInTheDocument());
     expect(screen.getByRole("dialog", { name: "Sonnet" })).toBeInTheDocument();
   });
 

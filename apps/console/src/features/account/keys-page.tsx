@@ -154,9 +154,7 @@ export function AccountKeysPage() {
         )}
         confirmLabel={t("account.archiveKey", "Archive key")}
         loading={act.isPending}
-        onConfirm={() => {
-          if (archiving) act.mutate({ key: archiving, action: "archive" });
-        }}
+        onConfirm={() => (archiving ? act.mutateAsync({ key: archiving, action: "archive" }) : undefined)}
       />
     </SettingsPage>
   );

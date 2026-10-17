@@ -306,7 +306,7 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
         description={t("org.role.changeHint", "Changes apply at once to everyone with this role.")}
         confirmLabel={t("org.saveRole", "Save role")}
         loading={save.isPending}
-        onConfirm={() => save.mutate(editing)}
+        onConfirm={() => save.mutateAsync(editing)}
       />
       <AlertDialog
         open={deleting}
@@ -316,7 +316,7 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
         description={t("org.role.deleteHint", "Nobody holds it; it leaves every role picker in the organization.")}
         confirmLabel={t("org.role.delete", "Delete role")}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </div>
   );

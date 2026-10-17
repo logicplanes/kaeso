@@ -95,9 +95,7 @@ export function SessionsPage() {
         description={t("account.endSessionConfirmHint", "{device} is signed out at once.", { device: describeUserAgent(ending?.user_agent) })}
         confirmLabel={t("account.endSession", "End session")}
         loading={end.isPending}
-        onConfirm={() => {
-          if (ending) end.mutate(ending);
-        }}
+        onConfirm={() => (ending ? end.mutateAsync(ending) : undefined)}
       />
       <AlertDialog
         open={all}
@@ -107,7 +105,7 @@ export function SessionsPage() {
         description={t("account.signOutEverywhereConfirmHint", "Every other browser signed in to your account is signed out; this one stays signed in.")}
         confirmLabel={t("account.signOutEverywhere", "Sign out everywhere")}
         loading={revokeAll.isPending}
-        onConfirm={() => revokeAll.mutate()}
+        onConfirm={() => revokeAll.mutateAsync()}
       />
     </SettingsPage>
   );

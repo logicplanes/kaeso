@@ -127,7 +127,7 @@ export function AliasesTab({
           description={t("models.alias.deleteHint", "Requests that send this name are refused, unless a model has the same name.")}
           confirmLabel={t("models.alias.delete", "Delete alias")}
           loading={remove.isPending}
-          onConfirm={() => remove.mutate(deleting)}
+          onConfirm={() => remove.mutateAsync(deleting)}
         />
       )}
     </>

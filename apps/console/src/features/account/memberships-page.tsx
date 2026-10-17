@@ -88,9 +88,7 @@ export function MembershipsPage() {
         description={t("account.leaveConfirmHint", "You lose access to its projects, and your keys in them are archived. An owner can invite you again.")}
         confirmLabel={t("account.leaveOrg", "Leave organization")}
         loading={leave.isPending}
-        onConfirm={() => {
-          if (leaving) leave.mutate(leaving);
-        }}
+        onConfirm={() => (leaving ? leave.mutateAsync(leaving) : undefined)}
       />
     </SettingsPage>
   );

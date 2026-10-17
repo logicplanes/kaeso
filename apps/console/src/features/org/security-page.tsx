@@ -206,7 +206,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
         }
         confirmLabel={t("org.sso.disconnect", "Disconnect")}
         loading={disconnect.isPending}
-        onConfirm={() => disconnect.mutate()}
+        onConfirm={() => disconnect.mutateAsync()}
       />
     </SettingsSection>
   );
@@ -496,7 +496,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
         )}
         confirmLabel={t("org.sso.require", "Require single sign-on")}
         loading={requireSso.isPending}
-        onConfirm={() => requireSso.mutate(true)}
+        onConfirm={() => requireSso.mutateAsync(true)}
       />
       <AlertDialog
         open={confirming === "2fa"}
@@ -509,7 +509,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
         )}
         confirmLabel={t("org.twoFactor.require", "Require two-factor authentication")}
         loading={require2fa.isPending}
-        onConfirm={() => require2fa.mutate(true)}
+        onConfirm={() => require2fa.mutateAsync(true)}
       />
     </SettingsSection>
   );

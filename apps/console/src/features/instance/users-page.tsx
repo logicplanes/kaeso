@@ -392,7 +392,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         description={t("instance.deactivateConfirmHint", "They can't sign in, every session ends and their keys are disabled until you reactivate them.")}
         confirmLabel={t("instance.deactivate", "Deactivate")}
         loading={deactivate.isPending}
-        onConfirm={() => deactivate.mutate()}
+        onConfirm={() => deactivate.mutateAsync()}
       />
       <AlertDialog
         open={confirm === "sessions"}
@@ -402,7 +402,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         description={t("instance.endSessionsConfirmHint", "They're signed out everywhere and get an email about it.")}
         confirmLabel={t("instance.endSessions", "End sessions")}
         loading={endSessions.isPending}
-        onConfirm={() => endSessions.mutate()}
+        onConfirm={() => endSessions.mutateAsync()}
       />
       <AlertDialog
         open={confirm === "reset-2fa"}
@@ -412,7 +412,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         description={t("instance.reset2faConfirmHint", "Their authenticator app and recovery codes stop working; they get an email about it.")}
         confirmLabel={t("instance.reset2fa", "Reset two-factor")}
         loading={reset2fa.isPending}
-        onConfirm={() => reset2fa.mutate()}
+        onConfirm={() => reset2fa.mutateAsync()}
       />
       <AlertDialog
         open={confirm === "delete"}
@@ -423,7 +423,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         confirmLabel={t("instance.deleteUser", "Delete user")}
         confirmText={u.email ?? u.name}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </div>
   );

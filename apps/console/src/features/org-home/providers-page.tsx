@@ -284,9 +284,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
         }
         confirmLabel={t("orgHome.deleteKey", "Delete key")}
         loading={remove.isPending}
-        onConfirm={() => {
-          if (deleting) remove.mutate(deleting);
-        }}
+        onConfirm={() => (deleting ? remove.mutateAsync(deleting) : undefined)}
       />
     </>
   );

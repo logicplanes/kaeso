@@ -232,7 +232,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
         description={t("models.removeHint", "Requests naming it are refused, and aliases and model lists that name it lose it.")}
         confirmLabel={t("models.removeFromCatalogue", "Remove from catalogue")}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </div>
   );

@@ -236,7 +236,7 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
         description={t("org.member.makeOwnerHint", "They become an owner with every right, and you become an admin.")}
         confirmLabel={t("org.ownership.transfer", "Transfer ownership")}
         loading={transfer.isPending}
-        onConfirm={() => transfer.mutate()}
+        onConfirm={() => transfer.mutateAsync()}
       />
       <AlertDialog
         open={removing}
@@ -250,7 +250,7 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
         description={t("org.member.removeHint", "They leave every project, and their user keys in the organization are archived.")}
         confirmLabel={self ? t("org.member.leave", "Leave organization") : t("org.member.removeMember", "Remove member")}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate(m)}
+        onConfirm={() => remove.mutateAsync(m)}
       />
     </div>
   );
