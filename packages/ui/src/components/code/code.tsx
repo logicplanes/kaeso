@@ -13,6 +13,10 @@ export const KAESO_CODE_VARIANTS = {
       classes: "inline box-decoration-clone",
       description: "Breaks with the sentence around it, each line keeping its fill and corners; for long code in running text",
     },
+    cell: {
+      classes: "inline",
+      description: "Breaks with the text around it and ends square at a break, so no padding hangs past a narrow table cell; for long code in a table",
+    },
   },
 } as const;
 export const KAESO_CODE_DEFAULT_VARIANTS = { shape: "auto", flow: "box" } as const;
@@ -28,7 +32,7 @@ export const Code = forwardRef<HTMLElement, CodeProps>(function Code({ shape = "
     <code
       ref={ref}
       className={cn(
-        "mono bg-fill-1 px-6 py-2 align-baseline text-small leading-none text-fg",
+        "mono bg-fill-1 px-4 py-2 align-baseline text-small leading-none text-fg",
         KAESO_CODE_VARIANTS.flow[flow].classes,
         shape === "auto" ? (oneWord ? "rounded-pill" : "rounded-code") : KAESO_CODE_VARIANTS.shape[shape].classes,
         className,

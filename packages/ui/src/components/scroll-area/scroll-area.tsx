@@ -5,9 +5,9 @@ import { cn } from "../../utils/cn.js";
 
 export const KAESO_SCROLL_AREA_VARIANTS = {
   orientation: {
-    vertical: { classes: "scroll-fade-y", description: "Scrolls up and down; the content fades at an edge with more to scroll to (default)" },
-    horizontal: { classes: "scroll-fade-x", description: "Scrolls sideways" },
-    both: { classes: "", description: "Both directions" },
+    vertical: { classes: "scroll-axis-y scroll-fade-y", description: "Scrolls up and down; the content fades at an edge with more to scroll to (default)" },
+    horizontal: { classes: "scroll-axis-x scroll-fade-x", description: "Scrolls sideways" },
+    both: { classes: "scroll-axis-both", description: "Both directions" },
   },
 } as const;
 export const KAESO_SCROLL_AREA_DEFAULT_VARIANTS = { orientation: "vertical" } as const;
@@ -40,7 +40,7 @@ export const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(function S
     <CSPProvider disableStyleElements>
       <BaseScrollArea.Root ref={ref} className={cn("relative min-h-0 overflow-hidden", className)}>
         <BaseScrollArea.Viewport
-          className={cn("size-full overscroll-contain focus-ring-inset", KAESO_SCROLL_AREA_VARIANTS.orientation[orientation].classes, viewportClassName)}
+          className={cn("size-full focus-ring-inset", KAESO_SCROLL_AREA_VARIANTS.orientation[orientation].classes, viewportClassName)}
           {...(label ? { role: "region", "aria-label": label } : {})}
         >
           {children}

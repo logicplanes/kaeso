@@ -68,12 +68,12 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
       case "del":
         return <del key={i}>{inline(x.c, ctx)}</del>;
       case "code":
-        return ctx.cell && x.v.length <= WHOLE_CODE ? (
-          <Code key={i} shape="rounded" className="whitespace-nowrap">
+        return x.v.length <= WHOLE_CODE ? (
+          <Code key={i} shape="rounded" flow={ctx.cell ? "cell" : "text"} className="whitespace-nowrap">
             {x.v}
           </Code>
         ) : (
-          <Code key={i} shape="rounded" flow={x.v.length > WHOLE_CODE ? "text" : "box"} className={ctx.cell ? undefined : "wrap-anywhere"}>
+          <Code key={i} shape="rounded" flow={ctx.cell ? "cell" : "text"} className={ctx.cell ? undefined : "wrap-anywhere"}>
             {codeText(x.v)}
           </Code>
         );
