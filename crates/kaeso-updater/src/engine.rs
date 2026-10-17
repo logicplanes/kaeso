@@ -21,6 +21,7 @@ const PULLED: [Service; 3] = [Service::Gateway, Service::Console, Service::Updat
 const PREVIOUS_SUFFIX: &str = "-previous";
 const STEADY_POLLS: u32 = 3;
 const MAINTENANCE_TRIES: u32 = 10;
+const CLEANUP_TRIES: u32 = 3;
 
 #[derive(Clone, Debug)]
 pub struct Settings {
@@ -250,7 +251,7 @@ impl Engine {
                 }
                 _ => (self.settings.console_timeout, false),
             };
-            if let Err(why) = self.healthy(&new_id, timeout, patient).await {
+            if let Err(why) = self.healthy(&new_id, timeout, patient, 0).await {
                 let f = fail(
                     Reason::Unhealthy,
                     format!("the new {} {why}", target.service.as_str()),
@@ -319,15 +320,44 @@ impl Engine {
                 tracing::warn!(error = %e, image = %image.reference(), "cannot tag the new image");
             }
         }
-        let old: Vec<String> = saved
-            .map(|s| s.switched.into_iter().map(|w| w.old_id).collect())
-            .unwrap_or_default();
-        for id in old {
-            if let Err(e) = self.docker.remove(&id).await {
+        let old: Vec<Switched> = saved.map(|s| s.switched).unwrap_or_default();
+        let mut left = Vec::new();
+        for w in &old {
+            if let Err(e) = self.remove_previous(&w.old_id).await {
                 tracing::warn!(error = %e, "cannot remove a previous container");
+                left.push(format!("{}{PREVIOUS_SUFFIX}", w.name));
             }
         }
-        self.end(JobState::Succeeded, warning).await;
+        if left.is_empty() {
+            return self.end(JobState::Succeeded, warning).await;
+        }
+        let names = left.join(" ");
+        let cleanup = format!(
+            "{to} runs, but {names} could not be removed, and no update starts while it is there; remove it with `docker rm {names}`"
+        );
+        let detail = match warning {
+            Some(w) => format!("{}; {cleanup}", w.detail),
+            None => cleanup,
+        };
+        self.end(
+            JobState::NeedsAttention,
+            Some(fail(Reason::DockerUnavailable, detail)),
+        )
+        .await;
+    }
+
+    async fn remove_previous(&self, id: &str) -> Result<(), crate::docker::DockerError> {
+        let mut tries = 0;
+        loop {
+            match self.docker.remove(id).await {
+                Ok(()) => return Ok(()),
+                Err(e) if tries >= CLEANUP_TRIES => return Err(e),
+                Err(_) => {
+                    tries += 1;
+                    tokio::time::sleep(self.settings.poll).await;
+                }
+            }
+        }
     }
 
     async fn verified(&self, name: &str, content: &[u8], commit: &str) -> Result<(), Failure> {
@@ -636,7 +666,13 @@ impl Engine {
         self.set_phase(t.service, Phase::Started, None)
     }
 
-    async fn healthy(&self, id: &str, timeout: Duration, patient: bool) -> Result<(), String> {
+    async fn healthy(
+        &self,
+        id: &str,
+        timeout: Duration,
+        patient: bool,
+        restarted_before: u64,
+    ) -> Result<(), String> {
         let deadline = tokio::time::Instant::now() + timeout;
         let mut steady = 0;
         loop {
@@ -646,7 +682,7 @@ impl Engine {
                     let restarts = c.get("RestartCount").and_then(Value::as_u64).unwrap_or(0);
                     let health = state.pointer("/Health/Status").and_then(Value::as_str);
                     let running = state.get("Running").and_then(Value::as_bool) == Some(true);
-                    if restarts > 0
+                    if restarts > restarted_before
                         || state.get("Restarting").and_then(Value::as_bool) == Some(true)
                     {
                         return Err("restarted after a crash".into());
@@ -713,16 +749,36 @@ impl Engine {
             (None, Some(project)) => self.remove_strays(project, w).await?,
             (None, None) => {}
         }
-        if let Err(e) = self.docker.rename(&w.old_id, &w.name).await {
-            tracing::debug!(error = %e, "the previous container keeps its name");
+        let before = self
+            .docker
+            .inspect(&w.old_id)
+            .await
+            .map_err(|e| e.to_string())?;
+        if clone::name(&before).ok().as_deref() != Some(w.name.as_str()) {
+            self.docker.rename(&w.old_id, &w.name).await.map_err(|e| {
+                format!(
+                    "the previous {} keeps its name {}{PREVIOUS_SUFFIX}: {e}",
+                    w.service.as_str(),
+                    w.name
+                )
+            })?;
         }
+        let restarted_before = before
+            .get("RestartCount")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
         self.docker
             .start(&w.old_id)
             .await
             .map_err(|e| e.to_string())?;
-        self.healthy(&w.old_id, self.settings.rollback_timeout, false)
-            .await
-            .map_err(|why| format!("the previous {} {why}", w.service.as_str()))
+        self.healthy(
+            &w.old_id,
+            self.settings.rollback_timeout,
+            false,
+            restarted_before,
+        )
+        .await
+        .map_err(|why| format!("the previous {} {why}", w.service.as_str()))
     }
 
     async fn started_gateway(&self, saved: &Saved) -> Option<Switched> {
@@ -781,7 +837,7 @@ impl Engine {
                 .end(
                     JobState::NeedsAttention,
                     Some(Failure {
-                        reason: failure.reason,
+                        reason: Reason::Migrated,
                         detail,
                     }),
                 )
@@ -866,7 +922,7 @@ impl Engine {
             let started = self.started_gateway(&saved).await;
             if let Some(new_id) = started.as_ref().and_then(|w| w.new_id.as_deref())
                 && self
-                    .healthy(new_id, self.settings.gateway_timeout, true)
+                    .healthy(new_id, self.settings.gateway_timeout, true, 0)
                     .await
                     .is_ok()
             {

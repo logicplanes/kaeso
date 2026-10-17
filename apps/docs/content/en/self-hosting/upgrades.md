@@ -110,7 +110,7 @@ The whole update takes about a minute. Only one update runs at a time. The resul
 | **Not installed** | Nothing changed. |
 | **Rolled back** | The new version didn't start, and the previous one runs again. |
 | **Rollback failed** | The new version didn't start, and the previous one didn't start again either. |
-| **Needs attention** | The new gateway didn't start, but it may have migrated the database, so the updater left it and the new console in place; see [rollback](#rollback). |
+| **Needs attention** | Someone has to look: the new gateway didn't start but may have migrated the database, so the updater left it and the new console in place (see [rollback](#rollback)), or the update couldn't finish cleaning up, such as removing the maintenance flag or the `…-previous` containers. The detail says which and what to do. |
 
 ### Rollback
 

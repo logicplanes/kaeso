@@ -19255,7 +19255,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."
+                  "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."
                 },
                 "started_at": {
                   "type": "string",
@@ -22974,7 +22974,7 @@
               "string",
               "null"
             ],
-            "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."
+            "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."
           },
           "started_at": {
             "type": "string",

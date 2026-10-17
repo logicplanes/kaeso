@@ -164,7 +164,7 @@ async fn a_failed_gateway_that_may_have_migrated_is_left_for_a_person() {
     let world = World::with(dir, daemon, migrating_releases(), Verifier::default()).await;
     let job = update(&world, TO).await;
     assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
-    assert_eq!(job.reason, Some(Reason::Unhealthy));
+    assert_eq!(job.reason, Some(Reason::Migrated));
     let detail = job.detail.unwrap();
     assert!(
         detail.contains("may have migrated the database"),
@@ -438,6 +438,63 @@ async fn progress_that_cannot_be_saved_stops_before_the_next_container_is_touche
     );
     assert_eq!(world.running("kaeso-console-1").image, "sha256:old-console");
     assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+}
+
+#[tokio::test]
+async fn a_previous_container_that_restarted_long_ago_still_comes_back() {
+    let mut daemon = Daemon::install();
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    for c in daemon.containers.iter_mut() {
+        c.restarts = 2;
+    }
+    let world = World::new("old-restarts", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+}
+
+#[tokio::test]
+async fn a_previous_container_that_keeps_its_temporary_name_is_a_failed_rollback() {
+    let mut daemon = Daemon::install();
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    daemon.fail_rename_back = true;
+    let world = World::new("rename-back", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RollbackFailed, "{job:?}");
+    assert!(
+        job.detail
+            .unwrap()
+            .contains("keeps its name kaeso-gateway-1-previous")
+    );
+}
+
+#[tokio::test]
+async fn previous_containers_that_cannot_be_removed_are_left_for_a_person() {
+    let mut daemon = Daemon::install();
+    daemon.fail_removals = 2;
+    let world = World::new("cleanup-retry", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(
+        job.state,
+        JobState::Succeeded,
+        "a retry removes it: {job:?}"
+    );
+
+    let mut daemon = Daemon::install();
+    daemon.fail_removals = u32::MAX;
+    let world = World::new("cleanup-stuck", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
+    let detail = job.detail.unwrap();
+    assert!(
+        detail.contains("docker rm kaeso-console-1-previous kaeso-gateway-1-previous"),
+        "{detail}"
+    );
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:new-gateway");
 }
 
 #[tokio::test]

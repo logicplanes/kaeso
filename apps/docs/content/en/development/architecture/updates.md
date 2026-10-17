@@ -54,7 +54,7 @@ The Release workflow builds three images, `kaeso-gateway`, `kaeso-console` and `
 
 ## The updater
 
-`crates/kaeso-updater` is a small axum server on port 8081: `GET /healthz` without a token, and `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) and `GET /v1/updates/{id}` with `Authorization: Bearer` and the shared token. It runs one update at a time and keeps it in `/state/job.json`, written atomically after every change; an update whose first state can't be written is refused with `503`, and one whose progress can't be saved before a container is touched stops there and rolls back. When the maintenance flag can't be removed after ten tries, the update ends `needs_attention`, since Caddy would keep answering that Kaeso is being updated.
+`crates/kaeso-updater` is a small axum server on port 8081: `GET /healthz` without a token, and `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) and `GET /v1/updates/{id}` with `Authorization: Bearer` and the shared token. It runs one update at a time and keeps it in `/state/job.json`, written atomically after every change; an update whose first state can't be written is refused with `503`, and one whose progress can't be saved before a container is touched stops there and rolls back. Restoring a previous container fails when it can't get its own name back, and its health check ignores restarts from before the update. The previous containers are removed with retries; when one stays, the update ends `needs_attention` and names the `docker rm` to run, since no update starts while it is there. When the maintenance flag can't be removed after ten tries, the update ends `needs_attention`, since Caddy would keep answering that Kaeso is being updated.
 
 An update (`engine.rs`):
 

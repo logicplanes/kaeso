@@ -20,6 +20,7 @@ const REASONS = [
   "updater_unreachable",
   "updater_refused",
   "state_unwritable",
+  "migrated",
 ];
 
 describe("update words", () => {

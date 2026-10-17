@@ -60,6 +60,8 @@ export function reasonText(reason: string | null | undefined): string | null {
       return t("instance.updates.whyUnreachable", "The updater couldn't be reached.");
     case "updater_refused":
       return t("instance.updates.whyRefused", "The updater refused the update; its logs say why.");
+    case "migrated":
+      return t("instance.updates.whyMigrated", "The new gateway didn't start and may have migrated the database.");
     case "state_unwritable":
       return t("instance.updates.whyState", "The updater couldn't save its progress, so it didn't start.");
     default:
