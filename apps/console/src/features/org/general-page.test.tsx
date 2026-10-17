@@ -200,6 +200,18 @@ describe("transferring ownership", () => {
     expect(requests("POST", "orgs/:org/ownership-transfer").map((r) => r.body)).toEqual([{ user_id: "usr_hedy" }]);
   });
 
+  it("says the members are loading until they arrive", async () => {
+    signedIn();
+    let release: () => void = () => undefined;
+    on("GET", "orgs/:org/members", () => new Promise((resolve) => (release = () => resolve(page(members)))));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Transfer ownership" }));
+    const dialog = await screen.findByRole("dialog", { name: "Transfer ownership" });
+    expect(within(dialog).getByRole("combobox", { name: "New owner" })).toHaveAttribute("placeholder", "Loading members…");
+    release();
+    await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "New owner" })).toHaveAttribute("placeholder", "Choose a member"));
+  });
+
   it("forgets the chosen member when cancelled, so it opens with no one chosen", async () => {
     signedIn();
     on("GET", "orgs/:org/members", page(members));
