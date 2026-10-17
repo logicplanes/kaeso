@@ -24,7 +24,10 @@ export function installFocusModality(): void {
   );
 }
 
-export const themeScript = `(function(){var d=document.documentElement;try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="light"||t==="dark"){d.setAttribute("data-theme",t)}}catch(e){}${modalitySource}})();`;
+const themeScriptFor = (key: string) =>
+  `(function(){var d=document.documentElement;try{var t=localStorage.getItem("${key}");if(t==="light"||t==="dark"){d.setAttribute("data-theme",t)}}catch(e){}${modalitySource}})();`;
+
+export const themeScript = themeScriptFor(THEME_STORAGE_KEY);
 
 interface ThemeContextValue {
   theme: ThemePreference;

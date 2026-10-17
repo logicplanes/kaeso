@@ -1,6 +1,7 @@
 import { forwardRef, type SVGAttributes } from "react";
 import { cn } from "../../utils/cn.js";
 import * as geometry from "./paths.js";
+import { NavWordmark } from "./nav-wordmark.js";
 
 export const KAESO_LOGO_VARIANTS = {
   markSize: {
@@ -79,25 +80,17 @@ export interface LogoWordmarkProps extends BaseLogoProps {
   size?: keyof typeof KAESO_LOGO_VARIANTS.lockupSize | "nav" | undefined;
 }
 
-const WORDMARK_TIGHT = "72 69.3 881.9 177.7";
-
 const Wordmark = forwardRef<SVGSVGElement, LogoWordmarkProps>(function Wordmark({ size = "sm", title = "Kaeso", decorative, className, style, ...props }, ref) {
   if (size === "nav") {
     return (
-      <svg
+      <NavWordmark
         ref={ref}
-        viewBox={WORDMARK_TIGHT}
-        fill="currentColor"
-        xmlns="http://www.w3.org/2000/svg"
-        className={cn("block shrink-0", className)}
-        style={{ width: 60, height: 12, ...style }}
-        {...(decorative ? { "aria-hidden": true, focusable: false } : { role: "img", "aria-label": title })}
+        title={title}
+        {...(decorative ? { decorative } : {})}
+        {...(className ? { className } : {})}
+        {...(style ? { style } : {})}
         {...props}
-      >
-        {geometry.wordmark.paths.map((d) => (
-          <path key={d} d={d} />
-        ))}
-      </svg>
+      />
     );
   }
   return (

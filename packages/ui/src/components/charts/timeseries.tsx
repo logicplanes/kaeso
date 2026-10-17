@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { forwardRef, useId, useMemo, useState, type ReactNode } from "react";
-import { scaleLinear } from "d3-scale";
+import { scaleLinear } from "./linear-scale.js";
 import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack } from "d3-shape";
 import { bisector, max as d3max, min as d3min } from "d3-array";
 import { timeTicks } from "d3-time";

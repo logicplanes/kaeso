@@ -23,7 +23,7 @@ import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { Skeleton } from "../skeleton/skeleton.js";
-import { Logo } from "../logo/logo.js";
+import { NavWordmark } from "../logo/nav-wordmark.js";
 import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { HandedTrigger, triggerPropsStore } from "../tooltip/trigger-props.js";
@@ -280,10 +280,10 @@ export function BrandWordmark({ href, label = "Kaeso" }: { href?: string | undef
   const LinkComp = useLinkComponent();
   return href ? (
     <LinkComp href={href} aria-label={label} className="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
-      <Logo.Wordmark size="nav" decorative />
+      <NavWordmark decorative />
     </LinkComp>
   ) : (
-    <Logo.Wordmark size="nav" title={label} className="text-fg" />
+    <NavWordmark title={label} className="text-fg" />
   );
 }
 BrandWordmark.displayName = "Sidebar.BrandWordmark";

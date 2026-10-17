@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { Logo } from "../logo/logo.js";
+import { NavWordmark } from "../logo/nav-wordmark.js";
 
 export const KAESO_SECTION_VARIANTS = {
   spacing: {
@@ -59,7 +59,7 @@ export const AuthLayout = forwardRef<
   return (
     <div ref={ref} className={cn("relative flex min-h-dvh flex-col items-center bg-panel px-16 py-64 text-fg", className)}>
       <div className="absolute top-0 left-0 mt-8 flex h-52 items-center px-28">
-        <Logo.Wordmark size="nav" />
+        <NavWordmark />
       </div>
       <div className="flex w-full max-w-auth flex-1 flex-col justify-center">
         <h1 className="text-center text-title-lg font-semibold text-fg text-balance">{title}</h1>

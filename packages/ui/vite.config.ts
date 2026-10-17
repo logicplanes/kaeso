@@ -85,7 +85,7 @@ function directIcons() {
 }
 
 const PURE_REACT = ["forwardRef", "memo", "createContext", "lazy"];
-const PURE_FACTORIES = ["lazyModule", "makeRoot", "makeSvg", "rangePresets", "BaseToast\\.createToastManager"];
+const PURE_FACTORIES = ["lazyModule", "makeRoot", "makeSvg", "rangePresets", "themeScriptFor", "BaseToast\\.createToastManager"];
 function treeShakeable() {
   return {
     name: "kaeso-tree-shakeable",
