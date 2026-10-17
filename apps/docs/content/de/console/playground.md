@@ -4,34 +4,30 @@ description: Einen Prompt an bis zu vier Modelle nebeneinander senden.
 order: 8
 ---
 
-Der **Playground** sendet einen Prompt an ein oder mehrere Modelle des Projekts und zeigt ihre Antworten nebeneinander, bis zu vier gleichzeitig. Jede Spalte ist eine eigene Unterhaltung.
+Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugleich und zeigt ihre Antworten nebeneinander. Jede Spalte ist ein eigenes Gespräch. Ihn zu nutzen erfordert das Recht **Playground nutzen**, das Admins und Entwickler eines Projekts haben.
 
-Playground-Anfragen sind echte Anfragen. Sie nutzen die Anbieter-Schlüssel des Projekts, den eigenen Modellzugriff und die eigenen Limits und Budgets sowie die des Projekts. Sie werden dem Projekt berechnet und erscheinen in den Anfrageprotokollen mit der Quelle **Playground**. Schlüssel-Limits gelten nicht, da kein Schlüssel verwendet wird.
+Anfragen im Playground sind echte Anfragen. Sie nutzen die Anbieter-Schlüssel des Projekts, den eigenen Modellzugriff sowie die eigenen Limits und die des Projekts; sie werden dem Projekt berechnet und erscheinen in den [Anfrageprotokollen](request-logs.md) mit der Quelle **Playground**. Schlüssel-Limits gelten nicht, weil kein Schlüssel verwendet wird.
 
-## Nutzung
+## Modelle vergleichen
 
-1. Ein Modell für die erste Spalte wählen; **Spalte hinzufügen** fügt weitere hinzu.
-2. Einen Prompt eingeben und senden.
+1. Ein Modell für die erste Spalte wählen und mit **Spalte hinzufügen** weitere. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, lässt sich nicht wählen.
+2. Einen Prompt an alle Modelle senden.
 3. Jede Antwort zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten.
 
-**Leeren** leert die Unterhaltung jeder Spalte.
+**Leeren** leert das Gespräch jeder Spalte.
 
-Ein Modell, für dessen Anbieter dieses Projekt keinen Schlüssel hat, lässt sich nicht wählen.
+Modelle und Parameter sind Teil der Seitenadresse, sodass ein Link denselben Vergleich öffnet. Ein noch nicht gesendeter Prompt bleibt im Browser; Gespräche werden nicht gespeichert.
 
 ## Parameter
 
-**Parameter** legt fest, was mit jeder Spalte gesendet wird:
+**Parameter** legt fest, was jede Spalte mitsendet:
 
 | Parameter | Wirkung |
 | --- | --- |
-| Systemanweisungen | Anweisungen, die vor der Unterhaltung gesendet werden |
-| Temperatur, Top P | Sampling, nur an Modelle gesendet, die eine Temperatur annehmen |
+| Systemanweisungen | Anweisungen vor dem Gespräch |
+| Temperatur, Top P | Sampling, nur an Modelle gesendet, die Temperatur unterstützen |
 | Max. Ausgabe-Token | Die längste Antwort |
-| Reasoning-Aufwand | Wie gründlich ein Reasoning-Modell nachdenkt, von ohne bis maximal |
-| Reasoning-Zusammenfassung | Ob das Nachdenken eines Reasoning-Modells zusammengefasst wird: Auto, knapp, detailliert oder aus |
+| Reasoning-Aufwand | Wie viel ein Reasoning-Modell nachdenkt, von **Ohne** bis **Maximal** |
+| Reasoning-Zusammenfassung | Ob das Reasoning eines Modells zusammengefasst wird: **Auto**, **Knapp**, **Detailliert** oder **Aus** |
 
-**Auf Standard zurücksetzen** setzt alle Parameter außer den Systemanweisungen zurück.
-
-Modelle und Parameter sind Teil der Adresse der Seite, ein Link darauf öffnet also denselben Vergleich. Ein noch nicht gesendeter Prompt bleibt im Browser erhalten; Unterhaltungen werden nicht gespeichert.
-
-Den Playground zu nutzen erfordert das Recht **Playground nutzen**, das Projekt-Admins und Entwickler haben.
+**Auf Standard zurücksetzen** setzt jeden Parameter außer den Systemanweisungen zurück.

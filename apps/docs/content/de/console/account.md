@@ -4,37 +4,46 @@ description: Profil, Passwort, Zwei-Faktor-Authentifizierung, Sitzungen, Design 
 order: 9
 ---
 
-Das eigene Konto liegt unter **Einstellungen** › **Konto**: im Menü am Fuß der Seitenleiste **Konto** wählen.
+Das eigene Konto liegt unter **Konto** im Menü am Fuß der Seitenleiste:
 
 | Seite | Inhalt |
 | --- | --- |
-| Profil | Bild, Name, E-Mail-Adresse, Konto-ID und das Löschen des Kontos |
+| Profil | Bild, Name, E-Mail-Adresse und Konto-ID; das Konto löschen |
 | Sicherheit | Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes |
-| Sitzungen | Wo das Konto angemeldet ist |
-| API-Schlüssel | Die eigenen Schlüssel in allen Projekten |
-| Mitgliedschaften | Die eigenen Organisationen und Projekte mit den Rollen darin; eine Organisation verlassen |
-| Benachrichtigungen | Welche E-Mails ankommen |
+| Sitzungen | Die Browser, in denen man angemeldet ist |
+| API-Schlüssel | Die eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
+| Mitgliedschaften | Die eigenen Organisationen und ihre Projekte mit den eigenen Rollen; eine Organisation verlassen |
+| Benachrichtigungen | Welche E-Mails man erhält |
 | Darstellung | Design und Sprache |
 
 ## E-Mail-Adresse
 
 **E-Mail ändern** sendet einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald der Link geöffnet wird. Sie erfordert eine kürzliche Anmeldung.
 
-## Passwort und Zwei-Faktor-Authentifizierung
+## Passwort
 
-**Passwort ändern** meldet die anderen Sitzungen ab. Wer kein Passwort hat, weil die Anmeldung per Link oder Single Sign-on erfolgt, legt mit **Passwort festlegen** eines an.
+**Passwort ändern** meldet die anderen Sitzungen ab. Wer sich nur mit Links oder Single Sign-on anmeldet und kein Passwort hat, legt mit **Passwort festlegen** eines an.
 
-Die Zwei-Faktor-Authentifizierung nutzt eine Authenticator-App und gilt für die Anmeldung mit Passwort; Anmeldelinks brauchen keinen Code. **Einrichten** zeigt einen QR-Code und einen Einrichtungsschlüssel; den sechsstelligen Code aus der App eingeben und **Einschalten** wählen. Dazu gibt es 10 Wiederherstellungscodes, jeder einmal anstelle eines Codes nutzbar und nur in diesem Moment angezeigt; sie kopieren oder herunterladen und sicher aufbewahren. **Neu erzeugen** ersetzt sie, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung.
+## Zwei-Faktor-Authentifizierung
 
-Wenn Authenticator und Wiederherstellungscodes beide verloren sind, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung zurücksetzen.
+Die Zwei-Faktor-Authentifizierung verlangt bei jeder Anmeldung mit Passwort einen Code aus einer Authenticator-App; Anmeldelinks und Single Sign-on brauchen keinen.
+
+1. Unter **Sicherheit** **Einrichten** wählen.
+2. Den QR-Code mit der App scannen oder den Einrichtungsschlüssel eingeben.
+3. Den sechsstelligen Code aus der App eingeben und **Einschalten** wählen.
+4. Die 10 Wiederherstellungscodes sichern, die die Konsole nur dieses eine Mal zeigt: kopieren oder **.txt herunterladen**. Jeder ersetzt einmal einen Code bei der Anmeldung.
+
+**Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung; beides erfordert eine kürzliche Anmeldung. Wer Authenticator und Wiederherstellungscodes verloren hat, lässt die Zwei-Faktor-Authentifizierung von einem Instanz-Admin zurücksetzen.
 
 ## Sitzungen
 
-**Sitzungen** listet jeden Browser, in dem das Konto angemeldet ist, und wie die Anmeldung erfolgte. **Beenden** meldet eine Sitzung ab; **Überall abmelden** meldet alle außer der aktuellen ab. Sitzungen enden von selbst nach 7 Tagen ohne Nutzung und spätestens nach 30 Tagen.
+**Sitzungen** listet jeden Browser, in dem man angemeldet ist, und wie die Anmeldung erfolgte. **Beenden** meldet einen davon ab, **Überall abmelden** alle außer dem aktuellen. Eine Sitzung endet nach 7 Tagen ohne Nutzung und spätestens nach 30 Tagen.
 
-## Verlassen und löschen
+## Eine Organisation verlassen und das Konto löschen
 
-**Organisation verlassen** unter **Mitgliedschaften** entfernt das Konto aus der Organisation und ihren Projekten und archiviert die eigenen Schlüssel dort. **Konto löschen** unter **Profil** entfernt das Konto aus allen Organisationen und archiviert alle eigenen Schlüssel; zur Bestätigung die eigene E-Mail-Adresse eingeben, und es erfordert eine kürzliche Anmeldung. Beides geht nicht, solange das Konto der letzte Inhaber einer Organisation ist: vorher jemand anderen zum Inhaber machen.
+**Organisation verlassen** unter **Mitgliedschaften** nimmt einen aus der Organisation und ihren Projekten und archiviert die eigenen Schlüssel dort. **Konto löschen** unter **Profil** nimmt einen aus jeder Organisation und archiviert alle eigenen Schlüssel; im Verlauf erscheint man als gelöschter Benutzer. Bestätigt wird mit der eigenen E-Mail-Adresse, und es erfordert eine kürzliche Anmeldung.
+
+Beides geht nicht, solange man der letzte Inhaber einer Organisation ist: zuerst jemand anderen zum Inhaber machen.
 
 ## Benachrichtigungen
 
@@ -44,7 +53,7 @@ Wenn Authenticator und Wiederherstellungscodes beide verloren sind, kann ein Ins
 
 Unter **Darstellung**:
 
-- **Design**: **System**, **Hell** oder **Dunkel**. Die Wahl gilt in diesem Browser.
-- **Sprache**: **Automatisch**, English, Deutsch oder 简体中文. Automatisch folgt der Sprache des Browsers und fällt auf Englisch zurück. Die Wahl wird im Konto gespeichert, gilt also auch in anderen Browsern, und E-Mails von Kaeso nutzen sie ebenfalls.
+- **Design**: **System**, **Hell** oder **Dunkel**. Es wird in diesem Browser gespeichert.
+- **Sprache**: **Automatisch**, English, Deutsch oder 简体中文. Automatisch folgt der Sprache des Browsers, oder Englisch, wenn die Konsole diese Sprache nicht hat. Die Wahl wird im Konto gespeichert, gilt also auch in anderen Browsern, und E-Mails von Kaeso verwenden sie ebenfalls.
 
-Produktnamen und Modell-IDs bleiben in jeder Sprache, wie sie sind.
+Produktnamen und Modell-IDs bleiben in jeder Sprache unverändert.

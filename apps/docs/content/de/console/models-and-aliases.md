@@ -4,64 +4,65 @@ description: Die Modelle wählen, die ein Projekt aufrufen darf, ihre Werte anpa
 order: 4
 ---
 
-Der **Katalog** eines Projekts listet die Modelle, die seine Schlüssel aufrufen dürfen. Eine Anfrage für ein Modell außerhalb des Katalogs wird abgelehnt. Der Katalog liegt auf der Seite **Modelle** des Projekts.
+Der **Katalog** eines Projekts auf seiner Seite **Modelle** listet die Modelle, die seine Schlüssel aufrufen dürfen. Eine Anfrage nach einem Modell außerhalb des Katalogs lehnt Kaeso ab. Modelle, eigene Werte und Aliasse zu ändern erfordert das Recht **Modelle verwalten**.
 
 ## Modelle hinzufügen
 
-**Modelle hinzufügen** wählen, OpenAI oder Anthropic wählen, suchen und ein oder mehrere Modelle auswählen; **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines einzelnen Modells vor dem Hinzufügen. Kaeso übernimmt Preise, Limits und Fähigkeiten jedes Modells von [models.dev](https://models.dev), einer offenen Datenbank für Modelle. **Alle aktuellen Anthropic-Modelle hinzufügen**, oder OpenAI-Modelle, fügt jedes Modell des Anbieters hinzu, das nicht veraltet ist und Text oder Embeddings erzeugt, und überspringt die, die schon im Katalog stehen; Modelle, die später erscheinen, kommen nicht von selbst hinzu.
+**Modelle hinzufügen** durchsucht die Modelle eines Anbieters. Ein oder mehrere auswählen und hinzufügen; **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells vor dem Hinzufügen. Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen.
 
-**Eigenes Modell hinzufügen** fügt ein Modell über seine ID hinzu. Wenn models.dev es nicht listet, seine Ein- und Ausgaben, Limits, Preise und das verwendete API-Format eingeben.
+- **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für Anthropic, fügt jedes nicht veraltete Text- und Embedding-Modell des Anbieters hinzu und überspringt die, die schon im Katalog sind. Später erscheinende Modelle kommen nicht von selbst hinzu.
+- **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, sind Eingaben und Ausgaben, Limits, Eingabe- und Ausgabepreis und das API-Format anzugeben, mit dem Kaeso es aufruft.
 
-Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden. Instanz-Admins sehen ihren Stand und synchronisieren sie sofort unter **Instanz** › **Modellquellen**. Ein Modell, das models.dev nicht mehr listet, bleibt mit seinen letzten bekannten Werten im Katalog, markiert als **Nicht mehr gelistet**; eines, das models.dev als veraltet führt, ist als **Veraltet** markiert.
+Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden; Instanz-Admins sehen ihren Stand unter [**Modellquellen**](instance-administration.md#modellquellen). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Eines, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
 
 ## Verfügbarkeit
 
-Ein Modell im Katalog bietet der Anbieter dem Anbieter-Schlüssel des Projekts nicht immer an: Der Anbieter kann es eingestellt haben, oder der Schlüssel hat keinen Zugriff darauf. Das Sheet jedes Modells zeigt seine **Verfügbarkeit**:
+Nicht jedes Modell im Katalog stellt der Anbieter dem Anbieter-Schlüssel des Projekts auch bereit: Der Anbieter hat es vielleicht eingestellt, oder dem Schlüssel fehlt der Zugriff. Die Liste markiert solche Modelle als **Nicht verfügbar**, und das Sheet jedes Modells zeigt seine **Verfügbarkeit**:
 
 | Verfügbarkeit | Bedeutung |
 | --- | --- |
-| Verfügbar | Der Anbieter hat es bei der letzten Prüfung oder Anfrage angeboten |
-| Nicht verfügbar | Der Anbieter hat geantwortet, dass er es diesem Schlüssel nicht anbietet; die Liste markiert es ebenfalls |
-| Nicht geprüft | Noch unbekannt, oder ein Anbieter-Schlüssel der Organisation hat sich seitdem geändert |
+| Verfügbar | Der Anbieter hat es bei der letzten Prüfung oder Anfrage bereitgestellt |
+| Nicht verfügbar | Der Anbieter hat erklärt, dass er es diesem Schlüssel nicht bereitstellt |
+| Nicht geprüft | Noch liegt keine Antwort vor, oder ein Anbieter-Schlüssel der Organisation hat sich seither geändert |
 
-**Verfügbarkeit prüfen** fragt den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts, ob er das Modell anbietet (`GET /v1/models/{model}` beim Anbieter und, wenn das mit „nicht gefunden“ antwortet, seine Modellliste `GET /v1/models`), und meldet das Ergebnis. Als nicht verfügbar gilt ein Modell nur, wenn die Liste des Anbieters antwortet und es nicht enthält. Modelle, die sich nicht prüfen ließen, behalten ihre Verfügbarkeit: Das Projekt hat keinen Schlüssel für den Anbieter, der Anbieter hat den Schlüssel abgelehnt oder nicht geantwortet, der Anbieter kann ein „nicht gefunden“ nicht bestätigen, weil seine Liste nicht antwortet, oder der Anbieter-Schlüssel hat sich während der Prüfung geändert. Kaeso lernt sie auch aus Anfragen: Antwortet der Anbieter auf eine Anfrage, dass er das Modell nicht kennt, und bestätigt seine Liste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md#fehler-des-anbieters); gelingt eine Anfrage an ein nicht verfügbares Modell, wird es wieder verfügbar. Eine Antwort zählt nur für den Schlüssel, der sie gegeben hat: Ändert sich ein Anbieter-Schlüssel, während eine Prüfung oder Anfrage läuft, wird ihre Antwort nicht gespeichert.
+**Verfügbarkeit prüfen** fragt den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts und meldet das Ergebnis. Als nicht verfügbar gilt ein Modell nur, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund: Das Projekt hat keinen Schlüssel für den Anbieter, der Anbieter hat den Schlüssel abgelehnt oder nicht geantwortet, seine Modellliste antwortet nicht, oder der Schlüssel hat sich während der Prüfung geändert.
 
-Ein nicht verfügbares Modell bleibt im Katalog, aber `GET /v1/models` lässt es weg, und Anfragen dafür gehen weiterhin an den Anbieter; Kaeso schickt sie nie an ein anderes Modell. Dem Anbieter-Schlüssel Zugriff auf das Modell geben oder das Modell aus dem Katalog entfernen. Das Prüfen braucht das Recht **Modelle verwalten** und steht im Audit-Log als `catalogue_model.check`.
+Auch Anfragen liefern Kaeso diese Information. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md); gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Eine Antwort zählt nur für den Schlüssel, der sie erhalten hat.
+
+Ein nicht verfügbares Modell bleibt im Katalog, und Anfragen danach gehen weiter an seinen Anbieter; Kaeso leitet sie nie an ein anderes Modell um. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Dem Anbieter-Schlüssel Zugriff auf das Modell geben oder das Modell aus dem Katalog entfernen. Prüfungen stehen im Audit-Log als `catalogue_model.check`.
 
 ## Die Werte eines Modells
 
-Das Sheet eines Modells zeigt die verwendeten Werte und woher jeder stammt: von models.dev, aus Kaesos eigenen Ergänzungen oder aus einer Anpassung in diesem Projekt. **Werte anpassen** ändert sie nur für dieses Projekt; **Auf models.dev zurücksetzen** setzt einen Wert auf die Quelle zurück. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern oder Entfernen dies und lädt die aktuellen Werte, sodass sich die Änderung erneut vornehmen lässt.
+Das Sheet eines Modells zeigt die **Verwendeten Werte** und woher jeder stammt: von models.dev, aus Kaesos eigenen Ergänzungen oder aus einem eigenen Wert dieses Projekts. **Werte anpassen** ändert sie nur für dieses Projekt, und **Auf models.dev zurücksetzen** stellt einen Wert der Quelle wieder her. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern dies und lädt die aktuellen Werte, damit sich die Änderung erneut vornehmen lässt.
 
-| Wert | Wirkung |
+| Wert | Bedeutung |
 | --- | --- |
 | Anzeigename | Der Name in der Konsole |
 | Eingaben, Ausgaben | Text, Bilder, Audio, Video, Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
-| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | Pro Million Token, in US-Dollar; Nutzung und Budgets werden zu den Preisen berechnet, die zum Zeitpunkt der Anfrage gelten |
-| Sendet als | Das API-Format, in dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
+| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token; Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten |
+| Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Unterstützt Temperatur | Ob das Modell `temperature` annimmt |
-| Unterstützt erzwungene Tool-Wahl | Ob das Modell `tool_choice` `required`, `any` oder ein benanntes Tool annimmt; bei einem Modell, das es nicht tut, lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
-| Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Aufwandsstufen es annimmt |
-| Zeitlimit | Sekunden für eine Anfrage an dieses Modell; ohne Wert gilt das Anfrage-Zeitlimit der Installation |
+| Unterstützt erzwungene Tool-Wahl | Ob das Modell `tool_choice` `required`, `any` oder ein benanntes Tool annimmt; für ein Modell ohne diese Fähigkeit lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
+| Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Stufen es annimmt |
+| Zeitlimit | Sekunden, die eine Anfrage an dieses Modell dauern darf; ohne Angabe gilt das Anfrage-Zeitlimit der Installation |
 | Veröffentlicht | Das Veröffentlichungsdatum des Modells |
 
-**Aus dem Katalog entfernen** nimmt ein Modell heraus; Anfragen dafür werden ab dann abgelehnt, und Aliasse und Modelllisten, die es nennen, verlieren es.
+**Aus dem Katalog entfernen** nimmt ein Modell heraus. Anfragen danach werden ab dann abgelehnt, und Aliasse und Modelllisten, die es nennen, verlieren es.
 
 ## Aliasse
 
-Ein **Alias** ist ein eigener Name des Projekts, der auf ein Modell seines Katalogs zeigt, etwa `fast` für `claude-haiku-4-5`. Apps rufen den Alias auf, und das Modell dahinter lässt sich wechseln, ohne die Apps zu ändern.
+Ein **Alias** ist ein eigener Name des Projekts für ein Modell seines Katalogs, etwa `fast` für `claude-haiku-4-5`. Apps senden den Alias als Modell, und das Modell dahinter lässt sich wechseln, ohne die Apps anzufassen.
 
-Auf dem Tab **Aliasse** fragt **Alias erstellen** nach einem Namen und einem Ziel. Ein Name hat 1 bis 200 Zeichen, ohne Leerzeichen und ohne `/`. Ein Alias mit demselben Namen wie ein Modell hat Vorrang; die Konsole markiert, dass er das Modell verdeckt.
+Auf dem Tab **Aliasse** fragt **Alias erstellen** nach einem Namen und einem **Ziel**. Ein Name hat 1 bis 200 Zeichen, ohne Leerzeichen und ohne `/`. Ein Alias hat Vorrang vor einem gleichnamigen Modell; die Liste kennzeichnet ihn mit **Verdeckt ein Modell**.
 
 ## Wie eine Anfrage ein Modell nennt
 
-Eine Anfrage kann ein Modell auf drei Arten nennen, und Kaeso sucht in dieser Reihenfolge:
+Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 
 1. Ein Alias des Projekts: `fast`.
 2. Anbieter und Modell: `anthropic/claude-haiku-4-5`.
-3. Die eigene ID des Modells: `claude-haiku-4-5`.
+3. Eine Modell-ID: `claude-haiku-4-5`.
 
 Haben zwei Anbieter ein Modell mit derselben ID, die Form `provider/model` verwenden.
-
-Modelle, Anpassungen und Aliasse zu ändern erfordert das Recht **Modelle verwalten**.

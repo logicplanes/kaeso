@@ -1,38 +1,55 @@
 ---
-title: Die Konsole nutzen
-description: Orientierung in der Konsole, der Weboberfläche einer Kaeso-Installation.
+title: Die Konsole verwenden
+description: Sich in der Konsole zurechtfinden, der Weboberfläche einer Kaeso-Installation.
 order: 3
 ---
 
-Die Konsole läuft unter der Domain der Installation, etwa `https://kaeso.example.com`. Die Anmeldung erfolgt per E-Mail-Adresse: je nachdem, was Installation und Organisation erlauben, mit Passwort, mit einem Anmeldelink per E-Mail oder per Single Sign-on.
+Die Konsole läuft unter der Domain der Installation, etwa `https://kaeso.example.com`. Angemeldet wird mit der E-Mail-Adresse und, je nachdem, was Installation und Organisation erlauben, mit Passwort, einem per E-Mail gesendeten Anmeldelink oder Single Sign-on; was die Anmeldeseite anbietet, erklärt [Anmeldung und Single Sign-on](../self-hosting/sign-in.md).
 
-## Zwei Modi
+## Die Seitenleiste
 
-**Die App** ist der Arbeitsbereich in einer Organisation und ihren Projekten. Die Seitenleiste zeigt **Übersicht**, **Projekte** und **Anbieter** der Organisation, danach eine Liste ihrer Projekte, und in einem Projekt dessen **Übersicht**, **Playground**, **API-Schlüssel**, **Anfrageprotokolle**, **Modelle**, **Limits**, **Mitglieder**, **Dienstkonten**, **Audit-Log** und **Einstellungen**.
+Die Seitenleiste richtet sich danach, wo gerade gearbeitet wird:
 
-**Einstellungen** enthält das eigene Konto, die Einstellungen der Organisation und, für Instanz-Admins, die Einstellungen der Installation. Geöffnet wird es über das Menü am Fuß der Seitenleiste mit **Organisationseinstellungen**, **Konto** oder **Instanz**; dasselbe Menü wechselt die Organisation und enthält **Abmelden**.
+- **In einer Organisation:** **Übersicht**, **Projekte** und **Anbieter**, darunter die Projekte der Organisation.
+- **In einem Projekt:** **Übersicht**, **Playground**, **API-Schlüssel**, **Anfrageprotokolle**, **Modelle**, **Limits**, **Mitglieder**, **Dienstkonten**, **Audit-Log** und **Einstellungen**, unter einem Link zurück zur Organisation.
 
-## Was angezeigt wird
+Das Menü am Fuß der Seitenleiste wechselt die Organisation und öffnet die **Organisationseinstellungen**, das eigene **Konto** und, für Instanz-Admins, die **Instanz**. Dort stehen auch **Organisation erstellen** und **Abmelden**.
 
-Was angezeigt wird, hängt von den eigenen Rechten ab. Eine Seite, für die das Recht fehlt, erscheint nicht in der Seitenleiste. Eine Aktion, die nicht erlaubt ist, ist deaktiviert, und ihr Tooltip nennt das nötige Recht und wer es vergeben kann. [Mitglieder und Rollen](members-and-roles.md) erklärt die Rechte.
+## Rechte
 
-Einige sensible Aktionen, etwa einen Anbieter-Schlüssel hinzufügen oder einem Schlüssel Plattformzugriff geben, verlangen eine erneute Anmeldung, wenn die letzte Anmeldung mehr als 15 Minuten zurückliegt.
+Was die Konsole zeigt, hängt von den eigenen Rechten ab. Seiten ohne das nötige Recht fehlen in der Seitenleiste. Eine Aktion ohne das nötige Recht ist deaktiviert; ihr Tooltip nennt das Recht und wer es vergeben kann. Rollen und Rechte erklärt [Mitglieder und Rollen](members-and-roles.md).
+
+Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten; die Konsole fragt dann vor der Ausführung nach einer erneuten Anmeldung:
+
+- in einer Organisation: Anbieter-Schlüssel hinzufügen oder ändern, einem Schlüssel Plattformzugriff geben, Plattform-Schlüssel erstellen, Single Sign-on ändern oder verlangen, Protokolle löschen, die Inhaberschaft übertragen und die Organisation löschen;
+- im eigenen Konto: die E-Mail-Adresse ändern, erstmals ein Passwort festlegen, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
 
 ## Suche und Tastenkürzel
 
-⌘K oder Strg+K öffnet die Suche: zu jeder Seite springen, Schlüssel, Modelle, Mitglieder und Dienstkonten des aktuellen Projekts finden, Neues erstellen, Organisation oder Projekt wechseln und das Design ändern. `c` erstellt auf der aktuellen Seite, `g` gefolgt von einem Buchstaben öffnet eine Seite, etwa `g k` die API-Schlüssel, und `?` listet alle Tastenkürzel.
+⌘K oder Strg+K öffnet die Suche: zu jeder Seite springen; Schlüssel, Modelle, Mitglieder und Dienstkonten des aktuellen Projekts finden; Neues erstellen; Organisation oder Projekt wechseln; das Design ändern.
 
-Listen wie API-Schlüssel, Modelle und Mitglieder sind ein einziger Halt für Tab. In einer Liste wechseln die Pfeiltasten nach oben und unten oder `j` und `k` zwischen den Zeilen, und Enter öffnet eine; die Pfeiltaste nach rechts führt zu den Aktionen einer Zeile, die Pfeiltaste nach links oder Escape zurück zur Zeile. Wo sich Zeilen auswählen lassen, etwa in **Modelle hinzufügen**, wählt Leertaste oder `x` eine aus, Umschalt mit einer Pfeiltaste erweitert die Auswahl, ⌘A oder Strg+A wählt alle Zeilen aus, und Escape hebt die Auswahl auf. Das erste Tab auf einer Seite erreicht **Zum Inhalt springen**, das die Seitenleiste überspringt.
+Einzelne Tasten wirken, solange kein Eingabefeld den Fokus hat:
+
+| Tasten | Aktion |
+| --- | --- |
+| `c` | Auf der aktuellen Seite erstellen, etwa einen Schlüssel unter **API-Schlüssel** |
+| `/` | Auf dieser Seite suchen |
+| `[` | Seitenleiste ein- oder ausklappen |
+| `g` `o`, `g` `k`, `g` `l`, `g` `m`, `g` `p` | Zur Übersicht, zu den API-Schlüsseln, Anfrageprotokollen, Modellen oder Einstellungen des Projekts |
+| `g` `s`, `g` `a` | Zu den Einstellungen oder zum Audit-Log der Organisation |
+| `?` | Alle Tastenkürzel anzeigen |
+
+Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp. Darin wechseln Pfeil nach oben und unten oder `j` und `k` die Zeile, und Enter öffnet sie; Pfeil nach rechts führt zu den Aktionen einer Zeile, Pfeil nach links oder Escape zurück. Wo sich Zeilen auswählen lassen, etwa unter **Modelle hinzufügen**, wählt Leertaste oder `x` eine Zeile aus, Umschalt mit Pfeil erweitert die Auswahl, ⌘A oder Strg+A wählt alle Zeilen aus und Escape hebt die Auswahl auf. Der erste Tab auf einer Seite erreicht **Zum Inhalt springen**, das die Seitenleiste überspringt.
 
 ## Seiten
 
 | Seite | Inhalt |
 | --- | --- |
-| [Organisationen und Projekte](organizations-and-projects.md) | Erstellen und Wechseln, das Standardprojekt, Übersichten und Einstellungen |
-| [Mitglieder und Rollen](members-and-roles.md) | Personen einladen, Rollen und Rechte, Dienstkonten |
-| [Anbieter-Schlüssel](provider-keys.md) | OpenAI und Anthropic verbinden |
-| [Modelle und Aliasse](models-and-aliases.md) | Der Katalog des Projekts, angepasste Werte und Aliasse |
-| [API-Schlüssel](api-keys.md) | Schlüssel für Apps und Skripte |
+| [Organisationen und Projekte](organizations-and-projects.md) | Anlegen und Wechseln, Übersichten, Einstellungen, Single Sign-on, das Audit-Log |
+| [Mitglieder und Rollen](members-and-roles.md) | Einladungen, Rollen und Rechte, Dienstkonten, Modellzugriff |
+| [Anbieter-Schlüssel](provider-keys.md) | OpenAI und Anthropic anbinden |
+| [Modelle und Aliasse](models-and-aliases.md) | Der Katalog des Projekts, Verfügbarkeit, eigene Werte und Aliasse |
+| [API-Schlüssel](api-keys.md) | Schlüssel für Apps und Skripte sowie Plattform-Schlüssel |
 | [Limits und Budgets](limits-and-budgets.md) | Raten und Budgets für Projekte, Mitglieder und Schlüssel |
 | [Anfrageprotokolle](request-logs.md) | Jede Anfrage, ihr Inhalt, Exporte und Aufbewahrung |
 | [Playground](playground.md) | Modelle nebeneinander ausprobieren |

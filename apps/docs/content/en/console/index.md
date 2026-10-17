@@ -4,37 +4,54 @@ description: Find your way around the console, the web interface of a Kaeso inst
 order: 3
 ---
 
-The console is served at your install's domain, such as `https://kaeso.example.com`. Sign in with your email: depending on what the install and your organization allow, with a password, a sign-in link by email, or single sign-on.
+The console runs at your install's domain, such as `https://kaeso.example.com`. You sign in with your email address and, depending on what the install and your organization allow, a password, a sign-in link sent by email, or single sign-on; [sign-in and single sign-on](../self-hosting/sign-in.md) explains what the sign-in page offers.
 
-## Two modes
+## The sidebar
 
-**The app** is where you work in an organization and its projects. The sidebar shows the organization's **Overview**, **Projects** and **Providers**, followed by a list of its projects, and in a project its **Overview**, **Playground**, **API keys**, **Request logs**, **Models**, **Limits**, **Members**, **Service accounts**, **Audit log** and **Settings**.
+The sidebar follows where you work:
 
-**Settings** holds your account, your organization's settings and, for instance admins, the install's settings. Open it from the menu at the foot of the sidebar with **Organization settings**, **Account** or **Instance**; the same menu switches organizations and has **Sign out**.
+- **In an organization:** **Overview**, **Projects** and **Providers**, then the organization's projects.
+- **In a project:** **Overview**, **Playground**, **API keys**, **Request logs**, **Models**, **Limits**, **Members**, **Service accounts**, **Audit log** and **Settings**, under a link back to the organization.
 
-## What you see
+The menu at the foot of the sidebar switches organization and opens **Organization settings**, your **Account** and, for instance admins, **Instance**. **Create organization** and **Sign out** are there too.
 
-What you see depends on your rights. A page you have no right to is not in the sidebar. An action you can't take is disabled, and its tooltip names the right it needs and who can give it to you. [Members and roles](members-and-roles.md) explains rights.
+## Rights
 
-Some sensitive actions, such as adding a provider key or giving a key platform access, ask you to sign in again when your last sign-in is more than 15 minutes old.
+What you see depends on your rights. A page you have no right to is left out of the sidebar. An action you can't take is disabled, and its tooltip names the right it needs and who can give it to you. [Members and roles](members-and-roles.md) explains roles and rights.
+
+Some actions need a sign-in from the last 15 minutes; the console asks you to sign in again before it carries them out:
+
+- in an organization: adding or changing provider keys, giving a key platform access, creating platform keys, changing or requiring single sign-on, deleting logs, transferring ownership and deleting the organization;
+- in your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
 
 ## Search and shortcuts
 
-Press ⌘K, or Ctrl+K, to open search: go to any page, find the current project's keys, models, members and service accounts, create things, switch organization or project, and change the theme. `c` creates on the current page, `g` followed by a letter goes to a page, such as `g k` for API keys, and `?` lists every keyboard shortcut.
+⌘K, or Ctrl+K, opens search: go to any page; find the current project's keys, models, members and service accounts; create things; switch organization or project; or change the theme.
 
-Lists, such as API keys, models and members, are one stop for Tab. In a list, the up and down arrows or `j` and `k` move between rows and Enter opens one; the right arrow moves into a row's actions, and the left arrow or Escape back to the row. Where rows can be selected, as in **Add models**, Space or `x` selects one, Shift with an arrow extends the selection, ⌘A or Ctrl+A selects every row, and Escape clears the selection. The first Tab on a page reaches **Skip to content**, which jumps past the sidebar.
+Single keys work when no field has focus:
+
+| Keys | Action |
+| --- | --- |
+| `c` | Create on this page, such as a key on **API keys** |
+| `/` | Search this page |
+| `[` | Collapse or expand the sidebar |
+| `g` `o`, `g` `k`, `g` `l`, `g` `m`, `g` `p` | Go to the project's overview, API keys, request logs, models or settings |
+| `g` `s`, `g` `a` | Go to the settings or the organization's audit log |
+| `?` | List every shortcut |
+
+A list, such as API keys or members, is a single Tab stop. Inside it, the up and down arrows or `j` and `k` move between rows and Enter opens one; the right arrow moves into a row's actions and the left arrow or Escape back out. Where rows can be selected, as in **Add models**, Space or `x` selects a row, Shift with an arrow extends the selection, ⌘A or Ctrl+A selects every row and Escape clears it. The first Tab on a page reaches **Skip to content**, which jumps past the sidebar.
 
 ## Pages
 
 | Page | What it covers |
 | --- | --- |
-| [Organizations and projects](organizations-and-projects.md) | Creating and switching them, the default project, overviews and settings |
-| [Members and roles](members-and-roles.md) | Inviting people, roles and rights, service accounts |
+| [Organizations and projects](organizations-and-projects.md) | Creating and switching them, overviews, settings, single sign-on, the audit log |
+| [Members and roles](members-and-roles.md) | Invitations, roles and rights, service accounts, model access |
 | [Provider keys](provider-keys.md) | Connecting OpenAI and Anthropic |
-| [Models and aliases](models-and-aliases.md) | The project's catalogue, overrides and aliases |
-| [API keys](api-keys.md) | Keys for apps and scripts |
+| [Models and aliases](models-and-aliases.md) | The project's catalogue, availability, overrides and aliases |
+| [API keys](api-keys.md) | Keys for apps and scripts, and platform keys |
 | [Limits and budgets](limits-and-budgets.md) | Rates and budgets for projects, members and keys |
 | [Request logs](request-logs.md) | Every request, its content, exports and retention |
 | [Playground](playground.md) | Trying models side by side |
 | [Account and language](account.md) | Your profile, security, sessions, theme and language |
-| [Instance administration](instance-administration.md) | Users, organizations and settings of the install |
+| [Instance administration](instance-administration.md) | The users, organizations and settings of the install |
