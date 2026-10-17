@@ -6,7 +6,7 @@ order: 1
 
 ## 服务器
 
-- 装有 Docker Engine 和 Docker Compose 2.24 或更高版本的 Linux。镜像提供 `linux/amd64` 和 `linux/arm64` 两种架构。
+- 装有 Docker Engine 和 Docker Compose 2.24 或更高版本的 Linux。镜像提供 `linux/amd64` 和 `linux/arm64` 两种架构。[一键更新](upgrades.md#一键更新)需要 Docker Engine 25 或更高版本，更新器使用其 API 版本 1.44。
 - 至少 2 个 vCPU 和 4 GB 内存，其中 ClickHouse 约占 2 GB。
 - 至少 20 GB 磁盘，另加请求日志所需的空间。
 

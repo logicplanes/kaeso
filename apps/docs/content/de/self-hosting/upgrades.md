@@ -90,7 +90,7 @@ secrets:
     file: ./updater-token
 ```
 
-Der Updater bindet `/var/run/docker.sock` über seinen Proxy ein; `DOCKER_SOCKET` in `.env` setzen, wenn der Socket von Docker woanders liegt, etwa bei Rootless Docker.
+Der Updater braucht Docker Engine 25 oder neuer: Er spricht die Docker-API 1.44, und der Proxy lässt nur diese Version durch; bei einer älteren Engine sagt die Seite, dass der Updater nicht antwortet. Er bindet `/var/run/docker.sock` über seinen Proxy ein; `DOCKER_SOCKET` in `.env` setzen, wenn der Socket von Docker woanders liegt, etwa bei Rootless Docker.
 
 ### Was geschieht
 

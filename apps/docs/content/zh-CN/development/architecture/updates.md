@@ -18,9 +18,9 @@ updater ──▶ maintenance volume ◀── Caddy (updating page, JSON 503s)
 
 ## 网关
 
-`services/updates.rs` 和 `update_check` 任务负责检查新版本：该任务每五分钟询问下一次检查是否到期（`update_settings.next_check_at`），一次检查会带着 `If-None-Match` 获取 `releases_url?per_page=50`。列表有变化时，会在一个事务中替换 `update_releases`；对每个比正在运行的版本更新的版本，获取并保存其 `release.json`，或保存无法获取的原因。每次检查最多获取十二个清单，每次并行四个，从最新的开始；其余的等待下一次检查，届时不带 `If-None-Match` 请求。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，或者在 `updates.releases_url` 指向镜像时从其源地址获取，客户端从不跟随从 HTTPS 到 HTTP 的重定向。下一次检查在 12 小时后再加上一小时内的随机时间；失败后至少一小时后，如果 GitHub 的 `Retry-After` 或 `x-ratelimit-reset` 要求，则更晚；在此之前，`update_settings.blocked_until` 也会让 **立即检查** 不发出请求。重复的失败只在 debug 级别记录。
+`services/updates.rs` 和 `update_check` 任务负责检查新版本：该任务每五分钟询问下一次检查是否到期（`update_settings.next_check_at`），一次检查会带着 `If-None-Match` 获取 `releases_url?per_page=50`，然后沿着 GitHub 的下一页链接继续获取，最多十页，直到列表到达正在运行的版本。列表有变化时，会在一个事务中替换 `update_releases`；对每个比正在运行的版本更新的版本，获取并保存其 `release.json`，或保存无法获取的原因。每次检查最多获取十二个清单，每次并行四个，从最新的开始；其余的等待下一次检查，届时不带 `If-None-Match` 请求。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，或者在 `updates.releases_url` 指向镜像时从其源地址获取，客户端从不跟随从 HTTPS 到 HTTP 的重定向。下一次检查在 12 小时后再加上一小时内的随机时间；失败后至少一小时后，如果 GitHub 的 `Retry-After` 或 `x-ratelimit-reset` 要求，则更晚；在此之前，`update_settings.blocked_until` 也会让 **立即检查** 不发出请求。重复的失败只在 debug 级别记录。
 
-`kaeso_update::policy::plan` 决定提供哪个版本：渠道中比正在运行的版本更新的最新版本，以及它是否需要手动更新：新的主版本、途经版本（包括预发布版本）的清单中有 `manual: true`，或者根本没有清单；目标版本的 `manual_since` 也会计入，因此即使网关从未见过途经的版本，也会将其视为需要手动更新。`instance/updates` 下的 Platform API 只供实例管理员使用；每次更改都会记录审计（`instance.update_check`、`instance.update_settings`、`instance.update_start`、`instance.update_finish`），`apply` 要求在最近 15 分钟内登录过。
+`kaeso_update::policy::plan` 决定提供哪个版本：渠道中比正在运行的版本更新的最新版本（GitHub 标记为预发布的版本，无论版本号如何，都视为预发布版本），以及它是否需要手动更新：新的主版本、途经版本（包括预发布版本）的清单中有 `manual: true`，或者根本没有清单；目标版本的 `manual_since` 也会计入，因此即使网关从未见过途经的版本，也会将其视为需要手动更新。`instance/updates` 下的 Platform API 只供实例管理员使用；每次更改都会记录审计（`instance.update_check`、`instance.update_settings`、`instance.update_start`、`instance.update_finish`），`apply` 要求在最近 15 分钟内登录过。
 
 `update_jobs` 保存每次更新；一个唯一索引保证同一时间只有一行处于 `running`。`apply` 在调用更新器之前提交该行。如果更新器拒绝（除 `202` 外的任何 HTTP 响应）或无法连接，该行会立即以 `failed` 结束，原因为 `updater_refused` 或 `updater_unreachable`；如果请求已发出但没有得到明确的响应，该行保持 `running`，由更新器自己的记录决定结果。某行运行期间，读取它时会向更新器询问其状态，并由最先读取它的网关（通常是切换后的新网关）记录一次结束，写入 `instance.update_finish`。开始两分钟后更新器仍不认识的任务以 `interrupted` 结束；更新器一小时内没有就其作出响应的任务以 `updater_unreachable` 结束。
 
@@ -50,7 +50,7 @@ updater ──▶ maintenance volume ◀── Caddy (updating page, JSON 503s)
 
 ## 更新器
 
-`crates/kaeso-updater` 是一个监听 8081 端口的小型 axum 服务器：`GET /healthz` 无需令牌；`GET /v1/status`、`POST /v1/updates`（`{ "id", "version" }`）和 `GET /v1/updates/{id}` 需要带有共享令牌的 `Authorization: Bearer`。它同一时间只运行一个更新，并把它保存在 `/state/job.json` 中，每次变化之后以原子方式写入；无法写入初始状态的更新会以 `503` 拒绝。
+`crates/kaeso-updater` 是一个监听 8081 端口的小型 axum 服务器：`GET /healthz` 无需令牌；`GET /v1/status`、`POST /v1/updates`（`{ "id", "version" }`）和 `GET /v1/updates/{id}` 需要带有共享令牌的 `Authorization: Bearer`。它同一时间只运行一个更新，并把它保存在 `/state/job.json` 中，每次变化之后以原子方式写入；无法写入初始状态的更新会以 `503` 拒绝；在操作容器之前无法保存进度的更新会就此停止并回退。如果重试十次后仍无法删除维护标记，更新以 `needs_attention` 结束，因为否则 Caddy 会一直回答 Kaeso 正在更新。
 
 一次更新（`engine.rs`）：
 

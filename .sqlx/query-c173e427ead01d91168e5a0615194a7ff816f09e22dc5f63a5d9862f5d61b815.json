@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, j.started_by, u.name AS started_by_name, j.started_at, j.finished_at FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE j.id = $1",
+  "query": "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by ORDER BY j.started_at DESC, j.id DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -115,6 +115,17 @@
       },
       {
         "ordinal": 10,
+        "name": "last_contact_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_jobs",
+            "name": "last_contact_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
         "name": "finished_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -126,9 +137,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -141,8 +150,9 @@
       true,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "de3791f5cde7f4b3afee911d4863f60c1532d1f61f3f74536f10c67941d07c9d"
+  "hash": "c173e427ead01d91168e5a0615194a7ff816f09e22dc5f63a5d9862f5d61b815"
 }

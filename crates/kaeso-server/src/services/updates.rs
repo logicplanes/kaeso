@@ -11,7 +11,7 @@ use kaeso_update::manifest::{self, Manifest};
 use kaeso_update::policy::{self, Channel, Plan, Release};
 use kaeso_update::protocol::{JobState, Reason};
 use reqwest::StatusCode;
-use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, RETRY_AFTER};
+use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, LINK, RETRY_AFTER};
 use serde::Deserialize;
 use serde_json::json;
 use time::OffsetDateTime;
@@ -28,6 +28,7 @@ const MANIFESTS_AT_ONCE: usize = 4;
 const MANIFESTS_PER_CHECK: usize = 12;
 const PER_PAGE: &str = "50";
 const MAX_LIST: usize = 4 << 20;
+const MAX_PAGES: usize = 10;
 const MAX_NOTES: usize = 64 << 10;
 
 static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
@@ -80,6 +81,10 @@ impl Release for Known {
 
     fn prepared(&self) -> bool {
         self.manifest.is_some()
+    }
+
+    fn prerelease(&self) -> bool {
+        self.row.prerelease
     }
 
     fn asks_for_steps_after(&self, running: &Version) -> bool {
@@ -183,14 +188,36 @@ fn kind_of(e: &reqwest::Error) -> &'static str {
     }
 }
 
-async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, CheckError> {
-    let url = &state.config.updates.releases_url;
-    let host = host_of(url);
+enum Page {
+    NotModified,
+    Releases {
+        etag: Option<String>,
+        next: Option<url::Url>,
+        releases: Vec<GitHubRelease>,
+    },
+}
+
+fn next_page(headers: &reqwest::header::HeaderMap) -> Option<url::Url> {
+    let link = headers.get(LINK)?.to_str().ok()?;
+    link.split(',').find_map(|part| {
+        let (target, params) = part.split_once(';')?;
+        params
+            .split(';')
+            .any(|p| p.trim() == r#"rel="next""#)
+            .then(|| target.trim().trim_start_matches('<').trim_end_matches('>'))
+            .and_then(|t| url::Url::parse(t).ok())
+    })
+}
+
+async fn fetch_page(
+    state: &AppState,
+    url: url::Url,
+    etag: Option<&str>,
+) -> Result<Page, CheckError> {
+    let host = host_of(&url);
     let client = HTTP.as_ref().ok_or(CheckError::Client)?;
-    let mut paged = url.clone();
-    paged.query_pairs_mut().append_pair("per_page", PER_PAGE);
     let mut req = client
-        .get(paged)
+        .get(url)
         .header(ACCEPT, "application/vnd.github+json")
         .header("X-GitHub-Api-Version", "2022-11-28");
     if let Some(tag) = etag {
@@ -202,7 +229,7 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
         .map_err(|e| CheckError::Unreachable(host.clone(), kind_of(&e)))?;
     let status = resp.status();
     if status == StatusCode::NOT_MODIFIED {
-        return Ok(Fetched::NotModified);
+        return Ok(Page::NotModified);
     }
     if status == StatusCode::TOO_MANY_REQUESTS || status == StatusCode::FORBIDDEN {
         return Err(CheckError::RateLimited(
@@ -218,6 +245,7 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
         .get(ETAG)
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
+    let next = next_page(resp.headers());
     let mut body = Vec::new();
     while let Some(chunk) = resp
         .chunk()
@@ -231,7 +259,51 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
     }
     let releases =
         serde_json::from_slice(&body).map_err(|e| CheckError::Parse(host, e.to_string()))?;
-    Ok(Fetched::Releases { etag, releases })
+    Ok(Page::Releases {
+        etag,
+        next,
+        releases,
+    })
+}
+
+async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, CheckError> {
+    let mut url = state.config.updates.releases_url.clone();
+    url.query_pairs_mut().append_pair("per_page", PER_PAGE);
+    let origin = url.origin();
+    let current = running();
+    let (first_etag, mut next, mut all) = match fetch_page(state, url, etag).await? {
+        Page::NotModified => return Ok(Fetched::NotModified),
+        Page::Releases {
+            etag,
+            next,
+            releases,
+        } => (etag, next, releases),
+    };
+    let mut pages = 1;
+    while let Some(url) = next.take() {
+        let reached = all
+            .iter()
+            .any(|r| policy::parse_tag(&r.tag_name).is_some_and(|v| v <= current));
+        if reached || pages >= MAX_PAGES || url.origin() != origin {
+            break;
+        }
+        match fetch_page(state, url, None).await? {
+            Page::NotModified => break,
+            Page::Releases {
+                next: more,
+                releases,
+                ..
+            } => {
+                all.extend(releases);
+                next = more;
+                pages += 1;
+            }
+        }
+    }
+    Ok(Fetched::Releases {
+        etag: first_etag,
+        releases: all,
+    })
 }
 
 fn rate_limit_wait(
@@ -624,9 +696,7 @@ pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreErr
             .await?;
         }
         Ok(Some(remote)) => {
-            if remote.step.as_str() != job.step {
-                updates::set_step(&state.pg, job.id, remote.step.as_str()).await?;
-            }
+            updates::seen(&state.pg, job.id, remote.step.as_str(), state.clock.now()).await?;
         }
         Ok(None) if state.clock.now() - job.started_at < START_GRACE => {
             tracing::debug!("the updater has not taken up the update yet");
@@ -644,7 +714,9 @@ pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreErr
             )
             .await?;
         }
-        Err(e) if state.clock.now() - job.started_at > LOST_AFTER => {
+        Err(e)
+            if state.clock.now() - job.last_contact_at.unwrap_or(job.started_at) > LOST_AFTER =>
+        {
             tracing::warn!(error = %e, "the updater lost touch with a running update");
             finish(
                 state,
@@ -709,6 +781,27 @@ mod tests {
         let mirror =
             url::Url::parse("http://releases:8080/repos/logicplanes/kaeso/releases").unwrap();
         assert_eq!(downloads_of(&mirror), "http://releases:8080/");
+    }
+
+    #[test]
+    fn the_next_page_comes_from_githubs_link_header() {
+        let mut h = HeaderMap::new();
+        assert_eq!(next_page(&h), None);
+        h.insert(
+            LINK,
+            HeaderValue::from_static(
+                r#"<https://api.github.com/repositories/1/releases?per_page=50&page=2>; rel="next", <https://api.github.com/repositories/1/releases?per_page=50&page=4>; rel="last""#,
+            ),
+        );
+        assert_eq!(
+            next_page(&h).unwrap().as_str(),
+            "https://api.github.com/repositories/1/releases?per_page=50&page=2"
+        );
+        h.insert(
+            LINK,
+            HeaderValue::from_static(r#"<https://api.github.com/x?page=1>; rel="prev""#),
+        );
+        assert_eq!(next_page(&h), None);
     }
 
     #[test]

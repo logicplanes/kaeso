@@ -162,6 +162,7 @@ pub struct JobRow {
     pub started_by: Option<Uuid>,
     pub started_by_name: Option<String>,
     pub started_at: OffsetDateTime,
+    pub last_contact_at: Option<OffsetDateTime>,
     pub finished_at: Option<OffsetDateTime>,
 }
 
@@ -197,7 +198,7 @@ pub async fn job(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<JobRow>, St
     Ok(sqlx::query_as!(
         JobRow,
         "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, \
-         j.started_by, u.name AS started_by_name, j.started_at, j.finished_at \
+         j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at \
          FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE j.id = $1",
         id
     )
@@ -209,7 +210,7 @@ pub async fn running_job(db: impl PgExecutor<'_>) -> Result<Option<JobRow>, Stor
     Ok(sqlx::query_as!(
         JobRow,
         "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, \
-         j.started_by, u.name AS started_by_name, j.started_at, j.finished_at \
+         j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at \
          FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE j.state = 'running'"
     )
     .fetch_optional(db)
@@ -220,7 +221,7 @@ pub async fn latest_job(db: impl PgExecutor<'_>) -> Result<Option<JobRow>, Store
     Ok(sqlx::query_as!(
         JobRow,
         "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, \
-         j.started_by, u.name AS started_by_name, j.started_at, j.finished_at \
+         j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at \
          FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by \
          ORDER BY j.started_at DESC, j.id DESC LIMIT 1"
     )
@@ -236,7 +237,7 @@ pub async fn jobs(
     Ok(sqlx::query_as!(
         JobRow,
         "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, \
-         j.started_by, u.name AS started_by_name, j.started_at, j.finished_at \
+         j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at \
          FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by \
          WHERE $1::uuid IS NULL OR j.id < $1 ORDER BY j.id DESC LIMIT $2",
         after,
@@ -246,11 +247,17 @@ pub async fn jobs(
     .await?)
 }
 
-pub async fn set_step(db: impl PgExecutor<'_>, id: Uuid, step: &str) -> Result<(), StoreError> {
+pub async fn seen(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    step: &str,
+    at: OffsetDateTime,
+) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE update_jobs SET step = $2 WHERE id = $1 AND state = 'running'",
+        "UPDATE update_jobs SET step = $2, last_contact_at = $3 WHERE id = $1 AND state = 'running'",
         id,
-        step
+        step,
+        at
     )
     .execute(db)
     .await?;

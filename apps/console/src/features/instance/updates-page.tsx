@@ -172,7 +172,7 @@ function Latest({ u, latest, running, onUpdate }: { u: UpdatesView; latest: Rele
   const commands = [
     `curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v${latest.version}/compose.yaml`,
     "docker compose pull",
-    "docker compose up -d",
+    "docker compose up -d --wait",
   ].join("\n");
   const reason = blocked(u);
   return (

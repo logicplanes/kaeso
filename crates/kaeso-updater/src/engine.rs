@@ -20,6 +20,7 @@ const ORDER: [Service; 2] = [Service::Console, Service::Gateway];
 const PULLED: [Service; 3] = [Service::Gateway, Service::Console, Service::Updater];
 const PREVIOUS_SUFFIX: &str = "-previous";
 const STEADY_POLLS: u32 = 3;
+const MAINTENANCE_TRIES: u32 = 10;
 
 #[derive(Clone, Debug)]
 pub struct Settings {
@@ -104,13 +105,23 @@ impl Engine {
     }
 
     fn update(&self, f: impl FnOnce(&mut Saved)) {
-        let mut guard = self.current.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some(saved) = guard.as_mut() {
-            f(saved);
-            if let Err(e) = self.settings.state.save(saved) {
-                tracing::warn!(error = %e, "cannot save the update's state");
-            }
+        if let Err(e) = self.record(f) {
+            tracing::warn!(detail = %e.detail, "cannot save the update's state");
         }
+    }
+
+    fn record(&self, f: impl FnOnce(&mut Saved)) -> Result<(), Failure> {
+        let mut guard = self.current.lock().unwrap_or_else(PoisonError::into_inner);
+        let Some(saved) = guard.as_mut() else {
+            return Ok(());
+        };
+        f(saved);
+        self.settings.state.save(saved).map_err(|e| {
+            fail(
+                Reason::StateUnwritable,
+                format!("cannot save the update's progress: {e}"),
+            )
+        })
     }
 
     pub fn last(&self) -> Option<Job> {
@@ -173,10 +184,38 @@ impl Engine {
         }
     }
 
-    fn end(&self, state: JobState, failure: Option<Failure>) {
-        if let Err(e) = self.settings.maintenance.clear() {
-            tracing::warn!(error = %e, "cannot remove the maintenance flag");
+    async fn clear_maintenance(&self) -> Result<(), std::io::Error> {
+        let mut tries = 0;
+        loop {
+            match self.settings.maintenance.clear() {
+                Ok(()) => return Ok(()),
+                Err(e) if tries >= MAINTENANCE_TRIES => return Err(e),
+                Err(e) => {
+                    tracing::warn!(error = %e, "cannot remove the maintenance flag yet");
+                    tries += 1;
+                    tokio::time::sleep(self.settings.poll).await;
+                }
+            }
         }
+    }
+
+    async fn end(&self, state: JobState, failure: Option<Failure>) {
+        let (state, failure) = match self.clear_maintenance().await {
+            Ok(()) => (state, failure),
+            Err(e) => {
+                let left = format!(
+                    "the maintenance flag could not be removed ({e}), so Caddy still answers that Kaeso is being updated; delete `active` from the kaeso_maintenance volume"
+                );
+                let failure = match failure {
+                    Some(f) => Failure {
+                        reason: f.reason,
+                        detail: format!("{}; {left}", f.detail),
+                    },
+                    None => fail(Reason::StateUnwritable, left),
+                };
+                (JobState::NeedsAttention, Some(failure))
+            }
+        };
         self.update(|s| {
             s.job.state = state;
             s.job.finished_at = Some(OffsetDateTime::now_utc());
@@ -196,7 +235,7 @@ impl Engine {
     async fn run(self: Arc<Self>, to: Version) {
         let prepared = match self.prepare(&to).await {
             Ok(p) => p,
-            Err(f) => return self.end(JobState::Failed, Some(f)),
+            Err(f) => return self.end(JobState::Failed, Some(f)).await,
         };
         self.step(Step::Switching);
         for target in &prepared.targets {
@@ -288,7 +327,7 @@ impl Engine {
                 tracing::warn!(error = %e, "cannot remove a previous container");
             }
         }
-        self.end(JobState::Succeeded, warning);
+        self.end(JobState::Succeeded, warning).await;
     }
 
     async fn verified(&self, name: &str, content: &[u8], commit: &str) -> Result<(), Failure> {
@@ -545,20 +584,25 @@ impl Engine {
         })
     }
 
-    fn set_phase(&self, service: Service, phase: Phase, new_id: Option<String>) {
-        self.update(|s| {
+    fn set_phase(
+        &self,
+        service: Service,
+        phase: Phase,
+        new_id: Option<String>,
+    ) -> Result<(), Failure> {
+        self.record(|s| {
             if let Some(w) = s.switched.iter_mut().find(|w| w.service == service) {
                 w.phase = phase;
                 if new_id.is_some() {
                     w.new_id = new_id;
                 }
             }
-        });
+        })
     }
 
     async fn switch(&self, t: &Target) -> Result<(), Failure> {
         let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
-        self.update(|s| {
+        self.record(|s| {
             s.switched.push(Switched {
                 service: t.service,
                 name: t.name.clone(),
@@ -566,7 +610,7 @@ impl Engine {
                 new_id: None,
                 phase: Phase::Stopping,
             })
-        });
+        })?;
         self.docker
             .stop(&t.id, self.settings.stop_seconds)
             .await
@@ -585,12 +629,11 @@ impl Engine {
         if t.service == Service::Gateway {
             clone::start_period(&mut spec, self.settings.gateway_timeout);
         }
-        self.set_phase(t.service, Phase::Creating, None);
+        self.set_phase(t.service, Phase::Creating, None)?;
         let new_id = self.docker.create(&t.name, &spec).await.map_err(docker)?;
-        self.set_phase(t.service, Phase::Created, Some(new_id.clone()));
+        self.set_phase(t.service, Phase::Created, Some(new_id.clone()))?;
         self.docker.start(&new_id).await.map_err(docker)?;
-        self.set_phase(t.service, Phase::Started, None);
-        Ok(())
+        self.set_phase(t.service, Phase::Started, None)
     }
 
     async fn healthy(&self, id: &str, timeout: Duration, patient: bool) -> Result<(), String> {
@@ -710,7 +753,7 @@ impl Engine {
 
     async fn roll_back(&self, failure: Failure) {
         let Some(saved) = self.snapshot() else {
-            return self.end(JobState::Failed, Some(failure));
+            return self.end(JobState::Failed, Some(failure)).await;
         };
         let gateway = if saved.migrates {
             self.started_gateway(&saved).await
@@ -734,13 +777,15 @@ impl Engine {
                 kept.join(" and ")
             );
             tracing::warn!(gateway = %w.name, "the update needs a person");
-            return self.end(
-                JobState::NeedsAttention,
-                Some(Failure {
-                    reason: failure.reason,
-                    detail,
-                }),
-            );
+            return self
+                .end(
+                    JobState::NeedsAttention,
+                    Some(Failure {
+                        reason: failure.reason,
+                        detail,
+                    }),
+                )
+                .await;
         }
         let mut problems = Vec::new();
         for w in saved.switched.iter().rev() {
@@ -754,7 +799,7 @@ impl Engine {
             format!("; rolling back failed: {}", problems.join("; "))
         };
         if problems.is_empty() {
-            self.end(JobState::RolledBack, Some(failure));
+            self.end(JobState::RolledBack, Some(failure)).await;
         } else {
             self.end(
                 JobState::RollbackFailed,
@@ -762,7 +807,8 @@ impl Engine {
                     reason: failure.reason,
                     detail: format!("{}{problems}", failure.detail),
                 }),
-            );
+            )
+            .await;
         }
     }
 
@@ -801,7 +847,9 @@ impl Engine {
             } else {
                 JobState::NeedsAttention
             };
-            return self.end(state, Some(fail(Reason::DockerUnavailable, detail)));
+            return self
+                .end(state, Some(fail(Reason::DockerUnavailable, detail)))
+                .await;
         }
         let interrupted = fail(
             Reason::Interrupted,
@@ -827,7 +875,7 @@ impl Engine {
             }
         }
         if saved.switched.is_empty() {
-            return self.end(JobState::Failed, Some(interrupted));
+            return self.end(JobState::Failed, Some(interrupted)).await;
         }
         self.roll_back(interrupted).await;
     }
