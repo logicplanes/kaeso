@@ -41,7 +41,7 @@ test.describe("phone width", () => {
       return route.fulfill({ response });
     });
     await open(page, "/components/app-frame");
-    expect(asked).toEqual([""]);
+    await expect.poll(() => asked, { message: "the sheet's code was preloaded once the page was idle" }).toEqual([""]);
     const toggle = phoneBar(page).getByRole("button", { name: "Open navigation" });
     await toggle.scrollIntoViewIfNeeded();
     await expect(toggle).toHaveAttribute("aria-expanded", "false");

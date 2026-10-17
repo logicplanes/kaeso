@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   AppFrame: {
-    description: "The page frame of an app: a skip link to the content, the sidebar, the inset panel and, on phones, a bar with a menu button.",
+    description:
+      "The page frame of an app: a skip link to the content, the sidebar, the inset panel and, on phones, a bar with a menu button. The navigation sheet's code loads once the page is idle or on the first tap; after a failed download the next tap or hover loads it again from a fresh address. Chromium and WebKit keep a failed download of a chunk the sheet shares with the rest of the app until the page is reloaded.",
     props: {
       brandHref: "Where the phone bar's wordmark links to (the app's home), as `Sidebar.Brand`'s `href`; without it the wordmark is not a link.",
       brandLabel: "The accessible name of the phone bar's wordmark (default \"Kaeso\"), as `Sidebar.Brand`'s `label`.",

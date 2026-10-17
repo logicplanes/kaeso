@@ -10,11 +10,11 @@ import { scrollParent } from "../../hooks/scroll-parent.js";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { createPortal } from "react-dom";
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
+import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 import { RowCheckbox } from "./row-checkbox.js";
 import { useUiText } from "../../i18n/context.js";
 
-const virtualRows = lazyModule(() => import("./virtual-rows.js"));
+const virtualRows = lazyModule(() => import("./virtual-rows.js"), { base: () => import.meta.url });
 
 export const KAESO_LIST_VARIANTS = {
   density: {
@@ -140,7 +140,8 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
 
   const virtual = flat.length > virtualizeAbove;
   const estimateSize = (i: number) => (flat[i]?.kind === "header" ? (i === 0 ? 36 : 52) : narrow ? 64 : density === "compact" ? 36 : 44);
-  const VirtualRows = useLazyModule(virtualRows, virtual)?.VirtualRows;
+  const [rowsModule, retryRows] = useLazyModuleRetried(virtualRows, virtual);
+  const VirtualRows = rowsModule?.VirtualRows;
   const scrollTo = useRef<((index: number) => void) | null>(null);
 
   if (active >= flat.length) setActive(-1);
@@ -289,7 +290,14 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
       aria-label={ariaLabel}
       aria-multiselectable={selectable || undefined}
       aria-busy={loading || undefined}
-      onKeyDown={onKeyDown}
+      onKeyDown={(e) => {
+        retryRows();
+        onKeyDown(e);
+      }}
+      onPointerEnter={retryRows}
+      onPointerDown={retryRows}
+      onFocus={retryRows}
+      onWheel={retryRows}
       className={cn("relative flex flex-col outline-none", inset && "overflow-hidden rounded-group bg-raised shadow-xs", className)}
     >
       {loading && (none || flat.length === 0) ? (

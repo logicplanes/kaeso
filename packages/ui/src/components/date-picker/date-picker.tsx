@@ -21,8 +21,8 @@ export const KAESO_DATE_PICKER_VARIANTS = {
 } as const;
 export const KAESO_DATE_PICKER_DEFAULT_VARIANTS = { size: "md" } as const;
 
-const datePopup = lazyModule(() => import("./date-popup.js"));
-const rangePopup = lazyModule(() => import("./range-popup.js"));
+const datePopup = lazyModule(() => import("./date-popup.js"), { base: () => import.meta.url });
+const rangePopup = lazyModule(() => import("./range-popup.js"), { base: () => import.meta.url });
 const preloadDatePopup = () => preload(datePopup);
 const preloadRangePopup = () => preload(rangePopup);
 

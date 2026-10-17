@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 
 export interface LazyModule<T> {
   current: () => T | undefined;
@@ -19,31 +19,43 @@ export async function lazyModulesSettled(): Promise<void> {
   while (loading?.size) await Promise.allSettled(loading);
 }
 
-const FAILED_FETCH = /dynamically imported module: (\S+)$/;
-
-function freshUrl(error: unknown, attempt: number): string | undefined {
-  const url = error instanceof Error ? FAILED_FETCH.exec(error.message)?.[1] : undefined;
-  if (!url || !URL.canParse(url)) return undefined;
-  const fresh = new URL(url);
-  fresh.searchParams.set("retry", String(attempt));
-  return fresh.href;
+export interface LazyModuleOptions<T> {
+  base?: (() => string) | undefined;
+  reimport?: ((url: string) => Promise<T>) | undefined;
 }
 
-export function lazyModule<T>(load: () => Promise<T>, reimport: (url: string) => Promise<T> = (url) => import(url) as Promise<T>): LazyModule<T> {
+const CHROMIUM_FAILED_FETCH = /^Failed to fetch dynamically imported module: (\S+)$/;
+const IMPORTED = /\bimport\(\s*(["'`])([^"'`$]+)\1\s*\)/;
+
+function failedAddress(error: unknown, load: () => unknown, base: (() => string) | undefined): string | undefined {
+  const named = error instanceof Error ? CHROMIUM_FAILED_FETCH.exec(error.message)?.[1] : undefined;
+  const from = base?.();
+  const address = named ?? (from ? IMPORTED.exec(String(load))?.[2] : undefined);
+  return address && URL.canParse(address, from) ? new URL(address, from).href : undefined;
+}
+
+function fresh(address: string, attempt: number): string {
+  const url = new URL(address);
+  url.searchParams.set("retry", String(attempt));
+  return url.href;
+}
+
+export function lazyModule<T>(load: () => Promise<T>, { base, reimport = (url) => import(url) as Promise<T> }: LazyModuleOptions<T> = {}): LazyModule<T> {
   let mod: T | undefined;
   let pending: Promise<T> | undefined;
   let failures = 0;
-  let again: string | undefined;
+  let address: string | undefined;
+  const attempt = () => (address ? reimport(fresh(address, failures)).catch(() => load()) : load());
   return {
     current: () => mod,
     load: () =>
       (pending ??= track(
-        (again ? reimport(again) : load()).then(
+        attempt().then(
           (m) => (mod = m),
           (error: unknown) => {
             pending = undefined;
             failures += 1;
-            again = freshUrl(error, failures) ?? again;
+            address = failedAddress(error, load, base) ?? address;
             throw error;
           },
         ),
@@ -74,4 +86,10 @@ export function useLazyModule<T>(m: LazyModule<T>, wanted: boolean, onFail?: (()
     };
   }, [m, wanted, mod]);
   return wanted ? mod : undefined;
+}
+
+export function useLazyModuleRetried<T>(m: LazyModule<T>, wanted: boolean): [T | undefined, () => void] {
+  const [failed, setFailed] = useState(false);
+  const mod = useLazyModule(m, wanted && !failed, () => setFailed(true));
+  return [mod, () => setFailed(false)];
 }

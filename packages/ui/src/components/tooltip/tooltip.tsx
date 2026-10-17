@@ -1,6 +1,6 @@
-import { isValidElement, useState, type ReactElement, type ReactNode } from "react";
+import { isValidElement, useState, type FocusEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
+import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 import { HandedTrigger, triggerPropsStore } from "./trigger-props.js";
 import { KbdSequence } from "../kbd/kbd.js";
 
@@ -38,15 +38,31 @@ export interface TooltipProps {
   sideOffset?: number | undefined;
 }
 
-const tooltipRoot = lazyModule(() => import("./tooltip-root.js"));
+const tooltipRoot = lazyModule(() => import("./tooltip-root.js"), { base: () => import.meta.url });
 
 export function Tooltip(props: TooltipProps) {
-  const mod = useLazyModule(tooltipRoot, true);
+  const [mod, retry] = useLazyModuleRetried(tooltipRoot, true);
   const [store] = useState(triggerPropsStore);
   if (!isValidElement(props.children)) return props.children;
+  const own = props.children.props as {
+    onPointerEnter?: ((e: PointerEvent<Element>) => void) | undefined;
+    onFocus?: ((e: FocusEvent<Element>) => void) | undefined;
+  };
+  const retryOnIntent = mod
+    ? undefined
+    : {
+        onPointerEnter: (e: PointerEvent<Element>) => {
+          own.onPointerEnter?.(e);
+          retry();
+        },
+        onFocus: (e: FocusEvent<Element>) => {
+          own.onFocus?.(e);
+          retry();
+        },
+      };
   return (
     <>
-      <HandedTrigger store={store} merge={mod?.mergeTriggerProps}>
+      <HandedTrigger store={store} merge={mod?.mergeTriggerProps} extra={retryOnIntent}>
         {props.children}
       </HandedTrigger>
       {mod && <mod.TooltipRoot {...props} triggerProps={store} />}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../utils/cn.js";
-import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
+import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 
-const checkbox = lazyModule(() => import("../checkbox/checkbox.js"));
+const checkbox = lazyModule(() => import("../checkbox/checkbox.js"), { base: () => import.meta.url });
 
 export function RowCheckbox({ checked, onToggle, "aria-label": ariaLabel }: { checked: boolean; onToggle: () => void; "aria-label": string }) {
-  const mod = useLazyModule(checkbox, true);
+  const [mod, retry] = useLazyModuleRetried(checkbox, true);
   const [over, setOver] = useState(false);
   const [pressed, setPressed] = useState(false);
   useEffect(() => {
@@ -28,7 +28,10 @@ export function RowCheckbox({ checked, onToggle, "aria-label": ariaLabel }: { ch
       role="checkbox"
       aria-checked={checked}
       aria-label={ariaLabel}
-      onPointerEnter={() => setOver(true)}
+      onPointerEnter={() => {
+        setOver(true);
+        retry();
+      }}
       onPointerLeave={() => setOver(false)}
       onPointerDown={() => setPressed(true)}
       onClick={() => {

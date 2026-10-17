@@ -158,7 +158,7 @@ PhoneBar.displayName = "AppFrame.PhoneBar";
 
 export const PEEK_DELAY = 750;
 
-const navSheet = lazyModule(() => import("./nav-sheet.js"));
+const navSheet = lazyModule(() => import("./nav-sheet.js"), { base: () => import.meta.url });
 
 function FrameSheet({
   navOpen,

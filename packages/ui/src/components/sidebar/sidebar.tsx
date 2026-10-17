@@ -288,7 +288,7 @@ export function BrandWordmark({ href, label = "Kaeso" }: { href?: string | undef
 }
 BrandWordmark.displayName = "Sidebar.BrandWordmark";
 
-const sidebarMenu = lazyModule(() => import("./sidebar-menu.js"));
+const sidebarMenu = lazyModule(() => import("./sidebar-menu.js"), { base: () => import.meta.url });
 
 function LazyMenu({
   trigger,
@@ -305,7 +305,10 @@ function LazyMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [wanted, setWanted] = useState(false);
-  const mod = useLazyModule(sidebarMenu, wanted || open);
+  const mod = useLazyModule(sidebarMenu, wanted || open, () => {
+    setWanted(false);
+    setOpen(false);
+  });
   const [store] = useState(triggerPropsStore);
   const button = useRef<HTMLElement | null>(null);
   const pending = open && !mod;
