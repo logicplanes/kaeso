@@ -1,5 +1,6 @@
 import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js";
 import { Fragment, forwardRef, useCallback, useRef, type ReactNode } from "react";
+import { CSPProvider } from "@base-ui/react/csp-provider";
 import { Select as BaseSelect } from "@base-ui/react/select";
 import { cn } from "../../utils/cn.js";
 import { warnStylingClassName } from "../../utils/dev.js";
@@ -185,67 +186,69 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           <Icon icon={icons.chevronDown} size="sm" />
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
-      <BaseSelect.Portal container={usePortalContainer()}>
-        <BaseSelect.Positioner
-          positionMethod="fixed"
-          collisionBoundary={pageBoundary()}
-          alignItemWithTrigger={false}
-          align="start"
-          sideOffset={6}
-          collisionPadding={8}
-          className="z-50 outline-none"
-        >
-          <BaseSelect.Popup className={cn(MENU_POPUP, "min-w-anchor overflow-hidden")} style={anchorWidthStyle(triggerWidth)}>
-            <BaseSelect.ScrollUpArrow className="flex h-20 items-center justify-center text-fg-tertiary">
-              <Icon icon={icons.chevronUp} size="xs" />
-            </BaseSelect.ScrollUpArrow>
-            <BaseSelect.List className="-mx-6 flex min-h-0 flex-col overflow-y-auto overscroll-contain px-6 outline-none scrollbar-quiet">
-              {groupsOf(options).map((g, gi) => (
-                <Fragment key={g.group ?? `g${gi}`}>
-                  {gi > 0 && <div role="presentation" className={MENU_SEPARATOR} />}
-                  <BaseSelect.Group className="flex flex-col">
-                    {g.group && <BaseSelect.GroupLabel className={MENU_LABEL}>{g.group}</BaseSelect.GroupLabel>}
-                    {g.items.map((o) => (
-                      <BaseSelect.Item
-                        key={o.value}
-                        value={o.value}
-                        {...(o.disabled ? { disabled: true } : {})}
-                        label={o.textValue ?? (typeof o.label === "string" ? o.label : o.value)}
-                        className={cn(MENU_ITEM, "group/opt")}
-                      >
-                        {multiple && (
-                          <span className="pointer-events-none flex">
-                            <OptionCheckbox />
+      <CSPProvider disableStyleElements>
+        <BaseSelect.Portal container={usePortalContainer()}>
+          <BaseSelect.Positioner
+            positionMethod="fixed"
+            collisionBoundary={pageBoundary()}
+            alignItemWithTrigger={false}
+            align="start"
+            sideOffset={6}
+            collisionPadding={8}
+            className="z-50 outline-none"
+          >
+            <BaseSelect.Popup className={cn(MENU_POPUP, "min-w-anchor overflow-hidden")} style={anchorWidthStyle(triggerWidth)}>
+              <BaseSelect.ScrollUpArrow className="flex h-20 items-center justify-center text-fg-tertiary">
+                <Icon icon={icons.chevronUp} size="xs" />
+              </BaseSelect.ScrollUpArrow>
+              <BaseSelect.List className="-mx-6 flex min-h-0 flex-col overflow-y-auto overscroll-contain px-6 outline-none scrollbar-quiet">
+                {groupsOf(options).map((g, gi) => (
+                  <Fragment key={g.group ?? `g${gi}`}>
+                    {gi > 0 && <div role="presentation" className={MENU_SEPARATOR} />}
+                    <BaseSelect.Group className="flex flex-col">
+                      {g.group && <BaseSelect.GroupLabel className={MENU_LABEL}>{g.group}</BaseSelect.GroupLabel>}
+                      {g.items.map((o) => (
+                        <BaseSelect.Item
+                          key={o.value}
+                          value={o.value}
+                          {...(o.disabled ? { disabled: true } : {})}
+                          label={o.textValue ?? (typeof o.label === "string" ? o.label : o.value)}
+                          className={cn(MENU_ITEM, "group/opt")}
+                        >
+                          {multiple && (
+                            <span className="pointer-events-none flex">
+                              <OptionCheckbox />
+                            </span>
+                          )}
+                          {o.icon && <Icon icon={o.icon} size="sm" className={cn(MENU_ICON, o.description && "self-start mt-10")} />}
+                          <span className={cn("flex min-w-0 flex-1 flex-col", o.description && "gap-2 py-8")}>
+                            <BaseSelect.ItemText className="truncate">{o.label}</BaseSelect.ItemText>
+                            {o.description && <span className="text-small font-regular whitespace-normal text-fg-secondary">{o.description}</span>}
                           </span>
-                        )}
-                        {o.icon && <Icon icon={o.icon} size="sm" className={cn(MENU_ICON, o.description && "self-start mt-10")} />}
-                        <span className={cn("flex min-w-0 flex-1 flex-col", o.description && "gap-2 py-8")}>
-                          <BaseSelect.ItemText className="truncate">{o.label}</BaseSelect.ItemText>
-                          {o.description && <span className="text-small font-regular whitespace-normal text-fg-secondary">{o.description}</span>}
-                        </span>
-                        {!multiple && (
-                          <BaseSelect.ItemIndicator
-                            keepMounted
-                            className={cn(
-                              "flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-selected:opacity-100",
-                              o.description && "self-start mt-10",
-                            )}
-                          >
-                            <Icon icon={icons.check} size="sm" />
-                          </BaseSelect.ItemIndicator>
-                        )}
-                      </BaseSelect.Item>
-                    ))}
-                  </BaseSelect.Group>
-                </Fragment>
-              ))}
-            </BaseSelect.List>
-            <BaseSelect.ScrollDownArrow className="flex h-20 items-center justify-center text-fg-tertiary">
-              <Icon icon={icons.chevronDown} size="xs" />
-            </BaseSelect.ScrollDownArrow>
-          </BaseSelect.Popup>
-        </BaseSelect.Positioner>
-      </BaseSelect.Portal>
+                          {!multiple && (
+                            <BaseSelect.ItemIndicator
+                              keepMounted
+                              className={cn(
+                                "flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-selected:opacity-100",
+                                o.description && "self-start mt-10",
+                              )}
+                            >
+                              <Icon icon={icons.check} size="sm" />
+                            </BaseSelect.ItemIndicator>
+                          )}
+                        </BaseSelect.Item>
+                      ))}
+                    </BaseSelect.Group>
+                  </Fragment>
+                ))}
+              </BaseSelect.List>
+              <BaseSelect.ScrollDownArrow className="flex h-20 items-center justify-center text-fg-tertiary">
+                <Icon icon={icons.chevronDown} size="xs" />
+              </BaseSelect.ScrollDownArrow>
+            </BaseSelect.Popup>
+          </BaseSelect.Positioner>
+        </BaseSelect.Portal>
+      </CSPProvider>
     </BaseSelect.Root>
   );
   if (field) return control;

@@ -1,4 +1,5 @@
 import { forwardRef, type ReactNode } from "react";
+import { CSPProvider } from "@base-ui/react/csp-provider";
 import { ScrollArea as BaseScrollArea } from "@base-ui/react/scroll-area";
 import { cn } from "../../utils/cn.js";
 
@@ -36,17 +37,19 @@ export const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(function S
   ref,
 ) {
   return (
-    <BaseScrollArea.Root ref={ref} className={cn("relative min-h-0 overflow-hidden", className)}>
-      <BaseScrollArea.Viewport
-        className={cn("size-full overscroll-contain focus-ring-inset", KAESO_SCROLL_AREA_VARIANTS.orientation[orientation].classes, viewportClassName)}
-        {...(label ? { role: "region", "aria-label": label } : {})}
-      >
-        {children}
-      </BaseScrollArea.Viewport>
-      {orientation !== "horizontal" && <Bar orientation="vertical" />}
-      {orientation !== "vertical" && <Bar orientation="horizontal" />}
-      {orientation === "both" && <BaseScrollArea.Corner />}
-    </BaseScrollArea.Root>
+    <CSPProvider disableStyleElements>
+      <BaseScrollArea.Root ref={ref} className={cn("relative min-h-0 overflow-hidden", className)}>
+        <BaseScrollArea.Viewport
+          className={cn("size-full overscroll-contain focus-ring-inset", KAESO_SCROLL_AREA_VARIANTS.orientation[orientation].classes, viewportClassName)}
+          {...(label ? { role: "region", "aria-label": label } : {})}
+        >
+          {children}
+        </BaseScrollArea.Viewport>
+        {orientation !== "horizontal" && <Bar orientation="vertical" />}
+        {orientation !== "vertical" && <Bar orientation="horizontal" />}
+        {orientation === "both" && <BaseScrollArea.Corner />}
+      </BaseScrollArea.Root>
+    </CSPProvider>
   );
 });
 ScrollArea.displayName = "ScrollArea";
