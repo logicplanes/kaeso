@@ -106,6 +106,8 @@ pub struct VerifyRequest {
     post,
     path = "/auth/magic-link/verify",
     summary = "Signs in with a sign-in link. The link works once.",
+    description = "A link from `kaeso user sign-in-link` works even while sign-in links by \
+    email are turned off.",
     tag = "auth",
     request_body = VerifyRequest,
     responses((status = 200, description = "Signed in; the session cookie is set.", body = SignedIn))
@@ -115,7 +117,6 @@ pub async fn verify(
     ctx: Ctx,
     Body(req): Body<VerifyRequest>,
 ) -> ApiResult<Response> {
-    links_on(&state)?;
     throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
     let hash = secret::hash(req.token.expose_secret());
     let token = tokens::consume(&state.pg, TokenKind::MagicLink, &hash, ctx.now)
@@ -124,6 +125,11 @@ pub async fn verify(
             metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "magic_link", "reason" => "invalid").increment(1);
             ApiError::Authentication("This sign-in link is invalid, used or expired; request a new one.".into())
         })?;
+    let by_operator = token.data.get("issued_by").and_then(|v| v.as_str())
+        == Some(crate::services::users::OPERATOR_LINK);
+    if !by_operator {
+        links_on(&state)?;
+    }
     let user_id = token
         .user_id
         .map(UserId::from_uuid)

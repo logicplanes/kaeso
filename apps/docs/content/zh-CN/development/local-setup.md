@@ -142,7 +142,7 @@ pnpm dev --port 3001
 cargo run -p kaeso-testkit -- mock-provider 127.0.0.1:18090
 ```
 
-在第一个终端中创建新的数据库并导出它们的设置，将两个服务商都指向模拟服务商，再加上公开 URL、主密钥以及只写入日志的邮件发送方式，然后启动网关：
+在第一个终端中创建新的数据库并导出它们的设置，将两个服务商都指向模拟服务商，再加上公开 URL、主密钥以及只写入日志的邮件发送方式，输出设置链接，然后启动网关：
 
 ```bash
 export $(cargo run -q -p kaeso-testkit -- fresh-services)
@@ -152,6 +152,7 @@ export KAESO_PUBLIC_URL=http://localhost:3000
 export KAESO_LISTEN=127.0.0.1:8080
 export KAESO_MASTER_KEYS="$(cargo run -q -p kaeso -- master-key generate)"
 export KAESO_MAIL_TRANSPORT=log
+cargo run -q -p kaeso -- setup-link
 cargo run -p kaeso -- serve
 ```
 
@@ -161,7 +162,7 @@ cargo run -p kaeso -- serve
 KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev
 ```
 
-然后打开网关日志中的设置链接。如果要改为调用真实的服务商，去掉两行 `KAESO_PROVIDERS_…` 即可。这些数据库会一直保留，直到在第一个终端中将其删除：
+然后打开 `setup-link` 输出的设置链接。如果要改为调用真实的服务商，去掉两行 `KAESO_PROVIDERS_…` 即可。这些数据库会一直保留，直到在第一个终端中将其删除：
 
 ```bash
 cargo run -q -p kaeso-testkit -- drop-services "$KAESO_CLICKHOUSE_DATABASE"

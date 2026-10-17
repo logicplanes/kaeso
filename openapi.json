@@ -240,7 +240,7 @@
           "auth"
         ],
         "summary": "Signs in with a sign-in link. The link works once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "A link from `kaeso user sign-in-link` works even while sign-in links by email are turned off.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthMagicLinkVerify",
         "requestBody": {
           "content": {
@@ -302,6 +302,17 @@
         "summary": "The sign-in methods on this install, for the first step of a sign-in page.",
         "description": "**Access:** public; no authentication.",
         "operationId": "getAuthMethods",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "query",
+            "description": "The org of a sign-in link (`/sign-in?org=…`), whose identity provider\nthe page offers.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -476,6 +487,64 @@
       }
     },
     "/platform/v1/auth/oidc/start": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "A link that starts SSO: sends the browser straight to the identity\nprovider, with the flow bound to this browser as `POST auth/oidc/start`\nbinds it. On failure, to the sign-in page with the reason in `#sso_error=`.",
+        "description": "For links from an intranet page or a bookmark. It only begins a sign-in in the browser that follows it, and whoever signs in at the provider is who is signed in afterwards, so it needs no `Origin` header.\n\n**Access:** public; no authentication.",
+        "operationId": "getAuthOidcStart",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "query",
+            "description": "The org whose identity provider signs in. Without it, the install's\nonly SSO connection.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "description": "The console path to open once signed in, as in `POST auth/oidc/start`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to the identity provider, or to the sign-in page with `#sso_error=`."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      },
       "post": {
         "tags": [
           "auth"
@@ -939,7 +1008,7 @@
           "auth"
         ],
         "summary": "Creates the first user (an instance admin) and the first organization,\nwhose owner they become, and signs them in. The setup link works once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "With password sign-in off, the first user has no password: they connect the organization's identity provider in this session, and `kaeso user sign-in-link` prints a one-time sign-in link for them until it works.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthSetup",
         "requestBody": {
           "content": {
@@ -21565,7 +21634,6 @@
           "token",
           "email",
           "name",
-          "password",
           "org_name"
         ],
         "properties": {
@@ -21585,9 +21653,12 @@
             "example": "Acme"
           },
           "password": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "password",
-            "description": "The first user's password, 12 to 128 characters.",
+            "description": "The first user's password, 12 to 128 characters. Required while password\nsign-in is on (`password` in `auth/methods`); refused while it is off,\nwhere the first user signs in with a sign-in link or SSO.",
             "writeOnly": true
           },
           "token": {
@@ -21638,6 +21709,17 @@
           "password": {
             "type": "boolean",
             "description": "Email and password."
+          },
+          "provider": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SsoProviderView",
+                "description": "The identity provider the page offers by name. Without an address: the\none of the org in `org`, or the install's only one when SSO is its only\nsign-in method, so the page needs no address; otherwise `null`. With an\naddress: the one of its domain."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sign_up": {
             "type": "boolean",
@@ -21753,6 +21835,32 @@
           }
         }
       },
+      "SsoProviderView": {
+        "type": "object",
+        "description": "An identity provider a sign-in page offers.",
+        "required": [
+          "org",
+          "auto_redirect"
+        ],
+        "properties": {
+          "auto_redirect": {
+            "type": "boolean",
+            "description": "The page starts the sign-in at the provider without a click, unless the\nperson just signed out or the last attempt failed."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name on the sign-in button, such as `Acme ID`; `null` to say SSO.",
+            "example": "Acme ID"
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org it signs in to; pass it as `org` to `auth/oidc/start`."
+          }
+        }
+      },
       "SsoRequest": {
         "type": "object",
         "description": "An SSO connection.",
@@ -21762,6 +21870,13 @@
           "domains"
         ],
         "properties": {
+          "auto_redirect": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Send people to the provider without a click when the sign-in page\noffers it alone: through the org's sign-in link, or as the only\nprovider of an install that signs in only with SSO. Leave out to keep\nthe stored choice; off for a new connection."
+          },
           "client_id": {
             "type": "string",
             "description": "The client id registered at the provider."
@@ -21804,6 +21919,14 @@
             "type": "string",
             "description": "The issuer URL; Kaeso fetches `/.well-known/openid-configuration` from it.",
             "example": "https://login.acme.example"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name on the sign-in button, 1 to 50 characters, such as `Acme ID`.\nLeave out to keep the stored one; an empty string removes it.",
+            "example": "Acme ID"
           }
         }
       },
@@ -21815,9 +21938,15 @@
           "client_id",
           "domains",
           "key_id",
-          "redirect_url"
+          "redirect_url",
+          "auto_redirect",
+          "sign_in_url"
         ],
         "properties": {
+          "auto_redirect": {
+            "type": "boolean",
+            "description": "The sign-in page sends people to the provider without a click when it\noffers this provider alone."
+          },
           "client_id": {
             "type": "string",
             "description": "The client id Kaeso uses."
@@ -21838,15 +21967,26 @@
             "type": "string",
             "description": "The master key id that wraps the client secret."
           },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name on the sign-in button, such as `Acme ID`; `null`: the button\nsays SSO."
+          },
           "redirect_url": {
             "type": "string",
             "description": "Where the provider must send users back (register it there)."
+          },
+          "sign_in_url": {
+            "type": "string",
+            "description": "The org's sign-in link: the sign-in page with this provider's button,\nwithout asking for an address. `GET auth/oidc/start?org=…` goes\nstraight to the provider instead."
           }
         }
       },
       "StartRequest": {
         "type": "object",
-        "description": "Which org to sign in to.",
+        "description": "Which org to sign in to, and where to go afterwards.",
         "properties": {
           "email": {
             "type": [
@@ -21856,11 +21996,19 @@
             "description": "Or the user's email address, whose domain names the org.",
             "example": "ada@acme.example"
           },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The console path to open once signed in, starting with one `/`; never\nanother site, the Platform API or the model API. Without it, the\nconsole's start page.",
+            "example": "/settings/account"
+          },
           "org": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OrgId",
-                "description": "The org, from its sign-in link."
+                "description": "The org: from its sign-in link (`/sign-in?org=…`, the `sign_in_url` of\nits SSO connection), from `provider` in `auth/methods`, or from the\nconsole page that asks for its SSO."
               },
               {
                 "type": "null"
@@ -22564,7 +22712,7 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "__Host-kaeso_session",
-        "description": "The console session cookie, set by the sign-in endpoints. State-changing requests must also send an `Origin` header equal to the install's public URL."
+        "description": "The console session cookie, set by the sign-in endpoints. Every request other than `GET`, `HEAD` and `OPTIONS` that carries it, and every such request to a public `auth/*` endpoint, must also send `Origin` with the origin of the install's public URL; `orgs/{org}/*` requests with an API key need none."
       }
     }
   },

@@ -329,3 +329,86 @@ async fn an_internationalised_sso_domain_is_one_domain_however_it_is_typed() {
     }
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn an_sso_connection_names_its_button_and_its_sign_in_link() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let sso = format!("{}/sso", security(&owner));
+    let cookie = owner.cookie.as_str();
+    let connection = |extra: Value| {
+        let mut body = json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example"],
+        });
+        if let (Some(body), Some(extra)) = (body.as_object_mut(), extra.as_object()) {
+            body.extend(extra.clone());
+        }
+        body
+    };
+
+    let r = put(&app, cookie, &sso, connection(json!({}))).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["sso"]["name"], Value::Null);
+    assert_eq!(r.body["sso"]["auto_redirect"], false);
+    assert_eq!(
+        r.body["sso"]["sign_in_url"],
+        format!("{}/sign-in?org={}", common::ORIGIN, owner.org_id)
+    );
+
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        connection(json!({ "name": "  Acme ID ", "auto_redirect": true })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["sso"]["name"], "Acme ID");
+    assert_eq!(r.body["sso"]["auto_redirect"], true);
+    let r = put(&app, cookie, &sso, connection(json!({}))).await;
+    assert_eq!(
+        (&r.body["sso"]["name"], &r.body["sso"]["auto_redirect"]),
+        (&json!("Acme ID"), &json!(true)),
+        "leaving both out keeps them"
+    );
+    let audited: Value = sqlx::query_scalar(
+        "SELECT after FROM audit_events WHERE action = 'security.sso_update' ORDER BY at DESC, id DESC LIMIT 1",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(
+        (&audited["name"], &audited["auto_redirect"]),
+        (&json!("Acme ID"), &json!(true))
+    );
+
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        connection(json!({ "name": "x".repeat(51) })),
+    )
+    .await;
+    assert_eq!(
+        (r.status, r.body["error"]["param"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("name"))
+    );
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        connection(json!({ "name": "", "auto_redirect": false })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(
+        (&r.body["sso"]["name"], &r.body["sso"]["auto_redirect"]),
+        (&Value::Null, &json!(false))
+    );
+    s.cleanup().await;
+}

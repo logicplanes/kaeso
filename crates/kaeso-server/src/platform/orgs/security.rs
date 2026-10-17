@@ -34,6 +34,16 @@ pub struct SsoView {
     pub key_id: String,
     #[doc = "Where the provider must send users back (register it there)."]
     pub redirect_url: String,
+    #[doc = "The name on the sign-in button, such as `Acme ID`; `null`: the button\n\
+        says SSO."]
+    pub name: Option<String>,
+    #[doc = "The sign-in page sends people to the provider without a click when it\n\
+        offers this provider alone."]
+    pub auto_redirect: bool,
+    #[doc = "The org's sign-in link: the sign-in page with this provider's button,\n\
+        without asking for an address. `GET auth/oidc/start?org=…` goes\n\
+        straight to the provider instead."]
+    pub sign_in_url: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -66,6 +76,13 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
             .collect(),
         key_id: c.key_id,
         redirect_url: crate::auth::oidc::redirect_url(state),
+        name: c.display_name,
+        auto_redirect: c.auto_redirect,
+        sign_in_url: format!(
+            "{}sign-in?org={}",
+            state.config.public_url,
+            OrgId::from_uuid(org.id)
+        ),
     });
     let sso_default_role = match (org.sso_default_preset.as_deref(), org.sso_default_role_id) {
         (None, _) => None,
@@ -126,6 +143,15 @@ pub struct SsoRequest {
     #[doc = "Deprecated: the built-in role; send `default_role` instead."]
     #[schema(deprecated)]
     pub default_preset: Option<String>,
+    #[doc = "The name on the sign-in button, 1 to 50 characters, such as `Acme ID`.\n\
+        Leave out to keep the stored one; an empty string removes it."]
+    #[schema(example = "Acme ID")]
+    pub name: Option<String>,
+    #[doc = "Send people to the provider without a click when the sign-in page\n\
+        offers it alone: through the org's sign-in link, or as the only\n\
+        provider of an install that signs in only with SSO. Leave out to keep\n\
+        the stored choice; off for a new connection."]
+    pub auto_redirect: Option<bool>,
 }
 
 #[utoipa::path(
@@ -194,6 +220,14 @@ pub async fn put_sso(
         }
     };
     let existing = oidc::get(&state.pg, scope.org.id).await?;
+    let display_name = match req.name.as_deref().map(str::trim) {
+        None => existing.as_ref().and_then(|c| c.display_name.clone()),
+        Some("") => None,
+        Some(name) => Some(crate::platform::validate::validate_label("name", name, 50)?),
+    };
+    let auto_redirect = req
+        .auto_redirect
+        .unwrap_or_else(|| existing.as_ref().is_some_and(|c| c.auto_redirect));
     let secret: String = match (&req.client_secret, &existing) {
         (Some(s), _) => s.expose_secret().to_owned(),
         (None, Some(c)) => {
@@ -235,6 +269,8 @@ pub async fn put_sso(
             wrapped_key: sealed.wrapped_key,
             key_id: sealed.key_id,
             domains: domains.clone(),
+            display_name: display_name.clone(),
+            auto_redirect,
         },
     )
     .await?;
@@ -249,7 +285,7 @@ pub async fn put_sso(
     orgs::update(&mut *tx, &row).await?;
     ctx.audit(Some(org), "security.sso_update")
         .target("org", org)
-        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some() }))
+        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;

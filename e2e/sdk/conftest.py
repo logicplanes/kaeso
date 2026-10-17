@@ -16,7 +16,7 @@ BIN = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")) / "debug"
 LOGS = ROOT / "target" / "e2e"
 OPENAI_SECRET = "sk-test-openai-e2e-credential"
 ANTHROPIC_SECRET = "sk-ant-test-e2e-credential"
-SETUP_URL = re.compile(r'"setup_url":"[^"]*#token=([^"]+)"')
+SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
 @dataclass
@@ -99,8 +99,9 @@ def gateway():
         server = subprocess.Popen([kaeso, "serve"], env=env, stdout=log, stderr=subprocess.STDOUT)
     try:
         wait_until(lambda: answers(f"{url}/healthz"), f"the gateway answering (log: {log_path})")
-        wait_until(lambda: SETUP_URL.search(log_path.read_text()), f"a setup link (log: {log_path})")
-        token = SETUP_URL.findall(log_path.read_text())[-1]
+        printed = subprocess.run([kaeso, "setup-link"], env=env, capture_output=True, text=True, check=True).stdout
+        token = SETUP_LINK.search(printed).group(1)
+        assert token not in log_path.read_text(), "the setup token reached the gateway's log"
         yield Gateway(url=url, mock=mock_url, setup_token=token)
     finally:
         stop(server)

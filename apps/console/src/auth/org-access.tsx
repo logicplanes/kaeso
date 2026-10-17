@@ -10,7 +10,7 @@ import { orgMembersQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "./mutation";
 import { eitherOf } from "./people";
 import { membershipsQuery, PROJECT_RIGHTS_KEY, sessionQuery, useMembership, useOrgRights } from "./session";
-import { startSso } from "./sign-in-api";
+import { here, startSso } from "./sign-in-api";
 
 export function NeedsTwoFactor({ orgName }: { orgName: string }) {
   return (
@@ -36,7 +36,7 @@ export function NeedsTwoFactor({ orgName }: { orgName: string }) {
 
 export function NeedsSso({ org, orgName }: { org: string; orgName: string }) {
   const start = useMutation({
-    mutationFn: () => startSso({ org }),
+    mutationFn: () => startSso({ org, next: here() }),
     onSuccess: (url) => window.location.assign(url),
     onError: (error) => toastApiError(error),
   });

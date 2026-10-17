@@ -1,4 +1,5 @@
 import { api, data } from "~/api/client";
+import type { SignInMethodsView, SsoProviderView } from "~/api/generated/types";
 
 export type PasswordResult = { kind: "signed_in" } | { kind: "totp"; challenge: string; expiresAt: string };
 
@@ -18,17 +19,29 @@ export async function sendMagicLink(email: string): Promise<string> {
   return data(await api.POST("/platform/v1/auth/magic-link", { body: { email } })).message;
 }
 
-export async function startSso(body: { email: string } | { org: string }): Promise<string> {
+export async function startSso(body: ({ email: string } | { org: string }) & { next?: string }): Promise<string> {
   return data(await api.POST("/platform/v1/auth/oidc/start", { body })).authorization_url;
 }
 
-export type SignInMethods = { password: boolean; magic_link: boolean; sso: boolean; sso_required: boolean; sign_up: boolean };
+export function here(): string {
+  return window.location.pathname + window.location.search;
+}
 
-export const signInMethodsQuery = {
-  queryKey: ["auth", "methods"] as const,
-  queryFn: async (): Promise<SignInMethods> => data(await api.GET("/platform/v1/auth/methods")),
-  staleTime: 5 * 60_000,
-};
+export type SignInMethods = SignInMethodsView;
+export type SsoProvider = SsoProviderView;
+
+export const signInMethodsQuery = signInPageQuery();
+
+export function signInPageQuery(org?: string) {
+  return {
+    queryKey: ["auth", "methods", org ?? null] as const,
+    queryFn: async (): Promise<SignInMethods> => data(await api.GET("/platform/v1/auth/methods", org ? { params: { query: { org } } } : {})),
+    staleTime: 5 * 60_000,
+    retry: false,
+    retryOnMount: false,
+    networkMode: "always" as const,
+  };
+}
 
 export async function signInMethodsFor(email: string): Promise<SignInMethods> {
   return data(await api.POST("/platform/v1/auth/methods", { body: { email } }));

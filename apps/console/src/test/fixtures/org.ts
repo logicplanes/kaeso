@@ -97,6 +97,9 @@ export function sso(overrides: Partial<SsoView> = {}): SsoView {
     domains: ["northwind.test"],
     key_id: "mk_sso",
     redirect_url: "https://console.northwind.test/sso/callback",
+    name: null,
+    auto_redirect: false,
+    sign_in_url: "https://console.northwind.test/sign-in?org=org_northwind",
     ...overrides,
   };
 }

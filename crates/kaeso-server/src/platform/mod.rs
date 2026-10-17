@@ -65,7 +65,7 @@ impl Modify for Components {
             "session",
             SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::with_description(
                 crate::platform::cookies::NAME,
-                "The console session cookie, set by the sign-in endpoints. State-changing requests must also send an `Origin` header equal to the install's public URL.",
+                "The console session cookie, set by the sign-in endpoints. Every request other than `GET`, `HEAD` and `OPTIONS` that carries it, and every such request to a public `auth/*` endpoint, must also send `Origin` with the origin of the install's public URL; `orgs/{org}/*` requests with an API key need none.",
             ))),
         );
         components.add_security_scheme(

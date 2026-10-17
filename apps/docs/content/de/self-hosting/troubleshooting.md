@@ -34,6 +34,16 @@ docker compose exec gateway kaeso setup-link
 
 Ist Kaeso bereits eingerichtet, sagt der Befehl das; stattdessen unter der eigenen Domain anmelden.
 
+## Ausgesperrt aus einer Installation ohne Passwörter
+
+Auf einer Installation, die sich nur per Single Sign-on anmeldet, führt kein Weg hinein, wenn der Identitätsanbieter nicht funktioniert oder die Sitzung der Einrichtung endete, bevor Single Sign-on lief. Statt Passwörter wieder einzuschalten, einen einmaligen Anmeldelink für einen Instanz-Admin ausgeben:
+
+```bash
+docker compose exec gateway kaeso user sign-in-link owner@example.com
+```
+
+Ihn innerhalb von 15 Minuten öffnen; er funktioniert einmal. Siehe [Wieder hineinkommen](sign-in.md#wieder-hineinkommen).
+
 ## Die Seite hat kein Zertifikat
 
 Caddy braucht einen DNS-Eintrag der Domain, der auf den Server zeigt, und offene Ports 80 und 443. `docker compose logs caddy` zeigt die Antwort der Zertifizierungsstelle. Siehe [Domains und TLS](domains-and-tls.md#zertifikate).

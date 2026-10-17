@@ -13,7 +13,23 @@ use kaeso_testkit::services::TestServices;
 use serde_json::json;
 
 async fn connect(app: &App, owner: &Owner, idp: &MockIdp, default_preset: Option<&str>) {
-    let org: OrgId = owner.org_id.parse().unwrap();
+    connect_org(app, &owner.org_id, idp, "acme.example", None, false).await;
+    sqlx::query("UPDATE organizations SET sso_default_preset = $1")
+        .bind(default_preset)
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+}
+
+async fn connect_org(
+    app: &App,
+    org: &str,
+    idp: &MockIdp,
+    domain: &str,
+    name: Option<&str>,
+    auto_redirect: bool,
+) {
+    let org: OrgId = org.parse().unwrap();
     let sealed = kaeso_crypto::seal(
         &app.state.keyring,
         b"client-secret",
@@ -31,17 +47,14 @@ async fn connect(app: &App, owner: &Owner, idp: &MockIdp, default_preset: Option
             secret_nonce: sealed.nonce,
             wrapped_key: sealed.wrapped_key,
             key_id: sealed.key_id,
-            domains: vec!["acme.example".into()],
+            domains: vec![domain.into()],
+            display_name: name.map(str::to_owned),
+            auto_redirect,
         },
     )
     .await
     .unwrap();
     assert_eq!(stored, oidc::Upserted::Saved);
-    sqlx::query("UPDATE organizations SET sso_default_preset = $1")
-        .bind(default_preset)
-        .execute(&app.state.pg)
-        .await
-        .unwrap();
 }
 
 struct Flow {
@@ -475,4 +488,312 @@ async fn oversized_identity_provider_answers_are_refused() {
     assert!(err.to_string().contains("too large"), "{err}");
     let ok = fetch("/small").await.unwrap();
     assert_eq!(ok.body().len(), 1 << 10);
+}
+
+const SSO_ONLY: [(&str, &str); 2] = [
+    ("KAESO_AUTH_PASSWORD", "false"),
+    ("KAESO_AUTH_MAGIC_LINK", "false"),
+];
+
+async fn follow(app: &App, query: &str) -> common::Resp {
+    app.raw(
+        Request::get(format!("/platform/v1/auth/oidc/start{query}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await
+}
+
+async fn methods_page(app: &App, query: &str) -> serde_json::Value {
+    let r = app
+        .call_with(
+            axum::http::Method::GET,
+            &format!("/auth/methods{query}"),
+            None,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body
+}
+
+async fn another_org(app: &App, name: &str) -> String {
+    let org = OrgId::new();
+    kaeso_store::pg::orgs::insert(&app.state.pg, org.uuid(), name, 30, 30)
+        .await
+        .unwrap();
+    org.to_string()
+}
+
+#[tokio::test]
+async fn an_sso_only_install_offers_its_only_provider_without_an_address() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &SSO_ONLY).await;
+    let owner = app.setup().await;
+    let page = methods_page(&app, "").await;
+    assert_eq!(
+        (&page["password"], &page["magic_link"], &page["sso"]),
+        (&json!(false), &json!(false), &json!(true))
+    );
+    assert_eq!(page["provider"], serde_json::Value::Null);
+
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(
+        &app,
+        &owner.org_id,
+        &idp,
+        "acme.example",
+        Some("Acme ID"),
+        true,
+    )
+    .await;
+    assert_eq!(
+        methods_page(&app, "").await["provider"],
+        json!({ "org": owner.org_id, "name": "Acme ID", "auto_redirect": true })
+    );
+
+    let beta = another_org(&app, "Beta").await;
+    connect_org(&app, &beta, &idp, "beta.example", None, false).await;
+    assert_eq!(
+        methods_page(&app, "").await["provider"],
+        serde_json::Value::Null,
+        "with two providers the page asks for the address"
+    );
+    assert_eq!(
+        methods_page(&app, &format!("?org={beta}")).await["provider"],
+        json!({ "org": beta, "name": null, "auto_redirect": false })
+    );
+    let by_address = app
+        .post(
+            "/auth/methods",
+            json!({ "email": "ada@acme.example" }),
+            None,
+        )
+        .await;
+    assert_eq!(by_address.body["sso"], true);
+    assert_eq!(by_address.body["provider"]["name"], "Acme ID");
+    assert_eq!(by_address.body["provider"]["org"], owner.org_id.as_str());
+    let elsewhere = app
+        .post(
+            "/auth/methods",
+            json!({ "email": "ada@else.example" }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (&elsewhere.body["sso"], &elsewhere.body["provider"]),
+        (&json!(false), &serde_json::Value::Null)
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_org_sign_in_link_names_its_provider_on_any_install() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(
+        &app,
+        &owner.org_id,
+        &idp,
+        "acme.example",
+        Some("Acme ID"),
+        false,
+    )
+    .await;
+    assert_eq!(
+        methods_page(&app, "").await["provider"],
+        serde_json::Value::Null,
+        "with passwords on, the page asks for the address first"
+    );
+    assert_eq!(
+        methods_page(&app, &format!("?org={}", owner.org_id)).await["provider"]["name"],
+        "Acme ID"
+    );
+    let unknown = OrgId::new();
+    assert_eq!(
+        methods_page(&app, &format!("?org={unknown}")).await["provider"],
+        serde_json::Value::Null
+    );
+
+    let off = App::start_with(&s, &[("KAESO_AUTH_OIDC", "false")]).await;
+    assert_eq!(
+        methods_page(&off, &format!("?org={}", owner.org_id)).await["provider"],
+        serde_json::Value::Null
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_start_link_goes_to_the_provider_and_back_to_the_page_asked_for() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &SSO_ONLY).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+
+    let r = follow(&app, "?next=%2Fsettings%2Faccount%3Ftab%3Dsessions").await;
+    assert_eq!(r.status, StatusCode::SEE_OTHER, "{:?}", r.headers);
+    let to = location(&r);
+    assert!(to.starts_with(idp.issuer()), "{to}");
+    assert!(to.contains("code_challenge_method=S256"), "{to}");
+    assert_eq!(r.headers[header::CACHE_CONTROL], "no-store");
+    let binding = r.set_cookie("__Host-kaeso_oidc").unwrap();
+    let auth = idp.authorize(&to, "ada@acme.example", "Ada Lovelace");
+    let back = callback(&app, &auth.code, &auth.state, Some(&binding)).await;
+    assert_eq!(
+        location(&back),
+        format!("{ORIGIN}/settings/account?tab=sessions")
+    );
+    let cookie = back.cookie().expect("signed in");
+    assert_eq!(
+        app.get("/auth/session", &cookie).await.body["user"]["email"],
+        "ada@acme.example"
+    );
+
+    let flow = start(
+        &app,
+        json!({ "org": owner.org_id, "next": "/orgs/x/projects/y/logs#top" }),
+    )
+    .await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    assert_eq!(
+        location(&back),
+        format!("{ORIGIN}/orgs/x/projects/y/logs#top")
+    );
+
+    let flow = start(&app, json!({ "email": "ada@acme.example" })).await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    assert_eq!(location(&back), format!("{ORIGIN}/"));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn next_never_sends_the_browser_off_the_install() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    for next in [
+        "//evil.example",
+        "https://evil.example/",
+        "/\\evil.example",
+        "/orgs\r\nSet-Cookie: x=1",
+        "/platform/v1/auth/oidc/start",
+        "/../v1/models",
+    ] {
+        let r = app
+            .post(
+                "/auth/oidc/start",
+                json!({ "org": owner.org_id, "next": next }),
+                None,
+            )
+            .await;
+        assert_eq!(
+            (r.status, r.body["error"]["param"].as_str()),
+            (StatusCode::BAD_REQUEST, Some("next")),
+            "{next:?}"
+        );
+        let r = follow(
+            &app,
+            &format!("?org={}&next={}", owner.org_id, urlencode(next)),
+        )
+        .await;
+        let to = location(&r);
+        assert!(
+            to.starts_with(&format!("{ORIGIN}/sign-in#sso_error=")),
+            "{next:?}: {to}"
+        );
+        assert!(r.set_cookie("__Host-kaeso_oidc").is_none(), "{next:?}");
+    }
+
+    let flow = start(&app, json!({ "org": owner.org_id, "next": "/orgs" })).await;
+    sqlx::query(
+        "UPDATE sign_in_tokens SET data = jsonb_set(data, '{next}', '\"//evil.example\"') WHERE kind = 'oidc_state'",
+    )
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    assert_eq!(location(&back), format!("{ORIGIN}/"));
+
+    let flow = start(&app, json!({ "org": owner.org_id, "next": "/orgs?a=1" })).await;
+    let auth = idp.authorize(&flow.url, "eve@else.example", "Eve");
+    let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    let to = location(&back);
+    assert!(
+        to.starts_with(&format!("{ORIGIN}/sign-in?next=%2Forgs%3Fa%3D1#sso_error=")),
+        "a refused sign-in keeps the page to come back to: {to}"
+    );
+    assert!(back.cookie().is_none());
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_start_link_without_an_org_needs_exactly_one_provider() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let to = location(&follow(&app, "?next=%2Forgs").await);
+    assert!(
+        to.starts_with(&format!(
+            "{ORIGIN}/sign-in?next=%2Forgs#sso_error=No%20organization"
+        )),
+        "{to}"
+    );
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    assert!(location(&follow(&app, "").await).starts_with(idp.issuer()));
+    let beta = another_org(&app, "Beta").await;
+    connect_org(&app, &beta, &idp, "beta.example", None, false).await;
+    let to = location(&follow(&app, "").await);
+    assert!(to.contains("sso_error=Name%20the%20organization"), "{to}");
+    assert!(location(&follow(&app, &format!("?org={beta}")).await).starts_with(idp.issuer()));
+    let to = location(&follow(&app, "?org=not-an-org").await);
+    assert!(
+        to.starts_with(&format!("{ORIGIN}/sign-in#sso_error=")),
+        "{to}"
+    );
+
+    let off = App::start_with(&s, &[("KAESO_AUTH_OIDC", "false")]).await;
+    let to = location(&follow(&off, &format!("?org={beta}")).await);
+    assert!(to.contains("turned%20off"), "{to}");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn sign_in_reads_and_start_links_need_no_origin_but_changes_do() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    let bare = |method: axum::http::Method, path: &'static str, body: Option<serde_json::Value>| {
+        let app = &app;
+        async move { app.call_with(method, path, body, None, None).await }
+    };
+    assert_eq!(
+        bare(axum::http::Method::GET, "/auth/methods", None)
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let expected = format!("Cross-site request refused; send the header `Origin: {ORIGIN}`.");
+    for (path, body) in [
+        ("/auth/methods", json!({ "email": "ada@acme.example" })),
+        ("/auth/oidc/start", json!({ "org": owner.org_id })),
+    ] {
+        let r = bare(axum::http::Method::POST, path, Some(body)).await;
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{path}");
+        assert_eq!(r.body["error"]["message"], expected.as_str(), "{path}");
+    }
+    let r = follow(&app, &format!("?org={}", owner.org_id)).await;
+    assert!(location(&r).starts_with(idp.issuer()));
+    s.cleanup().await;
 }

@@ -16,9 +16,11 @@
   "signIn.recoveryCode": "Wiederherstellungscode",
   "signIn.recoveryHint": "Einen Wiederherstellungscode eingeben; jeder gilt nur einmal.",
   "signIn.sso": "Weiter mit SSO",
+  "signIn.ssoWith": "Weiter mit {provider}",
   "signIn.title": "Anmelden",
   "signIn.twoStep": "Bestätigung in zwei Schritten",
   "signIn.useApp": "Authenticator-App verwenden",
+  "signIn.useEmail": "Stattdessen mit E-Mail anmelden",
   "signIn.useRecovery": "Wiederherstellungscode verwenden",
   "signIn.verify": "Bestätigen"
 }

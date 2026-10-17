@@ -8,6 +8,16 @@ use crate::state::AppState;
 
 pub const SETUP_LINK_LIFETIME: time::Duration = time::Duration::hours(24);
 
+pub async fn announce(state: &AppState) {
+    match users::any_exist(&state.pg).await {
+        Ok(true) => {}
+        Ok(false) => tracing::info!(
+            "Kaeso is not set up yet; run `kaeso setup-link` where the gateway runs to print the one-time setup link."
+        ),
+        Err(e) => tracing::error!(error = %e, "cannot tell whether Kaeso is set up"),
+    }
+}
+
 pub async fn issue_link(state: &AppState) -> Result<Option<String>, StoreError> {
     with_advisory_lock(&state.pg, locks::SETUP, || async {
         if users::any_exist(&state.pg).await? {

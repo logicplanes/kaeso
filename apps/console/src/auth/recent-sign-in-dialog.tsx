@@ -4,10 +4,9 @@ import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kae
 import { toastApiError } from "~/api/toast-error";
 import { meQuery } from "~/api/queries/me";
 import { t } from "~/i18n";
-import { RETURN_KEY, settleRecentSignIn } from "./recent-sign-in-store";
+import { settleRecentSignIn } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
-import { sendMagicLink, signInWithPassword, signInWithTotp, startSso } from "./sign-in-api";
-import { writeStored } from "~/storage";
+import { here, sendMagicLink, signInWithPassword, signInWithTotp, startSso } from "./sign-in-api";
 
 type Step = { kind: "password" } | { kind: "totp"; challenge: string; recovery: boolean } | { kind: "link-sent"; message: string };
 
@@ -50,8 +49,7 @@ export default function RecentSignInDialog() {
     });
   const continueWithSso = () =>
     attempt(async () => {
-      writeStored(RETURN_KEY, window.location.pathname + window.location.search, "session");
-      window.location.assign(await startSso({ email }));
+      window.location.assign(await startSso({ email, next: here() }));
     });
   const emailLink = () =>
     attempt(async () => {

@@ -29,7 +29,7 @@ Every setting is listed under [configuration](configuration.md#email). The gatew
 
 ## Without a mail server
 
-To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway then only logs that an email would have been sent, with its kind, never its recipient or content. Signing in with a password works, and the setup link is in the gateway's log either way; sign-in links, invitations and alerts are not delivered.
+To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway then only logs that an email would have been sent, with its kind, never its recipient or content. Signing in with a password works, and `kaeso setup-link` prints the setup link either way; sign-in links, invitations and alerts are not delivered.
 
 ## What Kaeso sends
 

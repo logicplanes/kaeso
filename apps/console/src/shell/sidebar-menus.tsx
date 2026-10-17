@@ -86,7 +86,7 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
     }
     queryClient.clear();
     forgetUserData();
-    await navigate({ to: "/sign-in" });
+    await navigate({ to: "/sign-in", search: { done: "signed-out" } });
   };
 
   return (

@@ -33,6 +33,8 @@ Under **Organization settings**, in the menu at the foot of the sidebar, the org
 
 Under **Security**, choose **Connect an identity provider** to sign people in through your OpenID Connect provider. Enter the issuer URL, the client id and secret of the app you registered there, and the email domains that sign in with it. Choose whether people can join without an invitation, and with which role; that applies only to people new to Kaeso, because an existing account signs in through single sign-on only once it is a member of the organization. Internationalised domains can be entered either way, `bücher.example` or `xn--bcher-kva.example`. The page shows the redirect URL to register with the provider.
 
+The last step sets how the sign-in page offers the provider: the name on its button, such as **Continue with Acme ID**, and **Start without a click**, which sends people straight to the provider whenever the page offers it alone, except right after they signed out or the provider refused them. The **Sign-in link** opens the sign-in page with this provider's button and no address to type; share it with members, on your intranet for example. [Sign-in and single sign-on](../self-hosting/sign-in.md) has the rules.
+
 Once connected, **Require single sign-on** makes it the only way into the organization. **Require two-factor authentication** applies to password sign-in, not to sign-in links or single sign-on.
 
 ### Deleting an organization

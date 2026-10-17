@@ -13,13 +13,16 @@ pub struct Connection {
     pub wrapped_key: Vec<u8>,
     pub key_id: String,
     pub domains: Vec<String>,
+    pub display_name: Option<String>,
+    pub auto_redirect: bool,
 }
 
 pub async fn get(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Option<Connection>, StoreError> {
     Ok(sqlx::query_as!(
         Connection,
         "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, \
-         COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\" \
+         COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", \
+         c.display_name, c.auto_redirect \
          FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id \
          WHERE c.org_id = $1 GROUP BY c.org_id",
         org_id
@@ -40,6 +43,24 @@ pub async fn org_for_domain(
     .await?)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Connected {
+    Nowhere,
+    Only(Uuid),
+    Several,
+}
+
+pub async fn connected(db: impl PgExecutor<'_>) -> Result<Connected, StoreError> {
+    let orgs = sqlx::query_scalar!("SELECT org_id FROM org_oidc ORDER BY org_id LIMIT 2")
+        .fetch_all(db)
+        .await?;
+    Ok(match orgs.as_slice() {
+        [] => Connected::Nowhere,
+        [only] => Connected::Only(*only),
+        _ => Connected::Several,
+    })
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Upserted {
     Saved,
@@ -48,16 +69,20 @@ pub enum Upserted {
 
 pub async fn upsert(db: &mut sqlx::PgConnection, c: &Connection) -> Result<Upserted, StoreError> {
     sqlx::query!(
-        "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, \
-         secret_ciphertext = $4, secret_nonce = $5, wrapped_key = $6, key_id = $7, updated_at = now()",
+        "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, \
+         display_name, auto_redirect) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, \
+         secret_ciphertext = $4, secret_nonce = $5, wrapped_key = $6, key_id = $7, display_name = $8, \
+         auto_redirect = $9, updated_at = now()",
         c.org_id,
         c.issuer,
         c.client_id,
         c.secret_ciphertext,
         c.secret_nonce,
         c.wrapped_key,
-        c.key_id
+        c.key_id,
+        c.display_name,
+        c.auto_redirect
     )
     .execute(&mut *db)
     .await?;
@@ -95,7 +120,7 @@ pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<Connection>, Stor
     Ok(sqlx::query_as!(
         Connection,
         "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, \
-         '{}'::text[] AS \"domains!\" FROM org_oidc"
+         '{}'::text[] AS \"domains!\", display_name, auto_redirect FROM org_oidc"
     )
     .fetch_all(db)
     .await?)

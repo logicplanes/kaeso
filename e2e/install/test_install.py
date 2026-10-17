@@ -14,7 +14,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = "kaeso-install-test"
-SETUP_URL = re.compile(r'"setup_url":"[^"]*#token=([^"]+)"')
+SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
 class Install(NamedTuple):
@@ -85,12 +85,12 @@ def install(tmp_path_factory):
     try:
         run("up", "-d", "--wait", "--wait-timeout", "300")
 
-        def setup_token() -> str | None:
-            logs = run("logs", "gateway", capture_output=True).stdout
-            tokens = SETUP_URL.findall(logs)
-            return tokens[-1] if tokens else None
-
-        yield Install(url, poll(setup_token, "a setup link in the gateway log"), env, run)
+        printed = run("exec", "-T", "gateway", "kaeso", "setup-link", capture_output=True).stdout
+        token = SETUP_LINK.search(printed).group(1)
+        logs = run("logs", "gateway", capture_output=True).stdout
+        assert "kaeso setup-link" in logs, "the gateway's log points to the setup link command"
+        assert token not in logs, "the setup token reached the gateway's log"
+        yield Install(url, token, env, run)
     finally:
         subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)

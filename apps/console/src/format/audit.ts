@@ -49,6 +49,7 @@ export const AUDIT_ACTIONS: Record<string, string[]> = {
     "user.totp_disable",
     "user.recovery_codes_regenerate",
     "user.2fa_reset",
+    "user.sign_in_link",
     "user.sessions_revoke",
     "user.notifications",
     "user.deactivate",

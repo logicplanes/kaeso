@@ -142,7 +142,7 @@ For a gateway you can restart in seconds, with a debugger or extra logging, run 
 cargo run -p kaeso-testkit -- mock-provider 127.0.0.1:18090
 ```
 
-In the first terminal, create fresh databases and export their settings, point both providers at the mock, add a public URL, a master key and email that is only logged, then start the gateway:
+In the first terminal, create fresh databases and export their settings, point both providers at the mock, add a public URL, a master key and email that is only logged, print the setup link, then start the gateway:
 
 ```bash
 export $(cargo run -q -p kaeso-testkit -- fresh-services)
@@ -152,6 +152,7 @@ export KAESO_PUBLIC_URL=http://localhost:3000
 export KAESO_LISTEN=127.0.0.1:8080
 export KAESO_MASTER_KEYS="$(cargo run -q -p kaeso -- master-key generate)"
 export KAESO_MAIL_TRANSPORT=log
+cargo run -q -p kaeso -- setup-link
 cargo run -p kaeso -- serve
 ```
 
@@ -161,7 +162,7 @@ Serve the console against it from a third terminal:
 KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev
 ```
 
-Then open the setup link from the gateway's log. To call the real providers instead, leave out the two `KAESO_PROVIDERS_…` lines. The databases stay until you drop them from the first terminal:
+Then open the setup link that `setup-link` printed. To call the real providers instead, leave out the two `KAESO_PROVIDERS_…` lines. The databases stay until you drop them from the first terminal:
 
 ```bash
 cargo run -q -p kaeso-testkit -- drop-services "$KAESO_CLICKHOUSE_DATABASE"

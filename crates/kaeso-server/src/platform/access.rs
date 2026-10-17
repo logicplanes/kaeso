@@ -558,7 +558,7 @@ fn check_origin(state: &AppState, req: &Parts) -> ApiResult<()> {
     {
         Some(origin) if origin == expected => Ok(()),
         _ => Err(ApiError::PermissionDenied(format!(
-            "Cross-site request refused; the `Origin` header must be {expected}."
+            "Cross-site request refused; send the header `Origin: {expected}`."
         ))),
     }
 }

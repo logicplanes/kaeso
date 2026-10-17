@@ -11,18 +11,8 @@ const notifications = async () => within(await screen.findByRole("region", { nam
 const BASE = `/orgs/${ORG}/projects/${PROJECT}`;
 
 describe("the start page", () => {
-  it("returns to the page kept before signing in again", async () => {
+  it("opens the first organization without a last place", async () => {
     signedIn();
-    on("GET", "me/sessions", { data: [] });
-    window.sessionStorage.setItem("kaeso:return", "/settings/account/sessions");
-    await renderApp("/");
-    await waitFor(() => expect(window.location.pathname).toBe("/settings/account/sessions"));
-    expect(window.sessionStorage.getItem("kaeso:return")).toBeNull();
-  });
-
-  it("ignores a kept page on another site", async () => {
-    signedIn();
-    window.sessionStorage.setItem("kaeso:return", "//elsewhere.test/x");
     await renderApp("/");
     await waitFor(() => expect(window.location.pathname).toBe(`/orgs/${ORG}`));
   });

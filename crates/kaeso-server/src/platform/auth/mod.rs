@@ -1,6 +1,7 @@
 pub mod invites;
 pub mod magic;
 pub mod methods;
+pub mod next;
 pub mod oidc;
 pub mod password;
 pub mod reset;
@@ -36,7 +37,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Public, routes!(magic::verify)))
         .routes(s.route(Access::Public, routes!(reset::request)))
         .routes(s.route(Access::Public, routes!(reset::verify)))
-        .routes(s.route(Access::Public, routes!(oidc::start)))
+        .routes(s.route(Access::Public, routes!(oidc::start, oidc::start_link)))
         .routes(s.route(Access::Public, routes!(oidc::callback)))
         .routes(s.route(Access::Public, routes!(invites::lookup)))
         .routes(s.route(Access::Public, routes!(invites::accept_invite)))

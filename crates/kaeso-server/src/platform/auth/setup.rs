@@ -31,9 +31,11 @@ pub struct SetupRequest {
     #[doc = "The first user's name."]
     #[schema(example = "Ada Lovelace")]
     pub name: String,
-    #[doc = "The first user's password, 12 to 128 characters."]
-    #[schema(value_type = String, format = Password, write_only)]
-    pub password: SecretString,
+    #[doc = "The first user's password, 12 to 128 characters. Required while password\n\
+        sign-in is on (`password` in `auth/methods`); refused while it is off,\n\
+        where the first user signs in with a sign-in link or SSO."]
+    #[schema(value_type = Option<String>, format = Password, write_only)]
+    pub password: Option<SecretString>,
     #[doc = "The first organization's name."]
     #[schema(example = "Acme")]
     pub org_name: String,
@@ -53,6 +55,9 @@ pub(crate) async fn hash_password(param: &str, password: SecretString) -> ApiRes
     path = "/auth/setup",
     summary = "Creates the first user (an instance admin) and the first organization,\n\
     whose owner they become, and signs them in. The setup link works once.",
+    description = "With password sign-in off, the first user has no password: they connect \
+    the organization's identity provider in this session, and `kaeso user sign-in-link` \
+    prints a one-time sign-in link for them until it works.",
     tag = "auth",
     request_body = SetupRequest,
     responses(
@@ -68,7 +73,19 @@ pub async fn setup(
     let email = validate_email("email", &req.email)?;
     let name = validate_name("name", &req.name)?;
     let org_name = validate_name("org_name", &req.org_name)?;
-    let password_hash = hash_password("password", req.password).await?;
+    let password_hash = match (state.config.auth.password, req.password) {
+        (true, Some(password)) => Some(hash_password("password", password).await?),
+        (true, None) => {
+            return Err(ApiError::invalid("password", "`password` is required."));
+        }
+        (false, Some(_)) => {
+            return Err(ApiError::invalid(
+                "password",
+                "Password sign-in is turned off on this install; leave `password` out.",
+            ));
+        }
+        (false, None) => None,
+    };
 
     let mut tx = state.pg.begin().await?;
     kaeso_store::pg::lock_setup(&mut tx).await?;
@@ -94,7 +111,7 @@ pub async fn setup(
             id: user.uuid(),
             email: &email,
             name: &name,
-            password_hash: Some(&password_hash),
+            password_hash: password_hash.as_deref(),
             email_verified_at: Some(ctx.now),
             is_instance_admin: true,
         },
@@ -105,7 +122,7 @@ pub async fn setup(
     ctx.audit(None, "instance.setup")
         .by(user)
         .target("user", user)
-        .after(serde_json::json!({ "email": email, "name": name, "is_instance_admin": true }))
+        .after(serde_json::json!({ "email": email, "name": name, "is_instance_admin": true, "has_password": password_hash.is_some() }))
         .write(&mut tx)
         .await?;
     ctx.audit(Some(org), "org.create")

@@ -68,7 +68,7 @@ services:
       dockerfile: deploy/gateway.Dockerfile
       target: gateway
     profiles: [console]
-    environment:
+    environment: &gateway-environment
       KAESO_PUBLIC_URL: ${KAESO_PUBLIC_URL:-http://localhost:3000}
       KAESO_POSTGRES_URL: postgres://kaeso:kaeso@postgres:5432/kaeso
       KAESO_CLICKHOUSE_URL: http://kaeso:kaeso@clickhouse:8123
@@ -102,6 +102,41 @@ services:
         condition: service_started
       provider:
         condition: service_healthy
+
+  sso-database:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    profiles: [sso]
+    environment:
+      PGPASSWORD: kaeso
+    command:
+      - sh
+      - -c
+      - psql -h postgres -U kaeso -d kaeso -tAc "SELECT 1 FROM pg_database WHERE datname = 'kaeso_sso'" | grep -q 1 || psql -h postgres -U kaeso -d kaeso -c "CREATE DATABASE kaeso_sso"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway-sso:
+    image: ${KAESO_GATEWAY_IMAGE:-kaeso-gateway:dev}
+    pull_policy: never
+    profiles: [sso]
+    environment:
+      <<: *gateway-environment
+      KAESO_PUBLIC_URL: ${KAESO_SSO_PUBLIC_URL:-http://localhost:3001}
+      KAESO_POSTGRES_URL: postgres://kaeso:kaeso@postgres:5432/kaeso_sso
+      KAESO_CLICKHOUSE_DATABASE: kaeso_sso
+      KAESO_VALKEY_KEY_PREFIX: "sso:"
+      KAESO_AUTH_PASSWORD: "false"
+      KAESO_AUTH_MAGIC_LINK: "false"
+    ports:
+      - 127.0.0.1:${KAESO_SSO_GATEWAY_PORT:-18081}:8080
+    volumes:
+      - master-key:/run/kaeso:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+      sso-database:
+        condition: service_completed_successfully
 
   master-key:
     <<: *node

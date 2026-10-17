@@ -16,6 +16,7 @@ export const STACKS = {
     clickhousePort: port("KAESO_CLICKHOUSE_PORT", 58123),
     postgresPort: port("KAESO_POSTGRES_PORT", 55432),
     valkeyPort: port("KAESO_VALKEY_PORT", 56379),
+    profiles: ["console"],
   },
   e2e: {
     project: "kaeso-console-e2e",
@@ -27,12 +28,16 @@ export const STACKS = {
     clickhousePort: 28123,
     postgresPort: 28432,
     valkeyPort: 28379,
+    profiles: ["console", "sso"],
+    ssoPublicUrl: "http://localhost:3101",
+    ssoGatewayPort: 28081,
   },
 };
 
 export function urls(stack) {
   return {
     gateway: `http://127.0.0.1:${stack.gatewayPort}`,
+    ssoGateway: `http://127.0.0.1:${stack.ssoGatewayPort}`,
     mail: `http://127.0.0.1:${stack.mailPort}`,
     idp: `http://idp.localhost:${stack.idpPort}`,
     clickhouse: `http://127.0.0.1:${stack.clickhousePort}`,
@@ -40,23 +45,28 @@ export function urls(stack) {
 }
 
 function compose(stack, args, options = {}) {
-  return execFileSync("docker", ["compose", "--file", "deploy/compose.dev.yaml", "--project-name", stack.project, "--profile", "console", ...args], {
-    cwd: repository,
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      KAESO_GATEWAY_IMAGE: process.env.KAESO_GATEWAY_IMAGE ?? `${stack.project}-gateway`,
-      KAESO_PUBLIC_URL: stack.publicUrl,
-      KAESO_GATEWAY_PORT: String(stack.gatewayPort),
-      KAESO_IDP_PORT: String(stack.idpPort),
-      KAESO_MAIL_PORT: String(stack.mailPort),
-      KAESO_MAIL_SMTP_PORT: String(stack.smtpPort),
-      KAESO_CLICKHOUSE_PORT: String(stack.clickhousePort),
-      KAESO_POSTGRES_PORT: String(stack.postgresPort),
-      KAESO_VALKEY_PORT: String(stack.valkeyPort),
+  return execFileSync(
+    "docker",
+    ["compose", "--file", "deploy/compose.dev.yaml", "--project-name", stack.project, ...stack.profiles.flatMap((p) => ["--profile", p]), ...args],
+    {
+      cwd: repository,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        KAESO_GATEWAY_IMAGE: process.env.KAESO_GATEWAY_IMAGE ?? `${stack.project}-gateway`,
+        KAESO_PUBLIC_URL: stack.publicUrl,
+        KAESO_GATEWAY_PORT: String(stack.gatewayPort),
+        KAESO_IDP_PORT: String(stack.idpPort),
+        KAESO_MAIL_PORT: String(stack.mailPort),
+        KAESO_MAIL_SMTP_PORT: String(stack.smtpPort),
+        KAESO_CLICKHOUSE_PORT: String(stack.clickhousePort),
+        KAESO_POSTGRES_PORT: String(stack.postgresPort),
+        KAESO_VALKEY_PORT: String(stack.valkeyPort),
+        ...(stack.ssoPublicUrl ? { KAESO_SSO_PUBLIC_URL: stack.ssoPublicUrl, KAESO_SSO_GATEWAY_PORT: String(stack.ssoGatewayPort) } : {}),
+      },
+      ...options,
     },
-    ...options,
-  });
+  );
 }
 
 export function up(stack) {
@@ -72,9 +82,14 @@ export function resetTwoFactor(stack, email) {
   compose(stack, ["exec", "--no-TTY", "gateway", "kaeso", "user", "reset-2fa", email], { stdio: ["ignore", "pipe", "inherit"] });
 }
 
-export function setupToken(stack) {
-  const logs = compose(stack, ["logs", "--no-log-prefix", "gateway"], { stdio: ["ignore", "pipe", "inherit"] });
-  return [...logs.matchAll(/"setup_url":"[^"#]*#token=([^"]+)"/g)].at(-1)?.[1] ?? null;
+export function setupToken(stack, service = "gateway") {
+  const printed = compose(stack, ["exec", "--no-TTY", service, "kaeso", "setup-link"], { stdio: ["ignore", "pipe", "inherit"] });
+  return /#token=(\S+)/.exec(printed)?.[1] ?? null;
+}
+
+export function signInLinkToken(stack, email, service = "gateway") {
+  const printed = compose(stack, ["exec", "--no-TTY", service, "kaeso", "user", "sign-in-link", email], { stdio: ["ignore", "pipe", "inherit"] });
+  return /#token=(\S+)/.exec(printed)?.[1] ?? null;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

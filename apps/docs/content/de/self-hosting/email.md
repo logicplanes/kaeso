@@ -29,7 +29,7 @@ Jede Einstellung steht unter [Konfiguration](configuration.md#e-mail). Ohne `KAE
 
 ## Ohne Mailserver
 
-Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das Gateway protokolliert dann nur, dass eine E-Mail gesendet worden wäre, mit ihrer Art, nie mit Empfänger oder Inhalt. Die Anmeldung mit Passwort funktioniert, und der Einrichtungslink steht in jedem Fall im Log des Gateways; Anmeldelinks, Einladungen und Warnungen werden nicht zugestellt.
+Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das Gateway protokolliert dann nur, dass eine E-Mail gesendet worden wäre, mit ihrer Art, nie mit Empfänger oder Inhalt. Die Anmeldung mit Passwort funktioniert, und `kaeso setup-link` gibt den Einrichtungslink in jedem Fall aus; Anmeldelinks, Einladungen und Warnungen werden nicht zugestellt.
 
 ## Was Kaeso sendet
 

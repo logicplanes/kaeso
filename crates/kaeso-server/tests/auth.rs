@@ -84,6 +84,169 @@ async fn setup_creates_the_first_admin_owner_and_works_once() {
     s.cleanup().await;
 }
 
+const SSO_ONLY: [(&str, &str); 2] = [
+    ("KAESO_AUTH_PASSWORD", "false"),
+    ("KAESO_AUTH_MAGIC_LINK", "false"),
+];
+
+async fn setup_token(app: &App) -> String {
+    let url = kaeso_server::setup::issue_link(&app.state)
+        .await
+        .unwrap()
+        .unwrap();
+    url.split("#token=").nth(1).unwrap().to_owned()
+}
+
+#[tokio::test]
+async fn setup_asks_for_a_password_only_while_passwords_sign_in() {
+    let s = TestServices::start().await;
+    let with_passwords = App::start(&s).await;
+    let token = setup_token(&with_passwords).await;
+    let r = with_passwords
+        .post(
+            "/auth/setup",
+            json!({ "token": token, "email": "owner@example.com", "name": "Owner", "org_name": "Acme" }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["param"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("password"))
+    );
+    assert_eq!(r.body["error"]["message"], "`password` is required.");
+
+    let sso_only = App::start_with(&s, &SSO_ONLY).await;
+    let r = sso_only
+        .post(
+            "/auth/setup",
+            json!({ "token": token, "email": "owner@example.com", "name": "Owner", "password": PASSWORD, "org_name": "Acme" }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["param"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("password"))
+    );
+    assert!(
+        r.body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("turned off"),
+        "{:?}",
+        r.body
+    );
+    let r = sso_only
+        .post(
+            "/auth/setup",
+            json!({ "token": token, "email": "owner@example.com", "name": "Owner", "org_name": "Acme" }),
+            None,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let cookie = r.cookie().unwrap();
+    let me = sso_only.get("/me", &cookie).await;
+    assert_eq!(me.body["has_password"], false);
+    let stored: Option<String> = sqlx::query_scalar("SELECT password_hash FROM users")
+        .fetch_one(&sso_only.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(stored, None);
+    let audited: serde_json::Value =
+        sqlx::query_scalar("SELECT after FROM audit_events WHERE action = 'instance.setup'")
+            .fetch_one(&sso_only.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(audited["has_password"], false);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_operator_sign_in_link_works_while_email_links_are_off() {
+    use kaeso_server::services::users::{OperatorSignIn, operator_sign_in_link};
+    use secrecy::ExposeSecret;
+
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &SSO_ONLY).await;
+    let owner = app.setup().await;
+    let link = |email: &'static str| {
+        let app = &app;
+        async move { operator_sign_in_link(&app.state, email).await.unwrap() }
+    };
+    let OperatorSignIn::Link(url) = link(" Owner@Example.com ").await else {
+        panic!("no link for the owner");
+    };
+    let url = url.expose_secret().to_owned();
+    assert!(
+        url.starts_with(&format!("{}/auth/magic-link#token=", common::ORIGIN)),
+        "{url}"
+    );
+    let token = url.split("#token=").nth(1).unwrap().to_owned();
+    let r = app
+        .post("/auth/magic-link/verify", json!({ "token": token }), None)
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let who = app.get("/auth/session", &r.cookie().unwrap()).await;
+    assert_eq!(who.body["user"]["id"], owner.user_id.as_str());
+    assert_eq!(who.body["session"]["method"], "magic_link");
+    let again = app
+        .post("/auth/magic-link/verify", json!({ "token": token }), None)
+        .await;
+    assert_eq!(again.status, StatusCode::UNAUTHORIZED);
+    let (audited,): (i64,) = sqlx::query_as(
+        "SELECT count(*) FROM audit_events WHERE action = 'user.sign_in_link' AND target_id = $1 AND actor_kind = 'system'",
+    )
+    .bind(&owner.user_id)
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(audited, 1);
+
+    assert!(matches!(
+        link("nobody@example.com").await,
+        OperatorSignIn::UnknownEmail
+    ));
+    assert!(matches!(
+        link("not an address").await,
+        OperatorSignIn::UnknownEmail
+    ));
+    sqlx::query("UPDATE users SET state = 'deactivated'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    assert!(matches!(
+        link("owner@example.com").await,
+        OperatorSignIn::Deactivated
+    ));
+    assert_eq!(
+        format!("{:?}", OperatorSignIn::Link("secret".to_owned().into())),
+        "Link(…)"
+    );
+
+    let emailed = "an-emailed-link";
+    kaeso_store::pg::tokens::insert(
+        &app.state.pg,
+        kaeso_store::pg::tokens::NewToken {
+            kind: kaeso_store::pg::tokens::TokenKind::MagicLink,
+            hash: &kaeso_core::secret::hash(emailed),
+            user_id: Some(common::uuid(&owner.user_id)),
+            email: Some("owner@example.com"),
+            data: json!({}),
+            expires_at: kaeso_core::clock::Clock::now(&app.clock) + time::Duration::minutes(15),
+        },
+    )
+    .await
+    .unwrap();
+    let r = app
+        .post("/auth/magic-link/verify", json!({ "token": emailed }), None)
+        .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Sign-in links are turned off on this install."
+    );
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn password_sign_in_never_reveals_whether_an_account_exists() {
     let s = TestServices::start().await;
