@@ -69,7 +69,7 @@ Das Standardprojekt: Inhaber und Admins treten ihm als Projekt-Admin bei, Entwic
 1. **Nur vergeben, was man selbst hat.** Rolle oder Rechte eines Mitglieds ändern, einladen, ein Projektmitglied hinzufügen, ein Dienstkonto erstellen oder ändern, eine eigene Rolle erstellen, ändern oder löschen und die Rolle für Personen wählen, die über Single Sign-on kommen, darf nur Rechte geben, die der Aufrufer hat: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt und Rechte in jedem Projekt nur, wenn der Aufrufer sie in jedem Projekt hat.
 2. **Nur auf Gleichgestellte wirken.** Rolle und Rechte eines Mitglieds ändert, oder das Mitglied entfernt, nur jemand, der jedes Recht hat, das das Mitglied in diesem Geltungsbereich hat.
 3. **Inhaber** werden nur von Inhabern gemacht, geändert, entfernt und eingeladen. Eine Organisation verliert nie ihren letzten Inhaber.
-4. **Erforderliche Rechte** werden für jedes Recht geprüft, das eine Änderung gibt.
+4. **Erforderliche Rechte** werden für jedes Recht geprüft, das eine Änderung gibt, und eine Änderung entfernt kein Recht, das ein in der Vergabe oder Rolle bleibendes Recht erfordert, auch wenn diesem Recht schon ein anderes seiner erforderlichen Rechte fehlt.
 5. **Schlüssel haben keine eigenen Rechte.** Ein API-Schlüssel handelt als sein Mitglied oder Dienstkonto in seinem Projekt, ein Plattform-Schlüssel einer Organisation mit den Rechten der Rolle Admin in seiner Organisation.
 
 Die Routen der Platform API für Rechte, Rollen und Vergaben sind unter [Platform API](../api/platform-api.md) beschrieben.

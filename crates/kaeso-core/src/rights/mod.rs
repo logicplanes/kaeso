@@ -316,20 +316,19 @@ macro_rules! check_needs {
     ($name:ident, $set:ty) => {
         pub fn $name(before: $set, after: $set) -> Result<(), MissingDependency> {
             for right in after.iter() {
-                let Some(needs) = right.needs().into_iter().find(|n| !after.contains(*n)) else {
-                    continue;
-                };
-                if !before.contains(right) {
-                    return Err(MissingDependency::Gained {
-                        right: right.as_str(),
-                        needs: needs.as_str(),
-                    });
-                }
-                if before.contains(needs) {
-                    return Err(MissingDependency::Removed {
-                        right: right.as_str(),
-                        needs: needs.as_str(),
-                    });
+                for needs in right.needs().into_iter().filter(|n| !after.contains(*n)) {
+                    if !before.contains(right) {
+                        return Err(MissingDependency::Gained {
+                            right: right.as_str(),
+                            needs: needs.as_str(),
+                        });
+                    }
+                    if before.contains(needs) {
+                        return Err(MissingDependency::Removed {
+                            right: right.as_str(),
+                            needs: needs.as_str(),
+                        });
+                    }
                 }
             }
             Ok(())

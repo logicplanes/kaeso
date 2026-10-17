@@ -48,6 +48,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - ScrollArea and Select no longer add an inline `<style>` element, which a strict Content Security Policy blocks; the stylesheet hides their native scrollbars.
 - Single sign-on brings people back to the console page they asked for, from `next`, instead of the start page; `next` must be a console path on the install, so it can't send a browser to another site.
 - The description of `org` in `POST auth/oidc/start` names where the organization comes from; the sign-in link it described didn't exist until now.
+- A change to a member's, service account's or role's rights is refused with `400` when it removes a right that a remaining right needs, also when that right already lacked another of its needs: removing `members.view` from a member who holds `members.invite` but no longer `org.view`, after their custom role was emptied, used to be accepted.
 
 ### Security
 
