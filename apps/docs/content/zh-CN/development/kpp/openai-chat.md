@@ -226,4 +226,4 @@ Responses 和 Embeddings 编解码器使用同一张 code 表（`openai_response
 | `data` | `models` |
 | 未知键 | extras 字段 |
 
-对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。
+对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。

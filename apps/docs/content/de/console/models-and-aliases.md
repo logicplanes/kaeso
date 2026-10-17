@@ -12,7 +12,21 @@ Der **Katalog** eines Projekts listet die Modelle, die seine Schlüssel aufrufen
 
 **Eigenes Modell hinzufügen** fügt ein Modell über seine ID hinzu. Wenn models.dev es nicht listet, seine Ein- und Ausgaben, Limits, Preise und das verwendete API-Format eingeben.
 
-Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden. Instanz-Admins sehen ihren Stand und synchronisieren sie sofort unter **Instanz** › **Modellquellen**. Ein Modell, das models.dev nicht mehr listet, bleibt mit seinen letzten bekannten Werten im Katalog, markiert als **Nicht mehr gelistet**.
+Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden. Instanz-Admins sehen ihren Stand und synchronisieren sie sofort unter **Instanz** › **Modellquellen**. Ein Modell, das models.dev nicht mehr listet, bleibt mit seinen letzten bekannten Werten im Katalog, markiert als **Nicht mehr gelistet**; eines, das models.dev als veraltet führt, ist als **Veraltet** markiert.
+
+## Verfügbarkeit
+
+Ein Modell im Katalog bietet der Anbieter dem Anbieter-Schlüssel des Projekts nicht immer an: Der Anbieter kann es eingestellt haben, oder der Schlüssel hat keinen Zugriff darauf. Das Sheet jedes Modells zeigt seine **Verfügbarkeit**:
+
+| Verfügbarkeit | Bedeutung |
+| --- | --- |
+| Verfügbar | Der Anbieter hat es bei der letzten Prüfung oder Anfrage angeboten |
+| Nicht verfügbar | Der Anbieter hat geantwortet, dass er es diesem Schlüssel nicht anbietet; die Liste markiert es ebenfalls |
+| Nicht geprüft | Noch unbekannt, oder ein Anbieter-Schlüssel der Organisation hat sich seitdem geändert |
+
+**Verfügbarkeit prüfen** fragt den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts, ob er das Modell anbietet (`GET /v1/models/{model}` beim Anbieter), und meldet das Ergebnis; Modelle, die sich nicht prüfen ließen, weil das Projekt keinen Schlüssel für den Anbieter hat oder der Anbieter den Schlüssel abgelehnt oder nicht geantwortet hat, behalten ihre Verfügbarkeit. Kaeso lernt sie auch aus Anfragen: Antwortet der Anbieter auf eine Anfrage, dass er das Modell nicht kennt, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md#fehler-des-anbieters); gelingt eine Anfrage an ein nicht verfügbares Modell, wird es wieder verfügbar.
+
+Ein nicht verfügbares Modell bleibt im Katalog, aber `GET /v1/models` lässt es weg, und Anfragen dafür gehen weiterhin an den Anbieter; Kaeso schickt sie nie an ein anderes Modell. Dem Anbieter-Schlüssel Zugriff auf das Modell geben oder das Modell aus dem Katalog entfernen. Das Prüfen braucht das Recht **Modelle verwalten** und steht im Audit-Log als `catalogue_model.check`.
 
 ## Die Werte eines Modells
 

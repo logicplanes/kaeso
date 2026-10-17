@@ -2,9 +2,10 @@ use kaeso_kpp::{DialectId, Extras, KppError, ModelInfo, ModelList, ModelsQuery, 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::codec::{EncodedRequest, HeaderList};
 use crate::models::{
-    add_query_extra, bad_listing, decode_date, encode_date, format_date, none_or, parse_date,
-    query_pairs, record_none,
+    add_query_extra, bad_listing, decode_date, encode_date, format_date, model_path, none_or,
+    parse_date, query_pairs, record_none,
 };
 use crate::wire::{
     Ext, Maybe, extra_for, extras_from, to_body, verbatim_from_form, without_position,
@@ -163,4 +164,8 @@ pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList
     }
     list.extras = extras;
     Ok(list)
+}
+
+pub(crate) fn retrieve_request(model: &str) -> EncodedRequest {
+    EncodedRequest::get(model_path(model), HeaderList::new())
 }

@@ -25,6 +25,7 @@ fn entry(provider: &str, model: &str) -> Entry {
         custom: false,
         delisted: false,
         last_known: None,
+        availability: None,
     }
 }
 
@@ -97,6 +98,38 @@ fn delisted_models_keep_their_last_known_values() {
     assert_eq!(x.fields.input_price, Some(dec!(2.5)));
     let bare = effective(&entry("openai", "unknown"), &snap, &Supplement::default()).unwrap();
     assert_eq!(bare.fields, Fields::default());
+}
+
+#[test]
+fn models_dev_marks_entries_deprecated_also_after_delisting() {
+    let snap = snapshot();
+    assert!(entry("openai", "gpt-4").is_deprecated(&snap));
+    assert!(!entry("anthropic", "claude-sonnet-4-5").is_deprecated(&snap));
+    assert!(!entry("openai", "unknown").is_deprecated(&snap));
+    let mut gone = entry("openai", "gone-model");
+    let mut last = snap.model("openai", "gpt-4").unwrap().clone();
+    last.id = "gone-model".into();
+    gone.last_known = Some(last);
+    gone.delisted = true;
+    assert!(gone.is_deprecated(&snap));
+}
+
+#[test]
+fn availability_reads_back_what_it_writes() {
+    for a in [Availability::Available, Availability::Unavailable] {
+        assert_eq!(Availability::parse(a.as_str()), Some(a));
+    }
+    assert_eq!(Availability::parse("unchecked"), None);
+    let mut e = entry("anthropic", "claude-sonnet-4-5");
+    assert!(!e.is_unavailable());
+    e.availability = Some(Availability::Unavailable);
+    assert!(e.is_unavailable());
+    let cached = serde_json::json!({
+        "id": e.id, "provider": "anthropic", "model_id": "claude-sonnet-4-5",
+        "overrides": {}, "custom": false, "delisted": false, "last_known": null
+    });
+    let old: Entry = serde_json::from_value(cached).unwrap();
+    assert_eq!(old.availability, None);
 }
 
 #[test]

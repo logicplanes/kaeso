@@ -1,8 +1,9 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { signedIn, without } from "~/test/fixtures";
-import { hoverReason } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
+import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const cells = () => screen.getAllByRole("gridcell").map((c) => c.textContent);
@@ -235,6 +236,76 @@ describe("ModelsPage", () => {
     expect(await screen.findByRole("button", { name: "Create alias" })).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /Catalogue/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ provider: "openai" }));
+  });
+
+  it("marks models the provider doesn't serve and models.dev deprecates", async () => {
+    signedIn();
+    projectData();
+    modelsApi({
+      models: [
+        catalogueModel({ availability: "unavailable", availability_checked_at: "2026-10-17T08:00:00Z" }),
+        catalogueModel({ id: "cm_old", model_id: "claude-3-haiku", deprecated: true, availability: "available" }),
+      ],
+    });
+    await renderApp(projectPath("models"));
+
+    await screen.findByText("claude-3-haiku");
+    expect(cells()).toEqual([
+      "Anthropic2",
+      "Claude Sonnet 4.5claude-3-haikuDeprecatedmessages200K$3 / $15Sept 2025",
+      "Claude Sonnet 4.5claude-sonnet-4-5UnavailableUnavailablemessages200K$3 / $15Sept 2025",
+    ]);
+  });
+
+  it("checks every model's availability and says what it found", async () => {
+    setUp();
+    const CHECK = "orgs/:org/projects/:project/models/check";
+    const found = catalogue().map((m, i) => ({ ...m, availability: i === 0 ? ("unavailable" as const) : ("available" as const) }));
+    on("POST", CHECK, { models: found, failed: [] });
+    const { user } = await renderApp(projectPath("models"));
+
+    await screen.findByText("gpt-5");
+    await user.click(screen.getByRole("button", { name: "Check availability" }));
+    expect(await notifications().findByText("Checked 4 models; 1 unavailable")).toBeInTheDocument();
+    expect(requests("POST", CHECK)).toHaveLength(1);
+
+    on("POST", CHECK, { models: found.map((m) => ({ ...m, availability: "available" })), failed: [] });
+    await user.click(screen.getByRole("button", { name: "Check availability" }));
+    expect(await notifications().findByText("Checked 4 models; all available")).toBeInTheDocument();
+  });
+
+  it("names why models could not be checked", async () => {
+    setUp();
+    const CHECK = "orgs/:org/projects/:project/models/check";
+    const failure = (reason: string, provider = "anthropic") => ({
+      catalogue_model_id: "cm_sonnet",
+      provider,
+      model_id: "claude-sonnet-4-5",
+      reason,
+      message: "Anthropic refused the project's provider key; an org admin can replace it.",
+    });
+    const { user } = await renderApp(projectPath("models"));
+    await screen.findByText("gpt-5");
+    for (const [failed, title] of [
+      [[failure("key_refused"), failure("key_refused")], "Anthropic refused the project's provider key"],
+      [[failure("no_key", "openai")], "No OpenAI key is set up for this project"],
+      [[failure("provider_error")], "Anthropic didn't answer; try again shortly"],
+    ] as const) {
+      on("POST", CHECK, { models: catalogue(), failed });
+      await user.click(screen.getByRole("button", { name: "Check availability" }));
+      expect(await notifications().findByText(title)).toBeInTheDocument();
+    }
+    expect(notifications().getByText("2 models could not be checked.")).toBeInTheDocument();
+  });
+
+  it("explains why models can't be checked without Manage models", async () => {
+    setUp(without("models.manage"));
+    const { user } = await renderApp(projectPath("models"));
+
+    await screen.findByText("gpt-5");
+    const check = screen.getByRole("button", { name: "Check availability" });
+    expect(check).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, check, /You need Manage models/);
   });
 
   it("explains why models can't be added without Manage models", async () => {

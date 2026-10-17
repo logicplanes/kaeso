@@ -301,6 +301,14 @@ async fn handle(
         };
         return error_response(&dir, name);
     }
+    if is_unserved(&path, &body) {
+        let (dir, name) = match dialect {
+            "anthropic_messages" => (dir.clone(), "not-found"),
+            "openai_responses" => (dir.clone(), "model-not-found-404"),
+            _ => (ctx.fixtures.join("openai_chat"), "model-not-found"),
+        };
+        return error_response(&dir, name);
+    }
     if let Some(name) = marker(&text, "gate") {
         ctx.shared.gate(name).pass().await;
     }
@@ -401,6 +409,22 @@ async fn handle(
         }
     };
     json_file(&file)
+}
+
+pub const UNSERVED_PREFIX: &str = "unserved-";
+
+fn is_unserved(path: &str, body: &[u8]) -> bool {
+    let named = path
+        .strip_prefix("/v1/models/")
+        .map(str::to_owned)
+        .or_else(|| {
+            serde_json::from_slice::<serde_json::Value>(body)
+                .ok()?
+                .get("model")?
+                .as_str()
+                .map(str::to_owned)
+        });
+    named.is_some_and(|m| m.starts_with(UNSERVED_PREFIX))
 }
 
 fn counting_fixture(dir: &Path, named: Option<&str>, default: &str) -> PathBuf {

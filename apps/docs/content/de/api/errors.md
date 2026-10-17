@@ -70,6 +70,20 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 
 Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so zurück, wie der Anbieter ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler trägt die Anfrage-ID von Kaeso in `request_id`. Andernfalls behält er seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das eigene Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
 
+Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbieter mit 404 für ein Modell aus dem Katalog, fragt Kaeso mit demselben Anbieter-Schlüssel beim Modell-Endpunkt des Anbieters (`GET /v1/models/{model}`) nach, ob er das Modell anbietet. Tut er es nicht, weil das Modell eingestellt ist oder der Schlüssel keinen Zugriff darauf hat, erhält die App 404 mit `param: model` und einer Meldung, die Anbieter und Modell nennt und sagt, was zu tun ist:
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "not_found_error",
+    "message": "Anthropic does not serve the model `claude-sonnet-4-5` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
+  }
+}
+```
+
+Kaeso markiert das Modell dann im Katalog als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)). Bietet der Anbieter das Modell an, betraf die 404 etwas anderes, etwa eine Datei-ID, und kommt so zurück, wie der Anbieter sie gesendet hat. Kaeso sendet die Anfrage nie erneut oder an ein anderes Modell.
+
 ## Warum Anfragen fehlschlagen
 
 | Status | Ursache |
@@ -77,7 +91,7 @@ Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so z
 | 400 | Die Anfrage ist nicht lesbar, das Modell nimmt eine Einstellung nicht an, die sie nutzt, ein Feld lässt sich nicht zum Anbieter übertragen, der Kontext ist zu lang, eine Modell-ID wird von mehreren Anbietern im Projekt bedient, oder für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
 | 401 | Kein Schlüssel, oder der Schlüssel ist unbekannt, deaktiviert, archiviert oder abgelaufen, sein Mitglied oder Dienstkonto ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar |
 | 403 | Der Schlüssel hat nur Plattformzugriff, ist ein Plattform-Schlüssel einer Organisation oder darf keine Modelle aufrufen (`api.request`), oder der Schlüssel oder sein Mitglied darf dieses Modell nicht nutzen |
-| 404 | Das Modell steht nicht im Katalog des Projekts, oder der Pfad wird nicht bedient |
+| 404 | Das Modell steht nicht im Katalog des Projekts, der Anbieter bietet es dem Anbieter-Schlüssel des Projekts nicht an, oder der Pfad wird nicht bedient |
 | 405 | Der Pfad nimmt diese Methode nicht an |
 | 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB |
 | 429 | Ein Ratenlimit oder Budget, oder zu viele unbekannte Schlüssel von derselben Adresse; `Retry-After` sagt, wann ein neuer Versuch möglich ist, außer bei einem aufgebrauchten Budget, dessen Meldung sagt, wann es neu beginnt |

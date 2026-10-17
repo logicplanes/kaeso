@@ -1,4 +1,5 @@
 pub mod accounts;
+pub mod availability;
 pub mod catalogue;
 pub mod continuity;
 pub mod credentials;

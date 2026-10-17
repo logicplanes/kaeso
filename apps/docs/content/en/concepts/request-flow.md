@@ -64,7 +64,7 @@ A model's own timeout in the catalogue replaces the request and first-byte timeo
 
 ## Reply
 
-A provider's error arrives as the provider sent it when the app speaks the provider's format, and keeps its meaning in the app's format otherwise ([provider errors](../api/errors.md#provider-errors)). A reply is decoded into the canonical format and encoded in the app's format, event by event for a stream. A reply is never refused for what it holds: what the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
+A provider's error arrives as the provider sent it when the app speaks the provider's format, and keeps its meaning in the app's format otherwise; a model the provider does not serve to the key gets Kaeso's own message ([provider errors](../api/errors.md#provider-errors)). A reply is decoded into the canonical format and encoded in the app's format, event by event for a stream. A reply is never refused for what it holds: what the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
 
 Replies carry `kaeso-model` and `kaeso-provider`. A stream's headers are sent as soon as the provider answers. While a stream is open and silent, the gateway writes keepalives the app's SDK ignores ([long streams](../self-hosting/domains-and-tls.md#long-streams)).
 

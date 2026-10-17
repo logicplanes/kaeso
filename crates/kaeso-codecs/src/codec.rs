@@ -50,6 +50,8 @@ pub trait Codec: sealed::Sealed {
     -> Result<ModelList, KppError>;
 
     fn decode_model(status: u16, headers: &HeaderList, body: &[u8]) -> Result<ModelInfo, KppError>;
+
+    fn encode_model_request(model: &str) -> EncodedRequest;
 }
 
 pub(crate) mod sealed {
@@ -184,6 +186,15 @@ impl EncodedRequest {
             path: path.into(),
             headers,
             body,
+        }
+    }
+
+    pub fn get(path: impl Into<String>, headers: HeaderList) -> Self {
+        EncodedRequest {
+            method: "GET",
+            path: path.into(),
+            headers,
+            body: Vec::new(),
         }
     }
 }

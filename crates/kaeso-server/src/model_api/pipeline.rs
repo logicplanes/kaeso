@@ -9,8 +9,8 @@ use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_core::catalogue::capability;
 use kaeso_core::catalogue::resolve::{ResolveError, access_message, resolve};
+use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
@@ -22,6 +22,7 @@ use super::hooks::{Admission, CLIENT_DISCONNECTED, Caller, Outcome, SHUT_DOWN, S
 use super::input_count::InputCounter;
 use super::listing::project_models;
 use super::stream;
+use crate::services::availability::{self, Probe};
 use crate::services::continuity;
 use crate::services::credentials::{self, ResolveError as CredentialError};
 use crate::state::AppState;
@@ -166,6 +167,7 @@ pub enum Stage {
     Credential,
     Upstream,
     Provider,
+    Unserved(String),
     Reply,
     Shutdown,
 }
@@ -265,7 +267,7 @@ pub(super) fn header_list(headers: &HeaderMap) -> HeaderList {
         .collect()
 }
 
-pub(super) fn base_url<'a>(state: &'a AppState, provider: &str) -> Option<&'a Url> {
+pub(crate) fn base_url<'a>(state: &'a AppState, provider: &str) -> Option<&'a Url> {
     state.config.providers.get(provider).map(|p| &p.base_url)
 }
 
@@ -284,7 +286,7 @@ pub(super) fn count_upstream_error(kind: &'static str, provider: &'static str) {
         .increment(1);
 }
 
-pub(super) fn upstream_error(e: &UpstreamError) -> KppError {
+pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
     match e {
         UpstreamError::Timeout(what) => error(
             ErrorKind::Timeout,
@@ -323,6 +325,18 @@ pub(super) fn upstream_error(e: &UpstreamError) -> KppError {
             )
         }
     }
+}
+
+pub(crate) fn unserved(eff: &Effective) -> KppError {
+    error(
+        ErrorKind::NotFound,
+        404,
+        format!(
+            "{} does not serve the model `{}` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
+            eff.provider.name, eff.model_id
+        ),
+    )
+    .with_param("model")
 }
 
 async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Done, Failure> {
@@ -558,6 +572,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .with_created_at(u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0));
     let status = resp.status;
     let success = (200..300).contains(&status);
+    if success && entry.is_unavailable() {
+        availability::record(state, caller.project_id, entry.id, Availability::Available).await;
+    }
 
     match resp.body {
         ResponseBody::Stream(chunks) if success => {
@@ -633,6 +650,20 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             if !success {
                 let err = dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes);
                 count_upstream_error(err.kind.as_str(), provider);
+                if err.kind == ErrorKind::NotFound
+                    && let Probe::Unserved =
+                        availability::probe(state, &credential.secret, &eff).await
+                {
+                    tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
+                    availability::record(
+                        state,
+                        caller.project_id,
+                        entry.id,
+                        Availability::Unavailable,
+                    )
+                    .await;
+                    return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+                }
                 return Err(fail(Stage::Provider)(err));
             }
             let reply =

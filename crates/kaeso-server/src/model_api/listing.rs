@@ -7,7 +7,8 @@ use axum::response::Response;
 use kaeso_codecs::dispatch;
 use kaeso_core::catalogue::capability::model_info;
 use kaeso_core::catalogue::resolve::resolve;
-use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelList};
+use kaeso_core::catalogue::{Effective, Entry};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelLifecycle, ModelList};
 use kaeso_store::pg::catalogue::ProjectModels;
 use uuid::Uuid;
 
@@ -41,22 +42,30 @@ async fn visible(
     let models = project_models(state, key.project_id).await?;
     let access = models.access(Some(key.id), key.user_id, key.service_account_id);
     let mut out = Vec::new();
-    let mut effective = Vec::new();
+    let mut listed = Vec::new();
     for entry in &models.entries {
-        if !access.allows(entry.id) {
+        if !access.allows(entry.id) || entry.is_unavailable() {
             continue;
         }
         if let Some(eff) = crate::services::catalogue::effective(state, entry) {
-            out.push(model_info(&entry.model_id, &eff));
-            effective.push((entry.id, eff));
+            out.push(info(state, &entry.model_id, entry, &eff));
+            listed.push((entry, eff));
         }
     }
     for alias in &models.aliases {
-        if let Some((_, eff)) = effective.iter().find(|(id, _)| *id == alias.target) {
-            out.push(model_info(&alias.name, eff));
+        if let Some((entry, eff)) = listed.iter().find(|(e, _)| e.id == alias.target) {
+            out.push(info(state, &alias.name, entry, eff));
         }
     }
     Ok(out)
+}
+
+fn info(state: &AppState, name: &str, entry: &Entry, eff: &Effective) -> ModelInfo {
+    let mut info = model_info(name, eff);
+    if entry.is_deprecated(&state.models_dev.current().snapshot) {
+        info.lifecycle = Some(ModelLifecycle::Deprecated);
+    }
+    info
 }
 
 fn json(body: Vec<u8>) -> Response {
@@ -134,5 +143,8 @@ async fn get_inner(
         return Err(not_found());
     }
     let eff = crate::services::catalogue::effective(state, entry).ok_or_else(not_found)?;
-    Ok(model_info(id, &eff))
+    if entry.is_unavailable() {
+        return Err(super::pipeline::unserved(&eff));
+    }
+    Ok(info(state, id, entry, &eff))
 }

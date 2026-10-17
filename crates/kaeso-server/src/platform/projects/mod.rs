@@ -4,6 +4,7 @@ pub mod audit;
 pub mod keys;
 pub mod limits;
 pub mod members;
+pub mod model_check;
 pub mod models;
 pub mod playground;
 pub mod project;
@@ -63,6 +64,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ModelsView), routes!(models::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(models::create)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(models::batch)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(model_check::check)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(models::get)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(models::update)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(models::delete)))

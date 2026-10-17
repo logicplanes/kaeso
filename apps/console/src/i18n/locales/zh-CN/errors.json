@@ -156,6 +156,7 @@
   "errors.modelIdsOrAllCurrent": "请发送 `model_ids` 或 `all_current: true` 之一。",
   "errors.modelNotAllowed": "模型 `{model}` 不在您可在此项目中使用的模型之列。",
   "errors.modelNotInCatalogue": "模型 `{model}` 不在此项目的目录中。",
+  "errors.modelUnserved": "服务商不向此项目的密钥提供 `{model}`；请检查密钥的访问权限。",
   "errors.modelsDevUnavailable": "无法获取 models.dev 数据，原因见网关日志。",
   "errors.modelsUnavailable": "Kaeso 暂时无法加载此项目的模型，请稍后重试。",
   "errors.nameRecipient": "请指定收件人。",

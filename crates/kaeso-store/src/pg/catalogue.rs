@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use kaeso_core::catalogue::resolve::Alias;
-use kaeso_core::catalogue::{Entry, Fields};
+use kaeso_core::catalogue::{Availability, Entry, Fields};
 use kaeso_core::models_dev;
 use serde::{Deserialize, Serialize};
 use sqlx::PgExecutor;
@@ -81,6 +81,8 @@ pub struct EntryRow {
     pub custom: bool,
     pub delisted_at: Option<OffsetDateTime>,
     pub last_known: Option<serde_json::Value>,
+    pub availability: Option<String>,
+    pub availability_checked_at: Option<OffsetDateTime>,
     pub created_by_kind: String,
     pub created_by_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
@@ -101,6 +103,15 @@ impl EntryRow {
             ),
             None => None,
         };
+        let availability = match self.availability.as_deref() {
+            Some(text) => Some(Availability::parse(text).ok_or_else(|| {
+                StoreError::Corrupt(format!(
+                    "availability `{text}` of catalogue model {}",
+                    self.id
+                ))
+            })?),
+            None => None,
+        };
         Ok(Entry {
             id: self.id,
             provider: self.provider.clone(),
@@ -109,6 +120,7 @@ impl EntryRow {
             custom: self.custom,
             delisted: self.delisted_at.is_some(),
             last_known,
+            availability,
         })
     }
 }
@@ -153,7 +165,8 @@ pub async fn get(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE project_id = $1 AND id = $2",
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         FROM catalogue_models WHERE project_id = $1 AND id = $2",
         project_id,
         id
     )
@@ -169,7 +182,8 @@ pub async fn get_for_update(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         FROM catalogue_models \
          WHERE project_id = $1 AND id = $2 FOR UPDATE",
         project_id,
         id
@@ -182,7 +196,8 @@ pub async fn list(db: impl PgExecutor<'_>, project_id: Uuid) -> Result<Vec<Entry
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE project_id = $1 \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         FROM catalogue_models WHERE project_id = $1 \
          ORDER BY provider, model_id",
         project_id
     )
@@ -233,7 +248,8 @@ pub async fn of_model(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         FROM catalogue_models \
          WHERE provider = $1 AND model_id = $2 AND NOT custom",
         provider,
         model_id
@@ -286,6 +302,42 @@ pub async fn mark_listed(
          WHERE provider = $1 AND model_id = $2 AND delisted_at IS NOT NULL RETURNING project_id",
         provider,
         model_id
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn set_availability(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+    availability: Availability,
+    at: OffsetDateTime,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE catalogue_models SET availability = $3, availability_checked_at = $4 \
+         WHERE project_id = $1 AND id = $2",
+        project_id,
+        id,
+        availability.as_str(),
+        at
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
+pub async fn clear_availability(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    provider: &str,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE catalogue_models SET availability = NULL, availability_checked_at = NULL \
+         WHERE org_id = $1 AND provider = $2 AND availability IS NOT NULL RETURNING project_id",
+        org_id,
+        provider
     )
     .fetch_all(db)
     .await?)

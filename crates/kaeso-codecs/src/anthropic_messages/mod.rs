@@ -117,4 +117,8 @@ impl Codec for AnthropicMessages {
         }
         models::decode_model(body)
     }
+
+    fn encode_model_request(model: &str) -> EncodedRequest {
+        models::retrieve_request(model)
+    }
 }

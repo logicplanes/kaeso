@@ -111,4 +111,8 @@ impl Codec for OpenAiResponses {
         }
         crate::openai_models::decode_model(DIALECT, body)
     }
+
+    fn encode_model_request(model: &str) -> EncodedRequest {
+        crate::openai_models::retrieve_request(model)
+    }
 }

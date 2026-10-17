@@ -229,6 +229,12 @@ fn refusal(f: &Failure) -> ApiError {
             e,
         ),
         Stage::Provider => from_provider(e),
+        Stage::Unserved(m) => ApiError::invalid(
+            "model",
+            format!(
+                "The provider does not serve `{m}` to this project's key; check the key's access."
+            ),
+        ),
         Stage::Reply => provider_error(
             StatusCode::BAD_GATEWAY,
             "The provider's answer could not be read; try again.",

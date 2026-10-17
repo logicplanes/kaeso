@@ -156,6 +156,10 @@ pub fn decode_model(
     dispatch!(dialect, decode_model(status, headers, body))?
 }
 
+pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRequest, KppError> {
+    dispatch!(dialect, encode_model_request(model))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::catalogue::{self as core, Fields};
+use kaeso_core::catalogue::{self as core, Availability, Fields};
 use kaeso_core::decimal_input::FieldsInput;
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
 use kaeso_core::provider::{self, Provider, ProviderId};
@@ -40,6 +40,15 @@ pub struct CatalogueModelView {
     #[doc = "When models.dev stopped listing it."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub delisted_at: Option<OffsetDateTime>,
+    #[doc = "Whether models.dev marks it deprecated."]
+    pub deprecated: bool,
+    #[doc = "Whether the provider serves it to the project's provider key, as the\n\
+        last check or request found."]
+    pub availability: AvailabilityState,
+    #[doc = "When Kaeso last found out, by a check or a request; `null` while\n\
+        `unchecked`."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub availability_checked_at: Option<OffsetDateTime>,
     #[doc = "The overridden fields."]
     pub overrides: Fields,
     #[doc = "The values in use: override, else models.dev, else Kaeso's supplement."]
@@ -64,9 +73,33 @@ pub struct CatalogueModelView {
     pub revision: i64,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "Whether the provider serves a model to the project's provider key.")]
+pub enum AvailabilityState {
+    #[doc = "The provider serves it."]
+    Available,
+    #[doc = "The provider answered that it does not serve it to this key: the model is\n\
+        retired, or the key has no access. Model listings leave it out; requests\n\
+        still go to the provider."]
+    Unavailable,
+    #[doc = "Not known yet, or a provider key of the org changed since."]
+    Unchecked,
+}
+
+impl From<Option<Availability>> for AvailabilityState {
+    fn from(a: Option<Availability>) -> AvailabilityState {
+        match a {
+            Some(Availability::Available) => AvailabilityState::Available,
+            Some(Availability::Unavailable) => AvailabilityState::Unavailable,
+            None => AvailabilityState::Unchecked,
+        }
+    }
+}
+
 type Tagged = [(axum::http::HeaderName, axum::http::HeaderValue); 1];
 
-fn view(
+pub(super) fn view(
     state: &AppState,
     row: &EntryRow,
     aliases: &[catalogue::AliasRow],
@@ -81,6 +114,9 @@ fn view(
         custom: row.custom,
         listed: row.delisted_at.is_none() && !row.custom,
         delisted_at: row.delisted_at,
+        deprecated: entry.is_deprecated(&state.models_dev.current().snapshot),
+        availability: entry.availability.into(),
+        availability_checked_at: row.availability_checked_at,
         overrides: entry.overrides,
         effective: eff.fields,
         egress_dialect: eff.dialect.as_str().to_owned(),

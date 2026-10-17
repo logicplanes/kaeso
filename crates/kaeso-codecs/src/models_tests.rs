@@ -685,3 +685,30 @@ fn unknown_model_ids_answer_404_in_the_app_dialect() {
     assert_eq!(o.status, 404);
     assert!(json_of(&o.body)["error"]["message"].is_string());
 }
+
+#[test]
+fn a_model_is_retrieved_with_a_get_on_its_own_path() {
+    let anthropic = dispatch::encode_model_request(A, "claude-sonnet-4-5").unwrap();
+    assert_eq!(anthropic.method, "GET");
+    assert_eq!(anthropic.path, "/v1/models/claude-sonnet-4-5");
+    assert_eq!(
+        anthropic.headers.get("anthropic-version"),
+        Some("2023-06-01")
+    );
+    assert!(anthropic.body.is_empty());
+    for d in OPENAI {
+        let openai = dispatch::encode_model_request(d, "ft:gpt-4o-mini:org::abc").unwrap();
+        assert_eq!(openai.method, "GET");
+        assert_eq!(openai.path, "/v1/models/ft:gpt-4o-mini:org::abc");
+        assert!(openai.headers.is_empty(), "{d}");
+        assert!(openai.body.is_empty());
+    }
+}
+
+#[test]
+fn a_retrieved_model_id_stays_one_path_segment() {
+    let req = dispatch::encode_model_request(A, "a/b c?d#e%f").unwrap();
+    assert_eq!(req.path, "/v1/models/a%2Fb%20c%3Fd%23e%25f");
+    let req = dispatch::encode_model_request(OPENAI[0], "modèle").unwrap();
+    assert_eq!(req.path, "/v1/models/mod%C3%A8le");
+}

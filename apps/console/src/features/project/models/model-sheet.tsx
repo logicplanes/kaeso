@@ -11,6 +11,7 @@ import { useApiMutation } from "~/auth/mutation";
 import { dialectLabel, providerLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
+import { availabilityLabel, unavailableHint } from "./availability";
 import { capabilities, fieldRows, type FieldKind } from "./model-fields";
 import { ModelForm, changedFields, draftFrom, draftProblem, modalityLabel, type FieldDraft } from "./model-form";
 import { modelName } from "~/format/models";
@@ -168,6 +169,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           { label: common.provider(), value: providerLabel(m.provider) },
           { label: t("models.modelId", "Model id"), value: m.model_id, mono: true, copy: m.model_id },
           { label: t("models.aliases", "Aliases"), value: m.aliases.length ? m.aliases.join(", ") : common.none() },
+          { label: t("models.availability", "Availability"), value: availabilityLabel(m) },
           {
             label: t("models.addedAt", "Added"),
             value: t("models.addedBy", "{date} by {name}", { date: formatDate(m.created_at), name: partyName(m.created_by) }),
@@ -239,6 +241,23 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
 function Flags({ m }: { m: CatalogueModelView }) {
   const count = Object.values(m.overrides).filter((v) => v !== null && v !== undefined).length;
   const flags: ReactNode[] = [];
+  const hints: ReactNode[] = [];
+  if (m.availability === "unavailable") {
+    flags.push(
+      <Badge key="unavailable" tone="danger">
+        {t("models.unavailable", "Unavailable")}
+      </Badge>,
+    );
+    hints.push(unavailableHint(m.provider));
+  }
+  if (m.deprecated) {
+    flags.push(
+      <Badge key="deprecated" tone="warning">
+        {t("models.deprecated", "Deprecated")}
+      </Badge>,
+    );
+    hints.push(t("models.deprecatedHint", "models.dev marks it deprecated; plan a move to a newer model."));
+  }
   if (m.custom) flags.push(<Badge key="custom">{t("models.custom", "Custom")}</Badge>);
   else if (count) flags.push(<Badge key="over">{t("models.overriddenCount", "Overridden {count}", { count })}</Badge>);
   if (!m.listed && !m.custom)
@@ -249,15 +268,16 @@ function Flags({ m }: { m: CatalogueModelView }) {
           : t("models.delisted", "No longer listed")}
       </Badge>,
     );
+  if (!m.listed && !m.custom) hints.push(t("models.delistedHint", "models.dev stopped listing it; it keeps its last known values."));
   if (!flags.length) return null;
   return (
-    <div className="flex flex-wrap items-center gap-8">
-      {flags}
-      {!m.listed && !m.custom && (
-        <Text variant="small" tone="secondary">
-          {t("models.delistedHint", "models.dev stopped listing it; it keeps its last known values.")}
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-wrap items-center gap-8">{flags}</div>
+      {hints.map((hint, i) => (
+        <Text key={i} variant="small" tone="secondary">
+          {hint}
         </Text>
-      )}
+      ))}
     </div>
   );
 }

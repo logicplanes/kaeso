@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::common::D as DIALECT;
+use crate::codec::{EncodedRequest, HeaderList};
 use crate::models::{
-    EPOCH_RFC3339, add_query_extra, bad_listing, decode_date, encode_date, format_rfc3339, none_or,
-    parse_rfc3339, query_pairs, record_none,
+    EPOCH_RFC3339, add_query_extra, bad_listing, decode_date, encode_date, format_rfc3339,
+    model_path, none_or, parse_rfc3339, query_pairs, record_none,
 };
 use crate::wire::{
     Ext, Maybe, extra_for, extras_from, to_body, verbatim_from_form, without_position,
@@ -352,4 +353,11 @@ pub(super) fn decode_models(body: &[u8]) -> Result<ModelList, KppError> {
     list.has_more = w.has_more.into_option().unwrap_or(false);
     list.extras = extras;
     Ok(list)
+}
+
+pub(super) fn retrieve_request(model: &str) -> EncodedRequest {
+    EncodedRequest::get(
+        model_path(model),
+        HeaderList::new().with("anthropic-version", super::ANTHROPIC_VERSION),
+    )
 }

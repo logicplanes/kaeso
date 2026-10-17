@@ -22,7 +22,10 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView } from "~/api/generated/types";
+import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { useApiMutation } from "~/auth/mutation";
+import { toast } from "~/shell/toast";
 import { providerLabel } from "~/format/labels";
 import { monthLabel } from "~/format/period";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -31,6 +34,7 @@ import { AddModelsDialog } from "./add-models-dialog";
 import { AliasesTab } from "./aliases-tab";
 import { capabilities, capabilityOptions, contextLabel, dialectPill, overriddenFields, priceLabel } from "./model-fields";
 import { ModelSheet } from "./model-sheet";
+import { checkFailureLabel } from "./availability";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
@@ -123,6 +127,31 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
     });
   }, [filtered, sort]);
 
+  const check = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
+    invalidates: [["orgs", org, "projects", project, "models"]],
+    onSuccess: (result) => {
+      const first = result.failed[0];
+      if (first) {
+        toast.warning(checkFailureLabel(first), {
+          description: t("models.checkFailedCount", "{count, plural, one {# model could not be checked.} other {# models could not be checked.}}", {
+            count: result.failed.length,
+          }),
+        });
+        return;
+      }
+      const unavailable = result.models.filter((m) => m.availability === "unavailable").length;
+      toast.success(
+        unavailable
+          ? t("models.checkedSome", "Checked {count, plural, one {# model} other {# models}}; {unavailable} unavailable", {
+              count: result.models.length,
+              unavailable,
+            })
+          : t("models.checkedAll", "Checked {count, plural, one {# model} other {# models}}; all available", { count: result.models.length }),
+      );
+    },
+  });
+
   const filtering = !!(search.provider || search.cap || search.overridden);
   const addButton = (
     <Button size="sm" variant="primary" leadingIcon={icons.add} disabled={!canManage} {...(reason ? { disabledReason: reason } : {})} onClick={create.run}>
@@ -178,6 +207,16 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               onCheckedChange={(v) => setSearch({ overridden: v || undefined })}
             />
             <Toolbar.Spacer />
+            <Button
+              size="sm"
+              leadingIcon={icons.refresh}
+              loading={check.isPending}
+              disabled={!canManage || all.length === 0}
+              {...(reason ? { disabledReason: reason } : {})}
+              onClick={() => check.mutate()}
+            >
+              {t("models.checkAvailability", "Check availability")}
+            </Button>
             <Select
               aria-label={t("models.sort", "Sort")}
               size="sm"
@@ -248,35 +287,41 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
         : write
           ? t("models.cacheWrite", "cache write {write}", { write })
           : null;
+  const unavailable = m.availability === "unavailable" && <Badge tone="danger">{t("models.unavailable", "Unavailable")}</Badge>;
   return (
-    <span className="hidden items-center gap-8 md:flex">
-      {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
-      {m.custom ? (
-        <Badge>{t("models.custom", "Custom")}</Badge>
-      ) : (
-        overridden > 0 && <Badge>{t("models.overriddenCount", "Overridden {count}", { count: overridden })}</Badge>
-      )}
-      {m.aliases.slice(0, 2).map((a) => (
-        <Pill key={a} size="sm">
-          {a}
+    <>
+      <span className="md:hidden">{unavailable}</span>
+      <span className="hidden items-center gap-8 md:flex">
+        {unavailable}
+        {m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}
+        {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
+        {m.custom ? (
+          <Badge>{t("models.custom", "Custom")}</Badge>
+        ) : (
+          overridden > 0 && <Badge>{t("models.overriddenCount", "Overridden {count}", { count: overridden })}</Badge>
+        )}
+        {m.aliases.slice(0, 2).map((a) => (
+          <Pill key={a} size="sm">
+            {a}
+          </Pill>
+        ))}
+        {m.aliases.length > 2 && (
+          <Text variant="small" tone="secondary">
+            {t("models.moreAliases", "+{count}", { count: m.aliases.length - 2 })}
+          </Text>
+        )}
+        <Pill size="sm" variant="outline">
+          {dialectPill(m.egress_dialect)}
         </Pill>
-      ))}
-      {m.aliases.length > 2 && (
-        <Text variant="small" tone="secondary">
-          {t("models.moreAliases", "+{count}", { count: m.aliases.length - 2 })}
+        <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
+          {contextLabel(f.context_limit)}
         </Text>
-      )}
-      <Pill size="sm" variant="outline">
-        {dialectPill(m.egress_dialect)}
-      </Pill>
-      <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
-        {contextLabel(f.context_limit)}
-      </Text>
-      <Tooltip content={cache ? t("models.priceWithCache", "{unit}; {cache}", { unit, cache }) : unit}>
-        <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-96 text-right">
-          {priceLabel(f)}
-        </Text>
-      </Tooltip>
-    </span>
+        <Tooltip content={cache ? t("models.priceWithCache", "{unit}; {cache}", { unit, cache }) : unit}>
+          <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-96 text-right">
+            {priceLabel(f)}
+          </Text>
+        </Tooltip>
+      </span>
+    </>
   );
 }

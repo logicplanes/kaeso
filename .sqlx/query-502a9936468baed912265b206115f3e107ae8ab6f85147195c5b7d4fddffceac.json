@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_models SET availability = NULL, availability_checked_at = NULL WHERE org_id = $1 AND provider = $2 AND availability IS NOT NULL RETURNING project_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "project_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "502a9936468baed912265b206115f3e107ae8ab6f85147195c5b7d4fddffceac"
+}

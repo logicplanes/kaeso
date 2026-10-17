@@ -12,7 +12,21 @@ Choose **Add models**, choose OpenAI or Anthropic, search, and select one or mor
 
 **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format it uses.
 
-The install refreshes models.dev data every 24 hours by default. Instance admins see its state, and sync it now, under **Instance** › **Model sources**. A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**.
+The install refreshes models.dev data every 24 hours by default. Instance admins see its state, and sync it now, under **Instance** › **Model sources**. A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**; one that models.dev marks deprecated is marked **Deprecated**.
+
+## Availability
+
+A model in the catalogue is not always one the provider serves to the project's provider key: the provider may have retired it, or the key may have no access to it. Each model's sheet shows its **Availability**:
+
+| Availability | Meaning |
+| --- | --- |
+| Available | The provider served it at the last check or request |
+| Unavailable | The provider answered that it doesn't serve it to this key; the list marks it too |
+| Not checked | Nothing has told yet, or a provider key of the organization changed since |
+
+**Check availability** asks each model's provider, with the project's provider key, whether it serves the model (`GET /v1/models/{model}` at the provider), and says what it found; models it could not check, because the project has no key for the provider or the provider refused the key or didn't answer, keep their availability. Kaeso also learns it from requests: when the provider answers a request with model not found, the model becomes unavailable and the app gets an [error that says so](../api/errors.md#provider-errors); when a request for an unavailable model succeeds, it becomes available again.
+
+An unavailable model stays in the catalogue, but `GET /v1/models` leaves it out, and requests for it still go to the provider; Kaeso never sends them to another model. Give the provider key access to the model, or remove the model from the catalogue. Checking needs the right **Manage models** and is in the audit log as `catalogue_model.check`.
 
 ## A model's values
 
