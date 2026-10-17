@@ -193,7 +193,7 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
         description={t("keys.archiveHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
         confirmLabel={t("keys.archiveKey", "Archive key")}
         loading={archive.isPending}
-        onConfirm={() => archive.mutate()}
+        onConfirm={() => archive.mutateAsync()}
       />
     </div>
   );

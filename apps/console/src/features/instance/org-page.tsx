@@ -300,23 +300,30 @@ function AppointOwnerDialog({
       toast.success(id === me ? t("instance.youreOwner", "You're an owner now") : t("instance.ownerAdded", "Owner added"));
     },
   });
+  const add = (id: string | null) => {
+    if (id && !appoint.isPending) appoint.mutate(id);
+  };
+  const appointing = (id: string | null) => appoint.isPending && appoint.variables === id;
   return (
     <Dialog
+      busy={appoint.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
       title={t("instance.addOwnerTitle", "Add an owner")}
       description={t("instance.addOwnerHint", "They manage it with every right; it's recorded in its audit log.")}
-      onSubmit={() => user && appoint.mutate(user)}
+      onSubmit={() => add(user)}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
-            disabled={!user}
+            disabled={!user || (appoint.isPending && !appointing(user))}
             {...(user ? {} : { disabledReason: t("instance.chooseUser", "Choose a user") })}
-            loading={appoint.isPending && appoint.variables === user}
-            onClick={() => user && appoint.mutate(user)}
+            loading={appointing(user)}
+            onClick={() => add(user)}
           >
             {t("instance.addOwnerSubmit", "Add owner")}
           </Button>
@@ -338,10 +345,11 @@ function AppointOwnerDialog({
         onInputValueChange={setQuery}
         value={user}
         onValueChange={(v: string | null) => setUser(v)}
+        disabled={appoint.isPending}
         emptyText={t("instance.noUsersMatch", "No users match")}
       />
       {!owners.has(me) && (
-        <Button size="sm" className="mt-12 self-start" loading={appoint.isPending && appoint.variables === me} onClick={() => appoint.mutate(me)}>
+        <Button size="sm" className="mt-12 self-start" disabled={appoint.isPending && !appointing(me)} loading={appointing(me)} onClick={() => add(me)}>
           {t("instance.addMe", "Add me")}
         </Button>
       )}
@@ -412,6 +420,7 @@ function Rename({ o }: { o: InstanceOrgView }) {
         {t("common.rename", "Rename")}
       </Button>
       <Dialog
+        busy={rename.isPending}
         open={open}
         onOpenChange={setOpen}
         size="sm"
@@ -420,7 +429,9 @@ function Rename({ o }: { o: InstanceOrgView }) {
         onSubmit={() => !reason && rename.mutate()}
         footer={
           <>
-            <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+            <Dialog.Close>
+              <Button>{t("common.cancel", "Cancel")}</Button>
+            </Dialog.Close>
             <Button
               variant="primary"
               disabled={!!reason}

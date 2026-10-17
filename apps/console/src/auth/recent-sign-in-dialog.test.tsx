@@ -91,6 +91,26 @@ describe("signing in again with a password", () => {
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", code: "123456" }]);
   });
 
+  it("checks one code at a time, and keeps the recovery link waiting meanwhile", async () => {
+    needsRecentSignIn();
+    on("POST", "auth/password", json(totpRequired(), { status: 202 }));
+    let respond: (reply: unknown) => void = () => undefined;
+    on("POST", "auth/totp", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.type(within(box).getByLabelText("Password"), "correct horse battery");
+    await user.click(within(box).getByRole("button", { name: "Sign in" }));
+    await user.type(await within(box).findByRole("textbox"), "123456");
+    await waitFor(() => expect(requests("POST", "auth/totp")).toHaveLength(1));
+    expect(within(box).getByRole("button", { name: "Use a recovery code" })).toBeDisabled();
+    await user.click(within(box).getByRole("button", { name: "Verify" }));
+    await user.type(within(box).getByRole("textbox"), "{Backspace}7");
+    expect(requests("POST", "auth/totp")).toHaveLength(1);
+    respond(signedInReply());
+    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(requests("POST", "auth/totp")).toHaveLength(1);
+  });
+
   it("tries the same code again with Verify", async () => {
     needsRecentSignIn();
     on("POST", "auth/password", json(totpRequired(), { status: 202 }));

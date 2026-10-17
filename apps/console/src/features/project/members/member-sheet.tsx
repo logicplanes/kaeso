@@ -189,7 +189,7 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
         description={t("project.members.removeHint", "Their keys in this project are archived and stop authenticating; they stay in the organization.")}
         confirmLabel={self ? t("project.members.leave", "Leave project") : t("project.members.remove", "Remove from project")}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </div>
   );

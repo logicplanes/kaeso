@@ -52,4 +52,34 @@ describe("Sheet", () => {
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("from the bottom, watches its header, rows and footer so a change of height grows it upwards smoothly; from the side, watches nothing", async () => {
+    const watched: Element[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe(el: Element) {
+          watched.push(el);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const { unmount } = render(
+      <Sheet inline side="bottom" title="Menu" footer={<Button>Done</Button>}>
+        <p>Theme</p>
+        <p>Language</p>
+      </Sheet>,
+    );
+    expect(watched.map((el) => el.textContent)).toEqual(["Menu", "Theme", "Language", "Done"]);
+    unmount();
+    watched.length = 0;
+    render(
+      <Sheet inline side="right" title="Key">
+        <p>Details</p>
+      </Sheet>,
+    );
+    expect(watched).toEqual([]);
+    vi.unstubAllGlobals();
+  });
 });

@@ -4,6 +4,9 @@ import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembersh
 import { notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const sidebar = () => screen.getByRole("navigation", { name: "Console" });
 

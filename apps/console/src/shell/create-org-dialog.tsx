@@ -30,6 +30,7 @@ export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
   });
   return (
     <Dialog
+      busy={create.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
@@ -38,7 +39,9 @@ export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
       onSubmit={() => name.trim() && create.mutate()}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" loading={create.isPending} disabled={!name.trim()} onClick={() => create.mutate()}>
             {t("shell.createOrg", "Create organization")}
           </Button>

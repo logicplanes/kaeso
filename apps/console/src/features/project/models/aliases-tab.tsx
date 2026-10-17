@@ -127,7 +127,7 @@ export function AliasesTab({
           description={t("models.alias.deleteHint", "Requests that send this name are refused, unless a model has the same name.")}
           confirmLabel={t("models.alias.delete", "Delete alias")}
           loading={remove.isPending}
-          onConfirm={() => remove.mutate(deleting)}
+          onConfirm={() => remove.mutateAsync(deleting)}
         />
       )}
     </>
@@ -176,6 +176,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
 
   return (
     <Dialog
+      busy={save.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
@@ -184,7 +185,9 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
       onSubmit={submit}
       footer={
         <>
-          <Button onClick={onClose}>{common.cancel()}</Button>
+          <Dialog.Close>
+            <Button>{common.cancel()}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={submit}>
             {alias ? t("models.alias.save", "Save alias") : t("models.createAlias", "Create alias")}
           </Button>

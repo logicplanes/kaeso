@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Dialog, LayerDialog } from "./dialog.js";
+import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
 import { StepDialog } from "./step-dialog.js";
 import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
@@ -208,6 +208,172 @@ async function openAddModels(onSubmit: (view: View) => void = () => undefined) {
 }
 
 const submit = () => userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+
+function TwoFactor() {
+  const [codes, setCodes] = useState(false);
+  return (
+    <Dialog open title={codes ? "Store your recovery codes" : "Set up two-factor authentication"}>
+      {codes ? (
+        <input type="checkbox" aria-label="I stored these codes" />
+      ) : (
+        <button type="button" onClick={() => setCodes(true)}>
+          Turn on
+        </button>
+      )}
+    </Dialog>
+  );
+}
+
+describe("Dialog content that changes", () => {
+  it("keeps the same dialog and moves the focus into the new content when the focused control goes away", async () => {
+    render(<TwoFactor />);
+    await frames();
+    const dialog = screen.getByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: "Turn on" }));
+    await frames();
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(dialog).toHaveAccessibleName("Store your recovery codes");
+    expect(screen.getByRole("checkbox", { name: "I stored these codes" })).toHaveFocus();
+  });
+  it("leaves the focus where it is while it stays in the dialog", async () => {
+    function Growing() {
+      const [more, setMore] = useState(false);
+      return (
+        <Dialog open title="Invite member">
+          <button type="button" onClick={() => setMore(true)}>
+            Add projects
+          </button>
+          {more && <input aria-label="Project" />}
+        </Dialog>
+      );
+    }
+    render(<Growing />);
+    await frames();
+    await userEvent.click(screen.getByRole("button", { name: "Add projects" }));
+    expect(screen.getByRole("button", { name: "Add projects" })).toHaveFocus();
+  });
+});
+
+describe("busy dialogs", () => {
+  it("stay open while their work is underway: Escape, a press outside, the close circle, Cancel and ⌘Enter do nothing", async () => {
+    const onOpenChange = vi.fn();
+    const onSubmit = vi.fn();
+    function Saving() {
+      const [busy, setBusy] = useState(true);
+      return (
+        <Dialog
+          open
+          busy={busy}
+          onOpenChange={onOpenChange}
+          onSubmit={onSubmit}
+          title="Rename key"
+          footer={
+            <>
+              <Dialog.Close>
+                <Button>Cancel</Button>
+              </Dialog.Close>
+              <Button onClick={() => setBusy(false)}>Saved</Button>
+            </>
+          }
+        >
+          <input aria-label="Name" />
+        </Dialog>
+      );
+    }
+    render(<Saving />);
+    await frames();
+    expect(screen.getByRole("button", { name: "Close" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(document.querySelector<HTMLElement>(".bg-overlay")!);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    screen.getByRole("textbox", { name: "Name" }).focus();
+    await userEvent.keyboard("{Control>}{Enter}{/Control}{Meta>}{Enter}{/Meta}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Saved" }));
+    expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
+    screen.getByRole("textbox", { name: "Name" }).focus();
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+  it("include a layer dialog, whose Back waits so no other layer can start a second request", async () => {
+    const onLayerChange = vi.fn();
+    render(
+      <LayerDialog
+        open
+        busy
+        layer={1}
+        onLayerChange={onLayerChange}
+        layers={[
+          { title: "Add models", content: <p>Search</p> },
+          { title: "Review values", content: <p>Prices</p> },
+        ]}
+      />,
+    );
+    await frames();
+    const back = screen.getByRole("button", { name: "Back" });
+    expect(back).toBeDisabled();
+    await userEvent.click(back);
+    expect(onLayerChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Review values");
+  });
+  it("keep an uncontrolled dialog open too", async () => {
+    render(
+      <Dialog defaultOpen busy title="Rename key">
+        <p>Saving</p>
+      </Dialog>,
+    );
+    await frames();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(screen.getByRole("dialog", { name: "Rename key" })).toBeInTheDocument();
+  });
+  it("include a step dialog while it submits, with Back and Cancel waiting", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <StepDialog
+        open
+        onOpenChange={onOpenChange}
+        submitting
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        steps={[{ id: "name", title: "What is it for?", content: <input aria-label="Name" /> }]}
+      />,
+    );
+    await frames();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+  it("include an alert dialog while the promise it waits for is pending, with Cancel waiting", async () => {
+    const onOpenChange = vi.fn();
+    let finish: () => void = () => undefined;
+    render(
+      <AlertDialog
+        open
+        onOpenChange={onOpenChange}
+        title="Delete key?"
+        description="Apps using it stop working."
+        confirmLabel="Delete key"
+        onConfirm={() => new Promise<void>((resolve) => (finish = resolve))}
+      />,
+    );
+    await frames();
+    await userEvent.click(screen.getByRole("button", { name: "Delete key" }));
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await act(async () => finish());
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
 
 describe("LayerDialog", () => {
   it("keeps one header height and goes back a layer", async () => {
@@ -493,22 +659,8 @@ describe("StepDialog", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toHaveAttribute("aria-disabled", "true");
   });
-  describe("height", () => {
-    const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
-    beforeEach(() => {
-      Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
-        configurable: true,
-        get(this: HTMLElement) {
-          if (!this.parentElement?.hasAttribute("data-step-frame")) return 0;
-          const shown = [...this.querySelectorAll("section")].find((s) => !s.hidden);
-          return Number(shown?.querySelector<HTMLElement>("[data-h]")?.dataset.h ?? 0) + 16;
-        },
-      });
-    });
-    afterEach(() => {
-      if (original) Object.defineProperty(HTMLElement.prototype, "offsetHeight", original);
-      vi.unstubAllGlobals();
-    });
+  describe("size", () => {
+    afterEach(() => vi.unstubAllGlobals());
     function Heights({ heights }: { heights: number[] }) {
       return (
         <StepDialog
@@ -528,56 +680,42 @@ describe("StepDialog", () => {
         />
       );
     }
-    const frame = (dialog: HTMLElement) => dialog.querySelector<HTMLElement>("[data-step-frame]")!;
     const shownStep = (dialog: HTMLElement) => [...dialog.querySelectorAll("section")].find((s) => !s.hidden)!;
+    const fixedSizes = (dialog: HTMLElement) =>
+      [dialog, ...dialog.querySelectorAll<HTMLElement>("*")].filter((el) => el.style.height || el.style.minHeight || el.style.maxHeight || el.style.width);
 
-    it("takes each step's height, shorter and taller, and opens without motion", async () => {
+    it("leaves every step at its own height: no fixed height, shorter and taller, and the drift on step changes only", async () => {
       render(<Heights heights={[40, 300, 40]} />);
       await frames();
       const dialog = screen.getByRole("dialog");
-      expect(frame(dialog).style.height).toBe("56px");
+      expect(fixedSizes(dialog)).toEqual([]);
       expect(shownStep(dialog)).not.toHaveAttribute("data-enter");
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-      expect(frame(dialog).style.height).toBe("316px");
+      expect(fixedSizes(dialog)).toEqual([]);
       expect(shownStep(dialog)).toHaveAttribute("data-enter", "forward");
       expect(screen.getByRole("textbox", { name: "Field 2" })).toHaveFocus();
       await userEvent.click(screen.getByRole("button", { name: "Back" }));
-      expect(frame(dialog).style.height).toBe("56px");
+      expect(fixedSizes(dialog)).toEqual([]);
       expect(shownStep(dialog)).toHaveAttribute("data-enter", "back");
       expect(screen.getByRole("textbox", { name: "Field 1" })).toHaveFocus();
     });
-    it("keeps one height for steps a few pixels apart, and lands on the 4px grid", async () => {
-      render(<Heights heights={[100, 90, 103]} />);
+    it("stays centered: the popup sits in a centring viewport, its frame fills it and nothing pins its top", async () => {
+      render(<Heights heights={[40, 300]} />);
       await frames();
       const dialog = screen.getByRole("dialog");
-      expect(frame(dialog).style.height).toBe("116px");
+      expect(dialog.parentElement).toHaveClass("fixed", "inset-0", "flex", "items-center", "justify-center");
+      expect(dialog.querySelector("[data-dialog-frame]")).toHaveClass("flex-1", "min-h-0");
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-      expect(frame(dialog).style.height).toBe("116px");
-      await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-      expect(frame(dialog).style.height).toBe("120px");
+      expect(dialog.getAttributeNames().filter((n) => n.startsWith("data-step"))).toEqual([]);
+      expect(dialog.style.cssText).not.toMatch(/top|margin|height/);
     });
-    it("grows for content that grows within a step in the next frame, never inside the observer's callback", async () => {
-      const callbacks: ResizeObserverCallback[] = [];
-      vi.stubGlobal(
-        "ResizeObserver",
-        class {
-          constructor(cb: ResizeObserverCallback) {
-            callbacks.push(cb);
-          }
-          observe() {}
-          unobserve() {}
-          disconnect() {}
-        },
-      );
-      render(<Heights heights={[40]} />);
+    it("starts a step at the top of the body", async () => {
+      render(<Heights heights={[40, 300]} />);
       await frames();
-      const dialog = screen.getByRole("dialog");
-      expect(frame(dialog).style.height).toBe("56px");
-      dialog.querySelector<HTMLElement>("[data-h]")!.dataset.h = "80";
-      for (const cb of callbacks) cb([], {} as ResizeObserver);
-      expect(frame(dialog).style.height).toBe("56px");
-      await act(() => vi.advanceTimersToNextFrame());
-      expect(frame(dialog).style.height).toBe("96px");
+      const body = screen.getByRole("dialog").querySelector<HTMLElement>("[data-dialog-body]")!;
+      body.scrollTop = 120;
+      await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+      expect(body.scrollTop).toBe(0);
     });
     it("with reduced motion, swaps the step without its drift", async () => {
       vi.stubGlobal("matchMedia", (q: string) => ({
@@ -592,9 +730,51 @@ describe("StepDialog", () => {
       await frames();
       const dialog = screen.getByRole("dialog");
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-      expect(frame(dialog).style.height).toBe("316px");
       expect(shownStep(dialog)).not.toHaveAttribute("data-enter");
       expect(screen.getByRole("textbox", { name: "Field 2" })).toHaveFocus();
+    });
+  });
+  describe("result", () => {
+    function CreateKey() {
+      const [created, setCreated] = useState(false);
+      return (
+        <StepDialog
+          open
+          title="Create key"
+          submitLabel="Create key"
+          onSubmit={() => setCreated(true)}
+          steps={[{ id: "name", title: "What is it for?", content: <input aria-label="Name" /> }]}
+          result={
+            created
+              ? {
+                  title: "Key created",
+                  description: "Copy the key now: it's shown once.",
+                  size: "lg",
+                  content: <button type="button">Copy key</button>,
+                  footer: <Button>Done</Button>,
+                }
+              : undefined
+          }
+        />
+      );
+    }
+    it("shows what the last step made in the same dialog, at its own size, with the focus and the announcement in it", async () => {
+      render(<CreateKey />);
+      await frames();
+      const dialog = screen.getByRole("dialog");
+      expect(dialog).toHaveClass("w-440");
+      await userEvent.click(screen.getByRole("button", { name: "Create key" }));
+      await frames();
+      expect(screen.getByRole("dialog")).toBe(dialog);
+      expect(dialog).toHaveAccessibleName("Key created");
+      expect(dialog).toHaveAccessibleDescription("Copy the key now: it's shown once.");
+      expect(dialog).toHaveClass("w-720");
+      expect(dialog.querySelector("[data-dialog-frame]")).toHaveClass("w-720", "self-center");
+      expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Done" })).toHaveFocus();
+      expect(dialog.querySelector("[aria-live]")).toHaveTextContent("Key created");
+      expect(dialog.querySelector("section")).toHaveAttribute("data-enter", "forward");
     });
   });
 });

@@ -45,6 +45,8 @@ describe("CreateKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
 
     const reveal = await screen.findByRole("dialog", { name: "Key created" });
+    expect(reveal).toBe(dialog);
+    expect(within(reveal).queryByRole("heading", { name: "Models and limits" })).not.toBeInTheDocument();
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ name: "checkout-web", access: "inference", expires_in_days: 90 }]);
     expect(within(reveal).getByText("Copy the key now: it's shown once, and Kaeso keeps only a hash of it.")).toBeInTheDocument();
     await user.click(within(reveal).getByRole("button", { name: "Done" }));
@@ -139,6 +141,27 @@ describe("CreateKeyDialog", () => {
     await screen.findByRole("dialog", { name: "Key created" });
     await user.keyboard("{Escape}");
     expect(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).toBeInTheDocument();
+  });
+
+  it("stays open while the key is being created, so its secret is never lost, and shows it when it arrives", async () => {
+    signedIn();
+    projectData();
+    let respond: (key: unknown) => void = () => undefined;
+    on("POST", KEYS, () => new Promise((resolve) => (respond = resolve)));
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "checkout-web{Enter}");
+    await next(user, dialog, "What can it call?");
+    await next(user, dialog, "Models and limits");
+    await user.click(within(dialog).getByRole("button", { name: "Create key" }));
+    await waitFor(() => expect(requests("POST", KEYS)).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Back" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog", { name: /Create key/ })).toBe(dialog);
+    respond(createdKey());
+    expect(await screen.findByRole("dialog", { name: "Key created" })).toBe(dialog);
+    expect(within(dialog).getByText(SECRET)).toBeInTheDocument();
+    expect(requests("POST", KEYS)).toHaveLength(1);
   });
 
   it("closes the form with Escape", async () => {

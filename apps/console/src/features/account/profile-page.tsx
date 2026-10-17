@@ -135,6 +135,7 @@ function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: bool
   });
   return (
     <Dialog
+      busy={change.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
@@ -143,7 +144,9 @@ function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: bool
       onSubmit={() => next.trim() && change.mutate()}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!next.trim()} loading={change.isPending} onClick={() => change.mutate()}>
             {t("account.sendConfirmation", "Send confirmation link")}
           </Button>
@@ -199,7 +202,7 @@ function DeleteAccount({ email }: { email: string }) {
         confirmLabel={t("account.deleteAccount", "Delete account")}
         confirmText={email}
         loading={remove.isPending}
-        onConfirm={() => remove.mutate()}
+        onConfirm={() => remove.mutateAsync()}
       />
     </SettingsSection>
   );

@@ -78,6 +78,28 @@ describe("profile page", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Change email" })).not.toBeInTheDocument());
   });
 
+  it("stays open while the confirmation link is on its way, so it can't be sent twice", async () => {
+    signedIn();
+    on("GET", "me", me());
+    let respond: (body: unknown) => void = () => undefined;
+    on("POST", "me/email", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp("/settings/account/profile");
+    await user.click(await screen.findByRole("button", { name: "Change email" }));
+    const dialog = await screen.findByRole("dialog", { name: "Change email" });
+    await user.type(within(dialog).getByLabelText("New email"), "ada@example.org");
+    await user.click(within(dialog).getByRole("button", { name: "Send confirmation link" }));
+    await waitFor(() => expect(requests("POST", "me/email")).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    within(dialog).getByLabelText("New email").focus();
+    await user.keyboard("{Meta>}{Enter}{/Meta}{Escape}");
+    expect(screen.getByRole("dialog", { name: "Change email" })).toBe(dialog);
+    expect(requests("POST", "me/email")).toHaveLength(1);
+    respond({ status: "sent" });
+    expect(await notifications().findByText("Confirmation link sent; your old address was notified")).toBeInTheDocument();
+    expect(requests("POST", "me/email")).toHaveLength(1);
+  });
+
   it("sends the confirmation link from its button", async () => {
     signedIn();
     on("GET", "me", me());

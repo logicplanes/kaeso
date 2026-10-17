@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -94,6 +94,7 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
   const ready = passwordOk(next) && (!hasPassword || current.length > 0);
   return (
     <Dialog
+      busy={save.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
@@ -101,7 +102,9 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
       onSubmit={() => ready && save.mutate()}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={() => save.mutate()}>
             {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
           </Button>
@@ -132,12 +135,19 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
   );
 }
 
+interface TwoFactorState {
+  open: boolean;
+  codes: string[] | null;
+}
+
+const TWO_FACTOR_CLOSED: TwoFactorState = { open: false, codes: null };
+
 function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft: number }) {
   const queryClient = useQueryClient();
-  const [setup, setSetup] = useState(false);
+  const [twoFactor, setTwoFactor] = useState<TwoFactorState>(TWO_FACTOR_CLOSED);
+  const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [codes, setCodes] = useState<string[] | null>(null);
   const off = useApiMutation({
     mutationFn: async () => {
       await api.DELETE("/platform/v1/me/totp");
@@ -154,7 +164,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
     invalidates: [["me"]],
     onSuccess: (r) => {
       setRegenerating(false);
-      setCodes(r.recovery_codes);
+      setTwoFactor({ open: true, codes: r.recovery_codes });
     },
   });
   return (
@@ -189,25 +199,24 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
             title={t("account.authenticatorApp", "Authenticator app")}
             description={t("account.authenticatorOff", "Off; password sign-ins need only the password.")}
             control={
-              <Button size="sm" variant="primary" onClick={() => setSetup(true)}>
+              <Button size="sm" variant="primary" onClick={() => setTwoFactor({ open: true, codes: null })}>
                 {t("account.setUp", "Set up")}
               </Button>
             }
           />
         )}
       </SettingsGroup>
-      {setup && (
-        <SetupDialog
-          onClose={() => setSetup(false)}
-          onEnabled={(c) => {
-            setSetup(false);
-            setCodes(c);
+      <DialogScope open={twoFactor.open}>
+        <TwoFactorDialog
+          open={twoFactor.open}
+          initialCodes={twoFactor.codes}
+          onClose={closeTwoFactor}
+          onEnabled={() => {
             void queryClient.invalidateQueries({ queryKey: ["me"] });
             void queryClient.invalidateQueries({ queryKey: ["session"] });
           }}
         />
-      )}
-      {codes && <RecoveryCodesDialog codes={codes} onClose={() => setCodes(null)} />}
+      </DialogScope>
       <AlertDialog
         open={turningOff}
         onOpenChange={setTurningOff}
@@ -216,7 +225,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         description={t("account.turnOffConfirmHint", "Password sign-ins need only the password; organizations that require it close to you.")}
         confirmLabel={t("account.turnOff", "Turn off")}
         loading={off.isPending}
-        onConfirm={() => off.mutate()}
+        onConfirm={() => off.mutateAsync()}
       />
       <AlertDialog
         open={regenerating}
@@ -226,43 +235,104 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         description={t("account.regenerateConfirmHint", "Your current recovery codes stop working; you get ten new ones to store.")}
         confirmLabel={t("account.regenerate", "Regenerate")}
         loading={regenerate.isPending}
-        onConfirm={() => regenerate.mutate()}
+        onConfirm={() => regenerate.mutateAsync()}
       />
     </SettingsSection>
   );
 }
 
-function SetupDialog({ onClose, onEnabled }: { onClose: () => void; onEnabled: (codes: string[]) => void }) {
+function TwoFactorDialog({
+  open,
+  initialCodes,
+  onClose,
+  onEnabled,
+}: {
+  open: boolean;
+  initialCodes: string[] | null;
+  onClose: () => void;
+  onEnabled: () => void;
+}) {
+  const [codes, setCodes] = useState(initialCodes);
   const start = useQuery({
     queryKey: ["totp-setup"],
     queryFn: async () => data(await api.POST("/platform/v1/me/totp")),
     staleTime: Infinity,
     gcTime: 0,
     retry: false,
+    enabled: !codes,
   });
   const [code, setCode] = useState("");
   const confirm = useApiMutation({
     mutationFn: async (c: string) => data(await api.POST("/platform/v1/me/totp/confirm", { body: { code: c } })),
-    onSuccess: (r) => onEnabled(r.recovery_codes),
+    onSuccess: (r) => {
+      setCodes(r.recovery_codes);
+      onEnabled();
+    },
     onError: () => setCode(""),
   });
+  const turnOn = (value: string) => {
+    if (!confirm.isPending) confirm.mutate(value);
+  };
+  const [stored, setStored] = useState(false);
   const failed = start.isError;
+  const closedOnFailure = useRef(false);
   useEffect(() => {
-    if (failed) onClose();
+    if (!failed || closedOnFailure.current) return;
+    closedOnFailure.current = true;
+    onClose();
   }, [failed, onClose]);
+  if (codes) {
+    const text = codes.join("\n");
+    const download = () => {
+      const href = URL.createObjectURL(new Blob([`${t("account.recoveryFileTitle", "Kaeso recovery codes")}\n\n${text}\n`], { type: "text/plain" }));
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "kaeso-recovery-codes.txt";
+      a.click();
+      URL.revokeObjectURL(href);
+    };
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={() => stored && onClose()}
+        size="md"
+        title={t("account.storeCodes", "Store your recovery codes")}
+        description={t("account.storeCodesHint", "Each code signs you in once without your authenticator; they're shown only now.")}
+        hideClose
+        footer={
+          <Button variant="primary" disabled={!stored} onClick={onClose}>
+            {t("common.done", "Done")}
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-16">
+          <CodeBlock code={text} title={t("account.recoveryCodes", "Recovery codes")} collapseAfter={0} />
+          <div className="flex gap-8">
+            <Button size="sm" onClick={download}>
+              {t("account.downloadTxt", "Download .txt")}
+            </Button>
+          </div>
+          <Checkbox label={t("account.codesStored", "I stored these codes")} checked={stored} onCheckedChange={setStored} />
+        </div>
+      </Dialog>
+    );
+  }
   const s = start.data;
   return (
     <Dialog
-      open
+      busy={confirm.isPending}
+      open={open}
       onOpenChange={(o) => !o && onClose()}
       size="md"
       title={t("account.setupTitle", "Set up two-factor authentication")}
       description={t("account.setupHint", "Add Kaeso to an authenticator app, then enter the six-digit code it shows.")}
-      onSubmit={() => code.length === 6 && confirm.mutate(code)}
+      onSubmit={() => code.length === 6 && turnOn(code)}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
-          <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => confirm.mutate(code)}>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => turnOn(code)}>
             {t("account.turnOn", "Turn on")}
           </Button>
         </>
@@ -291,46 +361,8 @@ function SetupDialog({ onClose, onEnabled }: { onClose: () => void; onEnabled: (
           <SkeletonLine lines={6} />
         )}
         <Field label={t("account.appCode", "Code from the app")}>
-          <OTPInput aria-label={t("account.appCode", "Code from the app")} value={code} onValueChange={setCode} onComplete={(v) => confirm.mutate(v)} />
+          <OTPInput aria-label={t("account.appCode", "Code from the app")} value={code} onValueChange={setCode} onComplete={turnOn} />
         </Field>
-      </div>
-    </Dialog>
-  );
-}
-
-function RecoveryCodesDialog({ codes, onClose }: { codes: string[]; onClose: () => void }) {
-  const [stored, setStored] = useState(false);
-  const text = codes.join("\n");
-  const download = () => {
-    const href = URL.createObjectURL(new Blob([`${t("account.recoveryFileTitle", "Kaeso recovery codes")}\n\n${text}\n`], { type: "text/plain" }));
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = "kaeso-recovery-codes.txt";
-    a.click();
-    URL.revokeObjectURL(href);
-  };
-  return (
-    <Dialog
-      open
-      onOpenChange={() => stored && onClose()}
-      size="md"
-      title={t("account.storeCodes", "Store your recovery codes")}
-      description={t("account.storeCodesHint", "Each code signs you in once without your authenticator; they're shown only now.")}
-      hideClose
-      footer={
-        <Button variant="primary" disabled={!stored} onClick={onClose}>
-          {t("common.done", "Done")}
-        </Button>
-      }
-    >
-      <div className="flex flex-col gap-16">
-        <CodeBlock code={text} title={t("account.recoveryCodes", "Recovery codes")} collapseAfter={0} />
-        <div className="flex gap-8">
-          <Button size="sm" onClick={download}>
-            {t("account.downloadTxt", "Download .txt")}
-          </Button>
-        </div>
-        <Checkbox label={t("account.codesStored", "I stored these codes")} checked={stored} onCheckedChange={setStored} />
       </div>
     </Dialog>
   );

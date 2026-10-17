@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { toastApiError } from "~/api/toast-error";
@@ -26,13 +26,17 @@ export default function RecentSignInDialog() {
     await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
     settleRecentSignIn(true);
   };
+  const running = useRef(false);
   const attempt = async (fn: () => Promise<void>) => {
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     try {
       await fn();
     } catch (e) {
       toastApiError(e);
     } finally {
+      running.current = false;
       setBusy(false);
     }
   };
@@ -59,10 +63,14 @@ export default function RecentSignInDialog() {
   const cancel = () => settleRecentSignIn(false);
   const footer =
     step.kind === "link-sent" ? (
-      <Button onClick={cancel}>{t("common.close", "Close")}</Button>
+      <Dialog.Close>
+        <Button>{t("common.close", "Close")}</Button>
+      </Dialog.Close>
     ) : (
       <>
-        <Button onClick={cancel}>{t("common.cancel", "Cancel")}</Button>
+        <Dialog.Close>
+          <Button>{t("common.cancel", "Cancel")}</Button>
+        </Dialog.Close>
         {step.kind === "password" && hasPassword && (
           <Button variant="primary" loading={busy} disabled={!password} onClick={submitPassword}>
             {t("auth.recent.signIn", "Sign in")}
@@ -83,6 +91,7 @@ export default function RecentSignInDialog() {
 
   return (
     <Dialog
+      busy={busy}
       open
       onOpenChange={(o) => !o && cancel()}
       size="sm"
@@ -103,7 +112,7 @@ export default function RecentSignInDialog() {
               autoFocus
             />
             {sso && (
-              <Button variant="link" className="self-start" onClick={() => void continueWithSso()}>
+              <Button variant="link" className="self-start" disabled={busy} onClick={() => void continueWithSso()}>
                 {t("auth.recent.ssoInstead", "Continue with SSO instead")}
               </Button>
             )}
@@ -123,6 +132,7 @@ export default function RecentSignInDialog() {
             <Button
               variant="link"
               className="self-start"
+              disabled={busy}
               onClick={() => {
                 setCode("");
                 setStep({ ...step, recovery: true });

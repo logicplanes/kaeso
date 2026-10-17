@@ -5,6 +5,9 @@ import { ALL_ORG_RIGHTS, ORG, membership, org, signedIn, whoAmI, withRights } fr
 import { OTHER_USER, THIRD_USER, hoverReason, member, notifications, roleGrant } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const PATH = `/settings/orgs/${ORG}/general`;
 
@@ -175,6 +178,26 @@ describe("transferring ownership", () => {
     expect(await notifications().findByText("Grace Hopper is an owner now; you're an admin")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/ownership-transfer").map((r) => r.body)).toEqual([{ user_id: OTHER_USER }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Transfer ownership" })).not.toBeInTheDocument());
+  });
+
+  it("stays open while the transfer is on its way, so it can't be sent twice", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", page(members));
+    let respond: (body: unknown) => void = () => undefined;
+    on("POST", "orgs/:org/ownership-transfer", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Transfer ownership" }));
+    const dialog = await screen.findByRole("dialog", { name: "Transfer ownership" });
+    await user.click(within(dialog).getByRole("combobox", { name: "New owner" }));
+    await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Transfer ownership" }));
+    await waitFor(() => expect(requests("POST", "orgs/:org/ownership-transfer")).toHaveLength(1));
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog", { name: "Transfer ownership" })).toBe(dialog);
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeDisabled();
+    respond(members[1]);
+    expect(await notifications().findByText("Grace Hopper is an owner now; you're an admin")).toBeInTheDocument();
+    expect(requests("POST", "orgs/:org/ownership-transfer")).toHaveLength(1);
   });
 
   it("transfers with the keyboard only once a member is chosen", async () => {

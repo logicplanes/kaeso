@@ -268,6 +268,7 @@ function TestEmailDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpe
     to.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? t("instance.emailOrEmpty", "Enter an email address, or leave it empty") : undefined;
   return (
     <Dialog
+      busy={send.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
@@ -276,7 +277,9 @@ function TestEmailDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpe
       onSubmit={() => !reason && send.mutate()}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!!reason} {...(reason ? { disabledReason: reason } : {})} loading={send.isPending} onClick={() => send.mutate()}>
             {t("instance.sendTestEmail", "Send test email")}
           </Button>

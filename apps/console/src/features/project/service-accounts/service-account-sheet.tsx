@@ -271,7 +271,7 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
         description={t("project.serviceAccounts.archiveConfirmHint", "Its keys are archived with it and stop authenticating; archiving is permanent.")}
         confirmLabel={t("project.serviceAccounts.archive", "Archive service account")}
         loading={archive.isPending}
-        onConfirm={() => archive.mutate()}
+        onConfirm={() => archive.mutateAsync()}
       />
       <CreateKeyDialog org={org} project={project} open={creatingKey} onClose={() => setCreatingKey(false)} fixedServiceAccount={{ id: a.id, name: a.name }} />
     </div>

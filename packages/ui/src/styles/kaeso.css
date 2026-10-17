@@ -881,11 +881,6 @@
 @utility animate-layer-in {
   animation: k-layer-in var(--k-duration-dialog) var(--k-ease-overlay);
 }
-@utility step-height-motion {
-  transition-property: height;
-  transition-duration: var(--k-duration-dialog);
-  transition-timing-function: var(--k-ease-standard);
-}
 @keyframes k-step-in {
   from {
     opacity: 0;
@@ -901,16 +896,11 @@
     animation: k-step-in var(--k-duration-dialog) var(--k-ease-overlay);
   }
 }
-[data-step-anchored] {
-  align-self: flex-start;
-  margin-top: var(--k-step-top);
+[data-resizing] {
+  overflow: hidden;
 }
-[data-step-anchored][data-step-glide] {
-  transition-property: opacity, transform, margin-top;
-  transition-timing-function: var(--k-ease-overlay), var(--k-ease-overlay), var(--k-ease-standard);
-}
-[data-step-anchored][data-step-glide][data-ending-style] {
-  transition-timing-function: var(--k-ease-exit);
+[data-resizing] [data-resize-clip] {
+  overflow-y: hidden;
 }
 @keyframes k-row-fresh {
   from {

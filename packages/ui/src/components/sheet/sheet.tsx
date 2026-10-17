@@ -1,6 +1,6 @@
 import { InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { forwardRef, type ReactElement, type ReactNode } from "react";
+import { forwardRef, useCallback, useState, type ReactElement, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
@@ -8,6 +8,7 @@ import { useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { useUiText } from "../../i18n/context.js";
+import { useResizeMotion } from "../../utils/resize-motion.js";
 
 export const KAESO_SHEET_VARIANTS = {
   size: {
@@ -39,9 +40,13 @@ export interface SheetProps {
   inline?: boolean | undefined;
 }
 
-function Frame({ title, subtitle, actions, children, footer, inline, onOpenChange }: SheetProps) {
+function Frame({ title, subtitle, actions, children, footer, inline, onOpenChange, side }: SheetProps) {
   const Title = inline ? "h2" : BaseDialog.Title;
   const t = useUiText();
+  const [box, setBox] = useState<HTMLElement | null>(null);
+  const grows = side === "bottom";
+  const headRef = useCallback((el: HTMLElement | null) => setBox(grows ? (el?.parentElement ?? null) : null), [grows]);
+  useResizeMotion(box);
   const close = (
     <IconButton
       icon={icons.close}
@@ -52,7 +57,7 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   );
   return (
     <>
-      <div className="flex h-60 shrink-0 items-center gap-12 pr-12 pl-24 hairline-b">
+      <div ref={headRef} className="flex h-60 shrink-0 items-center gap-12 pr-12 pl-24 hairline-b">
         <div className="flex min-w-0 flex-1 flex-col">
           <Title className="truncate text-title-sm font-semibold text-fg">{title}</Title>
           {subtitle && <span className="truncate mono text-small text-fg-secondary">{subtitle}</span>}
@@ -60,7 +65,9 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
         {actions}
         {inline ? close : <BaseDialog.Close render={close} />}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 py-20 scrollbar-quiet">{children}</div>
+      <div data-dialog-body="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 py-20 scrollbar-quiet">
+        {children}
+      </div>
       {footer && <div className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 py-16 hairline-t">{footer}</div>}
     </>
   );
@@ -74,7 +81,7 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(props
   );
   const focus = useRestoreFocus(open, () => modal);
   const container = usePortalContainer();
-  const settled = useScopedDialog(open);
+  const settled = useScopedDialog(inline ? false : open);
   if (inline)
     return (
       <div ref={ref} className={cn(box, "h-560")}>

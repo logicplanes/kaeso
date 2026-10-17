@@ -4,6 +4,9 @@ import { ORG, OTHER_PROJECT, PROJECT, membership, myMembership, myProject, signe
 import { apiError, noContent, on, requests } from "~/test/network";
 import { notifications } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const PATH = "/settings/account/memberships";
 const CONTOSO = "org_contoso";

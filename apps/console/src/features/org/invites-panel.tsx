@@ -162,9 +162,7 @@ export function InvitesPanel({ org }: { org: string }) {
         description={t("org.invites.revokeHint", "The link in the email stops working; you can invite the address again later.")}
         confirmLabel={t("org.invites.revokeInvitation", "Revoke invitation")}
         loading={revoke.isPending}
-        onConfirm={() => {
-          if (revoking) revoke.mutate(revoking);
-        }}
+        onConfirm={() => (revoking ? revoke.mutateAsync(revoking) : undefined)}
       />
     </>
   );

@@ -558,7 +558,7 @@
   "Shows a dash: some, but not all, of a group is checked.": "Zeigt einen Strich: Ein Teil der Gruppe ist angehakt, aber nicht alles.",
   "Shows a quiet progress line at the top of the list (async results).": "Zeigt oben in der Liste eine leise Fortschrittslinie (asynchrone Ergebnisse).",
   "Shows a remove circle; called with the click.": "Zeigt einen Entfernen-Kreis; wird mit dem Klick aufgerufen.",
-  "Shows a spinner on the confirm while work runs (also automatic for a promise).": "Zeigt einen Spinner auf der Bestätigung, solange die Arbeit läuft (bei einem Promise automatisch).",
+  "Shows a spinner on the confirm while work runs (also automatic for a promise); until it ends, the dialog stays open.": "Zeigt einen Spinner auf der Bestätigung, solange die Arbeit läuft (bei einem Promise automatisch); bis sie endet, bleibt der Dialog offen.",
   "Shows it as invalid; pair it with a message that says what to fix.": "Zeigt es als ungültig; zusammen mit einer Nachricht, die sagt, was zu korrigieren ist.",
   "Shows line numbers.": "Zeigt Zeilennummern.",
   "Shows skeleton rows while the first page loads.": "Zeigt Skelettzeilen, während die erste Seite lädt.",
@@ -965,5 +965,8 @@
   "Create a key, then another": "Einen Schlüssel erstellen, dann noch einen",
   "The key is shown once; closing the dialog forgets it, so the next key starts on the first step.": "Der Schlüssel wird einmal gezeigt; das Schließen des Dialogs vergisst ihn, sodass der nächste Schlüssel beim ersten Schritt beginnt.",
   "The component that keeps the flow's state and renders the dialog with the same `open`.": "Die Komponente, die den Zustand des Ablaufs hält und den Dialog mit demselben `open` rendert.",
-  "Whether the dialog inside is open; pass the value its `open` gets.": "Ob der Dialog darin geöffnet ist; übergib den Wert, den sein `open` erhält."
+  "Whether the dialog inside is open; pass the value its `open` gets.": "Ob der Dialog darin geöffnet ist; übergib den Wert, den sein `open` erhält.",
+  "The key, shown once after the last step": "Der Schlüssel, einmal gezeigt nach dem letzten Schritt",
+  "Content that grows and shrinks": "Inhalt, der wächst und schrumpft",
+  "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.": "Hält den Dialog offen, solange die darin gestartete Arbeit läuft: Escape, ein Klick daneben, der Schließen-Kreis, Dialog.Close und ⌘Enter bewirken nichts, damit keine Anfrage abgebrochen oder doppelt gesendet wird."
 }

@@ -1,5 +1,5 @@
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
 import { focusInputOnPress } from "../../utils/field-press.js";
@@ -9,6 +9,7 @@ import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { KbdSequence, Kbd } from "../kbd/kbd.js";
 import { useUiText } from "../../i18n/context.js";
+import { useResizeMotion } from "../../utils/resize-motion.js";
 
 export const KAESO_COMMAND_PALETTE_VARIANTS = {
   size: {
@@ -73,6 +74,9 @@ function Palette({
   const [active, setActive] = useState(0);
   const listId = useId();
   const input = useRef<HTMLInputElement>(null);
+  const [box, setBox] = useState<HTMLElement | null>(null);
+  const boxRef = useCallback((el: HTMLElement | null) => setBox(inline ? null : (el?.parentElement ?? null)), [inline]);
+  useResizeMotion(box);
   const page = pages[pages.length - 1];
   const source = page ? page.groups : groups;
   const visible = useMemo(
@@ -122,7 +126,10 @@ function Palette({
 
   let index = -1;
   return (
-    <div className={cn("relative flex palette-limits flex-col overflow-hidden", inline && "w-640 rounded-palette bg-raised shadow-dialog")}>
+    <div
+      ref={boxRef}
+      className={cn("relative flex palette-limits min-h-0 flex-col overflow-hidden", inline ? "w-640 rounded-palette bg-raised shadow-dialog" : "flex-1")}
+    >
       {loading && (
         <span aria-hidden className="absolute inset-x-0 top-0 h-2 overflow-hidden">
           <span className="block h-full w-1/3 animate-indeterminate bg-fg-tertiary" />
@@ -153,6 +160,7 @@ function Palette({
       </div>
       <div
         id={listId}
+        data-dialog-body=""
         {...(flat.length ? { role: "listbox", "aria-label": t("commandPalette.results", "Results") } : { role: "status" })}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8 scrollbar-quiet"
       >
@@ -241,7 +249,7 @@ export function CommandPalette(props: CommandPaletteProps) {
   const focus = useRestoreFocus(isOpen);
   const t = useUiText();
   const container = usePortalContainer();
-  const settled = useScopedDialog(isOpen);
+  const settled = useScopedDialog(inline ? false : isOpen);
   const session = useOpenSession(isOpen);
   if (inline) return <Palette {...props} close={() => undefined} />;
   return (
@@ -253,7 +261,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             aria-label={t("commandPalette.label", "Command palette")}
             initialFocus={focus.initialFocus}
             finalFocus={focus.finalFocus}
-            className="w-640 max-w-full overflow-hidden rounded-palette bg-raised text-fg shadow-dialog outline-none dialog-motion"
+            className="flex w-640 max-w-full flex-col overflow-hidden rounded-palette bg-raised text-fg shadow-dialog outline-none dialog-motion"
           >
             <Palette key={session} {...props} close={() => setOpen(false)} />
           </BaseDialog.Popup>

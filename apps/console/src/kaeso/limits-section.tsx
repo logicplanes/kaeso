@@ -218,6 +218,7 @@ export function EditLimitDialog({
   const problem = limitProblem(editing);
   return (
     <Dialog
+      busy={update.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
@@ -229,11 +230,13 @@ export function EditLimitDialog({
       footer={
         <>
           {onRemove && (
-            <Button variant="danger-secondary" className="mr-auto" onClick={onRemove}>
+            <Button variant="danger-secondary" className="mr-auto" disabled={update.isPending} onClick={onRemove}>
               {t("kaeso.limits.remove", "Remove limit")}
             </Button>
           )}
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!!problem}
@@ -290,7 +293,7 @@ export function RemoveLimitDialog({
       description={t("kaeso.limits.removeHint", "The {limit} stops applying; the levels above it still do.", { limit: limitDescription(limit) })}
       confirmLabel={t("kaeso.limits.remove", "Remove limit")}
       loading={remove.isPending}
-      onConfirm={() => remove.mutate()}
+      onConfirm={() => remove.mutateAsync()}
     />
   );
 }
