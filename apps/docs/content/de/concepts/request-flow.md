@@ -27,11 +27,12 @@ Der Modellname wird im Katalog des Projekts aufgelöst: zuerst ein Alias, dann `
 Der Katalogeintrag liefert Limits, Preise und Fähigkeiten des Modells, das Format, in dem der Anbieter aufgerufen wird, ob es Reasoning nutzt, ob es adaptives Denken hat, und sein Zeitlimit. Die Anfrage wird daran geprüft und mit 400 abgelehnt, wenn sie etwas braucht, das dem Modell fehlt:
 
 - Bilder, PDFs, Tools, ein JSON-Schema oder Reasoning;
-- eine Aufwandsstufe, die das Modell nicht listet;
+- eine Aufwandsstufe, die das Modell nicht listet, oder adaptives Denken für ein Claude-Modell ohne adaptives Denken;
+- eine erzwungene Tool-Wahl (`required`, `any` oder ein benanntes Tool) für ein Modell, das keine annimmt, etwa Claude Fable 5.1, Opus 5.5 und Sonnet 5.5; die Meldung nennt das Feld und den Wert der App selbst;
 - eine Temperatur ungleich 1 bei einem Modell, das keine annimmt, es sei denn, Kaeso schaltet das Denken von Claude ein und lässt die Temperatur weg;
 - Embeddings von einem Generierungsmodell oder Text von einem Embedding-Modell.
 
-Eine Anfrage für ein Claude-Modell ohne Höchstzahl an Ausgabe-Token erhält das Ausgabelimit des Modells.
+Eine Anfrage in einem OpenAI-Format für ein Claude-Modell ohne Höchstzahl an Ausgabe-Token erhält das Ausgabelimit des Modells. Anthropic Messages verlangt `max_tokens`, daher wird eine Messages-Anfrage ohne das Feld mit 400 abgelehnt, so wie Anthropic sie ablehnt.
 
 ## Limits
 

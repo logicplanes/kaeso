@@ -15469,6 +15469,13 @@
             "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat` or `openai_embeddings`.",
             "example": "openai_responses"
           },
+          "forced_tool_choice": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
+          },
           "input_modalities": {
             "type": [
               "array",
@@ -15627,6 +15634,13 @@
             ],
             "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat` or `openai_embeddings`.",
             "example": "openai_responses"
+          },
+          "forced_tool_choice": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
           },
           "input_modalities": {
             "type": [

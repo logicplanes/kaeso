@@ -55,7 +55,11 @@ impl Codec for AnthropicMessages {
     }
 
     fn encode_error(err: &KppError) -> EncodedError {
-        error::encode_error(err)
+        error::encode_error(err, None)
+    }
+
+    fn encode_error_for_request(err: &KppError, request_id: &str) -> EncodedError {
+        error::encode_error(err, Some(request_id))
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {

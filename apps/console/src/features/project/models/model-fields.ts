@@ -63,6 +63,7 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "structured_output", label: t("models.cap.structuredOutput", "Structured output"), kind: "bool" },
     { key: "temperature", label: t("models.field.temperature", "Temperature"), kind: "bool" },
     { key: "adaptive_thinking", label: t("models.field.adaptiveThinking", "Adaptive thinking"), kind: "bool" },
+    { key: "forced_tool_choice", label: t("models.field.forcedToolChoice", "Forced tool choice"), kind: "bool" },
     { key: "efforts", label: t("models.field.efforts", "Efforts"), kind: "list" },
     { key: "timeout_seconds", label: t("models.field.timeout", "Timeout"), kind: "number" },
     { key: "release_date", label: t("models.field.released", "Released"), kind: "date" },

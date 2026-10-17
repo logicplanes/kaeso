@@ -126,6 +126,9 @@ pub(crate) fn decode_request(
         }
     };
     let dec = Dec::new(&origin, None);
+    if kind == RequestKind::Generate && w.max_tokens.is_none() {
+        return Err(invalid_body("`max_tokens` is required").with_param("max_tokens"));
+    }
 
     let mut req = GenerateRequest::new(w.model);
     req.extras = extras_from(&origin, extra, verbatim);

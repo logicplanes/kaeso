@@ -1,4 +1,6 @@
-use kaeso_kpp::{DialectId, GenerateRequest, ModelInfo, ReasoningEffort, Request};
+use kaeso_kpp::{
+    DialectId, GenerateRequest, ModelInfo, ReasoningEffort, ReasoningMode, Request, ToolChoice,
+};
 
 use super::Effective;
 
@@ -15,6 +17,34 @@ fn refuse(capability: &'static str, param: Option<&'static str>, message: String
         capability,
         param,
         message,
+    }
+}
+
+fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
+    use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
+    match (field, ingress) {
+        ("effort", A) => "output_config.effort",
+        ("effort", R) => "reasoning.effort",
+        ("effort", _) => "reasoning_effort",
+        ("format", A) => "output_config.format",
+        ("format", R) => "text.format",
+        ("format", _) => "response_format",
+        ("messages", R) => "input",
+        ("reasoning", A) => "thinking",
+        ("reasoning", R) => "reasoning",
+        ("reasoning", _) => "reasoning_effort",
+        (other, _) => other,
+    }
+}
+
+fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'static str> {
+    let anthropic = ingress == DialectId::AnthropicMessages;
+    match choice? {
+        ToolChoice::Required if anthropic => Some("`tool_choice` `any`"),
+        ToolChoice::Tool(_) if anthropic => Some("`tool_choice` `tool`"),
+        ToolChoice::Required => Some("`tool_choice` `required`"),
+        ToolChoice::Tool(_) => Some("a named function in `tool_choice`"),
+        _ => None,
     }
 }
 
@@ -111,17 +141,18 @@ fn check_generation(
         ));
     }
     let caps = g.required_capabilities();
+    let messages = Some(app_param(ingress, "messages"));
     if caps.images && !eff.accepts("image") {
         return Err(refuse(
             "image input",
-            Some("messages"),
+            messages,
             format!("The model `{name}` does not accept images."),
         ));
     }
     if caps.pdf && !eff.accepts("pdf") {
         return Err(refuse(
             "pdf input",
-            Some("messages"),
+            messages,
             format!("The model `{name}` does not accept PDF documents."),
         ));
     }
@@ -132,18 +163,42 @@ fn check_generation(
             format!("The model `{name}` does not support tool calling."),
         ));
     }
+    if eff.fields.forced_tool_choice == Some(false)
+        && let Some(words) = forced_choice(g.tool_choice.as_ref(), ingress)
+    {
+        return Err(refuse(
+            "forced tool choice",
+            Some("tool_choice"),
+            format!(
+                "The model `{name}` does not accept {words}; send `auto` and ask for the tool in the prompt."
+            ),
+        ));
+    }
     if caps.json_schema && eff.fields.structured_output != Some(true) {
         return Err(refuse(
             "structured output",
-            Some("response_format"),
+            Some(app_param(ingress, "format")),
             format!("The model `{name}` does not support structured output (a JSON schema)."),
         ));
     }
     if caps.reasoning && eff.fields.reasoning != Some(true) {
         return Err(refuse(
             "reasoning",
-            Some("reasoning"),
+            Some(app_param(ingress, "reasoning")),
             format!("The model `{name}` does not support reasoning."),
+        ));
+    }
+    if eff.fields.adaptive_thinking == Some(false)
+        && g.reasoning
+            .as_ref()
+            .is_some_and(|r| r.mode == Some(ReasoningMode::Adaptive))
+    {
+        return Err(refuse(
+            "adaptive thinking",
+            Some("thinking"),
+            format!(
+                "The model `{name}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+            ),
         ));
     }
     if let Some(t) = g.sampling.temperature
@@ -164,7 +219,6 @@ fn check_generation(
 }
 
 fn kpp_turns_thinking_on(g: &GenerateRequest, ingress: DialectId, eff: &Effective) -> bool {
-    use kaeso_kpp::ReasoningMode;
     let Some(r) = &g.reasoning else {
         return false;
     };
@@ -228,7 +282,11 @@ fn check_effort(
                 .join(", ")
         )
     };
-    Err(refuse("effort", Some("reasoning_effort"), message))
+    Err(refuse(
+        "effort",
+        Some(app_param(ingress, "effort")),
+        message,
+    ))
 }
 
 pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {

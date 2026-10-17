@@ -27,6 +27,7 @@ order: 4
 | 发送格式 | Kaeso 调用该模型时使用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses 或 OpenAI Embeddings |
 | 工具调用、推理、结构化输出 | 模型支持的功能 |
 | 支持温度参数 | 模型是否接受 `temperature` |
+| 支持强制工具选择 | 模型是否接受 `tool_choice` 的 `required`、`any` 或指定的工具；对不接受的模型，Kaeso 会在调用服务商之前拒绝此类请求 |
 | 自适应思考、推理强度等级 | 模型推理的开启方式，以及其接受的推理强度 |
 | 超时 | 对该模型的请求的秒数；留空则使用部署的请求超时 |
 | 发布时间 | 模型的发布日期 |

@@ -1,4 +1,5 @@
 {
+  "models.acceptsForcedToolChoice": "支持强制工具选择",
   "models.acceptsTemperature": "支持温度参数",
   "models.actions": "模型操作",
   "models.addAllCurrent": "添加所有当前 {provider} 模型",
@@ -66,6 +67,7 @@
   "models.field.context": "上下文",
   "models.field.displayName": "显示名称",
   "models.field.efforts": "推理强度",
+  "models.field.forcedToolChoice": "强制工具选择",
   "models.field.inputPrice": "输入价格",
   "models.field.inputs": "输入",
   "models.field.outputLimit": "输出上限",

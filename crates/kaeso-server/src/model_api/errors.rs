@@ -4,6 +4,8 @@ use axum::response::Response;
 use kaeso_codecs::dispatch;
 use kaeso_kpp::{DialectId, ErrorKind, KppError};
 
+use crate::http::request_id;
+
 pub const MODEL_HEADER: &str = "kaeso-model";
 pub const PROVIDER_HEADER: &str = "kaeso-provider";
 
@@ -26,7 +28,10 @@ pub fn stamp(resp: &mut Response, served: &Served) {
 }
 
 pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response {
-    let encoded = dispatch::encode_error(dialect, err);
+    let encoded = match request_id::current() {
+        Some(id) => dispatch::encode_error_for_request(dialect, err, &id.to_string()),
+        None => dispatch::encode_error(dialect, err),
+    };
     let mut resp = Response::new(Body::from(encoded.body));
     *resp.status_mut() =
         StatusCode::from_u16(encoded.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);

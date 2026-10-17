@@ -24,7 +24,7 @@ Typed numeric fields go through `u32`, `u64`, `i64` (`seed`) or `f64`. A value o
 | `model` | `GenerateRequest.model` typed | |
 | `messages` | `system` + `messages` typed | See [messages](#messages-chatcompletionrequestmessage). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typed | Written as integers (`1`): form `integers`, the list of keys so written. The encoder writes such a key as an integer while its value is still a whole number, so `temperature: 1` comes back as `1`, not `1.0`; a changed value is written as the new value. From other dialects: the `f64` spelling (`1.0`). |
-| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect. |
+| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect. `CreateChatCompletionRequest` sets no minimum for it or for `max_tokens`, so every non-negative integer is kept, `0` included; a negative one is `InvalidRequest`. |
 | `max_tokens` (deprecated) | `sampling.max_output_tokens` typed | Form `max_tokens: "max_tokens"`. Both present with the same value: form `"both"`. With different values `max_completion_tokens` wins and `max_tokens` becomes the extra `max_tokens (differs from max_completion_tokens)`, sent back as `max_tokens`; the key names the conflict when another dialect refuses it. |
 | `stop` | `sampling.stop` typed | String spelling: form `stop: "string"`; `[]`: form `"array"`. More than four sequences: `Unsupported` (`stop`). |
 | `seed` | `sampling.seed` typed | |

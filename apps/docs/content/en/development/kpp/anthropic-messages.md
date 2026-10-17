@@ -35,7 +35,7 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `messages[].content` array | `blocks` | `[]` → form `content: "array"`. |
 | `system` string | `system: [Text]` | form `system: "string"`. |
 | `system` array (`RequestTextBlock[]`) | `system` | `[]` → form `system: "array"`. |
-| `max_tokens` | `sampling.max_output_tokens` | Required for generation: `check()` returns `InvalidRequest` (param `max_tokens`) when it is missing. |
+| `max_tokens` | `sampling.max_output_tokens` | Required for generation (`CreateMessageParams`): a request without it is `InvalidRequest` when it is decoded (`` The request body is not a valid Anthropic Messages request: `max_tokens` is required. ``, param `max_tokens`), so the gateway never fills it in for an Anthropic app; token counting has no `max_tokens`. `0` is valid, the spec's minimum: it fills the prompt cache without an answer. A request from another dialect without `sampling.max_output_tokens` is `InvalidRequest` in `check()`. |
 | `temperature`, `top_p`, `top_k` | `sampling.temperature`, `.top_p`, `.top_k` | Deprecated in the spec and absent from SDK 1.13.0, but still mapped. `temperature` and `top_p` keep their spelling: the keys written as integers (`1`) are listed in form `integers` and written as integers again while the value is still a whole number, so `temperature: 1` comes back as `1`, not `1.0`; a changed value is written as the new value. Requests from other dialects get Anthropic's own spelling (`1.0`) ([sampling](cross-format.md#sampling)). |
 | `stop_sequences` | `sampling.stop` | `[]` → verbatim. |
 | `stream: true` | `stream = On { include_usage: true }` | Anthropic always reports usage. `stream: false` → verbatim. |
@@ -204,7 +204,7 @@ Encoding events from other dialects:
 - **Reasoning blocks** from other dialects become `thinking` blocks ([reasoning blobs](cross-format.md#reasoning-blobs)): summaries and reasoning text as `thinking_delta`s with a blank line between parts, opaque deltas collected, and when the block stops one `signature_delta` with the reasoning blob of the whole block.
 - **Left out** ([replies](cross-format.md#replies)): foreign citation and unknown deltas, unknown blocks and `Extra` events, as in complete replies. While they arrive, the encoder writes paced `event: ping` frames (`{"type": "ping"}`, as Anthropic sends them): one per foreign extra event and one per 1,024 bytes of hidden text ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame.
 - **Stop reasons:** `StopReason::Other` is mapped as for replies.
-- **Errors:** a KPP `Error` becomes `event: error` with its body as for [errors](#errors): errors decoded from Anthropic as received, others as `{"type":"error","error":{type,message}}`.
+- **Errors:** a KPP `Error` becomes `event: error` with its body as for [errors](#errors), without a `request_id`: errors decoded from Anthropic as received, others as `{"type":"error","error":{type,message}}`.
 
 ## Errors
 
@@ -227,7 +227,8 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 - `error.message` → `message`; the whole body (with `request_id` and `error.details`) → `raw`; the HTTP status → `status`; `retry-after-ms` or `retry-after` → `retry_after`, which is written back as `retry-after`, rounded up to whole seconds.
 - A too-long prompt is a 400 `invalid_request_error` like any other, so only its message tells it apart. If Anthropic changes the wording, the error decodes as `InvalidRequest`.
 - An unknown `error.type`, or a body that is not an `ErrorResponse` (such as Cloudflare's HTML 413, JSON whose `type` is not `error`, or one with a top-level key Kaeso cannot carry), gets its kind from the status: 400, 409 and 422 `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied`, 404 `NotFound`, 408 and 504 `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, 503 and 529 `Overloaded`, and `ProviderError` for any other status and for stream errors, which have none. A documented `error.type` always wins over the status. The status and the raw body (as a string when it is not JSON) are kept, and such bodies are encoded again in Anthropic's error shape.
-- Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"}}`.
+- Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"},"request_id":null}`.
+- `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, also into a body encoded again from `raw`, where it replaces Anthropic's id; the gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
 - Other response headers (such as `anthropic-ratelimit-*` and `request-id`) are not part of `KppError`.
 
 ## Models

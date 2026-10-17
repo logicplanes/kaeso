@@ -35,7 +35,7 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` steht in ganzen Sekunden, aufgerundet; hat die Wartezeit einen Sekundenbruchteil, nennt `retry-after-ms` sie in Millisekunden.
+`Retry-After` steht in ganzen Sekunden, aufgerundet; hat die Wartezeit einen Sekundenbruchteil, nennt `retry-after-ms` sie in Millisekunden. Die OpenAI-Form hat kein Feld für die ID der Anfrage; sie steht im Header `kaeso-request-id`.
 
 ## Anthropic-Format
 
@@ -45,9 +45,12 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
   "error": {
     "type": "rate_limit_error",
     "message": "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds."
-  }
+  },
+  "request_id": "req_…"
 }
 ```
+
+`request_id` ist die ID der Anfrage, dieselbe wie in `kaeso-request-id`, auch bei einem eigenen Fehler des Anbieters.
 
 | Status | `error.type` |
 | --- | --- |
@@ -65,13 +68,13 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 
 ## Fehler des Anbieters
 
-Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so zurück, wie der Anbieter ihn gesendet hat, mit seinem Status. Andernfalls behält er seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das eigene Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
+Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so zurück, wie der Anbieter ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler trägt die Anfrage-ID von Kaeso in `request_id`. Andernfalls behält er seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das eigene Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
 
 ## Warum Anfragen fehlschlagen
 
 | Status | Ursache |
 | --- | --- |
-| 400 | Die Anfrage ist nicht lesbar, ein Feld lässt sich nicht zum Anbieter übertragen, der Kontext ist zu lang, eine Modell-ID wird von mehreren Anbietern im Projekt bedient, oder für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
+| 400 | Die Anfrage ist nicht lesbar, das Modell nimmt eine Einstellung nicht an, die sie nutzt, ein Feld lässt sich nicht zum Anbieter übertragen, der Kontext ist zu lang, eine Modell-ID wird von mehreren Anbietern im Projekt bedient, oder für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
 | 401 | Kein Schlüssel, oder der Schlüssel ist unbekannt, deaktiviert, archiviert oder abgelaufen, sein Mitglied oder Dienstkonto ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar |
 | 403 | Der Schlüssel hat nur Plattformzugriff, ist ein Plattform-Schlüssel einer Organisation oder darf keine Modelle aufrufen (`api.request`), oder der Schlüssel oder sein Mitglied darf dieses Modell nicht nutzen |
 | 404 | Das Modell steht nicht im Katalog des Projekts, oder der Pfad wird nicht bedient |

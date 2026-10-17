@@ -1,4 +1,5 @@
 {
+  "models.acceptsForcedToolChoice": "Unterstützt erzwungene Tool-Wahl",
   "models.acceptsTemperature": "Unterstützt Temperatur",
   "models.actions": "Modellaktionen",
   "models.addAllCurrent": "Alle aktuellen {provider}-Modelle hinzufügen",
@@ -66,6 +67,7 @@
   "models.field.context": "Kontext",
   "models.field.displayName": "Anzeigename",
   "models.field.efforts": "Aufwandsstufen",
+  "models.field.forcedToolChoice": "Erzwungene Tool-Wahl",
   "models.field.inputPrice": "Eingabepreis",
   "models.field.inputs": "Eingaben",
   "models.field.outputLimit": "Ausgabelimit",

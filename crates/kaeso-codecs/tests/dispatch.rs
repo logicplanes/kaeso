@@ -48,6 +48,23 @@ fn every_dialect_encodes_errors_with_a_status() {
 }
 
 #[test]
+fn only_anthropic_error_bodies_carry_a_request_id() {
+    let err = kaeso_kpp::KppError::new(ErrorKind::NotFound, "No such model.").with_status(404);
+    for dialect in DIALECTS {
+        let plain = dispatch::encode_error(dialect, &err);
+        let tagged = dispatch::encode_error_for_request(dialect, &err, "req_kaeso_1");
+        let body: serde_json::Value = serde_json::from_slice(&tagged.body).unwrap();
+        assert_eq!(tagged.status, plain.status, "{dialect:?}");
+        if dialect == DialectId::AnthropicMessages {
+            assert_eq!(body["request_id"], "req_kaeso_1");
+        } else {
+            assert_eq!(tagged.body, plain.body, "{dialect:?}");
+            assert!(!String::from_utf8_lossy(&tagged.body).contains("req_kaeso_1"));
+        }
+    }
+}
+
+#[test]
 fn an_embeddings_codec_does_not_read_generation_replies() {
     let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
     let err = dispatch::decode_response(

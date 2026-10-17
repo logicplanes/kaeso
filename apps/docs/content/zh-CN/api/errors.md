@@ -35,7 +35,7 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误结构：
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` 以整秒为单位，向上取整；当等待时间含有不足一秒的部分时，`retry-after-ms` 以毫秒给出。
+`Retry-After` 以整秒为单位，向上取整；当等待时间含有不足一秒的部分时，`retry-after-ms` 以毫秒给出。OpenAI 的错误结构没有请求 ID 字段；该 ID 位于 `kaeso-request-id` 响应头中。
 
 ## Anthropic 格式
 
@@ -45,9 +45,12 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误结构：
   "error": {
     "type": "rate_limit_error",
     "message": "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds."
-  }
+  },
+  "request_id": "req_…"
 }
 ```
+
+`request_id` 是请求的 ID，与 `kaeso-request-id` 中的相同，服务商自身的错误也是如此。
 
 | 状态码 | `error.type` |
 | --- | --- |
@@ -65,13 +68,13 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误结构：
 
 ## 服务商错误
 
-当应用和服务商使用相同格式时，服务商的错误会按服务商发送的原样返回，状态码不变。否则，错误会在应用所用格式中保持其含义：服务商拒绝的服务商密钥返回 401 或 403，服务商自身的速率限制返回 429，其计费拒绝返回 402 或 429，其他服务器错误返回各自的 5xx 状态码。请求日志会保存服务商自身的消息。
+当应用和服务商使用相同格式时，服务商的错误会按服务商发送的原样返回，状态码不变；Anthropic 错误在 `request_id` 中带有 Kaeso 的请求 ID。否则，错误会在应用所用格式中保持其含义：服务商拒绝的服务商密钥返回 401 或 403，服务商自身的速率限制返回 429，其计费拒绝返回 402 或 429，其他服务器错误返回各自的 5xx 状态码。请求日志会保存服务商自身的消息。
 
 ## 请求失败的原因
 
 | 状态码 | 原因 |
 | --- | --- |
-| 400 | 请求无法读取，某个字段无法传递给服务商，上下文过长，项目中有多个服务商提供同一模型 ID，或尚未为模型的服务商设置服务商密钥 |
+| 400 | 请求无法读取，模型不接受请求使用的某项设置，某个字段无法传递给服务商，上下文过长，项目中有多个服务商提供同一模型 ID，或尚未为模型的服务商设置服务商密钥 |
 | 401 | 没有密钥，或密钥未知、已停用、已归档或已过期，其成员或服务账号不再有效，或其项目或组织无法使用 |
 | 403 | 密钥仅具有平台访问权限、是组织平台密钥或无权调用模型（`api.request`），或密钥或其成员无权使用此模型 |
 | 404 | 模型不在项目目录中，或该路径不提供服务 |

@@ -4,19 +4,8 @@ expression: outcomes
 ---
 {
   "cache-prewarm": {
-    "body": {
-      "input": [
-        {
-          "content": "warmup",
-          "role": "user"
-        }
-      ],
-      "instructions": "You are an expert software engineer with deep knowledge of distributed systems...",
-      "max_output_tokens": 0,
-      "model": "claude-opus-5-5",
-      "store": false
-    },
-    "path": "/v1/responses"
+    "message": "`max_output_tokens 0` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "unsupported": "max_output_tokens 0"
   },
   "claude-code-mid-conversation-system": {
     "body": {
@@ -161,18 +150,8 @@ expression: outcomes
     "unsupported": "file id"
   },
   "max-tokens": {
-    "body": {
-      "input": [
-        {
-          "content": "Explain quantum physics",
-          "role": "user"
-        }
-      ],
-      "max_output_tokens": 10,
-      "model": "claude-opus-5-5",
-      "store": false
-    },
-    "path": "/v1/responses"
+    "message": "`max_output_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "unsupported": "max_output_tokens 10"
   },
   "metadata-service-tier": {
     "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",

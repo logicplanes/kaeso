@@ -21,6 +21,10 @@ pub trait Codec: sealed::Sealed {
 
     fn encode_error(err: &KppError) -> EncodedError;
 
+    fn encode_error_for_request(err: &KppError, _request_id: &str) -> EncodedError {
+        Self::encode_error(err)
+    }
+
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError>;
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError>;

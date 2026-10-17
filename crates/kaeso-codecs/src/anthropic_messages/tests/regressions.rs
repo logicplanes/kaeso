@@ -721,10 +721,15 @@ fn proxy_statuses_408_and_503_are_classified() {
 
 #[test]
 fn decode_errors_name_the_field_without_parser_positions() {
-    let cases: [(&[u8], &str, Option<&str>); 6] = [
+    let cases: [(&[u8], &str, Option<&str>); 7] = [
         (b"{not json", "not valid JSON", None),
         (b"[1]", "must be a JSON object", None),
         (br#"{"max_tokens":1,"messages":[]}"#, "`model` is required", Some("model")),
+        (
+            br#"{"model":"m","messages":[{"role":"user","content":"Hi"}]}"#,
+            "`max_tokens` is required",
+            Some("max_tokens"),
+        ),
         (
             br#"{"model":"m","max_tokens":"many","messages":[]}"#,
             "`max_tokens` must be a non-negative integer",

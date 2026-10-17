@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use kaeso_kpp::{
     Block, DialectId, DocumentBlock, EmbedInput, EmbedRequest, FunctionTool, GenerateRequest,
     JsonSchemaSpec, Message, OutputSpec, RawJson, ReasoningConfig, ReasoningEffort, Request, Role,
-    Source, ToolDef,
+    Source, ToolChoice, ToolDef,
 };
 use rust_decimal_macros::dec;
 use uuid::Uuid;
@@ -453,4 +453,171 @@ fn duties_fill_what_kpp_cannot_know() {
     assert_eq!(info.created_at, Some(1_760_486_400));
     assert_eq!(info.owned_by.as_deref(), Some("anthropic"));
     assert_eq!(info.max_output_tokens, Some(64_000));
+}
+
+fn refusal(
+    g: GenerateRequest,
+    ingress: DialectId,
+    e: &Effective,
+) -> super::capability::Unsupported {
+    let mut req = Request::Generate(g);
+    prepare(&mut req, ingress, e).unwrap_err()
+}
+
+fn with_choice(choice: ToolChoice) -> GenerateRequest {
+    let mut g =
+        user(vec![Block::text("hi")]).with_tool(ToolDef::Function(FunctionTool::new("f", None)));
+    g.tool_choice = Some(choice);
+    g
+}
+
+#[test]
+fn forced_tool_choice_is_refused_in_the_apps_words_where_the_model_rejects_it() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C, OpenAiResponses as R};
+    for model in ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5"] {
+        let e = eff(&entry("anthropic", model));
+        assert_eq!(e.fields.forced_tool_choice, Some(false), "{model}");
+        let cases = [
+            (C, ToolChoice::Required, "`tool_choice` `required`"),
+            (
+                C,
+                ToolChoice::Tool("f".into()),
+                "a named function in `tool_choice`",
+            ),
+            (R, ToolChoice::Required, "`tool_choice` `required`"),
+            (
+                R,
+                ToolChoice::Tool("f".into()),
+                "a named function in `tool_choice`",
+            ),
+            (A, ToolChoice::Required, "`tool_choice` `any`"),
+            (A, ToolChoice::Tool("f".into()), "`tool_choice` `tool`"),
+        ];
+        for (ingress, choice, words) in cases {
+            let u = refusal(with_choice(choice.clone()), ingress, &e);
+            assert_eq!(u.capability, "forced tool choice");
+            assert_eq!(u.param, Some("tool_choice"));
+            assert_eq!(
+                u.message,
+                format!(
+                    "The model `{model}` does not accept {words}; send `auto` and ask for the tool in the prompt."
+                )
+            );
+            let mut count = Request::CountTokens(with_choice(choice));
+            assert!(
+                prepare(&mut count, ingress, &e).is_err(),
+                "{model} {ingress}"
+            );
+        }
+        for choice in [ToolChoice::Auto, ToolChoice::None] {
+            for ingress in [A, C, R] {
+                assert!(check(with_choice(choice.clone()), ingress, &e).is_ok());
+            }
+        }
+    }
+    for model in [
+        "claude-fable-5",
+        "claude-opus-5",
+        "claude-sonnet-4-6",
+        "claude-haiku-5-5",
+    ] {
+        let e = eff(&entry("anthropic", model));
+        assert_eq!(e.fields.forced_tool_choice, None, "{model}");
+        assert!(
+            check(with_choice(ToolChoice::Required), C, &e).is_ok(),
+            "{model}"
+        );
+    }
+    let mut e = entry("anthropic", "claude-opus-5-5");
+    e.overrides.forced_tool_choice = Some(true);
+    assert!(check(with_choice(ToolChoice::Required), C, &eff(&e)).is_ok());
+}
+
+#[test]
+fn capability_refusals_name_the_apps_own_field() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C, OpenAiResponses as R};
+    let opus55 = eff(&entry("anthropic", "claude-opus-5-5"));
+    for (ingress, param) in [
+        (C, "reasoning_effort"),
+        (R, "reasoning.effort"),
+        (A, "output_config.effort"),
+    ] {
+        let u = refusal(with_effort("minimal"), ingress, &opus55);
+        assert_eq!(u.param, Some(param), "{ingress}");
+        assert_eq!(
+            u.message,
+            "The model `claude-opus-5-5` supports the effort levels `low`, `medium`, `high`, `xhigh`, `max`; `minimal` is not one of them."
+        );
+    }
+    let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
+    let mut schema = user(vec![Block::text("hi")]);
+    schema.output = OutputSpec::JsonSchema(JsonSchemaSpec::new(RawJson::empty_object()));
+    for (ingress, param) in [
+        (C, "response_format"),
+        (R, "text.format"),
+        (A, "output_config.format"),
+    ] {
+        assert_eq!(refusal(schema.clone(), ingress, &gpt35).param, Some(param));
+    }
+    let image = user(vec![Block::image(Source::base64("image/png", "AAAA"))]);
+    for (ingress, param) in [(C, "messages"), (R, "input"), (A, "messages")] {
+        assert_eq!(refusal(image.clone(), ingress, &gpt35).param, Some(param));
+    }
+    let gpt4o = eff(&entry("openai", "gpt-4o"));
+    for (ingress, param) in [(C, "reasoning_effort"), (R, "reasoning"), (A, "thinking")] {
+        assert_eq!(
+            refusal(with_effort("high"), ingress, &gpt4o).param,
+            Some(param)
+        );
+    }
+}
+
+#[test]
+fn adaptive_thinking_is_refused_before_sending_where_the_model_has_none() {
+    use kaeso_kpp::ReasoningMode;
+    let adaptive = |effort: Option<&str>| {
+        let mut g = user(vec![Block::text("hi")]);
+        let mut r = ReasoningConfig::default();
+        r.mode = Some(ReasoningMode::Adaptive);
+        r.effort = effort.map(ReasoningEffort::from_wire);
+        g.reasoning = Some(r);
+        g
+    };
+    for model in [
+        "claude-opus-4-5",
+        "claude-opus-4-5-20251101",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5",
+    ] {
+        let e = eff(&entry("anthropic", model));
+        let u = refusal(adaptive(None), DialectId::AnthropicMessages, &e);
+        assert_eq!(u.capability, "adaptive thinking");
+        assert_eq!(u.param, Some("thinking"));
+        assert_eq!(
+            u.message,
+            format!(
+                "The model `{model}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+            )
+        );
+    }
+    let opus45 = eff(&entry("anthropic", "claude-opus-4-5"));
+    assert!(check(with_effort("high"), DialectId::AnthropicMessages, &opus45).is_ok());
+    assert!(check(with_effort("high"), DialectId::OpenAiChat, &opus45).is_ok());
+    let haiku45 = eff(&entry("anthropic", "claude-haiku-4-5"));
+    let u = refusal(with_effort("low"), DialectId::AnthropicMessages, &haiku45);
+    assert_eq!(u.param, Some("output_config.effort"));
+    assert_eq!(
+        u.message,
+        "The model `claude-haiku-4-5` does not accept an effort level; `low` cannot be sent."
+    );
+    assert!(check(with_effort("low"), DialectId::OpenAiResponses, &haiku45).is_ok());
+    let sonnet46 = eff(&entry("anthropic", "claude-sonnet-4-6"));
+    assert!(
+        check(
+            adaptive(Some("high")),
+            DialectId::AnthropicMessages,
+            &sonnet46
+        )
+        .is_ok()
+    );
 }
