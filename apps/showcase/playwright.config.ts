@@ -15,7 +15,10 @@ export default defineConfig({
     reducedMotion: "reduce",
     colorScheme: "light",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "webkit", testMatch: "nav-sheet.spec.ts", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
+  ],
   webServer: {
     command: `pnpm exec astro preview --port ${port}`,
     env: { ASTRO_PREVIEW_BACKGROUND: "1" },

@@ -1,4 +1,17 @@
-import { createContext, forwardRef, useContext, useEffect, useId, useRef, useState, type HTMLAttributes, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type HTMLAttributes,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { InsetContent } from "../../utils/inset.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -17,7 +30,11 @@ export const KAESO_APP_FRAME_VARIANTS = {
 } as const;
 export const KAESO_APP_FRAME_DEFAULT_VARIANTS = { fill: "screen" } as const;
 
-const Ctx = createContext<{ openNav: () => void; embedded: boolean }>({ openNav: () => undefined, embedded: false });
+const Ctx = createContext<{ openNav: () => void; embedded: boolean; sheetReady: RefObject<boolean> }>({
+  openNav: () => undefined,
+  embedded: false,
+  sheetReady: { current: false },
+});
 export const useAppFrame = () => useContext(Ctx);
 
 export interface AppFrameProps {
@@ -37,10 +54,11 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
 ) {
   const [navOpen, setNavOpen] = useState(false);
   const toggle = useRef<HTMLButtonElement | null>(null);
+  const sheetReady = useRef(false);
   const mainId = `k-main-${useId().replace(/[^\w-]/g, "")}`;
   const Main = fill === "screen" ? "main" : "div";
   return (
-    <Ctx.Provider value={{ openNav: () => setNavOpen(true), embedded: fill === "parent" }}>
+    <Ctx.Provider value={{ openNav: () => setNavOpen(true), embedded: fill === "parent", sheetReady }}>
       <div
         ref={ref}
         className={cn(
@@ -57,7 +75,7 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
           label={brandLabel}
           actions={phoneActions}
           open={navOpen}
-          onOpen={() => setNavOpen(true)}
+          onToggle={() => setNavOpen((o) => !o)}
           toggleRef={toggle}
         />
         <Main
@@ -68,7 +86,7 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
         </Main>
         {corner && <div className="fixed right-16 bottom-16 z-10 flex items-center gap-8">{corner}</div>}
       </div>
-      <FrameSheet navOpen={navOpen} setNavOpen={setNavOpen} returnFocus={toggle}>
+      <FrameSheet navOpen={navOpen} setNavOpen={setNavOpen} toggle={toggle} ready={sheetReady}>
         {sidebar}
       </FrameSheet>
     </Ctx.Provider>
@@ -103,7 +121,7 @@ function PhoneBar({
   label,
   actions,
   open,
-  onOpen,
+  onToggle,
   toggleRef,
 }: {
   banner: boolean;
@@ -111,7 +129,7 @@ function PhoneBar({
   label: string | undefined;
   actions: ReactNode;
   open: boolean;
-  onOpen: () => void;
+  onToggle: () => void;
   toggleRef: RefObject<HTMLButtonElement | null>;
 }) {
   const Bar = banner ? "header" : "div";
@@ -129,7 +147,7 @@ function PhoneBar({
             aria-haspopup="dialog"
             aria-expanded={open}
             tooltip={false}
-            onClick={onOpen}
+            onClick={onToggle}
           />
         </span>
       </div>
@@ -140,34 +158,45 @@ PhoneBar.displayName = "AppFrame.PhoneBar";
 
 export const PEEK_DELAY = 750;
 
-const navSheet = lazyModule(() => import("./nav-sheet.js"));
+const navSheet = lazyModule(() => import("./nav-sheet.js"), { base: () => import.meta.url });
 
 function FrameSheet({
   navOpen,
   setNavOpen,
-  returnFocus,
+  toggle,
+  ready,
   children,
 }: {
   navOpen: boolean;
   setNavOpen: (o: boolean) => void;
-  returnFocus: RefObject<HTMLElement | null>;
+  toggle: RefObject<HTMLElement | null>;
+  ready: RefObject<boolean>;
   children: ReactNode;
 }) {
   const { peeking, setPeeking } = useSidebar();
   const [idle, setIdle] = useState(false);
   useEffect(() => whenIdle(() => setIdle(true)), []);
-  const NavSheet = useLazyModule(navSheet, idle || navOpen || peeking)?.NavSheet;
+  const dismiss = useCallback(() => {
+    setNavOpen(false);
+    setPeeking(false);
+  }, [setNavOpen, setPeeking]);
+  const NavSheet = useLazyModule(navSheet, idle || navOpen || peeking, () => {
+    setIdle(false);
+    dismiss();
+  })?.NavSheet;
+  const pending = (navOpen || peeking) && !NavSheet;
+  useLayoutEffect(() => {
+    ready.current = !!NavSheet;
+  });
+  usePendingDismiss(pending, toggle, dismiss);
   if (!NavSheet) return null;
   return (
     <NavSheet
       open={navOpen || peeking}
       peek={peeking && !navOpen}
-      {...(navOpen ? { returnFocus } : {})}
+      {...(navOpen ? { returnFocus: toggle } : {})}
       onOpenChange={(o) => {
-        if (!o) {
-          setNavOpen(false);
-          setPeeking(false);
-        }
+        if (!o) dismiss();
       }}
     >
       {children}
@@ -175,8 +204,29 @@ function FrameSheet({
   );
 }
 
+function usePendingDismiss(pending: boolean, toggle: RefObject<HTMLElement | null>, dismiss: () => void) {
+  useEffect(() => {
+    if (!pending) return;
+    const doc = toggle.current?.ownerDocument ?? document;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      dismiss();
+    };
+    const onPointerDown = (e: PointerEvent) => {
+      if (!toggle.current?.contains(e.target as Node)) dismiss();
+    };
+    doc.addEventListener("keydown", onKeyDown, true);
+    doc.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      doc.removeEventListener("keydown", onKeyDown, true);
+      doc.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [pending, toggle, dismiss]);
+}
+
 function MenuButton({ className }: { className?: string | undefined }) {
-  const { openNav } = useAppFrame();
+  const { openNav, sheetReady } = useAppFrame();
   const { collapsed, setCollapsed, setPeeking } = useSidebar();
   const intent = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const t = useUiText();
@@ -186,7 +236,10 @@ function MenuButton({ className }: { className?: string | undefined }) {
       onPointerEnter={() => {
         if (collapsed && wide()) intent.current = setTimeout(() => setPeeking(true), PEEK_DELAY);
       }}
-      onPointerLeave={() => clearTimeout(intent.current)}
+      onPointerLeave={() => {
+        clearTimeout(intent.current);
+        if (!sheetReady.current) setPeeking(false);
+      }}
       icon={icons.sidebar}
       data-sidebar-expand=""
       aria-label={collapsed ? t("appFrame.expandSidebar", "Expand sidebar") : t("appFrame.openNavigation", "Open navigation")}
