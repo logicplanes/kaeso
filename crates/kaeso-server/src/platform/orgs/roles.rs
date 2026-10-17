@@ -501,7 +501,14 @@ pub async fn update(
 ) -> ApiResult<Json<RoleView>> {
     builtin_refused(&role)?;
     let scope = ctx.org()?;
-    let before = custom(&state, scope, &role).await?;
+    let id: RoleId = role.parse().map_err(|_| ApiError::not_found("role"))?;
+    let mut tx = state.pg.begin().await?;
+    if !roles::lock(&mut *tx, scope.org.id, id.uuid()).await? {
+        return Err(ApiError::not_found("role"));
+    }
+    let before = roles::get(&mut *tx, scope.org.id, id.uuid())
+        .await?
+        .ok_or_else(|| ApiError::not_found("role"))?;
     let role_scope = if before.scope == "org" {
         "org"
     } else {
@@ -526,10 +533,6 @@ pub async fn update(
     )?;
     check_change(scope, role_scope, &before_holding, &after_holding)?;
     let (rights, project_rights) = names_of(&after_holding, role_scope);
-    let mut tx = state.pg.begin().await?;
-    if !roles::lock(&mut *tx, scope.org.id, before.id).await? {
-        return Err(ApiError::not_found("role"));
-    }
     let holders = roles::holder_deviations(&mut *tx, scope.org.id, before.id).await?;
     check_holders(role_scope, &before_holding, &after_holding, &holders)?;
     roles::update(

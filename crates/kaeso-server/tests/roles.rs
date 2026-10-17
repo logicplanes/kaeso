@@ -422,6 +422,116 @@ async fn patch(app: &App, owner: &Owner, path: &str, body: Value) -> common::Res
         .await
 }
 
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn after_the_lock(
+    app: &App,
+    held: sqlx::Transaction<'static, sqlx::Postgres>,
+    request: impl std::future::Future<Output = common::Resp>,
+) -> common::Resp {
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the change did not wait for the role's lock: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    held.commit().await.unwrap();
+    request.await
+}
+
+async fn member_viewer_role(app: &App, owner: &Owner) -> (String, String) {
+    let org = &owner.org_id;
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Member viewer", "rights": ["org.view", "members.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let role = created.body["id"].as_str().unwrap().to_owned();
+    let (_, id) = join(app, owner, "dev@example.com", &role, json!([])).await;
+    (role, id)
+}
+
+#[tokio::test]
+async fn a_rights_change_waits_for_a_role_change_and_is_checked_against_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (role, dev_id) = member_viewer_role(&app, &owner).await;
+    let mut held = app.state.pg.begin().await.unwrap();
+    sqlx::query("UPDATE org_roles SET rights = '{org.view}' WHERE id = $1")
+        .bind(common::uuid(&role))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    let r = after_the_lock(
+        &app,
+        held,
+        patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/members/{dev_id}"),
+            json!({ "role": role, "rights_added": ["members.invite"] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view`."
+    );
+}
+
+#[tokio::test]
+async fn a_role_change_waits_for_a_rights_change_and_is_checked_against_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (role, dev_id) = member_viewer_role(&app, &owner).await;
+    let mut held = app.state.pg.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM org_roles WHERE id = $1 FOR SHARE")
+        .bind(common::uuid(&role))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE org_memberships SET rights_added = '{members.invite}' WHERE user_id = $1")
+        .bind(common::uuid(&dev_id))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    let r = after_the_lock(
+        &app,
+        held,
+        patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/roles/{role}"),
+            json!({ "rights": ["org.view"] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view` for 1 of this role's holders; keep it in the role."
+    );
+}
+
 #[tokio::test]
 async fn a_role_change_never_strands_the_rights_its_holders_were_given() {
     let s = TestServices::start().await;

@@ -151,6 +151,21 @@ pub async fn holder_deviations(
     .await?)
 }
 
+pub async fn lock_shared(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    ids: &[Uuid],
+) -> Result<(), StoreError> {
+    sqlx::query_scalar!(
+        "SELECT id FROM org_roles WHERE org_id = $1 AND id = ANY($2) ORDER BY id FOR SHARE",
+        org_id,
+        ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn delete(db: impl PgExecutor<'_>, org_id: Uuid, id: Uuid) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "DELETE FROM org_roles WHERE org_id = $1 AND id = $2",
