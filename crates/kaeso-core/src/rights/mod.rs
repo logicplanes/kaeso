@@ -312,32 +312,106 @@ pub fn check_project_grant(
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum StrandedHolders {
+    #[error("`{right}` needs `{needs}` for {count} of this role's holders; keep it in the role.")]
+    Removed {
+        right: &'static str,
+        needs: &'static str,
+        count: usize,
+    },
+    #[error("`{right}` needs `{needs}`, removed from {count} of this role's holders; restore it.")]
+    Gained {
+        right: &'static str,
+        needs: &'static str,
+        count: usize,
+    },
+}
+
+impl StrandedHolders {
+    fn of(missing: MissingDependency, count: usize) -> StrandedHolders {
+        match missing {
+            MissingDependency::Removed { right, needs } => StrandedHolders::Removed {
+                right,
+                needs,
+                count,
+            },
+            MissingDependency::Gained { right, needs } => StrandedHolders::Gained {
+                right,
+                needs,
+                count,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct Deviation<S> {
+    pub added: S,
+    pub removed: S,
+}
+
 macro_rules! check_needs {
-    ($name:ident, $set:ty) => {
+    ($name:ident, $missing:ident, $holders:ident, $set:ty) => {
+        fn $missing(before: $set, after: $set) -> impl Iterator<Item = MissingDependency> {
+            after.iter().flat_map(move |right| {
+                right
+                    .needs()
+                    .into_iter()
+                    .filter(move |n| !after.contains(*n))
+                    .filter_map(move |needs| {
+                        if !before.contains(right) {
+                            Some(MissingDependency::Gained {
+                                right: right.as_str(),
+                                needs: needs.as_str(),
+                            })
+                        } else if before.contains(needs) {
+                            Some(MissingDependency::Removed {
+                                right: right.as_str(),
+                                needs: needs.as_str(),
+                            })
+                        } else {
+                            None
+                        }
+                    })
+            })
+        }
+
         pub fn $name(before: $set, after: $set) -> Result<(), MissingDependency> {
-            for right in after.iter() {
-                for needs in right.needs().into_iter().filter(|n| !after.contains(*n)) {
-                    if !before.contains(right) {
-                        return Err(MissingDependency::Gained {
-                            right: right.as_str(),
-                            needs: needs.as_str(),
-                        });
-                    }
-                    if before.contains(needs) {
-                        return Err(MissingDependency::Removed {
-                            right: right.as_str(),
-                            needs: needs.as_str(),
-                        });
-                    }
-                }
-            }
-            Ok(())
+            $missing(before, after).next().map_or(Ok(()), Err)
+        }
+
+        pub fn $holders(
+            before: $set,
+            after: $set,
+            holders: &[Deviation<$set>],
+        ) -> Result<(), StrandedHolders> {
+            let held = |role: $set, d: &Deviation<$set>| role.union(d.added).minus(d.removed);
+            let missing = |d: &Deviation<$set>| $missing(held(before, d), held(after, d));
+            let Some(first) = holders.iter().find_map(|d| missing(d).next()) else {
+                return Ok(());
+            };
+            let count = holders
+                .iter()
+                .filter(|d| missing(d).any(|m| m == first))
+                .count();
+            Err(StrandedHolders::of(first, count))
         }
     };
 }
 
-check_needs!(check_org_needs, OrgRights);
-check_needs!(check_project_needs, ProjectRights);
+check_needs!(
+    check_org_needs,
+    org_missing,
+    check_org_role_holders,
+    OrgRights
+);
+check_needs!(
+    check_project_needs,
+    project_missing,
+    check_project_role_holders,
+    ProjectRights
+);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct OrgHolding {

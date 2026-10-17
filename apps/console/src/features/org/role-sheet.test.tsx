@@ -249,6 +249,24 @@ describe("a custom role's sheet", () => {
     expect([...body.project_rights].sort()).toEqual(["project.update", "project.view"]);
   });
 
+  it("says which right its holders would lose a need of and keeps the change when it's refused", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged(holders));
+    withRoles([...roles, { ...opsRole, holders: 3 }]);
+    const refusal = "`members.invite` needs `members.view` for 2 of this role's holders; keep it in the role.";
+    on("PATCH", "orgs/:org/roles/:role", apiError(400, "invalid_request", refusal, { param: "rights" }));
+    const { sheet, user } = await openSheet("org:role_ops", "Operations");
+    const orgRights = matrix(sheet, "Rights of Operations");
+    await user.click(within(orgRights).getByRole("checkbox", { name: "View members" }));
+    await user.click(within(sheet).getByRole("button", { name: "Save role" }));
+    const confirm = await screen.findByRole("alertdialog");
+    await user.click(within(confirm).getByRole("button", { name: "Save role" }));
+    expect((await notifications().findAllByText(refusal)).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(within(orgRights).getByRole("checkbox", { name: "View members" })).not.toBeChecked();
+    expect(within(sheet).getByRole("button", { name: "Save role" })).toBeEnabled();
+  });
+
   it("deletes an unused role once confirmed", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged(holders));

@@ -14,6 +14,25 @@ use super::error::{ApiError, ApiResult};
 
 const DELETED_ROLE: &str = "Deleted role";
 
+pub fn requested_role(req: &GrantRequest) -> Option<Uuid> {
+    req.role_id()
+        .ok()
+        .and_then(|r| r.parse::<RoleId>().ok())
+        .map(|r| r.uuid())
+}
+
+pub async fn lock_roles(
+    tx: &mut sqlx::PgConnection,
+    org: Uuid,
+    ids: &[Option<Uuid>],
+) -> ApiResult<()> {
+    let ids: Vec<Uuid> = ids.iter().flatten().copied().collect();
+    if !ids.is_empty() {
+        roles::lock_shared(&mut *tx, org, &ids).await?;
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, ToSchema)]
 #[schema(description = "A role as other resources name it.")]
 pub struct RoleRef {

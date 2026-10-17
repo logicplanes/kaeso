@@ -13,8 +13,8 @@ use super::{ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
-    GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_project_peer,
-    project_from_store, project_to_store, project_view,
+    GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_project_peer, lock_roles,
+    project_from_store, project_to_store, project_view, requested_role,
 };
 use crate::platform::json::Body;
 use crate::platform::orgs::members::MemberUser;
@@ -115,11 +115,14 @@ pub async fn add(
     Body(req): Body<AddMember>,
 ) -> ApiResult<(StatusCode, Json<ProjectMemberView>)> {
     let project = ensure_active(&ctx, ARCHIVED)?;
-    let (grant, role) = RoleBook::load(&state.pg, ctx.org()?.org.id)
+    let org = ctx.org()?.org.id;
+    let mut tx = state.pg.begin().await?;
+    lock_roles(&mut tx, org, &[requested_role(&req.grant)]).await?;
+    let (grant, role) = RoleBook::load(&mut *tx, org)
         .await?
         .project_grant(&req.grant)?;
     check_project(ctx.project()?.rights, None, &grant)?;
-    members::get_org(&state.pg, ctx.org()?.org.id, req.user_id.uuid())
+    members::get_org(&mut *tx, org, req.user_id.uuid())
         .await?
         .filter(|m| m.user_state == "active")
         .ok_or_else(|| {
@@ -128,7 +131,6 @@ pub async fn add(
                 "Only active members of the organization can join its projects.",
             )
         })?;
-    let mut tx = state.pg.begin().await?;
     if !members::insert_project(
         &mut *tx,
         project,
@@ -154,9 +156,9 @@ pub async fn add(
     Ok((StatusCode::CREATED, Json(view(&row)?)))
 }
 
-async fn member(state: &AppState, ctx: &Ctx, user: &str) -> ApiResult<ProjectMember> {
+async fn member(db: impl sqlx::PgExecutor<'_>, ctx: &Ctx, user: &str) -> ApiResult<ProjectMember> {
     let user: UserId = id_param(user, "member")?;
-    members::get_project(&state.pg, ctx.project()?.project.id, user.uuid())
+    members::get_project(db, ctx.project()?.project.id, user.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("member"))
 }
@@ -177,14 +179,15 @@ pub async fn update(
     Body(req): Body<GrantRequest>,
 ) -> ApiResult<Json<ProjectMemberView>> {
     let project = ensure_active(&ctx, ARCHIVED)?;
-    let target = member(&state, &ctx, &user).await?;
+    let org = ctx.org()?.org.id;
+    let mut tx = state.pg.begin().await?;
+    let current = member(&mut *tx, &ctx, &user).await?;
+    lock_roles(&mut tx, org, &[current.role_id, requested_role(&req)]).await?;
+    let target = member(&mut *tx, &ctx, &user).await?;
     let before = grant_of(&target)?;
-    let (after, role) = RoleBook::load(&state.pg, ctx.org()?.org.id)
-        .await?
-        .project_grant(&req)?;
+    let (after, role) = RoleBook::load(&mut *tx, org).await?.project_grant(&req)?;
     check_project_peer(ctx.project()?.rights, &before)?;
     check_project(ctx.project()?.rights, Some(&before), &after)?;
-    let mut tx = state.pg.begin().await?;
     if !members::update_project(&mut *tx, project, target.user_id, &project_to_store(&after))
         .await?
     {
@@ -198,7 +201,7 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget_user_in_org(&state, ctx.org()?.org.id, target.user_id).await;
-    Ok(Json(view(&member(&state, &ctx, &user).await?)?))
+    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
 }
 
 #[utoipa::path(
@@ -216,7 +219,7 @@ pub async fn remove(
     Path((_o, _p, user)): Path<(String, String, String)>,
 ) -> ApiResult<StatusCode> {
     let project = ensure_active(&ctx, ARCHIVED)?;
-    let target = member(&state, &ctx, &user).await?;
+    let target = member(&state.pg, &ctx, &user).await?;
     check_project_peer(ctx.project()?.rights, &grant_of(&target)?)?;
     let mut tx = state.pg.begin().await?;
     members::delete_project(&mut *tx, project, target.user_id).await?;
@@ -257,5 +260,5 @@ pub async fn get(
     ctx: Ctx,
     Path((_o, _p, user)): Path<(String, String, String)>,
 ) -> ApiResult<Json<ProjectMemberView>> {
-    Ok(Json(view(&member(&state, &ctx, &user).await?)?))
+    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
 }

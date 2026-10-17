@@ -181,7 +181,7 @@ Jedes Mitglied einer Organisation hat eine Organisationsrolle, und jedes Projekt
 | --- | --- | --- |
 | `GET orgs/{org}/rights` | `org.view` | Jedes Recht nach Kategorie, mit Name, Beschreibung, Flags (`sensitive`, `recent_sign_in`, `cloud_only`) und den Rechten, die es erfordert |
 | `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Integrierte und eigene Rollen mit ihren Rechten, Rechten in jedem Projekt und der Zahl ihrer Inhaber; `?scope=org` oder `project` |
-| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Eigene Rollen erstellen, ändern und löschen, höchstens 50; eine Änderung gilt sofort für alle, die die Rolle haben, und eine Rolle, die jemand innehat, lässt sich nicht löschen |
+| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Eigene Rollen erstellen, ändern und löschen, höchstens 50; eine Änderung gilt sofort für alle, die die Rolle haben, und wird mit `400` abgelehnt, wenn danach jemand von ihnen ein Recht ohne ein dafür erforderliches Recht hätte, und eine Rolle, die jemand innehat, lässt sich nicht löschen |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | Die wirksamen Organisationsrechte eines Mitglieds, seine Rechte in jedem Projekt und seine Rechte in jedem seiner Projekte, die der Aufrufer sehen kann, jeweils mit ihren Quellen |
 | `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Die wirksamen Rechte eines Mitglieds in diesem Projekt, mit Quellen |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | Die eigenen Rechte des Aufrufers in diesem Projekt, mit Quellen |

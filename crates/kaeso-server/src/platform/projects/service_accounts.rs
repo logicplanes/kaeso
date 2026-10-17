@@ -14,8 +14,8 @@ use super::{ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
-    GrantRequest, GrantView, RoleBook, RoleRef, check_project, project_from_store,
-    project_to_store, project_view,
+    GrantRequest, GrantView, RoleBook, RoleRef, check_project, lock_roles, project_from_store,
+    project_to_store, project_view, requested_role,
 };
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
@@ -128,12 +128,14 @@ pub async fn create(
 ) -> ApiResult<(StatusCode, Json<ServiceAccountView>)> {
     let project = ensure_active(&ctx, ARCHIVED)?;
     let name = validate_name("name", &req.name)?;
-    let (grant, role) = RoleBook::load(&state.pg, ctx.org()?.org.id)
+    let org = ctx.org()?.org.id;
+    let mut tx = state.pg.begin().await?;
+    lock_roles(&mut tx, org, &[requested_role(&req.grant)]).await?;
+    let (grant, role) = RoleBook::load(&mut *tx, org)
         .await?
         .project_grant(&req.grant)?;
     check_project(ctx.project()?.rights, None, &grant)?;
     let id = ServiceAccountId::new();
-    let mut tx = state.pg.begin().await?;
     service_accounts::insert(
         &mut *tx,
         id.uuid(),
@@ -222,11 +224,16 @@ pub async fn update(
     Body(req): Body<AccountUpdate>,
 ) -> ApiResult<Json<ServiceAccountView>> {
     ensure_active(&ctx, ARCHIVED)?;
+    let org = ctx.org()?.org.id;
+    let mut tx = state.pg.begin().await?;
+    let current = lock_active(&mut tx, &ctx, &id).await?;
     let book = match &req.grant {
-        Some(_) => Some(RoleBook::load(&state.pg, ctx.org()?.org.id).await?),
+        Some(g) => {
+            lock_roles(&mut tx, org, &[current.role_id, requested_role(g)]).await?;
+            Some(RoleBook::load(&mut *tx, org).await?)
+        }
         None => None,
     };
-    let mut tx = state.pg.begin().await?;
     let before = lock_active(&mut tx, &ctx, &id).await?;
     let mut after = before.clone();
     if let Some(name) = req.name {

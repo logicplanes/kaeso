@@ -181,7 +181,7 @@ curl -s -b "$JAR" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs/req_…"
 | --- | --- | --- |
 | `GET orgs/{org}/rights` | `org.view` | 按类别列出的所有权限，包括其名称、描述、标记（`sensitive`、`recent_sign_in`、`cloud_only`）及其所需的权限 |
 | `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色及其权限、在所有项目中的权限以及持有者数量；`?scope=org` 或 `project` |
-| `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改和删除自定义角色，最多 50 个；更改会立即作用于所有持有者，已被持有的角色无法删除 |
+| `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改和删除自定义角色，最多 50 个；更改会立即作用于所有持有者，若会使某个持有者的某项权限缺少其所需权限，则以 `400` 拒绝；已被持有的角色无法删除 |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | 成员的有效组织权限、在所有项目中的权限，以及在调用者可见的每个所属项目中的权限，每项都附有来源 |
 | `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 成员在此项目中的有效权限及其来源 |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | 调用者自己在此项目中的权限及其来源 |

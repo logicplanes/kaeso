@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { PROJECT, signedIn, whoAmI, without } from "~/test/fixtures";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { NOW, PROJECT, signedIn, whoAmI, without } from "~/test/fixtures";
 import { apiKey, listed, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -9,7 +9,13 @@ const KEYS = "orgs/:org/projects/:project/keys";
 const keyRequests = () => requests("GET", KEYS).map((r) => Object.fromEntries(r.query));
 
 describe("KeysPage", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("groups every key by state under All and shows each key's expiry, owner and last use", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
     signedIn();
     projectData({
       members: [projectMember()],

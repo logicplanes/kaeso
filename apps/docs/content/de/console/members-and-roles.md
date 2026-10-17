@@ -27,7 +27,7 @@ Inhaber und Admins haben jedes Recht in jedem Projekt. Im Standardprojekt treten
 
 ### Eigene Rollen
 
-Unter **Organisationseinstellungen** › **Mitglieder** › **Rollen** legt **Rolle erstellen** eine eigene Rolle für die Organisation oder für Projekte an, ausgehend von einer integrierten Rolle oder ohne Rechte. Eine Organisationsrolle kann auch Rechte in jedem Projekt enthalten. Integrierte Rollen lassen sich nicht ändern; mit **Duplizieren** dient eine als Ausgangspunkt. Eine Organisation hat höchstens 50 eigene Rollen, und eine Rolle, die jemand innehat, lässt sich nicht löschen.
+Unter **Organisationseinstellungen** › **Mitglieder** › **Rollen** legt **Rolle erstellen** eine eigene Rolle für die Organisation oder für Projekte an, ausgehend von einer integrierten Rolle oder ohne Rechte. Eine Organisationsrolle kann auch Rechte in jedem Projekt enthalten. Integrierte Rollen lassen sich nicht ändern; mit **Duplizieren** dient eine als Ausgangspunkt. Eine Organisation hat höchstens 50 eigene Rollen, und eine Rolle, die jemand innehat, lässt sich nicht löschen. Eine Änderung, nach der jemand mit der Rolle ein Recht – etwa ein ihm hinzugefügtes – ohne ein dafür erforderliches Recht hätte, wird nicht gespeichert; die Meldung nennt das Recht, was es erfordert und wie viele Inhaber betroffen sind.
 
 Vergeben lassen sich nur Rechte, die man selbst hat, und ändern lassen sich nur Mitglieder, deren Rechte man alle selbst hat.
 

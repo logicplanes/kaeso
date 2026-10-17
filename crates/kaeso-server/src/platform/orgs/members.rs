@@ -13,8 +13,8 @@ use crate::auth::sessions;
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
-    GrantRequest, GrantView, RoleBook, RoleRef, check_org, check_org_peer, org_from_store,
-    org_to_store, org_view,
+    GrantRequest, GrantView, RoleBook, RoleRef, check_org, check_org_peer, lock_roles,
+    org_from_store, org_to_store, org_view, requested_role,
 };
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
@@ -132,9 +132,9 @@ pub async fn list(
     }))
 }
 
-async fn member(state: &AppState, ctx: &Ctx, user: &str) -> ApiResult<OrgMember> {
+async fn member(db: impl sqlx::PgExecutor<'_>, ctx: &Ctx, user: &str) -> ApiResult<OrgMember> {
     members::get_org(
-        &state.pg,
+        db,
         ctx.org()?.org.id,
         id_param::<UserId>(user, "member")?.uuid(),
     )
@@ -155,7 +155,7 @@ pub async fn get(
     ctx: Ctx,
     Path((_org, user)): Path<(String, String)>,
 ) -> ApiResult<Json<MemberView>> {
-    Ok(Json(view(&member(&state, &ctx, &user).await?)?))
+    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
 }
 
 #[utoipa::path(
@@ -176,9 +176,17 @@ pub async fn update(
     Body(req): Body<GrantRequest>,
 ) -> ApiResult<Json<MemberView>> {
     let scope = ctx.org()?;
-    let target = member(&state, &ctx, &user).await?;
+    let mut tx = state.pg.begin().await?;
+    let current = member(&mut *tx, &ctx, &user).await?;
+    lock_roles(
+        &mut tx,
+        scope.org.id,
+        &[current.role_id, requested_role(&req)],
+    )
+    .await?;
+    let target = member(&mut *tx, &ctx, &user).await?;
     let before = grant_of(&target)?;
-    let (after, role) = RoleBook::load(&state.pg, scope.org.id)
+    let (after, role) = RoleBook::load(&mut *tx, scope.org.id)
         .await?
         .org_grant(&req)?;
     if (before.is_owner() || after.is_owner()) && !scope.is_owner() {
@@ -188,7 +196,6 @@ pub async fn update(
     }
     check_org_peer(scope, &before)?;
     check_org(scope, Some(&before), &after)?;
-    let mut tx = state.pg.begin().await?;
     members::lock_owners(&mut tx, scope.org.id).await?;
     if before.is_owner()
         && !after.is_owner()
@@ -216,7 +223,7 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget_user_in_org(&state, scope.org.id, target.user_id).await;
-    Ok(Json(view(&member(&state, &ctx, &user).await?)?))
+    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
 }
 
 #[utoipa::path(
@@ -234,7 +241,7 @@ pub async fn remove(
     Path((_org, user)): Path<(String, String)>,
 ) -> ApiResult<StatusCode> {
     let scope = ctx.org()?;
-    let target = member(&state, &ctx, &user).await?;
+    let target = member(&state.pg, &ctx, &user).await?;
     if target.preset == "owner" && !scope.is_owner() {
         return Err(ApiError::PermissionDenied(
             "Only owners can remove an owner.".into(),

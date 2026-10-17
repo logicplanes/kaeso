@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT x.rights_added AS \"rights_added!\", x.rights_removed AS \"rights_removed!\" FROM ( SELECT 0 AS kind, m.id, m.rights_added, m.rights_removed FROM org_memberships m WHERE m.org_id = $1 AND m.role_id = $2 UNION ALL SELECT 1, m.id, m.rights_added, m.rights_removed FROM project_memberships m JOIN projects p ON p.id = m.project_id WHERE p.org_id = $1 AND m.role_id = $2 UNION ALL SELECT 2, s.id, s.rights_added, s.rights_removed FROM service_accounts s JOIN projects p ON p.id = s.project_id WHERE p.org_id = $1 AND s.role_id = $2 AND s.archived_at IS NULL) x WHERE cardinality(x.rights_added) > 0 OR cardinality(x.rights_removed) > 0 ORDER BY x.kind, x.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rights_added!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "rights_removed!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "e5ab7c7abd9d4dcf61717ef975f26ae7a8458e6e68ae42380697d79f7e025606"
+}

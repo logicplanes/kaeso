@@ -291,6 +291,8 @@
   "errors.rightNeedsRemoved": "`{right}` needs `{needs}`; remove `{right}` too.",
   "errors.roleDescriptionLength": "`description` must be at most 200 characters.",
   "errors.roleHasHolders": "{holders} members, service accounts or invites hold this role; reassign them first.",
+  "errors.roleHoldersLack": "`{right}` needs `{needs}`, removed from {count} of this role's holders; restore it.",
+  "errors.roleHoldersNeed": "`{right}` needs `{needs}` for {count} of this role's holders; keep it in the role.",
   "errors.roleHoldsMoreRights": "You can't change a role with rights you don't hold.",
   "errors.roleIsSsoDefault": "This role is the default role of SSO sign-ins; choose another one first.",
   "errors.roleNameLength": "`name` must be 1 to 50 characters.",

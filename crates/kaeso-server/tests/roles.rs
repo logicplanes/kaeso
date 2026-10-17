@@ -373,7 +373,16 @@ async fn a_change_never_drops_a_needed_right_beside_one_already_missing() {
             Some(&owner.cookie),
         )
         .await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.view` needs `org.view` for 1 of this role's holders; keep it in the role."
+    );
+    sqlx::query("UPDATE org_roles SET rights = '{}' WHERE id = $1")
+        .bind(common::uuid(&role))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
 
     let r = app
         .call(
@@ -406,6 +415,361 @@ async fn a_change_never_drops_a_needed_right_beside_one_already_missing() {
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+}
+
+async fn patch(app: &App, owner: &Owner, path: &str, body: Value) -> common::Resp {
+    app.call(Method::PATCH, path, Some(body), Some(&owner.cookie))
+        .await
+}
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn after_the_lock(
+    app: &App,
+    held: sqlx::Transaction<'static, sqlx::Postgres>,
+    request: impl std::future::Future<Output = common::Resp>,
+) -> common::Resp {
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the change did not wait for the role's lock: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    held.commit().await.unwrap();
+    request.await
+}
+
+async fn member_viewer_role(app: &App, owner: &Owner) -> (String, String) {
+    let org = &owner.org_id;
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Member viewer", "rights": ["org.view", "members.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let role = created.body["id"].as_str().unwrap().to_owned();
+    let (_, id) = join(app, owner, "dev@example.com", &role, json!([])).await;
+    (role, id)
+}
+
+#[tokio::test]
+async fn a_rights_change_waits_for_a_role_change_and_is_checked_against_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (role, dev_id) = member_viewer_role(&app, &owner).await;
+    let mut held = app.state.pg.begin().await.unwrap();
+    sqlx::query("UPDATE org_roles SET rights = '{org.view}' WHERE id = $1")
+        .bind(common::uuid(&role))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    let r = after_the_lock(
+        &app,
+        held,
+        patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/members/{dev_id}"),
+            json!({ "role": role, "rights_added": ["members.invite"] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view`."
+    );
+}
+
+#[tokio::test]
+async fn a_role_change_waits_for_a_rights_change_and_is_checked_against_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (role, dev_id) = member_viewer_role(&app, &owner).await;
+    let mut held = app.state.pg.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM org_roles WHERE id = $1 FOR SHARE")
+        .bind(common::uuid(&role))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE org_memberships SET rights_added = '{members.invite}' WHERE user_id = $1")
+        .bind(common::uuid(&dev_id))
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    let r = after_the_lock(
+        &app,
+        held,
+        patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/roles/{role}"),
+            json!({ "rights": ["org.view"] }),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view` for 1 of this role's holders; keep it in the role."
+    );
+}
+
+#[tokio::test]
+async fn needs_hold_within_each_grant_whatever_the_org_role_gives_in_every_project() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let org_role = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Model lead", "rights": ["org.view"], "project_rights": ["project.view", "models.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let org_role = org_role.body["id"].as_str().unwrap().to_owned();
+    let project_role = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Model reader", "rights": ["project.view", "models.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let project_role = project_role.body["id"].as_str().unwrap().to_owned();
+    let bare = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Project only", "rights": ["project.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let bare = bare.body["id"].as_str().unwrap().to_owned();
+    let (dev, dev_id) = join(&app, &owner, "dev@example.com", &org_role, json!([])).await;
+    let grant_path = format!("/orgs/{org}/projects/{project}/members/{dev_id}");
+
+    let r = patch(
+        &app,
+        &owner,
+        &grant_path,
+        json!({ "role": bare, "rights_added": ["models.manage"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`models.manage` needs `models.view`."
+    );
+
+    let r = patch(
+        &app,
+        &owner,
+        &grant_path,
+        json!({ "role": project_role, "rights_added": ["models.manage"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/roles/{project_role}"),
+        json!({ "rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`models.manage` needs `models.view` for 1 of this role's holders; keep it in the role."
+    );
+
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/roles/{org_role}"),
+        json!({ "project_rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let mine = app
+        .get(&format!("/orgs/{org}/projects/{project}/my-rights"), &dev)
+        .await;
+    assert_eq!(
+        held(&mine.body["rights"], "models.view").unwrap()[0]["kind"],
+        "project_role"
+    );
+    assert!(held(&mine.body["rights"], "models.manage").is_some());
+}
+
+#[tokio::test]
+async fn a_role_change_never_strands_the_rights_its_holders_were_given() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Member viewer", "rights": ["org.view", "members.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let role = created.body["id"].as_str().unwrap().to_owned();
+    let role_path = format!("/orgs/{org}/roles/{role}");
+    let mut ids = Vec::new();
+    for email in ["a@example.com", "b@example.com", "c@example.com"] {
+        ids.push(join(&app, &owner, email, "member", json!([])).await.1);
+    }
+    for (id, added) in ids.iter().zip([
+        json!(["members.invite"]),
+        json!(["members.invite"]),
+        json!([]),
+    ]) {
+        let r = patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/members/{id}"),
+            json!({ "role": role, "rights_added": added }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+
+    let r = patch(&app, &owner, &role_path, json!({ "rights": ["org.view"] })).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view` for 2 of this role's holders; keep it in the role."
+    );
+    assert_eq!(r.body["error"]["param"], "rights");
+    let kept = app.get(&role_path, &owner.cookie).await;
+    assert_eq!(names(&kept.body["rights"]), ["org.view", "members.view"]);
+
+    let c = &ids[2];
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/members/{c}"),
+        json!({ "role": role, "rights_removed": ["members.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = patch(
+        &app,
+        &owner,
+        &role_path,
+        json!({ "rights": ["org.view", "members.view", "members.invite"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`members.invite` needs `members.view`, removed from 1 of this role's holders; restore it."
+    );
+
+    for id in &ids {
+        let r = patch(
+            &app,
+            &owner,
+            &format!("/orgs/{org}/members/{id}"),
+            json!({ "role": role }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+    let r = patch(&app, &owner, &role_path, json!({ "rights": ["org.view"] })).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Model reader", "rights": ["project.view", "models.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let project_role = created.body["id"].as_str().unwrap().to_owned();
+    let project_role_path = format!("/orgs/{org}/roles/{project_role}");
+    let manager = json!({ "role": project_role, "rights_added": ["models.manage"] });
+    let a = &ids[0];
+    let member_path = format!("/orgs/{org}/projects/{project}/members/{a}");
+    let r = patch(&app, &owner, &member_path, manager.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let mut accounts = Vec::new();
+    for name in ["model-sync", "retired-sync"] {
+        let mut body = manager.clone();
+        body["name"] = json!(name);
+        let r = app
+            .post(
+                &format!("/orgs/{org}/projects/{project}/service-accounts"),
+                body,
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        accounts.push(r.body["id"].as_str().unwrap().to_owned());
+    }
+    let archive =
+        |id: &str| format!("/orgs/{org}/projects/{project}/service-accounts/{id}/archive");
+    let r = app
+        .call(
+            Method::POST,
+            &archive(&accounts[1]),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+
+    let r = patch(
+        &app,
+        &owner,
+        &project_role_path,
+        json!({ "rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`models.manage` needs `models.view` for 2 of this role's holders; keep it in the role."
+    );
+    let r = app
+        .call(
+            Method::POST,
+            &archive(&accounts[0]),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = patch(&app, &owner, &member_path, json!({ "role": project_role })).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = patch(
+        &app,
+        &owner,
+        &project_role_path,
+        json!({ "rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(names(&r.body["rights"]), ["project.view"]);
 }
 
 #[tokio::test]

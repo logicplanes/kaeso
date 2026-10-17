@@ -55,6 +55,19 @@ describe("a refusal of a spend budget that is too large", () => {
   });
 });
 
+describe("a role change that would leave its holders without a right they need", () => {
+  it("names the right, its need and the holders in German and Chinese", async () => {
+    const keep = "`members.invite` needs `members.view` for 1200 of this role's holders; keep it in the role.";
+    const restore = "`members.invite` needs `members.view`, removed from 3 of this role's holders; restore it.";
+    await speak("de");
+    expect((await errorFromResponse(refusal(keep))).message).toBe("`members.invite` setzt `members.view` voraus – für 1.200 Inhaber; in der Rolle behalten.");
+    expect((await errorFromResponse(refusal(restore))).message).toBe("`members.invite` setzt `members.view` voraus – für 3 Inhaber entfernt; zurückgeben.");
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal(keep))).message).toBe("此角色有 1,200 个持有者的 `members.invite` 需要 `members.view`；请在角色中保留它。");
+    expect((await errorFromResponse(refusal(restore))).message).toBe("此角色有 3 个持有者被移除了 `members.invite` 所需的 `members.view`；请先恢复。");
+  });
+});
+
 describe("a refusal in English", () => {
   it("keeps the gateway's own numbers, dates and lists exactly as written", async () => {
     const limits = "First lower the limits that allow more than this one: member usr_01 (1200), key key_1 (5), the project (8).";

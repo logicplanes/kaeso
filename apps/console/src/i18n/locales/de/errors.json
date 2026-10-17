@@ -289,6 +289,8 @@
   "errors.retentionRange": "Die Aufbewahrung muss 1 bis 36.500 Tage betragen.",
   "errors.rightNeeds": "`{right}` setzt `{needs}` voraus.",
   "errors.rightNeedsRemoved": "`{right}` setzt `{needs}` voraus; `{right}` ebenfalls entfernen.",
+  "errors.roleHoldersNeed": "`{right}` setzt `{needs}` voraus – für {count} Inhaber; in der Rolle behalten.",
+  "errors.roleHoldersLack": "`{right}` setzt `{needs}` voraus – für {count} Inhaber entfernt; zurückgeben.",
   "errors.roleDescriptionLength": "`description` darf höchstens 200 Zeichen lang sein.",
   "errors.roleHasHolders": "Diese Rolle ist {holders}-mal vergeben (Mitglieder, Dienstkonten, Einladungen); zuerst neu zuweisen.",
   "errors.roleHoldsMoreRights": "Rollen mit Rechten, die Sie nicht haben, können Sie nicht ändern.",

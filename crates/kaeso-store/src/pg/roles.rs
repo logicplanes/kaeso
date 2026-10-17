@@ -119,6 +119,53 @@ pub async fn lock(db: impl PgExecutor<'_>, org_id: Uuid, id: Uuid) -> Result<boo
     .is_some())
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HolderDeviation {
+    pub rights_added: Vec<String>,
+    pub rights_removed: Vec<String>,
+}
+
+pub async fn holder_deviations(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+) -> Result<Vec<HolderDeviation>, StoreError> {
+    Ok(sqlx::query_as!(
+        HolderDeviation,
+        "SELECT x.rights_added AS \"rights_added!\", x.rights_removed AS \"rights_removed!\" FROM ( \
+           SELECT 0 AS kind, m.id, m.rights_added, m.rights_removed FROM org_memberships m \
+           WHERE m.org_id = $1 AND m.role_id = $2 \
+           UNION ALL \
+           SELECT 1, m.id, m.rights_added, m.rights_removed FROM project_memberships m \
+           JOIN projects p ON p.id = m.project_id WHERE p.org_id = $1 AND m.role_id = $2 \
+           UNION ALL \
+           SELECT 2, s.id, s.rights_added, s.rights_removed FROM service_accounts s \
+           JOIN projects p ON p.id = s.project_id \
+           WHERE p.org_id = $1 AND s.role_id = $2 AND s.archived_at IS NULL) x \
+         WHERE cardinality(x.rights_added) > 0 OR cardinality(x.rights_removed) > 0 \
+         ORDER BY x.kind, x.id",
+        org_id,
+        id
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn lock_shared(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    ids: &[Uuid],
+) -> Result<(), StoreError> {
+    sqlx::query_scalar!(
+        "SELECT id FROM org_roles WHERE org_id = $1 AND id = ANY($2) ORDER BY id FOR SHARE",
+        org_id,
+        ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn delete(db: impl PgExecutor<'_>, org_id: Uuid, id: Uuid) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "DELETE FROM org_roles WHERE org_id = $1 AND id = $2",
