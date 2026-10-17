@@ -290,6 +290,8 @@ describe("ModelsPage", () => {
       [[failure("key_refused"), failure("key_refused")], "Anthropic refused the project's provider key"],
       [[failure("no_key", "openai")], "No OpenAI key is set up for this project"],
       [[failure("provider_error")], "Anthropic didn't answer; try again shortly"],
+      [[failure("inconclusive", "openai")], "OpenAI can't confirm whether it serves the model"],
+      [[failure("key_changed")], "The Anthropic key changed during the check; check again"],
     ] as const) {
       on("POST", CHECK, { models: catalogue(), failed });
       await user.click(screen.getByRole("button", { name: "Check availability" }));

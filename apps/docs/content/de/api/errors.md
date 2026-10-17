@@ -70,7 +70,7 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 
 Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so zurück, wie der Anbieter ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler trägt die Anfrage-ID von Kaeso in `request_id`. Andernfalls behält er seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das eigene Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
 
-Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbieter mit 404 für ein Modell aus dem Katalog, fragt Kaeso mit demselben Anbieter-Schlüssel beim Modell-Endpunkt des Anbieters (`GET /v1/models/{model}`) nach, ob er das Modell anbietet. Tut er es nicht, weil das Modell eingestellt ist oder der Schlüssel keinen Zugriff darauf hat, erhält die App 404 mit `param: model` und einer Meldung, die Anbieter und Modell nennt und sagt, was zu tun ist:
+Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbieter mit 404 für ein Modell aus dem Katalog, fragt Kaeso mit demselben Anbieter-Schlüssel beim Modell-Endpunkt des Anbieters (`GET /v1/models/{model}`) nach, ob er das Modell anbietet. Eine 404 dort kann auch heißen, dass der Anbieter diesen Endpunkt nicht hat, daher liest Kaeso dann die Modellliste des Anbieters (`GET /v1/models`, alle Seiten). Nur wenn die Liste antwortet und das Modell nicht enthält, weil das Modell eingestellt ist oder der Schlüssel keinen Zugriff darauf hat, erhält die App 404 mit `param: model` und einer Meldung, die Anbieter und Modell nennt und sagt, was zu tun ist:
 
 ```json
 {
@@ -82,7 +82,7 @@ Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbie
 }
 ```
 
-Kaeso markiert das Modell dann im Katalog als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)). Bietet der Anbieter das Modell an, betraf die 404 etwas anderes, etwa eine Datei-ID, und kommt so zurück, wie der Anbieter sie gesendet hat. Kaeso sendet die Anfrage nie erneut oder an ein anderes Modell.
+Kaeso markiert das Modell dann im Katalog als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich während der Nachfrage geändert. Bietet der Anbieter das Modell an, betraf die 404 etwas anderes, etwa eine Datei-ID, und kommt so zurück, wie der Anbieter sie gesendet hat. Kann Kaeso es nicht feststellen, weil die Modellliste des Anbieters nicht antwortet, wie bei manchen OpenAI-kompatiblen Diensten, kommt die 404 ebenfalls so zurück, wie der Anbieter sie gesendet hat, und die Verfügbarkeit des Modells bleibt, wie sie war. Das Anfrage-Log behält immer die eigene Meldung des Anbieters. Kaeso sendet die Anfrage nie erneut oder an ein anderes Modell.
 
 ## Warum Anfragen fehlschlagen
 

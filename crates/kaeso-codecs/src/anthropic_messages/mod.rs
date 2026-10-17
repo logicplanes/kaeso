@@ -121,4 +121,8 @@ impl Codec for AnthropicMessages {
     fn encode_model_request(model: &str) -> EncodedRequest {
         models::retrieve_request(model)
     }
+
+    fn encode_models_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError> {
+        models::list_request(query)
+    }
 }

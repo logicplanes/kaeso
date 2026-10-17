@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
+  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -57,6 +57,17 @@
             "name": "key_id"
           }
         }
+      },
+      {
+        "ordinal": 5,
+        "name": "revision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "revision"
+          }
+        }
       }
     ],
     "parameters": {
@@ -71,8 +82,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "87354625ebf19b1be05b8e89a8ccd912f2b3123969370508cb008443a02b90cb"
+  "hash": "28d2e18639a5e116afef8cec38803f566c69aa2aa4335225894e4515b974fc63"
 }

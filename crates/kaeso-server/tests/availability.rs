@@ -10,6 +10,9 @@ use serde_json::{Value, json};
 
 const UNSERVED_CLAUDE: &str = "unserved-claude-sonnet";
 const UNSERVED_GPT: &str = "unserved-gpt";
+const ANTHROPIC_NOT_FOUND: &str = "The requested resource could not be found.";
+const OPENAI_NOT_FOUND: &str =
+    "The model `gpt-9-ultra` does not exist or you do not have access to it.";
 
 async fn env() -> Env {
     let env = common::v1::env(Some(Arc::new(Capture::default())), None).await;
@@ -105,15 +108,35 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
         body["error"]["message"],
         unserved_message("Anthropic", UNSERVED_CLAUDE)
     );
-    let sent = env.mock.received();
-    let probe = sent.last().unwrap();
-    assert_eq!(probe.method, "GET");
+    let gets: Vec<_> = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|r| r.method == "GET")
+        .collect();
+    let probe = &gets[0];
     assert_eq!(probe.path, format!("/v1/models/{UNSERVED_CLAUDE}"));
     assert_eq!(probe.header("anthropic-version"), Some("2023-06-01"));
     assert!(probe.header("x-api-key").is_some());
+    let pages: Vec<_> = gets[1..]
+        .iter()
+        .map(|r| (r.path.as_str(), r.query.as_deref()))
+        .collect();
+    assert_eq!(
+        pages,
+        [
+            ("/v1/models", None),
+            ("/v1/models", Some("after_id=claude-haiku-4-5-20251001"))
+        ]
+    );
     let o = env.capture.all().pop().unwrap();
     assert_eq!(o.status, 404);
     assert_eq!(o.error_kind.as_deref(), Some("not_found"));
+    assert_eq!(
+        o.error_message.as_deref(),
+        Some(ANTHROPIC_NOT_FOUND),
+        "the request log keeps the provider's own answer"
+    );
 
     let r = call(
         &env,
@@ -132,6 +155,8 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
         body["error"]["message"],
         unserved_message("OpenAI", UNSERVED_GPT)
     );
+    let o = env.capture.all().pop().unwrap();
+    assert_eq!(o.error_message.as_deref(), Some(OPENAI_NOT_FOUND));
 
     let mut streamed = messages(UNSERVED_GPT, "Hi");
     streamed["stream"] = json!(true);
@@ -448,4 +473,373 @@ async fn an_archived_project_is_not_checked() {
         .post(&check, json!({}), Some(&env.owner.cookie))
         .await;
     assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+}
+
+async fn credential(env: &Env, provider: &str) -> String {
+    let creds = env
+        .app
+        .get(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    creds.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["provider"] == provider)
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+async fn replace_key(env: &Env, provider: &str, secret: &str) {
+    let id = credential(env, provider).await;
+    env.app
+        .post(
+            &format!("/orgs/{}/credentials/{id}/replace", env.owner.org_id),
+            json!({ "secret": secret }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+}
+
+async fn check(env: &Env) -> Value {
+    let r = env
+        .app
+        .post(
+            &format!("{}/models/check", base(env)),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body
+}
+
+fn failures(body: &Value) -> Vec<(String, String, String)> {
+    let mut found: Vec<_> = body["failed"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| {
+            (
+                f["model_id"].as_str().unwrap().to_owned(),
+                f["reason"].as_str().unwrap().to_owned(),
+                f["message"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    found.sort();
+    found
+}
+
+#[tokio::test]
+async fn a_key_change_during_a_request_keeps_its_answer_out_of_the_catalogue() {
+    let env = env().await;
+    let mut gate = env.mock.gate();
+    let held = messages(UNSERVED_CLAUDE, &format!("Hi {}", gate.marker()));
+    let change = async {
+        gate.wait_for(1).await;
+        replace_key(&env, "anthropic", "sk-ant-test-credential-0004").await;
+        gate.open();
+    };
+    let (r, ()) = tokio::join!(
+        call(&env, "/v1/messages", Some(&env.key), true, Some(held)),
+        change
+    );
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        unserved_message("Anthropic", UNSERVED_CLAUDE)
+    );
+    assert_eq!(
+        entry(&env, UNSERVED_CLAUDE).await["availability"],
+        "unchecked"
+    );
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(UNSERVED_CLAUDE, "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        entry(&env, UNSERVED_CLAUDE).await["availability"],
+        "unavailable"
+    );
+}
+
+#[tokio::test]
+async fn a_key_change_during_a_check_keeps_its_answers_out_of_the_catalogue() {
+    let env = env().await;
+    let mut gate = env.mock.gate();
+    replace_key(&env, "anthropic", &format!("sk-ant-{}", gate.marker())).await;
+    let change = async {
+        gate.wait_for(2).await;
+        replace_key(&env, "anthropic", "sk-ant-test-credential-0005").await;
+        gate.open();
+    };
+    let (body, ()) = tokio::join!(check(&env), change);
+    let changed = "The Anthropic provider key changed during the check; check again.";
+    assert_eq!(
+        failures(&body),
+        [
+            (
+                "claude-haiku-4-5".to_owned(),
+                "key_changed".to_owned(),
+                changed.to_owned()
+            ),
+            (
+                UNSERVED_CLAUDE.to_owned(),
+                "key_changed".to_owned(),
+                changed.to_owned()
+            ),
+        ]
+    );
+    for model in ["claude-haiku-4-5", UNSERVED_CLAUDE] {
+        assert_eq!(entry(&env, model).await["availability"], "unchecked");
+    }
+    assert_eq!(entry(&env, "gpt-4o").await["availability"], "available");
+    assert_eq!(
+        entry(&env, UNSERVED_GPT).await["availability"],
+        "unavailable"
+    );
+    let audit = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/audit-log?action=catalogue_model.check",
+                env.owner.org_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert!(
+        audit.body["data"][0]["after"]["failed"]
+            .as_array()
+            .unwrap()
+            .contains(&json!(format!("anthropic/{UNSERVED_CLAUDE}")))
+    );
+}
+
+#[tokio::test]
+async fn availability_is_written_only_for_the_key_that_answered() {
+    use kaeso_store::pg::catalogue::{Answer, Recorded, record_availability};
+    use kaeso_store::pg::credentials::{KeyInUse, key_in_use};
+
+    let env = env().await;
+    let pg = &env.app.state.pg;
+    let org = common::uuid(env.owner.org_id.as_str());
+    let project = common::uuid(env.project.as_str());
+    let haiku = common::uuid(
+        entry(&env, "claude-haiku-4-5").await["id"]
+            .as_str()
+            .unwrap(),
+    );
+    let key = key_in_use(pg, org, project, "anthropic")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(key.revision, 1);
+    let answer = |entry, key| Answer {
+        org_id: org,
+        project_id: project,
+        entry,
+        provider: "anthropic",
+        key,
+        availability: kaeso_core::catalogue::Availability::Unavailable,
+        at: env.app.state.clock.now(),
+    };
+    let stale = KeyInUse {
+        revision: key.revision + 1,
+        ..key
+    };
+    let other = KeyInUse {
+        id: uuid::Uuid::new_v4(),
+        ..key
+    };
+    for (entry, key, expected) in [
+        (haiku, stale, Recorded::KeyChanged),
+        (haiku, other, Recorded::KeyChanged),
+        (uuid::Uuid::new_v4(), key, Recorded::EntryGone),
+    ] {
+        let mut tx = pg.begin().await.unwrap();
+        assert_eq!(
+            record_availability(&mut tx, &answer(entry, key))
+                .await
+                .unwrap(),
+            expected
+        );
+        tx.commit().await.unwrap();
+    }
+    assert_eq!(
+        entry(&env, "claude-haiku-4-5").await["availability"],
+        "unchecked"
+    );
+
+    replace_key(&env, "anthropic", "sk-ant-test-credential-0006").await;
+    let replaced = key_in_use(pg, org, project, "anthropic")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!((replaced.id, replaced.revision), (key.id, 2));
+    let mut tx = pg.begin().await.unwrap();
+    assert_eq!(
+        record_availability(&mut tx, &answer(haiku, replaced))
+            .await
+            .unwrap(),
+        Recorded::Yes
+    );
+    tx.commit().await.unwrap();
+    kaeso_server::services::catalogue::forget(&env.app.state, project).await;
+    assert_eq!(
+        entry(&env, "claude-haiku-4-5").await["availability"],
+        "unavailable"
+    );
+
+    let mut changing = pg.begin().await.unwrap();
+    kaeso_store::pg::credentials::lock_provider(&mut changing, org, "anthropic")
+        .await
+        .unwrap();
+    sqlx::query("UPDATE provider_credentials SET revision = revision + 1 WHERE id = $1")
+        .bind(key.id)
+        .execute(&mut *changing)
+        .await
+        .unwrap();
+    let waiting = {
+        let pg = pg.clone();
+        let answer = Answer {
+            availability: kaeso_core::catalogue::Availability::Available,
+            ..answer(haiku, replaced)
+        };
+        tokio::spawn(async move {
+            let mut tx = pg.begin().await.unwrap();
+            let recorded = record_availability(&mut tx, &answer).await.unwrap();
+            tx.commit().await.unwrap();
+            recorded
+        })
+    };
+    changing.commit().await.unwrap();
+    assert_eq!(waiting.await.unwrap(), Recorded::KeyChanged);
+}
+
+#[tokio::test]
+async fn a_provider_without_model_endpoints_keeps_its_own_not_found() {
+    let env = env().await;
+    replace_key(&env, "openai", "sk-[mock:models=absent]-0001").await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(UNSERVED_GPT, "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], OPENAI_NOT_FOUND);
+    let gets: Vec<String> = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|r| r.method == "GET")
+        .map(|r| r.path)
+        .collect();
+    assert_eq!(
+        gets,
+        [
+            format!("/v1/models/{UNSERVED_GPT}"),
+            "/v1/models".to_owned()
+        ]
+    );
+    assert_eq!(entry(&env, UNSERVED_GPT).await["availability"], "unchecked");
+    assert!(listed(&env, false).await.contains(&UNSERVED_GPT.to_owned()));
+
+    let body = check(&env).await;
+    let inconclusive = "OpenAI cannot confirm whether it serves the model to this key.";
+    let models = [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "text-embedding-3-small",
+        UNSERVED_GPT,
+    ];
+    assert_eq!(
+        failures(&body),
+        models
+            .iter()
+            .map(|m| (
+                (*m).to_owned(),
+                "inconclusive".to_owned(),
+                inconclusive.to_owned()
+            ))
+            .collect::<Vec<_>>()
+    );
+    for model in models {
+        assert_eq!(entry(&env, model).await["availability"], "unchecked");
+    }
+    assert_eq!(
+        entry(&env, UNSERVED_CLAUDE).await["availability"],
+        "unavailable"
+    );
+}
+
+#[tokio::test]
+async fn a_model_listing_answers_when_the_model_endpoint_is_missing() {
+    let env = env().await;
+    let r = env
+        .app
+        .post(
+            &format!("{}/models", base(&env)),
+            json!({
+                "provider": "openai", "model_id": "model-id-0", "custom": true,
+                "overrides": {
+                    "input_modalities": ["text"], "output_modalities": ["text"],
+                    "context_limit": 8000, "output_limit": 1000,
+                    "input_price": "1", "output_price": "2", "egress_dialect": "openai_chat"
+                }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    replace_key(&env, "openai", "sk-[mock:models=list-only]-0002").await;
+    let body = check(&env).await;
+    assert_eq!(body["failed"], json!([]));
+    assert_eq!(entry(&env, "model-id-0").await["availability"], "available");
+    assert_eq!(
+        entry(&env, UNSERVED_GPT).await["availability"],
+        "unavailable"
+    );
+}
+
+#[tokio::test]
+async fn a_model_listing_that_never_ends_decides_nothing() {
+    let env = env().await;
+    replace_key(&env, "anthropic", "sk-ant-[mock:models=endless]-0003").await;
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(UNSERVED_CLAUDE, "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], ANTHROPIC_NOT_FOUND);
+    let pages = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|r| r.method == "GET" && r.path == "/v1/models")
+        .count();
+    assert_eq!(pages, 2);
+    assert_eq!(
+        entry(&env, UNSERVED_CLAUDE).await["availability"],
+        "unchecked"
+    );
 }

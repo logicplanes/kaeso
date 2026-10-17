@@ -70,7 +70,7 @@ Chat Completions, Responses and Embeddings share one error shape:
 
 When the app and the provider speak the same format, a provider's error comes back as the provider sent it, with its status; an Anthropic error carries Kaeso's request id in `request_id`. Otherwise it keeps its meaning in the app's format: a provider key the provider refuses comes back as 401 or 403, the provider's own rate limit as 429, its billing refusal as 402 or 429, and its other server errors with their 5xx status. The request log keeps the provider's own message.
 
-One provider error is Kaeso's own in every format: when the provider answers 404 for a model in the catalogue, Kaeso asks the provider's model endpoint (`GET /v1/models/{model}`) with the same provider key whether it serves the model. If it doesn't, because the model is retired or the key has no access to it, the app gets 404 with `param: model` and a message that names the provider and the model and says what to do:
+One provider error is Kaeso's own in every format: when the provider answers 404 for a model in the catalogue, Kaeso asks the provider's model endpoint (`GET /v1/models/{model}`) with the same provider key whether it serves the model. A 404 there could also mean the provider has no such endpoint, so Kaeso then reads the provider's model listing (`GET /v1/models`, every page). Only when the listing answers and lacks the model, because the model is retired or the key has no access to it, does the app get 404 with `param: model` and a message that names the provider and the model and says what to do:
 
 ```json
 {
@@ -82,7 +82,7 @@ One provider error is Kaeso's own in every format: when the provider answers 404
 }
 ```
 
-Kaeso then marks the model **Unavailable** in the catalogue ([availability](../console/models-and-aliases.md#availability)). If the provider does serve the model, the 404 was about something else, such as a file id, and comes back as the provider sent it. Kaeso never sends the request again or to another model.
+Kaeso then marks the model **Unavailable** in the catalogue ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed while it asked. If the provider does serve the model, the 404 was about something else, such as a file id, and comes back as the provider sent it. If Kaeso cannot tell, because the provider's model listing does not answer, as with some OpenAI-compatible services, the 404 also comes back as the provider sent it and the model's availability stays as it was. The request log always keeps the provider's own message. Kaeso never sends the request again or to another model.
 
 ## Why requests fail
 

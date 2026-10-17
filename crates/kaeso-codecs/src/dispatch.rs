@@ -160,6 +160,13 @@ pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRe
     dispatch!(dialect, encode_model_request(model))
 }
 
+pub fn encode_models_request(
+    dialect: DialectId,
+    query: &ModelsQuery,
+) -> Result<EncodedRequest, KppError> {
+    dispatch!(dialect, encode_models_request(query))?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

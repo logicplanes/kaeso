@@ -284,7 +284,7 @@ Names and values are percent-decoded (`+` is a space); a malformed escape or a r
 
 Lossy towards Anthropic apps: `owned_by` (OpenAI) has no field here, and extras from other dialects are left out ([replies](cross-format.md#replies)). A model from another dialect gets the defaults above (`display_name` is the id, `lifecycle: "active"`, `capabilities: null`, `line`, `max_*` and dates `null`).
 
-On the egress side, `encode_model_request` builds `GET /v1/models/{model_id}` with `anthropic-version: 2023-06-01` and no body, which also resolves an alias such as `claude-sonnet-4-5` (the [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) page), and `decode_models` and `decode_model` take a provider's reply; a status other than 2xx goes to `decode_error`. Decoded extras carry the origin `anthropic_messages` without a provider, because these functions take no `EgressCtx`.
+On the egress side, `encode_model_request` builds `GET /v1/models/{model_id}` with `anthropic-version: 2023-06-01` and no body, which also resolves an alias such as `claude-sonnet-4-5` (the [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) page), `encode_models_request` builds `GET /v1/models` with the same header and the query's `limit`, `after_id`, `before_id` and `lifecycle[]`, each value percent-encoded (`Unsupported` for any other parameter), and `decode_models` and `decode_model` take a provider's reply; a status other than 2xx goes to `decode_error`. Decoded extras carry the origin `anthropic_messages` without a provider, because these functions take no `EgressCtx`.
 
 ## Round trips
 

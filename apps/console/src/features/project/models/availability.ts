@@ -10,6 +10,10 @@ export function checkFailureLabel(f: CheckFailure): string {
       return t("models.check.noKey", "No {provider} key is set up for this project", { provider });
     case "key_refused":
       return t("models.check.keyRefused", "{provider} refused the project's provider key", { provider });
+    case "inconclusive":
+      return t("models.check.inconclusive", "{provider} can't confirm whether it serves the model", { provider });
+    case "key_changed":
+      return t("models.check.keyChanged", "The {provider} key changed during the check; check again", { provider });
     default:
       return t("models.check.providerError", "{provider} didn't answer; try again shortly", { provider });
   }

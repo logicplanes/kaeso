@@ -4,10 +4,11 @@ use kaeso_core::catalogue::resolve::Alias;
 use kaeso_core::catalogue::{Availability, Entry, Fields};
 use kaeso_core::models_dev;
 use serde::{Deserialize, Serialize};
-use sqlx::PgExecutor;
+use sqlx::{PgConnection, PgExecutor};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use super::credentials::{self, KeyInUse};
 use crate::StoreError;
 
 #[derive(Clone, Debug)]
@@ -307,25 +308,53 @@ pub async fn mark_listed(
     .await?)
 }
 
-pub async fn set_availability(
-    db: impl PgExecutor<'_>,
-    project_id: Uuid,
-    id: Uuid,
-    availability: Availability,
-    at: OffsetDateTime,
-) -> Result<bool, StoreError> {
-    Ok(sqlx::query!(
-        "UPDATE catalogue_models SET availability = $3, availability_checked_at = $4 \
-         WHERE project_id = $1 AND id = $2",
-        project_id,
-        id,
-        availability.as_str(),
-        at
+#[derive(Clone, Copy, Debug)]
+pub struct Answer<'a> {
+    pub org_id: Uuid,
+    pub project_id: Uuid,
+    pub entry: Uuid,
+    pub provider: &'a str,
+    pub key: KeyInUse,
+    pub availability: Availability,
+    pub at: OffsetDateTime,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Recorded {
+    Yes,
+    KeyChanged,
+    EntryGone,
+}
+
+pub async fn record_availability(
+    tx: &mut PgConnection,
+    answer: &Answer<'_>,
+) -> Result<Recorded, StoreError> {
+    credentials::lock_provider(&mut *tx, answer.org_id, answer.provider).await?;
+    let current =
+        credentials::key_in_use(&mut *tx, answer.org_id, answer.project_id, answer.provider)
+            .await?;
+    if current != Some(answer.key) {
+        return Ok(Recorded::KeyChanged);
+    }
+    let updated = sqlx::query!(
+        "UPDATE catalogue_models SET availability = $5, availability_checked_at = $6 \
+         WHERE org_id = $1 AND project_id = $2 AND id = $3 AND provider = $4",
+        answer.org_id,
+        answer.project_id,
+        answer.entry,
+        answer.provider,
+        answer.availability.as_str(),
+        answer.at
     )
-    .execute(db)
+    .execute(&mut *tx)
     .await?
-    .rows_affected()
-        == 1)
+    .rows_affected();
+    Ok(if updated == 1 {
+        Recorded::Yes
+    } else {
+        Recorded::EntryGone
+    })
 }
 
 pub async fn clear_availability(

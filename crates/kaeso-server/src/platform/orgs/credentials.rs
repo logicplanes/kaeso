@@ -350,6 +350,7 @@ pub async fn replace(
     let sealed =
         service::seal(&state, before.id, secret).map_err(|e| ApiError::internal(e.to_string()))?;
     let (kind, by) = creator_of(&ctx);
+    credentials::lock_provider(&mut tx, org, &before.provider).await?;
     let done = credentials::replace(
         &mut *tx,
         &NewCredential {
@@ -491,6 +492,7 @@ pub async fn assign(
         ));
     }
     let projects: Vec<Uuid> = wanted.into_iter().collect();
+    credentials::lock_provider(&mut tx, org, &before.provider).await?;
     credentials::set_assignments(&mut tx, org, &before.provider, id, &projects).await?;
     let after = view(&mut tx, org, id).await?;
     ctx.audit(Some(ctx.org()?.id()), "credential.assign")

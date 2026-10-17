@@ -48,6 +48,8 @@
   "models.cap.vision": "Bildeingabe",
   "models.capability": "Fähigkeit",
   "models.catalogue": "Katalog",
+  "models.check.inconclusive": "{provider} kann nicht bestätigen, ob es das Modell anbietet",
+  "models.check.keyChanged": "Der {provider}-Schlüssel wurde geändert; bitte erneut prüfen",
   "models.check.keyRefused": "{provider} hat den Anbieter-Schlüssel des Projekts abgelehnt",
   "models.check.noKey": "Für dieses Projekt ist kein {provider}-Schlüssel eingerichtet",
   "models.check.providerError": "{provider} hat nicht geantwortet; bitte gleich erneut versuchen",

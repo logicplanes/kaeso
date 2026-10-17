@@ -27,6 +27,13 @@ pub struct SealedRow {
     pub nonce: Vec<u8>,
     pub wrapped_key: Vec<u8>,
     pub key_id: String,
+    pub revision: i64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KeyInUse {
+    pub id: Uuid,
+    pub revision: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -106,7 +113,7 @@ pub async fn insert(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<()
 pub async fn replace(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE provider_credentials SET name = $3, ciphertext = $4, nonce = $5, wrapped_key = $6, key_id = $7, last4 = $8, \
-         updated_at = now() WHERE org_id = $1 AND id = $2",
+         revision = revision + 1, updated_at = now() WHERE org_id = $1 AND id = $2",
         c.org_id,
         c.id,
         c.name,
@@ -294,7 +301,27 @@ pub async fn resolve(
 ) -> Result<Option<SealedRow>, StoreError> {
     Ok(sqlx::query_as!(
         SealedRow,
-        "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id FROM provider_credentials c \
+        "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision FROM provider_credentials c \
+         LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
+         WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
+         ORDER BY a.project_id IS NULL LIMIT 1",
+        org_id,
+        project_id,
+        provider
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
+pub async fn key_in_use(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    project_id: Uuid,
+    provider: &str,
+) -> Result<Option<KeyInUse>, StoreError> {
+    Ok(sqlx::query_as!(
+        KeyInUse,
+        "SELECT c.id, c.revision FROM provider_credentials c \
          LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
          WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
          ORDER BY a.project_id IS NULL LIMIT 1",
@@ -325,7 +352,7 @@ pub async fn touch(
 pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedRow>, StoreError> {
     Ok(sqlx::query_as!(
         SealedRow,
-        "SELECT id, ciphertext, nonce, wrapped_key, key_id FROM provider_credentials"
+        "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision FROM provider_credentials"
     )
     .fetch_all(db)
     .await?)

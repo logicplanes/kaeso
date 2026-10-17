@@ -48,6 +48,8 @@
   "models.cap.vision": "图片输入",
   "models.capability": "能力",
   "models.catalogue": "目录",
+  "models.check.inconclusive": "{provider} 无法确认是否提供该模型",
+  "models.check.keyChanged": "{provider} 密钥在检查期间已更改，请重新检查",
   "models.check.keyRefused": "{provider} 拒绝了此项目的服务商密钥",
   "models.check.noKey": "此项目未设置 {provider} 密钥",
   "models.check.providerError": "{provider} 未响应，请稍后重试",

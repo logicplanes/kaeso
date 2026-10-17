@@ -4,8 +4,8 @@ use serde_json::Value;
 
 use crate::codec::{EncodedRequest, HeaderList};
 use crate::models::{
-    add_query_extra, bad_listing, decode_date, encode_date, format_date, model_path, none_or,
-    parse_date, query_pairs, record_none,
+    MODELS_PATH, add_query_extra, bad_listing, decode_date, encode_date, format_date, model_path,
+    none_or, parse_date, query_pairs, record_none,
 };
 use crate::wire::{
     Ext, Maybe, extra_for, extras_from, to_body, verbatim_from_form, without_position,
@@ -168,4 +168,30 @@ pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList
 
 pub(crate) fn retrieve_request(model: &str) -> EncodedRequest {
     EncodedRequest::get(model_path(model), HeaderList::new())
+}
+
+fn first_query_param(query: &ModelsQuery) -> Option<&'static str> {
+    [
+        ("limit", query.limit.is_some()),
+        ("after_id", query.after_id.is_some()),
+        ("before_id", query.before_id.is_some()),
+        ("lifecycle", !query.lifecycle.is_empty()),
+        ("query parameters", !query.extras.is_empty()),
+    ]
+    .into_iter()
+    .find_map(|(name, set)| set.then_some(name))
+}
+
+pub(crate) fn list_request(
+    dialect: DialectId,
+    query: &ModelsQuery,
+) -> Result<EncodedRequest, KppError> {
+    if let Some(param) = first_query_param(query) {
+        return Err(KppError::unsupported_by(
+            param,
+            dialect,
+            "OpenAI lists every model in one page; send the listing without it.",
+        ));
+    }
+    Ok(EncodedRequest::get(MODELS_PATH, HeaderList::new()))
 }

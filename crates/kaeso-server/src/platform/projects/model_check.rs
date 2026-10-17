@@ -3,8 +3,10 @@ use axum::extract::State;
 use futures::StreamExt;
 use kaeso_core::catalogue::Availability;
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
+use kaeso_core::provider;
 use kaeso_kpp::ErrorKind;
-use kaeso_store::pg::catalogue::{self, EntryRow};
+use kaeso_store::pg::catalogue::{self, Answer, EntryRow, Recorded};
+use kaeso_store::pg::credentials::KeyInUse;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -30,6 +32,10 @@ pub enum CheckFailureReason {
     KeyRefused,
     #[doc = "The provider did not answer the check, or answered with an error."]
     ProviderError,
+    #[doc = "The provider answered not found, but its model listing could not confirm it."]
+    Inconclusive,
+    #[doc = "The project's provider key changed while the check ran."]
+    KeyChanged,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -69,6 +75,12 @@ fn failure(row: &EntryRow, provider: &str, reason: CheckFailureReason) -> CheckF
         CheckFailureReason::ProviderError => {
             format!("{provider} did not answer the check; try again shortly.")
         }
+        CheckFailureReason::Inconclusive => {
+            format!("{provider} cannot confirm whether it serves the model to this key.")
+        }
+        CheckFailureReason::KeyChanged => {
+            format!("The {provider} provider key changed during the check; check again.")
+        }
     };
     CheckFailure {
         catalogue_model_id: CatalogueModelId::from_uuid(row.id),
@@ -79,12 +91,17 @@ fn failure(row: &EntryRow, provider: &str, reason: CheckFailureReason) -> CheckF
     }
 }
 
+struct Found {
+    availability: Availability,
+    key: KeyInUse,
+}
+
 async fn check_one(
     state: &AppState,
     org: OrgId,
     project: ProjectId,
     row: &EntryRow,
-) -> ApiResult<Result<Availability, CheckFailure>> {
+) -> ApiResult<Result<Found, CheckFailure>> {
     let entry = row.entry()?;
     let eff = service::effective(state, &entry)
         .ok_or_else(|| ApiError::internal(format!("unknown provider `{}`", row.provider)))?;
@@ -101,9 +118,19 @@ async fn check_one(
         }
         Err(ResolveError::Store(e)) => return Err(e.into()),
     };
+    let found = |availability| {
+        Ok(Ok(Found {
+            availability,
+            key: credential.key(),
+        }))
+    };
     match availability::probe(state, &credential.secret, &eff).await {
-        Probe::Served => Ok(Ok(Availability::Available)),
-        Probe::Unserved => Ok(Ok(Availability::Unavailable)),
+        Probe::Served => found(Availability::Available),
+        Probe::Unserved => found(Availability::Unavailable),
+        Probe::Inconclusive(e) => {
+            tracing::info!(provider = eff.provider.id, model = %eff.model_id, error = %e.message, "a model check was inconclusive");
+            Ok(Err(failure(row, name, CheckFailureReason::Inconclusive)))
+        }
         Probe::Failed(e) => {
             tracing::info!(provider = eff.provider.id, model = %eff.model_id, kind = e.kind.as_str(), error = %e.message, "a model check failed");
             let reason = match e.kind {
@@ -126,6 +153,10 @@ async fn check_one(
     or the key has no access, becomes `unavailable`: model listings leave it\n\
     out, and requests for it still go to the provider and fail there. Kaeso\n\
     also learns this from requests the provider answers with model not found.\n\
+    A not found from the provider's model endpoint counts only when the\n\
+    provider's model listing answers and lacks the model; otherwise the model\n\
+    keeps its availability and is reported as `inconclusive`. An answer is\n\
+    recorded only while the project still uses the key that gave it.\n\
     Changing a provider key of the org resets its provider's models to\n\
     `unchecked`.",
     tag = "models",
@@ -153,16 +184,34 @@ pub async fn check(
     let mut unavailable = Vec::new();
     let mut failed = Vec::new();
     for ((id, outcome), row) in outcomes.into_iter().zip(&rows) {
-        match outcome? {
-            Ok(a) => {
-                catalogue::set_availability(&mut *tx, project_id, id, a, ctx.now).await?;
-                let name = format!("{}/{}", row.provider, row.model_id);
-                match a {
-                    Availability::Available => available.push(name),
-                    Availability::Unavailable => unavailable.push(name),
-                }
+        let found = match outcome? {
+            Ok(found) => found,
+            Err(f) => {
+                failed.push(f);
+                continue;
             }
-            Err(f) => failed.push(f),
+        };
+        let answer = Answer {
+            org_id: org.uuid(),
+            project_id,
+            entry: id,
+            provider: &row.provider,
+            key: found.key,
+            availability: found.availability,
+            at: ctx.now,
+        };
+        let name = format!("{}/{}", row.provider, row.model_id);
+        match catalogue::record_availability(&mut tx, &answer).await? {
+            Recorded::Yes => match found.availability {
+                Availability::Available => available.push(name),
+                Availability::Unavailable => unavailable.push(name),
+            },
+            Recorded::KeyChanged => {
+                let provider =
+                    provider::provider(&row.provider).map_or(row.provider.as_str(), |p| p.name);
+                failed.push(failure(row, provider, CheckFailureReason::KeyChanged));
+            }
+            Recorded::EntryGone => {}
         }
     }
     ctx.audit(Some(org), "catalogue_model.check")
