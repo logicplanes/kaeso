@@ -16,18 +16,21 @@ Performance wird gemessen, nicht geschätzt: Die Builds der Konsole und der Doku
 
 Dynamische Importe, die bei Bedarf laden, werden nicht mitgezählt: die Positionierung der Tooltips, der Kalender der Datumsauswahl, die Befehlspalette, der Dialog für eine erneute Anmeldung, die Liste der Tastenkürzel, „Organisation erstellen“, der Toaster und die Teile einer Seite, die neben ihren Daten laden. Das Skript lässt den Build außerdem fehlschlagen, wenn ein Modul unter `src/features` im Entry oder in dessen statischen Importen steckt, da jede Seite, die Anmeldung eingeschlossen, zuerst den Entry lädt.
 
-Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt. Das Ziel ist die Größe, die eine Route erreichen soll; die Obergrenze ist die gemessene Größe, aufgerundet auf das nächste Kilobyte; sie wird nur mit Begründung angehoben, in dem Pull Request, der es braucht.
+Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt. Das Ziel ist die Größe, die eine Route erreichen soll; die Obergrenze ist die gemessene Größe mit ein paar Kilobyte Luft, etwa 5 %, wo eine Route kleiner geworden ist, sodass eine kleine Änderung passt und eine Verschlechterung trotzdem fehlschlägt. Eine Obergrenze wird nur mit Begründung angehoben, in dem Pull Request, der es braucht, und gesenkt, wenn eine Route kleiner wird.
 
 | Route | Datei | Ziel | Obergrenze | Gemessen, gzip |
 | --- | --- | --: | --: | --: |
-| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 127 kB | 126,0 kB |
-| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 207 kB | 206,0 kB |
+| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 122,2 kB |
+| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 190 kB | 181,1 kB |
 
-1 kB sind 1.024 Bytes. Noch erreicht keine der beiden Routen ihr Ziel. Von den 126,0 kB der Anmeldung entfallen 98,1 kB auf den Chunk `framework` (React und React DOM mit dem Scheduler, TanStack Router und Query, openapi-fetch sowie API-Client, Sitzung und Formatierung der Konsole), 14,3 kB auf den Chunk `ui` (`cn` der Bibliothek mit seiner eigenen Einrichtung von `tailwind-merge`, ihr Button, Text, Feld, Eingabefeld und Logo, der Seitentitel und das Layout der öffentlichen Seiten), 9,5 kB auf den Entry mit dem Routenbaum und seinen Preload-Listen und der Rest auf die eigenen Chunks der Anmeldeseite. Die Projektübersicht fügt den Rahmen der Konsole hinzu (die Seitenleiste mit ihren Teilen aus Base UI und Floating UI; ihre Menüs laden, sobald die Seite im Leerlauf ist oder beim ersten Hover, Fokus oder Drücken, ebenso wie die Datumsauswahlen der Bibliothek), die Kennzahlenkacheln und Diagramme mit ihren d3-Modulen und die Seite selbst.
+1 kB sind 1.024 Bytes. Noch erreicht keine der beiden Routen ihr Ziel. Von den 122,2 kB der Anmeldung entfallen 95,3 kB auf den Chunk `framework` (React und React DOM mit dem Scheduler, TanStack Router und Query, openapi-fetch sowie API-Client, Sitzung und Formatierung der Konsole), 13,0 kB auf den Chunk `ui` (`cn` der Bibliothek mit seiner eigenen Einrichtung von `tailwind-merge`, ihr Button, Text, Feld, Eingabefeld und Schriftzug, der Seitentitel und das Layout der öffentlichen Seiten), 9,7 kB auf den Entry mit dem Routenbaum und seinen Preload-Listen und der Rest auf die eigenen Chunks der Anmeldeseite. Die Projektübersicht fügt den Rahmen der Konsole hinzu (die Seitenleiste mit ihren Teilen aus Base UI und Floating UI; ihre Menüs laden, sobald die Seite im Leerlauf ist oder beim ersten Hover, Fokus oder Drücken, ebenso wie die Datumsauswahlen der Bibliothek; das Navigations-Sheet mit dem Dialog von Base UI lädt, sobald die Seite im Leerlauf ist oder beim ersten Tippen), die Kennzahlenkacheln und Diagramme mit ihren d3-Modulen (die Diagramme nutzen die eigene lineare Skala der Bibliothek, ohne die Farb-, Interpolations- und Zahlenformat-Module von d3-scale) und die Seite selbst.
+
+`src/main.tsx` fordert die Chunks der Routen an, auf die die Adresse passt (`loadPageChunks` in `src/router.tsx`), bevor es eine Sprache lädt und rendert, sodass der Code einer Seite eintrifft, während der Entry noch arbeitet, statt erst nach dem ersten Rendern. Deutsch und Chinesisch laden die Texte der Konsole und die der Bibliothek gleichzeitig.
 
 ### Was die Zahlen bewegt
 
 - **Routen.** Der Routenbaum steckt im Entry, daher fügt jede Route ihren Pfad, ihre Prüfung der Suchparameter und ihr `beforeLoad` jeder Seite hinzu. Eine Routendatei importiert aus ihrer Seite nur Typen: Ein Wert brächte das Modul der Seite und dessen Importe in den Entry. Ihre Prüfung der Suchparameter ist eine Funktion in der Routendatei, die sich `validateSearch` und `Route.useSearch({ select })` der Komponente teilen, sodass die Prüfung einmal im Entry steckt und die abgespaltene Komponente sie von dort importiert. Loader, Komponenten sowie Pending-, Error- und Not-found-Komponenten werden in eigene Chunks der Route ausgelagert.
+- **Module, die der Entry importiert.** Ein Modul, das der Entry importiert, steckt ganz im ersten Rendern, mit allem, was es importiert, auch mit Exporten, die erst spätere Seiten nutzen. Die Abfragen der Sitzung (`src/auth/session-queries.ts`) und die Prüfung des Zeitraums in den Suchparametern (`src/format/period-search.ts`) sind eigene Module, sodass die Observer von TanStack Query und die Datumsbeschriftungen bei den Seiten bleiben, die sie nutzen.
 - **Preload-Listen.** Für jeden Lazy-Chunk, den der Routenbaum laden kann, trägt der Entry die Liste der Chunks, die er braucht, sodass der Browser sie sofort abruft. Jeder Chunk in einer Liste kostet seinen Dateinamen; ein neuer gemeinsamer Chunk, den viele Seiten erreichen, macht jede Seite größer.
 - **Gemeinsame Chunks.** Der Bundler legt Module, die sich mehrere Lazy-Seiten teilen, in einen gemeinsamen Chunk. Teilt eine Seite, die die Übersicht nicht braucht, ein Modul mit einer, die sie braucht, lädt die Übersicht diesen Chunk ebenfalls, mit allem, was der Bundler sonst noch hineingelegt hat.
 - **Die Bibliothek.** Eine Komponente aus `@logicplanes/kaeso-ui`, die ein erstes Rendern zeichnet oder die eine dort gezeichnete Komponente importiert, gehört zum Budget; eine, die erst bei einer Interaktion lädt, nicht.
@@ -52,20 +55,20 @@ Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt.
 
 | Budget | Was gezählt wird | Gemessen | Obergrenze |
 | --- | --- | --: | --: |
-| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 204,7 kB (Englisch), 210,2 kB (Deutsch), 210,7 kB (Chinesisch) | 216 kB |
+| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 201,1 kB (Englisch), 206,7 kB (Deutsch), 207,1 kB (Chinesisch) | 216 kB |
 | Der Inhalt einer Seite | Der eigene Chunk jeder Seite: ihre Blöcke und ihr Inhaltsverzeichnis | höchstens 17,3 kB (`zh-CN/development/kpp/anthropic-messages`) | 24 kB pro Seite |
 
 Der Rahmen ändert sich mit dem Code und wächst mit jeder Seite ein wenig, weil das Website-Modul die Seitenleiste und Titel und Beschreibung jeder Seite enthält, sodass die Seitenleiste mit dem Rahmen rendert und nie springt. Deutsch und Chinesisch laden außerdem die Texte der Bibliothek für ihre Sprache, etwa 5 kB. Die Obergrenze ist die gemessene Größe des größten Rahmens mit etwas Luft. Der Inhalt einer Seite hat ein eigenes Budget, sodass eine zu lang gewordene Seite mit ihrer Adresse fehlschlägt, wer auch immer sie bearbeitet; die Lösung sind zwei Seiten.
 
-Die Suche mit ihrem Index, der Toaster und die Grammatiken der Syntaxhervorhebung laden nach dem ersten Rendern und werden nicht mitgezählt. Der Build gibt die Größe der Suche aus, 3,5 kB ohne den Index.
+Die Suche mit ihrem Index, der Toaster, das Navigations-Sheet und die Grammatiken der Syntaxhervorhebung laden nach dem ersten Rendern und werden nicht mitgezählt. Der Build gibt die Größe der Suche aus, 6,6 kB ohne den Index, samt dem Dialog von Base UI.
 
 | Teil des Rahmens | Warum er da ist |
 | --- | --- |
 | React und TanStack Router (`framework`) | Jede Seite |
-| `AppFrame`, `Sidebar`, das Navigations-Sheet | Der Rahmen; `Sidebar` bringt das Menü von Base UI mit |
+| `AppFrame`, `Sidebar` | Der Rahmen; `Sidebar` bringt das Menü von Base UI mit, und das Navigations-Sheet lädt, sobald die Seite im Leerlauf ist oder beim ersten Tippen |
 | `Select` | Die Sprach- und Theme-Auswahl am Fuß der Seitenleiste |
 | Tooltips, `IconButton` | Die Bedienelemente für Suche und Einklappen |
-| Die Seite und ihr Renderer | `Text`, `Link`, `Code`, `CodeBlock` (seine Syntaxhervorhebung lädt nur mit einem Codeblock), `Banner`, `Table`, `ScrollArea`, `Checkbox`, `Separator`, `TableOfContents`, dazu `Badge` und die Datumsformatierung für das Changelog |
+| Die Seite und ihr Renderer | `Text`, `Link`, `Code`, `CodeBlock` (seine Syntaxhervorhebung lädt nur mit einem Codeblock), `Banner`, `Table`, `ScrollArea`, `CheckboxBox`, `Separator`, `TableOfContents`, dazu `Badge` und die Datumsformatierung für das Changelog |
 | Die Seitenleiste und Titel und Beschreibung jeder Seite | Das Modul `site` der Sprache, sodass die Seitenleiste mit dem Rahmen rendert und nie springt |
 
 - Importe aus `@logicplanes/kaeso-ui` werden zur Build-Zeit auf die Einstiege der einzelnen Komponenten der Bibliothek umgeschrieben (`uiEntryImports` in `apps/docs/vite.config.ts`), sodass der Rahmen nur die Komponenten enthält, die die Website nutzt.

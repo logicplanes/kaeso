@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { Banner, Checkbox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text } from "@logicplanes/kaeso-ui";
+import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text } from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
@@ -118,7 +118,7 @@ function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: 
     <li className="flex gap-12">
       {item.task ? (
         <span className="flex shrink-0 items-center">
-          <Checkbox.Box checked={!!item.checked} readOnly aria-label={name} />
+          <CheckboxBox checked={!!item.checked} readOnly aria-label={name} />
         </span>
       ) : (
         <Text

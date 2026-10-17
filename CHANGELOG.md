@@ -20,6 +20,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
 - The showcase's View source links, its `llms.txt` and the links in its changelog open the source of the release the site was built for, at its tag, instead of the `dev` branch.
 - The project catalogue knows whether each model's provider serves it to the project's provider key: **Check availability** on the **Models** page (`POST …/models/check`) asks the provider, requests teach it too, and a model marked **Unavailable** is left out of `GET /v1/models`; changing a provider key resets its models to **Not checked**. Models models.dev marks deprecated show **Deprecated** and have `lifecycle: "deprecated"` in Anthropic model listings.
+- Smaller console downloads: a project's overview loads 25 kB less JavaScript and the sign-in page 4 kB less, the documentation site's frame 3.6 kB less, and a page's code is requested while the console starts instead of after its first render. `AppFrame` loads its phone navigation sheet once the page is idle or on the first tap, and the charts no longer need d3-scale's colour and number-format modules.
 
 ### Fixed
 
