@@ -168,6 +168,12 @@ const messages = (): Rule[] => [
   rule("errors.grantExceedsMany", (v) => t("errors.grantExceedsMany", "You can't grant `{right}` and {more} more rights: you don't hold them yourself.", v)),
   rule("errors.rightNeeds", (v) => t("errors.rightNeeds", "`{right}` needs `{needs}`.", v)),
   rule("errors.rightNeedsRemoved", (v) => t("errors.rightNeedsRemoved", "`{right}` needs `{needs}`; remove `{right}` too.", v)),
+  rule("errors.roleHoldersNeed", (v) => t("errors.roleHoldersNeed", "`{right}` needs `{needs}` for {count} of this role's holders; keep it in the role.", v), {
+    count: "number",
+  }),
+  rule("errors.roleHoldersLack", (v) => t("errors.roleHoldersLack", "`{right}` needs `{needs}`, removed from {count} of this role's holders; restore it.", v), {
+    count: "number",
+  }),
   rule("errors.notARight", (v) => t("errors.notARight", "`{value}` is not a right; see the rights catalogue.", v)),
   rule("errors.notAPreset", (v) => t("errors.notAPreset", "`{value}` is not a preset.", v)),
   rule("errors.issuerUrl", () => t("errors.issuerUrl", "`issuer` must be a URL.")),

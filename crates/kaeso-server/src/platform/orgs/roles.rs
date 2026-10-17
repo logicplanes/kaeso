@@ -3,9 +3,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{OrgId, RoleId};
 use kaeso_core::rights::{
-    OrgHolding, OrgPreset, OrgRights, ProjectPreset, ProjectRights, check_project_change,
+    Deviation, OrgHolding, OrgPreset, OrgRights, ProjectPreset, ProjectRights,
+    check_org_role_holders, check_project_change, check_project_role_holders,
 };
-use kaeso_store::pg::roles::{self, Role, RoleWrite};
+use kaeso_store::pg::roles::{self, HolderDeviation, Role, RoleWrite};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
@@ -311,6 +312,38 @@ fn check_change(
     Ok(())
 }
 
+fn check_holders(
+    scope: &str,
+    before: &OrgHolding,
+    after: &OrgHolding,
+    holders: &[HolderDeviation],
+) -> ApiResult<()> {
+    if scope == "org" {
+        let holders = holders
+            .iter()
+            .map(|h| {
+                Ok(Deviation {
+                    added: parse_org(&h.rights_added)?,
+                    removed: parse_org(&h.rights_removed)?,
+                })
+            })
+            .collect::<ApiResult<Vec<_>>>()?;
+        check_org_role_holders(before.org, after.org, &holders)?;
+    } else {
+        let holders = holders
+            .iter()
+            .map(|h| {
+                Ok(Deviation {
+                    added: parse_project(&h.rights_added)?,
+                    removed: parse_project(&h.rights_removed)?,
+                })
+            })
+            .collect::<ApiResult<Vec<_>>>()?;
+        check_project_role_holders(before.every_project, after.every_project, &holders)?;
+    }
+    Ok(())
+}
+
 fn check_holds(caller: &OrgScope, role: &OrgHolding) -> ApiResult<()> {
     if caller.holding().covers(role) {
         Ok(())
@@ -453,7 +486,8 @@ fn builtin_refused(role: &str) -> ApiResult<()> {
     patch,
     path = "/orgs/{org}/roles/{role}",
     summary = "Changes a custom role. It applies at once to everyone who holds it; the\n\
-    caller must hold every right the role has before and after.",
+    caller must hold every right the role has before and after. A change that\n\
+    would leave a holder with a right without a right it needs is refused.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("role" = String, Path, description = "A custom role's id (`role_…`).")),
     request_body = RoleUpdate,
@@ -496,6 +530,8 @@ pub async fn update(
     if !roles::lock(&mut *tx, scope.org.id, before.id).await? {
         return Err(ApiError::not_found("role"));
     }
+    let holders = roles::holder_deviations(&mut *tx, scope.org.id, before.id).await?;
+    check_holders(role_scope, &before_holding, &after_holding, &holders)?;
     roles::update(
         &mut *tx,
         &RoleWrite {

@@ -293,6 +293,71 @@ fn a_need_already_missing_does_not_hide_one_being_removed() {
 }
 
 #[test]
+fn a_role_change_never_strands_its_holders() {
+    let org = |names: &[&str]| OrgRights::parse(names.iter().copied()).unwrap();
+    let invites = Deviation {
+        added: org(&["members.invite"]),
+        removed: OrgRights::EMPTY,
+    };
+    let plain = Deviation::default();
+    let before = org(&["org.view", "members.view"]);
+    let after = org(&["org.view"]);
+    assert_eq!(
+        check_org_role_holders(before, after, &[plain, invites, plain, invites])
+            .unwrap_err()
+            .to_string(),
+        "`members.invite` needs `members.view` for 2 of this role's holders; keep it in the role."
+    );
+    assert!(check_org_role_holders(before, after, &[plain, plain]).is_ok());
+    assert!(check_org_role_holders(before, after, &[]).is_ok());
+    assert!(check_org_role_holders(before, before, &[invites]).is_ok());
+    let both = org(&["org.view", "members.view", "members.invite"]);
+    assert!(check_org_role_holders(before, both, &[invites]).is_ok());
+
+    let viewer_removed = Deviation {
+        added: OrgRights::EMPTY,
+        removed: org(&["members.view"]),
+    };
+    assert_eq!(
+        check_org_role_holders(both, both, &[viewer_removed]),
+        Ok(())
+    );
+    assert_eq!(
+        check_org_role_holders(before, both, &[viewer_removed])
+            .unwrap_err()
+            .to_string(),
+        "`members.invite` needs `members.view`, removed from 1 of this role's holders; restore it."
+    );
+
+    let project = |names: &[&str]| ProjectRights::parse(names.iter().copied()).unwrap();
+    let manager = Deviation {
+        added: project(&["models.manage"]),
+        removed: ProjectRights::EMPTY,
+    };
+    assert_eq!(
+        check_project_role_holders(
+            project(&["project.view", "models.view"]),
+            project(&["project.view"]),
+            &[manager]
+        )
+        .unwrap_err(),
+        StrandedHolders::Removed {
+            right: "models.manage",
+            needs: "models.view",
+            count: 1
+        }
+    );
+    assert!(
+        check_project_role_holders(
+            project(&["project.view"]),
+            project(&["project.view", "usage.view"]),
+            &[manager]
+        )
+        .is_ok()
+    );
+}
+
+#[test]
 fn deviations_add_and_remove() {
     let grant = ProjectGrant {
         added: [ProjectRight::LogsExport].into_iter().collect(),
@@ -644,6 +709,16 @@ fn org_rights() -> impl Strategy<Value = OrgRights> {
     })
 }
 
+fn deviations() -> impl Strategy<Value = Vec<Deviation<OrgRights>>> {
+    prop::collection::vec(
+        (org_rights(), org_rights(), org_rights()).prop_map(|(a, b, c)| Deviation {
+            added: a.intersect(b),
+            removed: b.intersect(c).minus(a),
+        }),
+        0..5,
+    )
+}
+
 proptest! {
     #[test]
     fn a_checked_grant_never_exceeds_the_grantor(grantor in org_rights(), before in org_rights(), after in org_rights()) {
@@ -673,5 +748,20 @@ proptest! {
         prop_assert!(e.minus(preset.rights().union(added)).is_empty());
         prop_assert_eq!(e.union(removed).minus(removed), e);
         prop_assert_eq!(g.normalised().effective(), e);
+    }
+
+    #[test]
+    fn a_checked_role_change_never_strands_a_holder(before in org_rights(), after in org_rights(), holders in deviations()) {
+        let id = crate::id::RoleId::new();
+        let held = |role: OrgRights, d: &Deviation<OrgRights>| {
+            OrgGrant { added: d.added, removed: d.removed, ..OrgGrant::custom(id, role, ProjectRights::EMPTY) }.effective()
+        };
+        let stranding = holders.iter().filter(|d| check_org_needs(held(before, d), held(after, d)).is_err()).count();
+        match check_org_role_holders(before, after, &holders) {
+            Ok(()) => prop_assert_eq!(stranding, 0),
+            Err(StrandedHolders::Removed { count, .. } | StrandedHolders::Gained { count, .. }) => {
+                prop_assert!(count >= 1 && count <= stranding);
+            }
+        }
     }
 }

@@ -69,7 +69,7 @@ The default project: Owners and Admins join it as project Admin, Developers as D
 1. **Give only what you hold.** Changing a member's role or rights, inviting, adding a project member, creating or changing a service account, creating, changing or deleting a custom role, and choosing the role for people who arrive through single sign-on may only give rights the caller holds: organization rights in the organization, project rights in that project, and rights in every project only if the caller holds them in every project.
 2. **Act only on peers.** A member's role and rights are changed, or the member removed, only by someone who holds every right the member holds in that scope.
 3. **Owners** are made, changed, removed and invited only by owners. An organization never loses its last owner.
-4. **Needs** are checked for every right a change gives, and a change removes no right that a right staying in the grant or role needs, even when that right already lacks another of its needs.
+4. **Needs** are checked for every right a change gives, and a change removes no right that a right staying in the grant or role needs, even when that right already lacks another of its needs. A change to a custom role is refused when it would leave one of its holders with a right, added to them or given by the role, without one it needs; nobody's own rights change with it.
 5. **Keys have no rights of their own.** An API key acts as its member or service account in its project, and an organization platform key with the Admin role's rights in its organization.
 
 The Platform API's routes for rights, roles and grants are described under [Platform API](../api/platform-api.md).

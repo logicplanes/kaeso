@@ -289,6 +289,8 @@
   "errors.retentionRange": "保留期必须为 1 到 36,500 天。",
   "errors.rightNeeds": "`{right}` 需要 `{needs}`。",
   "errors.rightNeedsRemoved": "`{right}` 需要 `{needs}`；请同时移除 `{right}`。",
+  "errors.roleHoldersNeed": "此角色有 {count} 个持有者的 `{right}` 需要 `{needs}`；请在角色中保留它。",
+  "errors.roleHoldersLack": "此角色有 {count} 个持有者被移除了 `{right}` 所需的 `{needs}`；请先恢复。",
   "errors.roleDescriptionLength": "`description` 最多 200 个字符。",
   "errors.roleHasHolders": "有 {holders} 个成员、服务账号或邀请使用此角色，请先重新分配。",
   "errors.roleHoldsMoreRights": "该角色包含您没有的权限，因此您无法更改。",

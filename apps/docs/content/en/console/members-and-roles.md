@@ -27,7 +27,7 @@ Owners and admins hold every right in every project. In the default project, own
 
 ### Custom roles
 
-Under **Organization settings** › **Members** › **Roles**, **Create role** makes a role of your own for the organization or for projects, starting from a built-in role or from no rights. An organization role can also hold rights in every project. Built-in roles can't be changed; **Duplicate** one to start from it. An organization has at most 50 custom roles, and a role somebody holds can't be deleted.
+Under **Organization settings** › **Members** › **Roles**, **Create role** makes a role of your own for the organization or for projects, starting from a built-in role or from no rights. An organization role can also hold rights in every project. Built-in roles can't be changed; **Duplicate** one to start from it. An organization has at most 50 custom roles, and a role somebody holds can't be deleted. A change that would leave someone with the role holding a right without one it needs, such as a right added to them, isn't saved; the message names the right, what it needs and how many holders it affects.
 
 You can only give rights you hold yourself, and only change members whose rights you all hold.
 

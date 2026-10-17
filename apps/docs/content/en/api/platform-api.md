@@ -181,7 +181,7 @@ Every organization member has one organization role, and every project member an
 | --- | --- | --- |
 | `GET orgs/{org}/rights` | `org.view` | Every right by category, with its name, description, flags (`sensitive`, `recent_sign_in`, `cloud_only`) and the rights it needs |
 | `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Built-in and custom roles with their rights, rights in every project and number of holders; `?scope=org` or `project` |
-| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Create, change and delete custom roles, at most 50; a change applies to every holder at once, and a role somebody holds can't be deleted |
+| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Create, change and delete custom roles, at most 50; a change applies to every holder at once and is refused with `400` when it would leave a holder with a right without one it needs, and a role somebody holds can't be deleted |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | A member's effective organization rights, rights in every project, and rights in each of their projects the caller can see, each with its sources |
 | `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | A member's effective rights in this project, with sources |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | The caller's own rights in this project, with sources |

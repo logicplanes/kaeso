@@ -246,6 +246,12 @@ impl From<kaeso_core::rights::MissingDependency> for ApiError {
     }
 }
 
+impl From<kaeso_core::rights::StrandedHolders> for ApiError {
+    fn from(e: kaeso_core::rights::StrandedHolders) -> ApiError {
+        ApiError::invalid("rights", e.to_string())
+    }
+}
+
 impl From<kaeso_core::rights::GrantCheckError> for ApiError {
     fn from(e: kaeso_core::rights::GrantCheckError) -> ApiError {
         match e {

@@ -13777,7 +13777,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Changes a custom role. It applies at once to everyone who holds it; the\ncaller must hold every right the role has before and after.",
+        "summary": "Changes a custom role. It applies at once to everyone who holds it; the\ncaller must hold every right the role has before and after. A change that\nwould leave a holder with a right without a right it needs is refused.",
         "description": "**Right:** `roles.manage` on the organization in the path.",
         "operationId": "patchOrgsOrgRolesRole",
         "parameters": [

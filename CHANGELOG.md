@@ -49,6 +49,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Single sign-on brings people back to the console page they asked for, from `next`, instead of the start page; `next` must be a console path on the install, so it can't send a browser to another site.
 - The description of `org` in `POST auth/oidc/start` names where the organization comes from; the sign-in link it described didn't exist until now.
 - A change to a member's, service account's or role's rights is refused with `400` when it removes a right that a remaining right needs, also when that right already lacked another of its needs: removing `members.view` from a member who holds `members.invite` but no longer `org.view`, after their custom role was emptied, used to be accepted.
+- Changing a custom role no longer leaves the members, project members or service accounts who hold it with a right they were given without one it needs: such a change is refused with `400` and a message that names the right, its need and how many holders it affects, in the console too, and nobody's rights change.
 
 ### Security
 
