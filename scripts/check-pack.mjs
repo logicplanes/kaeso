@@ -108,6 +108,9 @@ for (const p of packages) {
   const kb = (statSync(tarball).size / 1024).toFixed(0);
   console.log(`${manifest.name}@${manifest.version}: ${files.length} files, ${kb} kB packed`);
 }
+const licence = readFileSync(join(root, "LICENSE"), "utf8");
+for (const dir of [...packages.map((p) => p.dir), "crates/kaeso-kpp", "crates/kaeso-codecs"])
+  if (readFileSync(join(root, dir, "LICENSE"), "utf8") !== licence) fail(`${dir}/LICENSE must match the repository's LICENSE`);
 if (versions.size !== 1) fail(`versions differ: ${[...versions].join(", ")}`);
 if (expected && !versions.has(expected)) fail(`tag says ${expected}, packages say ${[...versions].join(", ")}`);
 
