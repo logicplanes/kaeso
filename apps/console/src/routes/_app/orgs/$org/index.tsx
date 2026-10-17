@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OrgOverviewPage, type OrgOverviewSearch } from "~/features/org-home/org-overview-page";
-import { periodSearch } from "~/format/period";
+import { periodSearch } from "~/format/period-search";
 
 const BY = ["project", "model", "member"] as const;
 

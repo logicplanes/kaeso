@@ -1,5 +1,6 @@
 import { forwardRef, useState } from "react";
-import { scaleBand, scaleLinear } from "d3-scale";
+import { scaleBand } from "d3-scale";
+import { scaleLinear } from "./linear-scale.js";
 import { max as d3max } from "d3-array";
 import { cn } from "../../utils/cn.js";
 import { formatNumber, formatPercent } from "../../format/index.js";

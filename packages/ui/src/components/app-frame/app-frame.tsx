@@ -1,13 +1,12 @@
-import { usePortalContainer } from "../../utils/portal-context.js";
-import { createContext, forwardRef, useContext, useId, useState, type HTMLAttributes, type ReactNode, type RefObject } from "react";
-import { Dialog } from "@base-ui/react/dialog";
+import { createContext, forwardRef, useContext, useEffect, useId, useRef, useState, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { InsetContent } from "../../utils/inset.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { buttonClasses } from "../button/button.js";
-import { useSidebar, BrandWordmark, SidebarFloatingContext, SidebarSheetContext } from "../sidebar/sidebar.js";
-import { useEffect, useRef } from "react";
+import { useSidebar, BrandWordmark } from "../sidebar/sidebar.js";
+import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
+import { whenIdle } from "../../utils/when-idle.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_APP_FRAME_VARIANTS = {
@@ -139,59 +138,9 @@ function PhoneBar({
 }
 PhoneBar.displayName = "AppFrame.PhoneBar";
 
-export function NavSheet({
-  open,
-  onOpenChange,
-  peek = false,
-  returnFocus,
-  children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  peek?: boolean | undefined;
-  returnFocus?: RefObject<HTMLElement | null> | undefined;
-  children: ReactNode;
-}) {
-  const leave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const t = useUiText();
-  useEffect(() => {
-    if (!open || peek || typeof window === "undefined") return;
-    const wide = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => wide.matches && onOpenChange(false);
-    onChange();
-    wide.addEventListener("change", onChange);
-    return () => wide.removeEventListener("change", onChange);
-  }, [open, peek, onOpenChange]);
-  return (
-    <Dialog.Root open={open} onOpenChange={(o: boolean) => onOpenChange(o)} modal={!peek}>
-      <Dialog.Portal container={usePortalContainer()}>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay opacity-60 backdrop-motion" />
-        <Dialog.Popup
-          aria-label={t("appFrame.navigation", "Navigation")}
-          data-side="left"
-          initialFocus={!peek}
-          {...(returnFocus ? { finalFocus: returnFocus } : {})}
-          className="fixed top-0 bottom-0 left-0 z-40 flex overflow-hidden rounded-r-sheet bg-chrome shadow-dialog outline-none safe-area-sheet sheet-motion"
-          onClick={(e) => {
-            if ((e.target as HTMLElement).closest("a[href]")) onOpenChange(false);
-          }}
-          onPointerEnter={() => clearTimeout(leave.current)}
-          onPointerLeave={() => {
-            if (!peek) return;
-            leave.current = setTimeout(() => onOpenChange(false), 160);
-          }}
-        >
-          <SidebarFloatingContext.Provider value>
-            <SidebarSheetContext.Provider value={{ close: () => onOpenChange(false), peek }}>{children}</SidebarSheetContext.Provider>
-          </SidebarFloatingContext.Provider>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-NavSheet.displayName = "NavSheet";
-
 export const PEEK_DELAY = 750;
+
+const navSheet = lazyModule(() => import("./nav-sheet.js"));
 
 function FrameSheet({
   navOpen,
@@ -205,6 +154,10 @@ function FrameSheet({
   children: ReactNode;
 }) {
   const { peeking, setPeeking } = useSidebar();
+  const [idle, setIdle] = useState(false);
+  useEffect(() => whenIdle(() => setIdle(true)), []);
+  const NavSheet = useLazyModule(navSheet, idle || navOpen || peeking)?.NavSheet;
+  if (!NavSheet) return null;
   return (
     <NavSheet
       open={navOpen || peeking}

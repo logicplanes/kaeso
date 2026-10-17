@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import type { OrgOverviewSearch } from "~/features/org-home/org-overview-page";
-import { periodSearch } from "~/format/period";
+import { periodSearch } from "~/format/period-search";
 
 export const Route = createFileRoute("/_app/settings/orgs/$org/usage")({
   validateSearch: (s: Record<string, unknown>): OrgOverviewSearch => periodSearch(s),

@@ -51,9 +51,10 @@ export async function load(next: Locale): Promise<Loaded> {
   const english: Loaded = { locale: "en", messages: {}, ui: {}, provider };
   if (next === "en") return english;
   try {
-    const [own, { LocaleProvider: libraryProvider, loadUiMessages }] = await Promise.all([catalogs[next](), import("./library")]);
+    const library = import("./library");
+    const [own, { LocaleProvider: libraryProvider }, ui] = await Promise.all([catalogs[next](), library, library.then((m) => m.loadUiMessages(next))]);
     provider = libraryProvider;
-    return { locale: next, messages: own.default, ui: await loadUiMessages(next), provider };
+    return { locale: next, messages: own.default, ui, provider };
   } catch {
     return english;
   }
