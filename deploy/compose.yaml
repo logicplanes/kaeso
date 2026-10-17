@@ -250,6 +250,11 @@ configs:
       		}
       	}
       }
+
+      http://127.0.0.1:2080 {
+      	bind 127.0.0.1
+      	respond "ok"
+      }
   updating_page:
     content: |
       <!doctype html>
@@ -403,11 +408,6 @@ configs:
       </script>
       </body>
       </html>
-
-      http://127.0.0.1:2080 {
-      	bind 127.0.0.1
-      	respond "ok"
-      }
 
 secrets:
   master_keys:
