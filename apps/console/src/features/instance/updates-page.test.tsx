@@ -46,7 +46,7 @@ describe("instance updates page", () => {
 
     await user.click(screen.getByRole("button", { name: "Update to 0.4.3" }));
     const confirm = await screen.findByRole("dialog", { name: "Update to Kaeso 0.4.3?" });
-    expect(within(confirm).getByText(/Back up PostgreSQL first/)).toBeInTheDocument();
+    expect(within(confirm).getByText(/Back up PostgreSQL and ClickHouse first/)).toBeInTheDocument();
     expect(within(confirm).getByText(/signed by Kaeso's release workflow/)).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Update now" }));
     await waitFor(() => expect(requests("POST", "instance/updates/apply").at(-1)?.body).toEqual({ version: "0.4.3" }));

@@ -257,7 +257,7 @@
   "instance.updates.applyTitle": "一键更新",
   "instance.updates.available": "有可用更新",
   "instance.updates.away": "Kaeso 正在切换，此窗口会自动重新连接。",
-  "instance.updates.backup": "请先备份 PostgreSQL：新版本迁移数据库后，只能通过恢复该备份回退。",
+  "instance.updates.backup": "请先备份 PostgreSQL 和 ClickHouse：新版本迁移它们之后，只能通过恢复这些备份回退。",
   "instance.updates.by": "发起人",
   "instance.updates.byHand": "手动更新",
   "instance.updates.byHandTitle": "在安装目录中手动更新",
