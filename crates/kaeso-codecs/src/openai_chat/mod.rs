@@ -42,8 +42,15 @@ pub(crate) fn kind_feature(kind: RequestKind) -> &'static str {
 }
 
 pub(crate) fn output_limit_field(extras: &Extras) -> &'static str {
+    let sent = |key: &str| {
+        extras
+            .form_value(DIALECT, crate::wire::VERBATIM_FORM_KEY)
+            .and_then(|fields| fields.get(key))
+            .is_some()
+    };
     match extras.form_str(DIALECT, request::FORM_MAX_TOKENS) {
         Some("max_tokens") => "max_tokens",
+        None if sent("max_tokens") && !sent("max_completion_tokens") => "max_tokens",
         _ => "max_completion_tokens",
     }
 }

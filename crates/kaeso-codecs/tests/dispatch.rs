@@ -208,6 +208,19 @@ fn cross_format_refusals_name_the_field_the_app_sent() {
         ),
         (A, anthropic(json!({"max_tokens": 10})), R, "max_tokens"),
         (C, chat(json!({})), A, "max_completion_tokens"),
+        (C, chat(json!({"max_tokens": null})), A, "max_tokens"),
+        (
+            C,
+            chat(json!({"max_completion_tokens": null})),
+            A,
+            "max_completion_tokens",
+        ),
+        (
+            C,
+            chat(json!({"max_tokens": null, "max_completion_tokens": null})),
+            A,
+            "max_completion_tokens",
+        ),
         (R, responses(json!({})), A, "max_output_tokens"),
         (
             A,
