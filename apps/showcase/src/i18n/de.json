@@ -760,6 +760,7 @@
   "The prompt box: grows with what is written, then scrolls; Send, which becomes Stop while a response streams.": "Das Prompt-Feld: wächst mit dem Text, scrollt dann; Senden wird zu Stopp, solange eine Antwort einläuft.",
   "The prompt is being sent: Send shows a spinner.": "Der Prompt wird gesendet: Senden zeigt einen Spinner.",
   "The properties shown for each item.": "Die Eigenschaften, die für jedes Element angezeigt werden.",
+  "The query in the field, when you control it; keep it in sync through onQueryChange.": "Die Suchanfrage im Feld, bei gesteuertem Zustand; über onQueryChange synchron halten.",
   "The quietest tone at 32px, after the delay.": "Der leiseste Ton bei 32px, nach der Verzögerung.",
   "The reasoning efforts the model takes, or false (the default) when it doesn't reason: no effort and no summary.": "Die Reasoning-Stufen, die das Modell kennt, oder false (Standard), wenn es nicht schlussfolgert: keine Stufe und keine Zusammenfassung.",
   "The reasoning summary so far, as Markdown. A \"Thinking\" disclosure shows it, closed by default.": "Die bisherige Reasoning-Zusammenfassung als Markdown. Ein „Denkt nach“-Bereich zeigt sie, standardmäßig zugeklappt.",

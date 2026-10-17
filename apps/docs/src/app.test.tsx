@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
@@ -6,8 +6,32 @@ import { LinkProvider, ThemeProvider } from "@logicplanes/kaeso-ui";
 import { LOCALE_STORAGE_KEY } from "~/i18n/locales";
 import { createDocsRouter } from "~/router";
 import { RouterLink } from "~/shell/router-link";
+import { setSearchOpen } from "~/shell/search-store";
 
-afterEach(() => localStorage.clear());
+const searchIndex = vi.hoisted(() => ({ hold: null as Promise<void> | null }));
+
+vi.mock("~/site/data", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/site/data")>();
+  return {
+    ...actual,
+    loadSearchIndex: async (locale: Parameters<typeof actual.loadSearchIndex>[0]) => {
+      await searchIndex.hold;
+      return actual.loadSearchIndex(locale);
+    },
+  };
+});
+
+afterEach(() => {
+  localStorage.clear();
+  searchIndex.hold = null;
+  setSearchOpen(false);
+});
+
+function holdSearch() {
+  let release: () => void = () => undefined;
+  searchIndex.hold = new Promise<void>((resolve) => (release = resolve));
+  return release;
+}
 
 function phoneBar() {
   const bar = document.querySelector<HTMLElement>("[data-phone-bar]");
@@ -125,6 +149,39 @@ describe("search", () => {
     expect(screen.queryByRole("option", { name: /Rate limits/ })).toBeNull();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByPlaceholderText("Search the documentation")).toBeNull());
+  });
+
+  it("keeps everything typed after ⌘K while the search is still loading", async () => {
+    const user = userEvent.setup();
+    const release = holdSearch();
+    app("/");
+    await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
+    await user.keyboard("{Control>}k{/Control}");
+    await user.keyboard("rat");
+    expect(screen.queryByPlaceholderText("Search the documentation")).toBeNull();
+    await user.keyboard("x{Backspace}");
+    release();
+    const input = await screen.findByPlaceholderText("Search the documentation");
+    expect(input).toHaveValue("rat");
+    await user.keyboard("e");
+    expect(input).toHaveValue("rate");
+    expect(await screen.findByRole("option", { name: /Rate limits/ })).toBeInTheDocument();
+  });
+
+  it("keeps what is typed in the moment between the search appearing and its field taking focus", async () => {
+    const user = userEvent.setup();
+    app("/");
+    await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
+    await user.keyboard("{Control>}k{/Control}");
+    const input = await screen.findByPlaceholderText("Search the documentation");
+    input.blur();
+    expect(input).not.toHaveFocus();
+    await user.keyboard("ali");
+    expect(input).toHaveValue("ali");
+    input.focus();
+    await user.keyboard("as");
+    expect(input).toHaveValue("alias");
+    expect(await screen.findByRole("option", { name: /^Aliases/ })).toBeInTheDocument();
   });
 
   it("opens from the phone bar, beside the navigation toggle, in the page's language", async () => {

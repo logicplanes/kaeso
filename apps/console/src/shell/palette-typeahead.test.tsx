@@ -27,4 +27,19 @@ describe("the command palette before it has loaded", () => {
     await user.keyboard("{Meta>}k{/Meta}");
     expect(await screen.findByPlaceholderText(PLACEHOLDER)).toHaveValue("");
   });
+
+  it("keeps what is typed before the field has focus, and goes on in the field", async () => {
+    signedIn();
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await screen.findByRole("navigation", { name: "Console" });
+    await user.keyboard("{Meta>}k{/Meta}");
+    const input = await screen.findByPlaceholderText(PLACEHOLDER);
+    input.blur();
+    expect(input).not.toHaveFocus();
+    await user.keyboard("ke");
+    expect(input).toHaveValue("ke");
+    input.focus();
+    await user.keyboard("ys");
+    expect(input).toHaveValue("keys");
+  });
 });

@@ -14,6 +14,7 @@ export const docs = {
       onQueryChange: "Called as the query changes, for async groups.",
       open: "Whether it is open, when you control it.",
       placeholder: 'Defaults to "Search or run a command" in the provider\'s language.',
+      query: "The query in the field, when you control it; keep it in sync through onQueryChange.",
     },
   },
 } satisfies ComponentDocs;
