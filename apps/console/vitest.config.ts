@@ -9,7 +9,8 @@ export default defineConfig({
     environment: "happy-dom",
     environmentOptions: { happyDOM: { url: "http://localhost:3000/" } },
     include: ["src/**/*.test.{ts,tsx}", "eslint/**/*.test.js", "scripts/**/*.test.mjs"],
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: ["./src/test/tooltips.tsx", "./src/test/setup.ts"],
+    testTimeout: 15_000,
     css: false,
     coverage: {
       provider: "v8",

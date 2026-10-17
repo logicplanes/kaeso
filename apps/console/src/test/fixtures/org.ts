@@ -1,5 +1,6 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
+import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 import type {
   CreatedKey_OrgKeyView,
   CredentialView,
@@ -195,10 +196,15 @@ export function notifications() {
 }
 
 export async function hoverReason(user: UserEvent, element: HTMLElement, text: string | RegExp): Promise<HTMLElement> {
-  await user.hover(element);
-  const tip = await screen.findByText(text);
-  await user.unhover(element);
-  return tip;
+  act(() => showTooltipsAtOnce(true));
+  try {
+    await user.hover(element);
+    const tip = await screen.findByText(text);
+    await user.unhover(element);
+    return tip;
+  } finally {
+    act(() => showTooltipsAtOnce(false));
+  }
 }
 
 export function membersData(list: MemberView[], rights: (user: string) => MemberRights = (user) => memberRights({ user_id: user })): void {

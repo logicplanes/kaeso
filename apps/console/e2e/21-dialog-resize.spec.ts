@@ -13,6 +13,12 @@ interface Sample {
   cy: number;
 }
 
+interface Motion {
+  samples: Sample[];
+  duration: number;
+  easing: string;
+}
+
 function totp(secret: string, at = Date.now()): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let bits = "";
@@ -49,6 +55,8 @@ window.kaesoResize = {
     const box = [...document.querySelectorAll("[role=dialog]")].find((d) => d.querySelector("[data-dialog-frame]"));
     const samples = [];
     this.samples = samples;
+    this.duration = box ? parseFloat(getComputedStyle(box).getPropertyValue("--k-duration-dialog")) : 0;
+    this.easing = box ? getComputedStyle(box).getPropertyValue("--k-ease-standard").trim() : "";
     this.recording = true;
     const painted = new MessageChannel();
     const sample = () => {
@@ -62,7 +70,7 @@ window.kaesoResize = {
   },
   stop() {
     this.recording = false;
-    return this.samples;
+    return { samples: this.samples, duration: this.duration, easing: this.easing };
   },
   geometry(box) {
     const frame = box.querySelector("[data-dialog-frame]");
@@ -88,12 +96,12 @@ test.beforeEach(async ({ page }) => {
 
 const still = (page: Page) => page.evaluate("window.kaesoResize.still()");
 
-async function record(page: Page, act: () => Promise<unknown>): Promise<Sample[]> {
+async function record(page: Page, act: () => Promise<unknown>): Promise<Motion> {
   await still(page);
   await page.evaluate("window.kaesoResize.start()");
   await act();
   await still(page);
-  return (await page.evaluate("window.kaesoResize.stop()")) as Sample[];
+  return (await page.evaluate("window.kaesoResize.stop()")) as Motion;
 }
 
 async function centredAtNaturalSize(dialog: Locator) {
@@ -106,27 +114,48 @@ async function centredAtNaturalSize(dialog: Locator) {
   return g;
 }
 
-function expectCentredAndSmooth(samples: Sample[], key: "h" | "w" = "h") {
+const traceOf = ({ samples }: Motion, key: "h" | "w") => samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
+
+function timeToReach(easing: string, progress: number) {
+  const [x1 = 0, y1 = 0, x2 = 1, y2 = 1] = (easing.match(/-?[\d.]+/g) ?? []).map(Number);
+  const bezier = (a: number, b: number, t: number) => 3 * (1 - t) ** 2 * t * a + 3 * (1 - t) * t ** 2 * b + t ** 3;
+  for (let i = 0; i <= 1000; i++) if (bezier(y1, y2, i / 1000) >= progress) return bezier(x1, x2, i / 1000);
+  return 1;
+}
+
+function travelTime({ samples }: Motion, key: "h" | "w") {
+  const from = samples[0]?.[key] ?? 0;
+  const to = samples.at(-1)?.[key] ?? 0;
+  const left = samples.findLast((s) => Math.abs(s[key] - from) <= 1)?.t ?? 0;
+  const arrived = samples.find((s) => Math.abs(s[key] - to) <= 1)?.t ?? 0;
+  return arrived - left;
+}
+
+function animationTime({ samples, duration, easing }: Motion, key: "h" | "w") {
+  const span = Math.abs((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0));
+  return duration * timeToReach(easing, 1 - 1 / span);
+}
+
+function stepsBack({ samples }: Motion, key: "h" | "w") {
+  const towards = Math.sign((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0));
+  return samples.slice(1).filter((s, i) => (s[key] - (samples[i]?.[key] ?? 0)) * towards < -1).length;
+}
+
+function expectCentredAndSmooth(motion: Motion, key: "h" | "w" = "h") {
+  const { samples, duration } = motion;
   expect(samples.length).toBeGreaterThan(3);
   for (const s of samples) {
     expect(Math.abs(s.cy)).toBeLessThanOrEqual(1);
     expect(Math.abs(s.cx)).toBeLessThanOrEqual(1);
   }
-  const values = samples.map((s) => s[key]);
-  const span = Math.max(...values) - Math.min(...values);
-  expect(span).toBeGreaterThan(8);
-  const trace = samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
-  let base = samples[0];
-  let last = samples[0];
-  for (const s of samples.slice(1)) {
-    if (!base || !last) break;
-    if (s.t > last.t) base = last;
-    expect(Math.abs(s[key] - base[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + Math.max(s.t - base.t, 1000 / 60) / 40) + 2);
-    last = s;
-  }
+  const trace = traceOf(motion, key);
+  expect(duration).toBeGreaterThan(0);
+  expect(Math.abs((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0)), trace).toBeGreaterThan(8);
+  expect(travelTime(motion, key), trace).toBeGreaterThanOrEqual(animationTime(motion, key) / 2);
+  expect(stepsBack(motion, key), trace).toBe(0);
 }
 
-const moved = (samples: Sample[]) => Math.abs((samples.at(-1)?.h ?? 0) - (samples[0]?.h ?? 0)) > 8;
+const moved = ({ samples }: Motion) => Math.abs((samples.at(-1)?.h ?? 0) - (samples[0]?.h ?? 0)) > 8;
 const footerButton = (dialog: Locator, name: string) => dialog.locator("[data-dialog-footer]").getByRole("button", { name, exact: true });
 
 for (const viewport of [
@@ -152,13 +181,13 @@ for (const viewport of [
         const first = await centredAtNaturalSize(dialog);
         const heights = [first.height];
         for (const heading of ["When does it expire?", "What can it call?"]) {
-          const samples = await record(page, () => footerButton(dialog, "Continue").click());
+          const motion = await record(page, () => footerButton(dialog, "Continue").click());
           await expect(dialog.getByRole("heading", { name: heading })).toBeVisible();
-          if (moved(samples)) expectCentredAndSmooth(samples);
+          if (moved(motion)) expectCentredAndSmooth(motion);
           heights.push((await centredAtNaturalSize(dialog)).height);
         }
         const back = await record(page, () => footerButton(dialog, "Back").click());
-        expect(back.every((s) => Math.abs(s.cy) <= 1)).toBe(true);
+        expect(back.samples.every((s) => Math.abs(s.cy) <= 1)).toBe(true);
         expect(Math.abs((await centredAtNaturalSize(dialog)).height - (heights[1] ?? 0))).toBeLessThanOrEqual(1);
         await footerButton(dialog, "Continue").click();
         await footerButton(dialog, "Continue").click();
@@ -182,6 +211,35 @@ for (const viewport of [
   }
 }
 
+test("a dialog that jumps to its new size in one frame fails the smoothness check", async ({ page }) => {
+  await signInAsOwner(page);
+  await openDefaultProject(page);
+  await page.goto(`${new URL(page.url()).pathname}/keys`);
+  await page
+    .getByRole("button", { name: /^Create( key)?$/ })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Create key" });
+  await dialog.getByLabel("Name").fill("resize-without-motion");
+  for (const heading of ["When does it expire?", "What can it call?", "Models and limits"]) {
+    await footerButton(dialog, "Continue").click();
+    await expect(dialog.getByRole("heading", { name: heading })).toBeVisible();
+  }
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const reveal = page.getByRole("dialog", { name: "Key created" });
+  const jump = await record(page, async () => {
+    await footerButton(dialog, "Create key").click();
+    await expect(reveal).toBeVisible();
+  });
+  expect(moved(jump)).toBe(true);
+  expect(travelTime(jump, "h"), traceOf(jump, "h")).toBeLessThan(animationTime(jump, "h") / 2);
+  expect(() => expectCentredAndSmooth(jump, "h")).toThrow();
+  await centredAtNaturalSize(reveal);
+  await footerButton(reveal, "Done").click();
+  await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
+  await expect(reveal).toBeHidden();
+});
+
 for (const [viewport, colorScheme] of [
   [{ width: 1440, height: 900 }, "light"],
   [{ width: 375, height: 812 }, "dark"],
@@ -196,13 +254,13 @@ for (const [viewport, colorScheme] of [
     await expect(dialog.getByRole("img", { name: "QR code to add Kaeso to an authenticator app" })).toBeVisible();
     await centredAtNaturalSize(dialog);
     const secret = (await dialog.locator("code").first().textContent()) ?? "";
-    const samples = await record(page, async () => {
+    const motion = await record(page, async () => {
       await dialog.getByRole("textbox", { name: "Code from the app" }).fill(totp(secret));
       await expect(page.getByRole("dialog", { name: "Store your recovery codes" })).toBeVisible();
     });
     const codes = page.getByRole("dialog", { name: "Store your recovery codes" });
-    for (const s of samples) expect(Math.abs(s.cy)).toBeLessThanOrEqual(1);
-    if (moved(samples)) expectCentredAndSmooth(samples);
+    for (const s of motion.samples) expect(Math.abs(s.cy)).toBeLessThanOrEqual(1);
+    if (moved(motion)) expectCentredAndSmooth(motion);
     await centredAtNaturalSize(codes);
     await expect(codes.getByRole("checkbox", { name: "I stored these codes" })).toBeFocused();
     await codes.getByRole("checkbox", { name: "I stored these codes" }).click();
