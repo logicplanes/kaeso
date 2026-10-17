@@ -35,7 +35,10 @@ export function buildChangelog(file: string, repoRoot: string): Changelog {
   const words = new Set<string>();
   const resolver: Resolver = {
     anchors,
-    resolve: (href) => ({ kind: "problem", message: `links to ${href}: link to a full https address, or to a version on this page by its anchor, v and the version` }),
+    resolve: (href) => ({
+      kind: "problem",
+      message: `links to ${href}: link to a full https address, or to a version on this page by its anchor, v and the version`,
+    }),
   };
   const fragment = (markdown: string, where: string): Block[] => {
     if (!markdown) return [];

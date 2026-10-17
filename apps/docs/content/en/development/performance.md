@@ -52,7 +52,7 @@ A route fails the build when it is over its ceiling. The target is the size a ro
 
 | Budget | What is counted | Measured | Ceiling |
 | --- | --- | --: | --: |
-| The frame in each language | The entry with its static imports and stylesheet, the language's site module and the library's messages | 204.6 kB (English), 210.1 kB (German), 210.6 kB (Chinese) | 216 kB |
+| The frame in each language | The entry with its static imports and stylesheet, the language's site module and the library's messages | 204.7 kB (English), 210.2 kB (German), 210.7 kB (Chinese) | 216 kB |
 | One page's content | Each page's own chunk: its blocks and table of contents | 17.3 kB at most (`zh-CN/development/kpp/anthropic-messages`) | 24 kB a page |
 
 The frame changes with the code and grows a little with every page, because the site module carries the sidebar and every page's title and description, so the sidebar paints with the frame and never shifts. German and Chinese also load the library's messages for their language, about 5 kB. The ceiling is the measured size of the largest frame with a little room. A page's content has a budget of its own, so a page that grows too long fails with its address, whoever edits it; the answer is two pages.

@@ -52,7 +52,7 @@ Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt.
 
 | Budget | Was gezählt wird | Gemessen | Obergrenze |
 | --- | --- | --: | --: |
-| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 204,6 kB (Englisch), 210,1 kB (Deutsch), 210,6 kB (Chinesisch) | 216 kB |
+| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 204,7 kB (Englisch), 210,2 kB (Deutsch), 210,7 kB (Chinesisch) | 216 kB |
 | Der Inhalt einer Seite | Der eigene Chunk jeder Seite: ihre Blöcke und ihr Inhaltsverzeichnis | höchstens 17,3 kB (`zh-CN/development/kpp/anthropic-messages`) | 24 kB pro Seite |
 
 Der Rahmen ändert sich mit dem Code und wächst mit jeder Seite ein wenig, weil das Website-Modul die Seitenleiste und Titel und Beschreibung jeder Seite enthält, sodass die Seitenleiste mit dem Rahmen rendert und nie springt. Deutsch und Chinesisch laden außerdem die Texte der Bibliothek für ihre Sprache, etwa 5 kB. Die Obergrenze ist die gemessene Größe des größten Rahmens mit etwas Luft. Der Inhalt einer Seite hat ein eigenes Budget, sodass eine zu lang gewordene Seite mit ihrer Adresse fehlschlägt, wer auch immer sie bearbeitet; die Lösung sind zwei Seiten.
