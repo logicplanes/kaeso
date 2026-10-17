@@ -47,7 +47,7 @@ pub enum Health {
 }
 
 pub const SLOW_INSPECTIONS: u32 = 4;
-pub const FROM_MIGRATIONS: &str = "20261017120001_updates";
+pub const FROM_MIGRATIONS: &str = "20261017140001_updates";
 
 #[derive(Clone, Debug)]
 pub struct Container {

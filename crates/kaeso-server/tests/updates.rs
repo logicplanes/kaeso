@@ -46,7 +46,7 @@ fn manifest(version: &str, manual: bool) -> Value {
         "commit": "5388ad0b98aa3d957fea99e200259842bf746680",
         "manual": manual,
         "manual_since": if manual { json!(version) } else { Value::Null },
-        "migrations": { "postgres": "20261017120001_updates", "clickhouse": "0002_usage_rollups" },
+        "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" },
         "updater_protocol": 1,
         "images": { "gateway": image("gateway"), "console": image("console"), "updater": image("updater") },
         "compose": { "name": "compose.yaml", "sha256": hex(&Sha256::digest(b"compose")) },

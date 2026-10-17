@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const digest = (c) => `sha256:${c.repeat(64)}`;
 const digests = { gateway: digest("a"), console: digest("b"), updater: digest("c") };
 const commit = "5388ad0b98aa3d957fea99e200259842bf746680";
-const migrations = { postgres: "20261017120001_updates", clickhouse: "0002_usage_rollups" };
+const migrations = { postgres: "20261017140001_updates", clickhouse: "0002_usage_rollups" };
 const compose = (v, extra = "") =>
   `services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:${v}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:${v}\n  caddy:\n    image: caddy:2${extra}\n`;
 
@@ -130,7 +130,7 @@ test("the latest migrations are the last files of each database", () => {
   try {
     mkdirSync(join(dir, "postgres"));
     mkdirSync(join(dir, "clickhouse"));
-    for (const name of ["20261001000000_a.sql", "20261017120001_updates.sql", "20261002000000_b.sql"]) writeFileSync(join(dir, "postgres", name), "");
+    for (const name of ["20261001000000_a.sql", "20261017140001_updates.sql", "20261002000000_b.sql"]) writeFileSync(join(dir, "postgres", name), "");
     for (const name of ["0001_request_log.sql", "0002_usage_rollups.sql"]) writeFileSync(join(dir, "clickhouse", name), "");
     assert.deepEqual(latestMigrations(dir), migrations);
     rmSync(join(dir, "clickhouse", "0001_request_log.sql"));
@@ -155,7 +155,7 @@ test("the command line writes the manifest from the digest files, the migrations
     writeFileSync(join(dir, "previous.json"), JSON.stringify({ manual_since: "3.4.4" }));
     mkdirSync(join(dir, "migrations", "postgres"), { recursive: true });
     mkdirSync(join(dir, "migrations", "clickhouse"));
-    writeFileSync(join(dir, "migrations", "postgres", "20261017120001_updates.sql"), "");
+    writeFileSync(join(dir, "migrations", "postgres", "20261017140001_updates.sql"), "");
     writeFileSync(join(dir, "migrations", "clickhouse", "0002_usage_rollups.sql"), "");
     const args = (sha) => [
       join(here, "release-manifest.mjs"),

@@ -42,7 +42,7 @@ Der Release-Workflow baut drei Images, `kaeso-gateway`, `kaeso-console` und `kae
     "updater": { "name": "ghcr.io/logicplanes/kaeso-updater", "digest": "sha256:…" }
   },
   "compose": { "name": "compose.yaml", "sha256": "…" },
-  "migrations": { "postgres": "20261017120001_updates", "clickhouse": "0002_usage_rollups" }
+  "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" }
 }
 ```
 
