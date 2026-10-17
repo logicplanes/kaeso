@@ -9,7 +9,7 @@ order: 6
 ## 升级
 
 1. 阅读发布说明，看看是否有需要处理的事项。
-2. [备份](backups.md) PostgreSQL。
+2. [备份](backups.md) PostgreSQL，也备份 ClickHouse，以便日后仍能[降级](#降级)。
 3. 下载新版本的 `compose.yaml`，覆盖旧文件。`.env`、`master-keys` 和 `compose.override.yaml` 中的设置保持不变。
 
 ```bash

@@ -4,7 +4,7 @@ description: 选择登录方式，让安装只使用单点登录，并在其他�
 order: 5
 ---
 
-人们可以用密码、通过邮件发送的登录链接，或通过所在组织的身份提供商（基于 OpenID Connect 的单点登录）登录控制台。三项[设置](configuration.md#登录)为整个安装分别开启或关闭每种方式：`KAESO_AUTH_PASSWORD`、`KAESO_AUTH_MAGIC_LINK` 和 `KAESO_AUTH_OIDC`。组织管理员在**安全**中连接身份提供商；参见[单点登录](../console/organizations-and-projects.md)。
+人们可以用密码、通过邮件发送的登录链接，或通过所在组织的身份提供商（基于 OpenID Connect 的单点登录）登录控制台。三项[设置](configuration.md#登录)为整个安装分别开启或关闭每种方式：`KAESO_AUTH_PASSWORD`、`KAESO_AUTH_MAGIC_LINK` 和 `KAESO_AUTH_OIDC`。组织管理员在**安全**中连接身份提供商；参见[单点登录](../console/organizations-and-projects.md#单点登录sso)。
 
 ## 登录页
 

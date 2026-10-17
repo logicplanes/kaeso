@@ -9,7 +9,7 @@ Releases follow semantic versioning, and every part of Kaeso shares the release'
 ## Upgrade
 
 1. Read the release notes for anything that needs action.
-2. [Back up](backups.md) PostgreSQL.
+2. [Back up](backups.md) PostgreSQL, and ClickHouse too, so that a [downgrade](#downgrade) stays possible.
 3. Download the new release's `compose.yaml` over the old one. Your settings in `.env`, `master-keys` and `compose.override.yaml` stay.
 
 ```bash
