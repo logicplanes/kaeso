@@ -61,6 +61,7 @@ struct GitHub {
     base: String,
     download_base: Option<String>,
     downloads: u32,
+    manual_since: Option<String>,
 }
 
 fn etag_of(releases: &[(String, bool, bool)]) -> String {
@@ -113,7 +114,13 @@ async fn download(State(gh): State<Arc<Mutex<GitHub>>>, OriginalUri(uri): Origin
     let tag = uri.path().split('/').nth(2).unwrap_or_default().to_owned();
     let version = tag.trim_start_matches('v');
     match gh.releases.iter().find(|(v, _, _)| v == version) {
-        Some((v, _, manual)) => axum::Json(manifest(v, *manual)).into_response(),
+        Some((v, _, manual)) => {
+            let mut m = manifest(v, *manual);
+            if let Some(since) = gh.manual_since.clone() {
+                m["manual_since"] = json!(since);
+            }
+            axum::Json(m).into_response()
+        }
         None => StatusCode::NOT_FOUND.into_response(),
     }
 }
@@ -378,6 +385,25 @@ async fn a_major_or_manual_release_is_never_offered_in_one_click() {
         .await;
     assert_eq!(r.body["manual"], "manual_steps");
     assert_eq!(r.body["latest"]["manual_steps"], true);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_release_with_steps_by_hand_the_gateway_never_saw_still_counts() {
+    let s = TestServices::start().await;
+    let v = semver::Version::parse(RUNNING).unwrap();
+    let skipped = format!("{}.{}.{}", v.major, v.minor, v.patch + 1);
+    let target = format!("{}.{}.{}", v.major, v.minor, v.patch + 2);
+    let (gh, url) = github(vec![(target.clone(), false, false)]).await;
+    gh.lock().unwrap().manual_since = Some(skipped);
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["latest"]["version"], target);
+    assert_eq!(r.body["manual"], "manual_steps");
+    assert_eq!(r.body["can_apply"], false);
     s.cleanup().await;
 }
 

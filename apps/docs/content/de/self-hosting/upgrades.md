@@ -31,7 +31,7 @@ Bei einer neuen Installation kommen die drei Einstellungen aus `KAESO_UPDATES_CH
 Ein Release lässt sich nur mit einem Klick einspielen, wenn alles davon zutrifft; sonst zeigt die Konsole seine Notizen und einen Link auf diese Seite:
 
 - Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, macht ein Release zur Hauptversion.
-- Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn sich seine `compose.yaml` über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen. Jede `release.json` nennt das letzte Release bis zu ihr, das Schritte von Hand verlangt, sodass der Updater ein Update über ein solches hinweg auch dann ablehnt, wenn das Gateway dieses Release nie gesehen hat.
+- Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn sich seine `compose.yaml` über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen. Jede `release.json` nennt das letzte Release bis zu ihr, das Schritte von Hand verlangt, sodass Gateway und Updater ein Update über ein solches hinweg auch dann ablehnen, wenn das Gateway dieses Release nie gesehen hat.
 - Das Release trägt `release.json`, das Manifest, das der Updater liest: jedes Release ab dem ersten mit Updater.
 
 ## Von Hand aktualisieren
@@ -110,7 +110,7 @@ Das ganze Update dauert etwa eine Minute. Es läuft immer nur ein Update. Das Er
 | **Nicht eingespielt** | Nichts hat sich geändert. |
 | **Zurückgesetzt** | Die neue Version ist nicht gestartet, und die vorige läuft wieder. |
 | **Zurücksetzen fehlgeschlagen** | Die neue Version ist nicht gestartet, und die vorige ist auch nicht wieder gestartet. |
-| **Braucht Aufmerksamkeit** | Das neue Gateway ist nicht gestartet, hat die Datenbank aber womöglich schon migriert, deshalb hat der Updater es stehen lassen; siehe [Zurücksetzen](#zurücksetzen). |
+| **Braucht Aufmerksamkeit** | Das neue Gateway ist nicht gestartet, hat die Datenbank aber womöglich schon migriert, deshalb hat der Updater es und die neue Konsole stehen lassen; siehe [Zurücksetzen](#zurücksetzen). |
 
 ### Zurücksetzen
 
@@ -118,7 +118,7 @@ Bevor er umstellt, vergleicht der Updater die letzten PostgreSQL- und ClickHouse
 
 Wird die neue Konsole nicht gesund, oder das neue Gateway nicht und beide Releases haben dieselben Migrationen, entfernt der Updater die neuen Container und startet die vorigen wieder: Das Update ist **Zurückgesetzt**, und Kaeso läuft mit der Version von vorher.
 
-Wird das neue Gateway nicht gesund und die Migrationen der Releases unterscheiden sich, oder das laufende Release hat keine `release.json`, hat das neue Gateway die Datenbank womöglich schon migriert, und jedes Gateway verweigert eine von einer neueren Version migrierte Datenbank. Der Updater stellt dann die vorige Konsole wieder her, lässt das neue Gateway stehen, behält das vorige Gateway gestoppt als `kaeso-gateway-1-previous` und endet mit **Braucht Aufmerksamkeit**. Dann entweder herausfinden, warum das neue Gateway nicht startet (`docker compose logs gateway`), es beheben und die Image-Tags in der `compose.yaml` auf die neue Version setzen, oder die Sicherung wiederherstellen und die alte Version ausführen, wie unter [Downgrade](#downgrade). Danach `kaeso-gateway-1-previous` entfernen; solange es existiert, beginnt der Updater kein weiteres Update.
+Wird das neue Gateway nicht gesund und die Migrationen der Releases unterscheiden sich, oder das laufende Release hat keine `release.json`, hat das neue Gateway die Datenbank womöglich schon migriert, und jedes Gateway verweigert eine von einer neueren Version migrierte Datenbank. Der Updater lässt dann das neue Gateway und die neue Konsole, die dessen API spricht, stehen, behält die vorigen gestoppt als `kaeso-gateway-1-previous` und `kaeso-console-1-previous` und endet mit **Braucht Aufmerksamkeit**. Dann entweder herausfinden, warum das neue Gateway nicht startet (`docker compose logs gateway`), es beheben und die Image-Tags in der `compose.yaml` auf die neue Version setzen, oder die Sicherung wiederherstellen und die alte Version ausführen, wie unter [Downgrade](#downgrade). Danach beide Container `…-previous` entfernen; solange einer existiert, beginnt der Updater kein weiteres Update.
 
 Startet der Updater während eines Updates neu, wartet er bis zu zwei Minuten auf Docker; dann schließt er das Update ab, sobald das neue Gateway gesund wird, setzt es wie oben zurück oder endet mit **Braucht Aufmerksamkeit**, wenn Docker nicht antwortet.
 

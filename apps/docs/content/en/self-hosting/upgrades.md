@@ -31,7 +31,7 @@ Turn **Look for new releases** off, or set `KAESO_UPDATES_CHECK=false` in [`comp
 A release updates in one click only when all of these hold; otherwise the console shows its notes and a link to this page:
 
 - It is not a new major version. A migration that needs a manual step makes a release a major one.
-- No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so. Every `release.json` names the last release up to it that asks for steps by hand, so the updater refuses an update across one even when the gateway never saw that release.
+- No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so. Every `release.json` names the last release up to it that asks for steps by hand, so the gateway and the updater refuse an update across one even when the gateway never saw that release.
 - The release carries `release.json`, the manifest the updater reads: every release from the first one with the updater on.
 
 ## Update by hand
@@ -110,7 +110,7 @@ The whole update takes about a minute. Only one update runs at a time. The resul
 | **Not installed** | Nothing changed. |
 | **Rolled back** | The new version didn't start, and the previous one runs again. |
 | **Rollback failed** | The new version didn't start, and the previous one didn't start again either. |
-| **Needs attention** | The new gateway didn't start, but it may have migrated the database, so the updater left it in place; see [rollback](#rollback). |
+| **Needs attention** | The new gateway didn't start, but it may have migrated the database, so the updater left it and the new console in place; see [rollback](#rollback). |
 
 ### Rollback
 
@@ -118,7 +118,7 @@ Before it switches, the updater compares the latest PostgreSQL and ClickHouse mi
 
 When the new console doesn't become healthy, or the new gateway doesn't and both releases have the same migrations, the updater removes the new containers and starts the previous ones again: the update is **Rolled back**, and Kaeso runs the version from before.
 
-When the new gateway doesn't become healthy and the releases' migrations differ, or the running release has no `release.json`, the new gateway may already have migrated the database, and every gateway refuses a database a newer version migrated. The updater then puts the previous console back, leaves the new gateway in place, keeps the previous gateway stopped as `kaeso-gateway-1-previous` and ends with **Needs attention**. Then either find out why the new gateway doesn't start (`docker compose logs gateway`), fix it and set the image tags in `compose.yaml` to the new version, or restore the backup and run the old version, as in [downgrade](#downgrade). Remove `kaeso-gateway-1-previous` once you're done; the updater refuses to start another update while it exists.
+When the new gateway doesn't become healthy and the releases' migrations differ, or the running release has no `release.json`, the new gateway may already have migrated the database, and every gateway refuses a database a newer version migrated. The updater then leaves the new gateway and the new console, which speaks its API, in place, keeps the previous ones stopped as `kaeso-gateway-1-previous` and `kaeso-console-1-previous` and ends with **Needs attention**. Then either find out why the new gateway doesn't start (`docker compose logs gateway`), fix it and set the image tags in `compose.yaml` to the new version, or restore the backup and run the old version, as in [downgrade](#downgrade). Remove both `…-previous` containers once you're done; the updater refuses to start another update while one exists.
 
 When the updater restarts during an update, it waits up to two minutes for Docker, then finishes the update when the new gateway turns healthy, rolls it back as above, or ends with **Needs attention** when Docker doesn't answer.
 

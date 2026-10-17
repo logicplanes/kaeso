@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { composeChanged, latestMigrations, manifest, manualSince, retag, sha256, sourceCommit } from "./release-manifest.mjs";
+import { composeChanged, latestMigrations, manifest, manualSince, previousManifest, retag, sha256, sourceCommit } from "./release-manifest.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const digest = (c) => `sha256:${c.repeat(64)}`;
@@ -106,6 +106,25 @@ test("without a release commit, the tagged commit is the one the workflow ran on
   }
 });
 
+test("a previous release that shipped release.json must hand it on", () => {
+  const repo = repository();
+  try {
+    repo.run("tag", "--annotate", "v3.4.4", "--message", "Kaeso 3.4.4");
+    mkdirSync(join(repo.dir, "scripts"));
+    writeFileSync(join(repo.dir, "scripts", "release-manifest.mjs"), "");
+    repo.run("add", ".");
+    repo.run("commit", "--quiet", "--message", "Write release.json");
+    repo.run("tag", "--annotate", "v3.4.5", "--message", "Kaeso 3.4.5");
+    writeFileSync(join(repo.dir, "previous.json"), JSON.stringify({ manual_since: "3.4.5" }));
+    assert.equal(previousManifest({ cwd: repo.dir, tag: undefined }), null);
+    assert.equal(previousManifest({ cwd: repo.dir, tag: "v3.4.4" }), null, "releases before release.json existed have none");
+    assert.throws(() => previousManifest({ cwd: repo.dir, tag: "v3.4.5" }), /v3\.4\.5 shipped release\.json, but it wasn't given/);
+    assert.deepEqual(previousManifest({ cwd: repo.dir, tag: "v3.4.5", path: join(repo.dir, "previous.json") }), { manual_since: "3.4.5" });
+  } finally {
+    rmSync(repo.dir, { recursive: true, force: true });
+  }
+});
+
 test("the latest migrations are the last files of each database", () => {
   const dir = mkdtempSync(join(tmpdir(), "release-migrations-"));
   try {
@@ -152,6 +171,8 @@ test("the command line writes the manifest from the digest files, the migrations
       join(dir, "migrations"),
       "--previous",
       join(dir, "previous.yaml"),
+      "--previous-tag",
+      "v3.4.6",
       "--previous-manifest",
       join(dir, "previous.json"),
       "--manual",

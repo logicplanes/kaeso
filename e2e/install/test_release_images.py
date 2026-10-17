@@ -37,6 +37,7 @@ def test_release_json_names_the_commit_the_attestations_name():
     assert "rev-parse HEAD" not in manifest
     assert "--migrations crates/kaeso-store/migrations" in manifest
     assert "--previous-manifest" in manifest
+    assert '--previous-tag "$previous"' in manifest
     assert re.search(r"^    permissions:\n      contents: read\n    env:", manifest, re.M)
 
 

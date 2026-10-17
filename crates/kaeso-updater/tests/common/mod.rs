@@ -60,6 +60,7 @@ pub struct Container {
     pub running: bool,
     pub health: Health,
     pub inspected: u32,
+    pub started: bool,
 }
 
 pub type Hook = Box<dyn Fn() + Send>;
@@ -77,6 +78,7 @@ pub struct Daemon {
     pub created: Vec<Value>,
     pub on_start: Option<Hook>,
     pub version_failures: u32,
+    pub fail_new_start: Option<String>,
 }
 
 pub fn index_of(service: Service) -> Vec<u8> {
@@ -129,6 +131,7 @@ impl Daemon {
                 running: true,
                 health: Health::Healthy,
                 inspected: 0,
+                started: true,
             });
         }
         d
@@ -169,6 +172,7 @@ impl Daemon {
             "HostConfig": { "RestartPolicy": { "Name": "unless-stopped" }, "ReadonlyRootfs": true },
             "NetworkSettings": { "Networks": { "kaeso_edge": { "Aliases": [c.name, c.labels.get("com.docker.compose.service")] } } },
             "State": {
+                "StartedAt": if c.started { "2026-10-17T10:00:00Z" } else { "0001-01-01T00:00:00Z" },
                 "Running": c.running,
                 "Restarting": false,
                 "ExitCode": if c.running { 0 } else { 1 },
@@ -286,6 +290,7 @@ async fn daemon(
                 running: false,
                 health,
                 inspected: 0,
+                started: false,
             });
             (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }
@@ -303,6 +308,7 @@ async fn daemon(
             let rest = &p["containers/".len()..];
             let (key, action) = rest.split_once('/').unwrap_or((rest, ""));
             let restart_health = d.old_health_after_restart;
+            let fail_start = d.fail_new_start.clone();
             if (m, action) == ("POST", "start")
                 && key.starts_with("new")
                 && let Some(hook) = &d.on_start
@@ -334,7 +340,20 @@ async fn daemon(
                         c.health = h;
                     }
                     c.running = c.health != Health::Crash;
+                    c.started = true;
                     c.inspected = 0;
+                    if c.id.starts_with("new")
+                        && fail_start.as_deref()
+                            == c.labels
+                                .get("com.docker.compose.service")
+                                .map(String::as_str)
+                    {
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            axum::Json(json!({ "message": "the connection broke" })),
+                        )
+                            .into_response();
+                    }
                     StatusCode::NO_CONTENT.into_response()
                 }
                 ("POST", "stop") => {

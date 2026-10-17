@@ -40,6 +40,9 @@ pub trait Release {
     fn version(&self) -> &Version;
     fn needs_manual_steps(&self) -> bool;
     fn prepared(&self) -> bool;
+    fn asks_for_steps_after(&self, _running: &Version) -> bool {
+        false
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -81,10 +84,11 @@ pub fn plan<'a, R: Release>(
     let crossed = |r: &&R| r.version() > running && r.version() <= target.version();
     let manual = if is_major(running, target.version()) {
         Some(Manual::Major)
-    } else if releases
-        .iter()
-        .filter(crossed)
-        .any(Release::needs_manual_steps)
+    } else if target.asks_for_steps_after(running)
+        || releases
+            .iter()
+            .filter(crossed)
+            .any(Release::needs_manual_steps)
     {
         Some(Manual::ManualSteps)
     } else if !target.prepared() {
@@ -109,6 +113,7 @@ mod tests {
         version: Version,
         manual: bool,
         prepared: bool,
+        manual_since: Option<Version>,
     }
 
     impl Release for R {
@@ -121,6 +126,9 @@ mod tests {
         fn prepared(&self) -> bool {
             self.prepared
         }
+        fn asks_for_steps_after(&self, running: &Version) -> bool {
+            self.manual_since.as_ref().is_some_and(|s| s > running)
+        }
     }
 
     fn r(v: &str) -> R {
@@ -128,6 +136,7 @@ mod tests {
             version: Version::parse(v).unwrap(),
             manual: false,
             prepared: true,
+            manual_since: None,
         }
     }
 
@@ -216,6 +225,23 @@ mod tests {
             target("0.2.0", Channel::Stable, &releases),
             Some(("0.3.0".into(), Some(Manual::ManualSteps)))
         );
+    }
+
+    #[test]
+    fn a_release_that_names_steps_by_hand_since_the_running_version_is_manual() {
+        let mut target = r("0.4.0");
+        target.manual_since = Some(v("0.3.0"));
+        let releases = [target];
+        assert_eq!(
+            target_of("0.2.0", &releases),
+            Some(("0.4.0".into(), Some(Manual::ManualSteps))),
+            "0.3.0 asked for steps by hand though the gateway never saw it"
+        );
+        assert_eq!(target_of("0.3.0", &releases), Some(("0.4.0".into(), None)));
+    }
+
+    fn target_of(running: &str, releases: &[R]) -> Option<(String, Option<Manual>)> {
+        target(running, Channel::Stable, releases)
     }
 
     #[test]

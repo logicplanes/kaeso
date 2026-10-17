@@ -39,6 +39,24 @@ export function manualSince({ version, manual, previous }) {
 
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
+export function shippedManifest({ cwd, tag }) {
+  try {
+    execFileSync("git", ["cat-file", "-e", `${tag}:scripts/release-manifest.mjs`], { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function previousManifest({ cwd, tag, path }) {
+  if (path) return JSON.parse(readFileSync(path, "utf8"));
+  if (!tag) return null;
+  if (shippedManifest({ cwd, tag })) {
+    throw new Error(`${tag} shipped release.json, but it wasn't given; download it so the steps by hand it names carry over`);
+  }
+  return null;
+}
+
 export function sourceCommit({ cwd, version, commit }) {
   const tag = `v${version}`;
   const tagged = git(cwd, "rev-parse", `${tag}^{commit}`);
@@ -91,7 +109,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
     compose: readFileSync(o.compose),
     migrations: latestMigrations(o.migrations),
     previousCompose: o.previous ? readFileSync(o.previous, "utf8") : null,
-    previous: o["previous-manifest"] ? JSON.parse(readFileSync(o["previous-manifest"], "utf8")) : null,
+    previous: previousManifest({ cwd: process.cwd(), tag: o["previous-tag"], path: o["previous-manifest"] }),
     manual: o.manual === "true",
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

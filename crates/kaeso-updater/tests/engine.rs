@@ -171,18 +171,57 @@ async fn a_failed_gateway_that_may_have_migrated_is_left_for_a_person() {
         "{detail}"
     );
     assert!(detail.contains("kaeso-gateway-1-previous"), "{detail}");
-    assert_eq!(world.running("kaeso-console-1").image, "sha256:old-console");
+    assert!(detail.contains("kaeso-console-1-previous"), "{detail}");
+    assert_eq!(
+        world.running("kaeso-console-1").image,
+        "sha256:new-console",
+        "the console stays with the gateway whose API it speaks"
+    );
     assert_eq!(
         world.container("kaeso-gateway-1").unwrap().image,
         "sha256:new-gateway"
     );
-    let previous = world.container("kaeso-gateway-1-previous").unwrap();
-    assert!(
-        !previous.running,
-        "the previous gateway is not started again"
-    );
+    for service in ["gateway", "console"] {
+        let previous = world
+            .container(&format!("kaeso-{service}-1-previous"))
+            .unwrap();
+        assert!(
+            !previous.running,
+            "the previous {service} is not started again"
+        );
+    }
     assert_eq!(world.compose(), compose_text(FROM));
     assert!(!world.maintenance());
+}
+
+#[tokio::test]
+async fn a_gateway_docker_started_though_the_start_call_failed_counts_as_started() {
+    let mut daemon = Daemon::install();
+    daemon.fail_new_start = Some("gateway".into());
+    let world = World::with(
+        fresh("start-broke"),
+        daemon,
+        migrating_releases(),
+        Verifier::default(),
+    )
+    .await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
+    assert_eq!(
+        world.container("kaeso-gateway-1").unwrap().image,
+        "sha256:new-gateway"
+    );
+
+    let mut daemon = Daemon::install();
+    daemon.fail_new_start = Some("gateway".into());
+    let world = World::new("start-broke-same", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(
+        job.state,
+        JobState::RolledBack,
+        "without new migrations it rolls back: {job:?}"
+    );
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
 }
 
 #[tokio::test]
@@ -542,6 +581,12 @@ async fn a_container_created_before_the_updater_saved_it_is_removed_on_rollback(
 
 #[tokio::test]
 async fn an_update_interrupted_while_the_gateway_migrates_finishes_when_it_turns_healthy() {
+    for phase in [Phase::Started, Phase::Created] {
+        interrupted_while_migrating(phase).await;
+    }
+}
+
+async fn interrupted_while_migrating(phase: Phase) {
     let mut daemon = Daemon::install();
     let old_id = previous(&mut daemon, "gateway");
     let mut new = daemon.container("kaeso-console-1").unwrap().clone();
@@ -551,8 +596,9 @@ async fn an_update_interrupted_while_the_gateway_migrates_finishes_when_it_turns
     new.labels
         .insert("com.docker.compose.service".into(), "gateway".into());
     new.health = Health::Slow;
+    new.started = true;
     daemon.containers.push(new);
-    let dir = fresh("recover-forward");
+    let dir = fresh(&format!("recover-forward-{phase:?}"));
     let state = StateFile::new(dir.join("state"));
     state.keep_compose(&compose_text(FROM)).unwrap();
     state
@@ -562,7 +608,7 @@ async fn an_update_interrupted_while_the_gateway_migrates_finishes_when_it_turns
                 Service::Gateway,
                 old_id,
                 Some(&format!("{:0<64}", "new7")),
-                Phase::Started,
+                phase,
             )],
         ))
         .unwrap();
@@ -612,6 +658,29 @@ async fn an_update_interrupted_when_online_is_finished_and_tagged_at_start() {
         .filter(|c| c.ends_with("/tag"))
         .collect();
     assert_eq!(tags.len(), 3, "{tags:?}");
+}
+
+#[tokio::test]
+async fn compose_yaml_edited_before_a_restart_is_left_alone() {
+    let dir = fresh("online-edited");
+    let mut edited = compose_text(FROM);
+    edited.extend_from_slice(b"  extra:\n    image: example\n");
+    std::fs::write(dir.join("compose.yaml"), &edited).unwrap();
+    let state = StateFile::new(dir.join("state"));
+    state.keep_compose(&compose_text(FROM)).unwrap();
+    state.save(&interrupted(Step::Online, Vec::new())).unwrap();
+    let world = World::with(
+        dir,
+        Daemon::install(),
+        Releases::default(),
+        Verifier::default(),
+    )
+    .await;
+    world.engine.recover().await;
+    let job = world.engine.last().unwrap();
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::ComposeChanged));
+    assert_eq!(world.compose(), edited);
 }
 
 #[tokio::test]
