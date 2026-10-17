@@ -30,6 +30,7 @@ Vier Verbindungen halten die Teile zusammen:
 | [Konsole](console.md) | Wie die Web-Konsole Daten liest, Seiten zeichnet, Code lädt und Fehler zeigt |
 | [Dokumentations-Website](docs-site.md) | Wie aus den Markdown-Seiten docs.kaeso.app wird |
 | [E-Mails](emails.md) | Wie das Gateway die E-Mails baut, die es sendet |
+| [Updates](updates.md) | Wie das Gateway von Releases erfährt und wie der Updater eines einspielt |
 | [KPP-Interna](../kpp/index.md) | Das kanonische Format, die Codecs und jedes Wire-Mapping |
 
 ## Der Rust-Workspace
@@ -43,6 +44,8 @@ Vier Verbindungen halten die Teile zusammen:
 | `kaeso-upstream` | Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodys und Abbruch. |
 | `kaeso-crypto` | Envelope-Verschlüsselung (AES-256-GCM), der Hauptschlüssel-Ring, Passwörter, TOTP und die schwärzenden Typen für Geheimnisse. |
 | `kaeso-mail` | SMTP-Versand und jede E-Mail in einem Layout, in drei Sprachen ([E-Mails](emails.md)). |
+| `kaeso-update` | Updates ohne I/O: das Release-Manifest, die Update-Regeln (Kanäle, Hauptversionen, Schritte von Hand) und das Protokoll des Updaters, gemeinsam für Gateway und Updater ([Updates](updates.md)). |
+| `kaeso-updater` | Der optionale Updater: prüft die Signaturen eines Releases und stellt eine Compose-Installation darauf um; der einzige Teil von Kaeso, der mit Docker spricht ([Updates](updates.md)). |
 | `kaeso-testkit` | Nur für Tests: Entwicklungs- und Testdatenbanken, der Mock-Anbieter aus den Fixtures von KPP und ein Mock-Identitätsanbieter. |
 | `kaeso-kpp`, `kaeso-codecs` | Die Typen und Codecs von KPP, auf crates.io veröffentlicht ([KPP-Interna](../kpp/index.md)). |
 | `kpp-conformance` | Ein Server, der die Ausgabe der KPP-Encoder an die offiziellen Python-SDKs für die [Konformitätssuite](../testing.md#sdk-konformität) gibt. |

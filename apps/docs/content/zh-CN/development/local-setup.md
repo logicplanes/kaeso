@@ -55,6 +55,7 @@ pnpm stack:up
 | `mail` | Mailpit，接收网关发送的每封邮件 | `http://127.0.0.1:58025`，SMTP 在 `127.0.0.1:51025` |
 | `provider` | 模拟的 OpenAI 和 Anthropic API，因此不需要真实的服务商密钥 | 仅在栈内部 |
 | `idp` | 用于单点登录的模拟 OpenID Connect 服务商 | `http://idp.localhost:18091` |
+| `releases` | 为 **实例设置 → 更新** 提供模拟的 Kaeso 版本和模拟更新器；向 `POST /__scenario` 发送 `releases`（`patch`、`major`、`manual`、`none`、`error`）、`updater`（`ready`、`down`）和 `outcome`（`succeeded`、`rolled_back`）可以改变它们的响应 | `http://127.0.0.1:18092` |
 | `master-key` | 在网关启动前把主密钥写入一个卷 | |
 
 该栈是 Compose 项目 `kaeso-dev`，定义在 `deploy/compose.dev.yaml` 中。Rust 测试只需要数据库和 Mailpit，它们可以不带网关单独启动：
@@ -86,13 +87,14 @@ pnpm dev
 ```mermaid
 flowchart TD
   accTitle: 开发环境
-  accDescr: 浏览器打开 localhost:3000 上的 Vite；Vite 把 /platform 和 /v1 转发到 127.0.0.1:18080 上的网关，其他请求则返回控制台。网关调用模拟服务商、Mailpit 和模拟身份提供方。
+  accDescr: 浏览器打开 localhost:3000 上的 Vite；Vite 把 /platform 和 /v1 转发到 127.0.0.1:18080 上的网关，其他请求则返回控制台。网关调用模拟服务商、Mailpit、模拟身份提供方以及模拟版本和模拟更新器。
   browser[浏览器] --> vite[localhost:3000 上的 Vite]
   vite -- /platform、/v1 --> gateway[127.0.0.1:18080 上的网关]
   vite -- 其他所有请求 --> console[控制台]
   gateway --> provider[模拟 OpenAI 和 Anthropic]
   gateway --> mail[Mailpit]
   gateway --> idp[模拟单点登录]
+  gateway --> releases[模拟 GitHub 版本和更新器]
 ```
 
 网关的公开 URL 就是开发服务器的地址，因此会话 Cookie 是第一方 Cookie，浏览器发送的 `Origin` 也正是网关期望的值。在生产环境中，反向代理以同样的方式在同一个域名下提供控制台和网关。

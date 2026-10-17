@@ -84,6 +84,10 @@ services:
       KAESO_PROVIDERS_ANTHROPIC_BASE_URL: http://provider:8080
       KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS: "true"
       KAESO_LOGS_FLUSH_INTERVAL: 500ms
+      KAESO_UPDATES_CHECK: "false"
+      KAESO_UPDATES_RELEASES_URL: http://releases:8080/repos/logicplanes/kaeso/releases
+      KAESO_UPDATER_URL: http://releases:8080/updater/
+      KAESO_UPDATER_TOKEN: development-updater-token-not-a-secret
       KAESO_LOG_FORMAT: json
     ports:
       - 127.0.0.1:${KAESO_GATEWAY_PORT:-18080}:8080
@@ -101,6 +105,8 @@ services:
       mail:
         condition: service_started
       provider:
+        condition: service_healthy
+      releases:
         condition: service_healthy
 
   sso-database:
@@ -152,6 +158,23 @@ services:
     command: ["node", "provider.mjs"]
     environment:
       PORT: "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  releases:
+    <<: *node
+    command: ["node", "releases.mjs"]
+    environment:
+      PORT: "8080"
+      UPDATER_TOKEN: development-updater-token-not-a-secret
+    volumes:
+      - ../apps/console/stack:/stack:ro
+      - ../package.json:/version/package.json:ro
+    ports:
+      - 127.0.0.1:${KAESO_RELEASES_PORT:-18092}:8080
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
       interval: 2s

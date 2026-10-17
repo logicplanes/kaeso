@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version, published_at, prerelease, notes, url, manifest, manifest_error FROM update_releases ORDER BY published_at DESC, version DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "published_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "published_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "prerelease",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "prerelease"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "notes",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "manifest",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "manifest"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "manifest_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "manifest_error"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "2a7cd7bf053668c13409503e0748675cdc780deb976afe8f294a86ab8495d356"
+}

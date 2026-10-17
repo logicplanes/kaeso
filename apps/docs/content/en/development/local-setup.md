@@ -55,6 +55,7 @@ This builds the gateway's image from your checkout (`kaeso-dev-gateway`, from `d
 | `mail` | Mailpit, which catches every email the gateway sends | `http://127.0.0.1:58025`, SMTP on `127.0.0.1:51025` |
 | `provider` | A mock OpenAI and Anthropic API, so no real provider key is needed | Inside the stack only |
 | `idp` | A mock OpenID Connect provider for single sign-on | `http://idp.localhost:18091` |
+| `releases` | Mock Kaeso releases and a mock updater for **Instance settings → Updates**; `POST /__scenario` with `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) and `outcome` (`succeeded`, `rolled_back`) changes what they answer | `http://127.0.0.1:18092` |
 | `master-key` | Writes the gateway's master key into a volume before it starts | |
 
 The stack is the Compose project `kaeso-dev`, defined in `deploy/compose.dev.yaml`. The Rust tests need only the databases and Mailpit, which start without the gateway:
@@ -86,13 +87,14 @@ Sign in as `owner@example.com`, an instance admin and the organization's owner, 
 ```mermaid
 flowchart TD
   accTitle: The development stack
-  accDescr: The browser opens Vite on localhost:3000, which sends /platform and /v1 on to the gateway on 127.0.0.1:18080 and serves the console for everything else. The gateway calls the mock providers, Mailpit and the mock identity provider.
+  accDescr: The browser opens Vite on localhost:3000, which sends /platform and /v1 on to the gateway on 127.0.0.1:18080 and serves the console for everything else. The gateway calls the mock providers, Mailpit, the mock identity provider and the mock releases and updater.
   browser[Browser] --> vite[Vite on localhost:3000]
   vite -- /platform, /v1 --> gateway[Gateway on 127.0.0.1:18080]
   vite -- everything else --> console[The console]
   gateway --> provider[Mock OpenAI and Anthropic]
   gateway --> mail[Mailpit]
   gateway --> idp[Mock single sign-on]
+  gateway --> releases[Mock GitHub releases and updater]
 ```
 
 The gateway's public URL is the development server's address, so the session cookie is first-party and the browser sends the `Origin` the gateway expects. In production a reverse proxy serves the console and the gateway on one domain in the same way.
