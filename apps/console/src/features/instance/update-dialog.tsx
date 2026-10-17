@@ -148,7 +148,10 @@ function Outcome({ job: j }: { job: UpdateJobView }): ReactNode {
         {j.state === "rollback_failed" && (
           <span>{t("instance.updates.rollbackFailedHint", "The previous version didn't start again; follow the upgrade guide to recover.")}</span>
         )}
-        {j.state === "needs_attention" && (
+        {j.state === "needs_attention" && j.reason !== "migrated" && (
+          <span>{t("instance.updates.attentionHint", "Kaeso needs someone to look at its containers; the detail below says what happened.")}</span>
+        )}
+        {j.state === "needs_attention" && j.reason === "migrated" && (
           <span>
             {t(
               "instance.updates.needsAttentionHint",

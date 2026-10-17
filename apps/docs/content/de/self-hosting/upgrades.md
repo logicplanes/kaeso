@@ -110,7 +110,7 @@ Das ganze Update dauert etwa eine Minute. Es läuft immer nur ein Update. Das Er
 | **Nicht eingespielt** | Nichts hat sich geändert. |
 | **Zurückgesetzt** | Die neue Version ist nicht gestartet, und die vorige läuft wieder. |
 | **Zurücksetzen fehlgeschlagen** | Die neue Version ist nicht gestartet, und die vorige ist auch nicht wieder gestartet. |
-| **Braucht Aufmerksamkeit** | Das neue Gateway ist nicht gestartet, hat die Datenbank aber womöglich schon migriert, deshalb hat der Updater es und die neue Konsole stehen lassen; siehe [Zurücksetzen](#zurücksetzen). |
+| **Braucht Aufmerksamkeit** | Jemand muss nachsehen: Das neue Gateway ist nicht gestartet, hat die Datenbank aber womöglich schon migriert, deshalb hat der Updater es und die neue Konsole stehen lassen (siehe [Zurücksetzen](#zurücksetzen)), oder das Update konnte nicht fertig aufräumen, etwa die Wartungsmarkierung oder die Container `…-previous` entfernen. Die Angabe sagt, was davon und was zu tun ist. |
 
 ### Zurücksetzen
 

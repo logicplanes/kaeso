@@ -135,7 +135,7 @@ pub struct UpdateJobView {
     #[doc = "The step it is on or ended on: `verifying`, `downloading`, `switching`, `migrating` or `online`."]
     #[schema(example = "verifying")]
     pub step: String,
-    #[doc = "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."]
+    #[doc = "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."]
     pub reason: Option<String>,
     #[doc = "The updater's account of what went wrong, in English."]
     pub detail: Option<String>,

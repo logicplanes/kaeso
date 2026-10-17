@@ -61,6 +61,7 @@ pub struct Container {
     pub health: Health,
     pub inspected: u32,
     pub started: bool,
+    pub restarts: u32,
 }
 
 pub type Hook = Box<dyn Fn() + Send>;
@@ -79,6 +80,8 @@ pub struct Daemon {
     pub on_start: Option<Hook>,
     pub version_failures: u32,
     pub fail_new_start: Option<String>,
+    pub fail_removals: u32,
+    pub fail_rename_back: bool,
 }
 
 pub fn index_of(service: Service) -> Vec<u8> {
@@ -132,6 +135,7 @@ impl Daemon {
                 health: Health::Healthy,
                 inspected: 0,
                 started: true,
+                restarts: 0,
             });
         }
         d
@@ -156,7 +160,7 @@ impl Daemon {
             Health::Slow => "unhealthy",
             _ => "starting",
         };
-        let restarts = u32::from(c.health == Health::Restarting);
+        let restarts = c.restarts + u32::from(c.health == Health::Restarting);
         json!({
             "Id": c.id,
             "Name": format!("/{}", c.name),
@@ -291,6 +295,7 @@ async fn daemon(
                 health,
                 inspected: 0,
                 started: false,
+                restarts: 0,
             });
             (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }
@@ -315,6 +320,14 @@ async fn daemon(
             {
                 hook();
             }
+            if m == "DELETE" && d.fail_removals > 0 {
+                d.fail_removals -= 1;
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    axum::Json(json!({ "message": "device or resource busy" })),
+                )
+                    .into_response();
+            }
             if m == "DELETE" {
                 let before = d.containers.len();
                 d.containers.retain(|c| c.id != key);
@@ -325,6 +338,18 @@ async fn daemon(
                 };
             }
             let new_name = q.get("name").cloned();
+            let refuse_rename = d.fail_rename_back
+                && action == "rename"
+                && new_name
+                    .as_deref()
+                    .is_some_and(|n| !n.ends_with("-previous"));
+            if refuse_rename {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    axum::Json(json!({ "message": "rename refused" })),
+                )
+                    .into_response();
+            }
             let taken = new_name
                 .as_ref()
                 .is_some_and(|n| d.container(n).is_some_and(|c| c.id != key));

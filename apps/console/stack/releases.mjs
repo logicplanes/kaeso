@@ -74,7 +74,7 @@ function job(entry) {
     to: entry.version,
     state,
     step: failed ? "migrating" : STEPS[at],
-    reason: failed ? "unhealthy" : null,
+    reason: failed ? (scenario.outcome === "needs_attention" ? "migrated" : "unhealthy") : null,
     detail: failed ? "the new gateway was not healthy within 600 seconds" : null,
     started_at: entry.started,
     finished_at: state === "running" ? null : new Date().toISOString(),

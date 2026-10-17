@@ -63,6 +63,7 @@ names!(Reason {
     UpdaterUnreachable => "updater_unreachable",
     UpdaterRefused => "updater_refused",
     StateUnwritable => "state_unwritable",
+    Migrated => "migrated",
 });
 
 impl JobState {

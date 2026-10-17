@@ -153,7 +153,7 @@ describe("instance updates page", () => {
       updateJob({
         state: "needs_attention",
         step: "migrating",
-        reason: "unhealthy",
+        reason: "migrated",
         detail: "the new gateway was not healthy within 600 seconds",
         finished_at: "2026-10-15T12:02:00Z",
       }),
@@ -166,6 +166,28 @@ describe("instance updates page", () => {
       within(dialog).getByText("The new gateway may have migrated the database, so Kaeso 0.4.2 wasn't started again; follow the upgrade guide."),
     ).toBeInTheDocument();
     expect(within(dialog).queryByText("Kaeso 0.4.2 runs again, unchanged.")).not.toBeInTheDocument();
+  });
+
+  it("names no migration when something else needs attention", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ job: updateJob(), can_apply: false }));
+    history();
+    on(
+      "GET",
+      "instance/updates/jobs/:update",
+      updateJob({
+        state: "needs_attention",
+        step: "online",
+        reason: "state_unwritable",
+        detail: "the maintenance flag could not be removed",
+        finished_at: "2026-10-15T12:02:00Z",
+      }),
+    );
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Show progress" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("Kaeso needs someone to look at its containers; the detail below says what happened.")).toBeInTheDocument();
+    expect(within(dialog).queryByText(/may have migrated the database/)).not.toBeInTheDocument();
   });
 
   it("says what is left when the new version runs but compose.yaml couldn't be written", async () => {
