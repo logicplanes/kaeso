@@ -1,9 +1,7 @@
 <div align="center">
   <br>
-  <a href="https://kaeso.app">
-    <img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-light.svg#gh-light-mode-only" alt="Kaeso" width="320">
-    <img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-dark.svg#gh-dark-mode-only" alt="Kaeso" width="320">
-  </a>
+  <a href="https://kaeso.app#gh-light-mode-only"><img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-light.svg#gh-light-mode-only" alt="Kaeso" width="320"></a>
+  <a href="https://kaeso.app#gh-dark-mode-only"><img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-dark.svg#gh-dark-mode-only" alt="Kaeso" width="320"></a>
   <br>
   <br>
   <p>The open-source AI gateway you run yourself.<br>One OpenAI- and Anthropic-compatible API in front of your providers, with keys, limits and logs under your control.</p>
