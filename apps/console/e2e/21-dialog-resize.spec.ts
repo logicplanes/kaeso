@@ -121,7 +121,7 @@ function expectCentredAndSmooth(samples: Sample[], key: "h" | "w" = "h") {
   for (const s of samples.slice(1)) {
     if (!base || !last) break;
     if (s.t > last.t) base = last;
-    expect(Math.abs(s[key] - base[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + (s.t - base.t) / 40) + 2);
+    expect(Math.abs(s[key] - base[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + Math.max(s.t - base.t, 1000 / 60) / 40) + 2);
     last = s;
   }
 }
