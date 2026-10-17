@@ -50,6 +50,30 @@ describe("organization security", () => {
     expect(screen.getByText("Registered at the provider as the sign-in callback.")).toBeInTheDocument();
     expect(screen.getByText("mk_sso")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByText("Says Continue with SSO.")).toBeInTheDocument();
+    expect(screen.getByText("Opens sign-in with this provider, without an address.")).toBeInTheDocument();
+    expect(screen.getByText("https://console.northwind.test/sign-in?org=org_northwind")).toBeInTheDocument();
+  });
+
+  it("shows the name on the sign-in button and whether it starts on its own", async () => {
+    signedIn();
+    serveSecurity(security({ sso: sso({ name: "Northwind ID", auto_redirect: true }) }));
+    await renderApp(PATH);
+    expect(await screen.findByText("Says Continue with Northwind ID and starts on its own.")).toBeInTheDocument();
+  });
+
+  it("says when a named button waits for a click", async () => {
+    signedIn();
+    serveSecurity(security({ sso: sso({ name: "Northwind ID" }) }));
+    await renderApp(PATH);
+    expect(await screen.findByText("Says Continue with Northwind ID.")).toBeInTheDocument();
+  });
+
+  it("says when an unnamed button starts on its own", async () => {
+    signedIn();
+    serveSecurity(security({ sso: sso({ auto_redirect: true }) }));
+    await renderApp(PATH);
+    expect(await screen.findByText("Says Continue with SSO and starts on its own.")).toBeInTheDocument();
   });
 
   it("says only invited people join when no role is set for new members", async () => {
@@ -136,10 +160,25 @@ describe("connecting an identity provider", () => {
     expect(screen.queryByRole("option", { name: /Join as Owner/ })).not.toBeInTheDocument();
     await user.click(await screen.findByRole("option", { name: /Join as Member/ }));
     expect(within(dialog).getByText(/Sees the organization and its members/)).toBeInTheDocument();
+    await user.click(next());
+    expect(await within(dialog).findByText("How does the sign-in page offer it?")).toBeInTheDocument();
+    await fill(user, within(dialog).getByRole("textbox", { name: "Name on the button" }), " Example ID ");
+    expect(within(dialog).getByText("Leave it empty to say SSO.")).toBeInTheDocument();
+    const auto = within(dialog).getByRole("switch", { name: "Start without a click" });
+    expect(auto).not.toBeChecked();
+    await user.click(auto);
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
     expect(await notifications().findByText("Identity provider connected")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/security/sso").map((r) => r.body)).toEqual([
-      { issuer: "https://login.example.com", client_id: "app-1", domains: ["example.com"], default_role: "member", client_secret: "s3cret" },
+      {
+        issuer: "https://login.example.com",
+        client_id: "app-1",
+        domains: ["example.com"],
+        default_role: "member",
+        name: "Example ID",
+        auto_redirect: true,
+        client_secret: "s3cret",
+      },
     ]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Connect an identity provider" })).not.toBeInTheDocument());
     expect(await screen.findByText("Register this redirect URL at the provider.")).toBeInTheDocument();
@@ -164,7 +203,7 @@ describe("connecting an identity provider", () => {
 
   it("edits the provider and keeps the stored secret", async () => {
     signedIn();
-    serveSecurity(security({ sso: sso(), sso_default_role: MEMBER_ROLE }));
+    serveSecurity(security({ sso: sso({ name: "Northwind ID", auto_redirect: true }), sso_default_role: MEMBER_ROLE }));
     on("PUT", "orgs/:org/security/sso", security({ sso: null }));
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Edit" }));
@@ -181,10 +220,23 @@ describe("connecting an identity provider", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("combobox", { name: "People without an invitation" }));
     await user.click(await screen.findByRole("option", { name: /Invite only/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("textbox", { name: "Name on the button" })).toHaveValue("Northwind ID");
+    const auto = within(dialog).getByRole("switch", { name: "Start without a click" });
+    expect(auto).toBeChecked();
+    await user.click(auto);
+    await user.clear(within(dialog).getByRole("textbox", { name: "Name on the button" }));
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("Single sign-on saved")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/security/sso").map((r) => r.body)).toEqual([
-      { issuer: "https://login.northwind.test", client_id: "client-123", domains: ["northwind.test", "northwind.example"], default_role: null },
+      {
+        issuer: "https://login.northwind.test",
+        client_id: "client-123",
+        domains: ["northwind.test", "northwind.example"],
+        default_role: null,
+        name: "",
+        auto_redirect: false,
+      },
     ]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit single sign-on" })).not.toBeInTheDocument());
   });

@@ -58,15 +58,15 @@ Compose 只从 `.env` 中读取这些变量。其他所有[设置](configuration
 
 ```bash
 docker compose up -d --wait
-docker compose logs gateway | grep setup_url
+docker compose exec gateway kaeso setup-link
 ```
 
-加上 `--wait` 后，`docker compose up` 要等每个服务都在运行、且每个带健康检查的服务（除 Caddy 外的所有服务）都报告 healthy 才返回；有服务达不到时命令失败。不加 `--wait` 时，Compose 启动容器后立即返回：使用自带的 Caddy 时，Caddy 会等网关和控制台变为 healthy，因此返回得足够晚；但在[自己的反向代理](domains-and-tls.md#自己的反向代理)之后会立即返回，此时网关还没有输出设置链接。`grep` 找到的那一行中的 `setup_url` 就是设置链接。
+加上 `--wait` 后，`docker compose up` 要等每个服务都在运行、且每个带健康检查的服务（除 Caddy 外的所有服务）都报告 healthy 才返回；有服务达不到时命令失败。不加 `--wait` 时，Compose 启动容器后立即返回：使用自带的 Caddy 时，Caddy 会等网关和控制台变为 healthy，因此返回得足够晚；但在[自己的反向代理](domains-and-tls.md#自己的反向代理)之后会立即返回，此时网关还无法响应 `kaeso setup-link`。随后 `kaeso setup-link` 会输出设置链接。
 
 1. PostgreSQL、ClickHouse 和 Valkey 启动；Compose 会等待 PostgreSQL 和 Valkey 报告为 healthy。
 2. 网关检查其设置，如果某项设置缺失或错误，就会停止并给出指明该设置的消息。它从不输出机密值。
 3. 网关在提供任何服务之前将 PostgreSQL 迁移到自己的版本，并在后台迁移 ClickHouse，不断重试直到 ClickHouse 响应；在此之前 `/readyz` 报告 `degraded`。迁移在锁的保护下运行，因此只有一个网关实例执行迁移，其他实例等待。
-4. 安装中还没有用户时，网关会在日志中输出一个设置链接。该链接只能使用一次，有效期为 24 小时。每次重启以及运行 `docker compose exec gateway kaeso setup-link` 都会输出一个新链接，并使旧链接失效。
+4. 安装中还没有用户时，网关会在日志中说明安装尚未设置以及如何获取设置链接，但从不记录链接本身：任何读取日志的人都可能借此接管安装。`docker compose exec gateway kaeso setup-link` 会在终端中输出该链接；它只能使用一次，有效期为 24 小时，每个新链接都会使旧链接失效。
 5. 网关和控制台都处于 healthy 状态后，Caddy 启动并为 `KAESO_DOMAIN` 获取证书。
 
 设置页面会创建第一个用户，该用户成为实例管理员和第一个组织的所有者，组织自带一个默认项目，该用户在其中是管理员。此后，其他人通过邀请加入，或者在实例允许的情况下自行注册；参见[实例管理](../console/instance-administration.md)。
@@ -108,6 +108,7 @@ services:
 | `kaeso master-key generate` | 以 `id:base64` 的形式输出一个新的主密钥 |
 | `kaeso master-key rewrap` | 用第一个主密钥重新加密已保存的机密，并报告哪些密钥 ID 仍在使用；参见[轮换主密钥](backups.md#轮换主密钥) |
 | `kaeso user reset-2fa <email>` | 删除用户的双重验证和恢复码，结束其会话，并向其发送邮件 |
+| `kaeso user sign-in-link <email>` | 为用户输出一个一次性登录链接，15 分钟内有效，即使通过邮件发送的登录链接已关闭也可使用；用于没有其他登录方式可用的情况，例如单点登录尚未设置好之前；参见[重新登录](sign-in.md#重新登录) |
 | `kaeso migrate` | 运行 PostgreSQL 和 ClickHouse 迁移，然后退出 |
 | `kaeso serve` | 运行网关；这是镜像的默认命令 |
 

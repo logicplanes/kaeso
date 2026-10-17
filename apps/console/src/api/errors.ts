@@ -42,7 +42,7 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
     return new ApiError({
       type: error.type as ErrorType,
       status: response.status,
-      message: await translated(error.message),
+      message: await translateGatewayMessage(error.message),
       param: error.param ?? null,
       requestId,
       right: error.right ?? null,
@@ -61,7 +61,7 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
 
 export const networkError = () => new ApiError({ type: "network", status: 0, message: t("common.unreachable", "Can't reach the gateway. Try again.") });
 
-async function translated(message: string): Promise<string> {
+export async function translateGatewayMessage(message: string): Promise<string> {
   if (locale() === "en") return message;
   try {
     return (await import("./gateway-errors")).translateMessage(message);

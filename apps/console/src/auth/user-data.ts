@@ -1,7 +1,6 @@
 import { LAST_PLACE_KEY } from "~/shell/last";
 import { RECENT_KEY } from "~/shell/recent";
 import { writeStored } from "~/storage";
-import { RETURN_KEY } from "./recent-sign-in-store";
 
 export const INVITE_KEY = "kaeso:invite";
 
@@ -19,5 +18,5 @@ function storedDrafts(): string[] {
 
 export function forgetUserData(): void {
   for (const key of [RECENT_KEY, LAST_PLACE_KEY, ...storedDrafts()]) writeStored(key, null);
-  for (const key of [INVITE_KEY, RETURN_KEY]) writeStored(key, null, "session");
+  writeStored(INVITE_KEY, null, "session");
 }

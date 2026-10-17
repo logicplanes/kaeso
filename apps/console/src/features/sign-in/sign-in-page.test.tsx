@@ -62,6 +62,7 @@ describe("the email step", () => {
 
   it("says when the gateway can't be reached", async () => {
     signedOut();
+    on("GET", "auth/methods", methods());
     on("POST", "auth/methods", () => {
       throw new TypeError("Failed to fetch");
     });
@@ -70,6 +71,15 @@ describe("the email step", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(await (await notifications()).findByText("Can't reach the gateway. Try again.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
+  });
+
+  it("still asks for the address when the install's methods can't load", async () => {
+    signedOut();
+    on("GET", "auth/methods", () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await renderApp("/sign-in");
+    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
   });
 
   it("asks to try again when the gateway's answer can't be read", async () => {
@@ -275,5 +285,116 @@ describe("arriving at sign-in", () => {
     await screen.findByRole("textbox", { name: "Email" });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(within(await screen.findByRole("region", { name: "Notifications" })).queryByText(/./)).not.toBeInTheDocument();
+  });
+});
+
+describe("single sign-on without an address", () => {
+  const NORTHWIND_ID = { org: ORG, name: "Northwind ID", auto_redirect: false };
+  const ssoOnly = (provider: typeof NORTHWIND_ID | null = NORTHWIND_ID) => methods({ password: false, magic_link: false, sso: true, provider });
+
+  it("offers the install's only provider by name and sends the person on with where they were going", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly());
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s1"));
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { user } = await renderApp(`/sign-in?next=/orgs/${ORG}/projects`);
+    const button = await screen.findByRole("button", { name: "Continue with Northwind ID" });
+    expect(button).toHaveFocus();
+    expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in with your email instead" })).not.toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+    await user.click(button);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s1"));
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: `/orgs/${ORG}/projects` }]);
+  });
+
+  it("says SSO on the button of a provider without a name", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, name: null as unknown as string }));
+    await renderApp("/sign-in");
+    expect(await screen.findByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
+  });
+
+  it("starts at the provider on its own when the provider asks for it", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s2"));
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    await renderApp("/sign-in");
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s2"));
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG }]);
+  });
+
+  it("waits for a click after signing out", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    await renderApp("/sign-in?done=signed-out");
+    expect(await (await notifications()).findByText("You're signed out")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(""));
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+  });
+
+  it("keeps the organization of a sign-in link when it drops the notice", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    await renderApp(`/sign-in?done=signed-out&org=${ORG}`);
+    expect(await (await notifications()).findByText("You're signed out")).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(`?org=${ORG}`));
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+  });
+
+  it("says why the provider couldn't start, and lets the person try again", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly());
+    on("POST", "auth/oidc/start", apiError(503, "unavailable", "The identity provider could not be reached."));
+    const { user } = await renderApp("/sign-in");
+    await user.click(await screen.findByRole("button", { name: "Continue with Northwind ID" }));
+    expect(await (await notifications()).findByText("The identity provider could not be reached.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeEnabled();
+  });
+
+  it("waits for a click after the provider refused, and says why in the person's language", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    await renderApp("/sign-in#sso_error=The%20identity%20provider%20refused%20the%20sign-in.", { locale: "de" });
+    expect(
+      await within(await screen.findByRole("region", { name: "Benachrichtigungen" })).findByText("Der Identitätsanbieter hat die Anmeldung abgelehnt."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+  });
+
+  it("offers an organization's provider from its sign-in link, and the address too", async () => {
+    signedOut();
+    on("GET", "auth/methods", (r: { query: URLSearchParams }) => (r.query.get("org") === ORG ? methods({ sso: true, provider: NORTHWIND_ID }) : methods()));
+    const { user } = await renderApp(`/sign-in?org=${ORG}`);
+    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
+    expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toContain(ORG);
+    await user.click(screen.getByRole("link", { name: "Sign in with your email instead" }));
+    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
+  });
+
+  it("ignores an organization that isn't one", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods());
+    await renderApp("/sign-in?org=../../steal");
+    await screen.findByRole("textbox", { name: "Email" });
+    expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toEqual([null]);
+  });
+
+  it("names the provider of the address, and goes straight there when it's the only way in", async () => {
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    await atMethods("/sign-in", methods({ sso: true, provider: NORTHWIND_ID }));
+    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
+
+    signedOut();
+    on("GET", "auth/methods", methods());
+    on("POST", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s3"));
+    const { user } = await renderApp(`/sign-in?next=/orgs/${ORG}`);
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test{Enter}");
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s3"));
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@northwind.test", next: `/orgs/${ORG}` }]);
   });
 });

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use time::Duration;
 use utoipa::{IntoParams, ToSchema};
 
-use super::throttle_ip;
+use super::{next, throttle_ip};
 use crate::auth::oidc::Provider;
 use crate::auth::sessions::{self, Method, SignIn};
 use crate::auth::throttle::TOKENS_PER_IP;
@@ -37,13 +37,30 @@ pub fn secret_aad(org: OrgId) -> Vec<u8> {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-#[schema(description = "Which org to sign in to.")]
+#[schema(description = "Which org to sign in to, and where to go afterwards.")]
 pub struct StartRequest {
-    #[doc = "The org, from its sign-in link."]
+    #[doc = "The org: from its sign-in link (`/sign-in?org=…`, the `sign_in_url` of\n\
+        its SSO connection), from `provider` in `auth/methods`, or from the\n\
+        console page that asks for its SSO."]
     pub org: Option<OrgId>,
     #[doc = "Or the user's email address, whose domain names the org."]
     #[schema(example = "ada@acme.example")]
     pub email: Option<String>,
+    #[doc = "The console path to open once signed in, starting with one `/`; never\n\
+        another site, the Platform API or the model API. Without it, the\n\
+        console's start page."]
+    #[schema(example = "/settings/account")]
+    pub next: Option<String>,
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct StartLink {
+    #[doc = "The org whose identity provider signs in. Without it, the install's\n\
+        only SSO connection."]
+    pub org: Option<OrgId>,
+    #[doc = "The console path to open once signed in, as in `POST auth/oidc/start`."]
+    pub next: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -87,6 +104,48 @@ fn sso_on(state: &AppState) -> ApiResult<()> {
     }
 }
 
+fn no_sso() -> ApiError {
+    ApiError::NotFound(
+        "No organization uses SSO for this sign-in; use another way to sign in.".into(),
+    )
+}
+
+struct Begun {
+    authorization_url: String,
+    cookie: HeaderValue,
+}
+
+async fn begin(state: &AppState, ctx: &Ctx, org: OrgId, next: Option<String>) -> ApiResult<Begun> {
+    let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
+    let provider = provider(state, org, &connection).await?;
+    let started = provider.start();
+    let binding = random_token();
+    tokens::insert(
+        &state.pg,
+        NewToken {
+            kind: TokenKind::OidcState,
+            hash: &secret::hash(&started.state),
+            user_id: None,
+            email: None,
+            data: serde_json::json!({
+                "org_id": org.to_string(),
+                "nonce": started.nonce,
+                "pkce_verifier": started.pkce_verifier,
+                "binding": crate::cache::hex(&secret::hash(&binding)),
+                "next": next,
+            }),
+            expires_at: ctx.now + FLOW_LIFETIME,
+        },
+    )
+    .await?;
+    let cookie = binding_cookie(state, &binding, FLOW_LIFETIME.whole_seconds())
+        .map_err(ApiError::internal)?;
+    Ok(Begun {
+        authorization_url: started.url,
+        cookie,
+    })
+}
+
 #[utoipa::path(
     post,
     path = "/auth/oidc/start",
@@ -103,11 +162,7 @@ pub async fn start(
 ) -> ApiResult<Response> {
     sso_on(&state)?;
     throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
-    let no_sso = || {
-        ApiError::NotFound(
-            "No organization uses SSO for this sign-in; use another way to sign in.".into(),
-        )
-    };
+    let next = next::validate(&state.config.public_url, req.next.as_deref())?;
     let org = match (req.org, req.email) {
         (Some(org), None) => org,
         (None, Some(email)) => {
@@ -120,36 +175,67 @@ pub async fn start(
         }
         _ => return Err(ApiError::bad_request("Send either `org` or `email`.")),
     };
-    let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
-    let provider = provider(&state, org, &connection).await?;
-    let started = provider.start();
-    let binding = random_token();
-    tokens::insert(
-        &state.pg,
-        NewToken {
-            kind: TokenKind::OidcState,
-            hash: &secret::hash(&started.state),
-            user_id: None,
-            email: None,
-            data: serde_json::json!({
-                "org_id": org.to_string(),
-                "nonce": started.nonce,
-                "pkce_verifier": started.pkce_verifier,
-                "binding": crate::cache::hex(&secret::hash(&binding)),
-            }),
-            expires_at: ctx.now + FLOW_LIFETIME,
-        },
-    )
-    .await?;
-    let cookie = binding_cookie(&state, &binding, FLOW_LIFETIME.whole_seconds())
-        .map_err(ApiError::internal)?;
+    let begun = begin(&state, &ctx, org, next).await?;
     Ok((
-        [(header::SET_COOKIE, cookie)],
+        [(header::SET_COOKIE, begun.cookie)],
         axum::Json(StartResponse {
-            authorization_url: started.url,
+            authorization_url: begun.authorization_url,
         }),
     )
         .into_response())
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/oidc/start",
+    summary = "A link that starts SSO: sends the browser straight to the identity\n\
+    provider, with the flow bound to this browser as `POST auth/oidc/start`\n\
+    binds it. On failure, to the sign-in page with the reason in `#sso_error=`.",
+    description = "For links from an intranet page or a bookmark. It only begins a sign-in \
+    in the browser that follows it, and whoever signs in at the provider is who is signed in \
+    afterwards, so it needs no `Origin` header.",
+    tag = "auth",
+    params(StartLink),
+    responses((status = 303, description = "Redirect to the identity provider, or to the sign-in page with `#sso_error=`."))
+)]
+pub async fn start_link(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    link: Result<Query<StartLink>, ApiError>,
+) -> Response {
+    let link = match link {
+        Ok(Query(link)) => link,
+        Err(e) => return refused(&state, &e, None, false),
+    };
+    let begun = async {
+        sso_on(&state)?;
+        throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
+        let next = next::validate(&state.config.public_url, link.next.as_deref())?;
+        let org = match link.org {
+            Some(org) => org,
+            None => match oidc::connected(&state.pg).await? {
+                oidc::Connected::Only(org) => OrgId::from_uuid(org),
+                oidc::Connected::Nowhere => return Err(no_sso()),
+                oidc::Connected::Several => {
+                    return Err(ApiError::invalid(
+                        "org",
+                        "Name the organization with `org`; several organizations use SSO here.",
+                    ));
+                }
+            },
+        };
+        begin(&state, &ctx, org, next).await
+    };
+    match begun.await {
+        Ok(begun) => {
+            let mut response = redirect(&begun.authorization_url);
+            response
+                .headers_mut()
+                .append(header::SET_COOKIE, begun.cookie);
+            response
+        }
+        Err(e) => refused(&state, &e, link.next.as_deref(), false),
+    }
 }
 
 async fn provider(state: &AppState, org: OrgId, c: &oidc::Connection) -> ApiResult<Provider> {
@@ -183,16 +269,47 @@ pub struct Callback {
     pub error_description: Option<String>,
 }
 
-fn finish_redirect(state: &AppState, error: Option<&str>, clear_binding: bool) -> Response {
-    let location = match error {
-        None => state.config.public_url.to_string(),
-        Some(message) => format!(
-            "{}sign-in#sso_error={}",
-            state.config.public_url,
-            percent_encoding::utf8_percent_encode(message, FRAGMENT)
-        ),
+fn redirect(location: &str) -> Response {
+    let mut response = StatusCode::SEE_OTHER.into_response();
+    let headers = response.headers_mut();
+    if let Ok(v) = HeaderValue::from_str(location) {
+        headers.insert(header::LOCATION, v);
+    }
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response
+}
+
+fn signed_in_location(state: &AppState, next: Option<&str>) -> String {
+    next.and_then(|n| next::target(&state.config.public_url, n))
+        .map_or_else(|| state.config.public_url.to_string(), |u| u.to_string())
+}
+
+fn failed_location(state: &AppState, message: &str, next: Option<&str>) -> String {
+    let next = next
+        .filter(|n| next::target(&state.config.public_url, n).is_some())
+        .map(|n| {
+            format!(
+                "?next={}",
+                percent_encoding::utf8_percent_encode(n, FRAGMENT)
+            )
+        })
+        .unwrap_or_default();
+    format!(
+        "{}sign-in{next}#sso_error={}",
+        state.config.public_url,
+        percent_encoding::utf8_percent_encode(message, FRAGMENT)
+    )
+}
+
+fn refused(state: &AppState, e: &ApiError, next: Option<&str>, clear_binding: bool) -> Response {
+    metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "oidc", "reason" => e.kind())
+        .increment(1);
+    tracing::info!(error = %e, "SSO sign-in failed");
+    let message = match e {
+        ApiError::Internal(_) => "Something went wrong; try again.".to_owned(),
+        other => other.to_string(),
     };
-    let mut response = (StatusCode::SEE_OTHER, [(header::LOCATION, location)]).into_response();
+    let mut response = redirect(&failed_location(state, &message, next));
     if clear_binding && let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);
     }
@@ -227,21 +344,17 @@ pub async fn callback(
     headers: HeaderMap,
     cb: Result<Query<Callback>, ApiError>,
 ) -> Response {
-    let outcome = match cb {
-        Ok(Query(cb)) => complete(&state, &ctx, &headers, cb).await,
+    let flow = match cb {
+        Ok(Query(cb)) => take_flow(&state, &ctx, &headers, cb).await,
         Err(e) => Err(e),
     };
-    match outcome {
+    let flow = match flow {
+        Ok(flow) => flow,
+        Err(e) => return refused(&state, &e, None, true),
+    };
+    match complete(&state, &ctx, &flow).await {
         Ok(response) => response,
-        Err(e) => {
-            metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "oidc", "reason" => e.kind()).increment(1);
-            tracing::info!(error = %e, "SSO sign-in failed");
-            let message = match &e {
-                ApiError::Internal(_) => "Something went wrong; try again.".to_owned(),
-                other => other.to_string(),
-            };
-            finish_redirect(&state, Some(&message), true)
-        }
+        Err(e) => refused(&state, &e, flow.next.as_deref(), true),
     }
 }
 
@@ -251,12 +364,26 @@ fn no_access() -> ApiError {
     )
 }
 
-async fn complete(
+struct Flow {
+    org: OrgId,
+    code: String,
+    nonce: String,
+    verifier: String,
+    next: Option<String>,
+}
+
+fn expired() -> ApiError {
+    ApiError::Authentication(
+        "The SSO sign-in expired or began in another browser; start again.".into(),
+    )
+}
+
+async fn take_flow(
     state: &AppState,
     ctx: &Ctx,
     headers: &HeaderMap,
     cb: Callback,
-) -> ApiResult<Response> {
+) -> ApiResult<Flow> {
     sso_on(state)?;
     if let Some(error) = cb.error {
         tracing::info!(
@@ -272,11 +399,6 @@ async fn complete(
         return Err(ApiError::bad_request(
             "The identity provider's answer is incomplete.",
         ));
-    };
-    let expired = || {
-        ApiError::Authentication(
-            "The SSO sign-in expired or began in another browser; start again.".into(),
-        )
     };
     let state_hash = secret::hash(&flow_state);
     let binding = binding_from(state, headers).ok_or_else(expired)?;
@@ -301,12 +423,23 @@ async fn complete(
     let (Some(nonce), Some(verifier)) = (field("nonce"), field("pkce_verifier")) else {
         return Err(expired());
     };
+    Ok(Flow {
+        org,
+        code,
+        nonce,
+        verifier,
+        next: field("next"),
+    })
+}
+
+async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow) -> ApiResult<Response> {
+    let org = flow.org;
     let connection = oidc::get(&state.pg, org.uuid())
         .await?
         .ok_or_else(expired)?;
     let identity = provider(state, org, &connection)
         .await?
-        .finish(&code, &verifier, &nonce)
+        .finish(&flow.code, &flow.verifier, &flow.nonce)
         .await
         .map_err(|e| {
             tracing::info!(error = %e, "SSO answer refused");
@@ -433,7 +566,10 @@ async fn complete(
     )
     .await?;
     tx.commit().await?;
-    let mut response = finish_redirect(state, None, true);
+    let mut response = redirect(&signed_in_location(state, flow.next.as_deref()));
+    if let Ok(v) = binding_cookie(state, "", 0) {
+        response.headers_mut().append(header::SET_COOKIE, v);
+    }
     let cookie =
         cookies::set(state, &created.token).ok_or_else(|| ApiError::internal("session cookie"))?;
     response.headers_mut().append(header::SET_COOKIE, cookie);

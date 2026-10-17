@@ -74,21 +74,17 @@ Der erste Start dauert ein bis zwei Minuten: Die Images werden heruntergeladen, 
 
 ## Mit dem Einrichtungslink anmelden
 
-Solange die Installation keine Benutzer hat, protokolliert das Gateway einen Einrichtungslink:
-
-```bash
-docker compose logs gateway | grep setup_url
-```
-
-Den Link im Browser öffnen. Er funktioniert einmal, 24 Stunden lang. Name, E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und den Namen der Organisation eingeben, dann **Kaeso einrichten** wählen.
-
-Wer die Einrichtung abschließt, ist damit der erste Instanz-Admin der Installation und Inhaber ihrer ersten Organisation, die mit einem Standardprojekt beginnt.
-
-Ist der Link abgelaufen oder verloren gegangen, einen neuen ausgeben; ältere Links funktionieren dann nicht mehr:
+Solange die Installation keine Benutzer hat, meldet das Log des Gateways das, enthält aber nie den Link selbst: Wer das Log liest, könnte damit die Installation übernehmen. Den Einrichtungslink im Terminal ausgeben:
 
 ```bash
 docker compose exec gateway kaeso setup-link
 ```
+
+Den Link im Browser öffnen. Er funktioniert einmal, 24 Stunden lang. Name, E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und den Namen der Organisation eingeben, dann **Kaeso einrichten** wählen. Eine Installation, die sich nur per Single Sign-on anmeldet, fragt nach keinem Passwort; siehe [Anmeldung und Single Sign-on](../self-hosting/sign-in.md#eine-installation-ohne-passwörter).
+
+Wer die Einrichtung abschließt, ist damit der erste Instanz-Admin der Installation und Inhaber ihrer ersten Organisation, die mit einem Standardprojekt beginnt.
+
+Ist der Link abgelaufen oder verloren gegangen, den Befehl erneut ausführen: Er gibt einen neuen Link aus, und ältere Links funktionieren nicht mehr.
 
 ## Einen Anbieter-Schlüssel hinzufügen
 

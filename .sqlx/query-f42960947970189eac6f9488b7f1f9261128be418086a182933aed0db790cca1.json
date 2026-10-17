@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, display_name, auto_redirect) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, secret_ciphertext = $4, secret_nonce = $5, wrapped_key = $6, key_id = $7, display_name = $8, auto_redirect = $9, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f42960947970189eac6f9488b7f1f9261128be418086a182933aed0db790cca1"
+}

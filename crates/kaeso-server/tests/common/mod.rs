@@ -306,19 +306,16 @@ impl App {
             .unwrap()
             .unwrap();
         let token = url.split("#token=").nth(1).unwrap();
-        let r = self
-            .post(
-                "/auth/setup",
-                json!({
-                    "token": token,
-                    "email": "owner@example.com",
-                    "name": "Owner",
-                    "password": PASSWORD,
-                    "org_name": "Acme",
-                }),
-                None,
-            )
-            .await;
+        let mut body = json!({
+            "token": token,
+            "email": "owner@example.com",
+            "name": "Owner",
+            "org_name": "Acme",
+        });
+        if self.state.config.auth.password {
+            body["password"] = json!(PASSWORD);
+        }
+        let r = self.post("/auth/setup", body, None).await;
         assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
         let cookie = r.cookie().unwrap();
         let who = self.get("/auth/session", &cookie).await;

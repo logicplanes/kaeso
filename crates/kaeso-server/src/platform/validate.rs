@@ -15,11 +15,15 @@ fn hidden(c: char) -> bool {
 }
 
 pub(crate) fn validate_name(param: &str, name: &str) -> ApiResult<String> {
+    validate_label(param, name, 100)
+}
+
+pub(crate) fn validate_label(param: &str, name: &str, max: usize) -> ApiResult<String> {
     let name = name.trim();
-    if name.is_empty() || name.chars().count() > 100 {
+    if name.is_empty() || name.chars().count() > max {
         return Err(ApiError::invalid(
             param,
-            format!("`{param}` must be 1 to 100 characters."),
+            format!("`{param}` must be 1 to {max} characters."),
         ));
     }
     if name.chars().any(hidden) {
@@ -41,7 +45,7 @@ pub(crate) fn validate_email(param: &str, email: &str) -> ApiResult<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{display_name, validate_name};
+    use super::{display_name, validate_label, validate_name};
 
     #[test]
     fn names_are_one_visible_line() {
@@ -68,5 +72,16 @@ mod tests {
             );
             assert_eq!(display_name(bad), None);
         }
+    }
+
+    #[test]
+    fn a_label_has_its_own_length() {
+        assert_eq!(validate_label("name", " Acme ID ", 50).unwrap(), "Acme ID");
+        assert_eq!(
+            validate_label("name", &"x".repeat(51), 50)
+                .unwrap_err()
+                .to_string(),
+            "`name` must be 1 to 50 characters."
+        );
     }
 }

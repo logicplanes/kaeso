@@ -29,7 +29,7 @@ KAESO_SMTP_FROM=Kaeso <kaeso@example.com>
 
 ## 没有邮件服务器时
 
-如果想在没有邮件服务器的情况下试用 Kaeso，设置 `KAESO_MAIL_TRANSPORT=log`。这样网关只会记录本应发送一封邮件及其类型，从不记录收件人或内容。用密码登录仍然可用，设置链接也总会出现在网关的日志中；但登录链接、邀请和提醒都不会送达。
+如果想在没有邮件服务器的情况下试用 Kaeso，设置 `KAESO_MAIL_TRANSPORT=log`。这样网关只会记录本应发送一封邮件及其类型，从不记录收件人或内容。用密码登录仍然可用，`kaeso setup-link` 也总能输出设置链接；但登录链接、邀请和提醒都不会送达。
 
 ## Kaeso 发送的邮件
 

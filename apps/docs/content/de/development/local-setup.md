@@ -142,7 +142,7 @@ Für ein Gateway, das sich in Sekunden neu starten lässt, mit Debugger oder zus
 cargo run -p kaeso-testkit -- mock-provider 127.0.0.1:18090
 ```
 
-Im ersten Terminal frische Datenbanken anlegen und ihre Einstellungen exportieren, beide Anbieter auf den Mock richten, eine öffentliche URL, einen Hauptschlüssel und E-Mail, die nur protokolliert wird, ergänzen und dann das Gateway starten:
+Im ersten Terminal frische Datenbanken anlegen und ihre Einstellungen exportieren, beide Anbieter auf den Mock richten, eine öffentliche URL, einen Hauptschlüssel und E-Mail, die nur protokolliert wird, ergänzen, den Einrichtungslink ausgeben und dann das Gateway starten:
 
 ```bash
 export $(cargo run -q -p kaeso-testkit -- fresh-services)
@@ -152,6 +152,7 @@ export KAESO_PUBLIC_URL=http://localhost:3000
 export KAESO_LISTEN=127.0.0.1:8080
 export KAESO_MASTER_KEYS="$(cargo run -q -p kaeso -- master-key generate)"
 export KAESO_MAIL_TRANSPORT=log
+cargo run -q -p kaeso -- setup-link
 cargo run -p kaeso -- serve
 ```
 
@@ -161,7 +162,7 @@ Die Konsole in einem dritten Terminal dagegen bereitstellen:
 KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev
 ```
 
-Dann den Einrichtungslink aus dem Log des Gateways öffnen. Um stattdessen die echten Anbieter aufzurufen, die beiden Zeilen `KAESO_PROVIDERS_…` weglassen. Die Datenbanken bleiben bestehen, bis sie im ersten Terminal gelöscht werden:
+Dann den Einrichtungslink öffnen, den `setup-link` ausgegeben hat. Um stattdessen die echten Anbieter aufzurufen, die beiden Zeilen `KAESO_PROVIDERS_…` weglassen. Die Datenbanken bleiben bestehen, bis sie im ersten Terminal gelöscht werden:
 
 ```bash
 cargo run -q -p kaeso-testkit -- drop-services "$KAESO_CLICKHOUSE_DATABASE"

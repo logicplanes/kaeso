@@ -152,7 +152,7 @@ describe("signing in again with a password", () => {
     const box = await toggle(user);
     await user.click(within(box).getByRole("button", { name: "Continue with SSO instead" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(window.sessionStorage.getItem("kaeso:return")).toBe(PATH);
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "owner@example.com", next: PATH }]);
   });
 });
 
@@ -181,7 +181,7 @@ describe("signing in again without a password", () => {
     expect(await within(box).findByText("Sign in again at your identity provider as owner@example.com. You come back to this page.")).toBeInTheDocument();
     await user.click(within(box).getByRole("button", { name: "Continue with SSO" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "owner@example.com" }]);
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "owner@example.com", next: PATH }]);
   });
 
   it("sends an account without an email address to the identity provider", async () => {
@@ -192,7 +192,7 @@ describe("signing in again without a password", () => {
     const box = await toggle(user);
     await user.click(await within(box).findByRole("button", { name: "Continue with SSO" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "" }]);
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "", next: PATH }]);
   });
 
   it("says when the gateway's answer can't be read", async () => {

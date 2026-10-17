@@ -280,6 +280,7 @@ describe("the organization switcher", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/sign-in"));
     expect(requests("POST", "auth/logout")).toHaveLength(1);
+    expect(await notifications().findByText("You're signed out")).toBeInTheDocument();
   });
 
   it("stays signed in and says why when signing out fails", async () => {

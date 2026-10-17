@@ -6,7 +6,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use kaeso_server::config::{self, Config, ProcessSource, Source};
-use kaeso_server::services::users::OperatorReset;
+use kaeso_server::services::users::{OperatorReset, OperatorSignIn};
 use secrecy::ExposeSecret;
 
 #[derive(Parser)]
@@ -47,6 +47,14 @@ enum UserCommand {
         about = "Remove a user's TOTP and recovery codes and end their sessions, as a last resort when they lost their device"
     )]
     Reset2fa {
+        #[arg(help = "The user's email address")]
+        email: String,
+    },
+    #[command(
+        name = "sign-in-link",
+        about = "Print a one-time sign-in link for a user, for when no other way to sign in works, such as before single sign-on is set up"
+    )]
+    SignInLink {
         #[arg(help = "The user's email address")]
         email: String,
     },
@@ -135,6 +143,19 @@ async fn run(command: Command) -> Result<()> {
                 }
             }
             state.mailer.flush().await;
+        }
+        Command::User(UserCommand::SignInLink { email }) => {
+            let state = kaeso_server::serve::prepare(config).await?;
+            match kaeso_server::services::users::operator_sign_in_link(&state, &email).await? {
+                OperatorSignIn::UnknownEmail => anyhow::bail!("no user has the address {email}"),
+                OperatorSignIn::Deactivated => {
+                    anyhow::bail!("the account of {email} is deactivated; reactivate it first")
+                }
+                OperatorSignIn::Link(url) => say!(
+                    "{}\n\nThe link signs {email} in once, within 15 minutes, even while sign-in links by email are off. Anyone who has it can sign in as {email}: open it yourself and don't share it.",
+                    url.expose_secret()
+                ),
+            }
         }
         Command::MasterKey(MasterKeyCommand::Rewrap) => {
             let state = kaeso_server::serve::prepare(config).await?;

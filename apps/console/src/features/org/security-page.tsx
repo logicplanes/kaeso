@@ -156,6 +156,12 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
                   : t("org.sso.inviteOnlyHint", "Only invited people can join through the provider.")
               }
             />
+            <SettingsRow title={t("org.sso.button", "Sign-in button")} description={buttonSentence(sso)} />
+            <SettingsRow
+              title={t("org.sso.signInLink", "Sign-in link")}
+              description={t("org.sso.signInLinkHint", "Opens sign-in with this provider, without an address.")}
+              control={<InlineCopyText value={sso.sign_in_url} label={t("org.sso.copySignInLink", "Copy sign-in link")} />}
+            />
             <SettingsRow
               title={t("org.sso.redirectUrl", "Redirect URL")}
               description={
@@ -206,6 +212,16 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
   );
 }
 
+function buttonSentence(sso: SsoView): string {
+  if (sso.name)
+    return sso.auto_redirect
+      ? t("org.sso.buttonNamedAuto", "Says Continue with {name} and starts on its own.", { name: sso.name })
+      : t("org.sso.buttonNamed", "Says Continue with {name}.", { name: sso.name });
+  return sso.auto_redirect
+    ? t("org.sso.buttonPlainAuto", "Says Continue with SSO and starts on its own.")
+    : t("org.sso.buttonPlain", "Says Continue with SSO.");
+}
+
 function SsoDialog({
   org,
   current,
@@ -224,6 +240,8 @@ function SsoDialog({
   const [secret, setSecret] = useState("");
   const [domains, setDomains] = useState<string[]>(current?.domains ?? []);
   const [role, setRole] = useState(defaultRole ?? INVITE_ONLY);
+  const [buttonName, setButtonName] = useState(current?.name ?? "");
+  const [autoRedirect, setAutoRedirect] = useState(current?.auto_redirect ?? false);
   const cat = useCatalogue(org);
   const giver = useOrgGiver(org);
   const roles = rolesOfScope(useRoles(org), "org").filter((r) => r.id !== "owner");
@@ -238,6 +256,8 @@ function SsoDialog({
             client_id: clientId.trim(),
             domains,
             default_role: role === INVITE_ONLY ? null : role,
+            name: buttonName.trim(),
+            auto_redirect: autoRedirect,
             ...(secret ? { client_secret: secret } : {}),
           },
         }),
@@ -365,6 +385,32 @@ function SsoDialog({
                 ...roleOptions(cat, roles, giver).map((o) => ({ ...o, label: t("org.sso.joinAs", "Join as {role}", { role: o.label }) })),
               ]}
             />
+          ),
+        },
+        {
+          id: "sign-in",
+          title: t("org.sso.signInStep", "How does the sign-in page offer it?"),
+          description: t("org.sso.signInStepHint", "The name on its button, and whether sign-in starts at the provider without a click."),
+          content: (
+            <div className="flex flex-col gap-16">
+              <Input
+                label={t("org.sso.buttonName", "Name on the button")}
+                placeholder={t("org.sso.buttonNameExample", "Acme ID")}
+                description={t("org.sso.buttonNameHint", "Leave it empty to say SSO.")}
+                value={buttonName}
+                onChange={(e) => setButtonName(e.target.value)}
+                maxLength={50}
+              />
+              <Switch
+                label={t("org.sso.autoRedirect", "Start without a click")}
+                description={t(
+                  "org.sso.autoRedirectHint",
+                  "When the sign-in page offers only this provider, it sends people straight there; not after they sign out.",
+                )}
+                checked={autoRedirect}
+                onCheckedChange={setAutoRedirect}
+              />
+            </div>
           ),
         },
       ]}

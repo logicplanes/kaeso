@@ -1,5 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
-import { CONSOLE_PORT, CONSOLE_URL, STACK_URLS } from "./e2e/stack";
+import { CONSOLE_PORT, CONSOLE_URL, SSO_CONSOLE_PORT, SSO_CONSOLE_URL, STACK_URLS } from "./e2e/stack";
+
+const consoleServer = (port: number, url: string, gateway: string, cache: string) => ({
+  command: `pnpm exec vite --config e2e/vite.config.ts --port ${port} --strictPort`,
+  url,
+  reuseExistingServer: false,
+  env: { KAESO_GATEWAY_URL: gateway, KAESO_VITE_CACHE: cache },
+  timeout: 120_000,
+});
 
 export default defineConfig({
   testDir: "e2e",
@@ -16,11 +24,8 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     viewport: { width: 1440, height: 900 },
   },
-  webServer: {
-    command: `pnpm exec vite --config e2e/vite.config.ts --port ${CONSOLE_PORT} --strictPort`,
-    url: CONSOLE_URL,
-    reuseExistingServer: false,
-    env: { KAESO_GATEWAY_URL: STACK_URLS.gateway, KAESO_VITE_CACHE: "node_modules/.vite-e2e" },
-    timeout: 120_000,
-  },
+  webServer: [
+    consoleServer(CONSOLE_PORT, CONSOLE_URL, STACK_URLS.gateway, "node_modules/.vite-e2e"),
+    consoleServer(SSO_CONSOLE_PORT, SSO_CONSOLE_URL, STACK_URLS.ssoGateway, "node_modules/.vite-e2e-sso"),
+  ],
 });

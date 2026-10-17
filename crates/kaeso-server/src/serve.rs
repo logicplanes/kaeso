@@ -189,14 +189,7 @@ pub async fn run(
     spawn_usage_flusher(state.clone(), shutdown.clone());
     crate::services::logs::spawn_writer(state.clone(), shutdown.clone());
 
-    match crate::setup::issue_link(&state).await {
-        Ok(Some(url)) => tracing::info!(
-            setup_url = %url,
-            "Kaeso is not set up yet. Open the setup link within 24 hours to create the first user and organization."
-        ),
-        Ok(None) => {}
-        Err(e) => tracing::error!(error = %e, "cannot issue the setup link"),
-    }
+    crate::setup::announce(&state).await;
 
     let config = &state.config;
     let public = bind(config.listen).await?;

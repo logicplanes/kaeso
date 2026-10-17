@@ -1,7 +1,9 @@
 import { Button, Input, Link, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
-import type { SignInMethods } from "~/auth/sign-in-api";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { toastApiError } from "~/api/toast-error";
+import { startSso, type SignInMethods, type SsoProvider } from "~/auth/sign-in-api";
 import { PublicPage } from "~/shell/public-page";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
@@ -10,6 +12,59 @@ export type Busy = "continue" | "password" | "magic_link" | "sso" | "code" | "si
 
 export async function requestSignUp(email: string): Promise<string> {
   return data(await api.POST("/platform/v1/auth/signup", { body: { email } })).message;
+}
+
+function ssoLabel(provider: SsoProvider | null | undefined): string {
+  return provider?.name ? t("signIn.ssoWith", "Continue with {provider}", { provider: provider.name }) : t("signIn.sso", "Continue with SSO");
+}
+
+export function ProviderStep({
+  provider,
+  next,
+  auto,
+  onEmail,
+  signUp,
+}: {
+  provider: SsoProvider;
+  next: string | undefined;
+  auto: boolean;
+  onEmail: (() => void) | undefined;
+  signUp: ReactNode;
+}) {
+  const [starting, setStarting] = useState(false);
+  const started = useRef(false);
+  const onStart = async () => {
+    setStarting(true);
+    try {
+      window.location.assign(await startSso({ org: provider.org, ...(next ? { next } : {}) }));
+    } catch (e) {
+      toastApiError(e);
+    } finally {
+      setStarting(false);
+    }
+  };
+  useEffect(() => {
+    if (!auto || !provider.auto_redirect || started.current) return;
+    started.current = true;
+    void onStart();
+  });
+  return (
+    <PublicPage title={t("signIn.title", "Sign in")}>
+      <div className="flex flex-col gap-16">
+        <Button variant="primary" size="xl" fullWidth loading={starting} onClick={() => void onStart()} autoFocus>
+          {ssoLabel(provider)}
+        </Button>
+        {onEmail && (
+          <Text variant="small" tone="secondary" className="text-center">
+            <Link href="#" variant="quiet" onClick={(e) => (e.preventDefault(), onEmail())}>
+              {t("signIn.useEmail", "Sign in with your email instead")}
+            </Link>
+          </Text>
+        )}
+      </div>
+      {signUp}
+    </PublicPage>
+  );
 }
 
 export function MethodsStep({
@@ -47,7 +102,7 @@ export function MethodsStep({
         <input type="email" name="username" autoComplete="username" value={address} readOnly hidden />
         {m.sso && (
           <Button variant={m.password ? "secondary" : "primary"} size="xl" fullWidth loading={busy === "sso"} onClick={onSso} autoFocus={!m.password}>
-            {t("signIn.sso", "Continue with SSO")}
+            {ssoLabel(m.provider)}
           </Button>
         )}
         {m.password && (

@@ -5,6 +5,7 @@ import { Button, Input } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { toast } from "~/shell/toast";
 import { toastApiError } from "~/api/toast-error";
+import { translateGatewayMessage } from "~/api/errors";
 import { sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso, type SignInMethods } from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
 import { safeNext } from "~/auth/next";
@@ -25,10 +26,27 @@ type Step =
   | { kind: "totp"; challenge: string; expiresAt: string; recovery: boolean }
   | { kind: "link-sent"; message: string };
 
-export function SignInPage({ next, ssoError, notice }: { next?: string | undefined; ssoError?: string | null | undefined; notice?: string | undefined }) {
+const onlySso = (m: SignInMethods) => m.sso && !m.password && !m.magic_link && !m.sign_up;
+
+export function SignInPage({
+  next,
+  org,
+  page,
+  ssoError,
+  notice,
+  quiet = false,
+}: {
+  next?: string | undefined;
+  org?: string | undefined;
+  page?: SignInMethods | null | undefined;
+  ssoError?: string | null | undefined;
+  notice?: string | undefined;
+  quiet?: boolean;
+}) {
   usePageTitle(t("signIn.title", "Sign in"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const provider = page?.provider ?? null;
   const [SignUp, setSignUp] = useState(() => signUpLine);
   useEffect(() => {
     if (!SignUp)
@@ -41,6 +59,8 @@ export function SignInPage({ next, ssoError, notice }: { next?: string | undefin
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<Step>({ kind: "email" });
+  const [withEmailInstead, setWithEmailInstead] = useState(false);
+  const [loaded, setLoaded] = useState(() => steps);
   const [busy, setBusy] = useState<Busy | null>(null);
   const passwordFailed = useRef(false);
   useEffect(() => {
@@ -51,13 +71,13 @@ export function SignInPage({ next, ssoError, notice }: { next?: string | undefin
     field?.select();
   }, [busy]);
   useEffect(() => {
-    if (ssoError) toast.error(ssoError, { id: "sso-error" });
+    if (ssoError) void translateGatewayMessage(ssoError).then((message) => toast.error(message, { id: "sso-error" }));
   }, [ssoError]);
   useEffect(() => {
     if (!notice) return;
     toast.success(notice, { id: "sign-in-notice" });
-    void navigate({ to: "/sign-in", search: next ? { next } : {}, replace: true });
-  }, [notice, next, navigate]);
+    void navigate({ to: "/sign-in", search: { ...(next ? { next } : {}), ...(org ? { org } : {}) }, replace: true });
+  }, [notice, next, org, navigate]);
 
   const done = async () => {
     await queryClient.resetQueries();
@@ -75,11 +95,15 @@ export function SignInPage({ next, ssoError, notice }: { next?: string | undefin
       setBusy(null);
     }
   };
+  const toProvider = async (body: { email: string } | { org: string }) => {
+    window.location.assign(await startSso({ ...body, ...(next ? { next } : {}) }));
+  };
   const address = email.trim();
   const withEmail = () =>
     run("continue", async () => {
       const [methods] = await Promise.all([signInMethodsFor(address), loadSteps()]);
-      setStep({ kind: "methods", methods });
+      if (onlySso(methods) && methods.provider?.auto_redirect) await toProvider({ email: address });
+      else setStep({ kind: "methods", methods });
     });
   const withPassword = () =>
     run("password", async () => {
@@ -102,15 +126,20 @@ export function SignInPage({ next, ssoError, notice }: { next?: string | undefin
       const { requestSignUp } = await loadSteps();
       setStep({ kind: "link-sent", message: await requestSignUp(address) });
     });
-  const withSso = () =>
-    run("sso", async () => {
-      window.location.assign(await startSso({ email: address }));
-    });
+  const withSso = () => run("sso", () => toProvider({ email: address }));
   const otherEmail = () => {
     setEmail(address);
     setPassword("");
     setStep({ kind: "email" });
   };
+  const alone = provider && !withEmailInstead && step.kind === "email" ? provider : null;
+  useEffect(() => {
+    if (provider && !loaded)
+      loadSteps().then(
+        (m) => setLoaded(m),
+        () => setWithEmailInstead(true),
+      );
+  }, [provider, loaded]);
 
   if (step.kind === "link-sent") {
     return (
@@ -154,6 +183,21 @@ export function SignInPage({ next, ssoError, notice }: { next?: string | undefin
       />
     );
   }
+
+  if (alone && loaded) {
+    const { ProviderStep } = loaded;
+    return (
+      <ProviderStep
+        provider={alone}
+        next={next}
+        auto={!quiet}
+        onEmail={page?.password || page?.magic_link ? () => setWithEmailInstead(true) : undefined}
+        signUp={SignUp && <SignUp />}
+      />
+    );
+  }
+
+  if (page === undefined || alone) return <PublicPage title={t("signIn.title", "Sign in")}>{null}</PublicPage>;
 
   return (
     <PublicPage title={t("signIn.title", "Sign in")}>

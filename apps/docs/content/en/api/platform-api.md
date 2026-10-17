@@ -44,6 +44,14 @@ Keys are for `orgs/{org}/*`: `me/*`, `instance/*` and the signed-in routes of `a
 
 Too many requests with unknown API keys from one address, on the model API and the Platform API together, are refused with `429 rate_limited` and `Retry-After` until the window ends. [API key failures](../self-hosting/configuration.md#api-key-failures) has the settings.
 
+### Cross-site requests
+
+Every request other than `GET`, `HEAD` and `OPTIONS` that carries the session cookie, and every such request to a public `auth/*` endpoint, must send `Origin` with the origin of the install's public URL, such as `Origin: https://kaeso.example.com`. Browsers send it by themselves. Without it, or with another origin, the answer is `403 permission_denied`, and its message names the header to send. The rule keeps other sites from acting with a person's session and from signing a browser in to an account of theirs; `Referer` doesn't count in its place.
+
+- `orgs/{org}/*` requests with an API key need no `Origin`.
+- Reads never need it, among them `GET auth/methods` and the start link `GET auth/oidc/start`.
+- A server that calls `POST auth/methods`, `POST auth/password` or `POST auth/oidc/start` sends `Origin` with the install's origin. To send people to an identity provider from another site, link to `GET auth/oidc/start` instead; see [sign-in and single sign-on](../self-hosting/sign-in.md#links-that-go-straight-to-the-provider).
+
 ## Errors
 
 ```json

@@ -230,7 +230,7 @@ async fn invalidations_reach_every_subscriber() {
 
 #[tokio::test]
 async fn an_sso_domain_signs_in_through_one_organization() {
-    use kaeso_store::pg::oidc::{self, Upserted};
+    use kaeso_store::pg::oidc::{self, Connected, Upserted};
     let s = TestServices::start().await;
     let (first, second) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
     for org in [first, second] {
@@ -247,15 +247,32 @@ async fn an_sso_domain_signs_in_through_one_organization() {
         wrapped_key: vec![3],
         key_id: "k1".into(),
         domains: vec!["acme.example".into()],
+        display_name: Some("Acme ID".into()),
+        auto_redirect: true,
     };
     let mut conn = s.pg.acquire().await.unwrap();
+    assert_eq!(
+        oidc::connected(&mut *conn).await.unwrap(),
+        Connected::Nowhere
+    );
     assert_eq!(
         oidc::upsert(&mut conn, &connection(first)).await.unwrap(),
         Upserted::Saved
     );
     assert_eq!(
+        oidc::connected(&mut *conn).await.unwrap(),
+        Connected::Only(first)
+    );
+    let stored = oidc::get(&mut *conn, first).await.unwrap().unwrap();
+    assert_eq!(stored.display_name.as_deref(), Some("Acme ID"));
+    assert!(stored.auto_redirect);
+    assert_eq!(
         oidc::upsert(&mut conn, &connection(second)).await.unwrap(),
         Upserted::DomainTaken("acme.example".into())
+    );
+    assert_eq!(
+        oidc::connected(&mut *conn).await.unwrap(),
+        Connected::Several
     );
     drop(conn);
     s.cleanup().await;

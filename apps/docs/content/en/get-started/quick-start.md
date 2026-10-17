@@ -74,21 +74,17 @@ The first start takes a minute or two: the images download, the databases start,
 
 ## Sign in with the setup link
 
-While the install has no users, the gateway logs a setup link:
-
-```bash
-docker compose logs gateway | grep setup_url
-```
-
-Open the link in a browser. It works once, for 24 hours. Enter your name, your email, a password of 12 to 128 characters and the name of your organization, then choose **Set up Kaeso**.
-
-You are now the install's first instance admin and the owner of its first organization, which starts with a default project.
-
-If the link expired or got lost, print a new one; older links stop working:
+While the install has no users, the gateway's log says so, but never holds the link itself: anyone who reads the log could take the install over with it. Print the setup link in your terminal:
 
 ```bash
 docker compose exec gateway kaeso setup-link
 ```
+
+Open the link in a browser. It works once, for 24 hours. Enter your name, your email, a password of 12 to 128 characters and the name of your organization, then choose **Set up Kaeso**. An install that signs in only with single sign-on asks for no password; see [sign-in and single sign-on](../self-hosting/sign-in.md#an-install-without-passwords).
+
+You are now the install's first instance admin and the owner of its first organization, which starts with a default project.
+
+If the link expired or got lost, run the command again: it prints a new link, and older links stop working.
 
 ## Add a provider key
 

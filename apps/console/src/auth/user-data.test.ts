@@ -15,7 +15,6 @@ describe("forgetting a person's data", () => {
     };
     for (const [key, value] of Object.entries(local)) window.localStorage.setItem(key, value);
     window.sessionStorage.setItem("kaeso:invite", "inv_token");
-    window.sessionStorage.setItem("kaeso:return", "/orgs/org_northwind");
 
     forgetUserData();
 

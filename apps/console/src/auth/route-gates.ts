@@ -1,23 +1,14 @@
 import { redirect } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import { orgProjectsQuery, projectQuery } from "~/api/queries/projects";
-import { internalPath } from "~/auth/next";
-import { RETURN_KEY } from "~/auth/recent-sign-in-store";
 import { keptWhileReadOnly } from "~/auth/rights";
 import { membershipsQuery, projectRightsQuery, sessionQuery } from "~/auth/session";
 import { writeLast } from "~/shell/last";
 import { PROJECT_PAGES } from "~/shell/pages";
 import { homePlace } from "~/shell/place";
 import { toast } from "~/shell/toast";
-import { takeStored } from "~/storage";
-
-function takeReturn(): string | null {
-  return internalPath(takeStored(RETURN_KEY, "session"));
-}
 
 export async function goHome(queryClient: QueryClient): Promise<void> {
-  const back = takeReturn();
-  if (back) throw redirect({ href: back });
   const place = homePlace(await queryClient.ensureQueryData(membershipsQuery));
   if (place?.project) throw redirect({ to: "/orgs/$org/projects/$project", params: { org: place.org, project: place.project } });
   if (place) throw redirect({ to: "/orgs/$org", params: { org: place.org } });

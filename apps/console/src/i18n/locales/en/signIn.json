@@ -16,9 +16,11 @@
   "signIn.recoveryCode": "Recovery code",
   "signIn.recoveryHint": "Enter one of your recovery codes; each works once.",
   "signIn.sso": "Continue with SSO",
+  "signIn.ssoWith": "Continue with {provider}",
   "signIn.title": "Sign in",
   "signIn.twoStep": "Two-step verification",
   "signIn.useApp": "Use the authenticator app",
+  "signIn.useEmail": "Sign in with your email instead",
   "signIn.useRecovery": "Use a recovery code",
   "signIn.verify": "Verify"
 }

@@ -68,7 +68,7 @@ pnpm --filter kaeso-console exec playwright install chromium
 
 单元测试在 happy-dom 中运行，每个测试各自模拟 Platform API（`apps/console/src/test/network.ts`，fixture 位于 `apps/console/src/test/fixtures/`）。`renderApp(path)` 在某个地址挂载整个控制台，并使用一个独立的路由器，它随测试结束而结束，因此一个测试导航到的内容不会影响下一个测试；`renderUi` 只挂载单个组件。测试断言用户看到的内容和发出的请求，并且以任意顺序运行都能通过，可用 `pnpm --filter kaeso-console exec vitest run --sequence.shuffle` 检查。`src/routes` 下的测试文件以 `-` 开头，因此路由生成器会跳过它们。
 
-端到端测试套件从不使用开发环境栈。它会用 `deploy/compose.dev.yaml` 启动自己的栈，即使用 28000 段端口的 Compose 项目 `kaeso-console-e2e`，网关在 `127.0.0.1:28080`；控制台由 Vite 在 http://localhost:3100 提供；运行结束时删除这个栈及其数据。`KAESO_GATEWAY_IMAGE` 会使用已构建好的网关镜像，而不是从检出的代码构建。各个 spec 从 `01-public` 开始逐个依赖前一个，`01-public` 负责设置安装。如果想在多次运行之间保留端到端测试栈，可以手动启动它并告知测试套件：
+端到端测试套件从不使用开发环境栈。它会用 `deploy/compose.dev.yaml` 启动自己的栈，即使用 28000 段端口的 Compose 项目 `kaeso-console-e2e`，网关在 `127.0.0.1:28080`；控制台由 Vite 在 http://localhost:3100 提供；供 `20-sso-only` 使用的、只通过单点登录登录的第二个网关在 `127.0.0.1:28081`，其控制台由 Vite 在 http://localhost:3101 提供；运行结束时删除这个栈及其数据。`KAESO_GATEWAY_IMAGE` 会使用已构建好的网关镜像，而不是从检出的代码构建。各个 spec 从 `01-public` 开始逐个依赖前一个，`01-public` 负责设置安装。如果想在多次运行之间保留端到端测试栈，可以手动启动它并告知测试套件：
 
 ```bash
 node apps/console/scripts/stack.mjs up --e2e

@@ -44,6 +44,14 @@ Platform API 管理组织、项目、成员、密钥、服务商密钥、模型�
 
 来自同一地址的使用未知 API 密钥的请求过多时（模型 API 和 Platform API 合并计算），会以 `429 rate_limited` 和 `Retry-After` 被拒绝，直到时间窗口结束。相关设置见 [API 密钥验证失败](../self-hosting/configuration.md#api-密钥查找失败)。
 
+### 跨站请求
+
+除 `GET`、`HEAD` 和 `OPTIONS` 之外，凡是携带会话 Cookie 的请求，以及发往公开 `auth/*` 端点的此类请求，都必须发送 `Origin`，其值为部署公开 URL 的源，例如 `Origin: https://kaeso.example.com`。浏览器会自动发送它。缺少该请求头或源不同时，响应为 `403 permission_denied`，其消息会指明应发送的请求头。这条规则可以防止其他网站借用某人的会话执行操作，或让浏览器登录到他们的账户；`Referer` 不能代替它。
+
+- 使用 API 密钥访问 `orgs/{org}/*` 的请求不需要 `Origin`。
+- 读取请求从不需要它，其中包括 `GET auth/methods` 和启动链接 `GET auth/oidc/start`。
+- 代为调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送部署的源作为 `Origin`。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`；参见[登录和单点登录](../self-hosting/sign-in.md#直接前往提供商的链接)。
+
 ## 错误
 
 ```json

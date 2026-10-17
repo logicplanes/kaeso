@@ -33,6 +33,8 @@ Unter **Organisationseinstellungen**, im Menü am Fuß der Seitenleiste, hat die
 
 Unter **Sicherheit** **Identitätsanbieter verbinden** wählen, damit sich Personen über den eigenen OpenID-Connect-Anbieter anmelden. Die Issuer-URL eingeben, Client-ID und Secret der dort registrierten App und die E-Mail-Domains, die sich darüber anmelden. Festlegen, ob Personen ohne Einladung beitreten können und mit welcher Rolle; das gilt nur für Personen, die neu bei Kaeso sind, denn ein bestehendes Konto meldet sich erst über Single Sign-on an, wenn es Mitglied der Organisation ist. Internationalisierte Domains lassen sich in beiden Formen eingeben, `bücher.example` oder `xn--bcher-kva.example`. Die Seite zeigt die Weiterleitungs-URL, die beim Anbieter zu registrieren ist.
 
+Der letzte Schritt legt fest, wie die Anmeldeseite den Anbieter anbietet: den Namen auf seiner Schaltfläche, etwa **Weiter mit Acme ID**, und **Ohne Klick starten**, das Personen direkt zum Anbieter schickt, sobald die Seite nur ihn anbietet, außer direkt nach dem Abmelden oder nachdem der Anbieter sie abgelehnt hat. Der **Anmeldelink** öffnet die Anmeldeseite mit der Schaltfläche dieses Anbieters, ohne dass eine Adresse einzugeben ist; ihn mit den Mitgliedern teilen, etwa im Intranet. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) beschreibt die Regeln.
+
 Sobald die Verbindung steht, macht **Single Sign-on verlangen** es zum einzigen Weg in die Organisation. **Zwei-Faktor-Authentifizierung verlangen** gilt für die Anmeldung mit Passwort, nicht für Anmeldelinks oder Single Sign-on.
 
 ### Eine Organisation löschen

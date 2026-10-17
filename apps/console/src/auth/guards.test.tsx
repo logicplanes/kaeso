@@ -40,7 +40,7 @@ describe("an organization that requires single sign-on", () => {
     expect(screen.getByText("Northwind Labs requires single sign-on. Your session works for your other organizations.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continue with SSO" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.northwind.test/authorize"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG }]);
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: `/orgs/${ORG}` }]);
   });
 
   it("says why single sign-on couldn't start", async () => {

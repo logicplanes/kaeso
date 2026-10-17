@@ -1,5 +1,6 @@
 use kaeso_core::id::UserId;
 use kaeso_store::StoreError;
+use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
 use kaeso_store::pg::{totp, users};
 
 use kaeso_mail::Actor;
@@ -70,6 +71,69 @@ pub async fn operator_reset_2fa(
     } else {
         OperatorReset::NothingToRemove
     })
+}
+
+pub const OPERATOR_LINK: &str = "operator";
+
+pub enum OperatorSignIn {
+    UnknownEmail,
+    Deactivated,
+    Link(secrecy::SecretString),
+}
+
+impl std::fmt::Debug for OperatorSignIn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OperatorSignIn::UnknownEmail => f.write_str("UnknownEmail"),
+            OperatorSignIn::Deactivated => f.write_str("Deactivated"),
+            OperatorSignIn::Link(_) => f.write_str("Link(…)"),
+        }
+    }
+}
+
+pub async fn operator_sign_in_link(
+    state: &AppState,
+    email: &str,
+) -> Result<OperatorSignIn, crate::platform::error::ApiError> {
+    let Ok(email) = kaeso_core::email::normalize(email) else {
+        return Ok(OperatorSignIn::UnknownEmail);
+    };
+    let Some(user) = users::get_by_email(&state.pg, &email).await? else {
+        return Ok(OperatorSignIn::UnknownEmail);
+    };
+    if user.state != "active" {
+        return Ok(OperatorSignIn::Deactivated);
+    }
+    let id = UserId::from_uuid(user.id);
+    let now = state.clock.now();
+    let token = kaeso_crypto::random_token();
+    let mut tx = state.pg.begin().await?;
+    tokens::insert(
+        &mut *tx,
+        NewToken {
+            kind: TokenKind::MagicLink,
+            hash: &kaeso_core::secret::hash(&token),
+            user_id: Some(user.id),
+            email: Some(&email),
+            data: serde_json::json!({ "issued_by": OPERATOR_LINK }),
+            expires_at: now + crate::platform::auth::magic::LIFETIME,
+        },
+    )
+    .await?;
+    crate::platform::audit::system(
+        &mut tx,
+        None,
+        "user.sign_in_link",
+        Some(("user", id.to_string())),
+        None,
+        now,
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(OperatorSignIn::Link(secrecy::SecretString::from(format!(
+        "{}auth/magic-link#token={token}",
+        state.config.public_url
+    ))))
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -34,6 +34,16 @@ docker compose exec gateway kaeso setup-link
 
 如果 Kaeso 已经设置完成，该命令会说明这一点；请改为在自己的域名上登录。
 
+## 无法登录没有密码的安装
+
+在只通过单点登录登录的安装上，如果身份提供商出现故障，或者设置时的会话在单点登录可用之前就已结束，就没有办法登录。无需重新开启密码，为实例管理员输出一个一次性登录链接即可：
+
+```bash
+docker compose exec gateway kaeso user sign-in-link owner@example.com
+```
+
+请在 15 分钟内打开它；它只能使用一次。参见[重新登录](sign-in.md#重新登录)。
+
 ## 网站没有证书
 
 Caddy 需要域名的 DNS 记录指向该服务器，并且 80 和 443 端口处于开放状态。`docker compose logs caddy` 会显示证书颁发机构的应答。参见[域名和 TLS](domains-and-tls.md#证书)。

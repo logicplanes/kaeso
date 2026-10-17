@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\" FROM org_oidc",
+  "query": "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", c.display_name, c.auto_redirect FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id WHERE c.org_id = $1 GROUP BY c.org_id",
   "describe": {
     "columns": [
       {
@@ -85,10 +85,34 @@
         "name": "domains!",
         "type_info": "TextArray",
         "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "auto_redirect",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "auto_redirect"
+          }
+        }
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -98,8 +122,10 @@
       false,
       false,
       false,
-      null
+      null,
+      true,
+      false
     ]
   },
-  "hash": "13c3a02c577f8ca3f6e25ce4249dcd859db4dfccec24f49158356844919cc992"
+  "hash": "252992f1ab8aaf125ca8d3ffa73697df92af2cdb59f2b699240eb91acd130a14"
 }

@@ -14,6 +14,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - `DialogScope` in `@logicplanes/kaeso-ui`: the component inside it mounts anew each time its dialog opens and unmounts once the dialog has finished closing, so a dialog's fields, steps, results and secrets never come back on the next open.
 - Both sites ship their Content Security Policy: every page carries it in a `<meta>`, and the build writes it to `csp.txt` and `_headers` for the response header. The documentation runs under `script-src 'self'; style-src 'self'` with nothing inline, and the showcase allows only the inline scripts and styles of its build, by hash.
 - Each release pulls both images for both platforms without signing in, and fails with what to do when ghcr.io refuses because a package is private.
+- Installs that sign in only with single sign-on: the sign-in page offers the identity provider's button without asking for an address when it is the install's only one or comes from an organization's sign-in link (`/sign-in?org=…`, shown on the Security page), names it (**Continue with Acme ID**) and can start at the provider without a click, except right after signing out or a refused sign-in. `GET /platform/v1/auth/oidc/start` is a link that goes straight to the provider, for bookmarks and intranet pages.
+- Setup on an install with passwords off asks for no password and opens the organization's Security page to connect the identity provider; `kaeso user sign-in-link <email>` prints a one-time sign-in link, audited, for when no other way in works.
 
 ### Changed
 
@@ -24,6 +26,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The project catalogue knows whether each model's provider serves it to the project's provider key: **Check availability** on the **Models** page (`POST …/models/check`) asks the provider, requests teach it too, and a model marked **Unavailable** is left out of `GET /v1/models`; changing a provider key resets its models to **Not checked**. Models models.dev marks deprecated show **Deprecated** and have `lifecycle: "deprecated"` in Anthropic model listings.
 - Smaller console downloads: a project's overview loads 25 kB less JavaScript and the sign-in page 4 kB less, the documentation site's frame 3.6 kB less, and a page's code is requested while the console starts instead of after its first render. `AppFrame` loads its phone navigation sheet once the page is idle or on the first tap, and the charts no longer need d3-scale's colour and number-format modules.
 - The install, quick start, upgrade and reverse proxy guides start Kaeso with `docker compose up -d --wait`, which returns once every service is healthy, also without the bundled Caddy, and fails when one isn't; the reverse proxy guide shows how to reach Kaeso from a proxy in Docker over a network of its own, under names that can't collide with other stacks.
+- The Platform API's cross-site refusal says which `Origin` header to send, and the Platform API page documents when `Origin` is needed.
 
 ### Fixed
 
@@ -43,9 +46,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - A request for a catalogue model that the provider does not serve to the project's provider key, such as a retired model or one the key has no access to, now fails with 404 and `param: model` in the app's format, with a message that names the provider and the model and says to check the key's access or remove the model, instead of the provider's bare `model: …`; Kaeso confirms it with the provider's model endpoint first and never retries.
 - The console image sets the permissions of its files itself, so an image built from a checkout with a strict umask serves the console instead of restarting without a word; when it can't read its files, it says which and stops.
 - ScrollArea and Select no longer add an inline `<style>` element, which a strict Content Security Policy blocks; the stylesheet hides their native scrollbars.
+- Single sign-on brings people back to the console page they asked for, from `next`, instead of the start page; `next` must be a console path on the install, so it can't send a browser to another site.
+- The description of `org` in `POST auth/oidc/start` names where the organization comes from; the sign-in link it described didn't exist until now.
 
 ### Security
 
+- The gateway no longer logs the setup link, which anyone who could read its logs could have used to take an install over before its first user existed; the log says that the install isn't set up yet and to run `kaeso setup-link`, which prints the link in the terminal.
 - The console no longer shows an API key's secret again after its dialog was closed: until the page was reloaded, the next Create key opened on the last key's secret. The secret now leaves the page and the console's memory once the dialog has closed.
 
 ## [0.1.0] - 2026-10-16

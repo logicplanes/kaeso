@@ -16,9 +16,11 @@
   "signIn.recoveryCode": "恢复码",
   "signIn.recoveryHint": "输入一个恢复码，每个仅可使用一次。",
   "signIn.sso": "使用 SSO 继续",
+  "signIn.ssoWith": "使用 {provider} 继续",
   "signIn.title": "登录",
   "signIn.twoStep": "两步验证",
   "signIn.useApp": "使用身份验证器应用",
+  "signIn.useEmail": "改用邮箱登录",
   "signIn.useRecovery": "使用恢复码",
   "signIn.verify": "验证"
 }

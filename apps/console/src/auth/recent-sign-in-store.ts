@@ -1,5 +1,3 @@
-export const RETURN_KEY = "kaeso:return";
-
 type Listener = (open: boolean) => void;
 
 let pending: Promise<boolean> | null = null;

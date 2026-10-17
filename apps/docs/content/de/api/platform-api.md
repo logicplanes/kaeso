@@ -44,6 +44,14 @@ Schlüssel sind für `orgs/{org}/*`: `me/*`, `instance/*` und die angemeldeten R
 
 Zu viele Anfragen mit unbekannten API-Schlüsseln von einer Adresse, auf Modell-API und Platform API zusammen, werden mit `429 rate_limited` und `Retry-After` abgelehnt, bis das Zeitfenster endet. [Fehlgeschlagene API-Schlüssel](../self-hosting/configuration.md#fehlgeschlagene-api-schlüssel) nennt die Einstellungen.
 
+### Websiteübergreifende Anfragen
+
+Jede Anfrage außer `GET`, `HEAD` und `OPTIONS`, die das Sitzungs-Cookie trägt, und jede solche Anfrage an einen öffentlichen `auth/*`-Endpunkt muss `Origin` mit dem Origin der öffentlichen URL der Installation senden, etwa `Origin: https://kaeso.example.com`. Browser senden es von selbst. Ohne ihn oder mit einem anderen Origin lautet die Antwort `403 permission_denied`, und ihre Meldung nennt den zu sendenden Header. Die Regel hindert andere Websites daran, mit der Sitzung einer Person zu handeln oder einen Browser in ein eigenes Konto anzumelden; `Referer` zählt nicht an seiner Stelle.
+
+- Anfragen an `orgs/{org}/*` mit einem API-Schlüssel brauchen kein `Origin`.
+- Lesende Anfragen brauchen es nie, darunter `GET auth/methods` und der Startlink `GET auth/oidc/start`.
+- Ein Server, der `POST auth/methods`, `POST auth/password` oder `POST auth/oidc/start` aufruft, sendet `Origin` mit dem Origin der Installation. Um Personen von einer anderen Website zum Identitätsanbieter zu schicken, stattdessen auf `GET auth/oidc/start` verlinken; siehe [Anmeldung und Single Sign-on](../self-hosting/sign-in.md#links-die-direkt-zum-anbieter-führen).
+
 ## Fehler
 
 ```json
