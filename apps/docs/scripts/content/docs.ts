@@ -1,14 +1,24 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { DEFAULT_LOCALE, LANGUAGE_NAMES, LOCALES, localeOfPath, localePrefix, type Locale } from "../../src/i18n/locales.ts";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
 import { buildChangelog, changelogClash, withChangelog } from "./changelog.ts";
+import { DIAGRAM_COMMAND, DIAGRAM_THEMES, diagramFile, diagramFiles, type DiagramJob } from "./diagram.ts";
 import { buildSite, type Site, type SitePage } from "./site.ts";
 
 export interface Docs {
   contentDir: string;
+  diagramDir: string;
   sites: Record<Locale, Site>;
+  diagrams: DiagramJob[];
   problems: string[];
+}
+
+export const diagramDirOf = (contentDir: string) => join(dirname(resolve(contentDir)), "diagrams");
+
+export function staleDiagrams(diagramDir: string, jobs: DiagramJob[]): string[] {
+  const used = new Set(jobs.flatMap((j) => DIAGRAM_THEMES.map((t) => diagramFile(j.key, t))));
+  return diagramFiles(diagramDir).filter((f) => !used.has(f));
 }
 
 const posix = (p: string) => p.split(sep).join("/");
@@ -53,31 +63,35 @@ export function kaesoVersion(docsRoot: string): string {
   return (JSON.parse(readFileSync(join(docsRoot, "..", "..", "package.json"), "utf8")) as { version: string }).version;
 }
 
-const siteOptions = (locale: Locale, version: string) => {
+const siteOptions = (locale: Locale, version: string, diagrams: string) => {
   const messages = MESSAGES[locale];
-  return { prefix: localePrefix(locale), labels: { home: messages["nav.introduction"], overview: messages["nav.overview"] }, version };
+  return { prefix: localePrefix(locale), labels: { home: messages["nav.introduction"], overview: messages["nav.overview"] }, version, diagrams };
 };
 
-export function buildDocs(contentDir: string, repoRoot: string, version: string, changelogFile?: string): Docs {
+export function buildDocs(contentDir: string, repoRoot: string, version: string, changelogFile?: string, diagramDir = diagramDirOf(contentDir)): Docs {
   const rel = posix(relative(repoRoot, contentDir));
   if (!existsSync(contentDir)) {
-    const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot, siteOptions(DEFAULT_LOCALE, version));
+    const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot, siteOptions(DEFAULT_LOCALE, version, diagramDir));
     const sites = Object.fromEntries(LOCALES.map((l) => [l, empty])) as Record<Locale, Site>;
-    return { contentDir, sites, problems: [`${rel} does not exist`] };
+    return { contentDir, diagramDir, sites, diagrams: [], problems: [`${rel} does not exist`] };
   }
-  const sites = Object.fromEntries(LOCALES.map((locale) => [locale, buildSite(join(contentDir, locale), repoRoot, siteOptions(locale, version))])) as Record<
-    Locale,
-    Site
-  >;
+  const sites = Object.fromEntries(
+    LOCALES.map((locale) => [locale, buildSite(join(contentDir, locale), repoRoot, siteOptions(locale, version, diagramDir))]),
+  ) as Record<Locale, Site>;
+  const diagrams = LOCALES.flatMap((l) => sites[l].diagrams);
+  const stale = staleDiagrams(diagramDir, diagrams).map(
+    (f) => `${posix(relative(repoRoot, join(diagramDir, f)))}: no page draws this diagram any more; run \`${DIAGRAM_COMMAND}\` to remove it`,
+  );
   const problems = [
     ...strayEntries(contentDir, repoRoot),
     ...LOCALES.flatMap((l) => sites[l].problems),
+    ...stale,
     ...reservedAddresses(sites[DEFAULT_LOCALE]),
     ...translationProblems(sites, repoRoot),
   ];
-  if (!changelogFile) return { contentDir, sites, problems };
+  if (!changelogFile) return { contentDir, diagramDir, sites, diagrams, problems };
   const changelog = buildChangelog(changelogFile, repoRoot);
   const clashes = LOCALES.flatMap((l) => changelogClash(sites[l], localePrefix(l)));
   const logged = Object.fromEntries(LOCALES.map((l) => [l, withChangelog(sites[l], changelog, localePrefix(l), MESSAGES[l])])) as Record<Locale, Site>;
-  return { contentDir, sites: logged, problems: [...problems, ...changelog.problems, ...clashes] };
+  return { contentDir, diagramDir, sites: logged, diagrams, problems: [...problems, ...changelog.problems, ...clashes] };
 }

@@ -47,6 +47,22 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiK
 
 ## 限额
 
+```mermaid
+sequenceDiagram
+  accTitle: 如何按限额检查请求
+  accDescr: 应用携带密钥发送请求；网关在调用服务商之前，在 Valkey 中检查密钥、成员和项目的限额，达到某个限额时以 429 拒绝请求。
+  participant App as 应用
+  participant Gateway as 网关
+  participant Valkey
+  participant Provider as 服务商
+  App->>Gateway: 携带 sk-kso-… 的请求
+  Gateway->>Valkey: 密钥、成员和项目的限额
+  Valkey-->>Gateway: 未超出任何限额
+  Gateway->>Provider: 服务商格式的请求
+  Provider-->>Gateway: 回复
+  Gateway-->>App: 回复，或达到限额时返回 429
+```
+
 限额分三个层级，请求必须同时满足所有层级。
 
 | 层级 | 每分钟请求数 | 每天 Token 数 | 每月支出 | 适用于 |

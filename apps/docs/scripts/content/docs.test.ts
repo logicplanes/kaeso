@@ -62,6 +62,18 @@ describe("buildDocs", () => {
     expect(docs.problems.some((p) => p.startsWith("content/en/de/index.md: its address /de is where the Deutsch pages live"))).toBe(true);
   });
 
+  it("names every drawing that no page draws any more", () => {
+    repo(everyLanguage({ "index.md": page("Start") }));
+    mkdirSync(join(root, "diagrams"));
+    writeFileSync(join(root, "diagrams", "0123456789abcdef.light.svg"), "<svg></svg>");
+    const docs = buildDocs(join(root, "content"), root, "1.4.0");
+    expect(docs.diagramDir).toBe(join(root, "diagrams"));
+    expect(docs.diagrams).toEqual([]);
+    expect(docs.problems).toEqual([
+      "diagrams/0123456789abcdef.light.svg: no page draws this diagram any more; run `pnpm --filter kaeso-docs diagrams` to remove it",
+    ]);
+  });
+
   it("names a missing content folder", () => {
     root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
     expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual(["content does not exist"]);

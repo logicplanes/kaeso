@@ -25,6 +25,7 @@ export const zhCN: Messages = {
   "page.nextStep": "下一页：{title}",
   "page.edit": "在 GitHub 上编辑",
   "page.table": "表格：{columns}",
+  "page.diagram": "图示：{title}",
   "page.task": "任务",
   "callout.note": "注意",
   "callout.tip": "提示",

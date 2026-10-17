@@ -622,6 +622,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
       - run: pnpm test
       - name: Coverage summary
         if: always()

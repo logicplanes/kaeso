@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Block } from "./ast";
 import { TextProvider } from "~/i18n/text";
-import { Markdown } from "./render";
+import { Markdown, diagramMinWidth } from "./render";
 
 const draw = (blocks: Block[]) => render(<Markdown blocks={blocks} />).container;
 
@@ -181,5 +181,64 @@ describe("Markdown", () => {
     expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["页面", "内容"]);
     expect(screen.getByRole("cell", { name: "快速开始" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "启动网关控制台和数据库" })).toBeInTheDocument();
+  });
+
+  it("lets long code break with its sentence and keeps short code in one piece", () => {
+    const c = draw([
+      {
+        t: "paragraph",
+        c: [
+          { t: "code", v: "docker compose exec gateway kaeso openapi" },
+          { t: "text", v: ". Then " },
+          { t: "code", v: "kaeso serve" },
+        ],
+      },
+    ]);
+    const [long, short] = [...c.querySelectorAll("code")];
+    expect(long).toHaveClass("inline", "box-decoration-clone");
+    expect(long).not.toHaveClass("inline-block");
+    expect(short).toHaveClass("inline-block");
+  });
+
+  it("draws a diagram as one labelled region with its light and dark image and its description for screen readers", () => {
+    draw([
+      {
+        t: "diagram",
+        light: "/assets/route.light.svg",
+        dark: "/assets/route.dark.svg",
+        width: 640,
+        height: 180,
+        title: "Route of a request",
+        description: "An app sends a request to Kaeso, which forwards it to the provider.",
+      },
+    ]);
+    const region = screen.getByRole("region", { name: "Diagram: Route of a request" });
+    const [light, dark] = screen.getAllByRole("img", { name: "Route of a request" });
+    expect(region).toContainElement(light ?? null);
+    expect(light).toHaveAttribute("src", "/assets/route.light.svg");
+    expect(dark).toHaveAttribute("src", "/assets/route.dark.svg");
+    expect(light).toHaveAttribute("width", "640");
+    expect(light).toHaveAccessibleDescription("An app sends a request to Kaeso, which forwards it to the provider.");
+    expect(light?.parentElement).toHaveClass("min-w-480");
+  });
+
+  it("names a diagram in the page's language and leaves out a description it doesn't have", () => {
+    render(
+      <TextProvider locale="de">
+        <Markdown blocks={[{ t: "diagram", light: "/l.svg", dark: "/d.svg", width: 300, height: 120, title: "Ablauf" }]} />
+      </TextProvider>,
+    );
+    expect(screen.getByRole("region", { name: "Diagramm: Ablauf" })).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "Ablauf" })[0]).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("lets a diagram shrink to a phone by a quarter at most, and scroll in its region beyond that", () => {
+    expect(diagramMinWidth(300)).toBeUndefined();
+    expect(diagramMinWidth(420)).toBeUndefined();
+    expect(diagramMinWidth(430)).toBe("min-w-360");
+    expect(diagramMinWidth(630)).toBe("min-w-480");
+    expect(diagramMinWidth(640)).toBe("min-w-480");
+    expect(diagramMinWidth(874)).toBe("min-w-720");
+    expect(diagramMinWidth(2000)).toBe("min-w-800");
   });
 });

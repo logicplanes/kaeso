@@ -1,5 +1,6 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
 import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, ListItem, TocEntry } from "../../src/markdown/ast.ts";
+import { DIAGRAM_LANG, diagramText } from "./diagram.ts";
 import { Slugger } from "./slug.ts";
 
 interface Heading {
@@ -13,12 +14,18 @@ export interface Lexed {
   tokens: Token[];
   headings: Heading[];
   h1?: string;
+  source?: string;
+  offset?: number;
 }
 
 export type Target = { kind: "page"; href: string } | { kind: "file"; ref: string; width?: number; height?: number } | { kind: "problem"; message: string };
 
+export type DiagramTarget =
+  { kind: "diagram"; light: string; dark: string; width: number; height: number; labels: string[] } | { kind: "problem"; message: string };
+
 export interface Resolver {
   resolve(href: string, as: "link" | "image"): Target;
+  diagram?(code: string, line: number): DiagramTarget;
   anchors: Set<string>;
 }
 
@@ -42,7 +49,7 @@ function plain(tokens: Token[] | undefined): string {
     .join("");
 }
 
-export function lex(body: string, options: { references?: boolean } = {}): Lexed {
+export function lex(body: string, options: { references?: boolean; offset?: number } = {}): Lexed {
   const tokens = lexer(options.references).lex(body);
   const slugger = new Slugger();
   const headings: Heading[] = [];
@@ -60,7 +67,7 @@ export function lex(body: string, options: { references?: boolean } = {}): Lexed
     }
   };
   walk(tokens, false);
-  return { tokens, headings, ...(h1 !== undefined ? { h1 } : {}) };
+  return { tokens, headings, ...(h1 !== undefined ? { h1 } : {}), source: body, offset: options.offset ?? 0 };
 }
 
 const LANGS: Record<string, CodeLang> = {
@@ -89,6 +96,9 @@ const LANGS: Record<string, CodeLang> = {
   patch: "diff",
 };
 
+const DRAWING = /[\u2190-\u21ff\u2500-\u257f\u25b2-\u25c5]/u;
+const isDiagram = (info: string | undefined) => (info ?? "").trim().split(/\s+/)[0]?.toLowerCase() === DIAGRAM_LANG;
+
 export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string } {
   const raw = (info ?? "").trim();
   const name = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
@@ -113,6 +123,49 @@ const CALLOUT = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(?:\n|$)/i;
 interface Ctx {
   resolver: Resolver;
   problems: string[];
+  source: string;
+  offset: number;
+  cursor: number;
+  labels: Map<Block, string[]>;
+}
+
+function fenceLine(code: Tokens.Code, ctx: Ctx): number {
+  const first = code.text.split("\n").find((l) => l.trim()) ?? "";
+  const fence = ctx.source.indexOf(code.raw.trimStart().split("\n")[0] ?? "", ctx.cursor);
+  const from = fence === -1 ? ctx.cursor : fence;
+  const at = first ? ctx.source.indexOf(first.trim(), from) : -1;
+  const start = fence !== -1 ? fence : at === -1 ? ctx.cursor : ctx.source.lastIndexOf("\n", at) + 1;
+  ctx.cursor = Math.max(ctx.cursor, start + 1);
+  return ctx.offset + ctx.source.slice(0, start).split("\n").length;
+}
+
+function diagram(code: Tokens.Code, ctx: Ctx): Block | null {
+  const line = fenceLine(code, ctx);
+  const at = (message: string) => ctx.problems.push(`:${line}: ${message}`);
+  if (!ctx.resolver.diagram) {
+    at("diagrams are drawn only on the pages in content/; show this as text or a list");
+    return null;
+  }
+  if (/^[ \t]*%%/m.test(code.text)) at("the diagram has a `%%` line: diagrams take no comments and no `%%{init}`, the site sets their look");
+  const text = diagramText(code.text);
+  if (!text.title) at("the diagram has no `accTitle: …`: name it in a few words for screen readers and search");
+  const target = ctx.resolver.diagram(code.text, line);
+  if (target.kind === "problem") {
+    at(target.message);
+    return null;
+  }
+  if (!text.title) return null;
+  const block: Block = {
+    t: "diagram",
+    light: target.light,
+    dark: target.dark,
+    width: target.width,
+    height: target.height,
+    title: text.title,
+    ...(text.description ? { description: text.description } : {}),
+  };
+  ctx.labels.set(block, target.labels);
+  return block;
 }
 
 function linkTarget(href: string, ctx: Ctx): { kind: "page" | "anchor" | "external" | "file"; href: string } | null {
@@ -257,6 +310,16 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
       }
       case "code": {
         const code = t as Tokens.Code;
+        if (isDiagram(code.lang)) {
+          const block = diagram(code, ctx);
+          if (block) out.push(block);
+          break;
+        }
+        const line = fenceLine(code, ctx);
+        if (DRAWING.test(code.text))
+          ctx.problems.push(
+            `:${line}: the code block draws a diagram with box-drawing characters or arrows; write it as a \`mermaid\` block (development/documentation.md, Diagrams)`,
+          );
         out.push({ t: "code", code: code.text, ...fenceInfo(code.lang) });
         break;
       }
@@ -300,7 +363,7 @@ export interface Compiled {
   changelog?: ChangelogContent;
 }
 
-function words(bs: Block[], into: Set<string>): void {
+function words(bs: Block[], into: Set<string>, labels: Map<Block, string[]> = new Map()): void {
   const add = (s: string) => {
     for (const w of s.toLowerCase().split(/[^\p{L}\p{N}_]+/u)) if (w.length >= 2) into.add(w);
   };
@@ -313,15 +376,16 @@ function words(bs: Block[], into: Set<string>): void {
   };
   for (const b of bs) {
     if (b.t === "heading" || b.t === "paragraph") inl(b.c);
-    else if (b.t === "list") for (const i of b.items) words(i.c, into);
-    else if (b.t === "quote" || b.t === "callout") words(b.c, into);
+    else if (b.t === "list") for (const i of b.items) words(i.c, into, labels);
+    else if (b.t === "quote" || b.t === "callout") words(b.c, into, labels);
+    else if (b.t === "diagram") [b.title, b.description ?? "", ...(labels.get(b) ?? [])].forEach(add);
     else if (b.t === "table") [...b.head, ...b.rows.flat()].forEach(inl);
     else if (b.t === "code" && b.code.length < 2000) add(b.code);
   }
 }
 
 export function compile(page: Lexed, resolver: Resolver): Compiled {
-  const ctx: Ctx = { resolver, problems: [] };
+  const ctx: Ctx = { resolver, problems: [], source: page.source ?? "", offset: page.offset ?? 0, cursor: 0, labels: new Map() };
   const first = page.tokens.find((t) => t.type !== "space");
   const tokens = page.h1 !== undefined ? page.tokens.filter((t) => t !== first) : page.tokens;
   const out = blocks(tokens, ctx, { headings: page.headings, next: 0 });
@@ -329,6 +393,6 @@ export function compile(page: Lexed, resolver: Resolver): Compiled {
     .filter((h) => !h.nested && (h.level === 2 || h.level === 3))
     .map((h) => ({ id: h.id, label: h.text, depth: h.level === 2 ? 0 : 1 }));
   const set = new Set<string>();
-  words(out, set);
+  words(out, set, ctx.labels);
   return { blocks: out, toc, words: [...set], problems: ctx.problems };
 }

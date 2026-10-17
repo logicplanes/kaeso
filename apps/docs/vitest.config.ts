@@ -28,9 +28,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "eslint/**/*.js"],
-      exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts"],
+      exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts", "scripts/content/mermaid-page.ts"],
       reporter: ["text", "text-summary", "json-summary", "html"],
-      thresholds: { statements: 94.6, branches: 85.3, functions: 96.5, lines: 95.8 },
+      thresholds: { statements: 95.4, branches: 86.1, functions: 97.3, lines: 96.5 },
     },
   },
 });

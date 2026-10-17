@@ -21,6 +21,7 @@ export type Block =
   | { t: "paragraph"; c: Inline[]; tight?: boolean }
   | { t: "list"; ordered: boolean; start: number; items: ListItem[] }
   | { t: "code"; lang: CodeLang; code: string; title?: string }
+  | { t: "diagram"; light: string; dark: string; width: number; height: number; title: string; description?: string }
   | { t: "quote"; c: Block[] }
   | { t: "callout"; kind: CalloutKind; c: Block[] }
   | { t: "table"; align: ("start" | "end")[]; head: Inline[][]; rows: Inline[][][] }

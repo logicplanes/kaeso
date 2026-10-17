@@ -1,5 +1,5 @@
-import { Fragment, type ReactNode } from "react";
-import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text } from "@logicplanes/kaeso-ui";
+import { Fragment, useId, type ReactNode } from "react";
+import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
@@ -73,7 +73,7 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
             {x.v}
           </Code>
         ) : (
-          <Code key={i} shape="rounded" className={ctx.cell ? undefined : "wrap-anywhere"}>
+          <Code key={i} shape="rounded" flow={x.v.length > WHOLE_CODE ? "text" : "box"} className={ctx.cell ? undefined : "wrap-anywhere"}>
             {codeText(x.v)}
           </Code>
         );
@@ -109,6 +109,44 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
         );
     }
   });
+}
+
+const DIAGRAM_MIN_WIDTHS = [
+  [320, "min-w-320"],
+  [360, "min-w-360"],
+  [440, "min-w-440"],
+  [480, "min-w-480"],
+  [560, "min-w-560"],
+  [640, "min-w-640"],
+  [720, "min-w-720"],
+  [800, "min-w-800"],
+] as const;
+const DIAGRAM_SHRINK = 0.75;
+
+export function diagramMinWidth(width: number): string | undefined {
+  const least = width * DIAGRAM_SHRINK;
+  if (least < DIAGRAM_MIN_WIDTHS[0][0]) return undefined;
+  return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least && min <= width)?.[1] ?? "min-w-800";
+}
+
+function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) {
+  const id = useId();
+  return (
+    <figure className="flex min-w-0 flex-col">
+      <ScrollArea orientation="horizontal" aria-label={ctx.t("page.diagram").replace("{title}", b.title)}>
+        <ThemeImage
+          light={b.light}
+          dark={b.dark}
+          alt={b.title}
+          width={b.width}
+          height={b.height}
+          aria-describedby={b.description ? id : undefined}
+          className={diagramMinWidth(b.width)}
+        />
+      </ScrollArea>
+      {b.description && <VisuallyHidden id={id}>{b.description}</VisuallyHidden>}
+    </figure>
+  );
 }
 
 function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: number; ctx: Ctx }) {
@@ -219,6 +257,8 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
         </ScrollArea>
       );
     }
+    case "diagram":
+      return <Diagram key={i} b={b} ctx={ctx} />;
     case "rule":
       return <Separator key={i} className="my-8" />;
   }
