@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import type { Loader, LoaderContext } from "astro/loaders";
 import { z } from "astro/zod";
 import { history, type ChangelogEntry } from "../../../../scripts/changelog.mjs";
+import { fragmentSource } from "../../scripts/refuse-raw-markup.mjs";
 
 const topic = z.object({ name: z.string(), id: z.string(), html: z.string() });
 const section = z.object({ name: z.string(), id: z.string(), html: z.string(), topics: z.array(topic) });
@@ -30,18 +31,20 @@ export type RenderedChangelog = z.infer<typeof changelogSchema>;
 
 export const CHANGELOG_GROUPS = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"];
 
-async function rendered(text: string, renderMarkdown: LoaderContext["renderMarkdown"]): Promise<RenderedChangelog> {
+async function rendered(text: string, renderMarkdown: LoaderContext["renderMarkdown"], file: URL): Promise<RenderedChangelog> {
   const log = history(text);
-  const html = async (markdown: string) => (markdown ? (await renderMarkdown(`${markdown}\n\n${log.definitions}`)).html : "");
+  const render = (source: string) => renderMarkdown(source, { fileURL: file });
+  if (log.definitions) await render(fragmentSource(log.definitions, log.definitionsLine ?? 1));
+  const html = async (markdown: string, line: number) => (markdown ? (await render(fragmentSource(markdown, line, log.definitions))).html : "");
   const each = <T, R>(items: T[], fn: (item: T) => Promise<R>) => Promise.all(items.map(fn));
   const part = async (e: ChangelogEntry) => ({
     id: e.id,
-    intro: await html(e.intro),
+    intro: await html(e.intro, e.introLine),
     sections: await each(e.sections, async (s) => ({
       name: s.name,
       id: s.id,
-      html: await html(s.markdown),
-      topics: await each(s.topics, async (t) => ({ name: t.name, id: t.id, html: await html(t.markdown) })),
+      html: await html(s.markdown, s.line),
+      topics: await each(s.topics, async (t) => ({ name: t.name, id: t.id, html: await html(t.markdown, t.line) })),
     })),
   });
   const { unreleased } = log;
@@ -66,17 +69,17 @@ export function changelogLoader(file: URL): Loader {
   const path = fileURLToPath(file);
   return {
     name: "kaeso-changelog",
-    load: async ({ store, parseData, renderMarkdown, generateDigest, watcher }) => {
+    load: async ({ store, parseData, renderMarkdown, generateDigest, watcher, logger }) => {
       const sync = async () => {
         const text = readFileSync(path, "utf8");
-        const data = await parseData({ id: "kaeso", data: await rendered(text, renderMarkdown) });
+        const data = await parseData({ id: "kaeso", data: await rendered(text, renderMarkdown, file) });
         store.clear();
         store.set({ id: "kaeso", data, digest: generateDigest(text) });
       };
       await sync();
       watcher?.add(path);
       watcher?.on("change", (changed) => {
-        if (changed === path) void sync();
+        if (changed === path) sync().catch((error: Error) => logger.error(error.message));
       });
     },
   };

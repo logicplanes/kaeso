@@ -16,6 +16,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Each release pulls both images for both platforms without signing in, and fails with what to do when ghcr.io refuses because a package is private.
 - Installs that sign in only with single sign-on: the sign-in page offers the identity provider's button without asking for an address when it is the install's only one or comes from an organization's sign-in link (`/sign-in?org=…`, shown on the Security page), names it (**Continue with Acme ID**) and can start at the provider without a click, except right after signing out or a refused sign-in. `GET /platform/v1/auth/oidc/start` is a link that goes straight to the provider, for bookmarks and intranet pages.
 - Setup on an install with passwords off asks for no password and opens the organization's Security page to connect the identity provider; `kaeso user sign-in-link <email>` prints a one-time sign-in link, audited, for when no other way in works.
+- Documentation pages show the current version wherever they write `{{version}}`, replaced at build time from the repository's version in text, code and frontmatter, so a release never needs a page edited; a backslash before it keeps it literal.
+- Ideas and questions have a home in GitHub Discussions: the issue chooser links to it, an Ideas discussion asks for the idea in a sentence or two, and the contributing page explains the categories and how an agreed idea becomes a feature request.
 
 ### Changed
 
@@ -27,6 +29,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Smaller console downloads: a project's overview loads 25 kB less JavaScript and the sign-in page 4 kB less, the documentation site's frame 3.6 kB less, and a page's code is requested while the console starts instead of after its first render. `AppFrame` loads its phone navigation sheet once the page is idle or on the first tap, and the charts no longer need d3-scale's colour and number-format modules.
 - The install, quick start, upgrade and reverse proxy guides start Kaeso with `docker compose up -d --wait`, which returns once every service is healthy, also without the bundled Caddy, and fails when one isn't; the reverse proxy guide shows how to reach Kaeso from a proxy in Docker over a network of its own, under names that can't collide with other stacks.
 - The Platform API's cross-site refusal says which `Origin` header to send, and the Platform API page documents when `Origin` is needed.
+- The documentation's and the showcase's changelog pages refuse raw HTML and links other than http, https and mailto in `CHANGELOG.md`: each site checks every part it renders, such as a section or a topic, with the Markdown parser that renders it, and its build fails and names the line of the file, so a changelog entry can never run code on either site; HTML written in a code span or a code block is fine.
 
 ### Fixed
 
