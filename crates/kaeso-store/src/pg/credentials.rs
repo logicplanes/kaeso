@@ -30,7 +30,7 @@ pub struct SealedRow {
     pub revision: i64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct KeyInUse {
     pub id: Uuid,
     pub revision: i64,

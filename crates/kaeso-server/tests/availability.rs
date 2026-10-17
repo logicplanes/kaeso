@@ -810,6 +810,16 @@ async fn a_model_listing_answers_when_the_model_endpoint_is_missing() {
     replace_key(&env, "openai", "sk-[mock:models=list-only]-0002").await;
     let body = check(&env).await;
     assert_eq!(body["failed"], json!([]));
+    let openai_listings = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|r| r.path == "/v1/models" && r.header("authorization").is_some())
+        .count();
+    assert_eq!(
+        openai_listings, 3,
+        "five models in three OpenAI dialects take one listing per dialect"
+    );
     assert_eq!(entry(&env, "model-id-0").await["availability"], "available");
     assert_eq!(
         entry(&env, UNSERVED_GPT).await["availability"],

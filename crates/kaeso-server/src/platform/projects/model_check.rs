@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::Json;
 use axum::extract::State;
 use futures::StreamExt;
@@ -15,7 +17,7 @@ use super::{MODELS_ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::params::Path;
-use crate::services::availability::{self, Probe};
+use crate::services::availability::{self, Listings, Probe};
 use crate::services::catalogue as service;
 use crate::services::credentials::{self, ResolveError};
 use crate::state::AppState;
@@ -101,6 +103,7 @@ async fn check_one(
     org: OrgId,
     project: ProjectId,
     row: &EntryRow,
+    listings: &Listings,
 ) -> ApiResult<Result<Found, CheckFailure>> {
     let entry = row.entry()?;
     let eff = service::effective(state, &entry)
@@ -124,7 +127,7 @@ async fn check_one(
             key: credential.key(),
         }))
     };
-    match availability::probe(state, &credential.secret, &eff).await {
+    match availability::probe(state, &credential, &eff, listings).await {
         Probe::Served => found(Availability::Available),
         Probe::Unserved => found(Availability::Unavailable),
         Probe::Inconclusive(e) => {
@@ -172,9 +175,16 @@ pub async fn check(
     let org = ctx.org()?.id();
     let project = ctx.project()?.id();
     let rows = catalogue::list(&state.pg, project_id).await?;
+    let listings = Arc::new(Listings::default());
     let outcomes: Vec<_> = futures::stream::iter(rows.clone().into_iter().map(|row| {
         let state = state.clone();
-        async move { (row.id, check_one(&state, org, project, &row).await) }
+        let listings = listings.clone();
+        async move {
+            (
+                row.id,
+                check_one(&state, org, project, &row, &listings).await,
+            )
+        }
     }))
     .buffered(AT_ONCE)
     .collect()
