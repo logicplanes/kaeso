@@ -81,6 +81,18 @@ async fn callback(app: &App, code: &str, state: &str, binding: Option<&str>) -> 
     app.raw(req.body(Body::empty()).unwrap()).await
 }
 
+async fn provider_error(app: &App, state: &str, binding: &str) -> common::Resp {
+    app.raw(
+        Request::get(format!(
+            "/platform/v1/auth/oidc/callback?error=access_denied&error_description=Denied&state={state}"
+        ))
+        .header(header::COOKIE, format!("__Host-kaeso_oidc={binding}"))
+        .body(Body::empty())
+        .unwrap(),
+    )
+    .await
+}
+
 fn location(r: &common::Resp) -> String {
     r.headers[header::LOCATION].to_str().unwrap().to_owned()
 }
@@ -706,7 +718,7 @@ async fn next_never_sends_the_browser_off_the_install() {
         .await;
         let to = location(&r);
         assert!(
-            to.starts_with(&format!("{ORIGIN}/sign-in#sso_error=")),
+            to.starts_with(&format!("{ORIGIN}/sign-in?org={}#sso_error=", owner.org_id)),
             "{next:?}: {to}"
         );
         assert!(r.set_cookie("__Host-kaeso_oidc").is_none(), "{next:?}");
@@ -728,8 +740,11 @@ async fn next_never_sends_the_browser_off_the_install() {
     let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
     let to = location(&back);
     assert!(
-        to.starts_with(&format!("{ORIGIN}/sign-in?next=%2Forgs%3Fa%3D1#sso_error=")),
-        "a refused sign-in keeps the page to come back to: {to}"
+        to.starts_with(&format!(
+            "{ORIGIN}/sign-in?next=%2Forgs%3Fa%3D1&org={}#sso_error=This%20organization",
+            owner.org_id
+        )),
+        "a refused sign-in keeps the page to come back to and the org it began with: {to}"
     );
     assert!(back.cookie().is_none());
     s.cleanup().await;
@@ -795,5 +810,101 @@ async fn sign_in_reads_and_start_links_need_no_origin_but_changes_do() {
     }
     let r = follow(&app, &format!("?org={}", owner.org_id)).await;
     assert!(location(&r).starts_with(idp.issuer()));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_refusal_at_the_provider_ends_the_flow_and_keeps_the_way_back() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    let refused = format!(
+        "#sso_error={}",
+        urlencode("The identity provider refused the sign-in.").replace('+', "%20")
+    );
+
+    let flow = start(
+        &app,
+        json!({ "org": owner.org_id, "next": "/settings/account" }),
+    )
+    .await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let r = provider_error(&app, &auth.state, &flow.binding).await;
+    assert_eq!(
+        location(&r),
+        format!(
+            "{ORIGIN}/sign-in?next=%2Fsettings%2Faccount&org={}{refused}",
+            owner.org_id
+        )
+    );
+    assert!(r.cookie().is_none());
+    let late = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    assert!(
+        location(&late).contains("sso_error=The%20SSO%20sign-in%20expired"),
+        "the refused flow can't be finished afterwards: {}",
+        location(&late)
+    );
+
+    let flow = start(
+        &app,
+        json!({ "email": "ada@acme.example", "next": "/orgs" }),
+    )
+    .await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let r = provider_error(&app, &auth.state, &flow.binding).await;
+    assert_eq!(
+        location(&r),
+        format!("{ORIGIN}/sign-in?next=%2Forgs{refused}"),
+        "a flow begun from an address names no org"
+    );
+
+    let flow = start(&app, json!({ "org": owner.org_id, "next": "/orgs" })).await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada Lovelace");
+    let r = provider_error(&app, &auth.state, "other-browser").await;
+    assert_eq!(location(&r), format!("{ORIGIN}/sign-in{refused}"));
+    let r = provider_error(&app, "unknown-state", &flow.binding).await;
+    assert_eq!(location(&r), format!("{ORIGIN}/sign-in{refused}"));
+    let back = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    assert_eq!(
+        location(&back),
+        format!("{ORIGIN}/orgs"),
+        "a refusal from another browser leaves the flow to the browser that began it"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_refusal_after_the_provider_keeps_the_org_of_its_sign_in_link() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, None).await;
+
+    let r = follow(&app, &format!("?org={}&next=%2Forgs", owner.org_id)).await;
+    let binding = r.set_cookie("__Host-kaeso_oidc").unwrap();
+    let auth = idp.authorize(&location(&r), "bob@acme.example", "Bob");
+    let back = callback(&app, &auth.code, &auth.state, Some(&binding)).await;
+    let to = location(&back);
+    assert!(
+        to.starts_with(&format!(
+            "{ORIGIN}/sign-in?next=%2Forgs&org={}#sso_error=You%20have%20no%20access",
+            owner.org_id
+        )),
+        "{to}"
+    );
+    assert!(back.cookie().is_none());
+
+    let r = follow(&app, "?next=%2Forgs").await;
+    let binding = r.set_cookie("__Host-kaeso_oidc").unwrap();
+    let auth = idp.authorize(&location(&r), "bob@acme.example", "Bob");
+    let back = callback(&app, &auth.code, &auth.state, Some(&binding)).await;
+    let to = location(&back);
+    assert!(
+        to.starts_with(&format!("{ORIGIN}/sign-in?next=%2Forgs#sso_error=")),
+        "a link without an org sends none back: {to}"
+    );
     s.cleanup().await;
 }

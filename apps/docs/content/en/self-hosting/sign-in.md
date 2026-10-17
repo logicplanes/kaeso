@@ -33,7 +33,7 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 ## Coming back to the right page
 
-Someone who opens a console page without a session goes to the sign-in page with that page in `next`, and comes back to it after signing in, through the identity provider too. `next` is kept with the sign-in flow on the gateway, never in the provider's URL. Only a path of the console on this install counts: a value that starts with `//` or a backslash, names another site, holds line breaks, or points into the Platform API or the model API is refused, and the start page opens instead. When the provider refuses someone, the sign-in page keeps `next` for the next attempt.
+Someone who opens a console page without a session goes to the sign-in page with that page in `next`, and comes back to it after signing in, through the identity provider too. `next` is kept with the sign-in flow on the gateway, never in the provider's URL. Only a path of the console on this install counts: a value that starts with `//` or a backslash, names another site, holds line breaks, or points into the Platform API or the model API is refused, and the start page opens instead. When the sign-in fails, at the provider or afterwards, the sign-in page keeps `next` for the next attempt, and the organization when the sign-in began with it named, from its sign-in link or its button, so the page shows that organization's button again beside the reason.
 
 ## Who signs in through single sign-on
 

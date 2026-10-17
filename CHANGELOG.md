@@ -57,6 +57,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - When Kaeso answers that a provider does not serve a catalogue model, the request log keeps the provider's own 404 message instead of Kaeso's explanation, which the app still gets.
 - A model availability check or request that was under way while an org admin replaced, assigned, made default or deleted a provider key no longer records its answer from the old key over the reset; such models stay **Not checked**, and the check reports them as `key_changed`.
 - A provider that answers 404 to `GET /v1/models/{model}`, such as an OpenAI-compatible service without that endpoint, no longer makes every model **Unavailable**: Kaeso marks a model unavailable only when the provider's model listing answers and lacks it, and otherwise passes the provider's 404 through, keeps the availability and reports the check as `inconclusive`.
+- A single sign-on refused by the identity provider, such as with `access_denied`, ends its sign-in flow and returns to the sign-in page with the page asked for in `next`, as other refusals do; a refused sign-in that began from an organization's sign-in link or button also keeps `org`, so the page shows that organization's button again beside the reason.
 
 ### Security
 
