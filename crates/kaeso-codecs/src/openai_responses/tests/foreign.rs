@@ -406,3 +406,35 @@ fn stateless_requests_replay_only_reasoning_with_encrypted_content() {
     );
     assert_eq!(body["store"], false);
 }
+
+#[test]
+fn output_limits_below_the_responses_minimum_are_refused_not_raised() {
+    for low in [0, 15] {
+        let mut req = foreign_request();
+        req.sampling.max_output_tokens = Some(low);
+        let err = OpenAiResponses::check(
+            &Request::Generate(req.clone()),
+            &crate::test_support::egress(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.unsupported_feature(),
+            Some(format!("max_output_tokens {low}").as_str())
+        );
+        assert_eq!(err.param.as_deref(), Some("max_output_tokens"));
+        assert!(
+            err.message.contains("at least 16 tokens"),
+            "{}",
+            err.message
+        );
+        assert!(
+            OpenAiResponses::check(&Request::CountTokens(req), &crate::test_support::egress())
+                .is_ok()
+        );
+    }
+    let mut req = foreign_request();
+    req.sampling.max_output_tokens = Some(16);
+    assert!(
+        OpenAiResponses::check(&Request::Generate(req), &crate::test_support::egress()).is_ok()
+    );
+}

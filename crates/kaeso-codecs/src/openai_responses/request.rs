@@ -68,6 +68,8 @@ fn valid_tool_name(name: &str) -> bool {
     !name.is_empty() && name.len() <= 64 && name.chars().all(crate::wire::is_name_char)
 }
 
+const MIN_MAX_OUTPUT_TOKENS: u32 = 16;
+
 fn invalid(e: impl std::fmt::Display) -> KppError {
     KppError::invalid_request(format!(
         "The request body is not a valid {} request: {e}.",
@@ -152,6 +154,15 @@ pub(super) fn decode(
     let count = kind == RequestKind::CountTokens;
     if w.model.is_none() && !count {
         return Err(invalid("`model` is required").with_param("model"));
+    }
+    if !count
+        && w.max_output_tokens
+            .is_some_and(|m| m < MIN_MAX_OUTPUT_TOKENS)
+    {
+        return Err(invalid(format!(
+            "`max_output_tokens` must be at least {MIN_MAX_OUTPUT_TOKENS}"
+        ))
+        .with_param("max_output_tokens"));
     }
     let stateless = "Kaeso is stateless: send the whole conversation in `input` instead.";
     if w.previous_response_id.is_some() {
@@ -555,7 +566,16 @@ pub(super) fn body_node(
     node
 }
 
-pub(super) fn check_rules(req: &Request) -> Result<(), KppError> {
+pub(super) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
+    check_rules(req)?;
+    check_foreign(req, target)?;
+    match req {
+        Request::Generate(r) => check_output_limit(r),
+        _ => Ok(()),
+    }
+}
+
+fn check_rules(req: &Request) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r),
         Request::Embed(_) => Err(KppError::unsupported_by(
@@ -569,6 +589,19 @@ pub(super) fn check_rules(req: &Request) -> Result<(), KppError> {
 
 fn unsupported(feature: &str, hint: &str) -> KppError {
     KppError::unsupported_by(feature, DIALECT, hint)
+}
+
+fn check_output_limit(r: &GenerateRequest) -> Result<(), KppError> {
+    match r.sampling.max_output_tokens {
+        Some(m) if m < MIN_MAX_OUTPUT_TOKENS => Err(unsupported(
+            &format!("max_output_tokens {m}"),
+            &format!(
+                "OpenAI Responses needs an output limit of at least {MIN_MAX_OUTPUT_TOKENS} tokens; raise it or route the request to another model."
+            ),
+        )
+        .with_param("max_output_tokens")),
+        _ => Ok(()),
+    }
 }
 
 fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
@@ -659,9 +692,8 @@ fn check_block(block: &Block, path: &str) -> Result<(), KppError> {
 }
 
 pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-    check_rules(req)?;
     let target = ctx.origin(DIALECT);
-    check_foreign(req, &target)?;
+    check(req, &target)?;
     let (r, path) = match req {
         Request::Generate(r) => (r, super::RESPONSES_PATH),
         Request::CountTokens(r) => (r, super::INPUT_TOKENS_PATH),

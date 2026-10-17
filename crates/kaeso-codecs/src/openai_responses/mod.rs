@@ -58,8 +58,7 @@ impl Codec for OpenAiResponses {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
-        request::check_rules(req)?;
-        crate::cross::check_foreign(req, &ctx.origin(DIALECT))
+        request::check(req, &ctx.origin(DIALECT))
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {

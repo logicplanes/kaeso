@@ -41,7 +41,7 @@ prop_compose! {
         system in proptest::option::of(text()),
         turns in proptest::collection::vec(turn(), 1..6),
         last in text(),
-        max_tokens in 1u32..4096,
+        max_tokens in 16u32..4096,
         temperature in proptest::option::of(0.0f64..1.0),
     ) -> GenerateRequest {
         let schema = RawJson::from_string(r#"{"type":"object","properties":{"q":{"type":"string"}}}"#.into()).unwrap();
@@ -150,7 +150,7 @@ fn a_temperature_with_seventeen_significant_digits_survives_every_dialect() {
     req.messages.push(Message::user(" "));
     req.messages.push(Message::assistant("é"));
     req.messages.push(Message::user("?"));
-    req.sampling.max_output_tokens = Some(1);
+    req.sampling.max_output_tokens = Some(16);
     req.sampling.temperature = Some(0.950_729_014_766_991_7);
     for d in GENERATION {
         let back = round_trip(d, &req);

@@ -526,3 +526,38 @@ fn request_errors_name_the_field_without_parser_positions() {
     .unwrap_err();
     assert!(err.message.contains("duplicate"), "{}", err.message);
 }
+
+#[test]
+fn max_output_tokens_below_the_documented_minimum_is_refused() {
+    for low in [0, 15] {
+        let body = format!(r#"{{"model":"m","input":"x","max_output_tokens":{low}}}"#);
+        let err = OpenAiResponses::decode_request(
+            RequestKind::Generate,
+            body.as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::InvalidRequest);
+        assert_eq!(err.param.as_deref(), Some("max_output_tokens"));
+        assert_eq!(
+            err.message,
+            "The request body is not a valid OpenAI Responses request: `max_output_tokens` must be at least 16."
+        );
+    }
+    let req = decode_req(
+        RequestKind::Generate,
+        br#"{"model":"m","input":"x","max_output_tokens":16}"#,
+    );
+    let Request::Generate(r) = &req else { panic!() };
+    assert_eq!(r.sampling.max_output_tokens, Some(16));
+    let count = decode_req(
+        RequestKind::CountTokens,
+        br#"{"model":"m","input":"x","max_output_tokens":0}"#,
+    );
+    let (enc, _) = encode_req(&count);
+    assert_json_eq(
+        "count",
+        br#"{"model":"m","input":"x","max_output_tokens":0}"#,
+        &enc.body,
+    );
+}
