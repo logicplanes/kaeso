@@ -87,6 +87,43 @@ describe("AuditLog", () => {
     expect(logQuery()).toEqual([{ limit: "100" }]);
   });
 
+  it("shows each actor's picture, or their initial without one", async () => {
+    const pictured = member({ user: { id: OTHER_USER, name: "Grace Hopper", email: "grace@example.com", avatar_url: "/avatars/grace.webp" } });
+    signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" }, memberships: [membership({ rights: ALL_ORG_RIGHTS })] }) });
+    on("GET", "orgs/:org/members", paged([member(), pictured]));
+    on("GET", "orgs/:org/credentials", { data: [] });
+    on("GET", "orgs/:org/platform-keys", paged([]));
+    on("GET", ORG_LOG, paged([created, auditEvent({ id: "evt_grace", actor: { kind: "user", id: OTHER_USER }, ip: "198.51.100.2" }), old]));
+    const { user } = await renderApp(PATH);
+
+    const rows = within(await table())
+      .getAllByRole("row")
+      .slice(1);
+    expect(rows[0]?.querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
+    await waitFor(() => expect(rows[1]?.querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull());
+    expect(rows[2]?.querySelector("img")).toBeNull();
+
+    await user.click(screen.getByRole("combobox", { name: "Actor" }));
+    const option = await screen.findByRole("option", { name: /Grace Hopper/ });
+    expect(option.querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull();
+  });
+
+  it("shows the initial for an actor without a picture", async () => {
+    orgLog();
+    const { user } = await renderApp(PATH);
+
+    const rows = within(await table())
+      .getAllByRole("row")
+      .slice(1);
+    expect(within(rows[0] as HTMLElement).getByText("A")).toBeInTheDocument();
+    expect((await table()).querySelector("img")).toBeNull();
+
+    await user.click(screen.getByRole("combobox", { name: "Actor" }));
+    const option = await screen.findByRole("option", { name: /Grace Hopper/ });
+    expect(within(option).getByText("G")).toBeInTheDocument();
+    expect(option.querySelector("img")).toBeNull();
+  });
+
   it("says when there are no events yet", async () => {
     orgLog([]);
     await renderApp(PATH);

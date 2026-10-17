@@ -5,7 +5,7 @@ import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members
 import { useSession } from "~/auth/session";
 import { useProjectRights } from "~/auth/rights";
 import { t } from "~/i18n";
-import { partyText, type PartyLabel, type PartyRef } from "~/kaeso/party";
+import { partyText, userLabel, type PartyLabel, type PartyRef } from "~/kaeso/party";
 
 export const asKeyState = (s: string): KeyState => (s === "disabled" || s === "expired" || s === "archived" ? s : "active");
 
@@ -21,8 +21,9 @@ export function usePartyLabel(org: string, project: string): (p: PartyRef) => Pa
       const named = (name: string): PartyLabel => ({ name, you: false });
       if (p.kind === "system") return named(t("keys.party.system", "System"));
       if (p.kind === "user") {
-        if (p.id === session.user.id) return { name: session.user.name, you: true };
-        return named(members.data?.find((m) => m.user.id === p.id)?.user.name ?? p.id ?? t("keys.party.aMember", "A member"));
+        if (p.id === session.user.id) return userLabel(session.user, true);
+        const member = members.data?.find((m) => m.user.id === p.id)?.user;
+        return member ? userLabel(member) : named(p.id ?? t("keys.party.aMember", "A member"));
       }
       if (p.kind === "service_account")
         return named(accounts.data?.find((a) => a.id === p.id)?.name ?? p.id ?? t("keys.party.aServiceAccount", "A service account"));
@@ -31,7 +32,7 @@ export function usePartyLabel(org: string, project: string): (p: PartyRef) => Pa
       if (p.kind === "api_key") return named(p.id ? t("keys.party.apiKey", "API key {id}", { id: p.id }) : t("keys.party.anApiKey", "API key"));
       return named(p.id ?? p.kind);
     },
-    [accounts.data, members.data, session.user.id, session.user.name],
+    [accounts.data, members.data, session.user],
   );
 }
 

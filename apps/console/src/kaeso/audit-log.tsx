@@ -60,7 +60,7 @@ export function AuditLog({
   search: AuditSearch;
   onSearch: (next: AuditSearch) => void;
   partyLabel: (p: PartyRef) => PartyLabel;
-  actors: { id: string; name: string; email?: string | null | undefined }[];
+  actors: { id: string; name: string; email?: string | null | undefined; avatar_url?: string | null | undefined }[];
   onActorSearch?: ((query: string) => void) | undefined;
   actorsLoading?: boolean | undefined;
   targetHref?: (kind: string, id: string) => string | undefined;
@@ -90,7 +90,7 @@ export function AuditLog({
         const label = partyLabel(v);
         return (
           <span className="flex min-w-0 items-center gap-8">
-            {v.kind === "user" && <Avatar name={label.name} size={20} decorative />}
+            {v.kind === "user" && <Avatar name={label.name} src={label.avatarUrl} size={20} decorative />}
             <span className="truncate">{partyText(label)}</span>
           </span>
         );
@@ -127,7 +127,12 @@ export function AuditLog({
             aria-label={t("kaeso.audit.actor", "Actor")}
             size="sm"
             placeholder={t("kaeso.audit.anyActor", "Any actor")}
-            options={actors.map((a) => ({ value: a.id, label: a.name, description: a.email ?? undefined }))}
+            options={actors.map((a) => ({
+              value: a.id,
+              label: a.name,
+              description: a.email ?? undefined,
+              leading: <Avatar name={a.name} src={a.avatar_url ?? undefined} size={20} decorative />,
+            }))}
             value={filters.actor ?? null}
             onInputValueChange={onActorSearch}
             loading={actorsLoading}

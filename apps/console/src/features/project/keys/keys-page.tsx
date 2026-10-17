@@ -12,10 +12,9 @@ import { usePageCreateAction } from "~/shell/create-action";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { ProjectHeader } from "~/shell/project-header";
 import { KeySheet } from "./key-sheet";
-import { asKeyState, serviceAccountName, usePartyName } from "./party";
+import { asKeyState, serviceAccountName, usePartyLabel } from "./party";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
-import { useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
 
@@ -26,7 +25,6 @@ const STATES = ["active", "disabled", "expired", "archived"] as const;
 export function KeysPage({ org, project, search }: { org: string; project: string; search: KeysSearch }) {
   const needs = useNeedsRight(org, project);
   const navigate = useNavigate();
-  const session = useSession();
   const rights = useProjectRights(org, project);
   const [creating, setCreating] = useState(!!search.create);
   const owner = search.owner;
@@ -34,7 +32,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
   const keys = useQuery(allKeysQuery(org, project, keyFilter({ owner, archived: all })));
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project), enabled: rights.has("service_accounts.view") });
-  const partyName = usePartyName(org, project);
+  const partyLabel = usePartyLabel(org, project);
   const canCreate = rights.has("keys.own.create");
 
   usePageCreateAction({
@@ -59,7 +57,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
             .filter((k) => k.state === state)
             .map((k) => {
               const expiry = expiryText(k);
-              const who = partyName(k.principal);
+              const who = partyLabel(k.principal);
               return {
                 id: k.id,
                 textValue: k.name,
@@ -73,12 +71,12 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
                   </Text>
                 ),
                 date: k.last_used_at ? formatRelative(k.last_used_at) : t("keys.neverUsed", "Never used"),
-                avatar: <Avatar name={k.principal.kind === "user" && k.principal.id === session.user.id ? session.user.name : who} size={20} />,
+                avatar: <Avatar name={who.name} src={who.avatarUrl} size={20} />,
               };
             }),
         }))
         .filter((g) => g.items.length > 0),
-    [all, list, partyName, session.user.id, session.user.name],
+    [all, list, partyLabel],
   );
 
   const ownerOptions = [
