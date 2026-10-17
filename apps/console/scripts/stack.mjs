@@ -11,6 +11,7 @@ export const STACKS = {
     publicUrl: process.env.KAESO_PUBLIC_URL ?? "http://localhost:3000",
     gatewayPort: port("KAESO_GATEWAY_PORT", 18080),
     idpPort: port("KAESO_IDP_PORT", 18091),
+    releasesPort: port("KAESO_RELEASES_PORT", 18092),
     mailPort: port("KAESO_MAIL_PORT", 58025),
     smtpPort: port("KAESO_MAIL_SMTP_PORT", 51025),
     clickhousePort: port("KAESO_CLICKHOUSE_PORT", 58123),
@@ -23,6 +24,7 @@ export const STACKS = {
     publicUrl: "http://localhost:3100",
     gatewayPort: 28080,
     idpPort: 28091,
+    releasesPort: 28092,
     mailPort: 28025,
     smtpPort: 28026,
     clickhousePort: 28123,
@@ -40,6 +42,7 @@ export function urls(stack) {
     ssoGateway: `http://127.0.0.1:${stack.ssoGatewayPort}`,
     mail: `http://127.0.0.1:${stack.mailPort}`,
     idp: `http://idp.localhost:${stack.idpPort}`,
+    releases: `http://127.0.0.1:${stack.releasesPort}`,
     clickhouse: `http://127.0.0.1:${stack.clickhousePort}`,
   };
 }
@@ -57,6 +60,7 @@ function compose(stack, args, options = {}) {
         KAESO_PUBLIC_URL: stack.publicUrl,
         KAESO_GATEWAY_PORT: String(stack.gatewayPort),
         KAESO_IDP_PORT: String(stack.idpPort),
+        KAESO_RELEASES_PORT: String(stack.releasesPort),
         KAESO_MAIL_PORT: String(stack.mailPort),
         KAESO_MAIL_SMTP_PORT: String(stack.smtpPort),
         KAESO_CLICKHOUSE_PORT: String(stack.clickhousePort),

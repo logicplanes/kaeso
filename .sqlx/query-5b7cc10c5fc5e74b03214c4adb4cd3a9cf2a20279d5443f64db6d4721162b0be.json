@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at FROM update_settings WHERE id = 1 FOR NO KEY UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "check_enabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "check_enabled"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "channel",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "channel"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "apply_enabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "apply_enabled"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "etag",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "etag"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_checked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "last_checked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "last_success_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "last_success_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "last_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "last_error"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "next_check_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "next_check_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5b7cc10c5fc5e74b03214c4adb4cd3a9cf2a20279d5443f64db6d4721162b0be"
+}

@@ -2,6 +2,7 @@
 
 crates/kaeso-codecs/fixtures/**/*.json -text
 crates/kaeso-codecs/fixtures/**/*.sse -text
+crates/kaeso-updater/tests/fixtures/** -text
 
 *.snap linguist-generated
 Cargo.lock linguist-generated

@@ -15,6 +15,7 @@ order: 1
 - Eine Domain, deren DNS-Eintrag auf den Server zeigt.
 - Die Ports 80 und 443 aus dem Internet erreichbar, für das Zertifikat und für HTTPS. Wo UDP-Port 443 offen ist, antwortet Caddy auch über HTTP/3.
 - Ausgehendes HTTPS zu den genutzten Anbietern (`api.openai.com`, `api.anthropic.com`) und zu `models.dev`, von wo das Gateway einmal am Tag die Modelldaten aktualisiert. Ohne Internetzugang zu `models.dev` arbeitet eine Installation mit den Modelldaten, die das Release mitbringt; die Aktualisierung lässt sich mit `KAESO_MODELS_DEV_SYNC=false` in der [`compose.override.yaml`](installation.md#lokale-änderungen) abschalten.
+- Ausgehendes HTTPS zu `api.github.com`, wo das Gateway zweimal täglich nach neuen Kaeso-Releases sucht, und für [Updates mit einem Klick](upgrades.md#updates-mit-einem-klick) zu `github.com`, `objects.githubusercontent.com` und `ghcr.io`. Eine Installation ohne es aktualisiert von Hand; die Prüfung wie unter [Upgrades](upgrades.md#installationen-ohne-internetzugang) beschrieben abschalten.
 - Ein SMTP-Server für Anmeldelinks, Einladungen, Budgetwarnungen und Sicherheitshinweise. Siehe [E-Mail](email.md).
 
 ## Festplatte für Anfrageprotokolle

@@ -30,6 +30,7 @@ flowchart TD
 | [控制台](console.md) | Web 控制台如何读取数据、绘制页面、加载代码和显示错误 |
 | [文档站点](docs-site.md) | Markdown 页面如何变成 docs.kaeso.app |
 | [邮件](emails.md) | 网关如何构建它发送的邮件 |
+| [更新](updates.md) | 网关如何得知新版本，以及更新器如何应用版本 |
 | [KPP 内部实现](../kpp/index.md) | 规范格式、编解码器和每一项 wire 映射 |
 
 ## Rust 工作区
@@ -43,6 +44,8 @@ flowchart TD
 | `kaeso-upstream` | 与服务商之间的传输：HTTP 客户端、认证请求头、基础 URL、超时、流式响应体和取消。 |
 | `kaeso-crypto` | 信封加密（AES-256-GCM）、主密钥环、密码、TOTP 以及会自动脱敏的密钥类型。 |
 | `kaeso-mail` | SMTP 投递，以及使用同一布局、提供三种语言的全部邮件（[邮件](emails.md)）。 |
+| `kaeso-update` | 不含 I/O 的更新逻辑：版本清单、更新规则（渠道、主版本、手动步骤）和更新器协议，由网关和更新器共用（[更新](updates.md)）。 |
+| `kaeso-updater` | 可选的更新器：校验版本签名并将 Compose 安装切换到该版本；Kaeso 中唯一与 Docker 通信的部分（[更新](updates.md)）。 |
 | `kaeso-testkit` | 仅用于测试：开发和测试数据库、基于 KPP fixture 的模拟服务商，以及一个模拟身份提供方。 |
 | `kaeso-kpp`、`kaeso-codecs` | KPP 的类型和编解码器，发布在 crates.io 上（[KPP 内部实现](../kpp/index.md)）。 |
 | `kpp-conformance` | 把 KPP 编码器的输出交给官方 Python SDK 的服务器，供[一致性测试](../testing.md#sdk-一致性)使用。 |

@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use kaeso_core::provider::ProviderId;
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use url::Url;
 
@@ -46,6 +46,8 @@ pub struct Config {
     pub auth: AuthConfig,
     pub key_failures: KeyFailuresConfig,
     pub models_dev: ModelsDevConfig,
+    pub updates: UpdatesConfig,
+    pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
@@ -149,6 +151,22 @@ pub struct ModelsDevConfig {
     pub url: Url,
     #[serde(with = "humantime_serde")]
     pub interval: Duration,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdatesConfig {
+    pub check: bool,
+    pub channel: kaeso_update::policy::Channel,
+    pub apply: bool,
+    pub releases_url: Url,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdaterConfig {
+    pub url: Url,
+    pub token: Option<SecretString>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -308,6 +326,28 @@ impl Config {
         }
         if self.smtp.password.is_some() && self.smtp.user.is_none() {
             return invalid("smtp.user", "is required when smtp.password is set".into());
+        }
+        for (key, url) in [
+            ("updates.releases_url", &self.updates.releases_url),
+            ("updater.url", &self.updater.url),
+        ] {
+            if !matches!(url.scheme(), "http" | "https") {
+                return invalid(key, "must be an http or https URL".into());
+            }
+        }
+        if self
+            .updater
+            .token
+            .as_ref()
+            .is_some_and(|t| t.expose_secret().trim().len() < kaeso_update::protocol::TOKEN_MIN_LEN)
+        {
+            return invalid(
+                "updater.token",
+                format!(
+                    "must be at least {} characters; generate one with `openssl rand -hex 32`",
+                    kaeso_update::protocol::TOKEN_MIN_LEN
+                ),
+            );
         }
         for (id, p) in self.providers.iter() {
             if !matches!(p.base_url.scheme(), "http" | "https") {

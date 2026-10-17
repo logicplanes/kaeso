@@ -16,6 +16,7 @@ kaeso-crypto.workspace = true
 kaeso-mail.workspace = true
 kaeso-store.workspace = true
 kaeso-upstream.workspace = true
+kaeso-update.workspace = true
 kaeso-kpp.workspace = true
 kaeso-codecs.workspace = true
 axum.workspace = true
@@ -60,3 +61,4 @@ http-body-util.workspace = true
 insta.workspace = true
 kaeso-testkit.workspace = true
 reqwest = { workspace = true, features = ["json"] }
+semver.workspace = true

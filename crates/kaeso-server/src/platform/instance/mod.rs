@@ -2,6 +2,7 @@ pub mod models_dev;
 pub mod orgs;
 pub mod settings;
 pub mod system;
+pub mod updates;
 pub mod users;
 
 use axum::Json;
@@ -44,6 +45,12 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(a, routes!(settings::update)))
         .routes(s.route(a, routes!(settings::test_email)))
         .routes(s.route(a, routes!(system::get)))
+        .routes(s.route(a, routes!(updates::get)))
+        .routes(s.route(a, routes!(updates::check)))
+        .routes(s.route(a, routes!(updates::settings)))
+        .routes(s.route(a, routes!(updates::apply)))
+        .routes(s.route(a, routes!(updates::jobs)))
+        .routes(s.route(a, routes!(updates::job)))
         .routes(s.route(a, routes!(audit_list)))
         .routes(s.route(a, routes!(audit_get)))
         .routes(s.route(a, routes!(orgs::projects_list)))

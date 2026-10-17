@@ -11,14 +11,14 @@ def job(name: str) -> str:
     return match.group(1)
 
 
-def test_a_release_pulls_both_images_for_both_platforms_without_signing_in():
+def test_a_release_pulls_every_image_for_both_platforms_without_signing_in():
     pull = job("public-images")
     assert re.search(r"^    needs: \[validate, manifest\]$", pull, re.M)
     assert re.search(r"^    permissions: \{\}$", pull, re.M)
     assert "login" not in pull
     assert 'export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"' in pull
     assert "echo '{}' > \"$DOCKER_CONFIG/config.json\"" in pull
-    assert "for image in kaeso-gateway kaeso-console; do" in pull
+    assert "for image in kaeso-gateway kaeso-console kaeso-updater; do" in pull
     assert 'ref="ghcr.io/logicplanes/$image:$VERSION"' in pull
     assert "for platform in linux/amd64 linux/arm64; do" in pull
     assert 'docker pull --quiet --platform "$platform" "$ref"' in pull

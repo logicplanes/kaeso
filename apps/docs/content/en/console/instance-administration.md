@@ -48,6 +48,10 @@ Changing account creation, organization creation or the allowed domains needs a 
 
 **System** shows the gateway's version and state, whether PostgreSQL, ClickHouse and Valkey are up, the request log buffer and the storage. It checks every 10 seconds, and **Check now** checks at once.
 
+## Updates
+
+The version the install runs, the newest Kaeso release with the notes of every release since, and when the gateway last looked for one; a **New** mark beside **Updates** in the settings sidebar says a newer release is out. **Check now** looks at once. The page's settings turn the twice-daily check off, offer pre-releases, and turn on one-click updates through the [updater](../self-hosting/upgrades.md#one-click-updates). With the updater, **Update to …** updates the install after a confirmation and follows each step until Kaeso is back; without it, or for a release that needs steps by hand, the page shows the commands and the upgrade guide. The history lists every update with who started it and how it ended.
+
 ## Audit log
 
 The instance's **Audit log** records changes to users, organizations and the install's settings, with who made them and when.

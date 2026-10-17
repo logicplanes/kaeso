@@ -1,12 +1,40 @@
 ---
 title: 升级
-description: 将安装迁移到新版本。
+description: 了解新版本，手动更新或通过更新器一键更新，以及更新期间会发生什么。
 order: 6
 ---
 
-版本遵循语义化版本规范，Kaeso 的所有组成部分都使用该版本的版本号。每个版本的发布说明位于[发布页面](https://github.com/logicplanes/kaeso/releases)，其 `compose.yaml` 固定了该版本的网关和控制台镜像。
+版本遵循语义化版本规范，Kaeso 的所有组成部分都使用该版本的版本号。每个版本的发布说明位于[发布页面](https://github.com/logicplanes/kaeso/releases)，实例管理员也可以在控制台的 **实例设置 → 更新** 中查看。每个版本的 `compose.yaml` 固定了该版本的网关、控制台和更新器镜像。
 
-## 升级
+更新有两种方式：[手动更新](#手动更新)，始终可用；以及在控制台中[一键更新](#一键更新)，需要先添加可选的更新器。
+
+## 新版本
+
+网关每天两次、在一小时内的随机时刻，通过 GitHub 的发布 API 检查新版本。它会带上上次响应的 `ETag`，因此列表没有变化时不会给 GitHub 增加负担；失败后至少等待一小时，GitHub 要求时等待更久，并且从不立即重试。请求中除了 `User-Agent` 里的网关版本外，不包含任何关于此安装的信息。
+
+在 **实例设置 → 更新** 中，实例管理员可以看到正在运行的版本、最新版本及其之后所有版本的发布说明、网关上次检查的时间，以及检查失败时的原因。**立即检查** 会马上检查，即使自动检查已关闭。设置侧边栏中 **更新** 旁的 **新** 标记是唯一的提醒；Kaeso 不会因为新版本发送邮件或显示横幅。
+
+| 设置 | 默认值 | 作用 |
+| --- | --- | --- |
+| 检查新版本（`updates.check`） | 开启 | 无法联网的安装请关闭。 |
+| 版本（`updates.channel`） | 仅稳定版 | `prerelease` 也会提供候选版本。稳定渠道从不提供预发布版本，但正在运行预发布版本的安装会获得其后的稳定版本。 |
+| 一键更新（`updates.apply`） | 关闭 | 实例管理员能否通过更新器在控制台中应用更新。 |
+
+新安装时，这三项设置取自 `KAESO_UPDATES_CHECK`、`KAESO_UPDATES_CHANNEL` 和 `KAESO_UPDATES_APPLY`；之后由实例管理员在控制台中更改，每次更改都会记录在实例审计日志中。开启一键更新需要在最近 15 分钟内登录过。
+
+### 无法联网的安装
+
+关闭 **检查新版本**，或在首次启动前在 [`compose.override.yaml`](installation.md#本地修改) 中设置 `KAESO_UPDATES_CHECK=false`。此时页面只显示正在运行的版本，并按下文手动更新。如果您有按 GitHub 发布 API 格式响应的镜像，可以用 `KAESO_UPDATES_RELEASES_URL` 让网关指向它。
+
+## 哪些版本可以一键更新
+
+只有同时满足以下条件的版本才能一键更新；否则控制台会显示其发布说明和指向本页的链接：
+
+- 不是新的主版本。需要手动步骤的迁移会使版本成为主版本。
+- 途经的版本都不要求手动操作。如果某个版本的 `compose.yaml` 除镜像版本外还有其他变化，或维护者如此标记，该版本就要求手动操作。
+- 该版本附带 `release.json`，即更新器读取的清单：从第一个带更新器的版本起，每个版本都有。
+
+## 手动更新
 
 1. 阅读发布说明，看看是否有需要处理的事项。
 2. [备份](backups.md) PostgreSQL，也备份 ClickHouse，以便日后仍能[降级](#降级)。
@@ -27,14 +55,75 @@ docker compose up -d --wait
 
 网关在启动时于锁的保护下迁移 PostgreSQL 和 ClickHouse，因此多个实例可以同时启动，只有一个执行迁移。迁移只向前进行且按顺序运行，因此升级时可以跳过版本。Kaeso 0.1.0 通过一组初始迁移创建完整的数据库结构；之后的版本在其后添加各自的迁移。
 
+无法一键更新时，控制台会显示这些命令，并带上确切的版本号。
+
+## 一键更新
+
+更新器是 `compose.yaml` 中的可选服务，位于 Compose 配置文件 `updater` 中，并带有其 Docker 套接字代理 `docker-proxy`。它是 Kaeso 中唯一与 Docker 通信的部分。
+
+### 开启
+
+在安装所在的文件夹中，为网关和更新器设置一个共享令牌，并开启该配置文件：
+
+```bash
+echo "KAESO_UPDATER_TOKEN=$(openssl rand -hex 32)" >> .env
+echo "COMPOSE_PROFILES=updater" >> .env
+docker compose up -d --wait
+```
+
+然后在 **实例设置 → 更新** 中开启 **一键更新**。如果更新器未安装、没有响应或对某个版本来说过旧，页面会说明。更新器出现之前的 Kaeso 版本需要手动更新一次。
+
+更新器通过其代理挂载 `/var/run/docker.sock`；如果 Docker 的套接字在其他位置（例如 rootless Docker），请在 `.env` 中设置 `DOCKER_SOCKET`。
+
+### 更新过程
+
+**更新到 …** 会要求确认，确认框会写明版本并提醒先备份。网关记录这次更新，在实例审计日志中写入 `instance.update_start`，并只把版本号交给更新器。随后控制台会跟进以下步骤：
+
+1. **下载。** 更新器通过 TLS 从 github.com 上的版本获取 `release.json` 和 `compose.yaml`，并按 `release.json` 中的摘要拉取网关、控制台和更新器镜像。Kaeso 继续运行。
+2. **校验签名。** 对 `release.json` 和每个镜像，更新器获取发布工作流的[构建来源证明](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations)，并用 Sigstore 校验：由 Sigstore 证书颁发机构签发给 `logicplanes/kaeso` 在 `prod` 上的发布工作流的证书、其证书透明度证明、透明日志的签名条目、对声明的签名、声明中的摘要，以及 `release.json` 中的提交。镜像自身的版本标签也必须一致。信任根内置在更新器中；任何一项校验失败都不会安装任何内容。
+3. **切换。** Caddy 以[更新页面](#kaeso-更新期间)作答。更新器停止控制台，用其原有设置和新镜像重新启动它并等待其健康检查；然后对网关做同样的操作。
+4. **迁移。** 新网关在启动时迁移数据库；更新器最多等待 10 分钟其健康检查通过。
+5. **恢复在线。** 更新器把新版本写入 `compose.yaml`，这样之后的 `docker compose up -d --wait` 会启动同样的镜像；它为镜像打上版本标签，删除旧容器并结束维护。
+
+整个更新大约需要一分钟。同一时间只运行一个更新。结果会作为 `instance.update_finish` 记录在实例审计日志和页面的历史中：**已更新**、**未安装**（没有任何更改）、**已回退** 或 **回退失败**。
+
+### 回退
+
+如果新容器没有变为健康状态，更新器会删除它并重新启动之前的容器：更新状态为 **已回退**，Kaeso 运行之前的版本。如果新网关已经迁移了数据库，之前的网关会拒绝该数据库（每个网关都会拒绝被更新版本迁移过的数据库），更新状态为 **回退失败**。这时可以手动启动新版本并查看其日志（`docker compose logs gateway`），或者恢复备份并运行旧版本，参见[降级](#降级)。
+
+如果更新器在更新期间重启，它会在再次启动时回退该更新；如果只剩清理工作，则会完成该更新。
+
+### 安全模型
+
+| 组件 | 能做什么 |
+| --- | --- |
+| 网关 | 请求更新器按版本号应用某个版本，并读取进度。它从不获得 Docker 访问权限，也无法指定镜像、选项或容器。 |
+| 更新器 | 只能在内部网络 `updates` 中访问，该网络只有网关与它共享，并且必须携带 `.env` 中的令牌：至少 32 个字符，以恒定时间比较，从不记录或返回。它只替换自身 Compose 项目中的网关和控制台容器，使用它们原有的设置和它按摘要固定并校验过的镜像；它只修改 `compose.yaml` 中的镜像版本，如果该文件与版本中的文件有任何其他差异，它不会改动。 |
+| `docker-proxy` | 位于内部网络 `docker` 中的 [socket-proxy](https://github.com/wollomatic/socket-proxy)。它只响应更新器，并且只放行更新器所用的 Docker API 调用：列出和检查容器，检查、拉取和标记 Kaeso 镜像，以及创建、启动、停止、重命名和删除容器。 |
+
+能控制 Docker 就能控制服务器，因此更新器是可选的，它丢弃了除写入 `compose.yaml` 所需之外的所有能力，并且只与网关和代理共享这些网络。没有 `updater` 配置文件时，Kaeso 中没有任何部分能访问 Docker。
+
+## Kaeso 更新期间
+
+在更新器切换版本期间，以及网关或控制台没有响应的任何时候（包括手动更新时），Caddy 会代为作答：
+
+| 请求 | 响应 |
+| --- | --- |
+| 页面 | `503`，并返回一个页面：根据浏览器语言使用英语、德语或简体中文，根据系统设置使用浅色或深色。更新器工作期间它会显示当前步骤，每 5 秒检查一次，Kaeso 恢复后返回控制台。它不会从其他地方加载任何内容。 |
+| `/platform/v1/*` | `503`，返回 Platform API 的错误，类型为 `unavailable` |
+| `/v1/messages`，以及带有 `anthropic-version` 请求头的其他 `/v1/*` | `529`，返回 Anthropic 的 `overloaded_error`，与服务商过载时网关的响应相同 |
+| 其他 `/v1/*` | `503`，返回 OpenAI 的 `service_unavailable_error` |
+
+每个响应都带有 `Retry-After: 30`，OpenAI 和 Anthropic 的 SDK 重试时会遵循它。消息会说明 Kaeso 是正在更新还是暂时无法访问。
+
 ## 保持不变的名称
 
 以下名称在每个版本中都相同，因此下载新的 `compose.yaml` 并运行 `docker compose pull` 后数据依然保留：
 
 - 下载地址 `https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml`；
-- 镜像 `ghcr.io/logicplanes/kaeso-gateway` 和 `ghcr.io/logicplanes/kaeso-console`，标签为该版本的版本号；
-- Compose 项目 `kaeso` 及其服务 `caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`；
-- 存放数据的卷 `kaeso_postgres`、`kaeso_clickhouse` 和 `kaeso_valkey`，以及存放 TLS 证书的卷 `kaeso_caddy_data` 和 `kaeso_caddy_config`。
+- 镜像 `ghcr.io/logicplanes/kaeso-gateway`、`ghcr.io/logicplanes/kaeso-console` 和 `ghcr.io/logicplanes/kaeso-updater`，标签为该版本的版本号；
+- Compose 项目 `kaeso` 及其服务 `caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`，以及 `updater` 配置文件中的 `updater` 和 `docker-proxy`；
+- 存放数据的卷 `kaeso_postgres`、`kaeso_clickhouse` 和 `kaeso_valkey`，存放 TLS 证书的卷 `kaeso_caddy_data` 和 `kaeso_caddy_config`，以及存放维护标记和更新器进度的卷 `kaeso_maintenance` 和 `kaeso_updater`。
 
 请在安装所在的文件夹中运行 Compose，不要使用 `-p` 或 `COMPOSE_PROJECT_NAME`，这样它会使用项目名 `kaeso`：换成其他项目名时，Compose 会从新的空卷开始。
 

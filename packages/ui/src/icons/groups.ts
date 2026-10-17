@@ -23,6 +23,7 @@ export const ICON_GROUPS = {
     "route",
     "gateway",
     "database",
+    "update",
     "security",
     "session",
     "overview",

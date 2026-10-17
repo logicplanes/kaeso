@@ -2532,6 +2532,372 @@
         "x-kaeso-access": "instance_admin"
       }
     },
+    "/platform/v1/instance/updates": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The running version, newer releases with their notes, the update settings, the updater and the last update.",
+        "description": "**Access:** a console session of an instance admin.",
+        "operationId": "getInstanceUpdates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatesView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
+    "/platform/v1/instance/updates/apply": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the gateway and the console, waits for the gateway's migrations and health, and goes back to the previous version when the new one fails. Poll `instance/updates/jobs/{update}` for the progress.\n\n**Access:** a console session of an instance admin.",
+        "operationId": "postInstanceUpdatesApply",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateJobView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
+    "/platform/v1/instance/updates/check": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Looks for new releases now, even when checking is off.",
+        "description": "**Access:** a console session of an instance admin.",
+        "operationId": "postInstanceUpdatesCheck",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatesView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
+    "/platform/v1/instance/updates/jobs": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Past and running updates, newest first.",
+        "description": "**Access:** a console session of an instance admin.",
+        "operationId": "getInstanceUpdatesJobs",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_UpdateJobView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
+    "/platform/v1/instance/updates/jobs/{update}": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "One update and its progress.",
+        "description": "**Access:** a console session of an instance admin.",
+        "operationId": "getInstanceUpdatesJobsUpdate",
+        "parameters": [
+          {
+            "name": "update",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UpdateId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateJobView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
+    "/platform/v1/instance/updates/settings": {
+      "patch": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Changes whether the gateway looks for releases, which ones it offers, and whether updates apply in one click (turning that on needs a recent sign-in).",
+        "description": "**Access:** a console session of an instance admin.",
+        "operationId": "patchInstanceUpdatesSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettingsChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatesView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
     "/platform/v1/instance/users": {
       "get": {
         "tags": [
@@ -14717,6 +15083,20 @@
         ],
         "pattern": "^key_[0-9a-hjkmnp-tv-z]{26}$"
       },
+      "ApplyUpdate": {
+        "type": "object",
+        "description": "The release to update to.",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The newest offered release's version, as the person confirmed it.",
+            "example": "0.2.1"
+          }
+        }
+      },
       "AppointOwner": {
         "type": "object",
         "description": "The user to appoint.",
@@ -18824,6 +19204,107 @@
           }
         }
       },
+      "List_UpdateJobView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An update of the install from one version to another.",
+              "required": [
+                "id",
+                "from",
+                "to",
+                "state",
+                "step",
+                "started_at"
+              ],
+              "properties": {
+                "detail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The updater's account of what went wrong, in English."
+                },
+                "finished_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it ended; `null` while it runs."
+                },
+                "from": {
+                  "type": "string",
+                  "description": "The version it updates from.",
+                  "example": "0.2.0"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/UpdateId",
+                  "description": "The update's id."
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why it did not succeed, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted` or `updater_unreachable`."
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it started."
+                },
+                "started_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateActor",
+                      "description": "Who started it; `null` once that user is deleted."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "description": "`running`, `succeeded`, `failed` (nothing changed), `rolled_back` (the previous version runs again) or `rollback_failed`.",
+                  "example": "running"
+                },
+                "step": {
+                  "type": "string",
+                  "description": "The step it is on or ended on: `downloading`, `verifying`, `switching`, `migrating` or `online`.",
+                  "example": "verifying"
+                },
+                "to": {
+                  "type": "string",
+                  "description": "The version it updates to.",
+                  "example": "0.2.1"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_UsageRow": {
         "type": "object",
         "description": "A page of results.",
@@ -20829,6 +21310,52 @@
         ],
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
       },
+      "ReleaseView": {
+        "type": "object",
+        "description": "A Kaeso release newer than the running version.",
+        "required": [
+          "version",
+          "published_at",
+          "prerelease",
+          "major",
+          "manual_steps",
+          "notes",
+          "url"
+        ],
+        "properties": {
+          "major": {
+            "type": "boolean",
+            "description": "Whether it is a new major version, which is never applied in one click."
+          },
+          "manual_steps": {
+            "type": "boolean",
+            "description": "Whether its release notes ask for steps by hand."
+          },
+          "notes": {
+            "type": "string",
+            "description": "The release notes, in Markdown."
+          },
+          "prerelease": {
+            "type": "boolean",
+            "description": "Whether it is a pre-release."
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was published."
+          },
+          "url": {
+            "type": "string",
+            "description": "The release's page.",
+            "example": "https://github.com/logicplanes/kaeso/releases/tag/v0.2.0"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version.",
+            "example": "0.2.0"
+          }
+        }
+      },
       "RemovedRight": {
         "type": "object",
         "description": "A right the role gives but that was removed for this member.",
@@ -22332,6 +22859,311 @@
             "type": "string",
             "description": "The secret in base32, to type into an authenticator app.",
             "example": "JBSWY3DPEHPK3PXP"
+          }
+        }
+      },
+      "UpdateActor": {
+        "type": "object",
+        "description": "Who started an update.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "The user's id."
+          },
+          "name": {
+            "type": "string",
+            "description": "The user's name.",
+            "example": "Ada Lovelace"
+          }
+        }
+      },
+      "UpdateChannel": {
+        "type": "string",
+        "description": "Which releases are offered.",
+        "enum": [
+          "stable",
+          "prerelease"
+        ]
+      },
+      "UpdateCheckView": {
+        "type": "object",
+        "description": "The last look for new releases.",
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last look failed, if it did."
+          },
+          "last_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the gateway last looked."
+          },
+          "last_success_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the gateway last got the list of releases."
+          },
+          "next_check_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it looks next, while checking is on."
+          }
+        }
+      },
+      "UpdateId": {
+        "type": "string",
+        "examples": [
+          "upd_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^upd_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "UpdateJobView": {
+        "type": "object",
+        "description": "An update of the install from one version to another.",
+        "required": [
+          "id",
+          "from",
+          "to",
+          "state",
+          "step",
+          "started_at"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The updater's account of what went wrong, in English."
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it ended; `null` while it runs."
+          },
+          "from": {
+            "type": "string",
+            "description": "The version it updates from.",
+            "example": "0.2.0"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UpdateId",
+            "description": "The update's id."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it did not succeed, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted` or `updater_unreachable`."
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it started."
+          },
+          "started_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpdateActor",
+                "description": "Who started it; `null` once that user is deleted."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "description": "`running`, `succeeded`, `failed` (nothing changed), `rolled_back` (the previous version runs again) or `rollback_failed`.",
+            "example": "running"
+          },
+          "step": {
+            "type": "string",
+            "description": "The step it is on or ended on: `downloading`, `verifying`, `switching`, `migrating` or `online`.",
+            "example": "verifying"
+          },
+          "to": {
+            "type": "string",
+            "description": "The version it updates to.",
+            "example": "0.2.1"
+          }
+        }
+      },
+      "UpdateSettingsChange": {
+        "type": "object",
+        "description": "Changes to the update settings.",
+        "properties": {
+          "apply": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether instance admins may apply updates in one click; turning it on needs a recent sign-in."
+          },
+          "channel": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpdateChannel",
+                "description": "Which releases are offered."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "check": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the gateway looks for new releases twice a day."
+          }
+        }
+      },
+      "UpdateSettingsView": {
+        "type": "object",
+        "description": "The update settings.",
+        "required": [
+          "check",
+          "channel",
+          "apply"
+        ],
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Whether instance admins may apply updates in one click through the updater."
+          },
+          "channel": {
+            "$ref": "#/components/schemas/UpdateChannel",
+            "description": "Which releases are offered."
+          },
+          "check": {
+            "type": "boolean",
+            "description": "Whether the gateway looks for new releases twice a day."
+          }
+        }
+      },
+      "UpdaterView": {
+        "type": "object",
+        "description": "The updater, the optional service that applies updates.",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "`not_installed` (no updater token is set), `unreachable` (it does not answer, or cannot reach Docker), `outdated` (too old for the newest release) or `ready`.",
+            "example": "ready"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its version, when it answers."
+          }
+        }
+      },
+      "UpdatesView": {
+        "type": "object",
+        "description": "Updates of the install: the running version, newer releases, the settings, the updater and the last update.",
+        "required": [
+          "current",
+          "state",
+          "releases",
+          "can_apply",
+          "settings",
+          "check",
+          "updater",
+          "upgrade_guide"
+        ],
+        "properties": {
+          "can_apply": {
+            "type": "boolean",
+            "description": "Whether the newest release can be applied now: one-click updates are on, nothing asks for steps by hand, the updater is ready and no update runs."
+          },
+          "check": {
+            "$ref": "#/components/schemas/UpdateCheckView",
+            "description": "The last look for releases."
+          },
+          "current": {
+            "type": "string",
+            "description": "The version the gateway runs.",
+            "example": "0.1.0"
+          },
+          "job": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpdateJobView",
+                "description": "The running update, or else the last one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseView",
+                "description": "The newest offered release, when it is newer than the running version."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "manual": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the newest release can't be applied in one click: `major` (a new major version), `manual_steps` (a release on the way asks for steps by hand) or `not_prepared` (it has no release manifest); `null` when it can."
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseView"
+            },
+            "description": "Every offered release newer than the running version, newest first."
+          },
+          "settings": {
+            "$ref": "#/components/schemas/UpdateSettingsView",
+            "description": "The settings."
+          },
+          "state": {
+            "type": "string",
+            "description": "`unknown` until the gateway first gets the list of releases, `up_to_date`, or `available` when a newer release is offered.",
+            "example": "available"
+          },
+          "updater": {
+            "$ref": "#/components/schemas/UpdaterView",
+            "description": "The updater."
+          },
+          "upgrade_guide": {
+            "type": "string",
+            "description": "The guide to updating by hand.",
+            "example": "https://docs.kaeso.app/self-hosting/upgrades"
           }
         }
       },

@@ -64,6 +64,20 @@ Kaeso is MIT licensed, and everything it ships depends only on permissively lice
 | `http-body-util` (tests only) | Reading response bodies in the server's tests | MIT |
 | `rsa`, `chrono` | The mock identity provider in `kaeso-testkit`, in tests only | MIT OR Apache-2.0 |
 
+### The updater
+
+The updater (`crates/kaeso-updater`) uses `tokio`, `axum`, `reqwest`, `serde`, `serde_json`, `tracing`, `secrecy`, `subtle`, `sha2`, `base64`, `url`, `time`, `futures` and `thiserror` as the gateway does, and these:
+
+| Crate | Used for | License |
+| --- | --- | --- |
+| `kaeso-update` | The release manifest, the update policy and the updater's protocol, from the same workspace; the gateway uses it too | MIT |
+| `semver` | Comparing release versions, in the gateway and the updater | MIT OR Apache-2.0 |
+| `sigstore` (feature `verify` only) | Verifying the Release workflow's build provenance attestations: the certificate chain to Sigstore's certificate authority, the certificate transparency proof, the workflow's identity, the DSSE signature and the transparency log entry | Apache-2.0 |
+| `rustls-pki-types` | The certificates of the trust root, for `sigstore` | MIT OR Apache-2.0 |
+| `aws-lc-rs` | Checking the transparency log's signed entry timestamp with the Rekor key, which `sigstore` leaves out | ISC AND (Apache-2.0 OR ISC) |
+
+The self-hosting package runs [`wollomatic/socket-proxy`](https://github.com/wollomatic/socket-proxy) (MIT, with parts under Apache-2.0) as the updater's Docker socket proxy, in the `updater` profile only.
+
 ### KPP
 
 The library code of `kaeso-kpp` and `kaeso-codecs` may use only `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`; anything else needs the maintainer's agreement and a row here. They use:

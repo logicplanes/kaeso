@@ -87,6 +87,8 @@
   "shell.settings.security": "Sicherheit",
   "shell.settings.sessions": "Sitzungen",
   "shell.settings.system": "System",
+  "shell.settings.updateNew": "Neu",
+  "shell.settings.updates": "Updates",
   "shell.settings.users": "Benutzer",
   "shell.shortcut.auditLog": "Zum Audit-Log",
   "shell.shortcut.close": "Dialog oder Bereich schließen",

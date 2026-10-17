@@ -11,5 +11,7 @@ pub mod mail_lang;
 pub mod master_key;
 pub mod models_dev;
 pub mod orgs;
+pub mod updater;
+pub mod updates;
 pub mod usage;
 pub mod users;
