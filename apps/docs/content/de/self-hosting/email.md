@@ -1,14 +1,14 @@
 ---
 title: E-Mail
-description: Wie Kaeso E-Mails sendet, was es sendet, in welcher Sprache und wie sich das testen lässt.
+description: Wie Kaeso E-Mails versendet, was es sendet, in welcher Sprache und wie es sich testen lässt.
 order: 5
 ---
 
-Kaeso sendet E-Mails für Anmeldelinks, Einladungen, das Zurücksetzen von Passwörtern, Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen und Sicherheitshinweise. Das Gateway sendet jede E-Mail selbst, über SMTP.
+Kaeso sendet E-Mails für Anmeldelinks, Einladungen, das Zurücksetzen von Passwörtern, Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen und Sicherheitshinweise. Das Gateway versendet jede E-Mail selbst über SMTP.
 
 ## SMTP einrichten
 
-Den SMTP-Server in `.env` eintragen und mit `docker compose up -d --wait` übernehmen:
+Den SMTP-Server in die `.env` eintragen und mit `docker compose up -d --wait` übernehmen:
 
 ```bash
 KAESO_SMTP_HOST=smtp.example.com
@@ -22,14 +22,14 @@ KAESO_SMTP_FROM=Kaeso <kaeso@example.com>
 | Einstellung | Gut zu wissen |
 | --- | --- |
 | `KAESO_SMTP_TLS` | `starttls` auf Port 587, `tls` für implizites TLS (meist Port 465), `none` nur für einen lokalen Mail-Catcher |
-| `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD` | Beide weglassen für einen Server, der keine Anmeldung braucht; ein Passwort braucht einen Benutzer |
-| `KAESO_SMTP_FROM` | Der Absender jeder E-Mail, als Adresse oder `Name <address>`. Die Compose-Datei setzt `Kaeso <kaeso@` und die eigene Domain; eine Adresse verwenden, von der der SMTP-Server senden darf |
+| `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD` | Beide weglassen, wenn der Server keine Anmeldung verlangt; ein Passwort braucht einen Benutzer |
+| `KAESO_SMTP_FROM` | Der Absender jeder E-Mail, als Adresse oder `Name <address>`. Standard ist `Kaeso <kaeso@` und die eigene Domain; eine Adresse verwenden, von der der SMTP-Server senden darf |
 
-Jede Einstellung steht unter [Konfiguration](configuration.md#e-mail). Ohne `KAESO_SMTP_HOST` startet das Gateway nicht, außer E-Mails werden nur protokolliert.
+Ohne `KAESO_SMTP_HOST` startet das Gateway nicht, außer E-Mails werden nur protokolliert. [Konfiguration](configuration.md#e-mail) listet jede E-Mail-Einstellung.
 
 ## Ohne Mailserver
 
-Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das Gateway protokolliert dann nur, dass eine E-Mail gesendet worden wäre, mit ihrer Art, nie mit Empfänger oder Inhalt. Die Anmeldung mit Passwort funktioniert, und `kaeso setup-link` gibt den Einrichtungslink in jedem Fall aus; Anmeldelinks, Einladungen und Warnungen werden nicht zugestellt.
+Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das Gateway protokolliert dann nur, dass eine E-Mail gesendet worden wäre, mit ihrer Art, nie mit Empfänger oder Inhalt. Die Anmeldung mit Passwort funktioniert, und `kaeso setup-link` gibt den Einrichtungslink in jedem Fall aus, aber Anmeldelinks, Einladungen und Warnungen kommen nie an.
 
 ## Was Kaeso sendet
 
@@ -54,31 +54,31 @@ Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das 
 | Budget-Warnung | {scope} hat {percent} % des {budget} verbraucht | Ein Budget eine seiner Warnschwellen erreicht |
 | Test | Kaeso-Test-E-Mail | Ein Instanz-Admin eine Test-E-Mail sendet |
 
-Sicherheits- und Organisationshinweise werden immer gesendet. Warnungen nennen in ihrer Fußzeile, wie sie sich abschalten lassen; welche Warnungen sie erhalten, wählen Personen unter **Einstellungen** › **Konto** › **Benachrichtigungen**.
+Sicherheits- und Organisationshinweise werden immer gesendet. Warnungen nennen in ihrer Fußzeile, wie sie sich abschalten lassen, und jede Person wählt unter **Einstellungen** › **Konto** › **Benachrichtigungen**, welche sie erhält.
 
 ## Sprachen
 
-Jede E-Mail gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch, mit Datumsangaben und Zahlen so geschrieben, wie jede Sprache sie schreibt.
+Jede E-Mail gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch, mit Datumsangaben und Zahlen so, wie jede Sprache sie schreibt.
 
 | Empfänger | Sprache |
 | --- | --- |
-| Eine Person mit Konto | Die Sprache, die sie unter **Einstellungen** › **Konto** gewählt hat; bei „Automatisch“ die Sprache des Browsers, der die E-Mail ausgelöst hat; sonst Englisch |
+| Eine Person mit Konto | Ihre Wahl unter **Einstellungen** › **Konto** › **Darstellung**; bei „Automatisch“ die Sprache des Browsers, der die E-Mail ausgelöst hat; sonst Englisch |
 | Jemand ohne Konto, für eine Einladung oder einen Registrierungslink | Die Sprache der Person, die eingeladen oder angefordert hat, sonst Englisch; wer eingeladen wird und schon ein Konto hat, erhält die eigene Wahl |
 | E-Mails, die ohne Browser gesendet werden: Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen, Hinweise zur Löschung von Organisationen | Die Wahl jedes Empfängers, sonst Englisch |
 
 ## Wie E-Mails aussehen
 
-Jede E-Mail hat das Aussehen der Konsole: die Kaeso-Wortmarke oben links, eine Überschrift, ein Satz, höchstens ein Button und eine Fußzeile, die die Installation nennt. Das HTML zeigt nie einen rohen Link, und ein Klartextteil sagt dieselben Worte, mit dem vollständigen Link.
+Jede E-Mail sieht aus wie die Konsole: die Kaeso-Wortmarke oben links, eine Überschrift, ein Satz, höchstens ein Button und eine Fußzeile, die die Installation nennt. Der HTML-Teil zeigt nie einen rohen Link; der Textteil sagt dasselbe und enthält den Link vollständig.
 
-- **Hell und dunkel.** Mail-Apps, die dem Dunkelmodus des Systems folgen, erhalten Kaesos dunkle Farben; der eigene Dunkelmodus von Outlook.com erhält dieselben Werte; Apps, die Farben von sich aus invertieren, erhalten ein helles Design, das dafür gebaut ist, die Invertierung zu überstehen.
-- **Nichts von außen.** Die Bilder der Wortmarke reisen in der E-Mail mit, sodass sie immer erscheinen und nie etwas von der Installation laden. Es gibt keine Webfonts, externen Bilder, Skripte oder Tracking-Pixel.
+- **Hell und dunkel.** Mail-Apps, die dem Dunkelmodus des Systems folgen, und der eigene Dunkelmodus von Outlook.com erhalten Kaesos dunkle Farben. Apps, die Farben selbst umkehren, erhalten ein helles Design, das die Umkehrung übersteht.
+- **Nichts von außen.** Die Bilder der Wortmarke reisen in der E-Mail mit, werden also immer angezeigt und laden nie etwas von der Installation. Es gibt keine Webfonts, externen Bilder, Skripte oder Tracking-Pixel.
 
 ## Zustellung
 
-E-Mails warten in einer Warteschlange im Speicher des Gateways und werden nacheinander gesendet. Eine fehlgeschlagene Zustellung wird drei weitere Male versucht, nach 1, 5 und 30 Sekunden, dann aufgegeben und protokolliert. E-Mails, die noch in der Warteschlange stehen, wenn das Gateway anhält, werden nicht gesendet.
+E-Mails warten in einer Warteschlange im Speicher des Gateways, bis zu 1.024 Stück, und bis zu 16 werden gleichzeitig zugestellt. Scheitert der SMTP-Server vorübergehend, versucht das Gateway es dreimal erneut, nach 1, 5 und 30 Sekunden; lehnt er eine E-Mail endgültig ab, gibt es keinen neuen Versuch. In beiden Fällen wird eine nicht zustellbare E-Mail protokolliert. Beim Beenden wartet das Gateway bis zu 10 Sekunden auf die Warteschlange; was dann noch nicht gesendet ist, geht verloren.
 
-Die Metrik `kaeso_emails_total{kind, outcome}` zählt E-Mails nach `outcome`: `sent`, `failed` oder `dropped`, wenn die Warteschlange voll ist. Siehe [Zustand und Metriken](monitoring.md).
+`kaeso_emails_total{kind, outcome}` zählt E-Mails nach `outcome`: `sent`, `failed` oder `dropped`, wenn die Warteschlange voll war. Siehe [Zustand und Metriken](monitoring.md).
 
 ## Testen
 
-In der Konsole **Einstellungen** › **Instanz** › **Einstellungen** öffnen. Der Abschnitt **E-Mail** zeigt den Transport, den SMTP-Host und den Absender; **Test-E-Mail senden** wählen, um eine an sich selbst oder an den eingegebenen Empfänger zu senden. Schlägt sie fehl oder kommt sie nicht an, steht im Log des Gateways, was der SMTP-Server geantwortet hat; mehr unter [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an).
+In der Konsole **Einstellungen** › **Instanz** › **Einstellungen** öffnen. Der Abschnitt **E-Mail** zeigt Transport, SMTP-Host und Absender; **Test-E-Mail senden** schickt eine an die eigene Adresse oder an den eingegebenen Empfänger. Schlägt sie fehl oder kommt sie nicht an, steht die Antwort des SMTP-Servers im Log des Gateways, mehr unter [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an).

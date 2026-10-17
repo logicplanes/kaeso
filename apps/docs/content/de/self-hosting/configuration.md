@@ -4,14 +4,18 @@ description: Wie das Gateway seine Einstellungen liest, und jede Einstellung, di
 order: 3
 ---
 
-Das Gateway wird mit `KAESO_*`-Umgebungsvariablen konfiguriert, optional ergänzt durch eine TOML-Datei. In der Compose-Installation gehören die Variablen, die `compose.yaml` liest, in `.env`, wie [die Datei .env](installation.md#die-datei-env) sie auflistet; jede andere Einstellung gehört in `compose.override.yaml`, wie [lokale Änderungen](installation.md#lokale-änderungen) zeigt. Eine Einstellung, die nur in `.env` steht, erreicht das Gateway nie. Die Compose-Datei setzt bereits die Datenbank-URLs, die Datei mit den Hauptschlüsseln und das JSON-Logformat und leitet die öffentliche URL aus `KAESO_DOMAIN` ab.
+Das Gateway liest seine Einstellungen aus `KAESO_*`-Umgebungsvariablen, optional ergänzt durch eine TOML-Datei. In der Compose-Installation gilt:
+
+- Die Variablen, die `compose.yaml` liest, stehen in der `.env`; [Die Datei .env](installation.md#die-datei-env) listet sie auf.
+- Jede andere Einstellung gehört in die `compose.override.yaml`, wie [Lokale Änderungen](installation.md#lokale-änderungen) zeigt. Steht sie nur in der `.env`, erreicht sie das Gateway nie.
+- `compose.yaml` setzt bereits die Datenbank-URLs, die Datei mit den Hauptschlüsseln und das JSON-Logformat und leitet `KAESO_PUBLIC_URL` aus `KAESO_DOMAIN` ab.
 
 ## Wie Einstellungen gelesen werden
 
-- **Umgebungsvariablen.** Jede Einstellung hat eine Variable, etwa `KAESO_LOG_LEVEL`. Eine leere Variable gilt als nicht gesetzt.
-- **Eine Datei.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` liest Einstellungen aus einer TOML-Datei, mit den TOML-Schlüsseln unten als Tabellen geschrieben (`[postgres]`, dann `url = "…"`). Eine Umgebungsvariable hat Vorrang vor der Datei. Ein Schlüssel, der keine Einstellung ist, ist ein Fehler. Jedes Release enthält [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml); die Datei setzt jede Einstellung, die kein Secret ist, auf ihren Standard oder, wo es keinen gibt, auf einen Beispielwert und ist damit ein gültiger Ausgangspunkt.
-- **Secrets aus Dateien.** Jede als Secret markierte Einstellung lässt sich stattdessen aus einer Datei lesen, die in `<VARIABLE>_FILE` genannt ist, etwa `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys` für Docker-Secrets. Ein abschließender Zeilenumbruch wird ignoriert. Die Variable und ihr `_FILE` zugleich zu setzen ist ein Fehler.
-- **Beim Start geprüft.** Das Gateway prüft beim Start jede Einstellung und startet nicht, mit einer Meldung, die die Einstellung nennt. Geheime Werte gibt es nie aus.
+- **Umgebungsvariablen.** Jede Einstellung hat eine, etwa `KAESO_LOG_LEVEL`. Eine leere Variable gilt als nicht gesetzt.
+- **Eine TOML-Datei.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` liest Einstellungen aus einer Datei, mit den Schlüsseln unten als Tabellen geschrieben (`[postgres]`, dann `url = "…"`). Eine Umgebungsvariable hat Vorrang vor der Datei, und ein Schlüssel, der keine Einstellung ist, ist ein Fehler. [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), die jedem Release beiliegt, setzt jede Einstellung, die kein Secret ist, auf ihren Standard oder einen Beispielwert und ist ein gültiger Ausgangspunkt.
+- **Secrets aus Dateien.** Jede geheime Einstellung lässt sich stattdessen aus der Datei lesen, die `<VARIABLE>_FILE` nennt, etwa `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys` für ein Docker-Secret. Ein abschließender Zeilenumbruch wird ignoriert; die Variable und ihr `_FILE` zugleich zu setzen ist ein Fehler.
+- **Beim Start geprüft.** Fehlt eine Einstellung oder ist sie ungültig, startet das Gateway nicht und nennt die Einstellung in seiner Meldung, ohne je ein Secret auszugeben.
 
 | Typ | Werte |
 | --- | --- |
@@ -27,7 +31,7 @@ Das Gateway wird mit `KAESO_*`-Umgebungsvariablen konfiguriert, optional ergänz
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | Text | `0.0.0.0:8080` | Adresse der Modell-API, der Platform API und der Health-Checks. |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | Text | `0.0.0.0:9100` | Adresse des Prometheus-Metrik-Listeners. Nie öffentlich weiterleiten. |
-| `KAESO_PUBLIC_URL` | `public_url` | Text | erforderlich | Die URL, über die Personen und Apps diese Installation erreichen, etwa `https://kaeso.example.com`: der reine Origin, ohne Pfad. Muss `https` sein, außer `http://localhost` für die Entwicklung. |
+| `KAESO_PUBLIC_URL` | `public_url` | Text | erforderlich | Die URL, über die Personen und Apps diese Installation erreichen, etwa `https://kaeso.example.com`: der reine Origin, ohne Pfad. Muss `https` sein, außer `http` auf einer Loopback-Adresse wie `http://localhost` für die Entwicklung. |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Kommagetrennte Netzwerke von Reverse Proxys, deren `X-Forwarded-For` geglaubt wird, für Client-Adressen in Logs, die Drosselung von Anmeldungen und die Drosselung von API-Schlüsseln. `trusted_proxies = ""` in der TOML-Datei vertraut keinem Proxy; eine leere Variable behält den Standard. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach einem Shutdown-Signal weiterlaufen dürfen. Die dann noch offenen enden mit einem Fehler im Format der App (503) und werden abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen darf und wie lange eine Verbindung zwischen zwei Anfragen ungenutzt bleiben darf, bevor das Gateway sie schließt; 1 s bis 10 min. Eine Anfrage, die gerade beantwortet wird, etwa ein langer Stream, wird dadurch nie unterbrochen. |
@@ -154,27 +158,25 @@ Timeouts für ein einzelnes Modell werden am Modell im Katalog eines Projekts fe
 
 ## Anbietereinstellungen
 
-Einstellungen eines Anbieters werden einmal pro Anbieter geschrieben: als TOML-Schlüssel `providers.<id>.<feld>` und als Variable `KAESO_PROVIDERS_<ID>_<FELD>`. Die Anbieter sind `openai` und `anthropic`, und jeder hat ein Feld, `base_url`, wie [Aufrufe an Anbieter](#aufrufe-an-anbieter) zeigt.
+Jeder Anbieter hat eigene Einstellungen: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und `_` für jedes `-`. Kaeso ruft zwei Anbieter auf, `openai` und `anthropic`, und jeder hat ein Feld, `base_url` (siehe [Aufrufe an Anbieter](#aufrufe-an-anbieter)).
 
-- **Anbieter-IDs** bestehen aus Kleinbuchstaben und Ziffern, mit einzelnen Bindestrichen dazwischen (`^[a-z0-9]+(-[a-z0-9]+)*$`): keine Großbuchstaben, Unterstriche oder Punkte. Dieselbe Regel gilt überall, wo eine ID vorkommt, auch für Anbieter-Schlüssel und Modelle im Katalog in der Konsole und der Platform API.
-- **Die Variable** ist `KAESO_PROVIDERS_`, die ID in Großbuchstaben mit `_` für jeden `-`, dann `_` und das Feld in Großbuchstaben. Ein Anbieter mit der ID `azure-openai` würde mit `KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL` gesetzt, in der Datei mit `[providers.azure-openai]` und `base_url = "…"`.
-- **Eine Bedeutung pro Variable.** Kaeso legt die Felder fest, und kein Feldname endet auf `_` und den Namen eines anderen Felds; so liest das Gateway eine Variable, indem es das Feld am Ende abtrennt, und der Rest ergibt genau eine ID.
-- **Unbekannte Anbieter werden abgelehnt.** Eine Variable `KAESO_PROVIDERS_…` oder eine Tabelle `[providers.…]`, deren ID die Regel verletzt oder einen Anbieter nennt, den Kaeso nicht aufruft, hält das Gateway beim Start an, mit einer Meldung, die sie nennt und die Anbieter aufzählt.
+- Anbieter-IDs bestehen aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen (`^[a-z0-9]+(-[a-z0-9]+)*$`). Dieselbe Regel gilt überall, wo eine ID vorkommt, auch für Anbieter-Schlüssel und Katalogmodelle.
+- Eine `KAESO_PROVIDERS_…`-Variable oder eine `[providers.…]`-Tabelle, deren ID die Regel verletzt oder einen Anbieter nennt, den Kaeso nicht aufruft, hält das Gateway beim Start an; die Meldung nennt sie und listet die Anbieter auf.
 
 ## Drosselung von API-Schlüsseln
 
-Eine Anfrage mit einem API-Schlüssel, den das Gateway nicht kürzlich gesehen hat, kostet eine Abfrage in PostgreSQL. Unbekannte Schlüssel werden 30 Sekunden lang gemerkt, sodass eine App, die weiter einen rotierten Schlüssel sendet, eine Abfrage pro 30 Sekunden und Gateway-Instanz kostet; ein Client, der für jede Anfrage einen neuen Schlüssel erfindet, kostete eine pro Anfrage. Deshalb zählt das Gateway fehlgeschlagene Schlüsselsuchen pro Client-Adresse, auf Modell-API und Platform API zusammen, in Valkey. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen (100) innerhalb von `KAESO_KEY_FAILURES_WINDOW` (1 Minute) ist die Adresse bis zum Ende des Fensters gesperrt: Jeder nicht gecachte Schlüssel von ihr erhält 429 mit `Retry-After`, im eigenen Format der API, ohne Datenbankabfrage.
+Jeder API-Schlüssel, den das Gateway nicht kürzlich gesehen hat, kostet eine Abfrage in PostgreSQL. Unbekannte Schlüssel merkt es sich 30 Sekunden lang; eine App, die weiter einen alten Schlüssel sendet, kostet daher eine Abfrage pro 30 Sekunden und Gateway-Instanz, ein Client, der für jede Anfrage einen neuen Schlüssel erfindet, aber eine pro Anfrage. Deshalb zählt das Gateway fehlgeschlagene Abfragen pro Client-Adresse in Valkey, über Modell-API und Platform API hinweg. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen (Standard 100) innerhalb von `KAESO_KEY_FAILURES_WINDOW` (Standard 1 Minute) ist die Adresse bis zum Ende des Fensters gesperrt: Jeder Schlüssel von ihr, der nicht im Cache liegt, erhält 429 mit `Retry-After` im Format der jeweiligen API, ohne Datenbankabfrage.
 
-- Nur Suchen, die keinen Schlüssel finden, zählen. Fehlerhaft geformte Werte, deaktivierte oder abgelaufene Schlüssel und ein unbekannter Schlüssel, der innerhalb von 30 Sekunden wiederholt wird, zählen nicht.
-- Gültige Schlüssel zählen nie. Ein Schlüssel, der in den letzten 30 Sekunden auf einer Instanz genutzt wurde, wird aus dem Speicher beantwortet, auch von einer gesperrten Adresse; ein gültiger Schlüssel, der länger nicht genutzt wurde, wartet auf das Ende des Fensters.
+- Es zählen nur wohlgeformte Schlüssel, zu denen es keinen Schlüssel gibt. Fehlerhafte Werte, deaktivierte oder abgelaufene Schlüssel und ein unbekannter Schlüssel, der innerhalb von 30 Sekunden wiederkommt, zählen nicht.
+- Gültige Schlüssel zählen nie. Ein Schlüssel, der in den letzten 30 Sekunden auf derselben Instanz verwendet wurde, wird aus dem Speicher beantwortet, auch von einer gesperrten Adresse; andere gültige Schlüssel warten das Ende des Fensters ab.
 - IPv6-Adressen zählen pro /64.
-- Hinter einem Reverse Proxy kommt die Client-Adresse nur dann aus `X-Forwarded-For`, wenn der Proxy in `KAESO_TRUSTED_PROXIES` steht. Mit einem nicht vertrauenswürdigen Proxy davor sieht jeder Client wie der Proxy aus und teilt dessen Kontingent, daher die eigenen Proxys eintragen.
-- Ist Valkey nicht erreichbar, werden Fehlschläge nicht gezählt.
+- Hinter einem Reverse Proxy stammt die Client-Adresse nur dann aus `X-Forwarded-For`, wenn der Proxy in `KAESO_TRUSTED_PROXIES` steht. Sonst sieht jeder Client wie der Proxy aus und teilt dessen Kontingent.
+- Solange Valkey nicht erreichbar ist, werden Fehlschläge nicht gezählt.
 
-Die Metrik `kaeso_key_failure_blocks_total` zählt Sperren, und die Logzeile `too many failed API key lookups from one address` nennt die Adresse; siehe [Zustand und Metriken](monitoring.md).
+Jede Sperre erhöht `kaeso_key_failure_blocks_total` und protokolliert `too many failed API key lookups from one address` mit der Adresse; siehe [Zustand und Metriken](monitoring.md).
 
 ## Hinweise
 
-- **Standards der Instanz** füllen nur die Instanzeinstellungen einer neuen Installation vor. Danach ändern Instanz-Admins, wer Konten und Organisationen erstellen darf, ob Organisationen gelöscht werden können und deren Karenzzeit sowie die Standards und Höchstwerte der Aufbewahrung unter **Einstellungen** › **Instanz** › **Einstellungen** in der Konsole oder über die Platform API (`instance/settings`); die gespeicherten Werte haben Vorrang.
-- **Anmeldemethoden**, die hier abgeschaltet sind, lassen sich in der Konsole nicht einschalten; sie zeigt sie so, wie die Konfiguration des Gateways sie festlegt.
-- **Entwicklung.** Mit `KAESO_PUBLIC_URL=http://localhost:…` wird das Sitzungscookie ohne `Secure` und ohne das Präfix `__Host-` gesendet, sodass die Konsole auf dem eigenen Rechner über einfaches HTTP funktioniert. Jede andere `http`-URL wird abgelehnt.
+- **Standards der Instanz** füllen nur die Instanzeinstellungen einer neuen Installation vor. Danach ändern Instanz-Admins die Erstellung von Konten und Organisationen, das Löschen von Organisationen und dessen Karenzzeit sowie Standards und Höchstwerte der Aufbewahrung unter **Einstellungen** › **Instanz** › **Einstellungen** oder über die Platform API (`instance/settings`); die gespeicherten Werte haben Vorrang.
+- **Anmeldemethoden**, die hier ausgeschaltet sind, lassen sich in der Konsole nicht einschalten; sie zeigt sie so, wie die Konfiguration sie festlegt.
+- **Entwicklung.** Ist `KAESO_PUBLIC_URL` eine `http`-URL auf einer Loopback-Adresse, etwa `http://localhost:8080`, wird das Sitzungscookie ohne `Secure` und ohne das Präfix `__Host-` gesendet, sodass die Konsole auf dem eigenen Rechner über einfaches HTTP funktioniert. Jede andere `http`-URL wird abgelehnt.

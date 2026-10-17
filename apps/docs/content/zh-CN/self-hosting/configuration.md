@@ -4,14 +4,18 @@ description: 网关如何读取其设置，以及它的每一项设置。
 order: 3
 ---
 
-网关通过 `KAESO_*` 环境变量配置，也可以辅以一个 TOML 文件。在 Compose 安装中，`compose.yaml` 读取的变量写入 `.env`，见 [.env 文件](installation.md#env-文件)中的列表；其他所有设置写入 `compose.override.yaml`，如[本地修改](installation.md#本地修改)所示。只写在 `.env` 中的设置不会传给网关。Compose 文件已经设置了数据库 URL、主密钥文件和 JSON 日志格式，并根据 `KAESO_DOMAIN` 推导出公开 URL。
+网关从 `KAESO_*` 环境变量读取设置，也可以辅以一个 TOML 文件。在 Compose 安装中：
+
+- `compose.yaml` 读取的变量写在 `.env` 中，[.env 文件](installation.md#env-文件)列出了它们。
+- 其他所有设置写在 `compose.override.yaml` 中，见[本地修改](installation.md#本地修改)。只写在 `.env` 中的设置不会传给网关。
+- `compose.yaml` 已经设置了数据库 URL、主密钥文件和 JSON 日志格式，并根据 `KAESO_DOMAIN` 推导出 `KAESO_PUBLIC_URL`。
 
 ## 设置的读取方式
 
-- **环境变量。** 每项设置都有一个变量，例如 `KAESO_LOG_LEVEL`。空变量视为未设置。
-- **文件。** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` 从一个 TOML 文件中读取设置，下文的 TOML 键以表的形式书写（先写 `[postgres]`，再写 `url = "…"`）。环境变量优先于文件。不是设置项的键会被视为错误。每个版本都附带 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)，它为每项非机密设置都给出了值：有默认值的设为默认值，没有的给出示例值，因此可以作为有效的起点。
-- **从文件读取机密。** 每项标记为机密的设置都可以改为从 `<VARIABLE>_FILE` 指定的文件中读取，例如用于 Docker secrets 的 `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys`。末尾的换行符会被忽略。同时设置变量及其 `_FILE` 会被视为错误。
-- **启动时检查。** 网关在启动时检查每项设置，出错时拒绝启动并给出指明该设置的消息。它从不输出机密值。
+- **环境变量。** 每项设置都有一个，例如 `KAESO_LOG_LEVEL`。空变量视为未设置。
+- **TOML 文件。** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` 从文件读取设置，下文的键以表的形式书写（先写 `[postgres]`，再写 `url = "…"`）。环境变量优先于文件，不是设置项的键视为错误。每个版本都附带 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)，其中每项非机密设置都填了默认值或示例值，可直接作为起点。
+- **从文件读取机密。** 每项机密设置都可以改为从 `<VARIABLE>_FILE` 指定的文件读取，例如用于 Docker secret 的 `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys`。末尾的换行符会被忽略；同时设置变量及其 `_FILE` 视为错误。
+- **启动时检查。** 缺少设置或设置无效时，网关拒绝启动，消息中会指明该设置，但从不输出机密。
 
 | 类型 | 取值 |
 | --- | --- |
@@ -27,7 +31,7 @@ order: 3
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | 模型 API、Platform API 和健康检查的地址。 |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `0.0.0.0:9100` | Prometheus 指标监听器的地址。切勿将其公开路由。 |
-| `KAESO_PUBLIC_URL` | `public_url` | text | 必填 | 人和应用访问本安装所用的 URL，例如 `https://kaeso.example.com`：只含源，不带路径。必须是 `https`，开发时的 `http://localhost` 除外。 |
+| `KAESO_PUBLIC_URL` | `public_url` | text | 必填 | 人和应用访问本安装所用的 URL，例如 `https://kaeso.example.com`：只含源，不带路径。必须是 `https`；开发时可以在回环地址上使用 `http`，例如 `http://localhost`。 |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | 以逗号分隔的反向代理网络，信任来自这些网络的 `X-Forwarded-For`，用于日志中的客户端地址、登录限流和 API 密钥限流。在 TOML 文件中写 `trusted_proxies = ""` 表示不信任任何代理；空变量则保留默认值。 |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | 收到关闭信号后，进行中的请求和流还可以继续运行多久。届时仍未结束的请求会以应用所用格式的错误（503）结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | 客户端发送一个请求的请求头最多可用多久，以及一个连接在两个请求之间最多可空闲多久，超时后网关会关闭该连接；1 秒到 10 分钟。正在应答的请求（例如长流）不会因此被中断。 |
@@ -154,27 +158,25 @@ order: 3
 
 ## 服务商设置
 
-服务商的设置按服务商分别书写：TOML 键为 `providers.<id>.<字段>`，变量为 `KAESO_PROVIDERS_<ID>_<字段>`。目前的服务商是 `openai` 和 `anthropic`，各有一个字段 `base_url`，见[服务商调用](#服务商调用)。
+每个服务商都有自己的设置：TOML 键为 `providers.<id>.<field>`，变量为 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 改为大写，每个 `-` 换成 `_`。Kaeso 调用两个服务商：`openai` 和 `anthropic`，各有一个字段 `base_url`（见[服务商调用](#服务商调用)）。
 
-- **服务商 ID** 由小写字母和数字组成，中间可用单个连字符分隔（`^[a-z0-9]+(-[a-z0-9]+)*$`）：不含大写字母、下划线或点。凡是出现 ID 的地方都适用同一规则，控制台和 Platform API 中的服务商密钥与目录模型也不例外。
-- **变量名**由 `KAESO_PROVIDERS_`、改为大写并把每个 `-` 换成 `_` 的 ID、`_` 以及大写的字段名依次组成。ID 为 `azure-openai` 的服务商将通过 `KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL` 设置，在文件中则写作 `[providers.azure-openai]` 加 `base_url = "…"`。
-- **每个变量只有一种含义。** 字段由 Kaeso 定义，且没有任何字段名以 `_` 加另一个字段名结尾，因此网关读取变量时从末尾去掉字段名，剩下的部分只对应一个 ID。
-- **未知服务商会被拒绝。** 如果 `KAESO_PROVIDERS_…` 变量或 `[providers.…]` 表中的 ID 违反规则，或指向 Kaeso 不调用的服务商，网关会在启动时停止，并给出指明该项、列出服务商的消息。
+- 服务商 ID 由小写字母和数字组成，中间以单个连字符分隔（`^[a-z0-9]+(-[a-z0-9]+)*$`）。凡出现 ID 的地方都适用同一规则，服务商密钥和目录模型也不例外。
+- 如果 `KAESO_PROVIDERS_…` 变量或 `[providers.…]` 表中的 ID 违反该规则，或指向 Kaeso 不调用的服务商，网关会在启动时停止，消息中会指明该项并列出所有服务商。
 
 ## API 密钥限流
 
-带有网关最近没有见过的 API 密钥的请求需要进行一次 PostgreSQL 查找。未知密钥会被记住 30 秒，因此持续发送已轮换密钥的应用，每 30 秒、每个网关实例只产生一次查找；而为每个请求编造一个新密钥的客户端，每个请求都会产生一次查找。因此，网关在 Valkey 中按客户端地址统计查找失败次数，模型 API 和 Platform API 合并计算。在 `KAESO_KEY_FAILURES_WINDOW`（1 分钟）内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS`（100）次后，该地址会被封锁到窗口结束：来自它的每个未缓存的密钥都会收到带有 `Retry-After` 的 429，以该 API 自身的格式返回，且不查询数据库。
+网关最近没有见过的 API 密钥，每个都要在 PostgreSQL 中查找一次。未知密钥会被记住 30 秒，因此持续发送旧密钥的应用，每 30 秒、每个网关实例只产生一次查找；但每个请求都编造新密钥的客户端，每个请求都会产生一次查找。为此，网关在 Valkey 中按客户端地址统计查找失败的次数，模型 API 和 Platform API 合并计算。在 `KAESO_KEY_FAILURES_WINDOW`（默认 1 分钟）内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS`（默认 100）次后，该地址会被封锁到窗口结束：来自它的每个未缓存的密钥都会收到 429 和 `Retry-After`，以该 API 自己的格式返回，不查询数据库。
 
-- 只有找不到密钥的查找才计数。格式错误的值、已停用或已过期的密钥，以及 30 秒内重复出现的未知密钥都不计数。
-- 有效密钥从不计数。某个实例在最近 30 秒内使用过的密钥直接从内存中应答，即使来自被封锁的地址也是如此；更长时间未使用的有效密钥则需要等待窗口结束。
+- 只有格式正确但找不到对应密钥的查找才计数。格式错误的值、已停用或已过期的密钥，以及 30 秒内重复出现的未知密钥都不计数。
+- 有效密钥从不计数。同一实例在最近 30 秒内用过的密钥直接从内存应答，即使来自被封锁的地址；其他有效密钥需等到窗口结束。
 - IPv6 地址按 /64 计数。
-- 位于反向代理之后时，只有当代理在 `KAESO_TRUSTED_PROXIES` 中，客户端地址才取自 `X-Forwarded-For`。如果前面是不受信任的代理，所有客户端看起来都是该代理，并共用它的额度，因此请列出自己的代理。
-- 无法连接 Valkey 时，失败不计数。
+- 位于反向代理之后时，只有代理在 `KAESO_TRUSTED_PROXIES` 中，客户端地址才取自 `X-Forwarded-For`。否则所有客户端看起来都是该代理，共用它的额度。
+- 无法连接 Valkey 期间，失败不计数。
 
-指标 `kaeso_key_failure_blocks_total` 统计封锁次数，日志行 `too many failed API key lookups from one address` 会指明该地址；参见[健康状态和指标](monitoring.md)。
+每次封锁都会使 `kaeso_key_failure_blocks_total` 加一，并记录带有该地址的日志 `too many failed API key lookups from one address`；参见[健康状态和指标](monitoring.md)。
 
 ## 说明
 
-- **实例默认值**只用于为新安装初始化实例设置。此后，实例管理员可以在控制台的**设置** › **实例** › **设置**中，或通过 Platform API（`instance/settings`）修改谁可以创建账户和组织、是否可以删除组织及其宽限期，以及保留期限的默认值和最大值；以保存的值为准。
-- 在这里关闭的**登录方式**无法在控制台中开启，控制台会按网关配置的状态显示它们。
-- **开发。** 使用 `KAESO_PUBLIC_URL=http://localhost:…` 时，会话 Cookie 不带 `Secure` 和 `__Host-` 前缀发送，因此控制台可以在本机通过普通 HTTP 工作。其他任何 `http` URL 都会被拒绝。
+- **实例默认值**只用于初始化新安装的实例设置。此后，实例管理员在**设置** › **实例** › **设置**中或通过 Platform API（`instance/settings`）修改账户和组织的创建、组织的删除及其宽限期，以及保留期限的默认值和最大值；以保存的值为准。
+- 在这里关闭的**登录方式**无法在控制台中开启，控制台按配置显示它们的状态。
+- **开发。** 当 `KAESO_PUBLIC_URL` 是回环地址上的 `http` URL（例如 `http://localhost:8080`）时，会话 Cookie 不带 `Secure` 也不带 `__Host-` 前缀，因此控制台可以在本机通过普通 HTTP 使用。其他任何 `http` URL 都会被拒绝。

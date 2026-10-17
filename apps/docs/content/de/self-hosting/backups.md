@@ -5,25 +5,25 @@ nav: Backups und Schlüssel
 order: 7
 ---
 
-Drei Dinge sichern, und die Hauptschlüssel getrennt von den Datenbank-Backups aufbewahren.
+Drei Dinge sichern und die Hauptschlüssel getrennt von den Datenbank-Backups aufbewahren.
 
-| Was | Enthält | Ohne es |
+| Was | Enthält | Ohne Backup |
 | --- | --- | --- |
 | PostgreSQL | Benutzer, Organisationen, Projekte, Schlüssel, verschlüsselte Anbieter-Schlüssel, Kataloge, Limits, Nutzungsdaten, Audit-Logs | Die Installation ist verloren |
 | ClickHouse | Anfrageprotokolle und Nutzungsaggregate | Der Protokollverlauf ist verloren; Limits und Budgets hängen nicht davon ab |
-| Hauptschlüssel | Die Schlüssel, die gespeicherte Anbieter-Schlüssel verschlüsseln | Anbieter-Schlüssel müssen neu eingegeben werden |
+| Hauptschlüssel | Die Schlüssel, die gespeicherte Anbieter-Schlüssel verschlüsseln | Alle Anbieter-Schlüssel müssen neu eingegeben werden |
 
-Valkey enthält nur Zähler und Caches. Jedes Limit hat eigene Zähler; Budgetzähler werden aus PostgreSQL neu aufgebaut, wenn sie fehlen, und Ratenfenster beginnen von vorn.
+Valkey enthält nur Zähler, Caches und kurzlebige Daten und braucht kein Backup: Budgetzähler werden aus PostgreSQL neu aufgebaut, wenn sie fehlen, und Ratenfenster beginnen von vorn.
 
 ## PostgreSQL
 
-Die Datenbank dumpen, während Kaeso läuft:
+Die Datenbank sichern, während Kaeso läuft:
 
 ```bash
 docker compose exec -T postgres pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
 ```
 
-Bei angehaltenem Gateway wiederherstellen. `--clean --if-exists` ersetzt, was die Datenbank enthält, sodass derselbe Befehl bei einer laufenden Installation und bei einer leeren Datenbank funktioniert:
+Bei angehaltenem Gateway wiederherstellen. `--clean --if-exists` ersetzt, was die Datenbank enthält, sodass derselbe Befehl bei einer bestehenden Installation und bei einer leeren Datenbank funktioniert:
 
 ```bash
 docker compose stop gateway
@@ -35,25 +35,23 @@ Auf einem neuen Server zuerst `compose.yaml`, `.env` und `master-keys` zurückle
 
 ## ClickHouse
 
-Den Befehl `BACKUP` von ClickHouse auf eine für Backups konfigurierte Disk nutzen, oder ein Tool wie `clickhouse-backup`. Bei einer kleinen Installation funktioniert es auch, ClickHouse anzuhalten und sein Volume zu kopieren:
+Den `BACKUP`-Befehl von ClickHouse mit einem für Backups eingerichteten Datenträger verwenden oder ein Werkzeug wie `clickhouse-backup`. Bei einer kleinen Installation funktioniert es auch, ClickHouse anzuhalten und sein Volume zu kopieren:
 
 ```bash
 docker compose stop clickhouse
 ```
 
-Das Volume `clickhouse` mit dem üblichen Volume-Backup kopieren und es dann mit `docker compose start clickhouse` wieder starten. Solange ClickHouse nicht läuft, funktionieren Anfragen weiter, und Protokollzeilen warten im Speicher des Gateways, bis zu `KAESO_LOGS_BUFFER_SIZE`.
+Das Volume `clickhouse` mit der üblichen Volume-Sicherung kopieren und dann `docker compose start clickhouse` ausführen. Solange ClickHouse nicht läuft, funktionieren Anfragen weiter, und die Zeilen der Anfrageprotokolle warten im Speicher des Gateways, bis zu `KAESO_LOGS_BUFFER_SIZE`.
 
 ## Hauptschlüssel
 
-Die Hauptschlüssel sind die Datei `master-keys` neben `compose.yaml`, die das Gateway als Docker-Secret `master_keys` liest. Jeder gespeicherte Anbieter-Schlüssel vermerkt die ID des Hauptschlüssels, der ihn verschlüsselt, nie den Schlüssel selbst, sodass ein Datenbank-Backup ohne seinen Hauptschlüssel keine Anbieter-Schlüssel entschlüsseln kann.
-
-Eine Kopie in einem Passwortmanager oder einem Secret-Store aufbewahren, nicht neben den Datenbank-Dumps.
+Die Hauptschlüssel sind die Datei `master-keys` neben der `compose.yaml`, die das Gateway als Docker-Secret `master_keys` liest. Ein gespeicherter Anbieter-Schlüssel vermerkt nur die ID des Hauptschlüssels, der ihn verschlüsselt, nie den Schlüssel selbst; ein Datenbank-Backup ohne seine Hauptschlüssel kann Anbieter-Schlüssel also nicht entschlüsseln. Eine Kopie in einem Passwortmanager oder Secret-Store aufbewahren, nicht neben den Datenbank-Dumps.
 
 ## Den Hauptschlüssel rotieren
 
-`master-keys` enthält einen oder mehrere Schlüssel, durch Kommas getrennt, den aktiven Schlüssel zuerst: `k7c21e9d04a:…,k3f9a01bc2d:…`. Neue Secrets nutzen den ersten Schlüssel; ältere lassen sich weiter mit ihrem entschlüsseln.
+`master-keys` enthält einen oder mehrere Schlüssel, durch Kommas getrennt, der aktive zuerst: `k7c21e9d04a:…,k3f9a01bc2d:…`. Neue Secrets werden mit dem ersten Schlüssel verschlüsselt; ältere lassen sich weiter mit ihrem eigenen entschlüsseln.
 
-1. Einen neuen Schlüssel erzeugen und ihn an den Anfang setzen, vor den alten:
+1. Einen neuen Schlüssel erzeugen und vor den alten setzen:
 
 ```bash
 printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
@@ -73,9 +71,9 @@ docker compose up -d --wait --force-recreate gateway
 docker compose exec gateway kaeso master-key rewrap
 ```
 
-Der Befehl meldet, wie viele Secrets jede Schlüssel-ID noch verschlüsselt und welche alten IDs nichts mehr nutzt.
+Der Befehl meldet, wie viele Secrets jede Schlüssel-ID noch verschlüsselt und welche alten IDs nichts mehr verwendet.
 
-4. Wird die alte ID nicht mehr genutzt, sie aus `master-keys` entfernen und das Gateway mit demselben Befehl neu erstellen. Bei mehreren Gateway-Instanzen sie erst entfernen, wenn jede Instanz mit der neuen Liste läuft.
+4. Sobald die alte ID unbenutzt ist, sie aus `master-keys` entfernen und das Gateway mit demselben Befehl wie in Schritt 2 neu erstellen. Bei mehreren Gateway-Instanzen sie erst entfernen, wenn jede Instanz mit der neuen Liste läuft.
 
 > [!WARNING]
-> Das Gateway startet nicht, wenn gespeicherte Secrets eine Schlüssel-ID nutzen, die nicht konfiguriert ist, und nennt die ID. Nie einen Schlüssel entfernen, bevor `rewrap` ihn als ungenutzt meldet.
+> Das Gateway startet nicht, wenn gespeicherte Secrets eine Schlüssel-ID verwenden, die nicht konfiguriert ist, und nennt die ID. Einen Schlüssel nie entfernen, bevor `rewrap` ihn als unbenutzt meldet.

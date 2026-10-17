@@ -4,14 +4,18 @@ description: How the gateway reads its settings, and every setting it has.
 order: 3
 ---
 
-The gateway is configured with `KAESO_*` environment variables, optionally backed by a TOML file. In the Compose install, the variables `compose.yaml` reads go in `.env`, as [the .env file](installation.md#the-env-file) lists; every other setting goes in `compose.override.yaml`, as [local changes](installation.md#local-changes) shows. A setting written only in `.env` never reaches the gateway. The Compose file already sets the database URLs, the master key file and the JSON log format, and derives the public URL from `KAESO_DOMAIN`.
+The gateway reads its settings from `KAESO_*` environment variables, optionally backed by a TOML file. In the Compose install:
+
+- The variables `compose.yaml` reads go in `.env`; [the .env file](installation.md#the-env-file) lists them.
+- Every other setting goes in `compose.override.yaml`, as [local changes](installation.md#local-changes) shows. Written only in `.env`, it never reaches the gateway.
+- `compose.yaml` already sets the database URLs, the master key file and the JSON log format, and derives `KAESO_PUBLIC_URL` from `KAESO_DOMAIN`.
 
 ## How settings are read
 
-- **Environment variables.** Each setting has a variable, such as `KAESO_LOG_LEVEL`. An empty variable counts as unset.
-- **A file.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` reads settings from a TOML file, with the TOML keys below written as tables (`[postgres]`, then `url = "…"`). An environment variable wins over the file. A key that is not a setting is an error. Every release attaches [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), which sets every setting that is not a secret, to its default or to an example where there is none, so it is a valid starting point.
-- **Secrets from files.** Every setting marked secret can be read instead from a file named in `<VARIABLE>_FILE`, such as `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys` for Docker secrets. A trailing newline is ignored. Setting both the variable and its `_FILE` is an error.
-- **Checked at startup.** The gateway checks every setting when it starts and refuses to start with a message that names the setting. It never prints secret values.
+- **Environment variables.** Each setting has one, such as `KAESO_LOG_LEVEL`. An empty variable counts as unset.
+- **A TOML file.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` reads settings from a file, with the keys below written as tables (`[postgres]`, then `url = "…"`). An environment variable wins over the file, and a key that is not a setting is an error. [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), attached to every release, sets every setting that isn't a secret to its default or to an example, and is a valid starting point.
+- **Secrets from files.** Every secret setting can instead be read from the file named in `<VARIABLE>_FILE`, such as `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys` for a Docker secret. A trailing newline is ignored; setting both the variable and its `_FILE` is an error.
+- **Checked at startup.** The gateway refuses to start when a setting is missing or invalid, with a message that names the setting and never prints a secret.
 
 | Type | Values |
 | --- | --- |
@@ -27,7 +31,7 @@ The gateway is configured with `KAESO_*` environment variables, optionally backe
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `0.0.0.0:9100` | Address of the Prometheus metrics listener. Never route it publicly. |
-| `KAESO_PUBLIC_URL` | `public_url` | text | required | The URL people and apps use to reach this install, such as `https://kaeso.example.com`: the bare origin, without a path. Must be `https`, except `http://localhost` for development. |
+| `KAESO_PUBLIC_URL` | `public_url` | text | required | The URL people and apps use to reach this install, such as `https://kaeso.example.com`: the bare origin, without a path. Must be `https`, except `http` on a loopback address such as `http://localhost`, for development. |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Comma-separated networks of reverse proxies whose `X-Forwarded-For` is believed, for client addresses in logs, sign-in throttling and the API key throttle. `trusted_proxies = ""` in the TOML file trusts no proxy; an empty variable keeps the default. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with an error in the app's format (503) and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send the headers of a request, and how long a connection may sit idle between two requests, before the gateway closes it; 1s to 10m. A request that is being answered, such as a long stream, is never cut by it. |
@@ -154,27 +158,25 @@ Timeouts for a single model are set on the model in a project's catalogue; see [
 
 ## Provider settings
 
-Settings of a provider are written once per provider: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`. The providers are `openai` and `anthropic`, and each has one field, `base_url`, as [provider calls](#provider-calls) lists.
+Each provider has its own settings: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and every `-` as `_`. Kaeso calls two providers, `openai` and `anthropic`, and each has one field, `base_url` (see [provider calls](#provider-calls)).
 
-- **Provider ids** are lowercase letters and digits, with single hyphens between them (`^[a-z0-9]+(-[a-z0-9]+)*$`): no capitals, underscores or dots. The same rule holds wherever an id appears, also for provider keys and catalogue models in the console and the Platform API.
-- **The variable** is `KAESO_PROVIDERS_`, the id in upper case with `_` for each `-`, then `_` and the field in upper case. A provider with the id `azure-openai` would be set with `KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL`, or in the file with `[providers.azure-openai]` and `base_url = "…"`.
-- **One meaning per variable.** Kaeso defines the fields, and no field's name ends in `_` and another field's name, so the gateway reads a variable by taking the field off its end; what is left maps back to exactly one id.
-- **Unknown providers are refused.** A `KAESO_PROVIDERS_…` variable or a `[providers.…]` table whose id breaks the rule or names a provider Kaeso doesn't call stops the gateway at startup, with a message that names it and lists the providers.
+- Provider ids are lowercase letters and digits with single hyphens between them (`^[a-z0-9]+(-[a-z0-9]+)*$`). The same rule holds wherever an id appears, provider keys and catalogue models included.
+- A `KAESO_PROVIDERS_…` variable or a `[providers.…]` table whose id breaks the rule, or names a provider Kaeso doesn't call, stops the gateway at startup with a message that names it and lists the providers.
 
 ## API key throttling
 
-A request with an API key that the gateway hasn't seen recently costs a PostgreSQL lookup. Unknown keys are remembered for 30 seconds, so an app that keeps sending a rotated key costs one lookup per 30 seconds and gateway instance; a client that makes up a new key for every request would cost one per request. So the gateway counts failed lookups per client address, on the model API and the Platform API together, in Valkey. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures (100) within `KAESO_KEY_FAILURES_WINDOW` (1 minute), the address is blocked until the window ends: every key from it that is not cached gets 429 with `Retry-After`, in the API's own format, without a database query.
+Every API key the gateway hasn't seen recently costs a PostgreSQL lookup. Unknown keys are remembered for 30 seconds, so an app that keeps sending an old key costs one lookup per 30 seconds and gateway instance, but a client that invents a new key for every request would cost one per request. The gateway therefore counts failed lookups per client address in Valkey, across the model API and the Platform API. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures (default 100) within `KAESO_KEY_FAILURES_WINDOW` (default 1 minute), the address is blocked until the window ends: every key from it that isn't cached gets 429 with `Retry-After`, in the API's own format, without a database query.
 
-- Only lookups that find no key count. Malformed values, disabled or expired keys, and an unknown key repeated within 30 seconds don't.
-- Valid keys never count. A key used in the last 30 seconds on an instance is answered from memory, even from a blocked address; a valid key that wasn't used for longer waits for the window to end.
+- Only well-formed keys that match no key count. Malformed values, disabled or expired keys, and an unknown key repeated within 30 seconds don't.
+- Valid keys never count. A key used on the same instance in the last 30 seconds is answered from memory, even from a blocked address; other valid keys wait for the window to end.
 - IPv6 addresses count per /64.
-- Behind a reverse proxy, the client address comes from `X-Forwarded-For` only when the proxy is in `KAESO_TRUSTED_PROXIES`. With an untrusted proxy in front, every client looks like the proxy and shares its allowance, so list your proxies.
-- When Valkey can't be reached, failures are not counted.
+- Behind a reverse proxy, the client address comes from `X-Forwarded-For` only when the proxy is in `KAESO_TRUSTED_PROXIES`. Otherwise every client looks like the proxy and shares its allowance.
+- While Valkey can't be reached, failures aren't counted.
 
-The metric `kaeso_key_failure_blocks_total` counts blocks, and the log line `too many failed API key lookups from one address` names the address; see [health and metrics](monitoring.md).
+Each block increments `kaeso_key_failure_blocks_total` and logs `too many failed API key lookups from one address` with the address; see [health and metrics](monitoring.md).
 
 ## Notes
 
-- **Instance defaults** only seed the instance settings of a new install. After that, instance admins change who may create accounts and organizations, whether organizations can be deleted and their grace period, and the retention defaults and maximums under **Settings** › **Instance** › **Settings** in the console, or through the Platform API (`instance/settings`); the stored values win.
-- **Sign-in methods** turned off here can't be turned on in the console, which shows them as the gateway's configuration sets them.
-- **Development.** With `KAESO_PUBLIC_URL=http://localhost:…` the session cookie is sent without `Secure` and without the `__Host-` prefix, so the console works over plain HTTP on your machine. Any other `http` URL is refused.
+- **Instance defaults** only seed the instance settings of a new install. After that, instance admins change account and organization creation, organization deletion and its grace period, and the retention defaults and maximums under **Settings** › **Instance** › **Settings**, or through the Platform API (`instance/settings`); the stored values win.
+- **Sign-in methods** turned off here can't be turned on in the console, which shows them as the configuration sets them.
+- **Development.** With `KAESO_PUBLIC_URL` set to `http` on a loopback address, such as `http://localhost:8080`, the session cookie is sent without `Secure` and without the `__Host-` prefix, so the console works over plain HTTP on your machine. Any other `http` URL is refused.

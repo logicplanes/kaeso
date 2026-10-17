@@ -40,4 +40,6 @@ Compose im Ordner der Installation ohne `-p` oder `COMPOSE_PROJECT_NAME` ausfüh
 
 ## Downgrade
 
-Ein Gateway startet nicht gegen eine Datenbank, die eine neuere Version migriert hat, und sagt das. Um zu einer älteren Version zurückzukehren, das Backup von vor dem Upgrade wiederherstellen und dann die ältere `compose.yaml` starten.
+Migrationen lassen sich nicht rückgängig machen. Gegen eine PostgreSQL-Datenbank, die ein neueres Release migriert hat, startet ein Gateway nicht und sagt das. Gegen eine ClickHouse-Datenbank, die ein neueres Release migriert hat, startet es zwar, schreibt aber keine Anfrageprotokolle und protokolliert `ClickHouse migrations failed; request logs are not written`.
+
+Um zu einem älteren Release zurückzukehren, das PostgreSQL-Backup von vor dem Upgrade wiederherstellen, dazu das [ClickHouse-Backup](backups.md#clickhouse), falls das neuere Release ClickHouse migriert hat, und dann die ältere `compose.yaml` starten.

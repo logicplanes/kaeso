@@ -40,4 +40,6 @@ docker compose up -d --wait
 
 ## 降级
 
-如果数据库已被更新的版本迁移过，网关会拒绝启动并说明这一点。要回到旧版本，先恢复升级前所做的备份，再启动旧版本的 `compose.yaml`。
+迁移无法撤销。PostgreSQL 数据库若已被更新的版本迁移过，网关会拒绝启动并说明原因。ClickHouse 数据库若已被更新的版本迁移过，网关仍会启动，但不写入请求日志，并记录 `ClickHouse migrations failed; request logs are not written`。
+
+要回到旧版本，先恢复升级前的 PostgreSQL 备份；如果新版本迁移过 ClickHouse，再恢复 [ClickHouse 备份](backups.md#clickhouse)，然后启动旧版本的 `compose.yaml`。
