@@ -1,13 +1,22 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { hydrated, open } from "./support";
 
 test.use({ reducedMotion: "no-preference" });
 
+const policy = readFileSync(new URL("../dist/csp.txt", import.meta.url), "utf8").trim();
+
 test.beforeEach(async ({ page }) => {
+  await page.route("**/*", async (route) => {
+    if (route.request().resourceType() !== "document") return route.continue();
+    const response = await route.fetch();
+    return route.fulfill({ response, headers: { ...response.headers(), "content-security-policy": policy } });
+  });
   await page.addInitScript(() => {
     const w = window as unknown as { reported: string[] };
     w.reported = [];
     addEventListener("error", (e) => w.reported.push(e.message));
+    document.addEventListener("securitypolicyviolation", (e) => w.reported.push(`${e.effectiveDirective} ${e.blockedURI} ${e.sample}`));
   });
 });
 test.afterEach(async ({ page }) => {
@@ -255,6 +264,29 @@ for (const viewport of [
     });
   }
 }
+
+test("the command palette keeps its top while its results shrink and grow smoothly, without a policy violation", async ({ page }) => {
+  await open(page, "/components/command-palette/examples");
+  const trigger = page.locator("#ex-basic .pv-stage button").first();
+  await trigger.scrollIntoViewIfNeeded();
+  await hydrated(page);
+  await trigger.click();
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await expect(palette).toBeVisible();
+  await still(page);
+  const top = async () => (await palette.boundingBox())?.y ?? 0;
+  const before = await top();
+  const tall = (await palette.boundingBox())?.height ?? 0;
+  const height = async () => (await palette.boundingBox())?.height ?? 0;
+  await palette.getByRole("combobox").pressSequentially("keys");
+  await expect.poll(height).toBeLessThan(tall - 40);
+  await expect(palette).not.toHaveAttribute("data-resizing");
+  expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
+  await palette.getByRole("combobox").fill("");
+  await expect.poll(async () => Math.abs((await height()) - tall)).toBeLessThanOrEqual(1);
+  await expect(palette).not.toHaveAttribute("data-resizing");
+  expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
+});
 
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
