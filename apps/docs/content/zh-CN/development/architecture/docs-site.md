@@ -6,11 +6,15 @@ order: 3
 
 文档是 `apps/docs` 中的 `kaeso-docs` 包：三种语言的 Markdown 页面，构建成一个静态站点，外观和交互与控制台一致，并且只用 `@logicplanes/kaeso-ui` 绘制。[编写文档](../documentation.md)说明如何写页面；本页说明站点如何工作。
 
-```text
-content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─▶ virtual modules ─▶ src/ (React, @logicplanes/kaeso-ui) ─▶ dist/
-                              frontmatter · marked's lexer · links,          site/<language>: sidebar, titles, previous/next, a loader per page
-                              anchors and images checked · search words      page/<language>/<path>: one page's blocks, its own chunk
-                              the same pages in every language               search/<language>: the index, loaded with the search
+```mermaid
+flowchart TD
+  accTitle: 从 Markdown 到网站
+  accDescr: 构建时，scripts/content 读取 content 中的页面和 diagrams 中已绘制的图示，检查它们，并为每种语言的网站、每个页面和搜索写出虚拟模块。src 中的 React 应用用 UI 库绘制它们，Vite 写出 dist。
+  pages[content/language/**/*.md] --> content[scripts/content，在 Vite 中<br>Frontmatter、链接、锚点、图片、<br>搜索词、每种语言]
+  diagrams[diagrams/*.svg<br>已绘制的 Mermaid 代码块] --> content
+  content --> modules[虚拟模块<br>每种语言的网站、页面和搜索]
+  modules --> app[src/，React 和 kaeso-ui]
+  app --> dist[dist/]
 ```
 
 ## 内容模型
@@ -23,8 +27,9 @@ content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─�
 | 侧边栏分组 | 某种语言中的一个目录 | 以其 `index.md` 的 `title` 命名，没有则用目录名；按该 `index.md` 的 `order` 排列 |
 | 嵌套页面 | 分组中带 `index.md` 的目录 | 其中的页面缩进显示在它下方；最多三层目录 |
 | 目录内的顺序 | frontmatter 中的 `order` | 先是目录的 `index.md`，再按 `order`，然后按标签 |
-| 页面在侧边栏中的标签 | frontmatter 中的 `nav` | 默认是标题；`index.md` 默认为该语言的“概览”（首页为“简介”） |
+| 页面在侧边栏中的标签 | frontmatter 中的 `nav` | 默认是标题；分组的 `index.md` 默认为该语言的“概览”（首页为“简介”），嵌套文件夹的 `index.md` 默认为其标题 |
 | 图片和文件 | `content/` 中任意位置 | 只有被页面显示或链接时才会发布，其尺寸在构建时读取 |
+| 图示 | 页面中的 `mermaid` 代码块 | 在 Chromium 中绘制为 `apps/docs/diagrams/` 中的浅色和深色 SVG，以其源码和网站样式的哈希命名，并以跟随主题的图片显示；必须填写 `accTitle` |
 | 草稿和私人笔记 | 以 `_` 或 `.` 开头的名称 | 不会进入站点 |
 
 frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的话，最多 140 个字符）为必填，`order` 和 `nav` 为可选。其他任何字段都是错误，这样拼写错误绝不会悄无声息地失效。
@@ -41,6 +46,9 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的�
 | `site.ts` | 单种语言：地址、侧边栏、上一页和下一页、按 GitHub 的方式解析相对链接、图片及其尺寸、搜索 |
 | `docs.ts` | 所有语言：每种语言一个站点，带有前缀和标签，并检查它们包含相同的页面且顺序一致 |
 | `changelog.ts` | 由 `CHANGELOG.md` 为每种语言生成的更新日志页面（[更新日志](#更新日志)） |
+| `diagram.ts` | 图示的标题和描述、由 Kaeso 设计令牌生成的 Mermaid 配置，以及为其绘制结果命名的哈希 |
+| `mermaid.ts` | 在加载了 Inter 的无头 Chromium 中用 `mermaid` 包绘制图示，并把每张图转换为不含样式表和脚本的浅色和深色 SVG |
+| `diagrams.ts` | `pnpm --filter kaeso-docs diagrams`：把缺失的图示绘制到 `apps/docs/diagrams/`，并删除不再使用的图示 |
 | `plugin.ts` | Vite 插件：虚拟模块、开发时修改后重新加载、为每个页面和语言生成一个带有面向搜索引擎和链接预览的 head 的 HTML 文件、`404.html` 以及站点地图 |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`：不构建应用，执行同样的检查 |
 
@@ -68,6 +76,12 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的�
 ### 在 GitHub 和站点上都有效的链接
 
 链接写在文件之间，与 GitHub 跟随链接的方式一致：`[keys](../console/api-keys.md#create-a-key)`。构建会相对于文件所在目录解析链接，检查页面和标题是否存在，并写出该页面语言下的站点地址（`/zh-CN/console/api-keys#创建密钥`）。标题使用 GitHub 的锚点，因此同一个锚点在两处都有效；翻译后的页面链接到翻译后标题的锚点。
+
+### 图示
+
+`mermaid` 代码块在构建时变成图示，因此读者收到的是两个静态 SVG 文件而不是 Mermaid 代码，严格的内容安全策略也保持不变。`mermaid.ts` 在无头 Chromium 中把每张图示渲染两次，以 `@logicplanes/kaeso-tokens` 的颜色、字体和圆角作为 Mermaid 的主题变量，标签为 SVG 文本，并用 Inter 测量。随后它把每个计算出的样式写到对应的元素上，删除样式表、阴影和生成的属性，因此用 `<img>` 显示的 SVG 不依赖页面的任何内容。绘制结果位于 `apps/docs/diagrams/`，以图示源码、Mermaid 版本和配置的哈希命名；它们已提交到仓库，因此没有 Chromium 的构建只需读取它们。`pnpm build` 和开发服务器会补画缺失的图示；图示是按旧源码绘制的，或绘制结果不再被任何页面使用时，`check:content` 会失败。
+
+页面用 `@logicplanes/kaeso-ui` 的 `ThemeImage` 显示图示：两张图片都在，只显示当前主题对应的那张；它跟随网站的主题设置，打印时使用浅色图。替代文本是图示的 `accTitle`，`accDescr` 是供屏幕阅读器使用的描述，两者连同图示的标签都会作为搜索词。图示在手机的内容栏中最多缩小四分之一，超出部分在它自己的区域内横向滚动，绝不让整个页面滚动。无法解析的图示会让构建失败并给出文件和行号；在代码块中用制表符或箭头画图同样会让构建失败。
 
 ### 更新日志
 

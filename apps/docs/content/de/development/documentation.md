@@ -80,10 +80,10 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 Das Bild neben die Seite oder in einen Ordner `images/` daneben legen und mit einem Alternativtext versehen, der sagt, was es zeigt:
 
 ```markdown
-![The request flow: app, key, model, limits, provider](images/request-flow.svg)
+![Die Seite API-Schlüssel mit einem Schlüssel](images/api-keys.png)
 ```
 
-PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites werden nicht angezeigt, und ein Bild ohne Alternativtext lässt den Build fehlschlagen. Bilder wählen, die auf hellem und dunklem Hintergrund lesbar sind; ein SVG kann seine Farben selbst mit `@media (prefers-color-scheme: dark)` umschalten. Ein Link auf jede andere Datei in `content/` veröffentlicht diese Datei.
+PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites werden nicht angezeigt, und ein Bild ohne Alternativtext lässt den Build fehlschlagen. Bilder wählen, die auf hellem und dunklem Hintergrund lesbar sind; ein SVG kann seine Farben selbst mit `@media (prefers-color-scheme: dark)` umschalten. Ein Link auf jede andere Datei in `content/` veröffentlicht diese Datei. Ein Bild zeigt nie ein Diagramm: Diagramme sind [Mermaid-Blöcke](#diagramme).
 
 ## Hinweisboxen
 
@@ -95,6 +95,33 @@ Die Alerts von GitHub, mit der Art allein in der ersten Zeile:
 ```
 
 `NOTE`, `TIP`, `IMPORTANT`, `WARNING` und `CAUTION` haben jeweils ein eigenes Aussehen und einen eigenen Titel. Sparsam einsetzen.
+
+## Diagramme
+
+Jedes Diagramm eines Systems, einer Architektur, eines Anfrage- oder Datenflusses, einer Abfolge, eines Zustands oder eines Lebenszyklus ist ein Mermaid-Block. Der Build zeichnet es in Kaesos eigenem Look, als helles und dunkles Bild, die dem Theme der Website folgen; kein Mermaid-Code erreicht die Lesenden. Ein Diagramm wird nie mit Rahmenzeichen oder Pfeilen in einem Codeblock gezeichnet und nie als Screenshot oder Bild gezeigt: Der Build schlägt bei einem Codeblock fehl, der mit Zeichen wie `─`, `│`, `└`, `▶` oder `→` zeichnet.
+
+````markdown
+```mermaid
+sequenceDiagram
+  accTitle: Ablauf einer Anfrage
+  accDescr: Die App sendet eine Anfrage an das Gateway, das sie an den Anbieter weitersendet und die Antwort im Format der App zurückgibt.
+  participant App
+  participant Gateway
+  participant Provider as Anbieter
+  App->>Gateway: Anfrage im Format der App
+  Gateway->>Provider: Anfrage im Format des Anbieters
+  Provider-->>Gateway: Antwort
+  Gateway-->>App: Antwort im Format der App
+```
+````
+
+- Den passenden Typ wählen: `flowchart` für Teile und wie sie verbunden sind, `sequenceDiagram` für Anfragen und Antworten zwischen Beteiligten, `stateDiagram-v2` für einen Lebenszyklus. `flowchart TD`, von oben nach unten, bleibt auf dem Telefon lesbar; ein Diagramm, das breiter als die Spalte ist, scrollt in seinem eigenen Rahmen.
+- `accTitle:` benennt das Diagramm in wenigen Wörtern und ist Pflicht. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet es zusammen mit den Beschriftungen des Diagramms.
+- Beschriftungen kurz halten, in der Sprache der Seite; Namen aus dem Code bleiben, wie sie sind. `<br>` bricht eine Beschriftung in eine zweite Zeile um.
+- Ein Diagramm nur zeichnen, wo es hilft; eine kurze Liste oder eine Tabelle ist oft klarer.
+- Keine `%%`-Kommentare und kein `%%{init}`: Die Website setzt Farben, Schrift und Radius aus Kaesos Tokens.
+
+Die Zeichnungen liegen committet in `apps/docs/diagrams/`. `pnpm --filter kaeso-docs diagrams` zeichnet neue und geänderte Diagramme mit Chromium und entfernt die, die keine Seite mehr nutzt; der Dev-Server und `pnpm build` zeichnen Fehlendes nebenbei. `check:content` schlägt fehl, wenn sich ein Diagramm seit dem Zeichnen geändert hat, und ein Diagramm, das sich nicht parsen lässt, schlägt mit Datei und Zeile fehl.
 
 ## Alles andere
 

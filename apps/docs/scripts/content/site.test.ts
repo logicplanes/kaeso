@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildSite } from "./site.ts";
+import { diagramKey, mermaidVersion } from "./diagram.ts";
+import { buildSite, located } from "./site.ts";
 
 let root = "";
 afterEach(() => root && rmSync(root, { recursive: true, force: true }));
@@ -31,6 +32,7 @@ describe("buildSite", () => {
       "guides/limits/index.md": page("Limits", "", "order: 3\nnav: All limits\n"),
       "guides/limits/budgets.md": page("Budgets"),
       "reference/models.md": page("Models"),
+      "reference/platform-api/index.md": page("Platform API"),
     });
     expect(site.problems).toEqual([]);
     expect(site.nav).toEqual([
@@ -53,7 +55,14 @@ describe("buildSite", () => {
           { path: "/guides/limits/budgets", label: "Budgets", depth: 1 },
         ],
       },
-      { id: "reference", label: "Reference", items: [{ path: "/reference/models", label: "Models", depth: 0 }] },
+      {
+        id: "reference",
+        label: "Reference",
+        items: [
+          { path: "/reference/models", label: "Models", depth: 0 },
+          { path: "/reference/platform-api", label: "Platform API", depth: 0 },
+        ],
+      },
     ]);
     const keys = site.metas.find((m) => m.path === "/guides/keys");
     expect(keys).toMatchObject({ file: "content/guides/keys.md", prev: { path: "/guides", title: "Guides" }, next: { path: "/guides/provider-keys" } });
@@ -138,5 +147,66 @@ describe("buildSite", () => {
     const site = repo({ "index.md": page("Home", "![The flow](./flow.png)"), "flow.png": PNG });
     expect(site.problems).toEqual([]);
     expect(JSON.stringify(site.pages[0]?.compiled?.blocks)).toContain('"src":"content/flow.png","alt":"The flow","width":24,"height":12');
+  });
+
+  it("shows a drawn diagram at its size, searchable by its labels, and names the line of one that isn't drawn yet", () => {
+    const code = "flowchart LR\n  accTitle: Route\n  app[App] --> kaeso[Kaeso]";
+    const other = "flowchart LR\n  accTitle: Other\n  a --> b";
+    const body = `Text.\n\n\u0060\u0060\u0060mermaid\n${code}\n\u0060\u0060\u0060\n\n\u0060\u0060\u0060mermaid\n${other}\n\u0060\u0060\u0060`;
+    const site = repo({
+      "index.md": page("Home", body),
+      "broken.md": page("Broken", "\u0060\u0060\u0060mermaid\nflowchart LR\n  accTitle: Bad\n\u0060\u0060\u0060"),
+    });
+    const key = diagramKey(code, mermaidVersion(root));
+    expect(site.diagrams.map((d) => [d.file, d.line, d.key === key])).toEqual([
+      ["content/broken.md", 6, false],
+      ["content/index.md", 8, true],
+      ["content/index.md", 14, false],
+    ]);
+    expect(site.problems.filter((p) => p.includes("last drawn"))).toHaveLength(3);
+    mkdirSync(join(root, "diagrams"));
+    writeFileSync(join(root, "diagrams", `${key}.light.svg`), '<svg width="364" height="49"><text>App</text><text>Kaeso</text></svg>');
+    writeFileSync(join(root, "diagrams", `${key}.dark.svg`), '<svg width="364" height="49"></svg>');
+    const drawn = buildSite(join(root, "content"), root, {
+      prefix: "",
+      labels: { home: "Introduction", overview: "Overview" },
+      version: "1.4.0",
+      diagrams: join(root, "diagrams"),
+    });
+    expect(drawn.problems).toEqual([
+      "content/broken.md:6: the diagram has changed since it was last drawn; run `pnpm --filter kaeso-docs diagrams` and commit diagrams/",
+      "content/index.md:14: the diagram has changed since it was last drawn; run `pnpm --filter kaeso-docs diagrams` and commit diagrams/",
+    ]);
+    expect(drawn.pages.find((p) => p.path === "/")?.compiled?.blocks[1]).toEqual({
+      t: "diagram",
+      light: `diagrams/${key}.light.svg`,
+      dark: `diagrams/${key}.dark.svg`,
+      width: 364,
+      height: 49,
+      title: "Route",
+    });
+    expect(drawn.search.find((s) => s.path === "/")?.words.split(" ")).toEqual(expect.arrayContaining(["route", "app", "kaeso"]));
+  });
+
+  it("names a drawing without a size", () => {
+    const code = "flowchart LR\n  accTitle: Route\n  a --> b";
+    root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
+    const key = diagramKey(code, mermaidVersion(root));
+    mkdirSync(join(root, "diagrams"));
+    for (const theme of ["light", "dark"]) writeFileSync(join(root, "diagrams", `${key}.${theme}.svg`), "<svg></svg>");
+    mkdirSync(join(root, "content"));
+    writeFileSync(join(root, "content", "index.md"), page("Home", `\u0060\u0060\u0060mermaid\n${code}\n\u0060\u0060\u0060`));
+    const site = buildSite(join(root, "content"), root, {
+      prefix: "",
+      labels: { home: "Introduction", overview: "Overview" },
+      version: "1.4.0",
+      diagrams: join(root, "diagrams"),
+    });
+    expect(site.problems).toEqual([`content/index.md:6: diagrams/${key}.light.svg has no width and height; run \`pnpm --filter kaeso-docs diagrams\` again`]);
+  });
+
+  it("puts a problem's line right after its file", () => {
+    expect(located("content/a.md", ":12: broken")).toBe("content/a.md:12: broken");
+    expect(located("content/a.md", "broken")).toBe("content/a.md: broken");
   });
 });

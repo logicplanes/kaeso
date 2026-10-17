@@ -136,6 +136,20 @@ A hotfix fixes the latest release without what `dev` has gathered since. It work
 
 `.github/workflows/release.yml` is started by hand with a version, and only one run goes at a time; a second waits for the first. Validate, Prepare, Checks and Tag run one after another. Once the tag is pushed, Sync dev and the publishing jobs start.
 
+```mermaid
+flowchart TD
+  accTitle: The order of the Release workflow's jobs
+  accDescr: Validate, Prepare, Checks and Tag run one after another. After Tag, Sync dev, the images, the npm packages and crates.io start. The images are joined in Image manifest and pulled without credentials, the npm packages are packed and published, and GitHub release runs once the anonymous pull, npm and crates.io have finished.
+  validate[Validate] --> prepare[Prepare] --> checks[Checks] --> tag[Tag]
+  tag --> sync[Sync dev]
+  tag --> image[Image] --> manifest[Image manifest] --> pull[Anonymous pull]
+  tag --> pack[Pack npm packages] --> npm[npm]
+  tag --> crates[crates.io]
+  pull --> release[GitHub release]
+  npm --> release
+  crates --> release
+```
+
 The jobs that write to the repository or publish anything run in the `release` environment, which accepts runs from `prod` only. Tag and Sync dev are the only jobs that push to the repository: they build nothing, only run git, and push with the run's own token, so their pushes don't start CI again.
 
 | Job | What it does |

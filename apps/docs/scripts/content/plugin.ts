@@ -5,6 +5,8 @@ import { DEFAULT_LOCALE, LOCALES, homePath, isLocale, localeOfPath, pathWithinLo
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
 import type { Block, Inline, PageContent, PageMeta } from "../../src/markdown/ast.ts";
 import { documentTitle } from "../../src/page/document-title.ts";
+import { DIAGRAM_COMMAND } from "./diagram.ts";
+import { browserRender, missingDiagrams, syncDiagrams, type Render } from "./diagrams.ts";
 import { buildDocs, type Docs } from "./docs.ts";
 import type { Site, SitePage } from "./site.ts";
 
@@ -15,6 +17,7 @@ export interface DocsOptions {
   siteUrl: string;
   version: string;
   changelog?: string;
+  render?: Render;
 }
 
 export interface PageHead {
@@ -152,6 +155,8 @@ function withAssets(page: SitePage, root: string): string {
           return { ...b, c: blocks(b.c) };
         case "table":
           return { ...b, head: b.head.map(inline), rows: b.rows.map((r) => r.map(inline)) };
+        case "diagram":
+          return { ...b, light: ref(b.light), dark: ref(b.dark) };
         default:
           return b;
       }
@@ -244,22 +249,56 @@ export function kaesoDocs(options: DocsOptions): Plugin {
   let isBuild = false;
   const current = () => (docs ??= buildDocs(contentDir, options.root, options.version, changelog));
   const summary = (d: Docs) => `content: ${d.problems.length} to fix in ${options.contentDir}/\n  ${d.problems.join("\n  ")}`;
+  const render = options.render ?? browserRender(options.root);
+  const draw = async (d: Docs, prune: boolean): Promise<string[]> => {
+    if (!missingDiagrams(d.diagramDir, d.diagrams).length && !prune) return [];
+    try {
+      const result = await syncDiagrams(d.diagramDir, d.diagrams, render, { prune });
+      if (result.drawn || result.removed.length) docs = null;
+      return result.problems;
+    } catch (error) {
+      const missing = new Set(missingDiagrams(d.diagramDir, d.diagrams).map((j) => j.key));
+      const places = d.diagrams.filter((j) => missing.has(j.key)).map((j) => `${j.file}:${j.line}`);
+      return [`can't draw ${places.join(", ")} (${(error as Error).message.split("\n")[0]}); run \`${DIAGRAM_COMMAND}\` where Chromium is installed`];
+    }
+  };
 
   return {
     name: "kaeso-docs",
     config(_config, env) {
       isBuild = env.command === "build";
     },
-    buildStart() {
+    async buildStart() {
       docs = null;
+      if (isBuild) {
+        const failed = await draw(current(), true);
+        if (failed.length) this.error(`diagrams: ${failed.length} to fix\n  ${failed.join("\n  ")}`);
+      }
       const d = current();
       for (const locale of LOCALES) for (const page of d.sites[locale].pages) this.addWatchFile(page.file);
       if (changelog) this.addWatchFile(changelog);
       if (isBuild && d.problems.length) this.error(summary(d));
     },
     configureServer(server) {
+      const invalidate = () => {
+        for (const id of server.moduleGraph.idToModuleMap.keys()) {
+          if (!id.startsWith(RESOLVED)) continue;
+          const mod = server.moduleGraph.getModuleById(id);
+          if (mod) server.moduleGraph.invalidateModule(mod);
+        }
+      };
       const report = () => {
         const d = current();
+        if (missingDiagrams(d.diagramDir, d.diagrams).length) {
+          void draw(d, false).then((failed) => {
+            for (const problem of failed) server.config.logger.warn(problem);
+            if (docs) return;
+            invalidate();
+            report();
+            server.ws.send({ type: "full-reload" });
+          });
+          return;
+        }
         if (d.problems.length) server.config.logger.warn(summary(d));
       };
       report();
@@ -268,11 +307,7 @@ export function kaesoDocs(options: DocsOptions): Plugin {
       const changed = (file: string) => {
         if (!resolve(file).startsWith(contentDir) && resolve(file) !== changelog) return;
         docs = null;
-        for (const id of server.moduleGraph.idToModuleMap.keys()) {
-          if (!id.startsWith(RESOLVED)) continue;
-          const mod = server.moduleGraph.getModuleById(id);
-          if (mod) server.moduleGraph.invalidateModule(mod);
-        }
+        invalidate();
         report();
         server.ws.send({ type: "full-reload" });
       };

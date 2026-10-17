@@ -29,6 +29,7 @@ The root definition of done covers the site. To run its own checks alone, after 
 
 ```
 pnpm --filter kaeso-docs check:content
+pnpm --filter kaeso-docs diagrams
 pnpm --filter kaeso-docs lint
 pnpm --filter kaeso-docs typecheck
 pnpm --filter kaeso-docs test
@@ -37,7 +38,7 @@ pnpm --filter kaeso-docs licenses:check
 pnpm --filter kaeso-docs e2e
 ```
 
-`check:content` checks every page in every language without building; `lint` runs ESLint and then `check:content`. `test` runs Vitest with coverage thresholds. `build` fails on a content problem or a bundle budget (`scripts/budget.ts`); `licenses:check` then checks that every package whose code is in the build is MIT, ISC, BSD, 0BSD or Apache-2.0 licensed. `e2e` runs Playwright, axe included, against a production build of the fixture pages in `e2e/fixtures/content`. Then look at every page you changed in light and dark, at desktop and phone widths, in English, German and Chinese, and fix what looks wrong.
+`check:content` checks every page in every language without building; `diagrams` draws the Mermaid blocks of the pages with Chromium and removes drawings no page uses; `lint` runs ESLint and then `check:content`. `test` runs Vitest with coverage thresholds. `build` fails on a content problem or a bundle budget (`scripts/budget.ts`); `licenses:check` then checks that every package whose code is in the build is MIT, ISC, BSD, 0BSD or Apache-2.0 licensed. `e2e` runs Playwright, axe included, against a production build of the fixture pages in `e2e/fixtures/content`. Then look at every page you changed in light and dark, at desktop and phone widths, in English, German and Chinese, and fix what looks wrong.
 
 ## Rules
 
@@ -57,8 +58,9 @@ pnpm --filter kaeso-docs e2e
    - nothing changes size when its state changes, and nothing shifts after the first paint;
    - a focus ring shows for the keyboard only, never after a click.
 9. **Code blocks in pages never contain comments**; explain a command in the sentence before it.
-10. **Tests assert on what a person sees**, and the content build's tests on what an author writes. The coverage thresholds are in `vitest.config.ts`.
-11. **Changelog:** a change to the site itself gets a line under `[Unreleased]` in the repository's `CHANGELOG.md`; changes to pages need none.
+10. **Diagrams are Mermaid, drawn by the build.** Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a ` ```mermaid ` block with `accTitle` and, in a sentence or two, `accDescr`, its labels translated like the page; never ASCII or box-drawing art in a code block, never a screenshot or an image of a diagram. `check:content` fails on a code block that draws with box-drawing characters or arrows. The build draws them in strict mode into static images, so nothing of them runs in a reader's browser; `pnpm --filter kaeso-docs diagrams` draws new and changed diagrams into `diagrams/`, which is committed with the page; [writing documentation](content/en/development/documentation.md#diagrams) has the rules.
+11. **Tests assert on what a person sees**, and the content build's tests on what an author writes. The coverage thresholds are in `vitest.config.ts`.
+12. **Changelog:** a change to the site itself gets a line under `[Unreleased]` in the repository's `CHANGELOG.md`; changes to pages need none.
 
 ## Where things are
 
@@ -66,6 +68,7 @@ pnpm --filter kaeso-docs e2e
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `content/<language>/` | The pages. Folders are sidebar groups; a folder's `index.md` names and places it                                                               |
 | `scripts/content/`    | Frontmatter, slugs, compiling a page, one site per language, the changelog page, the translation checks, the Vite plugin, `pnpm check:content` |
+| `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams`    |
 | `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                      |
 | `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                            |
 | `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                    |

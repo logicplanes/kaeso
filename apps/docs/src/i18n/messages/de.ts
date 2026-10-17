@@ -25,6 +25,7 @@ export const de: Messages = {
   "page.nextStep": "Weiter: {title}",
   "page.edit": "Auf GitHub bearbeiten",
   "page.table": "Tabelle: {columns}",
+  "page.diagram": "Diagramm: {title}",
   "page.task": "Aufgabe",
   "callout.note": "Hinweis",
   "callout.tip": "Tipp",

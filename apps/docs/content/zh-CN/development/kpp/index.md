@@ -26,6 +26,26 @@ let reply = dispatch::decode_response(DialectId::OpenAiChat, status, &reply_head
 let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &EncodeCtx::for_request(req))?;
 ```
 
+```mermaid
+sequenceDiagram
+  accTitle: 请求经过 KPP 的路径
+  accDescr: Anthropic Messages 编解码器把应用的请求解码为 KPP 并进行校验。OpenAI Chat Completions 编解码器检查并编码它，网关再把它发送给服务商。服务商的回复由同一个编解码器解码为 KPP，再由应用一侧的编解码器以应用的格式编码。
+  participant App as 应用
+  participant In as Anthropic Messages 编解码器
+  participant KPP
+  participant Out as OpenAI Chat 编解码器
+  participant Provider as 服务商
+  App->>In: 请求体和请求头
+  In->>KPP: 1 解码
+  Note over KPP: 2 校验
+  KPP->>Out: 3 检查并编码
+  Out->>Provider: 服务商格式的请求
+  Provider-->>Out: 回复
+  Out-->>KPP: 4 解码回复
+  KPP-->>In: 5 编码回复
+  In-->>App: 应用格式的回复
+```
+
 1. **解码。** 应用一侧的编解码器把请求体和请求头读成一个 KPP `Request`。`decode_request` 接受一个 `RequestKind`，因为不知道端点，就无法区分 Anthropic 的 `/v1/messages` 和 `/v1/messages/count_tokens` 请求体。KPP 没有建模的内容保存在 `Extras` 中，并绑定到它所来自的方言。
 2. **校验。** `validate()` 检查每种方言都需要满足的条件，例如有模型、消息有内容、工具调用 ID 和工具名称不重复，以及 `tool_choice` 指向已定义的工具。
 3. **检查并编码。** `encode_request` 先运行目标的 `check()`，在发送任何内容之前，以 `Unsupported` 拒绝目标无法表达的内容（[跨格式转换](cross-format.md)），然后写出发给服务商的请求。`EgressCtx` 携带网关对目标所知的信息：请求种类和流模式、服务商，以及模型是否推理、是否支持自适应思考。编码器还会在其中记下它不得不改写的工具 ID 和名称。
@@ -116,6 +136,21 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 ## 流
 
 KPP 流的结构是 `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`，任何位置都可能出现 `Error`，`Extra` 则携带 KPP 没有建模的方言事件。
+
+```mermaid
+stateDiagram-v2
+  accTitle: KPP 流事件的顺序
+  accDescr: 流以 ResponseStart 开始。随后是任意数量的块，每个块由 BlockStart、任意数量的 BlockDelta 和 BlockStop 组成，然后是任意数量的 ResponseDelta，最后由 ResponseStop 结束。Error 可能出现在任何位置。
+  [*] --> ResponseStart
+  ResponseStart --> BlockStart
+  BlockStart --> BlockDelta: 任意数量
+  BlockDelta --> BlockStop
+  BlockStop --> BlockStart: 下一个块
+  BlockStop --> ResponseDelta: 任意数量
+  ResponseStart --> ResponseDelta: 没有块
+  ResponseDelta --> ResponseStop
+  ResponseStop --> [*]
+```
 
 - **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2……。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
 - **每个生命周期事件都携带 `Extras`**，因此同一方言内的回放能精确重现原始事件，包括各事件自己的字段，例如 OpenAI 的 `obfuscation`。

@@ -156,6 +156,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 | `@tanstack/react-router` | MIT | 每种语言一棵路由树；每个地址加载其页面的 chunk |
 | `marked`（仅构建） | MIT | 内容构建的 Markdown 词法分析器；页面在构建时编译，因此它从不进入浏览器 |
 | `image-size`（仅构建） | MIT | 每张图片的宽度和高度，让页面不会在图片加载时跳动 |
+| `mermaid`（仅构建） | MIT | 构建时在无头 Chromium 中把页面的图示绘制为 SVG 文件；它的代码不会进入浏览器 |
 
 ### 构建、测试和展示站点工具
 
@@ -173,7 +174,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 | `openai`、`@anthropic-ai/sdk` | Apache-2.0、MIT | `pnpm seed` 中经过网关的示例流量 |
 | `vitest`、`@vitest/coverage-v8`、`happy-dom` | MIT | 带覆盖率的单元测试和组件测试 |
 | `@testing-library/react`、`@testing-library/user-event`、`@testing-library/jest-dom` | MIT | 从用户所见出发的测试 |
-| `@playwright/test` | Apache-2.0 | 端到端测试 |
+| `@playwright/test` | Apache-2.0 | 端到端测试，以及绘制文档图示的无头 Chromium |
 | `@axe-core/playwright`、`axe-core` | MPL-2.0 | 端到端测试中的无障碍检查 |
 | `pngjs` | MIT | 在展示站点的几何检查中读取截图 |
 | `astro`、`@astrojs/react`、`@astrojs/mdx` | MIT | 展示站点 |

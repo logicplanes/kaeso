@@ -19,6 +19,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Documentation pages show the current version wherever they write `{{version}}`, replaced at build time from the repository's version in text, code and frontmatter, so a release never needs a page edited; a backslash before it keeps it literal.
 - Ideas and questions have a home in GitHub Discussions: the issue chooser links to it, an Ideas discussion asks for the idea in a sentence or two, and the contributing page explains the categories and how an agreed idea becomes a feature request.
 - `StepDialog` takes `result`: what the last step made, such as a key shown once, takes the steps' place in the same dialog at its own size.
+- Diagrams in the documentation: a `mermaid` code block is drawn at build time into a light and a dark SVG in Kaeso's own colours, type and radius, shown as images that follow the site's theme setting and print in light, named for screen readers by its `accTitle` and `accDescr`, searchable by its labels, and scrolling in its own region on a phone. No Mermaid code reaches the browser, the strict Content Security Policy is unchanged, a diagram that doesn't parse fails the build with its file and line, and so does a code block that draws one with box-drawing characters or arrows. Every diagram in the documentation is now drawn this way, in English, German and Simplified Chinese.
+- `ThemeImage` in `@logicplanes/kaeso-ui`, an image with a light and a dark version that follows the theme setting and prints the light one, and a `flow="text"` variant of `Code` for long code that breaks with the sentence around it.
 
 ### Changed
 
@@ -31,6 +33,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The install, quick start, upgrade and reverse proxy guides start Kaeso with `docker compose up -d --wait`, which returns once every service is healthy, also without the bundled Caddy, and fails when one isn't; the reverse proxy guide shows how to reach Kaeso from a proxy in Docker over a network of its own, under names that can't collide with other stacks.
 - The Platform API's cross-site refusal says which `Origin` header to send, and the Platform API page documents when `Origin` is needed.
 - The documentation's and the showcase's changelog pages refuse raw HTML and links other than http, https and mailto in `CHANGELOG.md`: each site checks every part it renders, such as a section or a topic, with the Markdown parser that renders it, and its build fails and names the line of the file, so a changelog entry can never run code on either site; HTML written in a code span or a code block is fine.
+- Long inline code in the documentation breaks with its sentence instead of moving to a line of its own, and a nested folder's page is named by its title in the sidebar instead of a second "Overview".
 
 ### Fixed
 

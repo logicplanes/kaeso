@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Block, Inline } from "../../src/markdown/ast.ts";
-import { compile, fenceInfo, lex, safeExternal, type Resolver, type Target } from "./compile.ts";
+import { compile, fenceInfo, lex, safeExternal, type DiagramTarget, type Resolver, type Target } from "./compile.ts";
 
 function md(body: string, targets: Record<string, Target> = {}) {
   const lexed = lex(body);
@@ -154,6 +154,81 @@ describe("blocks", () => {
 
   it("collects the page's words for the search", () => {
     expect(md("## Rate limits\n\nRequests per **minute**.").words).toEqual(["rate", "limits", "requests", "per", "minute"]);
+  });
+});
+
+describe("diagrams", () => {
+  const drawn: DiagramTarget = {
+    kind: "diagram",
+    light: "diagrams/k.light.svg",
+    dark: "diagrams/k.dark.svg",
+    width: 364,
+    height: 49,
+    labels: ["App", "Kaeso gateway"],
+  };
+  const page = (body: string, target: DiagramTarget = drawn, offset = 4) => {
+    const lexed = lex(body, { offset });
+    const seen: { code: string; line: number }[] = [];
+    const out = compile(lexed, {
+      anchors: new Set(),
+      resolve: () => ({ kind: "page", href: "/" }),
+      diagram: (code, line) => (seen.push({ code, line }), target),
+    });
+    return { ...out, seen };
+  };
+  const FLOW = "```mermaid\nflowchart LR\n  accTitle: Route of a request\n  accDescr: An app calls Kaeso.\n  app[App] --> kaeso[Kaeso gateway]\n```";
+
+  it("turns a mermaid block into a diagram with its drawings, title and description, and passes the fence's line in the file", () => {
+    const out = page(`\nIntro.\n\n${FLOW}\n`);
+    expect(out.problems).toEqual([]);
+    expect(out.blocks[1]).toEqual({
+      t: "diagram",
+      light: "diagrams/k.light.svg",
+      dark: "diagrams/k.dark.svg",
+      width: 364,
+      height: 49,
+      title: "Route of a request",
+      description: "An app calls Kaeso.",
+    });
+    expect(out.seen).toEqual([
+      { code: "flowchart LR\n  accTitle: Route of a request\n  accDescr: An app calls Kaeso.\n  app[App] --> kaeso[Kaeso gateway]", line: 8 },
+    ]);
+    expect(out.words).toEqual(expect.arrayContaining(["route", "request", "app", "calls", "kaeso", "gateway"]));
+    expect(out.words).not.toContain("flowchart");
+  });
+
+  it("finds the line of every diagram, in lists and after an identical one", () => {
+    const out = page(`${FLOW}\n\n- Item\n\n  ${FLOW.replace(/\n/g, "\n  ")}\n\n${FLOW}\n`, drawn, 0);
+    expect(out.seen.map((s) => s.line)).toEqual([1, 10, 17]);
+  });
+
+  it("names the file's line of a diagram without a title, with a comment, or not drawn yet", () => {
+    expect(page("```mermaid\nflowchart LR\n  a --> b\n```").problems).toEqual([
+      ":5: the diagram has no `accTitle: …`: name it in a few words for screen readers and search",
+    ]);
+    expect(page("Text.\n\n```mermaid\n%%{init: {'theme': 'dark'}}%%\nflowchart LR\n  accTitle: A\n  a --> b\n```").problems).toEqual([
+      ":7: the diagram has a `%%` line: diagrams take no comments and no `%%{init}`, the site sets their look",
+    ]);
+    const missing = page(FLOW, { kind: "problem", message: "the diagram has changed since it was last drawn" });
+    expect(missing.problems).toEqual([":5: the diagram has changed since it was last drawn"]);
+    expect(missing.blocks).toEqual([]);
+  });
+
+  it("refuses a diagram where it can't be drawn, such as the changelog", () => {
+    const out = compile(lex(FLOW), { anchors: new Set(), resolve: () => ({ kind: "page", href: "/" }) });
+    expect(out.blocks).toEqual([]);
+    expect(out.problems).toEqual([":1: diagrams are drawn only on the pages in content/; show this as text or a list"]);
+  });
+
+  it("fails a code block that draws a diagram with box-drawing characters or arrows, and keeps plain code", () => {
+    const out = page(
+      "Text.\n\n```text\napp ──▶ gateway\n         ▲\nconsole ─┘\n```\n\n```bash\ncurl -s https://kaeso.example.com/v1/models | jq '.data[] | .id'\n```\n\n```\nKPP → canonical\n```",
+    );
+    expect(out.problems).toEqual([
+      ":7: the code block draws a diagram with box-drawing characters or arrows; write it as a `mermaid` block (development/documentation.md, Diagrams)",
+      ":15: the code block draws a diagram with box-drawing characters or arrows; write it as a `mermaid` block (development/documentation.md, Diagrams)",
+    ]);
+    expect(out.blocks.map((b) => b.t)).toEqual(["paragraph", "code", "code", "code"]);
   });
 });
 

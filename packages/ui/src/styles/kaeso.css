@@ -1073,6 +1073,18 @@
     }
   }
 }
+@utility theme-light-only {
+  display: var(--k-show-light);
+  @media print {
+    display: block;
+  }
+}
+@utility theme-dark-only {
+  display: var(--k-show-dark);
+  @media print {
+    display: none;
+  }
+}
 @utility opacity-motion {
   transition-property: opacity, fill-opacity;
   transition-duration: var(--k-duration-fast);

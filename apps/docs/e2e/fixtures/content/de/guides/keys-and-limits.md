@@ -47,6 +47,22 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiK
 
 ## Limits
 
+```mermaid
+sequenceDiagram
+  accTitle: Wie eine Anfrage gegen ihre Limits geprüft wird
+  accDescr: Die App sendet eine Anfrage mit ihrem Schlüssel; das Gateway prüft die Limits des Schlüssels, des Mitglieds und des Projekts in Valkey, bevor es den Anbieter aufruft, und lehnt die Anfrage mit 429 ab, wenn eines erreicht ist.
+  participant App
+  participant Gateway
+  participant Valkey
+  participant Provider as Anbieter
+  App->>Gateway: Anfrage mit sk-kso-…
+  Gateway->>Valkey: Limits von Schlüssel, Mitglied und Projekt
+  Valkey-->>Gateway: Innerhalb aller Limits
+  Gateway->>Provider: Anfrage im Format des Anbieters
+  Provider-->>Gateway: Antwort
+  Gateway-->>App: Antwort, oder 429, wenn ein Limit erreicht ist
+```
+
 Limits gelten auf drei Ebenen, und eine Anfrage muss in alle passen.
 
 | Ebene    | Anfragen pro Minute | Token pro Tag | Ausgaben pro Monat | Gilt für                                     |

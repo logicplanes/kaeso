@@ -83,10 +83,16 @@ Das baut die Bibliotheken in `packages/`, startet den Stack (und baut das Gatewa
 
 Als `owner@example.com` anmelden, Instanz-Admin und Inhaber der Organisation, oder als `lin@example.com`, ein Entwickler. Beide haben das Passwort `correct horse battery staple`. E-Mails landen in Mailpit unter http://127.0.0.1:58025.
 
-```text
-browser ─▶ http://localhost:3000 (Vite) ─▶ /platform, /v1 sent on to the gateway on 127.0.0.1:18080
-                                         └▶ everything else: the console
-gateway ─▶ provider (mock OpenAI and Anthropic), mail (Mailpit), idp (mock single sign-on)
+```mermaid
+flowchart TD
+  accTitle: Der Entwicklungs-Stack
+  accDescr: Der Browser öffnet Vite auf localhost:3000; Vite leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter und liefert für alles andere die Konsole aus. Das Gateway ruft die Mock-Anbieter, Mailpit und den Mock-Identitätsanbieter auf.
+  browser[Browser] --> vite[Vite auf localhost:3000]
+  vite -- /platform, /v1 --> gateway[Gateway auf 127.0.0.1:18080]
+  vite -- alles andere --> console[Die Konsole]
+  gateway --> provider[Mock-OpenAI und -Anthropic]
+  gateway --> mail[Mailpit]
+  gateway --> idp[Mock-Single-Sign-on]
 ```
 
 Die öffentliche URL des Gateways ist die Adresse des Entwicklungsservers. So ist das Sitzungscookie ein First-Party-Cookie, und der Browser sendet den `Origin`, den das Gateway erwartet. In Produktion liefert ein Reverse Proxy Konsole und Gateway auf die gleiche Weise unter einer Domain aus.

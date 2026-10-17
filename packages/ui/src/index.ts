@@ -42,6 +42,7 @@ export * from "./components/sidebar/index.js";
 export * from "./components/app-frame/index.js";
 export * from "./components/theme-menu/index.js";
 export * from "./components/theme-select/index.js";
+export * from "./components/theme-image/index.js";
 export * from "./components/calendar/index.js";
 export * from "./components/date-picker/index.js";
 export * from "./components/filter-chip/index.js";

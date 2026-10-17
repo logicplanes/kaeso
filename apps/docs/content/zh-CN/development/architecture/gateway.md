@@ -8,13 +8,37 @@ order: 1
 
 ## 请求路径
 
-```text
-app ─▶ /v1 ─▶ 1 key ─▶ 2 decode (KPP) ─▶ 3 model ─▶ 4 limits ─▶ 5 provider key ─▶ 6 encode (KPP) + send ─▶ provider
-app ◀──────── 8 encode reply (KPP) ◀── 7 decode reply (KPP) ◀───────────────────────────────────────────── provider
-                                               └─▶ 9 charge usage (Valkey, PostgreSQL) · 10 log (ClickHouse)
+```mermaid
+sequenceDiagram
+  accTitle: 模型 API 的请求路径
+  accDescr: 网关检查密钥，用 KPP 解码请求，解析模型，检查限额，选择服务商密钥，用 KPP 编码请求并发送。它用 KPP 解码回复并为应用编码，然后在 Valkey 和 PostgreSQL 中计入用量，并在 ClickHouse 中记录请求。
+  participant App as 应用
+  participant Gateway as 网关
+  participant KPP
+  participant Provider as 服务商
+  participant Stores as Valkey、PostgreSQL、<br>ClickHouse
+  App->>Gateway: /v1 上的请求
+  Gateway->>Gateway: 1 密钥
+  Gateway->>KPP: 2 解码
+  Gateway->>Gateway: 3 模型、4 限额、5 服务商密钥
+  Gateway->>KPP: 6 编码
+  Gateway->>Provider: 6 发送
+  Provider-->>Gateway: 回复
+  Gateway->>KPP: 7 解码回复、8 编码回复
+  Gateway-->>App: 回复
+  Gateway->>Stores: 9 计入用量、10 记录日志
+```
 
-console, scripts ─▶ /platform/v1 ─▶ session cookie | API key with platform access | platform key
-                                  ─▶ exactly one right per endpoint ─▶ service ─▶ PostgreSQL + audit event
+Platform API 请求经过以下路径：
+
+```mermaid
+flowchart TD
+  accTitle: Platform API 的请求路径
+  accDescr: 控制台和脚本使用会话 Cookie、具有平台访问权限的 API 密钥或平台密钥调用 /platform/v1。每个端点只检查一项权限，然后由服务修改 PostgreSQL 并写入审计事件。
+  callers[控制台、脚本] -- /platform/v1 --> auth[会话 Cookie、具有平台访问权限的<br>API 密钥或平台密钥]
+  auth --> right[每个端点恰好一项权限]
+  right --> service[服务]
+  service --> db[(PostgreSQL 和审计事件)]
 ```
 
 | 代码 | 位置 |

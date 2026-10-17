@@ -13,3 +13,12 @@ Open the organization's **Providers** page and choose **Add key**. A key's reque
 ## Assign keys to projects
 
 Assign a key to the projects that should use it; the others keep the default.
+
+```mermaid
+flowchart TD
+  accTitle: Which provider key a request uses
+  accDescr: A request uses the key assigned to its project, or else the organization's default key for the provider.
+  request[Request in a project] --> assigned{Key assigned to the project?}
+  assigned -- yes --> own[The assigned key]
+  assigned -- no --> fallback[The organization's default key]
+```

@@ -47,6 +47,22 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiK
 
 ## Limits
 
+```mermaid
+sequenceDiagram
+  accTitle: How a request is checked against its limits
+  accDescr: The app sends a request with its key; the gateway checks the key's, the member's and the project's limits in Valkey before it calls the provider, and refuses the request with 429 when one is reached.
+  participant App
+  participant Gateway
+  participant Valkey
+  participant Provider
+  App->>Gateway: Request with sk-kso-…
+  Gateway->>Valkey: Key, member and project limits
+  Valkey-->>Gateway: Within every limit
+  Gateway->>Provider: Request in the provider's format
+  Provider-->>Gateway: Reply
+  Gateway-->>App: Reply, or 429 when a limit is reached
+```
+
 Limits apply at three levels, and a request must fit all of them.
 
 | Level   | Requests per minute | Tokens per day | Spend per month | Applies to                                  |

@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Plugin, Rollup } from "vite";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { diagramKey, mermaidVersion } from "./diagram.ts";
+import type { Render } from "./diagrams.ts";
 import { buildDocs } from "./docs.ts";
 import { absoluteUrl, alternatesFor, htmlFiles, kaesoDocs, pageHtml, pageModuleId, sitemap, structuredData, type PageHead } from "./plugin.ts";
 
@@ -45,7 +47,7 @@ const TEMPLATE = `<!doctype html>
 
 type Hooks = {
   config: (c: object, env: { command: "build" | "serve" }) => void;
-  buildStart: (this: { addWatchFile: (f: string) => void; error: (m: string) => never }) => void;
+  buildStart: (this: { addWatchFile: (f: string) => void; error: (m: string) => never }) => Promise<void>;
   resolveId: (id: string) => string | null;
   load: (id: string) => string | null;
   writeBundle: (output: { dir?: string }, bundle: Rollup.OutputBundle) => void;
@@ -183,6 +185,140 @@ describe("addresses and HTML", () => {
   });
 });
 
+describe("diagrams in the Vite plugin", () => {
+  const FLOW = "flowchart LR\n  accTitle: Route\n  app[App] --> kaeso[Kaeso]";
+  const diagramRepo = (code = FLOW) => {
+    root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
+    for (const locale of ["en", "de", "zh-CN"]) {
+      const file = join(root, "content", locale, "index.md");
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, page("Kaeso", `Text.\n\n\u0060\u0060\u0060mermaid\n${code}\n\u0060\u0060\u0060`));
+    }
+    return diagramKey(code, mermaidVersion(root));
+  };
+  const drawn: Render = async (sources) =>
+    sources.map(({ key }) => ({ key, ok: true, svg: { light: '<svg width="364" height="49"></svg>', dark: '<svg width="364" height="49"></svg>' } }));
+  const plugin = (render: Render) =>
+    hooks(
+      kaesoDocs({
+        root,
+        contentDir: "content",
+        editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
+        siteUrl: "https://docs.kaeso.app",
+        version: "1.4.0",
+        render,
+      }),
+    );
+  const ctx = {
+    addWatchFile: () => undefined,
+    error: (m: string): never => {
+      throw new Error(m);
+    },
+  };
+
+  it("draws the missing diagrams before a build, removes unused drawings, and imports both drawings into the page as files", async () => {
+    const key = diagramRepo();
+    mkdirSync(join(root, "diagrams"));
+    writeFileSync(join(root, "diagrams", "ffffffffffffffff.dark.svg"), "<svg></svg>");
+    const render = vi.fn(drawn);
+    const p = plugin(render);
+    p.config({}, { command: "build" });
+    await p.buildStart.call(ctx);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(existsSync(join(root, "diagrams", `${key}.light.svg`))).toBe(true);
+    expect(existsSync(join(root, "diagrams", "ffffffffffffffff.dark.svg"))).toBe(false);
+    const module = p.load("\0kaeso-docs:page/de") ?? "";
+    expect(module).toContain(`import kaeso_asset_0 from ${JSON.stringify(`${join(root, "diagrams", `${key}.light.svg`)}?url`)};`);
+    expect(module).toContain(`import kaeso_asset_1 from ${JSON.stringify(`${join(root, "diagrams", `${key}.dark.svg`)}?url`)};`);
+    expect(module).toContain('"t":"diagram","light":kaeso_asset_0,"dark":kaeso_asset_1,"width":364,"height":49,"title":"Route"');
+    await p.buildStart.call(ctx);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails a build with the file and line of a diagram that doesn't parse", async () => {
+    diagramRepo("flowchart LR\n  accTitle: Route\n  a -->> b");
+    const p = plugin(async (sources) => sources.map(({ key }) => ({ key, ok: false, line: 3, message: "Parse error on line 3" })));
+    p.config({}, { command: "build" });
+    await expect(p.buildStart.call(ctx)).rejects.toThrow(
+      "diagrams: 3 to fix\n  content/en/index.md:11: the diagram doesn't parse: Parse error on line 3\n  content/de/index.md:11:",
+    );
+  });
+
+  it("names the diagrams it couldn't draw when there is no browser", async () => {
+    diagramRepo();
+    const p = plugin(async () => {
+      throw new Error("browserType.launch: Executable doesn't exist\nmore");
+    });
+    p.config({}, { command: "build" });
+    await expect(p.buildStart.call(ctx)).rejects.toThrow(
+      "diagrams: 1 to fix\n  can't draw content/en/index.md:8, content/de/index.md:8, content/zh-CN/index.md:8 (browserType.launch: Executable doesn't exist); run `pnpm --filter kaeso-docs diagrams` where Chromium is installed",
+    );
+  });
+
+  it("draws a missing diagram while serving, then reloads the page", async () => {
+    const key = diagramRepo();
+    const sent: unknown[] = [];
+    const warned: string[] = [];
+    let resolve: () => void = () => undefined;
+    const done = new Promise<void>((r) => (resolve = r));
+    const server = {
+      config: { logger: { warn: (m: string) => warned.push(m) } },
+      watcher: { add: () => undefined, on: () => undefined },
+      moduleGraph: { idToModuleMap: new Map([["\0kaeso-docs:page/en", {}]]), getModuleById: () => ({}), invalidateModule: () => undefined },
+      ws: {
+        send: (m: unknown) => {
+          sent.push(m);
+          resolve();
+        },
+      },
+    };
+    const p = kaesoDocs({
+      root,
+      contentDir: "content",
+      editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
+      siteUrl: "https://docs.kaeso.app",
+      version: "1.4.0",
+      render: drawn,
+    }) as unknown as { configureServer: (s: unknown) => void };
+    p.configureServer(server);
+    await done;
+    expect(sent).toEqual([{ type: "full-reload" }]);
+    expect(warned).toEqual([]);
+    expect(existsSync(join(root, "diagrams", `${key}.dark.svg`))).toBe(true);
+  });
+
+  it("warns about a diagram it couldn't draw while serving, and keeps serving", async () => {
+    diagramRepo();
+    const warned: string[] = [];
+    let resolve: () => void = () => undefined;
+    const done = new Promise<void>((r) => (resolve = r));
+    const server = {
+      config: {
+        logger: {
+          warn: (m: string) => {
+            warned.push(m);
+            resolve();
+          },
+        },
+      },
+      watcher: { add: () => undefined, on: () => undefined },
+      moduleGraph: { idToModuleMap: new Map(), getModuleById: () => undefined, invalidateModule: () => undefined },
+      ws: { send: () => undefined },
+    };
+    const p = kaesoDocs({
+      root,
+      contentDir: "content",
+      editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
+      siteUrl: "https://docs.kaeso.app",
+      version: "1.4.0",
+      render: async (sources) => sources.map(({ key }) => ({ key, ok: false, message: "No diagram type detected" })),
+    }) as unknown as { configureServer: (s: unknown) => void };
+    p.configureServer(server);
+    await done;
+    expect(warned[0]).toBe("content/en/index.md:9: the diagram doesn't parse: No diagram type detected");
+  });
+});
+
 describe("the Vite plugin", () => {
   const plugin = () =>
     kaesoDocs({
@@ -216,7 +352,7 @@ describe("the Vite plugin", () => {
     expect(p.load("/src/main.tsx")).toBeNull();
   });
 
-  it("watches every page, and fails a build on a broken page", () => {
+  it("watches every page, and fails a build on a broken page", async () => {
     repo();
     writeFileSync(join(root, "content/de/guides/keys.md"), page("Schlüssel", "[kaputt](missing.md)"));
     const watched: string[] = [];
@@ -228,11 +364,11 @@ describe("the Vite plugin", () => {
     };
     const serve = hooks(plugin());
     serve.config({}, { command: "serve" });
-    serve.buildStart.call(ctx);
+    await serve.buildStart.call(ctx);
     expect(watched).toHaveLength(9);
     const build = hooks(plugin());
     build.config({}, { command: "build" });
-    expect(() => build.buildStart.call(ctx)).toThrow(/content\/de\/guides\/keys\.md: links to missing\.md, which doesn't exist/);
+    await expect(build.buildStart.call(ctx)).rejects.toThrow(/content\/de\/guides\/keys\.md: links to missing\.md, which doesn't exist/);
   });
 
   it("writes an HTML file per page, a 404 per language and the sitemap", () => {
@@ -338,7 +474,7 @@ describe("the changelog page", () => {
       changelog: "CHANGELOG.md",
     });
 
-  it("serves the changelog as a page of every language, and watches its file", () => {
+  it("serves the changelog as a page of every language, and watches its file", async () => {
     repo();
     writeFileSync(join(root, "CHANGELOG.md"), CHANGELOG);
     const p = hooks(plugin());
@@ -348,7 +484,7 @@ describe("the changelog page", () => {
     expect(changelog).toContain('"changelog":{"releases":[{"id":"v1.2.0"');
     expect(changelog).toContain('"toc":[{"id":"v1.2.0","label":"1.2.0","depth":0}]');
     const watched: string[] = [];
-    p.buildStart.call({
+    await p.buildStart.call({
       addWatchFile: (f: string) => watched.push(f),
       error: (m: string): never => {
         throw new Error(m);

@@ -4,14 +4,15 @@ description: 网关、KPP、控制台、UI 库和文档如何在同一个仓库�
 order: 2
 ---
 
-```text
-                     crates/kaeso-kpp, crates/kaeso-codecs
-                                    │
-apps ─▶ /v1 ─────────▶ gateway (crates/kaeso, crates/kaeso-*) ─▶ OpenAI, Anthropic
-                         │    │
-console ─▶ /platform/v1 ─┘    └─▶ openapi.json ─▶ the console's API client
-   ▲
-packages/ui, packages/tokens ─▶ apps/console, apps/docs, apps/showcase
+```mermaid
+flowchart TD
+  accTitle: 各部分如何配合
+  accDescr: 应用通过 /v1 调用网关，控制台通过 /platform/v1 调用网关。网关使用 KPP 并调用 OpenAI 和 Anthropic，控制台的 API 客户端由网关的 openapi.json 生成。
+  apps[应用] -- /v1 --> gateway[网关<br>crates/kaeso, crates/kaeso-*]
+  console[控制台<br>apps/console] -- /platform/v1 --> gateway
+  kpp[KPP<br>crates/kaeso-kpp,<br>crates/kaeso-codecs] -- 供网关使用 --> gateway
+  gateway --> providers[OpenAI、Anthropic]
+  gateway -- openapi.json --> client[控制台的 API 客户端]
 ```
 
 各部分之间有四条主要关联：
@@ -63,10 +64,16 @@ packages/ui, packages/tokens ─▶ apps/console, apps/docs, apps/showcase
 
 ## 生产环境
 
-```text
-browser, apps ─▶ https://kaeso.example.com ─▶ Caddy ─▶ /v1/*, /platform/* ─▶ gateway
-                                                   └▶ everything else ─▶ console (static files)
-gateway ─▶ PostgreSQL (state), ClickHouse (request logs), Valkey (counters, caches)
+```mermaid
+flowchart TD
+  accTitle: 生产环境中的安装
+  accDescr: 浏览器和应用通过安装的域名访问 Caddy。Caddy 把 /v1 和 /platform 转给网关，其余请求转给控制台的静态文件。网关把状态保存在 PostgreSQL，请求日志保存在 ClickHouse，计数器和缓存保存在 Valkey。
+  clients[浏览器、应用] -- https://kaeso.example.com --> caddy[Caddy]
+  caddy -- /v1/*、/platform/* --> gateway[网关]
+  caddy -- 其他所有请求 --> console[控制台，静态文件]
+  gateway --> pg[(PostgreSQL<br>状态)]
+  gateway --> ch[(ClickHouse<br>请求日志)]
+  gateway --> valkey[(Valkey<br>计数器、缓存)]
 ```
 
 控制台是一组静态文件，运行在自己的小容器中，与网关使用同一个域名。因此它的会话 Cookie 是第一方 Cookie，不需要 CORS；只有在浏览器中直接调用模型 API 的 Web 应用，才需要把自己的源加入 `KAESO_CORS_ALLOWED_ORIGINS`。[自托管](../../self-hosting/index.md)介绍了如何安装。

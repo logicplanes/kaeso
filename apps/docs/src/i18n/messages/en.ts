@@ -23,6 +23,7 @@ export const en = {
   "page.nextStep": "Next: {title}",
   "page.edit": "Edit on GitHub",
   "page.table": "Table: {columns}",
+  "page.diagram": "Diagram: {title}",
   "page.task": "Task",
   "callout.note": "Note",
   "callout.tip": "Tip",

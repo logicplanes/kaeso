@@ -26,6 +26,26 @@ let reply = dispatch::decode_response(DialectId::OpenAiChat, status, &reply_head
 let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &EncodeCtx::for_request(req))?;
 ```
 
+```mermaid
+sequenceDiagram
+  accTitle: The path of a request through KPP
+  accDescr: The Anthropic Messages codec decodes the app's request into KPP, which is validated. The OpenAI Chat Completions codec checks it, encodes it, and the gateway sends it to the provider. The provider's reply is decoded into KPP by the same codec and encoded in the app's format by the app's codec.
+  participant App
+  participant In as Anthropic Messages codec
+  participant KPP
+  participant Out as OpenAI Chat codec
+  participant Provider
+  App->>In: Body and headers
+  In->>KPP: 1 decode
+  Note over KPP: 2 validate
+  KPP->>Out: 3 check and encode
+  Out->>Provider: Provider's request
+  Provider-->>Out: Reply
+  Out-->>KPP: 4 decode the reply
+  KPP-->>In: 5 encode the reply
+  In-->>App: Reply in the app's format
+```
+
 1. **Decode.** The app's codec reads the body and headers into a KPP `Request`. `decode_request` takes a `RequestKind`, because Anthropic's `/v1/messages` and `/v1/messages/count_tokens` bodies can't be told apart without the endpoint. Whatever KPP doesn't model is kept in `Extras`, bound to the dialect it came from.
 2. **Validate.** `validate()` checks what every dialect needs, such as a model, messages with content, unique tool call ids and tool names, and a `tool_choice` that names a defined tool.
 3. **Check and encode.** `encode_request` first runs the target's `check()`, which refuses with `Unsupported` anything the target can't express, before anything is sent ([crossing formats](cross-format.md)). It then writes the provider's request. `EgressCtx` carries what the gateway knows about the target: the request kind and stream mode, the provider, and whether the model reasons or has adaptive thinking. The encoder adds the tool ids and names it had to rewrite.
@@ -116,6 +136,21 @@ The types are shaped by what the codecs need to stay lossless:
 ## Streams
 
 A KPP stream is `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, with `Error` possible at any point and `Extra` carrying dialect events KPP does not model.
+
+```mermaid
+stateDiagram-v2
+  accTitle: The order of a KPP stream's events
+  accDescr: A stream starts with ResponseStart. Then come any number of blocks, each BlockStart, any number of BlockDelta and BlockStop, then any number of ResponseDelta, and ResponseStop ends it. Error may come at any point.
+  [*] --> ResponseStart
+  ResponseStart --> BlockStart
+  BlockStart --> BlockDelta: any number
+  BlockDelta --> BlockStop
+  BlockStop --> BlockStart: next block
+  BlockStop --> ResponseDelta: any number
+  ResponseStart --> ResponseDelta: no blocks
+  ResponseDelta --> ResponseStop
+  ResponseStop --> [*]
+```
 
 - **Block indexes** are KPP's own: 0, 1, 2, … in the order blocks start. Blocks may interleave (OpenAI streams parallel tool calls this way), so every event names its block.
 - **Every lifecycle event carries `Extras`**, so a same-dialect replay reproduces the original events exactly, including per-event fields such as OpenAI's `obfuscation`.

@@ -171,6 +171,11 @@ export const shadow = {
   thumb: mode("0 1px 2px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.04)", "0 1px 2px rgb(0 0 0 / 0.5)"),
 } as const;
 
+export const themeDisplay = {
+  "show-light": mode("block", "none"),
+  "show-dark": mode("none", "block"),
+} as const;
+
 export const material = {
   "primary-gradient": mode(
     "linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 50%)",

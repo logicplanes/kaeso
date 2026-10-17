@@ -86,7 +86,7 @@ CI runs these checks for every area a pull request changes, and all of them on `
 3. **Every visible word in English, German and Simplified Chinese**: interfaces, emails, error messages and documentation pages. [Translations](https://docs.kaeso.app/development/translations) has the rules and the glossary.
 4. **Tests for every change**, asserting on what a person or an app sees, deterministic (injectable clocks, no sleeps). Coverage gates in `.cargo/config.toml` and every `vitest.config.ts` are never lowered; raise them when coverage rises.
 5. **Change everything a change touches, in the same pull request**: the console with the Platform API and `openapi.json`, `packages/ui` when an app needs a component, the pages in `apps/docs/content` when people will notice, a row on the [dependencies](https://docs.kaeso.app/development/dependencies) page for a new dependency.
-6. **Documentation lives only in `apps/docs/content`**, in all three languages. No `docs/` folders elsewhere.
+6. **Documentation lives only in `apps/docs/content`**, in all three languages. No `docs/` folders elsewhere. Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a Mermaid block that the docs build draws; never ASCII or box-drawing art, never a screenshot or an image of a diagram. The content check fails on a code block that draws one.
 7. **MIT-compatible dependencies only**, checked by `cargo deny` and `pnpm licenses:check`.
 8. **Never commit secrets or personal data.** Placeholders only: `kaeso.example.com`, `sk-kso-…`, `owner@example.com`.
 

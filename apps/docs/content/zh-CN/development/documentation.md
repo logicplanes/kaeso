@@ -80,10 +80,10 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 把图片放在页面旁边，或旁边的 `images/` 文件夹中，并写上说明图片内容的替代文本：
 
 ```markdown
-![The request flow: app, key, model, limits, provider](images/request-flow.svg)
+![包含一个密钥的 API 密钥页面](images/api-keys.png)
 ```
 
-支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。请选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。
+支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。请选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。图片从不用来展示图示：图示请写成 [Mermaid 代码块](#图示)。
 
 ## 提示块
 
@@ -95,6 +95,33 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 ```
 
 `NOTE`、`TIP`、`IMPORTANT`、`WARNING` 和 `CAUTION` 各有自己的样式和标题。请谨慎使用。
+
+## 图示
+
+系统、架构、请求或数据流、时序、状态和生命周期的每一张图示都写成 Mermaid 代码块。构建时会以 Kaeso 自己的样式把它绘制成浅色和深色两张图片，并跟随网站的主题切换；读者不会收到任何 Mermaid 代码。图示从不在代码块中用制表符或箭头画出，也从不以截图或图片展示：代码块中用 `─`、`│`、`└`、`▶` 或 `→` 等字符画图会导致构建失败。
+
+````markdown
+```mermaid
+sequenceDiagram
+  accTitle: 请求流程
+  accDescr: 应用把请求发送给网关，网关把它转发给服务商，并以应用的格式返回回复。
+  participant App as 应用
+  participant Gateway as 网关
+  participant Provider as 服务商
+  App->>Gateway: 应用格式的请求
+  Gateway->>Provider: 服务商格式的请求
+  Provider-->>Gateway: 回复
+  Gateway-->>App: 应用格式的回复
+```
+````
+
+- 选择合适的类型：`flowchart` 表示各部分及其连接，`sequenceDiagram` 表示参与方之间的请求和回复，`stateDiagram-v2` 表示生命周期。`flowchart TD`（从上到下）在手机上也易于阅读；比内容栏更宽的图示会在自己的框内滚动。
+- `accTitle:` 用几个词为图示命名，必须填写。`accDescr:` 用一两句话说明它展示了什么；屏幕阅读器会朗读两者，搜索也能连同图示的标签找到它们。
+- 标签要简短，使用页面的语言；代码中的名称保持原样。`<br>` 可以把标签分成两行。
+- 只在图示确实有帮助时才画；简短的列表或表格往往更清楚。
+- 不写 `%%` 注释，也不写 `%%{init}`：网站会根据 Kaeso 的设计令牌设置颜色、字体和圆角。
+
+绘制结果提交在 `apps/docs/diagrams/` 中。`pnpm --filter kaeso-docs diagrams` 用 Chromium 绘制新增和修改过的图示，并删除不再被任何页面使用的图示；开发服务器和 `pnpm build` 也会随时补画缺失的图示。图示在绘制后被修改时，`check:content` 会失败；无法解析的图示会连同文件和行号一起报错。
 
 ## 其他语法
 

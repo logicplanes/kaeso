@@ -221,7 +221,7 @@ describe("the changelog page", () => {
   });
 
   it("starts the sidebar when there is no home page group", () => {
-    const empty = { contentDir: "", pages: [], nav: [], metas: [], search: [], assets: new Set<string>(), problems: [] };
+    const empty = { contentDir: "", pages: [], nav: [], metas: [], search: [], assets: new Set<string>(), diagrams: [], problems: [] };
     expect(withChangelog(empty, changelog, "", MESSAGES.en).nav).toEqual([{ id: "pages", items: [{ path: "/changelog", label: "Changelog", depth: 0 }] }]);
   });
 

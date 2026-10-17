@@ -4,14 +4,15 @@ description: How the gateway, KPP, the console, the UI library and the documenta
 order: 2
 ---
 
-```text
-                     crates/kaeso-kpp, crates/kaeso-codecs
-                                    │
-apps ─▶ /v1 ─────────▶ gateway (crates/kaeso, crates/kaeso-*) ─▶ OpenAI, Anthropic
-                         │    │
-console ─▶ /platform/v1 ─┘    └─▶ openapi.json ─▶ the console's API client
-   ▲
-packages/ui, packages/tokens ─▶ apps/console, apps/docs, apps/showcase
+```mermaid
+flowchart TD
+  accTitle: How the parts fit together
+  accDescr: Apps call the gateway on /v1 and the console calls it on /platform/v1. The gateway uses KPP and calls OpenAI and Anthropic, and its openapi.json generates the console's API client.
+  apps[Apps] -- /v1 --> gateway[Gateway<br>crates/kaeso, crates/kaeso-*]
+  console[Console<br>apps/console] -- /platform/v1 --> gateway
+  kpp[KPP<br>crates/kaeso-kpp,<br>crates/kaeso-codecs] -- used by --> gateway
+  gateway --> providers[OpenAI, Anthropic]
+  gateway -- openapi.json --> client[The console's API client]
 ```
 
 Four connections hold the parts together:
@@ -63,10 +64,16 @@ The apps read the libraries' builds, so run `pnpm build:packages` before anythin
 
 ## In production
 
-```text
-browser, apps ─▶ https://kaeso.example.com ─▶ Caddy ─▶ /v1/*, /platform/* ─▶ gateway
-                                                   └▶ everything else ─▶ console (static files)
-gateway ─▶ PostgreSQL (state), ClickHouse (request logs), Valkey (counters, caches)
+```mermaid
+flowchart TD
+  accTitle: An install in production
+  accDescr: Browsers and apps reach Caddy on the install's domain. Caddy sends /v1 and /platform to the gateway and everything else to the console's static files. The gateway keeps its state in PostgreSQL, request logs in ClickHouse and counters and caches in Valkey.
+  clients[Browsers, apps] -- https://kaeso.example.com --> caddy[Caddy]
+  caddy -- /v1/*, /platform/* --> gateway[Gateway]
+  caddy -- everything else --> console[Console, static files]
+  gateway --> pg[(PostgreSQL<br>state)]
+  gateway --> ch[(ClickHouse<br>request logs)]
+  gateway --> valkey[(Valkey<br>counters, caches)]
 ```
 
 The console is a set of static files in its own small container, served on the gateway's domain. Its session cookie is therefore first-party and it needs no CORS; only web apps that call the model API from a browser need their origins in `KAESO_CORS_ALLOWED_ORIGINS`. [Self-hosting](../../self-hosting/index.md) describes an install.

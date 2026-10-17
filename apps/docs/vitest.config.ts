@@ -20,17 +20,26 @@ export default defineConfig({
   ],
   resolve: { alias: { "~": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    environment: "happy-dom",
-    environmentOptions: { happyDOM: { url: "http://localhost:4480/" } },
-    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts", "eslint/**/*.test.js"],
-    setupFiles: ["./src/test/setup.ts"],
     css: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "site",
+          environment: "happy-dom",
+          environmentOptions: { happyDOM: { url: "http://localhost:4480/" } },
+          include: ["src/**/*.test.{ts,tsx}"],
+          setupFiles: ["./src/test/setup.ts"],
+        },
+      },
+      { extends: true, test: { name: "build", environment: "node", include: ["scripts/**/*.test.ts", "eslint/**/*.test.js"] } },
+    ],
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "eslint/**/*.js"],
-      exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts"],
+      exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts", "scripts/content/mermaid-page.ts"],
       reporter: ["text", "text-summary", "json-summary", "html"],
-      thresholds: { statements: 94.6, branches: 85.3, functions: 96.5, lines: 95.8 },
+      thresholds: { statements: 95.4, branches: 86.1, functions: 97.3, lines: 96.5 },
     },
   },
 });

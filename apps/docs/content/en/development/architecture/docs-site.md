@@ -6,11 +6,15 @@ order: 3
 
 The documentation is the `kaeso-docs` package in `apps/docs`: Markdown pages in three languages, built into a static site that looks and works like the console and is drawn only with `@logicplanes/kaeso-ui`. [Writing documentation](../documentation.md) explains how to write a page; this page explains how the site works.
 
-```text
-content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─▶ virtual modules ─▶ src/ (React, @logicplanes/kaeso-ui) ─▶ dist/
-                              frontmatter · marked's lexer · links,          site/<language>: sidebar, titles, previous/next, a loader per page
-                              anchors and images checked · search words      page/<language>/<path>: one page's blocks, its own chunk
-                              the same pages in every language               search/<language>: the index, loaded with the search
+```mermaid
+flowchart TD
+  accTitle: From Markdown to the site
+  accDescr: At build time, scripts/content reads the pages in content and the drawn diagrams in diagrams, checks them and writes virtual modules for each language's site, each page and the search. The React app in src draws them with the UI library, and Vite writes dist.
+  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>frontmatter, links, anchors, images,<br>search words, every language]
+  diagrams[diagrams/*.svg<br>Mermaid blocks, drawn] --> content
+  content --> modules[Virtual modules<br>site, page and search per language]
+  modules --> app[src/, React and kaeso-ui]
+  app --> dist[dist/]
 ```
 
 ## Content model
@@ -23,8 +27,9 @@ content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─�
 | A sidebar group | A folder in a language | Named by its `index.md`'s `title`, or by the folder's name; placed by that `index.md`'s `order` |
 | A nested page | A folder inside a group, with `index.md` | Its pages are indented under it; at most three folder levels |
 | Order inside a folder | Frontmatter `order` | The folder's `index.md` first, then by `order`, then by label |
-| A page's sidebar label | Frontmatter `nav` | Defaults to the title; `index.md` defaults to the language's "Overview" (the home page: "Introduction") |
+| A page's sidebar label | Frontmatter `nav` | Defaults to the title; a group's `index.md` defaults to the language's "Overview" (the home page: "Introduction"), a nested folder's `index.md` to its title |
 | Images and files | Anywhere in `content/` | Published only when a page shows or links to them, with their size read at build time |
+| A diagram | A `mermaid` code block in a page | Drawn in Chromium into a light and a dark SVG in `apps/docs/diagrams/`, named by a hash of its source and of the site's look, and shown as images that follow the theme; `accTitle` is required |
 | Drafts and private notes | Names starting with `_` or `.` | Left out of the site |
 
 Frontmatter has exactly four fields: `title` and `description` (one short sentence, at most 140 characters) are required, `order` and `nav` are optional. Any other field is an error, so a typo never silently does nothing.
@@ -41,6 +46,9 @@ Frontmatter has exactly four fields: `title` and `description` (one short senten
 | `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes, search |
 | `docs.ts` | Every language: a site each, with its prefix and labels, and the check that they hold the same pages in the same order |
 | `changelog.ts` | The changelog page, made from `CHANGELOG.md` in every language ([the changelog](#the-changelog)) |
+| `diagram.ts` | A diagram's title and description, the Mermaid configuration made from Kaeso's tokens, and the hash that names its drawings |
+| `mermaid.ts` | Draws diagrams with the `mermaid` package in headless Chromium, with Inter loaded, and turns each into a light and a dark SVG with no stylesheet or script |
+| `diagrams.ts` | `pnpm --filter kaeso-docs diagrams`: draws the missing diagrams into `apps/docs/diagrams/` and removes the unused ones |
 | `plugin.ts` | The Vite plugin: virtual modules, reload on a change in development, an HTML file per page and language with its head for search engines and link previews, `404.html`s and the sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: the same checks without building the app |
 
@@ -68,6 +76,12 @@ Pages are edited in a browser on GitHub, so the build treats them as untrusted t
 ### Links that work on GitHub and on the site
 
 A link is written between files, as GitHub follows it: `[keys](../console/api-keys.md#create-a-key)`. The build resolves it against the file's folder, checks that the page and the heading exist, and writes the site's address in the page's language (`/de/console/api-keys#schlüssel-erstellen`). Headings use GitHub's anchors, so the same anchor works in both places; a translated page links to the translated heading's anchor.
+
+### Diagrams
+
+A `mermaid` code block becomes a diagram at build time, so readers get two static SVG files and no Mermaid code, and the strict content security policy stays as it is. `mermaid.ts` renders each diagram twice in headless Chromium, with the colours, the type and the radius of `@logicplanes/kaeso-tokens` as Mermaid's theme variables and labels as SVG text, measured in Inter. It then writes every computed style onto its element and drops the stylesheet, the shadows and the generated attributes, so an SVG shown with `<img>` needs nothing from the page. The drawings live in `apps/docs/diagrams/`, named by a hash of the diagram's source, the Mermaid version and the configuration; they are committed, so a build without Chromium only reads them. `pnpm build` and the dev server draw what is missing, and `check:content` fails on a diagram drawn for an older source and on a drawing no page uses.
+
+The page shows a diagram as `ThemeImage` from `@logicplanes/kaeso-ui`: both images, with only the one for the current theme displayed, following the site's theme setting and printing the light one. Its alternative text is the diagram's `accTitle`, `accDescr` is its description for screen readers, and both, with the diagram's labels, are search words. A diagram shrinks to a phone's column by a quarter at most and scrolls sideways in its own region beyond that, never the page. A diagram that doesn't parse fails the build with its file and line; a code block that draws a diagram with box-drawing characters or arrows fails it too.
 
 ### The changelog
 

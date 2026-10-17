@@ -2,7 +2,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { imageSize } from "image-size";
 import type { NavGroup, NavItem, PageMeta, SearchEntry } from "../../src/markdown/ast.ts";
-import { compile, lex, type Compiled, type Lexed, type Resolver, type Target } from "./compile.ts";
+import { compile, lex, type Compiled, type DiagramTarget, type Lexed, type Resolver, type Target } from "./compile.ts";
+import { DIAGRAM_COMMAND, DIAGRAM_THEMES, diagramFile, diagramKey, mermaidVersion, svgLabels, svgSize, type DiagramJob } from "./diagram.ts";
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts";
 import { humanize, pathSegment } from "./slug.ts";
 
@@ -12,7 +13,10 @@ export interface SiteOptions {
   prefix: string;
   labels: { home: string; overview: string };
   version: string;
+  diagrams?: string;
 }
+
+export const located = (file: string, problem: string) => `${file}${problem.startsWith(":") ? "" : ": "}${problem}`;
 
 export interface SitePage {
   file: string;
@@ -32,6 +36,7 @@ export interface Site {
   metas: PageMeta[];
   search: SearchEntry[];
   assets: Set<string>;
+  diagrams: DiagramJob[];
   problems: string[];
 }
 
@@ -70,15 +75,24 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
   const rel = (f: string) => posix(relative(repoRoot, f));
   const address = (segments: string[]) => (segments.length ? `${options.prefix}/${segments.join("/")}` : options.prefix || "/");
 
-  if (!existsSync(contentDir)) return { contentDir, pages, nav: [], metas: [], search: [], assets: new Set(), problems: [`${rel(contentDir)} does not exist`] };
+  if (!existsSync(contentDir))
+    return { contentDir, pages, nav: [], metas: [], search: [], assets: new Set(), diagrams: [], problems: [`${rel(contentDir)} does not exist`] };
 
   const read = (file: string, segments: string[]) => {
     const parsed = parseFrontmatter(withVersion(readFileSync(file, "utf8"), options.version));
     const name = file.split(sep).pop() ?? "";
     const isIndex = name.toLowerCase() === "index.md";
     const path = address([...segments, ...(isIndex ? [] : [pathSegment(name)])]);
-    const label = parsed.data.nav ?? (isIndex ? (segments.length ? options.labels.overview : options.labels.home) : parsed.data.title);
-    const page: SitePage = { file, rel: rel(file), local: posix(relative(contentDir, file)), path, meta: parsed.data, label, lexed: lex(parsed.body) };
+    const label = parsed.data.nav ?? (isIndex && segments.length < 2 ? (segments.length ? options.labels.overview : options.labels.home) : parsed.data.title);
+    const page: SitePage = {
+      file,
+      rel: rel(file),
+      local: posix(relative(contentDir, file)),
+      path,
+      meta: parsed.data,
+      label,
+      lexed: lex(parsed.body, { offset: parsed.lines }),
+    };
     for (const p of parsed.problems) problems.push(`${page.rel}: ${p}`);
     if (page.lexed.h1 !== undefined && page.lexed.h1 !== page.meta.title)
       problems.push(`${page.rel}: starts with \`# ${page.lexed.h1}\`, but its title is "${page.meta.title}"; make them the same or leave the heading out`);
@@ -139,8 +153,23 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
   }
 
   const assets = new Set<string>();
+  const diagrams: DiagramJob[] = [];
+  const diagramDir = options.diagrams ?? resolve(contentDir, "..", "..", "diagrams");
+  const renderer = mermaidVersion(repoRoot);
+  const diagram = (page: SitePage, code: string, line: number): DiagramTarget => {
+    const key = diagramKey(code, renderer);
+    diagrams.push({ key, code, file: page.rel, line });
+    const [light, dark] = DIAGRAM_THEMES.map((theme) => join(diagramDir, diagramFile(key, theme)));
+    if (!light || !dark || !existsSync(light) || !existsSync(dark))
+      return { kind: "problem", message: `the diagram has changed since it was last drawn; run \`${DIAGRAM_COMMAND}\` and commit ${rel(diagramDir)}/` };
+    const svg = readFileSync(light, "utf8");
+    const size = svgSize(svg);
+    if (!size) return { kind: "problem", message: `${rel(light)} has no width and height; run \`${DIAGRAM_COMMAND}\` again` };
+    return { kind: "diagram", light: rel(light), dark: rel(dark), ...size, labels: svgLabels(svg) };
+  };
   const resolver = (page: SitePage): Resolver => ({
     anchors: new Set(page.lexed.headings.map((h) => h.id)),
+    diagram: (code, line) => diagram(page, code, line),
     resolve(href: string, as: "link" | "image"): Target {
       const [pathPart = "", ...hashParts] = href.split("#");
       const hash = hashParts.join("#");
@@ -183,7 +212,7 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
   });
   for (const page of pages) {
     page.compiled = compile(page.lexed, resolver(page));
-    for (const p of page.compiled.problems) problems.push(`${page.rel}: ${p}`);
+    for (const p of page.compiled.problems) problems.push(located(page.rel, p));
   }
 
   const order = nav.flatMap((g) => g.items.map((i) => i.path));
@@ -214,5 +243,5 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
     };
   });
 
-  return { contentDir, pages, nav, metas, search, assets, problems };
+  return { contentDir, pages, nav, metas, search, assets, diagrams, problems };
 }

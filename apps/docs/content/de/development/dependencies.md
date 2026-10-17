@@ -156,6 +156,7 @@ Die Schriftdateien sind unveränderte Subsets und behalten ihre Namen. `pnpm rel
 | `@tanstack/react-router` | MIT | Ein Routenbaum pro Sprache; jede Adresse lädt den Chunk ihrer Seite |
 | `marked` (nur Build) | MIT | Der Markdown-Lexer des Content-Builds; Seiten werden zur Build-Zeit kompiliert, sodass er nie in den Browser gelangt |
 | `image-size` (nur Build) | MIT | Breite und Höhe jedes Bildes, damit Seiten beim Laden der Bilder nicht verspringen |
+| `mermaid` (nur Build) | MIT | Zeichnet die Diagramme der Seiten beim Build in Headless-Chromium als SVG-Dateien; nichts von seinem Code erreicht den Browser |
 
 ### Build-, Test- und Showcase-Werkzeuge
 
@@ -173,7 +174,7 @@ Keines davon ist Teil eines veröffentlichten Pakets oder des Builds der Konsole
 | `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Beispielverkehr durch das Gateway in `pnpm seed` |
 | `vitest`, `@vitest/coverage-v8`, `happy-dom` | MIT | Unit- und Komponententests mit Coverage |
 | `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom` | MIT | Tests aus Sicht dessen, was eine Person sieht |
-| `@playwright/test` | Apache-2.0 | End-to-End-Tests |
+| `@playwright/test` | Apache-2.0 | End-to-End-Tests und das Headless-Chromium, das die Diagramme der Dokumentation zeichnet |
 | `@axe-core/playwright`, `axe-core` | MPL-2.0 | Barrierefreiheitsprüfungen in den End-to-End-Tests |
 | `pngjs` | MIT | Liest Screenshots in den Geometrieprüfungen des Showcases |
 | `astro`, `@astrojs/react`, `@astrojs/mdx` | MIT | Der Showcase |
