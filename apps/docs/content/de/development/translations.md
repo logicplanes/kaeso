@@ -14,11 +14,11 @@ Jedes Wort, das Kaeso einer Person zeigt, gibt es auf Englisch, Deutsch und vere
 | E-Mails | Eine Funktion pro E-Mail in `crates/kaeso-mail/src/templates.rs` | Den Tests des Mail-Crates ([E-Mails](architecture/emails.md#sprachen)) |
 | Diese Dokumentation | `apps/docs/content/<locale>/` und `apps/docs/src/i18n/messages` | `check:content` und dem Typecheck ([Dokumentation schreiben](documentation.md#übersetzen)) |
 
-Was das Gateway in seine eigenen Antworten schreibt, etwa Fehlermeldungen und die Namen von Rechten, kommt auf Englisch an; die Konsole übersetzt, was sie kennt.
+Das Gateway schreibt seine eigenen Antworten, etwa Fehlermeldungen und die Namen von Rechten, auf Englisch; die Konsole übersetzt, was sie kennt ([was das Gateway schreibt](#was-das-gateway-schreibt)).
 
 ## Hausstil
 
-Jede Sprache folgt derselben Stimme: kurz, schlicht, ein Satz, keine Füllwörter. Die Bedeutung übersetzen, nicht die Wörter, und so kurz bleiben wie das Englische.
+Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Die Bedeutung übersetzen, nicht die Wörter, und so kurz bleiben wie das Englische.
 
 | | Englisch | Deutsch | Vereinfachtes Chinesisch |
 | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Jede Sprache folgt derselben Stimme: kurz, schlicht, ein Satz, keine Füllwörte
 | Anführungszeichen | "…" | „…“ | “…” |
 | Interpunktion | | | Volle Breite (，。：；？（）), ohne Leerzeichen drumherum; ein Leerzeichen zwischen chinesischen und lateinischen Wörtern, Ziffern oder Code (`3 个密钥`, `API 密钥`) |
 
-Deutsch ist etwa ein Drittel länger als Englisch: Layouts müssen das aushalten, ohne kurze Beschriftungen abzuschneiden, Beschreibungen passen weiterhin in eine Zeile, Buttons behalten ihre Breite und Tabellen laufen nicht über. Chinesisch ist kürzer, braucht aber die volle Zeilenhöhe; nie kleiner setzen. Deutsch behält etablierte Begriffe wie Token, Playground und Budget, statt deutsche Wörter dafür zu erfinden.
+Deutsch ist etwa ein Drittel länger als Englisch. Layouts müssen das aushalten: Beschriftungen werden nicht abgeschnitten, Beschreibungen passen weiterhin in eine Zeile, Buttons behalten ihre Breite und Tabellen laufen nicht über. Chinesisch ist kürzer, braucht aber die volle Zeilenhöhe; nie kleiner setzen. Deutsch behält etablierte Begriffe wie Token, Playground und Budget, statt deutsche Wörter dafür zu erfinden.
 
 Nie übersetzt werden: Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, models.dev), Modell-IDs, IDs und Schlüsselpräfixe, Code, Einstellungen (`KAESO_*`), Pfade, Feldnamen, Rechte (`keys.all.view`), HTTP-Methoden und Statuscodes, Einheiten, die die Bibliothek formatiert, und die Namen von Personen und Organisationen.
 
@@ -104,7 +104,7 @@ Nie übersetzt werden: Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, mod
 - Eine Person wählt unter **Einstellungen** › **Konto** › **Darstellung** › **Sprache**: Automatisch, English, Deutsch oder 简体中文. Die Wahl wird an ihrem Konto gespeichert (`PATCH me` mit `locale`, gelesen aus `auth/session`), sodass sie ihr in jeden Browser folgt.
 - **Automatisch**, der Standard, nimmt die erste Sprache des Browsers, die die Konsole hat (`navigator.languages`: `de-AT` ist Deutsch, jedes Chinesisch ist vereinfachtes Chinesisch), fällt auf Englisch zurück und folgt dem Browser, wenn sich dessen Sprache ändert.
 - Der Browser hält eine Kopie der Wahl des Kontos (`kaeso:locale`), sodass schon das erste Rendern, die Anmeldung eingeschlossen, in ihr erscheint. Englisch lädt nichts weiter; Deutsch und Chinesisch laden ihre Kataloge (den der Konsole und den der Bibliothek, je ein Chunk) vor dem ersten Rendern.
-- `src/i18n/sync.tsx` wechselt, wenn die Sitzung etwas anderes sagt, weil die Wahl in einem anderen Browser getroffen wurde. Der Wechsel zeichnet die Konsole in der neuen Sprache neu; die Seite, ihre Daten und ihre Position bleiben.
+- Meldet die Sitzung eine Wahl, die in einem anderen Browser getroffen wurde, wechselt `src/i18n/sync.tsx` zu ihr. Der Wechsel zeichnet die Konsole in der neuen Sprache neu; die Seite, ihre Daten und ihre Position bleiben.
 
 ### Texte schreiben
 
@@ -175,7 +175,7 @@ root.render(
 
 - Ohne `LocaleProvider` ist alles Englisch.
 - `resolveUiLocale` bildet ein BCP-47-Tag auf eine mitgelieferte Sprache ab: `de-AT` ist `de`, `zh-Hans` ist `zh-CN`, alles andere `en`. `loadUiMessages` gibt für Englisch `{}` zurück und lädt nichts.
-- Für einen Sprachwechsel den neuen Katalog laden und den Provider mit beiden rendern; bis er da ist, das alte Paar behalten.
+- Für einen Sprachwechsel den neuen Katalog laden und den Provider dann mit neuer Sprache und neuem Katalog zugleich rendern; bis der Katalog da ist, das alte Paar behalten.
 - Der Provider setzt auch die Sprache der Formatierer (`formatNumber`, `formatDate`, `formatRelative`, `formatUSD` und andere), die einfache Funktionen sind; `setFormatLocale(locale, messages)` tut dasselbe ohne React. Die eigenen Texte einer App nutzen ihre eigenen Kataloge, und `formatMessage(template, values, locale)` formatiert ICU-Nachrichten auf dieselbe Weise.
 
 ## Der Showcase

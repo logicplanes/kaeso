@@ -4,18 +4,18 @@ description: Jede direkte Abhängigkeit, warum es sie gibt, ihre Lizenz und die 
 order: 7
 ---
 
-Kaeso steht unter der MIT-Lizenz, und alles, was es ausliefert, hängt nur von permissiv lizenziertem Code ab. Eine neue Abhängigkeit bekommt im selben Pull Request eine Zeile auf dieser Seite, mit dem Grund, warum sie nötig ist, und ihrer Lizenz.
+Kaeso steht unter der MIT-Lizenz, und alles, was es ausliefert, hängt nur von permissiv lizenziertem Code ab. Eine neue Abhängigkeit bekommt im selben Pull Request eine Zeile auf dieser Seite, die sagt, warum sie nötig ist und unter welcher Lizenz sie steht.
 
 ## Lizenzrichtlinie
 
 | Was ausgeliefert wird | Erlaubte Lizenzen | Geprüft von |
 | --- | --- | --- |
 | Das Gateway | MIT, MIT-0, Apache-2.0 (auch mit der LLVM-Ausnahme), BSD-2-Clause, BSD-3-Clause, ISC, Unicode-3.0, Unicode-DFS-2016, Zlib und die [Ausnahmen](#ausnahmen) unten | `cargo deny check` mit der `deny.toml` im Wurzelverzeichnis |
-| `kaeso-kpp`, `kaeso-codecs` | Dieselbe Liste ohne Ausnahmen, und überhaupt keine Runtime- oder HTTP-Crates | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` mit `crates/kaeso-codecs/deny.toml` |
+| `kaeso-kpp`, `kaeso-codecs` | Dieselbe Liste ohne Ausnahmen; `tokio`, `reqwest`, `hyper` und `axum` sind verboten | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` mit `crates/kaeso-codecs/deny.toml` |
 | `@logicplanes/kaeso-ui`, `@logicplanes/kaeso-tokens` | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, für ihre Produktionsabhängigkeiten | `pnpm licenses:check` (`scripts/licenses.mjs`) |
 | Die Konsole und die Dokumentation | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, für jedes Paket, dessen Code in ihrem Build steckt | `pnpm licenses:check`, nach `pnpm build` |
 
-`cargo deny check` lehnt außerdem Crates aus unbekannten Registries oder Git-Repositorys ab, ebenso Wildcard-Versionen, zurückgezogene Crates und Crates mit Sicherheitsmeldungen. GPL-, LGPL- und AGPL-Code ist in nichts, was Kaeso ausliefert, je erlaubt. npm-Pakete sind in den `package.json`-Dateien auf exakte Versionen gepinnt, und Cargo-Versionen sind in `Cargo.lock` festgeschrieben.
+`cargo deny check` lehnt außerdem Crates aus unbekannten Registries oder Git-Repositorys ab, ebenso Wildcard-Versionen, zurückgezogene Crates und Crates mit Sicherheitsmeldungen. GPL-, LGPL- und AGPL-Code ist in nichts, was Kaeso ausliefert, je erlaubt. npm-Pakete sind in den `package.json`-Dateien auf exakte Versionen gepinnt; Cargo-Versionen sind in `Cargo.lock` festgeschrieben.
 
 ## Rust
 
@@ -66,7 +66,7 @@ Kaeso steht unter der MIT-Lizenz, und alles, was es ausliefert, hängt nur von p
 
 ### KPP
 
-Der Bibliothekscode von `kaeso-kpp` und `kaeso-codecs` darf nur `serde`, `serde_json` (mit `raw_value`), `bytes`, `thiserror`, `indexmap`, `base64` und `mime` verwenden. Alles andere braucht hier eine Zeile.
+Der Bibliothekscode von `kaeso-kpp` und `kaeso-codecs` darf nur `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` verwenden; alles andere braucht die Zustimmung des Maintainers und hier eine Zeile. Genutzt werden:
 
 | Crate | Verwendet von | Warum | Lizenz |
 | --- | --- | --- | --- |
@@ -88,7 +88,7 @@ Tests, Benchmarks und Werkzeuge dürfen mehr verwenden, nie als normale Abhängi
 
 ### Ausnahmen
 
-Transitive Crates, deren Lizenz permissiv ist, aber nicht auf der Liste von KPP steht. Jede ist nur für dieses Crate erlaubt, in der `deny.toml` im Wurzelverzeichnis.
+Transitive Crates unter einer permissiven Lizenz, die nicht auf der Liste der erlaubten steht. Jede Ausnahme steht in der `deny.toml` im Wurzelverzeichnis und gilt nur für dieses Crate; die Richtlinie von KPP hat keine.
 
 | Crate | Eingebunden über | Lizenz | Warum sie akzeptabel ist |
 | --- | --- | --- | --- |

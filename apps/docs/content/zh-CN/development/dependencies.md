@@ -4,14 +4,14 @@ description: 每个直接依赖、引入它的原因、它的许可证，以及�
 order: 7
 ---
 
-Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证的代码。新增依赖时，要在同一个拉取请求中为它在本页添加一行，写明需要它的原因及其许可证。
+Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证的代码。新增依赖时，要在同一个拉取请求中为它在本页添加一行，写明为什么需要它以及它采用什么许可证。
 
 ## 许可证政策
 
 | 发布内容 | 允许的许可证 | 检查方式 |
 | --- | --- | --- |
 | 网关 | MIT、MIT-0、Apache-2.0（也包括带 LLVM 例外的版本）、BSD-2-Clause、BSD-3-Clause、ISC、Unicode-3.0、Unicode-DFS-2016、Zlib，以及下面列出的[例外](#例外) | 使用根目录的 `deny.toml` 运行 `cargo deny check` |
-| `kaeso-kpp`、`kaeso-codecs` | 同一份列表，但没有例外，且完全不使用运行时或 HTTP crate | 使用 `crates/kaeso-codecs/deny.toml` 运行 `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
+| `kaeso-kpp`、`kaeso-codecs` | 同一份列表，但没有例外；禁止使用 `tokio`、`reqwest`、`hyper` 和 `axum` | 使用 `crates/kaeso-codecs/deny.toml` 运行 `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | `@logicplanes/kaeso-ui`、`@logicplanes/kaeso-tokens` | 对其生产依赖：MIT、ISC、BSD-2-Clause、BSD-3-Clause、Apache-2.0、0BSD | `pnpm licenses:check`（`scripts/licenses.mjs`） |
 | 控制台和文档 | 对代码进入其构建产物的每个包：MIT、ISC、BSD-2-Clause、BSD-3-Clause、Apache-2.0、0BSD | 在 `pnpm build` 之后运行 `pnpm licenses:check` |
 
@@ -66,7 +66,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 
 ### KPP
 
-`kaeso-kpp` 和 `kaeso-codecs` 的库代码只能使用 `serde`、`serde_json`（启用 `raw_value`）、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`。其他任何依赖都需要在这里添加一行。
+`kaeso-kpp` 和 `kaeso-codecs` 的库代码只能使用 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`；其他任何依赖都需要维护者同意，并在这里添加一行。目前使用的有：
 
 | Crate | 使用方 | 原因 | 许可证 |
 | --- | --- | --- | --- |
@@ -88,7 +88,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 
 ### 例外
 
-许可证宽松但不在 KPP 列表中的传递依赖 crate。每一项都只针对该 crate 在根目录的 `deny.toml` 中放行。
+许可证宽松、但不在允许列表中的传递依赖 crate。每个例外都写在根目录的 `deny.toml` 中，只对该 crate 生效；KPP 的政策没有例外。
 
 | Crate | 引入方 | 许可证 | 可以接受的原因 |
 | --- | --- | --- | --- |
