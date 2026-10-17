@@ -1,9 +1,9 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useSidebar, IconButton, NavSheet, PortalContainer, Toaster, Sidebar, ThemeProvider, TooltipProvider, icons } from "@logicplanes/kaeso-ui";
+import { useSidebar, IconButton, NavSheet, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeSelect, TooltipProvider, icons } from "@logicplanes/kaeso-ui";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
-import { DocsLanguageSelect, DocsLocale, DocsThemeSelect, docsText, useDocsLang } from "~/lib/locale";
+import { DocsLanguageSelect, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
 import { localizedPath } from "~/lib/languages";
 
 const clean = (p: string) => p.replace(/\.html$/, "").replace(/\/$/, "") || "/";
@@ -54,7 +54,7 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
       <Sidebar.Footer>
         <div className="grid w-full grid-cols-2 gap-4">
           <DocsLanguageSelect />
-          <DocsThemeSelect />
+          <ThemeSelect fullWidth />
         </div>
       </Sidebar.Footer>
     </Sidebar>

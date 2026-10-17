@@ -11,7 +11,7 @@ import CodeView from "~/components/CodeView.astro";
 
 ## 选择主题
 
-`ThemeProvider` 会记住用户的选择（跟随系统、浅色或深色），并在文档上设置 `data-theme`。`ThemeMenu` 是对应的控件；`useTheme()` 用于读取和设置（`theme` 是所选项，`resolvedTheme` 是实际显示的主题）。
+`ThemeProvider` 会记住用户的选择（跟随系统、浅色或深色），并在文档上设置 `data-theme`。`ThemeMenu`（带菜单的图标按钮）和 `ThemeSelect`（以文字显示所选项的选择框）是对应的控件；`useTheme()` 用于读取和设置（`theme` 是所选项，`resolvedTheme` 是实际显示的主题）。页面上的每个 `ThemeProvider` 都会跟随同一选择。
 
 <CodeView
   code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";

@@ -1,9 +1,9 @@
 import { useLocation } from "@tanstack/react-router";
-import { IconButton, Sidebar, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
+import { IconButton, Sidebar, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
 import { homePath } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
-import { LanguageMenu } from "./language-menu";
+import { LanguageSelect } from "./language-select";
 import { openSearch } from "./search-store";
 
 export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
@@ -28,8 +28,10 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
         ))}
       </Sidebar.Content>
       <Sidebar.Footer>
-        <LanguageMenu />
-        <ThemeMenu />
+        <div className="grid w-full grid-cols-2 gap-4">
+          <LanguageSelect />
+          <ThemeSelect fullWidth />
+        </div>
       </Sidebar.Footer>
     </Sidebar>
   );

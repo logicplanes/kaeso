@@ -61,7 +61,7 @@ A link is written between files, as GitHub follows it: `[keys](../console/api-ke
 | `src/site/` | Loads a language's site module, its search index and the library's messages, each once |
 | `src/page/` | The page (title, description, content, previous and next, Edit on GitHub, "On this page"), not found, and a page that can't load |
 | `src/markdown/` | The page format (`ast.ts`) and its drawing with library components (`render.tsx`) |
-| `src/shell/` | `AppFrame` with the sidebar, the search, the language menu, the theme, links through the router, toasts |
+| `src/shell/` | `AppFrame` with the sidebar, the search, the language and theme selects, links through the router, toasts |
 | `src/i18n/` | The languages and their addresses, the remembered preference, and the site's own words in `messages/` |
 
 The frame is the console's: `AppFrame` with its Skip to content link and `Sidebar`, the wordmark alone at the top left, 28px in and 28px down, the panel inset on the chrome, and the phone bar and navigation sheet below 1024px. A page is laid out like the console's settings pages: a `title-lg` title and a `body-lg` description in a 640px column; text is `body-lg`, headings `title` (`##`) and `title-sm` (`###`), code in `CodeBlock`, callouts in `Banner`, tables in `Table` inside a horizontal `ScrollArea`. From 1280px, "On this page" (`TableOfContents`) stands to the right; its column is kept on pages without it, so the text never moves between pages.

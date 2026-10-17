@@ -4,6 +4,7 @@ export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "kaeso:theme";
+const THEME_EVENT = "kaeso:theme-change";
 
 const modalitySource = `if(!window.__kModality){window.__kModality=1;document.addEventListener("pointerdown",function(){d.setAttribute("data-k-pointer","")},true);document.addEventListener("keydown",function(e){if(!e.metaKey&&!e.ctrlKey&&!e.altKey){d.removeAttribute("data-k-pointer")}},true)}`;
 
@@ -64,8 +65,13 @@ export function ThemeProvider({ children, defaultTheme = "system", target }: The
     setSystem(systemTheme());
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
     const onChange = () => setSystem(mq.matches ? "dark" : "light");
+    const follow = (event: Event) => setThemeState((event as CustomEvent<ThemePreference>).detail);
     mq?.addEventListener("change", onChange);
-    return () => mq?.removeEventListener("change", onChange);
+    window.addEventListener(THEME_EVENT, follow);
+    return () => {
+      mq?.removeEventListener("change", onChange);
+      window.removeEventListener(THEME_EVENT, follow);
+    };
   }, [defaultTheme]);
 
   useEffect(() => {
@@ -81,6 +87,7 @@ export function ThemeProvider({ children, defaultTheme = "system", target }: The
       if (next === "system") localStorage.removeItem(THEME_STORAGE_KEY);
       else localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {}
+    window.dispatchEvent(new CustomEvent<ThemePreference>(THEME_EVENT, { detail: next }));
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => ({ theme, resolvedTheme: theme === "system" ? system : theme, setTheme }), [theme, system, setTheme]);

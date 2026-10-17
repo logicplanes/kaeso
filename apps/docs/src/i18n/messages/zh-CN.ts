@@ -6,7 +6,7 @@ export const zhCN: Messages = {
   "site.navigation": "文档",
   "nav.introduction": "简介",
   "nav.overview": "概览",
-  "language.current": "语言：{language}",
+  "language.label": "语言",
   "search.open": "搜索",
   "search.placeholder": "搜索文档",
   "search.empty": "没有匹配项，换个词试试。",
