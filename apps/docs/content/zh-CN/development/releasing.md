@@ -93,6 +93,7 @@ git push origin dev
 6. **部署网站**：从该版本的标签（例如 `v0.2.0`）部署，方法见[网站](#网站)。发布预发布版本后这一步是可选的，因为网站随后描述的是该预发布版本。
 
 ```bash
+git fetch origin --tags
 git checkout v0.2.0
 ```
 

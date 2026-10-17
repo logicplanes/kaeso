@@ -93,6 +93,7 @@ git push origin dev
 6. **Die Websites bereitstellen**, vom Tag des Releases, etwa `v0.2.0`, wie unter [Die Websites](#die-websites) beschrieben. Nach einem Pre-Release ist das optional, denn die Websites beschreiben dann das Pre-Release.
 
 ```bash
+git fetch origin --tags
 git checkout v0.2.0
 ```
 
