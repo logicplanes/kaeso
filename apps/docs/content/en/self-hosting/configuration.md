@@ -32,6 +32,12 @@ The gateway is configured with `KAESO_*` environment variables, optionally backe
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with an error in the app's format (503) and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send the headers of a request, and how long a connection may sit idle between two requests, before the gateway closes it; 1s to 10m. A request that is being answered, such as a long stream, is never cut by it. |
 
+### Browser apps
+
+| Variable | TOML key | Type | Default | What it does |
+| --- | --- | --- | --- | --- |
+| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | text | — | Comma-separated origins of the web apps that may call the model API from a browser, such as `https://app.example.com,http://localhost:5173`: scheme, host and port, without a path. Only these get CORS headers, and only on `/v1`; with none listed, Kaeso sends no CORS headers at all. `*` and values that are no origin stop the gateway at startup. See [calling from a browser](../api/model-api.md#calling-from-a-browser). |
+
 ### Databases
 
 | Variable | TOML key | Type | Default | What it does |

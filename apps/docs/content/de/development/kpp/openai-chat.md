@@ -101,7 +101,7 @@ Ein unbekannter Schlüssel, dessen Name mit `header:` beginnt oder `.` enthält,
 
 | Wire-Feld | KPP | Hinweise |
 |---|---|---|
-| `id`, `model` | `Response.id`, `.model` | |
+| `id`, `model` | `Response.id`, `.model` | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `object` | keins | Immer `chat.completion`; ein anderer Wert oder keiner: Form `object`. |
 | `created`, `service_tier`, `system_fingerprint`, `metadata`, `moderation` | Extras | Eine Antwort ohne `created` in ihren Extras, etwa eine aus einem anderen Dialekt, bekommt `EncodeCtx::created_at` oder `0`. |
 | `choices` | `choices[0]` | Mehr als eine Auswahl: `Unsupported` (`n`); keine: `ProviderError`; ein anderer `index` als 0: Extras `choice.index`. |

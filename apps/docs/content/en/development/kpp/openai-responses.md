@@ -107,7 +107,7 @@ The `id` and `status` of message and function call items (`msg_…`, `fc_…`) a
 
 | Wire field | KPP | Notes |
 | --- | --- | --- |
-| `id`, `model` | `Response.id`, `.model` typed | |
+| `id`, `model` | `Response.id`, `.model` typed | From another format, the provider's id as it is ([reply ids](cross-format.md#reply-ids)). |
 | `status` `completed` | `stop = EndTurn`, or `ToolUse` when `output` holds a `function_call` | |
 | `status` `incomplete` + `incomplete_details.reason` `max_output_tokens` / `content_filter` / other | `stop = MaxTokens` / `ContentFilter` / `Other(reason)` | Other statuses (`in_progress`, `cancelled`, `queued`): `Other(status)`; the exact `status` and `incomplete_details` come back from overrides. |
 | `status` `failed` + `error {code, message}` | `decode_response` returns the error | Kind from `error.code` (`ResponseErrorCode`) alone, by every code of the [error table](#errors-errorresponse) and the codes listed under it, for example `server_error` → `ProviderError`, `rate_limit_exceeded` → `RateLimited`, `vector_store_timeout` → `Timeout`, `invalid_prompt` → `InvalidRequest`, `cyber_policy` → `ContentFiltered`; other or missing codes → `ProviderError`. Without a message: `The provider reported that the response failed.` The whole object is kept in `raw`. It is not an error body, so a Responses app gets an `ErrorResponse` with the message, the status, `type` and `code` of the kind. |

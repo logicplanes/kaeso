@@ -129,7 +129,7 @@ Schema `Message`。
 
 | Wire 字段 | KPP | 说明 |
 |---|---|---|
-| `id`、`model` | `id`、`model` | |
+| `id`、`model` | `id`、`model` | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `content[]` | `blocks` | 与[内容块](#内容块)相同；工具 ID 和名称通过 `EgressCtx` 映射回原值。 |
 | `stop_reason` `end_turn` / `max_tokens` / `stop_sequence` / `tool_use` / `pause_turn` / `refusal` | `stop` `EndTurn` / `MaxTokens` / `StopSequence(s)` / `ToolUse` / `PauseTurn` / `Refusal` | |
 | `stop_reason` `model_context_window_exceeded` | `MaxTokens` 加 form `spelling:stop_reason` | 输出被上下文窗口截断；Anthropic 应用会收到原样的值。 |

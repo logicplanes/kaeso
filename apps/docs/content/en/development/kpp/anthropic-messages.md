@@ -129,7 +129,7 @@ Schema `Message`.
 
 | Wire field | KPP | Notes |
 |---|---|---|
-| `id`, `model` | `id`, `model` | |
+| `id`, `model` | `id`, `model` | From another format, the provider's id as it is ([reply ids](cross-format.md#reply-ids)). |
 | `content[]` | `blocks` | As for [content blocks](#content-blocks); tool ids and names are mapped back through `EgressCtx`. |
 | `stop_reason` `end_turn` / `max_tokens` / `stop_sequence` / `tool_use` / `pause_turn` / `refusal` | `stop` `EndTurn` / `MaxTokens` / `StopSequence(s)` / `ToolUse` / `PauseTurn` / `Refusal` | |
 | `stop_reason` `model_context_window_exceeded` | `MaxTokens` plus form `spelling:stop_reason` | The output was cut by the context window; Anthropic apps get the exact value back. |

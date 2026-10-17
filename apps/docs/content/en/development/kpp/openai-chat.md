@@ -101,7 +101,7 @@ An unknown key whose name starts with `header:` or contains `.` cannot be carrie
 
 | Wire field | KPP | Notes |
 |---|---|---|
-| `id`, `model` | `Response.id`, `.model` | |
+| `id`, `model` | `Response.id`, `.model` | From another format, the provider's id as it is ([reply ids](cross-format.md#reply-ids)). |
 | `object` | none | Always `chat.completion`; another value, or none: form `object`. |
 | `created`, `service_tier`, `system_fingerprint`, `metadata`, `moderation` | extras | A reply without `created` in its extras, such as one from another dialect, gets `EncodeCtx::created_at`, or `0`. |
 | `choices` | `choices[0]` | More than one choice: `Unsupported` (`n`); none: `ProviderError`; an `index` other than 0: extras `choice.index`. |

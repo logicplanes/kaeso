@@ -2,10 +2,10 @@ use std::path::{Path, PathBuf};
 
 use toml::{Table, Value};
 
-use super::Config;
 use super::settings::{
     Kind, PROVIDER_ENV_PREFIX, REQUIRED, Setting, parse_provider_env, setting, settings,
 };
+use super::{AllowedOrigins, Config};
 
 pub trait Source {
     fn var(&self, name: &str) -> Option<String>;
@@ -154,7 +154,7 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
             });
         }
     }
-    let config: Config = Value::Table(table)
+    let mut config: Config = Value::Table(table)
         .try_into()
         .map_err(|e: toml::de::Error| {
             let message = e.message().to_owned();
@@ -165,6 +165,8 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
                 .map_or("configuration", |s| &s.key);
             ConfigError::invalid(key, format!("is invalid: {message}"))
         })?;
+    config.cors.origins = AllowedOrigins::parse(&config.cors.allowed_origins)
+        .map_err(|e| ConfigError::invalid("cors.allowed_origins", e.to_string()))?;
     config.validate()?;
     Ok(config)
 }
@@ -695,6 +697,49 @@ mod tests {
             );
         }
         assert!(load(&Map::minimal().set("KAESO_INSTANCE_ACCOUNT_CREATION", "anyone")).is_err());
+    }
+
+    #[test]
+    fn cors_origins_are_off_by_default_and_checked_at_startup() {
+        let c = load(&Map::minimal()).unwrap();
+        assert!(c.cors.origins.is_empty());
+        let c = load(&Map::minimal().set("KAESO_CORS_ALLOWED_ORIGINS", "")).unwrap();
+        assert!(c.cors.origins.is_empty());
+        let c = load(&Map::minimal().set(
+            "KAESO_CORS_ALLOWED_ORIGINS",
+            "https://App.example.com/, http://localhost:5173",
+        ))
+        .unwrap();
+        assert_eq!(
+            c.cors.origins.iter().collect::<Vec<_>>(),
+            ["http://localhost:5173", "https://app.example.com"]
+        );
+        let file = Map::minimal().set("KAESO_CONFIG", "/etc/kaeso.toml").file(
+            "/etc/kaeso.toml",
+            "[cors]\nallowed_origins = \"https://app.example.com\"\n",
+        );
+        assert!(
+            load(&file)
+                .unwrap()
+                .cors
+                .origins
+                .allows("https://app.example.com")
+        );
+        for (bad, reason) in [
+            ("*", "must not be `*`"),
+            ("https://app.example.com,*", "must not be `*`"),
+            ("https://app.example.com/chat", "has a path, query or user"),
+            ("app.example.com", "is not an http or https origin"),
+        ] {
+            let err = load(&Map::minimal().set("KAESO_CORS_ALLOWED_ORIGINS", bad))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with("KAESO_CORS_ALLOWED_ORIGINS (cors.allowed_origins) ")
+                    && err.contains(reason),
+                "{err}"
+            );
+        }
     }
 
     #[test]

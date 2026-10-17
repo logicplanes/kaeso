@@ -129,7 +129,7 @@ Schema `Message`.
 
 | Wire-Feld | KPP | Hinweise |
 |---|---|---|
-| `id`, `model` | `id`, `model` | |
+| `id`, `model` | `id`, `model` | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `content[]` | `blocks` | Wie bei den [Content-Blöcken](#content-blöcke); Tool-IDs und -Namen werden über `EgressCtx` zurückübersetzt. |
 | `stop_reason` `end_turn` / `max_tokens` / `stop_sequence` / `tool_use` / `pause_turn` / `refusal` | `stop` `EndTurn` / `MaxTokens` / `StopSequence(s)` / `ToolUse` / `PauseTurn` / `Refusal` | |
 | `stop_reason` `model_context_window_exceeded` | `MaxTokens` plus form `spelling:stop_reason` | Die Ausgabe wurde vom Kontextfenster abgeschnitten; Anthropic-Apps erhalten den genauen Wert zurück. |

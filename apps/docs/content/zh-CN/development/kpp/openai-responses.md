@@ -107,7 +107,7 @@ OpenAI Responses，即 `POST /v1/responses`（含流式）和 `POST /v1/response
 
 | Wire 字段 | KPP | 说明 |
 | --- | --- | --- |
-| `id`、`model` | `Response.id`、`.model` 类型化 | |
+| `id`、`model` | `Response.id`、`.model` 类型化 | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `status` `completed` | `stop = EndTurn`；当 `output` 含有 `function_call` 时为 `ToolUse` | |
 | `status` `incomplete` + `incomplete_details.reason` `max_output_tokens` / `content_filter` / 其他 | `stop = MaxTokens` / `ContentFilter` / `Other(reason)` | 其他状态（`in_progress`、`cancelled`、`queued`）：`Other(status)`；确切的 `status` 和 `incomplete_details` 通过覆盖项还原。 |
 | `status` `failed` + `error {code, message}` | `decode_response` 返回该错误 | 错误类型只取自 `error.code`（`ResponseErrorCode`），依据[错误表](#错误errorresponse)中的每个错误码以及表下列出的错误码，例如 `server_error` → `ProviderError`，`rate_limit_exceeded` → `RateLimited`，`vector_store_timeout` → `Timeout`，`invalid_prompt` → `InvalidRequest`，`cyber_policy` → `ContentFiltered`；其他错误码或缺少错误码 → `ProviderError`。没有消息时：`The provider reported that the response failed.` 整个对象保存在 `raw` 中。它不是错误响应体，因此 Responses 应用得到的是一个 `ErrorResponse`，带有该消息以及该错误类型对应的状态码、`type` 和 `code`。 |

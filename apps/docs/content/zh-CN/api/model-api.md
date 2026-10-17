@@ -75,6 +75,20 @@ Chat Completions 没有用于模型推理内容的字段。当 Chat Completions 
 | `kaeso-provider` | 处理请求的服务商，在模型确定后提供，包括错误响应 |
 | `kaeso-model` | 服务商的模型 ID，在模型确定后提供，包括错误响应 |
 
+## 从浏览器调用
+
+只有当另一个源的 API 以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出你的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头；请参阅[浏览器应用](../self-hosting/configuration.md#浏览器应用)。列出之后，仅在 `/v1` 上：
+
+- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥，以 204 应答且不带响应体：`Access-Control-Allow-Origin` 为该源，`Access-Control-Allow-Methods: GET, POST`，`Access-Control-Max-Age: 7200`，`Access-Control-Allow-Headers` 中是所请求的、属于官方 SDK 会发送的请求头：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key` 和 `x-stainless-…`。预检请求不是模型请求：不会被记录到日志、不计费，也不计入限额。
+- **应答。** 对已列出源的每个应答（包括错误）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, retry-after, retry-after-ms`，让应用可以读取这些响应头。
+- **其他源**不会收到 CORS 响应头，因此浏览器会拦截调用；它们的预检请求会得到空的 204。`/v1` 上的每个应答都带有 `Vary: Origin`，让缓存区分这些应答。
+- **精确匹配源。** 协议、主机和端口必须一致：`https://app.example.com` 既不允许 `http://app.example.com`，也不允许 `https://www.app.example.com`。`*` 会被拒绝，因为它会让任何网站都能用访问者持有的密钥发送请求。
+- **不使用 Cookie。** Kaeso 从不发送 `Access-Control-Allow-Credentials`，因为密钥放在请求头中。Platform API、健康检查和指标从不应答跨源请求。
+
+两个 SDK 都只有在应用传入 `dangerouslyAllowBrowser: true` 时才会在浏览器中运行。
+
+> 使用某个页面的任何人都能读取该页面持有的密钥。请为浏览器应用单独创建一个密钥：只有推理访问权限、有效期短、只能调用所需的模型并设有严格的限额；或者由你自己的后端发放短期密钥。请参阅 [API 密钥](../console/api-keys.md)。
+
 ## Kaeso 不做的事
 
 - **重试。** Kaeso 对每个请求只发送一次。在错误允许的情况下，SDK 会自行重试。

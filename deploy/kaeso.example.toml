@@ -7,6 +7,9 @@ shutdown_grace = "30s"
 [server]
 header_read_timeout = "30s"
 
+[cors]
+allowed_origins = ""
+
 [postgres]
 pool_size = 20
 

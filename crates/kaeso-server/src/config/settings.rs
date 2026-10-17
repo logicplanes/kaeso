@@ -78,6 +78,7 @@ const ROWS: &[Row] = &[
     s("trusted_proxies", "KAESO_TRUSTED_PROXIES", Text, Some("127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"), false, "Comma-separated networks of reverse proxies whose `X-Forwarded-For` is believed, for client addresses in logs, sign-in throttling and the API key throttle. `trusted_proxies = \"\"` in the TOML file trusts no proxy; an empty variable keeps the default."),
     s("shutdown_grace", "KAESO_SHUTDOWN_GRACE", Text, Some("30s"), false, "How long in-flight requests and streams may run after a shutdown signal."),
     s("server.header_read_timeout", "KAESO_SERVER_HEADER_READ_TIMEOUT", Text, Some("30s"), false, "How long a client may take to send the headers of a request, and how long a connection may sit idle between two requests, before the gateway closes it; 1s to 10m."),
+    s("cors.allowed_origins", "KAESO_CORS_ALLOWED_ORIGINS", Text, None, false, "Comma-separated origins of the web apps that may call the model API from a browser, such as `https://app.example.com`, never `*`; only these get CORS headers, and only on `/v1`."),
     s("postgres.url", "KAESO_POSTGRES_URL", Text, None, true, "PostgreSQL connection URL. Required."),
     s("postgres.pool_size", "KAESO_POSTGRES_POOL_SIZE", Integer, Some("20"), false, "Maximum PostgreSQL connections per gateway instance."),
     s("clickhouse.url", "KAESO_CLICKHOUSE_URL", Text, None, true, "ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Required."),
