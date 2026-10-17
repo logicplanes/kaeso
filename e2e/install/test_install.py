@@ -195,6 +195,10 @@ def test_the_gateway_gets_no_more_database_rights_than_it_needs(install):
 
 
 def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
+    assert {name: install.health.get(name) for name in ("updater", "docker-proxy")} == {
+        "updater": "healthy",
+        "docker-proxy": "healthy",
+    }
     status = owner.get("/platform/v1/instance/updates")
     assert status.status_code == 200, status.text
     assert status.json()["updater"]["state"] == "ready", status.json()
