@@ -4,16 +4,20 @@ description: How the gateway learns about releases, what a release carries for t
 order: 5
 ---
 
-```text
-GitHub releases API ◀── gateway (update_check job, instance/updates/*) ──▶ PostgreSQL
-                              │  bearer token, internal network "updates"
-                              ▼
-                           updater ──▶ github.com (release.json, compose.yaml), api.github.com (attestations), ghcr.io
-                              │  internal network "docker"
-                              ▼
-                         docker-proxy ──▶ /var/run/docker.sock
-                              │
-updater ──▶ maintenance volume ◀── Caddy (updating page, JSON 503s)
+```mermaid
+flowchart LR
+  accTitle: How an install learns about releases and updates
+  accDescr: The gateway checks GitHub's releases API, keeps its state in PostgreSQL and asks the updater over the internal network updates with a bearer token. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io, reaches Docker only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
+  gateway[Gateway] -- checks for releases --> releases[GitHub releases API]
+  gateway --> postgres[(PostgreSQL)]
+  gateway -- bearer token, network updates --> updater[Updater]
+  updater -- release.json, compose.yaml --> github[github.com]
+  updater -- attestations --> api[api.github.com]
+  updater -- images --> ghcr[ghcr.io]
+  updater -- network docker --> proxy[docker-proxy]
+  proxy --> socket[Docker socket]
+  updater -- maintenance flag --> maintenance[(Volume maintenance)]
+  caddy[Caddy] -- updating page, JSON 503s --> maintenance
 ```
 
 ## The gateway
