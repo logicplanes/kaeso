@@ -58,6 +58,26 @@ for (const colorScheme of ["light", "dark"] as const) {
   }
 }
 
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`the navigation sheet and the search stay within the policy in the ${colorScheme} theme`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      const violations = await underPolicy(page);
+      await page.goto("/zh-CN/components/button");
+      await hydrated(page);
+      await page.getByRole("button", { name: "打开导航" }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "搜索" }).first().click();
+      await page.getByPlaceholder("搜索页面、组件和属性").fill("Select");
+      await expect(page.getByRole("option").first()).toBeVisible();
+      expect(await violations()).toEqual([]);
+    });
+  }
+});
+
 test("moving between pages, languages and themes stays within the policy", async ({ page }) => {
   const violations = await underPolicy(page);
   await page.goto("/components/button");
