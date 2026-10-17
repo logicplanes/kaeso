@@ -56,7 +56,7 @@ function manifest(version) {
     commit: sha(version).slice(0, 40),
     manual: !!r?.manual,
     manual_since: r?.manual ? version : null,
-    migrations: { postgres: "20261017120001_updates", clickhouse: "0002_usage_rollups" },
+    migrations: { postgres: "20261017140001_updates", clickhouse: "0002_usage_rollups" },
     updater_protocol: 1,
     images: { gateway: image("gateway"), console: image("console"), updater: image("updater") },
     compose: { name: "compose.yaml", sha256: sha(`compose ${version}`) },

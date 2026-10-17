@@ -227,7 +227,7 @@ mod tests {
                 "updater": { "name": "ghcr.io/logicplanes/kaeso-updater", "digest": format!("sha256:{D}") },
             },
             "compose": { "name": "compose.yaml", "sha256": D },
-            "migrations": { "postgres": "20261017120001_updates", "clickhouse": "0002_usage_rollups" },
+            "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" },
             "manual_since": "0.1.4",
             "notes": "fields this version doesn't know are ignored",
         })
