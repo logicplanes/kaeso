@@ -15,6 +15,12 @@ const trim = (lines) => {
   return lines.slice(first, last + 1);
 };
 
+const leading = (lines) =>
+  Math.max(
+    0,
+    lines.findIndex((line) => line.trim()),
+  );
+
 const concat = (newer, older) => {
   if (!newer.length) return older;
   if (!older.length) return newer;
@@ -29,14 +35,15 @@ const parse = (text) => {
   const start = lines.findIndex(sectionName);
   const end = lines.findIndex((line, i) => i > start && linkName(line));
   const sections = [];
-  for (const line of lines.slice(start, end === -1 ? undefined : end)) {
-    if (sectionName(line)) sections.push({ name: sectionName(line), heading: line, body: [] });
+  for (const [i, line] of lines.slice(start, end === -1 ? undefined : end).entries()) {
+    if (sectionName(line)) sections.push({ name: sectionName(line), heading: line, body: [], line: start + i + 1 });
     else sections.at(-1).body.push(line);
   }
   return {
     head: trim(lines.slice(0, start)),
-    sections: sections.map((section) => ({ ...section, body: trim(section.body) })),
+    sections: sections.map((section) => ({ ...section, bodyLine: section.line + 1 + leading(section.body), body: trim(section.body) })),
     links: end === -1 ? [] : trim(lines.slice(end)),
+    linksLine: end === -1 ? null : end + 1 + leading(lines.slice(end)),
   };
 };
 
@@ -45,14 +52,14 @@ const format = ({ head, sections, links }) => {
   return `${paragraphs(blocks).join("\n")}\n`;
 };
 
-const outline = (body) => {
-  const parts = [{ group: null, topic: null, lines: [] }];
-  for (const line of body) {
+const outline = (body, bodyLine = 1) => {
+  const parts = [{ group: null, topic: null, lines: [], line: bodyLine }];
+  for (const [i, line] of body.entries()) {
     const group = /^### (.+)/.exec(line)?.[1].trim();
     const topic = /^#### (.+)/.exec(line)?.[1].trim();
     const current = parts.at(-1);
-    if (group) parts.push({ group, topic: null, lines: [] });
-    else if (topic && current.group) parts.push({ group: current.group, topic, lines: [] });
+    if (group) parts.push({ group, topic: null, lines: [], line: bodyLine + i + 1 });
+    else if (topic && current.group) parts.push({ group: current.group, topic, lines: [], line: bodyLine + i + 1 });
     else current.lines.push(line);
   }
   return parts;
@@ -61,7 +68,7 @@ const outline = (body) => {
 const fold = (bodies) => {
   let intro = [];
   const groups = new Map();
-  for (const { group, topic, lines } of bodies.flatMap(outline)) {
+  for (const { group, topic, lines } of bodies.flatMap((body) => outline(body))) {
     if (!group) {
       intro = concat(intro, trim(lines));
       continue;
@@ -124,7 +131,7 @@ const slug = (text) =>
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 
-const entry = (id, body) => {
+const entry = (id, body, bodyLine) => {
   const seen = new Map();
   const unique = (base) => {
     const count = seen.get(base) ?? 0;
@@ -132,19 +139,20 @@ const entry = (id, body) => {
     return count ? `${base}-${count + 1}` : base;
   };
   const markdown = (lines) => trim(lines).join("\n");
-  const [intro, ...parts] = outline(body);
+  const startOf = (lines, line) => line + leading(lines);
+  const [intro, ...parts] = outline(body, bodyLine);
   const sections = [];
-  for (const { group, topic, lines } of parts) {
-    if (!topic) sections.push({ name: group, id: unique(`${id}-${slug(group)}`), markdown: markdown(lines), topics: [] });
+  for (const { group, topic, lines, line } of parts) {
+    if (!topic) sections.push({ name: group, id: unique(`${id}-${slug(group)}`), markdown: markdown(lines), line: startOf(lines, line), topics: [] });
     else {
       const section = sections.at(-1);
-      section.topics.push({ name: topic, id: unique(`${section.id}-${slug(topic)}`), markdown: markdown(lines) });
+      section.topics.push({ name: topic, id: unique(`${section.id}-${slug(topic)}`), markdown: markdown(lines), line: startOf(lines, line) });
     }
   }
   const filled = sections
     .map((section) => ({ ...section, topics: section.topics.filter((topic) => topic.markdown) }))
     .filter((section) => section.markdown || section.topics.length);
-  return { id, intro: markdown(intro.lines), sections: filled };
+  return { id, intro: markdown(intro.lines), introLine: startOf(intro.lines, intro.line), sections: filled };
 };
 
 const isEmpty = ({ intro, sections }) => !intro && !sections.length;
@@ -152,14 +160,14 @@ const isEmpty = ({ intro, sections }) => !intro && !sections.length;
 const RELEASE_HEADING = /^## \[([^\]]+)\](?:\s+-\s+(\d{4}-\d{2}-\d{2}))?(\s+\[YANKED\])?\s*$/i;
 
 export function history(text) {
-  if (!text.split("\n").some(sectionName)) return { repository: null, definitions: "", unreleased: null, releases: [] };
-  const { sections, links } = parse(text);
+  if (!text.split("\n").some(sectionName)) return { repository: null, definitions: "", definitionsLine: null, unreleased: null, releases: [] };
+  const { sections, links, linksLine } = parse(text);
   const repository = repositoryOf(links);
   const versions = sections
     .filter(({ name }) => name !== "Unreleased")
-    .map(({ name, heading, body }) => {
+    .map(({ name, heading, body, bodyLine }) => {
       const [, , date, yanked] = RELEASE_HEADING.exec(heading) ?? [];
-      return { ...entry(`v${name}`, body), version: name, date: date ?? null, prerelease: !isStable(name), yanked: Boolean(yanked) };
+      return { ...entry(`v${name}`, body, bodyLine), version: name, date: date ?? null, prerelease: !isStable(name), yanked: Boolean(yanked) };
     });
   const latest = versions.find(({ prerelease, yanked }) => !prerelease && !yanked)?.version ?? null;
   const releases = versions.map((release, i) => {
@@ -173,12 +181,13 @@ export function history(text) {
     };
   });
   const pending = sections.find(({ name }) => name === "Unreleased");
-  const unreleased = pending && entry("unreleased", pending.body);
+  const unreleased = pending && entry("unreleased", pending.body, pending.bodyLine);
   const since = releases[0]?.version ?? null;
   const compare = /^\[Unreleased\]: (\S+)/.exec(unreleasedLink(links) ?? "")?.[1] ?? null;
   return {
     repository,
     definitions: links.filter(linkName).join("\n"),
+    definitionsLine: linksLine,
     unreleased: unreleased && !isEmpty(unreleased) ? { ...unreleased, since, compare: since && compare } : null,
     releases,
   };

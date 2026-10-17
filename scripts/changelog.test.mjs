@@ -181,12 +181,15 @@ test("the history leaves out an [Unreleased] section with nothing but headings",
   assert.equal(history(changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"])).unreleased, null);
 });
 
+const lineOf = (text, line) => text.split("\n").indexOf(line) + 1;
+
 test("the history keeps lines under [Unreleased] apart from every release, with the compare view since the newest one", () => {
   const text = sample.replace("### Fixed\n", "### Fixed\n\n- Quiet streams time out.\n");
   assert.deepEqual(history(text).unreleased, {
     id: "unreleased",
     intro: "",
-    sections: [{ name: "Fixed", id: "unreleased-fixed", markdown: "- Quiet streams time out.", topics: [] }],
+    introLine: lineOf(text, "## [Unreleased]") + 2,
+    sections: [{ name: "Fixed", id: "unreleased-fixed", markdown: "- Quiet streams time out.", line: lineOf(text, "- Quiet streams time out."), topics: [] }],
     since: "0.3.0-rc.1",
     compare: `${repo}/compare/v0.3.0-rc.1...HEAD`,
   });
@@ -259,15 +262,30 @@ test("a release keeps its introduction, its sections and their topics, with the 
   const { releases } = history(sample);
   const release = releases.find(({ version }) => version === "0.2.0");
   assert.equal(release.intro, "A release about batches.");
+  assert.equal(release.introLine, lineOf(sample, "A release about batches."));
   assert.deepEqual(release.sections, [
     {
       name: "Added",
       id: "v0.2.0-added",
       markdown: "- A batch page.",
-      topics: [{ name: "Model API", id: "v0.2.0-added-model-api", markdown: "- Batch results that span\n  two lines." }],
+      line: lineOf(sample, "- A batch page."),
+      topics: [
+        {
+          name: "Model API",
+          id: "v0.2.0-added-model-api",
+          markdown: "- Batch results that span\n  two lines.",
+          line: lineOf(sample, "- Batch results that span"),
+        },
+      ],
     },
-    { name: "Added", id: "v0.2.0-added-2", markdown: "- A second list under the same heading.", topics: [] },
-    { name: "Security", id: "v0.2.0-security", markdown: "- Keys are checked twice.", topics: [] },
+    {
+      name: "Added",
+      id: "v0.2.0-added-2",
+      markdown: "- A second list under the same heading.",
+      line: lineOf(sample, "- A second list under the same heading."),
+      topics: [],
+    },
+    { name: "Security", id: "v0.2.0-security", markdown: "- Keys are checked twice.", line: lineOf(sample, "- Keys are checked twice."), topics: [] },
   ]);
   assert.equal(releases[0].sections[0].markdown, "- Batches, which run:\n  - in the background,\n  - with [their own limits][limits].");
 });
@@ -280,7 +298,7 @@ test("the history hands on the link definitions, so reference links in entries r
 });
 
 test("a changelog without releases has no history, and one without an [Unreleased] link no addresses", () => {
-  assert.deepEqual(history("# Changelog\n"), { repository: null, definitions: "", unreleased: null, releases: [] });
+  assert.deepEqual(history("# Changelog\n"), { repository: null, definitions: "", definitionsLine: null, unreleased: null, releases: [] });
   const [only] = history(`# Changelog\n\n${first}\n`).releases;
   assert.equal(only.url, null);
   assert.equal(only.compare, null);
@@ -295,4 +313,24 @@ test("every release in CHANGELOG.md has a date and the anchor v and its version,
     assert.equal(id, `v${version}`);
   }
   assert.equal(releases.filter(({ latest }) => latest).length, 1);
+});
+
+const fragments = (text) => {
+  const log = history(text);
+  const entries = [...(log.unreleased ? [log.unreleased] : []), ...log.releases];
+  return entries.flatMap((entry) => [
+    { markdown: entry.intro, line: entry.introLine },
+    ...entry.sections.flatMap((section) => [{ markdown: section.markdown, line: section.line }, ...section.topics]),
+  ]);
+};
+
+test("every fragment the history hands on says the line of the file where it starts, and so do the definitions", () => {
+  for (const text of [sample, readFileSync(join(root, "CHANGELOG.md"), "utf8"), sample.replace("### Fixed\n", "### Fixed\n\n\n- Quiet streams time out.\n")]) {
+    const lines = text.split("\n");
+    for (const { markdown, line } of fragments(text)) {
+      if (markdown) assert.equal(lines.slice(line - 1, line - 1 + markdown.split("\n").length).join("\n"), markdown);
+    }
+    const { definitions, definitionsLine } = history(text);
+    assert.equal(lines[definitionsLine - 1], definitions.split("\n")[0]);
+  }
 });

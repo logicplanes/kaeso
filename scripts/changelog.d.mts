@@ -2,18 +2,21 @@ export interface ChangelogTopic {
   name: string;
   id: string;
   markdown: string;
+  line: number;
 }
 
 export interface ChangelogSection {
   name: string;
   id: string;
   markdown: string;
+  line: number;
   topics: ChangelogTopic[];
 }
 
 export interface ChangelogEntry {
   id: string;
   intro: string;
+  introLine: number;
   sections: ChangelogSection[];
 }
 
@@ -36,6 +39,7 @@ export interface ChangelogRelease extends ChangelogEntry {
 export interface ChangelogHistory {
   repository: string | null;
   definitions: string;
+  definitionsLine: number | null;
   unreleased: ChangelogUnreleased | null;
   releases: ChangelogRelease[];
 }

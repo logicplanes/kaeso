@@ -7,6 +7,7 @@ import { localizedHeadingIds } from "./scripts/localized-heading-ids.mjs";
 import { folderIndexes } from "./scripts/folder-indexes.mjs";
 import { sitemap } from "./scripts/sitemap.mjs";
 import { contentSecurityPolicy } from "./scripts/content-security-policy.mjs";
+import { refuseRawMarkup } from "./scripts/refuse-raw-markup.mjs";
 
 const ui = fileURLToPath(new URL("../../packages/ui/src", import.meta.url));
 
@@ -16,7 +17,7 @@ export default defineConfig({
   trailingSlash: "never",
   build: { format: "file" },
   integrations: [react(), mdx(), folderIndexes(), sitemap(), contentSecurityPolicy()],
-  markdown: { syntaxHighlight: false, rehypePlugins: [localizedHeadingIds] },
+  markdown: { syntaxHighlight: false, remarkPlugins: [refuseRawMarkup], rehypePlugins: [localizedHeadingIds] },
   devToolbar: { enabled: false },
   prefetch: { prefetchAll: true, defaultStrategy: "hover" },
   vite: {

@@ -93,6 +93,7 @@ git push origin dev
 6. **Deploy the sites** from the release's tag, such as `v0.2.0`, as described in [the sites](#the-sites). After a pre-release this is optional, since the sites then describe the pre-release.
 
 ```bash
+git fetch origin --tags
 git checkout v0.2.0
 ```
 

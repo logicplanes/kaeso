@@ -97,6 +97,97 @@ describe("buildChangelog", () => {
   });
 });
 
+describe("a changelog with markup that could run", () => {
+  const log = (entry: string) => `# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-09-01\n\n### Added\n\n${entry}\n`;
+  const FIRST = 9;
+  const problemsOf = (entry: string) => {
+    repo({ "CHANGELOG.md": log(entry) });
+    return buildChangelog(join(root, "CHANGELOG.md"), root).problems;
+  };
+  const refused = (line: number) => [`CHANGELOG.md: line ${line}: raw HTML is not allowed; write it in a code span or remove it`];
+
+  it("fails the build with the file and the line instead of drawing raw HTML", () => {
+    repo({ "CHANGELOG.md": log('- A <img src=x onerror="alert(1)"> picture.') });
+    const built = buildChangelog(join(root, "CHANGELOG.md"), root);
+    expect(built.problems).toEqual(refused(FIRST));
+  });
+
+  it("refuses tags, comments, processing instructions, declarations and HTML blocks", () => {
+    expect(problemsOf("- A <script>alert(1)</script> script.")).toEqual(refused(FIRST));
+    expect(problemsOf('- Fine.\n\n<div onclick="x()">block</div>')).toEqual(refused(FIRST + 2));
+    expect(problemsOf("- A <!-- hidden --> note.")).toEqual(refused(FIRST));
+    expect(problemsOf("- Fine.\n\n<!--\nhidden\n-->")).toEqual(refused(FIRST + 2));
+    expect(problemsOf("- A <?php echo 1; ?> instruction.")).toEqual(refused(FIRST));
+    expect(problemsOf("<!DOCTYPE html>")).toEqual(refused(FIRST));
+    expect(problemsOf("<table>\n<tr><td>cell</td></tr>\n</table>")).toEqual(refused(FIRST));
+  });
+
+  it("refuses a tag whose attributes continue on the next lines, at the line it starts on", () => {
+    expect(problemsOf("- Fine.\n\n- A picture <img\n  src=x\n  onerror=alert(1)> here.")).toEqual(refused(FIRST + 2));
+    expect(problemsOf("A picture <img\nsrc=x onerror=alert(1)>")).toEqual(refused(FIRST));
+  });
+
+  it("refuses a tag after an escaped backtick, which opens no code span", () => {
+    expect(problemsOf("- A \\`<img src=x onerror=alert(1)>\\` picture.")).toEqual(refused(FIRST));
+    expect(problemsOf("- A \\`<script>alert(1)</script>\\`")).toEqual(refused(FIRST));
+  });
+
+  it("refuses a tag after four spaces that only look like a fence, which is an indented code block only after a blank line", () => {
+    expect(problemsOf("Text\n    ```\n<script>alert(1)</script>\n    ```")).toEqual(refused(FIRST + 2));
+    expect(problemsOf("    ```\n\n<div>x</div>\n\n    ```")).toEqual(refused(FIRST + 2));
+  });
+
+  it("refuses a tag after a code span that a backslash does not escape, since code spans take no escapes", () => {
+    expect(problemsOf("- The `a \\` <i>` span.")).toEqual(refused(FIRST));
+  });
+
+  it("refuses raw HTML in a quote and in a table cell", () => {
+    expect(problemsOf("> A <b>quote</b>")).toEqual(refused(FIRST));
+    expect(problemsOf("| a | b |\n| - | - |\n| x | <b>y</b> |")).toEqual(refused(FIRST + 2));
+  });
+
+  it("fails the build for a link that is not http, https or mailto", () => {
+    expect(problemsOf("- A [link](javascript:alert(1)).")).toEqual([
+      'CHANGELOG.md: [1.0.0] links to "javascript:alert(1)": only http, https and mailto addresses, and relative links to files in content/, are allowed',
+    ]);
+    expect(problemsOf("- A [link][r].\n\n[r]: data:text/html,x")).toEqual([
+      'CHANGELOG.md: [1.0.0] links to "data:text/html,x": only http, https and mailto addresses, and relative links to files in content/, are allowed',
+    ]);
+  });
+
+  it("checks each fragment as it is drawn: markup that is code in the whole file but not alone is refused, and the other way round is accepted", () => {
+    const fenceOverHeading = (inside: string, after: string) => `- Fine.\n\n\`\`\`\ncode\n\n### Fixed\n\n${inside}\n\`\`\`${after}`;
+    expect(problemsOf(fenceOverHeading("<b>x</b>", ""))).toEqual(refused(FIRST + 7));
+    expect(problemsOf("```\ncode\n\n### Fixed\n\n```\n\n<b>x</b>")).toEqual([]);
+  });
+
+  it("names the line in the file for a fragment under a heading of its own, in a topic and in an older release", () => {
+    repo({
+      "CHANGELOG.md":
+        "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n#### Console\n\n- <i>Fine</i>.\n\n## [1.0.0] - 2026-09-01\n\nIntro.\n\n### Added\n\n- Fine.\n\n- <u>x</u>\n",
+    });
+    expect(buildChangelog(join(root, "CHANGELOG.md"), root).problems).toEqual(refused(19).concat(refused(9)));
+  });
+
+  it("accepts HTML written as code, in fences, in indented code, as an autolink or as an entity", () => {
+    const entry = [
+      "- The `<meta>` tag and ``<style>`` element.",
+      "- See <https://example.com> and &lt;b&gt;, 1 < 2 and 3 > 2.",
+      "",
+      "  ```html",
+      "  <script>alert(1)</script>",
+      "  ```",
+      "",
+      "      <b>indented code</b>",
+      "",
+      "~~~",
+      "<div>fenced</div>",
+      "~~~",
+    ].join("\n");
+    expect(problemsOf(entry)).toEqual([]);
+  });
+});
+
 describe("the changelog page", () => {
   const changelog = buildChangelog(fixture, docsRoot);
 

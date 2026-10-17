@@ -128,7 +128,7 @@ describe("Markdown", () => {
     expect(screen.getByRole("cell", { name: "60" })).toBeInTheDocument();
   });
 
-  it("keeps the words of a table whole: short columns on one line, long ones wrapping only between words", () => {
+  it("draws a table as a named region with its headers and cells, and lets only long identifiers break at their underscores", () => {
     const summary = "Start the gateway, the console and the databases with Docker Compose, then send the first request";
     draw([
       {
@@ -149,19 +149,17 @@ describe("Markdown", () => {
         ],
       },
     ]);
-    const quick = screen.getByRole("link", { name: "Quick start" });
-    expect(quick).not.toHaveClass("wrap-anywhere");
-    expect(quick.closest("td")).toHaveClass("whitespace-nowrap");
-    expect(screen.getByRole("cell", { name: summary })).not.toHaveClass("whitespace-nowrap");
-    expect(screen.getByRole("cell", { name: summary })).toHaveClass("min-w-140");
-    expect(screen.getByRole("link", { name: /Point Claude Code/ })).not.toHaveClass("wrap-anywhere");
-    const short = screen.getByText("metrics_listen");
-    expect(short).toHaveClass("whitespace-nowrap");
-    expect(short.querySelector("wbr")).toBeNull();
-    expect(screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN").querySelectorAll("wbr")).toHaveLength(2);
+    expect(screen.getByRole("region", { name: "Table: Page, Setting, What to do" })).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Page", "Setting", "What to do"]);
+    expect(screen.getByRole("link", { name: "Quick start" })).toHaveAttribute("href", "/get-started/quick-start");
+    expect(screen.getByRole("cell", { name: summary })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Point Claude Code/ })).toHaveAttribute("href", "https://kaeso.app/");
+    expect(screen.getByText("metrics_listen").querySelector("wbr")).toBeNull();
+    const long = screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
+    expect(long.querySelectorAll("wbr")).toHaveLength(2);
   });
 
-  it("measures Chinese by its width, so a short Chinese column stays on one line too", () => {
+  it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {
     render(
       <TextProvider locale="zh-CN">
         <Markdown
@@ -180,7 +178,8 @@ describe("Markdown", () => {
       </TextProvider>,
     );
     expect(screen.getByRole("region", { name: "表格：页面、内容" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "快速开始" })).toHaveClass("whitespace-nowrap");
-    expect(screen.getByRole("cell", { name: /启动网关/ })).toHaveClass("min-w-140");
+    expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["页面", "内容"]);
+    expect(screen.getByRole("cell", { name: "快速开始" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "启动网关控制台和数据库" })).toBeInTheDocument();
   });
 });

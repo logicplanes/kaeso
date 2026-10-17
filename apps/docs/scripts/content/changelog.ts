@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { relative, sep } from "node:path";
+import { Lexer, type Token, type Tokens } from "marked";
 import { history, type ChangelogEntry as Written } from "../../../../scripts/changelog.mjs";
 import type { Messages } from "../../src/i18n/messages/index.ts";
 import type { Block, ChangelogContent, ChangelogEntry, ChangelogGroup, NavGroup, PageMeta, SearchEntry, TocEntry } from "../../src/markdown/ast.ts";
@@ -23,12 +24,35 @@ const GROUPS: Readonly<Record<string, ChangelogGroup>> = {
   Security: "security",
 };
 
+const rawHtmlOffsets = (markdown: string): number[] => {
+  const found: number[] = [];
+  const visit = (tokens: Token[], raw: string, base: number) => {
+    let cursor = 0;
+    for (const token of tokens) {
+      const at = raw.indexOf(token.raw, cursor);
+      const offset = at === -1 ? base : base + at;
+      if (at !== -1) cursor = at + token.raw.length;
+      if (token.type === "html") found.push(offset);
+      const cells = token.type === "table" ? [...(token as Tokens.Table).header, ...(token as Tokens.Table).rows.flat()] : [];
+      const children = [
+        ...("tokens" in token && token.tokens ? token.tokens : []),
+        ...(token.type === "list" ? (token as Tokens.List).items : []),
+        ...cells.flatMap((cell) => cell.tokens),
+      ];
+      visit(children, token.raw, offset);
+    }
+  };
+  visit(new Lexer({ gfm: true }).lex(markdown), markdown, 0);
+  return found;
+};
+
 const posix = (p: string) => p.split(sep).join("/");
 
 export function buildChangelog(file: string, repoRoot: string): Changelog {
   const rel = posix(relative(repoRoot, file));
   if (!existsSync(file)) return { file, rel, content: { releases: [] }, words: [], problems: [`${rel} does not exist`] };
-  const log = history(readFileSync(file, "utf8"));
+  const markdown = readFileSync(file, "utf8");
+  const log = history(markdown);
   const written = [...(log.unreleased ? [log.unreleased] : []), ...log.releases];
   const anchors = new Set(written.flatMap((e) => [e.id, ...e.sections.flatMap((s) => [s.id, ...s.topics.map((t) => t.id)])]));
   const problems: string[] = [];
@@ -40,24 +64,32 @@ export function buildChangelog(file: string, repoRoot: string): Changelog {
       message: `links to ${href}: link to a full https address, or to a version on this page by its anchor, v and the version`,
     }),
   };
-  const fragment = (markdown: string, where: string): Block[] => {
+  const rawHtml = (source: string, line: number, limit: number) => {
+    const lines = rawHtmlOffsets(source)
+      .filter((offset) => offset < limit)
+      .map((offset) => line + source.slice(0, offset).split("\n").length - 1);
+    for (const at of new Set(lines)) problems.push(`${rel}: line ${at}: raw HTML is not allowed; write it in a code span or remove it`);
+  };
+  const fragment = (markdown: string, where: string, line: number): Block[] => {
     if (!markdown) return [];
-    const compiled = compile(lex(`${markdown}\n\n${log.definitions}`, { references: true }), resolver);
+    const source = `${markdown}\n\n${log.definitions}`;
+    rawHtml(source, line, markdown.length);
+    const compiled = compile(lex(source, { references: true }), resolver);
     for (const problem of compiled.problems) problems.push(`${rel}: [${where}] ${problem}`);
     for (const word of compiled.words) words.add(word);
     return compiled.blocks;
   };
   const entry = (e: Written, where: string): ChangelogEntry => ({
     id: e.id,
-    intro: fragment(e.intro, where),
+    intro: fragment(e.intro, where, e.introLine),
     sections: e.sections.map((s) => {
       const group = GROUPS[s.name];
       return {
         name: s.name,
         ...(group ? { group } : {}),
         id: s.id,
-        blocks: fragment(s.markdown, where),
-        topics: s.topics.map((t) => ({ name: t.name, id: t.id, blocks: fragment(t.markdown, where) })),
+        blocks: fragment(s.markdown, where, s.line),
+        topics: s.topics.map((t) => ({ name: t.name, id: t.id, blocks: fragment(t.markdown, where, t.line) })),
       };
     }),
   });
