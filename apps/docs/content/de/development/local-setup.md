@@ -4,18 +4,18 @@ description: Schritt für Schritt von einem frischen Klon zu einer laufenden Ins
 order: 1
 ---
 
-Diese Seite richtet alles auf dem eigenen Rechner ein: das aus dem Quellcode gebaute Gateway mit seinen Datenbanken, die Konsole, Beispieldaten und die Tests. Jeder Befehl läuft vom Wurzelverzeichnis des Repositorys aus.
+Diese Seite führt von einem frischen Klon zum aus dem Quellcode gebauten Gateway, zur Konsole mit Beispieldaten und zu bestandenen Tests. Jeder Befehl läuft vom Wurzelverzeichnis des Repositorys aus.
 
 ## Was benötigt wird
 
 | Werkzeug | Version | Genutzt für |
 | --- | --- | --- |
-| [Git](https://git-scm.com) | jede aktuelle | Den Code |
-| [Node.js](https://nodejs.org) | 24, wie in `.node-version` | Die Konsole, die UI-Bibliothek, die Dokumentation und die Skripte |
-| pnpm | 11, in `package.json` festgelegt und von Corepack installiert | Den TypeScript-Workspace |
-| [Rust](https://rustup.rs) über rustup | 1.99, in `rust-toolchain.toml` festgelegt und bei der ersten Nutzung installiert | Das Gateway und KPP |
-| [Docker](https://docs.docker.com/get-docker/) mit Compose | Docker Compose 2.24 oder neuer | Den Entwicklungs-Stack |
-| [Python](https://www.python.org) | 3.13 | Nur für die [End-to-End-Tests](testing.md#end-to-end-tests) |
+| [Git](https://git-scm.com) | Jede aktuelle | Den Code |
+| [Node.js](https://nodejs.org) | 24, wie in `.node-version` | Konsole, UI-Bibliothek, Dokumentation und Skripte |
+| pnpm | 11, in `package.json` festgelegt und von Corepack bereitgestellt | Den TypeScript-Workspace |
+| [Rust](https://rustup.rs) über rustup | 1.99, in `rust-toolchain.toml` festgelegt | Gateway und KPP |
+| [Docker](https://docs.docker.com/get-docker/) mit Compose | Compose 2.24 oder neuer | Den Entwicklungs-Stack |
+| [Python](https://www.python.org) | 3.13 | Nur die [End-to-End-Tests](testing.md#end-to-end-tests) |
 
 Corepack ist bei Node.js dabei. Einmal einschalten, dann stellt es genau die pnpm-Version bereit, die das Repository festlegt:
 
@@ -23,7 +23,7 @@ Corepack ist bei Node.js dabei. Einmal einschalten, dann stellt es genau die pnp
 corepack enable
 ```
 
-rustup liest `rust-toolchain.toml`, sobald `cargo` zum ersten Mal im Repository läuft, und installiert Rust 1.99 mit rustfmt, clippy und llvm-tools. `rustup show` erledigt das vorab.
+rustup installiert Rust 1.99 mit rustfmt, clippy und llvm-tools beim ersten `cargo`-Aufruf im Repository; `rustup show` erledigt das vorab.
 
 ## 1. Code holen
 
@@ -38,7 +38,7 @@ cd kaeso
 pnpm install
 ```
 
-Das installiert jedes Paket des TypeScript-Workspace: die Konsole, die Dokumentation, den Showcase und die Bibliotheken in `packages/`. Die Rust-Abhängigkeiten holt Cargo beim ersten Build von selbst.
+Das installiert Konsole, Dokumentation, Showcase und die Bibliotheken in `packages/`. Cargo holt die Rust-Abhängigkeiten beim ersten Build.
 
 ## 3. Entwicklungs-Stack starten
 
@@ -46,28 +46,32 @@ Das installiert jedes Paket des TypeScript-Workspace: die Konsole, die Dokumenta
 pnpm stack:up
 ```
 
-Das baut das Image des Gateways aus dem eigenen Checkout (`kaeso-dev-gateway`, aus `deploy/gateway.Dockerfile`), startet es in Docker mit PostgreSQL, ClickHouse, Valkey, Mailpit, einem Mock-Modellanbieter und einem Mock-Identitätsanbieter und wartet dann, bis jeder Dienst healthy ist. Der erste Build kompiliert das Gateway und dauert einige Minuten; spätere nutzen den Cache von Docker.
+Das baut das Image des Gateways aus dem Checkout (`kaeso-dev-gateway`, aus `deploy/gateway.Dockerfile`), startet es mit den Diensten unten und wartet, bis alle gesund sind. Der erste Build kompiliert das Gateway und dauert einige Minuten; spätere nutzen den Cache von Docker. Solange die Installation keine Benutzer hat, gibt der Befehl zum Schluss einen Einrichtungslink aus, `http://localhost:3000/setup#token=…`, den er über `kaeso setup-link` im Container des Gateways holt.
 
 | Dienst | Was er ist | Auf dem eigenen Rechner |
 | --- | --- | --- |
-| `gateway` | Das aus dem eigenen Checkout gebaute Gateway | `127.0.0.1:18080` |
+| `gateway` | Das aus dem Checkout gebaute Gateway | `127.0.0.1:18080` |
 | `postgres`, `clickhouse`, `valkey` | Die Datenbanken des Gateways, auch von den Rust-Tests genutzt | `127.0.0.1:55432`, `127.0.0.1:58123`, `127.0.0.1:56379` |
-| `mail` | Mailpit, das Anmeldelinks, Einladungen und Passwort-Zurücksetzungen abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
-| `provider` | Eine Mock-API für OpenAI und Anthropic, die jede Anfrage beantwortet, ohne einen echten Anbieter aufzurufen | Nur innerhalb des Stacks |
-| `idp` | Ein Mock-OpenID-Connect-Anbieter für Single Sign-on | `http://idp.localhost:18091` |
-| `master-key` | Schreibt den Hauptschlüssel des Gateways in ein Volume, bevor es startet | |
+| `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
+| `provider` | Eine nachgebildete OpenAI- und Anthropic-API, sodass kein echter Anbieter-Schlüssel nötig ist | Nur innerhalb des Stacks |
+| `idp` | Ein nachgebildeter OpenID-Connect-Anbieter für Single Sign-on | `http://idp.localhost:18091` |
+| `master-key` | Schreibt den Hauptschlüssel des Gateways vor dessen Start in ein Volume | |
 
-Der Stack ist das Compose-Projekt `kaeso-dev`, definiert in `deploy/compose.dev.yaml`. Ein zweiter Klon kann daneben einen eigenen Stack betreiben, wie unten unter Einen zweiten Stack betreiben beschrieben. Jede Modellanfrage geht an den Mock-Anbieter, daher ist kein echter Anbieter-Schlüssel nötig.
+Der Stack ist das Compose-Projekt `kaeso-dev`, definiert in `deploy/compose.dev.yaml`. Die Rust-Tests brauchen nur die Datenbanken und Mailpit, die auch ohne Gateway starten:
 
-## 4. Mit Beispieldaten füllen
+```bash
+docker compose -f deploy/compose.dev.yaml up -d --wait
+```
+
+## 4. Beispieldaten anlegen
 
 ```bash
 pnpm seed
 ```
 
-Das richtet die Installation über die Platform API ein, so wie es eine Person tun würde, und füllt sie: die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, Schlüsseln, Modellen, Aliassen und Limits, einige hundert Anfragen, die über das Gateway an den Mock-Anbieter gesendet werden, und 70 Tage ältere Anfragehistorie.
+Das richtet die Installation über die Platform API ein, wie es eine Person täte, und füllt sie: die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, Schlüsseln, Modellen, Aliassen und Limits, einigen Hundert Anfragen über das Gateway an den nachgebildeten Anbieter und 70 Tagen früherer Anfragehistorie.
 
-Um die Installation stattdessen von Hand einzurichten, diesen Schritt überspringen: `pnpm stack:up` gibt einen Einrichtungslink aus (`http://localhost:3000/setup#token=…`), solange die Installation keine Benutzer hat.
+Wer die Installation lieber von Hand einrichtet, überspringt diesen Schritt und öffnet den Einrichtungslink, den `pnpm stack:up` ausgegeben hat.
 
 ## 5. Konsole öffnen
 
@@ -75,9 +79,9 @@ Um die Installation stattdessen von Hand einzurichten, diesen Schritt übersprin
 pnpm dev
 ```
 
-Das baut die Bibliotheken in `packages/`, startet den Stack (und baut das Gateway neu, wenn sich sein Quellcode geändert hat) und stellt die Konsole unter http://localhost:3000 bereit. Sie lädt beim Speichern neu.
+Das baut die Bibliotheken in `packages/`, startet den Stack (und baut das Gateway neu, wenn sich sein Quellcode geändert hat) und liefert die Konsole unter http://localhost:3000 aus, die beim Speichern neu lädt.
 
-Als `owner@example.com` anmelden, Instanz-Admin und Inhaber der Organisation, oder als `lin@example.com`, ein Entwickler. Beide haben das Passwort `correct horse battery staple`. E-Mails, die das Gateway sendet, landen in Mailpit unter http://127.0.0.1:58025.
+Als `owner@example.com` anmelden, Instanz-Admin und Inhaber der Organisation, oder als `lin@example.com`, ein Entwickler. Beide haben das Passwort `correct horse battery staple`. E-Mails landen in Mailpit unter http://127.0.0.1:58025.
 
 ```text
 browser ─▶ http://localhost:3000 (Vite) ─▶ /platform, /v1 sent on to the gateway on 127.0.0.1:18080
@@ -85,23 +89,16 @@ browser ─▶ http://localhost:3000 (Vite) ─▶ /platform, /v1 sent on to the
 gateway ─▶ provider (mock OpenAI and Anthropic), mail (Mailpit), idp (mock single sign-on)
 ```
 
-Die öffentliche URL des Gateways ist die Adresse des Entwicklungsservers, sodass das Session-Cookie ein First-Party-Cookie ist und der `Origin`, den der Browser sendet, der ist, den das Gateway erwartet. Im Produktivbetrieb laufen Konsole und Gateway auf dieselbe Weise unter einer Domain, hinter einem Reverse Proxy.
+Die öffentliche URL des Gateways ist die Adresse des Entwicklungsservers. So ist das Sitzungscookie ein First-Party-Cookie, und der Browser sendet den `Origin`, den das Gateway erwartet. In Produktion liefert ein Reverse Proxy Konsole und Gateway auf die gleiche Weise unter einer Domain aus.
 
 ## 6. Tests ausführen
 
-Die TypeScript-Tests:
-
 ```bash
 pnpm test
-```
-
-Die Rust-Tests, die die Datenbanken des Stacks nutzen:
-
-```bash
 cargo test --workspace --all-features
 ```
 
-Jeder Rust-Test legt eigene Datenbanken an, sodass Tests parallel laufen und die Beispieldaten unberührt lassen. [Tests](testing.md) listet jede Suite, die End-to-End-Tests und die Prüfungen, die eine Änderung bestehen muss.
+`pnpm test` führt die TypeScript-Tests aus. Die Rust-Tests nutzen die Datenbanken des Stacks, und jeder Test legt eigene Datenbanken an; so laufen sie parallel und lassen die Beispieldaten unberührt. [Tests](testing.md) beschreibt jede Suite und die Prüfungen, die eine Änderung bestehen muss.
 
 ## Stack stoppen
 
@@ -109,11 +106,11 @@ Jeder Rust-Test legt eigene Datenbanken an, sodass Tests parallel laufen und die
 pnpm stack:down
 ```
 
-Das entfernt den Stack mit seinen Daten, einschließlich der Datenbanken der Rust-Tests; das nächste `pnpm stack:up` startet leer.
+Das entfernt den Stack mit allen Daten, auch den Datenbanken der Rust-Tests. Das nächste `pnpm stack:up` beginnt leer.
 
 ## Ports und Images ändern
 
-Die Ports des Stacks kommen aus `apps/console/scripts/stack.mjs`. Diese Variablen ändern sie: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT`, `KAESO_IDP_PORT` und `KAESO_PUBLIC_URL`. Liegen die Datenbanken woanders, finden die Rust-Tests sie über `KAESO_TEST_POSTGRES_URL`, `KAESO_TEST_CLICKHOUSE_URL` und `KAESO_TEST_VALKEY_URL`.
+Diese Variablen ändern die Ports des Stacks, deren Standardwerte in `apps/console/scripts/stack.mjs` stehen: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT` und `KAESO_IDP_PORT`. `KAESO_PUBLIC_URL` legt die Adresse der Konsole fest. Laufen die Datenbanken anderswo, zeigen `KAESO_TEST_POSTGRES_URL`, `KAESO_TEST_CLICKHOUSE_URL` und `KAESO_TEST_VALKEY_URL` den Rust-Tests den Weg.
 
 Um den Stack mit einem anderswo gebauten Gateway-Image zu betreiben, etwa einem Release, dieses angeben; der Stack nutzt es dann, statt selbst zu bauen:
 
@@ -123,7 +120,7 @@ KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:{{version}} pnpm stack:up
 
 ## Einen zweiten Stack betreiben
 
-Ein zweiter Klon bekommt einen eigenen Stack, wenn er einen anderen Projektnamen und andere Ports hat. `KAESO_STACK_PROJECT` benennt das Compose-Projekt (standardmäßig `kaeso-dev`) und danach das Image des Gateways; `pnpm stack:up`, `pnpm seed` und `pnpm stack:down` arbeiten dann nur mit diesem Projekt. Im zweiten Klon:
+Ein zweiter Klon kann neben dem ersten einen eigenen Stack betreiben, mit einem anderen Compose-Projekt und anderen Ports. `KAESO_STACK_PROJECT` benennt das Projekt (standardmäßig `kaeso-dev`) und danach das Image des Gateways; `pnpm stack:up`, `pnpm seed` und `pnpm stack:down` arbeiten dann nur mit diesem Projekt. Im zweiten Klon:
 
 ```bash
 export KAESO_STACK_PROJECT=kaeso-two KAESO_PUBLIC_URL=http://localhost:3001
@@ -132,37 +129,39 @@ export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223 KAESO_VALKEY_PORT=5
 pnpm dev --port 3001
 ```
 
-`pnpm seed` in derselben Shell füllt diesen Stack. Auf seine Datenbanken zeigen die Rust-Tests mit den `KAESO_TEST_…`-Variablen oben.
+`pnpm seed` in derselben Shell füllt diesen Stack.
 
 ## Das Gateway aus dem Quellcode ausführen
 
-Für ein Gateway, das sich in Sekunden neu starten lässt, mit Debugger oder zusätzlichem Logging, es mit Cargo gegen die Datenbanken des Stacks ausführen. Zuerst den Mock-Anbieter in einem zweiten Terminal starten, damit keine Anfrage einen echten Anbieter erreicht:
+Für ein Gateway, das sich in Sekunden neu starten lässt, mit Debugger oder zusätzlichem Logging, es mit Cargo gegen die Datenbanken des Stacks ausführen.
 
-```bash
-cargo run -p kaeso-testkit -- mock-provider 127.0.0.1:18090
-```
+1. In einem zweiten Terminal den nachgebildeten Anbieter starten, damit keine Anfrage einen echten Anbieter erreicht:
 
-Im ersten Terminal frische Datenbanken anlegen und ihre Einstellungen exportieren, beide Anbieter auf den Mock richten, eine öffentliche URL, einen Hauptschlüssel und E-Mail, die nur protokolliert wird, ergänzen, den Einrichtungslink ausgeben und dann das Gateway starten:
+   ```bash
+   cargo run -p kaeso-testkit -- mock-provider 127.0.0.1:18090
+   ```
 
-```bash
-export $(cargo run -q -p kaeso-testkit -- fresh-services)
-export KAESO_PROVIDERS_OPENAI_BASE_URL=http://127.0.0.1:18090
-export KAESO_PROVIDERS_ANTHROPIC_BASE_URL=http://127.0.0.1:18090
-export KAESO_PUBLIC_URL=http://localhost:3000
-export KAESO_LISTEN=127.0.0.1:8080
-export KAESO_MASTER_KEYS="$(cargo run -q -p kaeso -- master-key generate)"
-export KAESO_MAIL_TRANSPORT=log
-cargo run -q -p kaeso -- setup-link
-cargo run -p kaeso -- serve
-```
+2. Im ersten Terminal frische Datenbanken anlegen und ihre Einstellungen exportieren, beide Anbieter auf die Nachbildung zeigen lassen, eine öffentliche URL, eine Listen-Adresse, einen Hauptschlüssel und nur protokollierte E-Mails setzen, dann den Einrichtungslink ausgeben und das Gateway starten:
 
-Die Konsole in einem dritten Terminal dagegen bereitstellen:
+   ```bash
+   export $(cargo run -q -p kaeso-testkit -- fresh-services)
+   export KAESO_PROVIDERS_OPENAI_BASE_URL=http://127.0.0.1:18090
+   export KAESO_PROVIDERS_ANTHROPIC_BASE_URL=http://127.0.0.1:18090
+   export KAESO_PUBLIC_URL=http://localhost:3000
+   export KAESO_LISTEN=127.0.0.1:8080
+   export KAESO_MASTER_KEYS="$(cargo run -q -p kaeso -- master-key generate)"
+   export KAESO_MAIL_TRANSPORT=log
+   cargo run -q -p kaeso -- setup-link
+   cargo run -p kaeso -- serve
+   ```
 
-```bash
-KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev
-```
+3. In einem dritten Terminal die Konsole dagegen ausliefern und dann den Einrichtungslink öffnen:
 
-Dann den Einrichtungslink öffnen, den `setup-link` ausgegeben hat. Um stattdessen die echten Anbieter aufzurufen, die beiden Zeilen `KAESO_PROVIDERS_…` weglassen. Die Datenbanken bleiben bestehen, bis sie im ersten Terminal gelöscht werden:
+   ```bash
+   KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev
+   ```
+
+Um stattdessen die echten Anbieter anzusprechen, die beiden Zeilen mit `KAESO_PROVIDERS_…` weglassen. Die Datenbanken bleiben, bis sie im ersten Terminal gelöscht werden:
 
 ```bash
 cargo run -q -p kaeso-testkit -- drop-services "$KAESO_CLICKHOUSE_DATABASE"
@@ -172,17 +171,13 @@ Jede Einstellung steht unter [Konfiguration](../self-hosting/configuration.md).
 
 ## Generierter Code
 
-Zwei Dinge werden generiert statt geschrieben:
+- **`openapi.json`**, das Dokument der Platform API im Wurzelverzeichnis, wird aus dem Code des Gateways erzeugt. Nach einer Änderung an der Platform API neu erzeugen und mit der Änderung committen, zusammen mit dem Teil der Änderung, der die Konsole betrifft:
 
-- **`openapi.json`**, das Dokument der Platform API im Wurzelverzeichnis des Repositorys, entsteht aus dem Code des Gateways. Nach einer Änderung an der Platform API neu schreiben und mit der Änderung committen:
+  ```bash
+  cargo run -q -p kaeso -- openapi > openapi.json
+  ```
 
-```bash
-cargo run -q -p kaeso -- openapi > openapi.json
-```
-
-- **Der API-Client und der Routenbaum der Konsole.** `pnpm --filter kaeso-console generate` schreibt die Typen des Clients aus `openapi.json` und den Routenbaum aus `apps/console/src/routes`. Die Skripte `dev`, `build`, `typecheck`, `test` und `e2e` der Konsole führen es zuerst aus, und keine der beiden Ausgaben wird committet.
-
-Konsole und Gateway ändern sich daher gemeinsam: Eine Änderung an der Platform API aktualisiert `openapi.json` und die Konsole im selben Pull Request.
+- **API-Client und Routenbaum der Konsole.** `pnpm --filter kaeso-console generate` schreibt die Typen des Clients aus `openapi.json` und den Routenbaum aus `apps/console/src/routes`. Die Skripte `dev`, `build`, `typecheck`, `test` und `e2e` der Konsole führen es zuerst aus; keines der Ergebnisse wird committet.
 
 ## Die Dokumentations-Website
 
@@ -191,7 +186,7 @@ pnpm build:packages
 pnpm --filter kaeso-docs dev
 ```
 
-Die Website läuft unter http://localhost:4480 und lädt neu, sobald eine Seite in `apps/docs/content` gespeichert wird. `pnpm --filter kaeso-docs check:content` prüft jede Seite, jeden Link und jede Übersetzung, ohne sie zu starten. [Dokumentation schreiben](documentation.md) beschreibt den Rest.
+Die Website läuft unter http://localhost:4480 und lädt neu, sobald eine Seite in `apps/docs/content` gespeichert wird. [Dokumentation schreiben](documentation.md) beschreibt den Rest.
 
 ## Die UI-Bibliothek
 
@@ -200,4 +195,4 @@ pnpm build:packages
 pnpm --filter kaeso-showcase dev
 ```
 
-Der Showcase aller Komponenten läuft unter http://localhost:4321 und lädt neu, wenn sich der Quellcode der Bibliothek ändert. Konsole und Dokumentation lesen stattdessen den Build der Bibliothek: Nach einer Änderung an `packages/ui` oder `packages/tokens` `pnpm build:packages` ausführen und ihre Entwicklungsserver neu starten.
+Der Showcase läuft unter http://localhost:4321 und lädt neu, wenn sich der Quellcode der Bibliothek ändert. Konsole und Dokumentation lesen dagegen den Build der Bibliothek: nach Änderungen an `packages/ui` oder `packages/tokens` `pnpm build:packages` ausführen und ihre Entwicklungsserver neu starten.
