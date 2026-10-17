@@ -115,11 +115,15 @@ function expectCentredAndSmooth(samples: Sample[], key: "h" | "w" = "h") {
   const values = samples.map((s) => s[key]);
   const span = Math.max(...values) - Math.min(...values);
   expect(span).toBeGreaterThan(8);
-  samples.slice(1).forEach((s, i) => {
-    const previous = samples[i] ?? s;
-    const trace = samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
-    expect(Math.abs(s[key] - previous[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + (s.t - previous.t) / 40) + 2);
-  });
+  const trace = samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
+  let base = samples[0];
+  let last = samples[0];
+  for (const s of samples.slice(1)) {
+    if (!base || !last) break;
+    if (s.t > last.t) base = last;
+    expect(Math.abs(s[key] - base[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + (s.t - base.t) / 40) + 2);
+    last = s;
+  }
 }
 
 const moved = (samples: Sample[]) => Math.abs((samples.at(-1)?.h ?? 0) - (samples[0]?.h ?? 0)) > 8;

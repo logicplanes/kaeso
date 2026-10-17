@@ -116,10 +116,14 @@ function expectSmooth(samples: Sample[], key: "h" | "w", distance?: number) {
   const values = samples.map((s) => s[key]);
   const span = distance ?? Math.max(...values) - Math.min(...values);
   expect(span).toBeGreaterThan(8);
-  for (let i = 1; i < samples.length; i++) {
-    const elapsed = samples[i]!.t - samples[i - 1]!.t;
-    const trace = samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
-    expect(Math.abs(values[i]! - values[i - 1]!), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + elapsed / 40) + 2);
+  const trace = samples.map((x) => `${Math.round(x.t)}:${Math.round(x[key])}`).join(" ");
+  let base = samples[0];
+  let last = samples[0];
+  for (const s of samples.slice(1)) {
+    if (!base || !last) break;
+    if (s.t > last.t) base = last;
+    expect(Math.abs(s[key] - base[key]), trace).toBeLessThanOrEqual(span * Math.min(1, 0.25 + (s.t - base.t) / 40) + 2);
+    last = s;
   }
   expect(new Set(values.map(Math.round)).size).toBeGreaterThan(3);
 }
