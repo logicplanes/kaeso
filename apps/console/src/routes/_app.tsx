@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { isApiError } from "~/api/errors";
-import { membershipsQuery, sessionQuery } from "~/auth/session";
+import { membershipsQuery, sessionQuery } from "~/auth/session-queries";
 import { loadRouteGates } from "~/auth/route-gates-load";
 import { AppShell } from "~/shell/app-shell";
 import { GatewayUnreachable } from "~/shell/gateway-unreachable";

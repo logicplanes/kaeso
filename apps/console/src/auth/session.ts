@@ -3,17 +3,9 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { Membership, MyMembership, WhoAmI } from "~/api/generated/types";
+import { membershipsQuery, sessionQuery } from "./session-queries";
 
-export const sessionQuery = queryOptions({
-  queryKey: ["session"],
-  queryFn: async (): Promise<WhoAmI> => data(await api.GET("/platform/v1/auth/session")),
-  staleTime: 0,
-});
-
-export const membershipsQuery = queryOptions({
-  queryKey: ["me", "memberships"],
-  queryFn: async (): Promise<MyMembership[]> => data(await api.GET("/platform/v1/me/memberships")).data,
-});
+export { membershipsQuery, sessionQuery };
 
 export function useSession(): WhoAmI {
   return useSuspenseQuery(sessionQuery).data;

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { LogRange } from "~/api/queries/logs";
 import { LogsPage, type LogsSearch } from "~/features/project/logs/logs-page";
-import { parseDay } from "~/format/period";
+import { parseDay } from "~/format/period-search";
 
 const RANGES = new Set(["1h", "7d", "30d"]);
 const text = <K extends string>(name: K, v: unknown): Partial<Record<K, string>> => (typeof v === "string" && v ? ({ [name]: v } as Record<K, string>) : {});

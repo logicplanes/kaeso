@@ -1,4 +1,4 @@
-import { parseDay } from "~/format/period";
+import { parseDay } from "~/format/period-search";
 
 export interface AuditFilters {
   actor?: string;
