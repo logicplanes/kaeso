@@ -614,7 +614,10 @@ async fn rejections_are_errors_in_the_apps_format() {
             assert!(body["error"]["type"].as_str().is_some(), "{what}: {body}");
             assert_eq!(body["request_id"], request_id.as_str(), "{what}: {body}");
         } else {
-            assert!(!String::from_utf8_lossy(&bytes).contains(&request_id), "{what}");
+            assert!(
+                !String::from_utf8_lossy(&bytes).contains(&request_id),
+                "{what}"
+            );
             assert!(body["error"]["type"].as_str().is_some(), "{what}: {body}");
             assert!(body.get("type").is_none(), "{what}: {body}");
         }
@@ -628,12 +631,170 @@ async fn rejections_are_errors_in_the_apps_format() {
 }
 
 #[tokio::test]
+async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_words() {
+    let env = env().await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    for model in ["claude-opus-5-5", "claude-opus-4-5"] {
+        let r = env
+            .app
+            .post(
+                &format!("{base}/models"),
+                json!({ "provider": "anthropic", "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    }
+    let tool = json!({"type": "function", "function": {"name": "emit_token", "parameters": {"type": "object"}}});
+    let before = env.mock.received().len();
+    let mut body = chat("claude-opus-5-5", "Reply with exactly: pong");
+    body["tools"] = json!([tool]);
+    body["tool_choice"] = json!("required");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"],
+        json!({
+            "message": "The model `claude-opus-5-5` does not accept `tool_choice` `required`; send `auto` and ask for the tool in the prompt.",
+            "type": "invalid_request_error",
+            "param": "tool_choice",
+            "code": null,
+        })
+    );
+    body["tool_choice"] = json!({"type": "function", "function": {"name": "emit_token"}});
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body.clone()),
+    )
+    .await;
+    assert!(
+        r.text().contains("a named function in `tool_choice`"),
+        "{}",
+        r.text()
+    );
+    assert!(!r.text().contains("\"tool\""), "{}", r.text());
+    let responses = json!({
+        "model": "claude-opus-5-5",
+        "input": "Reply with exactly: pong",
+        "tools": [{"type": "function", "name": "emit_token", "parameters": {"type": "object"}}],
+        "tool_choice": {"type": "function", "name": "emit_token"},
+    });
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(responses),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.text().contains("a named function in `tool_choice`"),
+        "{}",
+        r.text()
+    );
+    let mut own = messages("claude-opus-5-5", "Reply with exactly: pong");
+    own["tools"] = json!([{"name": "emit_token", "input_schema": {"type": "object"}}]);
+    own["tool_choice"] = json!({"type": "any"});
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(own.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The model `claude-opus-5-5` does not accept `tool_choice` `any`; send `auto` and ask for the tool in the prompt."
+    );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+
+    body["tool_choice"] = json!("none");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(sent["tool_choice"], json!({"type": "none"}));
+    assert_eq!(sent["tools"][0]["name"], "emit_token");
+    own["tool_choice"] = json!({"type": "auto"});
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(own)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    let before = env.mock.received().len();
+    let minimal =
+        json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "minimal"}});
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(minimal)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "reasoning.effort");
+    let mut adaptive = messages("claude-opus-4-5", "Hi");
+    adaptive["thinking"] = json!({"type": "adaptive"});
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(adaptive)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The model `claude-opus-4-5` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+    );
+    let mut effort = messages("claude-haiku-4-5", "Hi");
+    effort["output_config"] = json!({"effort": "low"});
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(effort)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.text().contains("does not accept an effort level"),
+        "{}",
+        r.text()
+    );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+    let mut budget = chat("claude-opus-4-5", "Hi");
+    budget["reasoning_effort"] = json!("high");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(budget),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(
+        sent["thinking"],
+        json!({"type": "enabled", "budget_tokens": 24576})
+    );
+    assert!(sent.get("output_config").is_none(), "{sent}");
+}
+
+#[tokio::test]
 async fn anthropic_apps_must_send_max_tokens_and_errors_name_the_request_id() {
     let env = env().await;
     let before = env.mock.received().len();
     let mut body = messages("claude-haiku-4-5", "Hi");
     body.as_object_mut().unwrap().remove("max_tokens");
-    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body.clone())).await;
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(body.clone()),
+    )
+    .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(
         r.json(),
@@ -655,7 +816,10 @@ async fn anthropic_apps_must_send_max_tokens_and_errors_name_the_request_id() {
         "/v1/messages",
         Some(&env.key),
         true,
-        Some(messages("claude-haiku-4-5", "[mock:error=recorded-thinking]")),
+        Some(messages(
+            "claude-haiku-4-5",
+            "[mock:error=recorded-thinking]",
+        )),
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());

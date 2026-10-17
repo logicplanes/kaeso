@@ -19,6 +19,7 @@ export interface FieldDraft {
   structured_output: boolean;
   temperature: boolean;
   adaptive_thinking: boolean;
+  forced_tool_choice: boolean;
   efforts: string[];
   timeout_seconds: string;
 }
@@ -51,6 +52,7 @@ export function draftFrom(f: Fields): FieldDraft {
     structured_output: !!f.structured_output,
     temperature: !!f.temperature,
     adaptive_thinking: !!f.adaptive_thinking,
+    forced_tool_choice: f.forced_tool_choice !== false,
     efforts: f.efforts ?? [],
     timeout_seconds: num(f.timeout_seconds),
   };
@@ -75,6 +77,7 @@ function fieldsOf(d: FieldDraft, provider: string): Fields {
     structured_output: d.structured_output,
     temperature: d.temperature,
     adaptive_thinking: provider === "anthropic" ? d.adaptive_thinking : null,
+    forced_tool_choice: d.forced_tool_choice,
     efforts: d.efforts,
     timeout_seconds: int(d.timeout_seconds),
   };
@@ -85,28 +88,31 @@ const samePrice = (a: string | null | undefined, b: string | null | undefined) =
 const PRICES = new Set(["input_price", "output_price", "cache_read_price", "cache_write_price"]);
 const asBool = (v: unknown) => !!v;
 const BOOLS = new Set(["tool_call", "reasoning", "structured_output", "temperature", "adaptive_thinking"]);
+const accepts = (v: unknown) => v !== false;
+const ACCEPTED_UNLESS_FALSE = new Set(["forced_tool_choice"]);
 const asList = (v: unknown) => (Array.isArray(v) ? [...(v as string[])].sort() : []);
 const LISTS = new Set(["input_modalities", "output_modalities", "efforts"]);
+
+function sameValue(key: string, v: unknown, b: unknown): boolean {
+  if (PRICES.has(key)) return samePrice(v as string | null, b as string | null);
+  if (BOOLS.has(key)) return asBool(v) === asBool(b);
+  if (ACCEPTED_UNLESS_FALSE.has(key)) return accepts(v) === accepts(b);
+  if (LISTS.has(key)) return same(asList(v), asList(b));
+  return same(v, b);
+}
 
 export function changedFields(d: FieldDraft, base: Fields, provider: string): Partial<Fields> {
   const next = fieldsOf(d, provider);
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(next)) {
-    const b = base[k as keyof Fields];
-    const equal = PRICES.has(k)
-      ? samePrice(v as string | null, b as string | null)
-      : BOOLS.has(k)
-        ? asBool(v) === asBool(b)
-        : LISTS.has(k)
-          ? same(asList(v), asList(b))
-          : same(v, b);
-    if (!equal) out[k] = v;
+    if (!sameValue(k, v, base[k as keyof Fields])) out[k] = v;
   }
   return out as Partial<Fields>;
 }
 
 export function allFields(d: FieldDraft, provider: string): Partial<Fields> {
-  return Object.fromEntries(Object.entries(fieldsOf(d, provider)).filter(([, v]) => v !== null && !(Array.isArray(v) && v.length === 0))) as Partial<Fields>;
+  const unset = (k: string, v: unknown) => v === null || (Array.isArray(v) && v.length === 0) || (ACCEPTED_UNLESS_FALSE.has(k) && v === true);
+  return Object.fromEntries(Object.entries(fieldsOf(d, provider)).filter(([k, v]) => !unset(k, v))) as Partial<Fields>;
 }
 
 export function draftProblem(d: FieldDraft, custom: boolean): string | null {
@@ -214,6 +220,11 @@ export function ModelForm({ value, onChange, provider }: { value: FieldDraft; on
             onCheckedChange={(adaptive_thinking) => set({ adaptive_thinking })}
           />
         )}
+        <Switch
+          label={t("models.acceptsForcedToolChoice", "Accepts a forced tool choice")}
+          checked={value.forced_tool_choice}
+          onCheckedChange={(forced_tool_choice) => set({ forced_tool_choice })}
+        />
       </div>
       <Select
         label={t("models.effortLevels", "Effort levels")}

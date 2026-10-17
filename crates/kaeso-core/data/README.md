@@ -31,6 +31,7 @@ Fields models.dev does not have. A catalogue entry's effective value is its over
 | Field | Meaning |
 |---|---|
 | `adaptive_thinking` | Anthropic models: whether `thinking: {type: "adaptive"}` is accepted. `false` makes kpp turn an effort from another format into a thinking budget. |
+| `forced_tool_choice` | `false` for models that refuse a forced tool choice (Anthropic `tool_choice` `any` or `tool`); the gateway then refuses `required`, `any` or a named tool before calling the provider. Absent means the model takes one. |
 | `efforts` | Supported effort levels, used when models.dev lists none. |
 | `egress_dialect` | The format Kaeso sends: for OpenAI models `openai_responses` (the default), `openai_chat` or `openai_embeddings`. |
 
@@ -40,5 +41,6 @@ Every entry comes from one of these sources, checked on 2026-10-11:
 |---|---|---|
 | Claude 4.5 models | budget thinking only; no effort except on Claude Opus 4.5 | Anthropic, [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) and [Effort](https://platform.claude.com/docs/en/build-with-claude/effort); live check: `claude-haiku-4-5` answers `thinking: {type: adaptive}` with 400 |
 | Claude 4.6 and later | adaptive thinking and their effort levels | the same pages; live check: `claude-sonnet-4-6` accepts adaptive thinking |
+| `claude-fable-5-1`, `claude-opus-5-5`, `claude-sonnet-5-5` | no forced tool choice | Anthropic, [migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide) (forced tool use returns 400 `tool_choice: type "tool" and "any" are not supported for this model.`, token counting included; Claude Fable 5 and Opus 5 accept it); a live run on 2026-10-17 got that 400 from all three for `any` and `tool`, while `auto` worked |
 | `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
 | `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |

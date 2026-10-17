@@ -95,6 +95,10 @@ pub struct Fields {
     #[doc = "Anthropic models: whether adaptive thinking is accepted."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adaptive_thinking: Option<bool>,
+    #[doc = "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\n\
+        or a named function); absent means it does."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forced_tool_choice: Option<bool>,
     #[doc = "Supported effort levels."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub efforts: Option<Vec<String>>,
@@ -129,6 +133,7 @@ macro_rules! each_field {
             cache_write_price,
             egress_dialect,
             adaptive_thinking,
+            forced_tool_choice,
             efforts,
             timeout_seconds,
             release_date
@@ -152,6 +157,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "cache_write_price",
     "egress_dialect",
     "adaptive_thinking",
+    "forced_tool_choice",
     "efforts",
     "timeout_seconds",
     "release_date",
@@ -202,6 +208,7 @@ impl Fields {
             cache_write_price: cost.cache_write,
             egress_dialect: None,
             adaptive_thinking: None,
+            forced_tool_choice: None,
             efforts: m.efforts(),
             timeout_seconds: None,
             release_date: m.release_date.clone(),
@@ -402,6 +409,7 @@ pub struct Supplement {
 #[serde(deny_unknown_fields)]
 struct SupplementEntry {
     adaptive_thinking: Option<bool>,
+    forced_tool_choice: Option<bool>,
     efforts: Option<Vec<String>>,
     egress_dialect: Option<DialectId>,
 }
@@ -417,6 +425,7 @@ impl Supplement {
             for (model, e) in entries {
                 let fields = Fields {
                     adaptive_thinking: e.adaptive_thinking,
+                    forced_tool_choice: e.forced_tool_choice,
                     efforts: e.efforts,
                     egress_dialect: e.egress_dialect,
                     ..Fields::default()

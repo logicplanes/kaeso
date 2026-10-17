@@ -119,6 +119,25 @@ describe("ModelSheet", () => {
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
   });
 
+  it("shows and changes whether the model accepts a forced tool choice", async () => {
+    const opus = catalogueModel({ effective: { ...catalogueModel().effective, forced_tool_choice: false } });
+    setUp([opus]);
+    on("PATCH", ONE_MODEL, opus);
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Claude Sonnet 4.5");
+    expect(await within(s).findByText("Values in use")).toBeInTheDocument();
+    expect(s).toHaveTextContent("Forced tool choiceNomodels.dev");
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    const forced = within(s).getByRole("switch", { name: "Accepts a forced tool choice" });
+    expect(forced).not.toBeChecked();
+    await user.click(forced);
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { forced_tool_choice: true } }]);
+  });
+
   it("explains values that can't be saved and cancels the edit", async () => {
     setUp();
     const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
