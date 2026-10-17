@@ -251,7 +251,9 @@ impl Engine {
         if now == prepared {
             return None;
         }
-        if compose::retag(&now, from, to) != prepared && !recovering {
+        let torn =
+            recovering && (now.is_empty() || prepared.starts_with(&now) || kept.starts_with(&now));
+        if compose::retag(&now, from, to) != prepared && !torn {
             return Some(fail(
                 Reason::ComposeChanged,
                 format!("{to} runs, but compose.yaml changed during the update; {by_hand}"),
@@ -680,20 +682,68 @@ impl Engine {
             .map_err(|why| format!("the previous {} {why}", w.service.as_str()))
     }
 
+    async fn started_gateway(&self, saved: &Saved) -> Option<Switched> {
+        let w = saved
+            .switched
+            .iter()
+            .find(|w| w.service == Service::Gateway)?;
+        match (w.phase, w.new_id.as_deref()) {
+            (Phase::Started, _) => Some(w.clone()),
+            (Phase::Created, Some(id)) => {
+                let started_at = match self.docker.inspect(id).await {
+                    Ok(c) => c
+                        .pointer("/State/StartedAt")
+                        .and_then(Value::as_str)
+                        .map(str::to_owned),
+                    Err(e) => {
+                        tracing::warn!(error = %e, "cannot tell whether the new gateway started; it counts as started");
+                        return Some(w.clone());
+                    }
+                };
+                started_at
+                    .filter(|t| !t.starts_with("0001-01-01"))
+                    .map(|_| w.clone())
+            }
+            _ => None,
+        }
+    }
+
     async fn roll_back(&self, failure: Failure) {
         let Some(saved) = self.snapshot() else {
             return self.end(JobState::Failed, Some(failure));
         };
-        let gateway = saved
-            .switched
-            .iter()
-            .find(|w| w.service == Service::Gateway && w.phase == Phase::Started);
-        let keep_gateway = saved.migrates && gateway.is_some();
+        let gateway = if saved.migrates {
+            self.started_gateway(&saved).await
+        } else {
+            None
+        };
+        if let Some(w) = gateway {
+            let kept: Vec<String> = saved
+                .switched
+                .iter()
+                .map(|s| format!("{}{PREVIOUS_SUFFIX}", s.name))
+                .collect();
+            let detail = format!(
+                "{}; the new gateway may have migrated the database, so the new {} left in place and the previous ones stay stopped as {}",
+                failure.detail,
+                if saved.switched.len() > 1 {
+                    "console and gateway were"
+                } else {
+                    "gateway was"
+                },
+                kept.join(" and ")
+            );
+            tracing::warn!(gateway = %w.name, "the update needs a person");
+            return self.end(
+                JobState::NeedsAttention,
+                Some(Failure {
+                    reason: failure.reason,
+                    detail,
+                }),
+            );
+        }
         let mut problems = Vec::new();
         for w in saved.switched.iter().rev() {
-            if keep_gateway && w.service == Service::Gateway {
-                continue;
-            }
             if let Err(e) = self.restore(w, saved.project.as_deref()).await {
                 problems.push(e);
             }
@@ -703,19 +753,6 @@ impl Engine {
         } else {
             format!("; rolling back failed: {}", problems.join("; "))
         };
-        if let Some(w) = gateway.filter(|_| keep_gateway) {
-            let detail = format!(
-                "{}; the new gateway may have migrated the database, so it was left running and the previous one stays stopped as {}{PREVIOUS_SUFFIX}{problems}",
-                failure.detail, w.name
-            );
-            return self.end(
-                JobState::NeedsAttention,
-                Some(Failure {
-                    reason: failure.reason,
-                    detail,
-                }),
-            );
-        }
         if problems.is_empty() {
             self.end(JobState::RolledBack, Some(failure));
         } else {
@@ -778,11 +815,8 @@ impl Engine {
             if saved.job.step == Step::Online {
                 return self.finish(&from, &to, true).await;
             }
-            let started = saved
-                .switched
-                .iter()
-                .find(|w| w.service == Service::Gateway && w.phase == Phase::Started);
-            if let Some(new_id) = started.and_then(|w| w.new_id.as_deref())
+            let started = self.started_gateway(&saved).await;
+            if let Some(new_id) = started.as_ref().and_then(|w| w.new_id.as_deref())
                 && self
                     .healthy(new_id, self.settings.gateway_timeout, true)
                     .await

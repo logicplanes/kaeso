@@ -2,6 +2,8 @@ use serde_json::{Map, Value, json};
 
 pub const IMAGE_LABEL: &str = "com.docker.compose.image";
 pub const VERSION_LABEL: &str = "org.opencontainers.image.version";
+pub const START_PERIOD_LABEL: &str = "app.kaeso.updater.start-period-was";
+const NO_START_PERIOD: &str = "none";
 
 const SAME_AS_IMAGE: &[&str] = &[
     "Cmd",
@@ -90,12 +92,41 @@ pub fn start_period(spec: &mut Value, period: std::time::Duration) {
     if !check.is_object() {
         *check = Value::Object(Map::new());
     }
+    let mut was = None;
     if let Some(check) = check.as_object_mut() {
-        let current = check
-            .get("StartPeriod")
-            .and_then(Value::as_u64)
-            .unwrap_or(0);
-        check.insert("StartPeriod".into(), json!(current.max(nanos)));
+        was = check.get("StartPeriod").and_then(Value::as_u64);
+        check.insert("StartPeriod".into(), json!(was.unwrap_or(0).max(nanos)));
+    }
+    let marker = was.map_or_else(|| NO_START_PERIOD.to_owned(), |n| n.to_string());
+    let labels = body
+        .entry("Labels")
+        .or_insert_with(|| Value::Object(Map::new()));
+    if let Some(labels) = labels.as_object_mut() {
+        labels.insert(START_PERIOD_LABEL.into(), Value::String(marker));
+    }
+}
+
+fn without_added_start_period(config: &mut Map<String, Value>) {
+    let was = config
+        .get_mut("Labels")
+        .and_then(Value::as_object_mut)
+        .and_then(|labels| labels.remove(START_PERIOD_LABEL));
+    let Some(was) = was.as_ref().and_then(Value::as_str) else {
+        return;
+    };
+    let Some(check) = config.get_mut("Healthcheck").and_then(Value::as_object_mut) else {
+        return;
+    };
+    match was.parse::<u64>() {
+        Ok(nanos) => {
+            check.insert("StartPeriod".into(), json!(nanos));
+        }
+        Err(_) => {
+            check.remove("StartPeriod");
+        }
+    }
+    if check.is_empty() {
+        config.remove("Healthcheck");
     }
 }
 
@@ -106,6 +137,7 @@ pub fn spec(
     reference: &str,
 ) -> Result<Value, CloneError> {
     let mut config = object(container, "Config")?.clone();
+    without_added_start_period(&mut config);
     let host_config = object(container, "HostConfig")?.clone();
     let image_config = old_image.get("Config");
     let inherited = |key: &str| image_config.and_then(|c| c.get(key));
@@ -317,6 +349,57 @@ mod tests {
         let mut odd = json!({ "Healthcheck": null });
         start_period(&mut odd, ten_minutes);
         assert_eq!(odd["Healthcheck"]["StartPeriod"], 600_000_000_000u64);
+        assert_eq!(inherited["Labels"][START_PERIOD_LABEL], "none");
+        assert_eq!(own["Labels"][START_PERIOD_LABEL], "900000000000");
+    }
+
+    #[test]
+    fn the_next_update_takes_the_new_images_health_check_again() {
+        let ten_minutes = std::time::Duration::from_secs(600);
+        let mut updated = container();
+        let mut merged = old_image()["Config"]["Healthcheck"].clone();
+        merged["StartPeriod"] = json!(600_000_000_000u64);
+        updated["Config"]["Healthcheck"] = merged;
+        updated["Config"]["Labels"][START_PERIOD_LABEL] = json!("none");
+        let next = spec(
+            &updated,
+            &old_image(),
+            &json!({ "Id": "sha256:newer" }),
+            "x",
+        )
+        .unwrap();
+        assert!(
+            next.get("Healthcheck").is_none(),
+            "the old image's check is not carried over: {next}"
+        );
+        assert!(next["Labels"].get(START_PERIOD_LABEL).is_none());
+        let mut next = next;
+        start_period(&mut next, ten_minutes);
+        assert_eq!(
+            next["Healthcheck"],
+            json!({ "StartPeriod": 600_000_000_000u64 })
+        );
+
+        let mut own = container();
+        own["Config"]["Healthcheck"] =
+            json!({ "Test": ["CMD", "probe"], "StartPeriod": 600_000_000_000u64 });
+        own["Config"]["Labels"][START_PERIOD_LABEL] = json!("30000000000");
+        let kept = spec(&own, &old_image(), &json!({}), "x").unwrap();
+        assert_eq!(
+            kept["Healthcheck"],
+            json!({ "Test": ["CMD", "probe"], "StartPeriod": 30_000_000_000u64 }),
+            "a check of the service's own keeps its own start period"
+        );
+
+        let mut bare = container();
+        bare["Config"]["Healthcheck"] = json!({ "StartPeriod": 600_000_000_000u64 });
+        bare["Config"]["Labels"][START_PERIOD_LABEL] = json!("none");
+        assert!(
+            spec(&bare, &old_image(), &json!({}), "x")
+                .unwrap()
+                .get("Healthcheck")
+                .is_none()
+        );
     }
 
     #[test]

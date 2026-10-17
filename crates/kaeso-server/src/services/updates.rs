@@ -81,6 +81,12 @@ impl Release for Known {
     fn prepared(&self) -> bool {
         self.manifest.is_some()
     }
+
+    fn asks_for_steps_after(&self, running: &Version) -> bool {
+        self.manifest
+            .as_ref()
+            .is_some_and(|m| m.asks_for_steps_after(running))
+    }
 }
 
 pub fn known(rows: Vec<ReleaseRow>) -> Vec<Known> {

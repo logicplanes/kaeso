@@ -613,7 +613,7 @@ jobs:
           since=()
           if [[ -n "$previous" ]]; then
             git show "$previous:deploy/compose.yaml" > "$RUNNER_TEMP/previous-compose.yaml"
-            since+=(--previous "$RUNNER_TEMP/previous-compose.yaml")
+            since+=(--previous "$RUNNER_TEMP/previous-compose.yaml" --previous-tag "$previous")
             if gh release view "$previous" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qxF release.json; then
               gh release download "$previous" --repo "$GITHUB_REPOSITORY" --pattern release.json --output "$RUNNER_TEMP/previous-release.json"
               since+=(--previous-manifest "$RUNNER_TEMP/previous-release.json")
