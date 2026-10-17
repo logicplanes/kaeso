@@ -2,7 +2,7 @@
 
 use kaeso_update::RELEASE_WORKFLOW;
 use kaeso_updater::source::{Endpoints, Source};
-use kaeso_updater::verify::{Sigstore, Subject, Trust, VerifyError};
+use kaeso_updater::verify::{NO_PROMISE, Sigstore, Subject, Trust, VerifyError};
 
 const GATEWAY_ATTESTATIONS: &[u8] = include_bytes!("fixtures/attestations-gateway-0.1.0.json");
 const CONSOLE_ATTESTATIONS: &[u8] = include_bytes!("fixtures/attestations-console-0.1.0.json");
@@ -142,4 +142,76 @@ fn a_trust_root_without_keys_is_refused() {
     assert!(Trust::parse("{}").is_err());
     assert!(Trust::parse("not json").is_err());
     assert!(Trust::embedded().is_ok());
+}
+
+#[tokio::test]
+async fn a_bundle_without_a_signed_entry_timestamp_names_what_it_is() {
+    let s = sigstore(RELEASE_WORKFLOW);
+    let doc = tampered(|b| {
+        b["verificationMaterial"]["tlogEntries"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("inclusionPromise");
+    });
+    let err = s
+        .check(&doc, subject(GATEWAY, GATEWAY_INDEX, COMMIT))
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains(NO_PROMISE), "{err}");
+}
+
+const TRUSTED_ROOT: &str = include_str!("../data/trusted_root.json");
+
+fn root(change: impl Fn(&mut serde_json::Value)) -> Trust {
+    let mut doc: serde_json::Value = serde_json::from_str(TRUSTED_ROOT).unwrap();
+    change(&mut doc);
+    Trust::parse(&doc.to_string()).unwrap()
+}
+
+async fn check_with(trust: Trust) -> Result<(), VerifyError> {
+    Sigstore::new(
+        trust,
+        RELEASE_WORKFLOW,
+        Source::new(Endpoints::github().unwrap()).unwrap(),
+    )
+    .check(
+        GATEWAY_ATTESTATIONS,
+        subject(GATEWAY, GATEWAY_INDEX, COMMIT),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn keys_and_authorities_count_only_within_their_validity() {
+    let later = "2099-01-01T00:00:00Z";
+    let rekor = root(|r| {
+        for log in r["tlogs"].as_array_mut().unwrap() {
+            log["publicKey"]["validFor"]["start"] = later.into();
+        }
+    });
+    let err = check_with(rekor).await.unwrap_err();
+    assert!(
+        err.to_string().contains("outside its log key's validity"),
+        "{err}"
+    );
+    let fulcio = root(|r| {
+        for ca in r["certificateAuthorities"].as_array_mut().unwrap() {
+            ca["validFor"]["end"] = "2022-01-01T00:00:00Z".into();
+        }
+    });
+    let err = check_with(fulcio).await.unwrap_err();
+    assert!(err.to_string().contains("for the time of signing"), "{err}");
+    let ct = root(|r| {
+        for log in r["ctlogs"].as_array_mut().unwrap() {
+            log["publicKey"]["validFor"]["start"] = later.into();
+        }
+    });
+    let err = check_with(ct).await.unwrap_err();
+    assert!(err.to_string().contains("for the time of signing"), "{err}");
+    let mut broken: serde_json::Value = serde_json::from_str(TRUSTED_ROOT).unwrap();
+    broken["certificateAuthorities"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("validFor");
+    assert!(Trust::parse(&broken.to_string()).is_err());
 }

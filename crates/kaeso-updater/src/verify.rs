@@ -12,6 +12,8 @@ use sigstore::bundle::Bundle;
 use sigstore::bundle::verify::Verifier;
 use sigstore::bundle::verify::policy::Identity;
 use sigstore::trust::ManualTrustRoot;
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 
 use crate::source::Source;
 
@@ -57,16 +59,63 @@ pub trait Verify: Send + Sync {
     fn verify<'a>(&'a self, subject: Subject<'a>) -> BoxFuture<'a, Result<(), VerifyError>>;
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Window {
+    start: i64,
+    end: Option<i64>,
+}
+
+impl Window {
+    fn of(value: Option<&Value>) -> Option<Window> {
+        let at = |key: &str| -> Option<Option<i64>> {
+            match value?.get(key) {
+                None | Some(Value::Null) => Some(None),
+                Some(v) => OffsetDateTime::parse(v.as_str()?, &Rfc3339)
+                    .ok()
+                    .map(|t| Some(t.unix_timestamp())),
+            }
+        };
+        Some(Window {
+            start: at("start")??,
+            end: at("end")?,
+        })
+    }
+
+    pub fn contains(&self, at: i64) -> bool {
+        at >= self.start && self.end.is_none_or(|end| at <= end)
+    }
+}
+
 #[derive(Clone, Debug)]
 struct RekorKey {
     id: Vec<u8>,
     point: Vec<u8>,
+    window: Window,
+}
+
+#[derive(Clone, Debug)]
+struct Authority {
+    certificates: Vec<Vec<u8>>,
+    window: Window,
+}
+
+#[derive(Clone, Debug)]
+struct CtLog {
+    id: String,
+    spki: Vec<u8>,
+    window: Window,
+}
+
+struct LogKey {
+    id: Vec<u8>,
+    spki: Vec<u8>,
+    window: Window,
 }
 
 #[derive(Clone, Debug)]
 pub struct Trust {
-    fulcio: Vec<Vec<u8>>,
-    ctfe: BTreeMap<String, Vec<u8>>,
+    fulcio: Vec<Authority>,
+    ctfe: Vec<CtLog>,
     rekor: Vec<RekorKey>,
 }
 
@@ -88,35 +137,55 @@ impl Trust {
                 .cloned()
                 .unwrap_or_default()
         };
-        let fulcio: Vec<Vec<u8>> = list("certificateAuthorities")
-            .iter()
-            .flat_map(|ca| {
-                ca.pointer("/certChain/certificates")
-                    .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default()
-            })
-            .filter_map(|c| c.get("rawBytes").and_then(b64))
-            .collect();
-        let keys = |key: &str| -> Vec<(Vec<u8>, Vec<u8>)> {
-            list(key)
+        let mut fulcio = Vec::new();
+        for ca in list("certificateAuthorities") {
+            let window = Window::of(ca.get("validFor"))
+                .ok_or_else(|| bad("a certificate authority has no valid validFor"))?;
+            let certificates: Vec<Vec<u8>> = ca
+                .pointer("/certChain/certificates")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default()
                 .iter()
-                .filter_map(|log| {
-                    let id = log.pointer("/logId/keyId").and_then(b64)?;
-                    let spki = log.pointer("/publicKey/rawBytes").and_then(b64)?;
-                    Some((id, spki))
-                })
-                .collect()
+                .filter_map(|c| c.get("rawBytes").and_then(b64))
+                .collect();
+            fulcio.push(Authority {
+                certificates,
+                window,
+            });
+        }
+        let keys = |key: &str| -> Result<Vec<LogKey>, VerifyError> {
+            let mut out = Vec::new();
+            for log in list(key) {
+                let (Some(id), Some(spki)) = (
+                    log.pointer("/logId/keyId").and_then(b64),
+                    log.pointer("/publicKey/rawBytes").and_then(b64),
+                ) else {
+                    continue;
+                };
+                let window = Window::of(log.pointer("/publicKey/validFor"))
+                    .ok_or_else(|| bad("a log key has no valid validFor"))?;
+                out.push(LogKey { id, spki, window });
+            }
+            Ok(out)
         };
-        let ctfe: BTreeMap<String, Vec<u8>> = keys("ctlogs")
+        let ctfe: Vec<CtLog> = keys("ctlogs")?
             .into_iter()
-            .map(|(id, spki)| (hex(&id), spki))
+            .map(|k| CtLog {
+                id: hex(&k.id),
+                spki: k.spki,
+                window: k.window,
+            })
             .collect();
-        let rekor = keys("tlogs")
+        let rekor = keys("tlogs")?
             .into_iter()
-            .filter_map(|(id, spki)| {
-                let point = spki.strip_prefix(P256_SPKI_PREFIX)?.to_vec();
-                Some(RekorKey { id, point })
+            .filter_map(|k| {
+                let point = k.spki.strip_prefix(P256_SPKI_PREFIX)?.to_vec();
+                Some(RekorKey {
+                    id: k.id,
+                    point,
+                    window: k.window,
+                })
             })
             .collect::<Vec<_>>();
         if fulcio.is_empty() || ctfe.is_empty() || rekor.is_empty() {
@@ -131,15 +200,30 @@ impl Trust {
         })
     }
 
-    fn verifier(&self) -> Result<Verifier, String> {
+    fn verifier(&self, at: i64) -> Result<Verifier, String> {
+        let fulcio_certs: Vec<CertificateDer<'static>> = self
+            .fulcio
+            .iter()
+            .filter(|ca| ca.window.contains(at))
+            .flat_map(|ca| ca.certificates.iter())
+            .map(|der| CertificateDer::from(der.clone()))
+            .collect();
+        let ctfe_keys: BTreeMap<String, Vec<u8>> = self
+            .ctfe
+            .iter()
+            .filter(|log| log.window.contains(at))
+            .map(|log| (log.id.clone(), log.spki.clone()))
+            .collect();
+        if fulcio_certs.is_empty() || ctfe_keys.is_empty() {
+            return Err(
+                "the trust root names no certificate authority or CT log for the time of signing"
+                    .into(),
+            );
+        }
         let root = ManualTrustRoot {
-            fulcio_certs: self
-                .fulcio
-                .iter()
-                .map(|der| CertificateDer::from(der.clone()))
-                .collect(),
+            fulcio_certs,
             rekor_keys: BTreeMap::new(),
-            ctfe_keys: self.ctfe.clone(),
+            ctfe_keys,
         };
         Verifier::new(Default::default(), root).map_err(|e| e.to_string())
     }
@@ -168,8 +252,10 @@ fn number(value: Option<&Value>) -> Option<i64> {
     }
 }
 
+pub const NO_PROMISE: &str = "the bundle has no signed entry timestamp: it is a Rekor v2 or timestamp-authority bundle, which this updater can't check yet; update by hand";
+
 impl Trust {
-    fn check_promise(&self, bundle: &Value) -> Result<(), String> {
+    fn check_promise(&self, bundle: &Value) -> Result<i64, String> {
         let entries = bundle
             .pointer("/verificationMaterial/tlogEntries")
             .and_then(Value::as_array)
@@ -181,29 +267,36 @@ impl Trust {
             .pointer("/logId/keyId")
             .and_then(b64)
             .ok_or("the log entry names no log")?;
+        let Some(signature) = entry
+            .pointer("/inclusionPromise/signedEntryTimestamp")
+            .and_then(b64)
+        else {
+            return Err(NO_PROMISE.into());
+        };
         let key = self
             .rekor
             .iter()
             .find(|k| k.id == id)
             .ok_or("the log entry is from a log the trust root doesn't name")?;
+        let integrated_time = number(entry.get("integratedTime")).ok_or("no integrated time")?;
+        if !key.window.contains(integrated_time) {
+            return Err("the log entry is from outside its log key's validity".into());
+        }
         let body = entry
             .get("canonicalizedBody")
             .and_then(Value::as_str)
             .ok_or("the log entry has no body")?;
         let signed = SignedEntry {
             body,
-            integrated_time: number(entry.get("integratedTime")).ok_or("no integrated time")?,
+            integrated_time,
             log_id: hex(&id),
             log_index: number(entry.get("logIndex")).ok_or("no log index")?,
         };
         let payload = serde_json::to_vec(&signed).map_err(|e| e.to_string())?;
-        let signature = entry
-            .pointer("/inclusionPromise/signedEntryTimestamp")
-            .and_then(b64)
-            .ok_or("the log entry has no signed entry timestamp")?;
         UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, &key.point)
             .verify(&payload, &signature)
-            .map_err(|_| "the transparency log's signature does not match".to_owned())
+            .map_err(|_| "the transparency log's signature does not match".to_owned())?;
+        Ok(integrated_time)
     }
 }
 
@@ -280,10 +373,10 @@ impl Sigstore {
 
     async fn check_bundle(&self, bundle: &Value, subject: &Subject<'_>) -> Result<(), String> {
         check_statement(bundle, subject)?;
-        self.trust.check_promise(bundle)?;
+        let signed_at = self.trust.check_promise(bundle)?;
         let parsed: Bundle = serde_json::from_value(bundle.clone())
             .map_err(|e| format!("the bundle does not parse: {e}"))?;
-        let verifier = self.trust.verifier()?;
+        let verifier = self.trust.verifier(signed_at)?;
         let policy = Identity::new(&self.identity, GITHUB_ISSUER);
         verifier
             .verify(subject.content, parsed, &policy, true)

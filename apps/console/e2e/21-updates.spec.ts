@@ -4,7 +4,11 @@ import { expect, signInAsOwner, test, toastText } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
-type Scenario = { releases?: "patch" | "major" | "manual" | "none" | "error"; updater?: "ready" | "down"; outcome?: "succeeded" | "rolled_back" };
+type Scenario = {
+  releases?: "patch" | "major" | "manual" | "none" | "error";
+  updater?: "ready" | "down";
+  outcome?: "succeeded" | "rolled_back" | "needs_attention";
+};
 
 async function scenario(s: Scenario): Promise<{ running: string; versions: { patch: string; minor: string; major: string } }> {
   const res = await fetch(`${STACK_URLS.releases}/__scenario`, { method: "POST", body: JSON.stringify(s) });
@@ -67,6 +71,20 @@ test("rolled back: the failure says what runs now", async ({ page }) => {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("The new version didn't start.")).toBeVisible({ timeout: 30_000 });
   await expect(dialog.getByText(`Kaeso ${running} runs again, unchanged.`)).toBeVisible();
+});
+
+test("needs attention: a gateway that may have migrated is left for a person", async ({ page }) => {
+  const { running } = await scenario({ releases: "patch", outcome: "needs_attention" });
+  await openUpdates(page);
+  await checkNow(page);
+  await page.getByRole("button", { name: /^Update to / }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Update now" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Needs attention")).toBeVisible({ timeout: 30_000 });
+  await expect(
+    dialog.getByText(`The new gateway may have migrated the database, so Kaeso ${running} wasn't started again; follow the upgrade guide.`),
+  ).toBeVisible();
+  await expect(dialog.getByText(`Kaeso ${running} runs again, unchanged.`)).toHaveCount(0);
 });
 
 test("major release: the upgrade guide instead of a button", async ({ page }) => {

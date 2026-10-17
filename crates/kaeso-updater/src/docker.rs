@@ -8,6 +8,13 @@ use url::Url;
 pub const API_VERSION: &str = "v1.44";
 pub const PROJECT_LABEL: &str = "com.docker.compose.project";
 pub const SERVICE_LABEL: &str = "com.docker.compose.service";
+pub const ONEOFF_LABEL: &str = "com.docker.compose.oneoff";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Listed {
+    pub id: String,
+    pub name: String,
+}
 const MAX_BODY: usize = 16 << 20;
 
 #[derive(Debug, thiserror::Error)]
@@ -90,7 +97,7 @@ impl Docker {
         Ok((status, out))
     }
 
-    async fn expect(
+    async fn answered(
         &self,
         method: Method,
         what: &str,
@@ -119,7 +126,7 @@ impl Docker {
 
     pub async fn version(&self) -> Result<String, DockerError> {
         let out = self
-            .expect(Method::GET, "report its version", "version", None, &[])
+            .answered(Method::GET, "report its version", "version", None, &[])
             .await?;
         let v = Self::json("version", &out)?;
         Ok(v.get("Version")
@@ -132,21 +139,36 @@ impl Docker {
         &self,
         project: &str,
         service: &str,
-    ) -> Result<Vec<String>, DockerError> {
+    ) -> Result<Vec<Listed>, DockerError> {
         let filters = json!({
-            "label": [format!("{PROJECT_LABEL}={project}"), format!("{SERVICE_LABEL}={service}")]
+            "label": [
+                format!("{PROJECT_LABEL}={project}"),
+                format!("{SERVICE_LABEL}={service}"),
+                format!("{ONEOFF_LABEL}=False"),
+            ]
         })
         .to_string();
         let path = format!("containers/json?all=true&filters={}", encode(&filters));
         let out = self
-            .expect(Method::GET, "list containers", &path, None, &[])
+            .answered(Method::GET, "list containers", &path, None, &[])
             .await?;
         let list = Self::json("containers", &out)?;
         Ok(list
             .as_array()
             .map(|a| {
                 a.iter()
-                    .filter_map(|c| c.get("Id").and_then(Value::as_str).map(str::to_owned))
+                    .filter_map(|c| {
+                        let id = c.get("Id").and_then(Value::as_str)?.to_owned();
+                        let name = c
+                            .get("Names")
+                            .and_then(Value::as_array)
+                            .and_then(|n| n.first())
+                            .and_then(Value::as_str)
+                            .unwrap_or_default()
+                            .trim_start_matches('/')
+                            .to_owned();
+                        Some(Listed { id, name })
+                    })
                     .collect()
             })
             .unwrap_or_default())
@@ -154,7 +176,7 @@ impl Docker {
 
     pub async fn inspect(&self, id: &str) -> Result<Value, DockerError> {
         let out = self
-            .expect(
+            .answered(
                 Method::GET,
                 "inspect a container",
                 &format!("containers/{}/json", encode(id)),
@@ -192,7 +214,7 @@ impl Docker {
             encode(&image.name),
             encode(&image.digest)
         );
-        let out = self.expect(Method::POST, &what, &path, None, &[]).await?;
+        let out = self.answered(Method::POST, &what, &path, None, &[]).await?;
         for line in out.split(|b| *b == b'\n').filter(|l| !l.is_empty()) {
             if let Ok(event) = serde_json::from_slice::<Value>(line)
                 && let Some(message) = event.get("error").and_then(Value::as_str)
@@ -218,14 +240,14 @@ impl Docker {
             encode(repository),
             encode(tag)
         );
-        self.expect(Method::POST, "tag an image", &path, None, &[])
+        self.answered(Method::POST, "tag an image", &path, None, &[])
             .await
             .map(|_| ())
     }
 
     pub async fn create(&self, name: &str, spec: &Value) -> Result<String, DockerError> {
         let out = self
-            .expect(
+            .answered(
                 Method::POST,
                 "create a container",
                 &format!("containers/create?name={}", encode(name)),
@@ -241,7 +263,7 @@ impl Docker {
     }
 
     pub async fn start(&self, id: &str) -> Result<(), DockerError> {
-        self.expect(
+        self.answered(
             Method::POST,
             "start a container",
             &format!("containers/{}/start", encode(id)),
@@ -253,7 +275,7 @@ impl Docker {
     }
 
     pub async fn stop(&self, id: &str, seconds: u32) -> Result<(), DockerError> {
-        self.expect(
+        self.answered(
             Method::POST,
             "stop a container",
             &format!("containers/{}/stop?t={seconds}", encode(id)),
@@ -265,7 +287,7 @@ impl Docker {
     }
 
     pub async fn rename(&self, id: &str, name: &str) -> Result<(), DockerError> {
-        self.expect(
+        self.answered(
             Method::POST,
             "rename a container",
             &format!("containers/{}/rename?name={}", encode(id), encode(name)),
@@ -277,7 +299,7 @@ impl Docker {
     }
 
     pub async fn remove(&self, id: &str) -> Result<(), DockerError> {
-        self.expect(
+        self.answered(
             Method::DELETE,
             "remove a container",
             &format!("containers/{}?force=true", encode(id)),

@@ -47,7 +47,8 @@ pub async fn serve(
     ));
     let docker = Docker::new(&config.docker)?;
     let engine = Engine::new(config.settings(), docker, source, verify);
-    engine.recover().await;
+    let recovering = Arc::clone(&engine);
+    tokio::spawn(async move { recovering.recover().await });
     let listener = tokio::net::TcpListener::bind(config.listen)
         .await
         .map_err(RunError::Listen)?;

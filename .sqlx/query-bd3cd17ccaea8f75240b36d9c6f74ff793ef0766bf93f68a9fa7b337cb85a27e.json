@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at FROM update_settings WHERE id = 1 FOR NO KEY UPDATE",
+  "query": "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at, blocked_until FROM update_settings WHERE id = 1 FOR NO KEY UPDATE",
   "describe": {
     "columns": [
       {
@@ -90,6 +90,17 @@
             "name": "next_check_at"
           }
         }
+      },
+      {
+        "ordinal": 8,
+        "name": "blocked_until",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "update_settings",
+            "name": "blocked_until"
+          }
+        }
       }
     ],
     "parameters": {
@@ -103,8 +114,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "5b7cc10c5fc5e74b03214c4adb4cd3a9cf2a20279d5443f64db6d4721162b0be"
+  "hash": "bd3cd17ccaea8f75240b36d9c6f74ff793ef0766bf93f68a9fa7b337cb85a27e"
 }

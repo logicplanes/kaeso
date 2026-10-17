@@ -79,6 +79,26 @@ pub fn version_of(image: &Value) -> Option<&str> {
         .as_str()
 }
 
+pub fn start_period(spec: &mut Value, period: std::time::Duration) {
+    let nanos = u64::try_from(period.as_nanos()).unwrap_or(u64::MAX);
+    let Some(body) = spec.as_object_mut() else {
+        return;
+    };
+    let check = body
+        .entry("Healthcheck")
+        .or_insert_with(|| Value::Object(Map::new()));
+    if !check.is_object() {
+        *check = Value::Object(Map::new());
+    }
+    if let Some(check) = check.as_object_mut() {
+        let current = check
+            .get("StartPeriod")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
+        check.insert("StartPeriod".into(), json!(current.max(nanos)));
+    }
+}
+
 pub fn spec(
     container: &Value,
     old_image: &Value,
@@ -277,6 +297,26 @@ mod tests {
             spec(&c, &old_image(), &json!({}), "x"),
             Err(CloneError::Missing("HostConfig"))
         );
+    }
+
+    #[test]
+    fn the_start_period_covers_the_migrations_and_keeps_the_rest_of_the_check() {
+        let ten_minutes = std::time::Duration::from_secs(600);
+        let mut inherited = spec(&container(), &old_image(), &json!({}), "x").unwrap();
+        start_period(&mut inherited, ten_minutes);
+        assert_eq!(
+            inherited["Healthcheck"],
+            json!({ "StartPeriod": 600_000_000_000u64 })
+        );
+        let mut own = json!({ "Healthcheck": { "Test": ["CMD", "probe"], "StartPeriod": 900_000_000_000u64 } });
+        start_period(&mut own, ten_minutes);
+        assert_eq!(
+            own["Healthcheck"],
+            json!({ "Test": ["CMD", "probe"], "StartPeriod": 900_000_000_000u64 })
+        );
+        let mut odd = json!({ "Healthcheck": null });
+        start_period(&mut odd, ten_minutes);
+        assert_eq!(odd["Healthcheck"]["StartPeriod"], 600_000_000_000u64);
     }
 
     #[test]

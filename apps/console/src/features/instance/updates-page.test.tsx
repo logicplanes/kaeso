@@ -125,7 +125,7 @@ describe("instance updates page", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
-  it("says when Kaeso is away during the switch and when neither version runs", async () => {
+  it("says when Kaeso is away during the switch and when the previous version doesn't come back", async () => {
     signedIn();
     on("GET", "instance/updates", available({ job: updateJob(), can_apply: false }));
     history();
@@ -140,7 +140,55 @@ describe("instance updates page", () => {
     await user.click(await screen.findByRole("button", { name: "Show progress" }));
     expect(await screen.findByText("Kaeso is switching over; this window reconnects by itself.")).toBeInTheDocument();
     expect(await screen.findByText("The update didn't finish.", {}, { timeout: 5_000 })).toBeInTheDocument();
-    expect(screen.getByText("Neither version runs; follow the upgrade guide to recover from the backup.")).toBeInTheDocument();
+    expect(screen.getByText("The previous version didn't start again; follow the upgrade guide to recover.")).toBeInTheDocument();
+  });
+
+  it("hands a gateway that may have migrated the database to a person", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ job: updateJob(), can_apply: false }));
+    history();
+    on(
+      "GET",
+      "instance/updates/jobs/:update",
+      updateJob({
+        state: "needs_attention",
+        step: "migrating",
+        reason: "unhealthy",
+        detail: "the new gateway was not healthy within 600 seconds",
+        finished_at: "2026-10-15T12:02:00Z",
+      }),
+    );
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Show progress" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("Needs attention")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("The new gateway may have migrated the database, so Kaeso 0.4.2 wasn't started again; follow the upgrade guide."),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText("Kaeso 0.4.2 runs again, unchanged.")).not.toBeInTheDocument();
+  });
+
+  it("says what is left when the new version runs but compose.yaml couldn't be written", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ job: updateJob(), can_apply: false }));
+    history();
+    on(
+      "GET",
+      "instance/updates/jobs/:update",
+      updateJob({
+        state: "succeeded",
+        step: "online",
+        reason: "compose_unwritable",
+        detail: "0.4.3 runs, but compose.yaml cannot be written: read-only file system",
+        finished_at: "2026-10-15T12:02:00Z",
+      }),
+    );
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Show progress" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("Kaeso 0.4.3 is running")).toBeInTheDocument();
+    expect(within(dialog).getByText("One step is left")).toBeInTheDocument();
+    expect(within(dialog).getByText("Set the Kaeso images in compose.yaml to 0.4.3 by hand.")).toBeInTheDocument();
   });
 
   it("sends a major release to the upgrade guide", async () => {

@@ -4,16 +4,16 @@ import { t } from "~/i18n";
 export const UPDATER_DOCS = "https://docs.kaeso.app/self-hosting/upgrades#one-click-updates";
 export const BACKUP_DOCS = "https://docs.kaeso.app/self-hosting/backups";
 
-export const STEPS = ["downloading", "verifying", "switching", "migrating", "online"] as const;
+export const STEPS = ["verifying", "downloading", "switching", "migrating", "online"] as const;
 
 export type Tone = "success" | "warning" | "danger" | "info" | "neutral";
 
 export function stepLabel(step: string): string {
   switch (step) {
     case "downloading":
-      return t("instance.updates.stepDownloading", "Download the release");
+      return t("instance.updates.stepDownloading", "Download the images");
     case "verifying":
-      return t("instance.updates.stepVerifying", "Check its signatures");
+      return t("instance.updates.stepVerifying", "Check the release's signatures");
     case "switching":
       return t("instance.updates.stepSwitching", "Switch to the new version");
     case "migrating":
@@ -58,6 +58,10 @@ export function reasonText(reason: string | null | undefined): string | null {
       return t("instance.updates.whyInterrupted", "The update was interrupted.");
     case "updater_unreachable":
       return t("instance.updates.whyUnreachable", "The updater couldn't be reached.");
+    case "updater_refused":
+      return t("instance.updates.whyRefused", "The updater refused the update; its logs say why.");
+    case "state_unwritable":
+      return t("instance.updates.whyState", "The updater couldn't save its progress, so it didn't start.");
     default:
       return reason;
   }
@@ -69,7 +73,9 @@ export function jobResult(job: UpdateJobView): { tone: Tone; label: string; deta
     case "running":
       return { tone: "info", label: t("instance.updates.stateRunning", "Running"), detail: null };
     case "succeeded":
-      return { tone: "success", label: t("instance.updates.stateSucceeded", "Updated"), detail };
+      return { tone: detail ? "warning" : "success", label: t("instance.updates.stateSucceeded", "Updated"), detail };
+    case "needs_attention":
+      return { tone: "danger", label: t("instance.updates.stateNeedsAttention", "Needs attention"), detail };
     case "rolled_back":
       return { tone: "warning", label: t("instance.updates.stateRolledBack", "Rolled back"), detail };
     case "rollback_failed":

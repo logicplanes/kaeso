@@ -14,6 +14,7 @@ pub struct Settings {
     pub last_success_at: Option<OffsetDateTime>,
     pub last_error: Option<String>,
     pub next_check_at: Option<OffsetDateTime>,
+    pub blocked_until: Option<OffsetDateTime>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,7 +40,7 @@ pub async fn seed(db: impl PgExecutor<'_>, defaults: &Choices) -> Result<(), Sto
 pub async fn settings(db: impl PgExecutor<'_>) -> Result<Settings, StoreError> {
     sqlx::query_as!(
         Settings,
-        "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at \
+        "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at, blocked_until \
          FROM update_settings WHERE id = 1"
     )
     .fetch_optional(db)
@@ -50,7 +51,7 @@ pub async fn settings(db: impl PgExecutor<'_>) -> Result<Settings, StoreError> {
 pub async fn settings_for_update(db: &mut sqlx::PgConnection) -> Result<Settings, StoreError> {
     sqlx::query_as!(
         Settings,
-        "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at \
+        "SELECT check_enabled, channel, apply_enabled, etag, last_checked_at, last_success_at, last_error, next_check_at, blocked_until \
          FROM update_settings WHERE id = 1 FOR NO KEY UPDATE"
     )
     .fetch_optional(db)
@@ -78,16 +79,18 @@ pub async fn record_check(
     etag: Option<&str>,
     error: Option<&str>,
     next: OffsetDateTime,
+    blocked_until: Option<OffsetDateTime>,
 ) -> Result<(), StoreError> {
     sqlx::query!(
         "UPDATE update_settings SET last_checked_at = $1, etag = COALESCE($2, etag), \
-         last_error = $3, next_check_at = $4, \
+         last_error = $3, next_check_at = $4, blocked_until = $5, \
          last_success_at = CASE WHEN $3::text IS NULL THEN $1 ELSE last_success_at END, \
          updated_at = now() WHERE id = 1",
         at,
         etag,
         error,
         next,
+        blocked_until,
     )
     .execute(db)
     .await?;
@@ -174,7 +177,7 @@ pub struct NewJob<'a> {
 pub async fn start_job(db: impl PgExecutor<'_>, job: &NewJob<'_>) -> Result<bool, StoreError> {
     let inserted = sqlx::query!(
         "INSERT INTO update_jobs (id, from_version, to_version, state, step, started_by, started_at) \
-         VALUES ($1, $2, $3, 'running', 'downloading', $4, $5)",
+         VALUES ($1, $2, $3, 'running', 'verifying', $4, $5)",
         job.id,
         job.from_version,
         job.to_version,

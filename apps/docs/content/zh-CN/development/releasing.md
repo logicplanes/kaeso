@@ -165,7 +165,9 @@ flowchart TD
 | Pack npm packages | 从标签构建这些库，并以该版本号运行包检查进行打包 |
 | npm | 发布 `@logicplanes/kaeso-tokens` 和 `@logicplanes/kaeso-ui` |
 | crates.io | 发布 `kaeso-kpp` 和 `kaeso-codecs` |
-| GitHub release | 在任何人都能拉取镜像、两个注册表都已有这些包之后，下载已发布的 tarball 和 crate，并创建带有文件和说明的版本 |
+| Release manifest | 为[更新器](../self-hosting/upgrades.md#一键更新)写入 `release.json`：已发布镜像的摘要、`compose.yaml` 的哈希、最新的迁移、该版本或其之前的版本是否要求手动操作，以及本次运行开始时所在、也是其证明中写明的提交。它只能读取仓库 |
+| Attest release.json | 为 `release.json` 证明构建来源；它只能看到这个文件，除了证明什么也不能做 |
+| GitHub release | 在任何人都能拉取镜像、两个注册表都已有这些包之后，像安装时一样用 `gh attestation verify` 检查 `release.json` 和每个镜像能否依据此工作流在 `prod` 上的运行以及 `release.json` 中的提交通过校验，然后下载已发布的 tarball 和 crate，并创建带有文件和说明的版本 |
 
 npm 和 crates.io 作业通过受信任发布进行身份验证，因此仓库不保存任何注册表令牌。两者都会跳过已经发布的版本，所以发布作业失败时，重新运行这次运行中失败的作业即可完成发布。
 

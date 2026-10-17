@@ -165,7 +165,9 @@ Die Jobs, die ins Repository schreiben oder etwas veröffentlichen, laufen in de
 | Pack npm packages | Baut die Bibliotheken aus dem Tag und packt sie mit der Paketprüfung in der Version des Releases |
 | npm | Veröffentlicht `@logicplanes/kaeso-tokens` und `@logicplanes/kaeso-ui` |
 | crates.io | Veröffentlicht `kaeso-kpp` und `kaeso-codecs` |
-| GitHub release | Sobald jeder die Images laden kann und beide Registries die Pakete haben, lädt er die veröffentlichten Tarballs und Crates herunter und erstellt das Release mit seinen Dateien und Notizen |
+| Release manifest | Schreibt `release.json` für den [Updater](../self-hosting/upgrades.md#updates-mit-einem-klick): die Digests der veröffentlichten Images, den Hash der `compose.yaml`, die letzten Migrationen, ob das Release oder eines davor Schritte von Hand verlangt, und den Commit, auf dem der Lauf begann und den seine Attestierungen nennen. Er kann das Repository nur lesen |
+| Attest release.json | Attestiert die Build-Provenance von `release.json`; er sieht nichts als diese Datei und kann nichts als attestieren |
+| GitHub release | Sobald jeder die Images laden kann und beide Registries die Pakete haben, prüft er mit `gh attestation verify`, dass `release.json` und jedes Image gegen diesen Workflow auf `prod` und den Commit aus `release.json` bestehen, wie Installationen es prüfen, lädt die veröffentlichten Tarballs und Crates herunter und erstellt das Release mit seinen Dateien und Notizen |
 
 Die Jobs für npm und crates.io authentifizieren sich per Trusted Publishing, sodass das Repository keine Registry-Tokens hält. Beide überspringen eine bereits veröffentlichte Version; schlägt ein Veröffentlichungs-Job fehl, schließt ein erneuter Lauf der fehlgeschlagenen Jobs das Release ab.
 

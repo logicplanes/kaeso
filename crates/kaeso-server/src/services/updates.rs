@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
+use futures::StreamExt;
 use kaeso_core::id::UpdateId;
 use kaeso_store::StoreError;
 use kaeso_store::pg::updates::{self, Choices, Finish, JobRow, ReleaseRow, Settings};
@@ -21,7 +22,10 @@ use crate::state::AppState;
 pub const CHECK_INTERVAL: time::Duration = time::Duration::hours(12);
 pub const RETRY_INTERVAL: time::Duration = time::Duration::hours(1);
 pub const LOST_AFTER: time::Duration = time::Duration::hours(1);
+pub const START_GRACE: time::Duration = time::Duration::minutes(2);
 const JITTER_SECONDS: u32 = 3600;
+const MANIFESTS_AT_ONCE: usize = 4;
+const MANIFESTS_PER_CHECK: usize = 12;
 const PER_PAGE: &str = "50";
 const MAX_LIST: usize = 4 << 20;
 const MAX_NOTES: usize = 64 << 10;
@@ -31,6 +35,15 @@ static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
         .timeout(Duration::from_secs(20))
         .connect_timeout(Duration::from_secs(10))
         .user_agent(concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")))
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            let downgrade = attempt.url().scheme() != "https"
+                && attempt.previous().iter().any(|u| u.scheme() == "https");
+            if downgrade || attempt.previous().len() > 5 {
+                attempt.stop()
+            } else {
+                attempt.follow()
+            }
+        }))
         .build()
         .inspect_err(|e| tracing::error!(error = %e, "cannot build the release client"))
         .ok()
@@ -232,7 +245,20 @@ fn rate_limit_wait(
         .map(|reset| time::Duration::seconds((reset - now.unix_timestamp()).max(0)))
 }
 
-async fn fetch_manifest(url: &str, version: &Version) -> Result<Manifest, String> {
+pub fn downloads_of(releases_url: &url::Url) -> String {
+    if releases_url.host_str() == Some("api.github.com") {
+        kaeso_update::DOWNLOADS.to_owned()
+    } else {
+        format!("{}/", releases_url.origin().ascii_serialization())
+    }
+}
+
+async fn fetch_manifest(url: &str, version: &Version, downloads: &str) -> Result<Manifest, String> {
+    if !url.starts_with(downloads) {
+        return Err(format!(
+            "the release manifest is not under {downloads}, so it is ignored"
+        ));
+    }
     let client = HTTP.as_ref().ok_or_else(|| "no HTTP client".to_owned())?;
     let mut resp = client
         .get(url)
@@ -272,17 +298,23 @@ fn notes(body: Option<String>) -> String {
     text
 }
 
-async fn rows_of(releases: Vec<GitHubRelease>, previous: &[Known]) -> Vec<ReleaseRow> {
+enum Wanted {
+    Ready(Option<serde_json::Value>, Option<String>),
+    Fetch(String),
+}
+
+async fn rows_of(
+    releases: Vec<GitHubRelease>,
+    previous: &[Known],
+    downloads: &str,
+) -> Vec<ReleaseRow> {
     let current = running();
-    let mut rows = Vec::new();
+    let mut listed: Vec<(Version, GitHubRelease, Wanted)> = Vec::new();
     for r in releases.into_iter().filter(|r| !r.draft) {
         let Some(version) = policy::parse_tag(&r.tag_name) else {
             continue;
         };
-        if rows
-            .iter()
-            .any(|row: &ReleaseRow| row.version == version.to_string())
-        {
+        if listed.iter().any(|(v, _, _)| *v == version) {
             continue;
         }
         let asset = r
@@ -293,26 +325,58 @@ async fn rows_of(releases: Vec<GitHubRelease>, previous: &[Known]) -> Vec<Releas
         let kept = previous
             .iter()
             .find(|k| k.version == version && k.manifest.is_some());
-        let (manifest, manifest_error) = match (kept, asset) {
-            (Some(k), _) => (k.row.manifest.clone(), None),
-            (None, _) if version <= current => (None, None),
-            (None, None) => (None, Some("the release has no release manifest".to_owned())),
-            (None, Some(url)) => match fetch_manifest(&url, &version).await {
-                Ok(m) => (serde_json::to_value(m).ok(), None),
-                Err(e) => (None, Some(e)),
-            },
+        let wanted = match (kept, asset) {
+            (Some(k), _) => Wanted::Ready(k.row.manifest.clone(), None),
+            (None, _) if version <= current => Wanted::Ready(None, None),
+            (None, None) => {
+                Wanted::Ready(None, Some("the release has no release manifest".to_owned()))
+            }
+            (None, Some(url)) => Wanted::Fetch(url),
         };
-        rows.push(ReleaseRow {
-            version: version.to_string(),
-            published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
-            prerelease: r.prerelease || !version.pre.is_empty(),
-            notes: notes(r.body),
-            url: r.html_url,
-            manifest,
-            manifest_error,
-        });
+        listed.push((version, r, wanted));
     }
-    rows
+    let mut fetches: Vec<(Version, String)> = listed
+        .iter()
+        .filter_map(|(v, _, w)| match w {
+            Wanted::Fetch(url) => Some((v.clone(), url.clone())),
+            Wanted::Ready(..) => None,
+        })
+        .collect();
+    fetches.sort_by(|a, b| b.0.cmp(&a.0));
+    fetches.truncate(MANIFESTS_PER_CHECK);
+    let fetched: Vec<(Version, Result<Manifest, String>)> = futures::stream::iter(fetches)
+        .map(|(version, url)| async move {
+            let result = fetch_manifest(&url, &version, downloads).await;
+            (version, result)
+        })
+        .buffer_unordered(MANIFESTS_AT_ONCE)
+        .collect()
+        .await;
+    listed
+        .into_iter()
+        .map(|(version, r, wanted)| {
+            let (manifest, manifest_error) = match wanted {
+                Wanted::Ready(m, e) => (m, e),
+                Wanted::Fetch(_) => match fetched.iter().find(|(v, _)| *v == version) {
+                    Some((_, Ok(m))) => (serde_json::to_value(m).ok(), None),
+                    Some((_, Err(e))) => (None, Some(e.clone())),
+                    None => (
+                        None,
+                        Some("the release manifest is fetched at a later check".to_owned()),
+                    ),
+                },
+            };
+            ReleaseRow {
+                version: version.to_string(),
+                published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+                prerelease: r.prerelease || !version.pre.is_empty(),
+                notes: notes(r.body),
+                url: r.html_url,
+                manifest,
+                manifest_error,
+            }
+        })
+        .collect()
 }
 
 fn jitter() -> time::Duration {
@@ -337,6 +401,12 @@ pub async fn check(state: &AppState) -> Result<Checked, StoreError> {
 
 async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
     let settings = updates::settings(&state.pg).await?;
+    if let Some(until) = settings.blocked_until.filter(|u| state.clock.now() < *u) {
+        tracing::debug!(%until, "GitHub asked to wait; the check waits too");
+        return Ok(Checked::Failed(settings.last_error.unwrap_or_else(|| {
+            "GitHub refused more requests for now".to_owned()
+        })));
+    }
     let previous = known(updates::releases(&state.pg).await?);
     let current = running();
     let incomplete = previous
@@ -350,16 +420,31 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
     let now = state.clock.now();
     match fetched {
         Ok(Fetched::NotModified) => {
-            updates::record_check(&state.pg, now, None, None, now + CHECK_INTERVAL + jitter())
-                .await?;
+            updates::record_check(
+                &state.pg,
+                now,
+                None,
+                None,
+                now + CHECK_INTERVAL + jitter(),
+                None,
+            )
+            .await?;
             Ok(Checked::Unchanged)
         }
         Ok(Fetched::Releases { etag, releases }) => {
-            let rows = rows_of(releases, &previous).await;
+            let downloads = downloads_of(&state.config.updates.releases_url);
+            let rows = rows_of(releases, &previous, &downloads).await;
             let mut tx = state.pg.begin().await?;
             updates::replace_releases(&mut tx, &rows, etag.as_deref()).await?;
-            updates::record_check(&mut *tx, now, None, None, now + CHECK_INTERVAL + jitter())
-                .await?;
+            updates::record_check(
+                &mut *tx,
+                now,
+                None,
+                None,
+                now + CHECK_INTERVAL + jitter(),
+                None,
+            )
+            .await?;
             tx.commit().await?;
             tracing::info!(releases = rows.len(), "fetched the Kaeso release list");
             Ok(Checked::Changed)
@@ -374,8 +459,16 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
             let wait = e
                 .retry_after()
                 .map_or(RETRY_INTERVAL, |w| w.max(RETRY_INTERVAL));
-            updates::record_check(&state.pg, now, None, Some(&message), now + wait + jitter())
-                .await?;
+            let blocked = e.retry_after().map(|w| now + w);
+            updates::record_check(
+                &state.pg,
+                now,
+                None,
+                Some(&message),
+                now + wait + jitter(),
+                blocked,
+            )
+            .await?;
             Ok(Checked::Failed(message))
         }
     }
@@ -507,7 +600,7 @@ pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreErr
     }
     let id = UpdateId::from_uuid(job.id).to_string();
     let seen = match updater::of(state) {
-        None => Err(UpdaterError::Unreachable("not configured".into())),
+        None => Err(UpdaterError::NotSent("not configured".into())),
         Some(client) => client.job(&id).await,
     };
     match seen {
@@ -528,6 +621,9 @@ pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreErr
             if remote.step.as_str() != job.step {
                 updates::set_step(&state.pg, job.id, remote.step.as_str()).await?;
             }
+        }
+        Ok(None) if state.clock.now() - job.started_at < START_GRACE => {
+            tracing::debug!("the updater has not taken up the update yet");
         }
         Ok(None) => {
             finish(
@@ -594,6 +690,19 @@ mod tests {
         );
         h.insert(RETRY_AFTER, HeaderValue::from_static("120"));
         assert_eq!(rate_limit_wait(&h, now), Some(time::Duration::seconds(120)));
+    }
+
+    #[test]
+    fn manifests_come_only_from_kaesos_releases_or_the_configured_server() {
+        let github =
+            url::Url::parse("https://api.github.com/repos/logicplanes/kaeso/releases").unwrap();
+        assert_eq!(
+            downloads_of(&github),
+            "https://github.com/logicplanes/kaeso/releases/download/"
+        );
+        let mirror =
+            url::Url::parse("http://releases:8080/repos/logicplanes/kaeso/releases").unwrap();
+        assert_eq!(downloads_of(&mirror), "http://releases:8080/");
     }
 
     #[test]

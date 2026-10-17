@@ -397,7 +397,7 @@ jobs:
           name: published-${{ matrix.image }}
           path: ${{ runner.temp }}/published/*
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   public-images:
     name: Anonymous pull
@@ -544,19 +544,15 @@ jobs:
             echo "Published [$crate $VERSION](https://crates.io/crates/$crate/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
           done
 
-  github-release:
-    name: GitHub release
-    needs: [validate, manifest, public-images, npm, crates]
+  release-manifest:
+    name: Release manifest
+    needs: [validate, manifest]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: release
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: read
     env:
       VERSION: ${{ needs.validate.outputs.version }}
-      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
       MANUAL: ${{ inputs.manual }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -573,11 +569,86 @@ jobs:
           pattern: published-*
           merge-multiple: true
           path: ${{ runner.temp }}/published
+      - name: Write release.json
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/manifest"
+          mkdir -p "$out"
+          previous="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname --merged HEAD | grep -vxF "v$VERSION" | head -n 1 || true)"
+          since=()
+          if [[ -n "$previous" ]]; then
+            git show "$previous:deploy/compose.yaml" > "$RUNNER_TEMP/previous-compose.yaml"
+            since+=(--previous "$RUNNER_TEMP/previous-compose.yaml")
+            if gh release view "$previous" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qxF release.json; then
+              gh release download "$previous" --repo "$GITHUB_REPOSITORY" --pattern release.json --output "$RUNNER_TEMP/previous-release.json"
+              since+=(--previous-manifest "$RUNNER_TEMP/previous-release.json")
+            fi
+          fi
+          node scripts/release-manifest.mjs --version "$VERSION" --commit "$GITHUB_SHA" --digests "$RUNNER_TEMP/published" \
+            --compose deploy/compose.yaml --migrations crates/kaeso-store/migrations --manual "$MANUAL" "${since[@]}" > "$out/release.json"
+          if [[ "$(jq -r .manual "$out/release.json")" == true ]]; then
+            echo "Installs update to $VERSION by hand: it was marked so, or it changes compose.yaml beyond the image versions." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          cat "$out/release.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-manifest
+          path: ${{ runner.temp }}/manifest/release.json
+          if-no-files-found: error
+          retention-days: 7
+
+  attest-manifest:
+    name: Attest release.json
+    needs: [release-manifest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: release-manifest
+          path: ${{ runner.temp }}/manifest
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: ${{ runner.temp }}/manifest/release.json
+
+  github-release:
+    name: GitHub release
+    needs: [validate, manifest, public-images, npm, crates, attest-manifest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+      attestations: read
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: release-manifest
+          path: ${{ runner.temp }}/assets
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: published-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/published
       - name: Collect the assets
         run: |
           set -euo pipefail
           assets="$RUNNER_TEMP/assets"
-          mkdir -p "$assets"
           cp deploy/compose.yaml deploy/kaeso.example.toml "$assets/"
           cp deploy/.env.example "$assets/env.example"
           for package in tokens ui; do
@@ -586,17 +657,27 @@ jobs:
           for crate in kaeso-kpp kaeso-codecs; do
             curl -fsSL --retry 5 --retry-all-errors -o "$assets/$crate-$VERSION.crate" "https://static.crates.io/crates/$crate/$crate-$VERSION.crate"
           done
-          previous="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname --merged HEAD | grep -vxF "v$VERSION" | head -n 1 || true)"
-          if [[ -n "$previous" ]]; then git show "$previous:deploy/compose.yaml" > "$RUNNER_TEMP/previous-compose.yaml"; fi
-          node scripts/release-manifest.mjs --version "$VERSION" --commit "$(git rev-parse HEAD)" --digests "$RUNNER_TEMP/published" \
-            --compose deploy/compose.yaml --manual "$MANUAL" ${previous:+--previous "$RUNNER_TEMP/previous-compose.yaml"} > "$assets/release.json"
-          if [[ "$(jq -r .manual "$assets/release.json")" == true ]]; then
-            echo "Installs update to $VERSION by hand: it was marked so, or it changes compose.yaml beyond the image versions." >> "$GITHUB_STEP_SUMMARY"
-          fi
           ls -l "$assets"
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
-        with:
-          subject-path: ${{ runner.temp }}/assets/release.json
+      - name: Check that installs will trust the release
+        run: |
+          set -euo pipefail
+          manifest="$RUNNER_TEMP/assets/release.json"
+          commit="$(jq -r .commit "$manifest")"
+          if [[ "$commit" != "$GITHUB_SHA" ]]; then
+            echo "::error::release.json names $commit, but the attestations name $GITHUB_SHA, the commit this run started on; installs would refuse every image."
+            exit 1
+          fi
+          trust=(--repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" --source-ref refs/heads/prod --source-digest "$commit")
+          gh attestation verify "$manifest" "${trust[@]}"
+          for image in gateway console updater; do
+            digest="$(cat "$RUNNER_TEMP/published/$image")"
+            if [[ "$(jq -r ".images.$image.digest" "$manifest")" != "$digest" ]]; then
+              echo "::error::release.json names another digest for kaeso-$image than the one published."
+              exit 1
+            fi
+            gh attestation verify "oci://ghcr.io/logicplanes/kaeso-$image@$digest" "${trust[@]}"
+          done
+          echo "release.json and every image verify against this workflow on prod at \`${GITHUB_SHA:0:12}\`." >> "$GITHUB_STEP_SUMMARY"
       - name: Create the release
         run: |
           set -euo pipefail

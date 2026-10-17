@@ -13,7 +13,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 use subtle::ConstantTimeEq;
 
-use crate::engine::Engine;
+use crate::engine::{BeginError, Engine};
 
 const ID_PREFIX: &str = "upd_";
 const ID_ALPHABET: &[u8] = b"0123456789abcdefghjkmnpqrstvwxyz";
@@ -93,7 +93,11 @@ async fn start(State(app): State<App>, body: axum::body::Bytes) -> Response {
     };
     match app.engine.begin(req.id, version) {
         Ok(job) => (StatusCode::ACCEPTED, Json(job)).into_response(),
-        Err(busy) => error(StatusCode::CONFLICT, &busy.to_string()),
+        Err(e @ BeginError::Busy) => error(StatusCode::CONFLICT, &e.to_string()),
+        Err(e @ BeginError::State(_)) => {
+            tracing::error!(error = %e, "refused an update");
+            error(StatusCode::SERVICE_UNAVAILABLE, &e.to_string())
+        }
     }
 }
 

@@ -129,13 +129,13 @@ pub struct UpdateJobView {
     #[doc = "The version it updates to."]
     #[schema(example = "0.2.1")]
     pub to: String,
-    #[doc = "`running`, `succeeded`, `failed` (nothing changed), `rolled_back` (the previous version runs again) or `rollback_failed`."]
+    #[doc = "`running`, `succeeded` (with a `reason` when compose.yaml still needs the new version by hand), `failed` (nothing changed), `rolled_back` (the previous version runs again), `rollback_failed` (the previous version did not start again) or `needs_attention` (the new gateway may have migrated the database and did not start; someone has to look)."]
     #[schema(example = "running")]
     pub state: String,
-    #[doc = "The step it is on or ended on: `downloading`, `verifying`, `switching`, `migrating` or `online`."]
+    #[doc = "The step it is on or ended on: `verifying`, `downloading`, `switching`, `migrating` or `online`."]
     #[schema(example = "verifying")]
     pub step: String,
-    #[doc = "Why it did not succeed, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted` or `updater_unreachable`."]
+    #[doc = "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."]
     pub reason: Option<String>,
     #[doc = "The updater's account of what went wrong, in English."]
     pub detail: Option<String>,
@@ -367,7 +367,7 @@ pub struct ApplyUpdate {
     post,
     path = "/instance/updates/apply",
     summary = "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-    description = "The updater checks the release's signed provenance, downloads the images, switches the gateway and the console, waits for the gateway's migrations and health, and goes back to the previous version when the new one fails. Poll `instance/updates/jobs/{update}` for the progress.",
+    description = "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.",
     tag = "instance",
     request_body = ApplyUpdate,
     responses((status = 202, body = UpdateJobView))
@@ -445,28 +445,42 @@ pub async fn apply(
         id: id.to_string(),
         version: to.clone(),
     };
-    if let Err(e) = client.start(&request).await {
-        let job = updates::job(&state.pg, id.uuid())
-            .await?
-            .ok_or_else(|| ApiError::internal("the update row vanished"))?;
-        let detail = e.to_string();
-        service::finish(
-            &state,
-            &job,
-            &Outcome {
-                state: JobState::Failed,
-                step: &job.step,
-                reason: Some(Reason::UpdaterUnreachable),
-                detail: Some(&detail),
-            },
-        )
-        .await?;
-        return Err(match e {
-            UpdaterError::Busy => ApiError::Conflict(
-                "The updater is busy with another update; try again later.".into(),
-            ),
-            other => updater_unavailable(other),
-        });
+    match client.start(&request).await {
+        Ok(_) => {}
+        Err(e) if e.certain() => {
+            let job = updates::job(&state.pg, id.uuid())
+                .await?
+                .ok_or_else(|| ApiError::internal("the update row vanished"))?;
+            let detail = e.to_string();
+            service::finish(
+                &state,
+                &job,
+                &Outcome {
+                    state: JobState::Failed,
+                    step: &job.step,
+                    reason: Some(if e.refused() {
+                        Reason::UpdaterRefused
+                    } else {
+                        Reason::UpdaterUnreachable
+                    }),
+                    detail: Some(&detail),
+                },
+            )
+            .await?;
+            return Err(match e {
+                UpdaterError::Busy => ApiError::Conflict(
+                    "The updater is busy with another update; try again later.".into(),
+                ),
+                other if other.refused() => ApiError::unavailable(
+                    "The updater refused the update; nothing was changed.",
+                    other,
+                ),
+                other => updater_unavailable(other),
+            });
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "the updater did not confirm the update; its progress tells")
+        }
     }
     let job = updates::job(&state.pg, id.uuid())
         .await?
