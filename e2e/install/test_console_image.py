@@ -72,7 +72,12 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
             except httpx.HTTPError:
                 return False
 
-        poll(healthy, "the console answering /healthz", seconds=30)
+        try:
+            poll(healthy, "the console answering /healthz", seconds=30)
+        except TimeoutError as error:
+            logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True)
+            files = subprocess.run(["docker", "run", "--rm", "--entrypoint", "ls", image, "-lnR", "/etc/caddy", "/srv"], capture_output=True, text=True)
+            raise AssertionError(f"{error}; the container logged: {logs.stdout}{logs.stderr}; its files: {files.stdout}") from error
         for path, text in DIST.items():
             reply = httpx.get(f"{url}/{path}", timeout=5)
             assert reply.status_code == 200, f"/{path}: {reply.status_code}"
