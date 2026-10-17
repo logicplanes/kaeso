@@ -75,7 +75,7 @@ async function atRest(page: Page) {
     const frames = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const moving = () => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getComputedTiming().endTime !== Infinity);
     const transitioning = () => document.querySelector("[data-starting-style], [data-ending-style]");
-    const idle = () => new Promise((resolve) => (typeof requestIdleCallback === "function" ? requestIdleCallback(resolve) : setTimeout(resolve)));
+    const idle = () => new Promise((resolve) => (typeof requestIdleCallback === "function" ? requestIdleCallback(resolve, { timeout: 1000 }) : setTimeout(resolve)));
     await document.fonts.ready;
     await idle();
     await frames();

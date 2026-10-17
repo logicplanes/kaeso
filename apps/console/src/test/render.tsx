@@ -4,7 +4,7 @@ import { render, waitFor, type RenderResult } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router";
-import { LinkProvider, ThemeProvider } from "@logicplanes/kaeso-ui";
+import { LinkProvider, ThemeProvider, TooltipProvider } from "@logicplanes/kaeso-ui";
 import { apply, load, type Locale } from "~/i18n";
 import { I18nProvider } from "~/i18n/provider";
 import { queryClient } from "~/query";
@@ -28,7 +28,9 @@ async function providers(children: ReactNode, locale: Locale): Promise<ReactNode
     <QueryClientProvider client={queryClient}>
       <I18nProvider initial={initial}>
         <ThemeProvider>
-          <LinkProvider component={RouterLink}>{children}</LinkProvider>
+          <TooltipProvider>
+            <LinkProvider component={RouterLink}>{children}</LinkProvider>
+          </TooltipProvider>
           <AppToaster />
         </ThemeProvider>
       </I18nProvider>

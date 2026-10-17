@@ -38,7 +38,10 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(response?.headers()["content-security-policy"]).toBe(policy());
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await page.keyboard.press("ControlOrMeta+k");
+      const search = page.getByRole("dialog").getByRole("combobox");
+      await expect(search).toBeFocused();
       await page.keyboard.type("key");
+      await expect(search).toHaveValue("key");
       await expect(page.getByRole("option").first()).toBeVisible();
       await page.keyboard.press("Escape");
       const language = page.locator("[role=combobox]").filter({ hasText: /English|Deutsch|简体中文/ });

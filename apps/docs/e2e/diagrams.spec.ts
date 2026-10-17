@@ -54,8 +54,12 @@ test("a diagram follows the site's theme setting, not only the system's, and pri
 
 test("the search finds a page by its diagram's words", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.keyboard.press("ControlOrMeta+k");
+  const input = page.getByPlaceholder("Search the documentation");
+  await expect(input).toBeFocused();
   await page.keyboard.type("or else");
+  await expect(input).toHaveValue("or else");
   await expect(page.getByRole("option", { name: /Provider keys/ }).first()).toBeVisible();
 });
 
