@@ -533,6 +533,92 @@ async fn a_role_change_waits_for_a_rights_change_and_is_checked_against_it() {
 }
 
 #[tokio::test]
+async fn needs_hold_within_each_grant_whatever_the_org_role_gives_in_every_project() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let org_role = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": "Model lead", "rights": ["org.view"], "project_rights": ["project.view", "models.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let org_role = org_role.body["id"].as_str().unwrap().to_owned();
+    let project_role = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Model reader", "rights": ["project.view", "models.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let project_role = project_role.body["id"].as_str().unwrap().to_owned();
+    let bare = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Project only", "rights": ["project.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let bare = bare.body["id"].as_str().unwrap().to_owned();
+    let (dev, dev_id) = join(&app, &owner, "dev@example.com", &org_role, json!([])).await;
+    let grant_path = format!("/orgs/{org}/projects/{project}/members/{dev_id}");
+
+    let r = patch(
+        &app,
+        &owner,
+        &grant_path,
+        json!({ "role": bare, "rights_added": ["models.manage"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`models.manage` needs `models.view`."
+    );
+
+    let r = patch(
+        &app,
+        &owner,
+        &grant_path,
+        json!({ "role": project_role, "rights_added": ["models.manage"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/roles/{project_role}"),
+        json!({ "rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`models.manage` needs `models.view` for 1 of this role's holders; keep it in the role."
+    );
+
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/roles/{org_role}"),
+        json!({ "project_rights": ["project.view"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let mine = app
+        .get(&format!("/orgs/{org}/projects/{project}/my-rights"), &dev)
+        .await;
+    assert_eq!(
+        held(&mine.body["rights"], "models.view").unwrap()[0]["kind"],
+        "project_role"
+    );
+    assert!(held(&mine.body["rights"], "models.manage").is_some());
+}
+
+#[tokio::test]
 async fn a_role_change_never_strands_the_rights_its_holders_were_given() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
