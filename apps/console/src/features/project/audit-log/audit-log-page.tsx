@@ -24,7 +24,7 @@ export function ProjectAuditLogPage({ org, project, search }: { org: string; pro
           search={search}
           onSearch={(next) => void navigate({ to: "/orgs/$org/projects/$project/audit-log", params: { org, project }, search: next, replace: true })}
           partyLabel={partyLabel}
-          actors={(members.data ?? []).map((m) => ({ id: m.user.id, name: m.user.name, email: m.user.email }))}
+          actors={(members.data ?? []).map((m) => m.user)}
           targetHref={(kind, id) => (kind === "user" ? `${base}/members?member=${id}` : undefined)}
           targetName={(kind, id) => (kind === "user" ? members.data?.find((m) => m.user.id === id)?.user.name : undefined)}
         />

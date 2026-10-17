@@ -54,7 +54,7 @@ export function OrgAuditLogPage({ org, search }: { org: string; search: AuditSea
         search={search}
         onSearch={(next) => void navigate({ to: "/settings/orgs/$org/audit-log", params: { org }, search: next, replace: true })}
         partyLabel={partyLabel}
-        actors={(members.data ?? []).map((m) => ({ id: m.user.id, name: m.user.name, email: m.user.email }))}
+        actors={(members.data ?? []).map((m) => m.user)}
         targetHref={targetHref}
         targetName={targetName}
       />

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { PROJECT, signedIn, without } from "~/test/fixtures";
+import { PROJECT, signedIn, whoAmI, without } from "~/test/fixtures";
 import { apiKey, listed, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -36,6 +36,26 @@ describe("KeysPage", () => {
     expect(within(grid).getByRole("gridcell", { name: /expiring-soon/ })).toHaveTextContent(/Grace Hopper|G/);
     expect(within(grid).getByRole("gridcell", { name: /old-key/ })).toHaveTextContent(/Expired/);
     expect(within(within(grid).getByRole("gridcell", { name: /nightly-batch/ })).getByRole("img", { name: "ci-deploy" })).toBeInTheDocument();
+  });
+
+  it("shows an owner's picture on their keys, or their initial without one", async () => {
+    signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" } }) });
+    projectData({
+      members: [projectMember({ user: { avatar_url: "/avatars/grace.webp" } }), projectMember({ user: { id: "usr_alan", name: "Alan Turing" } })],
+      keys: [
+        apiKey(),
+        apiKey({ id: "key_grace", name: "grace-key", principal: { kind: "user", id: "usr_grace" } }),
+        apiKey({ id: "key_alan", name: "alan-key", principal: { kind: "user", id: "usr_alan" } }),
+      ],
+    });
+    await renderApp(projectPath("keys"));
+
+    const grid = await screen.findByRole("grid", { name: "Keys" });
+    const cell = (name: RegExp) => within(grid).getByRole("gridcell", { name });
+    await waitFor(() => expect(cell(/grace-key/).querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull());
+    expect(cell(/checkout-web/).querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
+    expect(within(cell(/alan-key/)).getByRole("img", { name: "Alan Turing" })).toHaveTextContent("A");
+    expect(cell(/alan-key/).querySelector("img[src]")).toBeNull();
   });
 
   it("shows only active keys under Active", async () => {

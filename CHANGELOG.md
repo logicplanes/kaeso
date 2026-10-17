@@ -20,6 +20,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ### Fixed
 
+- The console's audit logs show the actor's profile picture, in the Actor column and in the actor filter, instead of only an initial, and a project's API keys show their owner's picture.
 - The descriptions of the showcase's home and changelog pages are in German and Chinese on the German and Chinese pages, and the showcase's German search placeholder fits on a phone.
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
 - Tables in the documentation keep their words whole and scroll inside a named region when they are wider than the screen, and the previous and next links show their label above the page title; a ScrollArea with an `aria-label` is now a region screen readers announce.

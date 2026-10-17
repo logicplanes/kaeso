@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import type { AuditEventView, InstanceUserView } from "~/api/generated/types";
-import { USER, signedIn } from "~/test/fixtures";
+import { USER, signedIn, whoAmI } from "~/test/fixtures";
 import { instanceOrg, instanceUser } from "~/test/fixtures/instance-account";
 import { paged } from "~/test/fixtures/org";
 import { auditEvent } from "~/test/fixtures/shell";
@@ -116,6 +116,36 @@ describe("instance audit log", () => {
     await renderApp(`${PATH}?actor=usr_linus`);
     await waitFor(() => expect(screen.getByRole("combobox", { name: "Actor" })).toHaveValue("Linus Pauling"));
     expect(requests("GET", "instance/audit-log").at(-1)?.query.get("actor")).toBe("usr_linus");
+  });
+
+  it("shows each actor's picture, or their initial without one", async () => {
+    signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" } }) });
+    const everyone = [instanceUser({ id: USER, name: "Ada Okafor", email: "owner@example.com" }), instanceUser({ avatar_url: "/avatars/grace.webp" })];
+    instanceAudit(EVENTS, { listed: everyone, users: everyone });
+    const { user } = await renderApp(PATH);
+    const self = (await within(table()).findByText("Ada Okafor (you)")).closest('[role="row"]') as HTMLElement;
+    expect(self.querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
+    await waitFor(() => expect(row("198.51.100.4").querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull());
+    expect(within(row("198.51.100.6")).getByText("U")).toBeInTheDocument();
+    expect(row("198.51.100.6").querySelector("img")).toBeNull();
+    expect(row("198.51.100.5").querySelector("img")).toBeNull();
+
+    await user.click(screen.getByRole("combobox", { name: "Actor" }));
+    const option = await screen.findByRole("option", { name: /Grace Hopper/ });
+    expect(option.querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull();
+  });
+
+  it("shows the initial for an actor without a picture", async () => {
+    signedIn();
+    instanceAudit();
+    const { user } = await renderApp(PATH);
+    await within(table()).findByText("Ada Okafor (you)");
+    await waitFor(() => expect(within(row("198.51.100.4")).getByText("G")).toBeInTheDocument());
+    expect(table().querySelector("img")).toBeNull();
+
+    await user.click(screen.getByRole("combobox", { name: "Actor" }));
+    const option = await screen.findByRole("option", { name: /Grace Hopper/ });
+    expect(within(option).getByText("G")).toBeInTheDocument();
   });
 
   it("opens an event in a sheet", async () => {

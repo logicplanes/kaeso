@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { orgMembersQuery, platformKeysQuery } from "~/api/queries/orgs";
 import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
-import { partyText, type PartyLabel, type PartyRef } from "~/kaeso/party";
+import { partyText, userLabel, type PartyLabel, type PartyRef } from "~/kaeso/party";
 
 export function useOrgPartyLabel(org: string): (p: PartyRef) => PartyLabel {
   const session = useSession();
@@ -15,8 +15,9 @@ export function useOrgPartyLabel(org: string): (p: PartyRef) => PartyLabel {
       const named = (name: string): PartyLabel => ({ name, you: false });
       if (p.kind === "system") return named(t("org.party.system", "System"));
       if (p.kind === "user") {
-        if (p.id === session.user.id) return { name: session.user.name, you: true };
-        return named(members.data?.find((m) => m.user.id === p.id)?.user.name ?? p.id ?? t("org.party.member", "A member"));
+        if (p.id === session.user.id) return userLabel(session.user, true);
+        const member = members.data?.find((m) => m.user.id === p.id)?.user;
+        return member ? userLabel(member) : named(p.id ?? t("org.party.member", "A member"));
       }
       if (p.kind === "org_platform_key") {
         const name = keys.data?.find((k) => k.id === p.id)?.name ?? p.id;
@@ -27,7 +28,7 @@ export function useOrgPartyLabel(org: string): (p: PartyRef) => PartyLabel {
         return named(p.id ? t("org.party.serviceAccount", "Service account {id}", { id: p.id }) : t("org.party.serviceAccountUnnamed", "Service account"));
       return named(p.id ?? p.kind);
     },
-    [keys.data, members.data, session.user.id, session.user.name],
+    [keys.data, members.data, session.user],
   );
 }
 

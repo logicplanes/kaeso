@@ -5,7 +5,7 @@ import { auditLogQuery, type AuditSearch } from "~/api/queries/audit";
 import { instanceOrgQuery, instanceUserQuery, instanceUsersQuery } from "~/api/queries/instance";
 import { useSession } from "~/auth/session";
 import { AuditLog } from "~/kaeso/audit-log";
-import type { PartyLabel, PartyRef } from "~/kaeso/party";
+import { userLabel, type PartyLabel, type PartyRef } from "~/kaeso/party";
 import { InstancePage } from "./instance-page";
 import { t } from "~/i18n";
 
@@ -34,11 +34,13 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
   const partyLabel = useCallback(
     (p: PartyRef): PartyLabel => {
       if (p.kind === "system") return { name: t("instance.system", "System"), you: false };
-      if (p.kind === "user" && p.id === session.user.id) return { name: session.user.name, you: true };
-      if (p.kind === "user") return { name: known.get(p.id ?? "")?.name ?? p.id ?? t("instance.aUser", "A user"), you: false };
+      if (p.kind === "user" && p.id === session.user.id) return userLabel(session.user, true);
+      const user = p.kind === "user" ? known.get(p.id ?? "") : undefined;
+      if (user) return userLabel(user);
+      if (p.kind === "user") return { name: p.id ?? t("instance.aUser", "A user"), you: false };
       return { name: p.id ?? p.kind, you: false };
     },
-    [known, session.user.id, session.user.name],
+    [known, session.user],
   );
   const selected = filters.actor ? known.get(filters.actor) : undefined;
   const actors = [...(selected && !matches.some((u) => u.id === selected.id) ? [selected] : []), ...matches];
@@ -52,7 +54,7 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
         search={search}
         onSearch={(next) => void navigate({ to: "/settings/instance/audit-log", search: next, replace: true })}
         partyLabel={partyLabel}
-        actors={actors.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
+        actors={actors}
         onActorSearch={setActorQuery}
         actorsLoading={found.isFetching}
         targetName={targetName}
