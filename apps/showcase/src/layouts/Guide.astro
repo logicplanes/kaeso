@@ -8,13 +8,15 @@ interface Props {
   description: string;
   path: string;
   toc: [string, string][];
+  wide?: boolean | undefined;
+  feed?: { title: string; href: string } | undefined;
 }
-const { title, description, path, toc } = Astro.props;
+const { title, description, path, toc, wide, feed } = Astro.props;
 const lang = docsLangOf(Astro.params.lang);
 ---
 
-<Shell title={title} description={description} path={path}>
-  <GuideBody title={docsText(lang, title)} description={docsText(lang, description)} toc={toc}>
+<Shell title={title} description={description} path={path} feed={feed}>
+  <GuideBody title={docsText(lang, title)} description={docsText(lang, description)} toc={toc} wide={wide}>
     <slot />
   </GuideBody>
 </Shell>

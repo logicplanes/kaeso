@@ -42,6 +42,13 @@
   & li + li {
     margin-top: 4px;
   }
+  & li > ul,
+  & li > ol {
+    margin-top: 4px;
+  }
+  & ul ul {
+    list-style: circle;
+  }
   & strong {
     color: var(--k-text);
     font-weight: var(--k-weight-semibold);

@@ -228,8 +228,12 @@ function blocks(bs: Block[], ctx: Ctx): ReactNode[] {
   return bs.map((b, i) => block(b, i, ctx));
 }
 
-export function Markdown({ blocks: bs, className }: { blocks: Block[]; className?: string }) {
+export function Markdown({ blocks: bs, className, lang }: { blocks: Block[]; className?: string; lang?: string | undefined }) {
   const t = useText();
   const locale = useSiteLocale();
-  return <div className={`flex min-w-0 flex-col gap-16${className ? ` ${className}` : ""}`}>{blocks(bs, { size: "body-lg", tone: "default", t, locale })}</div>;
+  return (
+    <div lang={lang} className={`flex min-w-0 flex-col gap-16${className ? ` ${className}` : ""}`}>
+      {blocks(bs, { size: "body-lg", tone: "default", t, locale })}
+    </div>
+  );
 }

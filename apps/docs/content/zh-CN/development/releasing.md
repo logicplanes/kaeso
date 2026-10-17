@@ -55,6 +55,8 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
 
 在同一版本的预发布版本之后发布正式版本时（例如在 `0.2.0-rc.1` 和 `0.2.0-rc.2` 之后发布 `0.2.0`），会把这些预发布版本的各节以及 `[Unreleased]` 下的新内容合并成一节 `## [0.2.0] - YYYY-MM-DD`：每个标题（例如 `### Added`）及其下每个主题（例如 `#### Model API`）中的条目分别合并在一起，最新的在前，预发布版本的各节及其链接则被移除。这些修改由 `scripts/changelog.mjs` 完成，GitHub 上的发布说明就是它写出的那一节。这样它的发布说明就列出了该版本自上一个正式版本以来的全部变更。
 
+两个网站都在 `/changelog` 显示更新日志：文档（[更新日志页面](architecture/docs-site.md#更新日志)）和 ui.kaeso.app 上的展示站都通过 `scripts/changelog.mjs` 中的 `history` 读取 `CHANGELOG.md`，因此发布时无需为它们做额外的步骤。从发布标签构建时，`[Unreleased]` 下没有内容，页面会省略它；从 `dev` 构建时，这些条目排在最前面，并标记为尚未发布。
+
 ## 发布一个版本
 
 1. **准备好 `dev`。** [完成标准](testing.md#完成变更之前)中的每项检查都通过，包括 `pnpm release:check`，`dev` 上的 CI 为绿色，并且 `CHANGELOG.md` 写明了该版本的所有变更。

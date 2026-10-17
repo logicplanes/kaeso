@@ -32,9 +32,49 @@ export interface TocEntry {
   depth: 0 | 1;
 }
 
+export type ChangelogGroup = "added" | "changed" | "deprecated" | "removed" | "fixed" | "security";
+
+export interface ChangelogTopic {
+  name: string;
+  id: string;
+  blocks: Block[];
+}
+
+export interface ChangelogSection {
+  name: string;
+  group?: ChangelogGroup;
+  id: string;
+  blocks: Block[];
+  topics: ChangelogTopic[];
+}
+
+export interface ChangelogEntry {
+  id: string;
+  intro: Block[];
+  sections: ChangelogSection[];
+}
+
+export interface ChangelogRelease extends ChangelogEntry {
+  version: string;
+  date?: string;
+  prerelease: boolean;
+  yanked: boolean;
+  latest: boolean;
+  previous?: string;
+  url?: string;
+  compare?: string;
+}
+
+export interface ChangelogContent {
+  releases: ChangelogRelease[];
+  unreleased?: ChangelogEntry & { since?: string; compare?: string };
+  repository?: string;
+}
+
 export interface PageContent {
   blocks: Block[];
   toc: TocEntry[];
+  changelog?: ChangelogContent;
 }
 
 export interface PageMeta {

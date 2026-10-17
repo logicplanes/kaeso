@@ -20,7 +20,7 @@ const count = components.length;
     </h1>
     <div class="flex items-center gap-4">
       <a
-        href={localizedPath(lang, "/changelog")}
+        href={`${localizedPath(lang, "/changelog")}#v${ui.version}`}
         class="hidden h-32 items-center rounded-pill px-10 mono text-small text-fg-secondary transition-control hover:text-fg focus-ring sm:inline-flex"
       >
         @logicplanes/kaeso-ui v{ui.version}

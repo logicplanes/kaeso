@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 4481;
 export const FIXTURES = "e2e/fixtures/content";
+export const CHANGELOG = "e2e/fixtures/CHANGELOG.md";
 export const EDIT_BASE = "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/";
 
 export default defineConfig({
@@ -21,7 +22,7 @@ export default defineConfig({
     command: `pnpm exec vite build --outDir dist-e2e --emptyOutDir && pnpm exec vite preview --outDir dist-e2e --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
-    env: { KAESO_DOCS_CONTENT: FIXTURES, KAESO_DOCS_PORT: String(PORT), KAESO_VITE_CACHE: "node_modules/.vite-e2e" },
+    env: { KAESO_DOCS_CONTENT: FIXTURES, KAESO_DOCS_CHANGELOG: CHANGELOG, KAESO_DOCS_PORT: String(PORT), KAESO_VITE_CACHE: "node_modules/.vite-e2e" },
     timeout: 120_000,
   },
 });

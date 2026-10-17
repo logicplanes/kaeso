@@ -36,6 +36,7 @@ test("every page is built with its own title, description and alternates", async
   const sitemap = await (await request.get("/sitemap.xml")).text();
   const english = [
     "/",
+    "/changelog",
     "/guides",
     "/guides/keys-and-limits",
     "/guides/provider-keys",
@@ -53,7 +54,7 @@ test("every page is built with its own title, description and alternates", async
 test("the build passes the site check: every page in the sitemap, with its alternates and link previews", () => {
   const docs = fileURLToPath(new URL("..", import.meta.url));
   const out = execFileSync("node", ["../../scripts/check-site.mjs", "dist-e2e", "https://docs.kaeso.app"], { cwd: docs, encoding: "utf8" });
-  expect(out).toMatch(/^site: 24 pages, all 24 in sitemap\.xml/);
+  expect(out).toMatch(/^site: 27 pages, all 27 in sitemap\.xml/);
 });
 
 test("a page names its language, its preview image and what it is", async ({ request }) => {

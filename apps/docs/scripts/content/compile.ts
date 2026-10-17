@@ -1,5 +1,5 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
-import type { Block, CalloutKind, CodeLang, Inline, ListItem, TocEntry } from "../../src/markdown/ast.ts";
+import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, ListItem, TocEntry } from "../../src/markdown/ast.ts";
 import { Slugger } from "./slug.ts";
 
 interface Heading {
@@ -22,11 +22,11 @@ export interface Resolver {
   anchors: Set<string>;
 }
 
-function lexer() {
+function lexer(references = false) {
   const tokenizer = new Tokenizer();
   tokenizer.html = () => undefined;
   tokenizer.tag = () => undefined;
-  tokenizer.def = () => undefined;
+  if (!references) tokenizer.def = () => undefined;
   return new Lexer({ gfm: true, breaks: false, tokenizer });
 }
 
@@ -42,8 +42,8 @@ function plain(tokens: Token[] | undefined): string {
     .join("");
 }
 
-export function lex(body: string): Lexed {
-  const tokens = lexer().lex(body);
+export function lex(body: string, options: { references?: boolean } = {}): Lexed {
+  const tokens = lexer(options.references).lex(body);
   const slugger = new Slugger();
   const headings: Heading[] = [];
   let h1: string | undefined;
@@ -221,6 +221,7 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
   for (const t of tokens) {
     switch (t.type) {
       case "space":
+      case "def":
         break;
       case "heading": {
         const h = t as Tokens.Heading;
@@ -296,6 +297,7 @@ export interface Compiled {
   toc: TocEntry[];
   words: string[];
   problems: string[];
+  changelog?: ChangelogContent;
 }
 
 function words(bs: Block[], into: Set<string>): void {

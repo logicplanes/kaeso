@@ -52,7 +52,7 @@ A route fails the build when it is over its ceiling. The target is the size a ro
 
 | Budget | What is counted | Measured | Ceiling |
 | --- | --- | --: | --: |
-| The frame in each language | The entry with its static imports and stylesheet, the language's site module and the library's messages | 202.1 kB (English), 207.6 kB (German), 208.1 kB (Chinese) | 216 kB |
+| The frame in each language | The entry with its static imports and stylesheet, the language's site module and the library's messages | 204.7 kB (English), 210.2 kB (German), 210.7 kB (Chinese) | 216 kB |
 | One page's content | Each page's own chunk: its blocks and table of contents | 17.3 kB at most (`zh-CN/development/kpp/anthropic-messages`) | 24 kB a page |
 
 The frame changes with the code and grows a little with every page, because the site module carries the sidebar and every page's title and description, so the sidebar paints with the frame and never shifts. German and Chinese also load the library's messages for their language, about 5 kB. The ceiling is the measured size of the largest frame with a little room. A page's content has a budget of its own, so a page that grows too long fails with its address, whoever edits it; the answer is two pages.
@@ -65,7 +65,7 @@ The search with its index, the toaster and the code highlighter's grammars load 
 | `AppFrame`, `Sidebar`, the navigation sheet | The frame; `Sidebar` brings Base UI's menu with it |
 | `Select` | The language and theme selects at the foot of the sidebar |
 | Tooltips, `IconButton` | The search and collapse controls |
-| The page and its renderer | `Text`, `Link`, `Code`, `CodeBlock` (its highlighter loads only with a code block), `Banner`, `Table`, `ScrollArea`, `Checkbox`, `Separator`, `TableOfContents` |
+| The page and its renderer | `Text`, `Link`, `Code`, `CodeBlock` (its highlighter loads only with a code block), `Banner`, `Table`, `ScrollArea`, `Checkbox`, `Separator`, `TableOfContents`, and `Badge` with the date formatter for the changelog |
 | The sidebar and every page's title and description | The language's `site` module, so the sidebar paints with the frame and never shifts |
 
 - Imports from `@logicplanes/kaeso-ui` are rewritten to the library's per-component entries at build time (`uiEntryImports` in `apps/docs/vite.config.ts`), so the frame holds only the components the site uses.

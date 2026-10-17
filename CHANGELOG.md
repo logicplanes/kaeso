@@ -6,12 +6,14 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ### Added
 
+- A changelog page on the documentation site, after the introduction, made from `CHANGELOG.md` in English, German and Simplified Chinese: every release with its date in the page's language, an address such as `/changelog#v0.1.0`, Latest and pre-release marks, and links to its GitHub release and to the changes since the release before.
 - `ThemeSelect`, a select for the system, light or dark theme with its label and choices in the provider's language, beside `ThemeMenu`.
 - On phones, the documentation site and the UI library's showcase open the search from a button in the header, beside the navigation toggle; `AppFrame` takes `phoneActions` for such buttons.
 - Both sites list every page in every language in `sitemap.xml`, with its `hreflang` alternates and `x-default`, and name it in `robots.txt`; every page has a canonical address, Open Graph and Twitter tags with a preview image of the Kaeso logo, and its language's alternates, and the showcase has a web manifest. Not-found pages and the showcase's examples and states pages are kept out of search results.
 
 ### Changed
 
+- The showcase's changelog shows the same releases, marks and links as the documentation's, with its section names in the page's language, and shows changes that aren't released yet only when there are any, marked as such.
 - The documentation site's sidebar shows the same language and theme selects, side by side at its foot, as the UI library's showcase.
 - Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
 - The showcase's View source links, its `llms.txt` and the links in its changelog open the source of the release the site was built for, at its tag, instead of the `dev` branch.

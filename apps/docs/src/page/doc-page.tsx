@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { AppFrame, Link, Separator, TableOfContents, Text } from "@logicplanes/kaeso-ui";
 import { useText } from "~/i18n/text";
-import type { PageMeta } from "~/markdown/ast";
+import type { PageContent, PageMeta } from "~/markdown/ast";
 import { Markdown } from "~/markdown/render";
 import { usePageTitle } from "~/shell/title";
+import { Changelog, ChangelogNote } from "./changelog";
 import type { LoadedPage } from "./load";
 
 export function DocPage({ meta, content, editBase }: LoadedPage) {
@@ -24,9 +25,14 @@ export function DocPage({ meta, content, editBase }: LoadedPage) {
             <Text as="p" variant="body-lg" weight="regular" tone="secondary" className="text-pretty">
               {meta.description}
             </Text>
+            {content.changelog && <ChangelogNote />}
           </header>
-          {content.blocks.length > 0 && <Markdown blocks={content.blocks} className="mt-40" />}
-          <PageFooter meta={meta} editBase={editBase} />
+          {content.changelog ? (
+            <Changelog changelog={content.changelog} />
+          ) : (
+            content.blocks.length > 0 && <Markdown blocks={content.blocks} className="mt-40" />
+          )}
+          <PageFooter meta={meta} editBase={editBase} content={content} />
         </article>
         <div className="hidden w-200 shrink-0 xl:block">{content.toc.length > 1 && <TableOfContents items={content.toc} className="sticky top-64" />}</div>
       </div>
@@ -34,7 +40,7 @@ export function DocPage({ meta, content, editBase }: LoadedPage) {
   );
 }
 
-function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
+function PageFooter({ meta, editBase, content }: { meta: PageMeta; editBase: string; content: PageContent }) {
   const t = useText();
   return (
     <footer className="mt-64 flex flex-col gap-24">
@@ -50,9 +56,17 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
       )}
       <Separator />
       <div className="flex">
-        <Link href={`${editBase}${meta.file}`} variant="quiet" external>
-          {t("page.edit")}
-        </Link>
+        {content.changelog ? (
+          content.changelog.repository && (
+            <Link href={`${content.changelog.repository}/releases`} variant="quiet" external>
+              {t("changelog.releases")}
+            </Link>
+          )
+        ) : (
+          <Link href={`${editBase}${meta.file}`} variant="quiet" external>
+            {t("page.edit")}
+          </Link>
+        )}
       </div>
     </footer>
   );

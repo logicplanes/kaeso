@@ -83,6 +83,9 @@ const fold = (bodies) => {
 
 const folded = (version) => (name) => name === "Unreleased" || (isStable(version) && name.startsWith(`${version}-`));
 
+const unreleasedLink = (links) => links.find((line) => linkName(line) === "Unreleased");
+const repositoryOf = (links) => /^\[Unreleased\]: (.+)\/compare\//.exec(unreleasedLink(links) ?? "")?.[1] ?? null;
+
 export function releasable(text, version) {
   const { sections } = parse(text);
   if (sections.some(({ name }) => name === version)) return true;
@@ -93,8 +96,8 @@ export function release(text, version, date) {
   const changelog = parse(text);
   if (changelog.sections.some(({ name }) => name === version)) return text;
   const folds = folded(version);
-  const unreleased = changelog.links.find((line) => linkName(line) === "Unreleased");
-  const base = unreleased && /^\[Unreleased\]: (.+)\/compare\//.exec(unreleased)?.[1];
+  const unreleased = unreleasedLink(changelog.links);
+  const base = repositoryOf(changelog.links);
   if (!base) throw new Error("CHANGELOG.md has no [Unreleased] compare link");
   const body = fold(changelog.sections.filter(({ name }) => folds(name)).map((section) => section.body));
   const sections = [
@@ -113,6 +116,72 @@ export function notes(text, version) {
   const section = parse(text).sections.find(({ name }) => name === version);
   if (!section) throw new Error(`CHANGELOG.md has no section for ${version}`);
   return section.body.join("\n");
+}
+
+const slug = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+
+const entry = (id, body) => {
+  const seen = new Map();
+  const unique = (base) => {
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count ? `${base}-${count + 1}` : base;
+  };
+  const markdown = (lines) => trim(lines).join("\n");
+  const [intro, ...parts] = outline(body);
+  const sections = [];
+  for (const { group, topic, lines } of parts) {
+    if (!topic) sections.push({ name: group, id: unique(`${id}-${slug(group)}`), markdown: markdown(lines), topics: [] });
+    else {
+      const section = sections.at(-1);
+      section.topics.push({ name: topic, id: unique(`${section.id}-${slug(topic)}`), markdown: markdown(lines) });
+    }
+  }
+  const filled = sections
+    .map((section) => ({ ...section, topics: section.topics.filter((topic) => topic.markdown) }))
+    .filter((section) => section.markdown || section.topics.length);
+  return { id, intro: markdown(intro.lines), sections: filled };
+};
+
+const isEmpty = ({ intro, sections }) => !intro && !sections.length;
+
+const RELEASE_HEADING = /^## \[([^\]]+)\](?:\s+-\s+(\d{4}-\d{2}-\d{2}))?(\s+\[YANKED\])?\s*$/i;
+
+export function history(text) {
+  if (!text.split("\n").some(sectionName)) return { repository: null, definitions: "", unreleased: null, releases: [] };
+  const { sections, links } = parse(text);
+  const repository = repositoryOf(links);
+  const versions = sections
+    .filter(({ name }) => name !== "Unreleased")
+    .map(({ name, heading, body }) => {
+      const [, , date, yanked] = RELEASE_HEADING.exec(heading) ?? [];
+      return { ...entry(`v${name}`, body), version: name, date: date ?? null, prerelease: !isStable(name), yanked: Boolean(yanked) };
+    });
+  const latest = versions.find(({ prerelease, yanked }) => !prerelease && !yanked)?.version ?? null;
+  const releases = versions.map((release, i) => {
+    const previous = versions[i + 1]?.version ?? null;
+    return {
+      ...release,
+      latest: release.version === latest,
+      previous,
+      url: repository && `${repository}/releases/tag/v${release.version}`,
+      compare: repository && previous && `${repository}/compare/v${previous}...v${release.version}`,
+    };
+  });
+  const pending = sections.find(({ name }) => name === "Unreleased");
+  const unreleased = pending && entry("unreleased", pending.body);
+  const since = releases[0]?.version ?? null;
+  const compare = /^\[Unreleased\]: (\S+)/.exec(unreleasedLink(links) ?? "")?.[1] ?? null;
+  return {
+    repository,
+    definitions: links.filter(linkName).join("\n"),
+    unreleased: unreleased && !isEmpty(unreleased) ? { ...unreleased, since, compare: since && compare } : null,
+    releases,
+  };
 }
 
 const file = join(dirname(fileURLToPath(import.meta.url)), "..", "CHANGELOG.md");

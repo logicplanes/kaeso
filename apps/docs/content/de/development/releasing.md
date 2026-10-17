@@ -55,6 +55,8 @@ Ein Release fügt unter `## [Unreleased]` die Überschrift `## [X.Y.Z] - YYYY-MM
 
 Ein stabiles Release nach Pre-Releases seiner Version, etwa `0.2.0` nach `0.2.0-rc.1` und `0.2.0-rc.2`, fasst deren Abschnitte und alles Neue unter `[Unreleased]` im einen Abschnitt `## [0.2.0] - YYYY-MM-DD` zusammen: Die Zeilen unter jeder Überschrift, etwa `### Added`, und unter jedem Thema darin, etwa `#### Model API`, kommen zusammen, die neuesten zuerst, und die Abschnitte und Links der Pre-Releases entfallen. `scripts/changelog.mjs` nimmt diese Änderungen vor, und die Release Notes auf GitHub sind der Abschnitt, den es schreibt. Seine Release Notes nennen dann alles, was die Version seit dem letzten stabilen Release ändert.
 
+Beide Websites zeigen das Changelog unter `/changelog`: Die Dokumentation ([die Seite Änderungen](architecture/docs-site.md#das-changelog)) und der Showcase unter ui.kaeso.app lesen `CHANGELOG.md` mit `history` aus `scripts/changelog.mjs`, sodass ein Release für sie keinen weiteren Schritt braucht. Aus dem Tag eines Releases gebaut, steht unter `[Unreleased]` nichts, und sie lassen es weg; aus `dev` gebaut, zeigen sie diese Zeilen zuerst, als noch nicht veröffentlicht markiert.
+
 ## Ein Release erstellen
 
 1. **`dev` vorbereiten.** Jede Prüfung der [Definition of Done](testing.md#bevor-eine-änderung-fertig-ist) besteht, `pnpm release:check` eingeschlossen, CI auf `dev` ist grün, und `CHANGELOG.md` nennt alles, was das Release ändert.
