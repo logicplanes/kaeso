@@ -40,6 +40,7 @@ Frontmatter has exactly four fields: `title` and `description` (one short senten
 | `compile.ts` | One page: marked's lexer with raw HTML turned off, then the page format of `src/markdown/ast.ts`; links checked; callouts; search words |
 | `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes, search |
 | `docs.ts` | Every language: a site each, with its prefix and labels, and the checks that they hold the same pages in the same order |
+| `changelog.ts` | The changelog page, made from `CHANGELOG.md` in every language ([the changelog](#the-changelog)) |
 | `plugin.ts` | The Vite plugin: virtual modules, reload on a change in development, an HTML file per page and language with its head for search engines and link previews, `404.html`s and the sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: the same checks without building the app |
 
@@ -52,6 +53,12 @@ Pages are edited in a browser on GitHub, so the build treats them as untrusted t
 ### Links that work on GitHub and on the site
 
 A link is written between files, as GitHub follows it: `[keys](../console/api-keys.md#create-a-key)`. The build resolves it against the file's folder, checks that the page and the heading exist, and writes the site's address in the page's language (`/de/console/api-keys#schlüssel-erstellen`). Headings use GitHub's anchors, so the same anchor works in both places; a translated page links to the translated heading's anchor.
+
+### The changelog
+
+`/changelog` in every language is the one page that isn't a file in `content/`: the build makes it from `CHANGELOG.md` at the repository root, so the changelog has one source and is never translated by hand. `history` in `scripts/changelog.mjs`, the code that also moves the changelog during a release, splits the file into releases, sections such as `### Added` and topics such as `#### Model API`; `changelog.ts` compiles each part as it compiles a page, with the file's link references followed. A link to anything but a full address or a version on the page fails the build, as a broken link in a page does.
+
+The page follows the introduction in the sidebar. Its own words, the section names included, are the site's and are translated; the entries stay in English, marked `lang="en"` on the German and Chinese pages, which say so below their description. Each version's anchor is `v` and the version, as its Git tag, in every language: `/de/changelog#v{{version}}`. The newest stable release is marked Latest, as on GitHub, pre-releases are marked as such, and each release shows its date in the page's language and links to its GitHub release and to the changes since the release before. `[Unreleased]` is left out when it has no lines, as on the release tags the sites are built from; with lines, it comes first and says that they aren't in a release yet. The page names GitHub's feed of releases for feed readers, and its words are in the search, after every other page. The unit tests and the e2e suite read `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_CHANGELOG` chooses another file.
 
 ## The app
 

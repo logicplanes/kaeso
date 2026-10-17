@@ -52,7 +52,7 @@ order: 8
 
 | 预算 | 计入的内容 | 实测 | 上限 |
 | --- | --- | --: | --: |
-| 每种语言的框架 | 入口及其静态导入和样式表、该语言的站点模块，以及库的文案 | 202.1 kB（英语），207.6 kB（德语），208.1 kB（中文） | 216 kB |
+| 每种语言的框架 | 入口及其静态导入和样式表、该语言的站点模块，以及库的文案 | 204.6 kB（英语），210.1 kB（德语），210.6 kB（中文） | 216 kB |
 | 单个页面的内容 | 每个页面自己的 chunk：其内容块和目录 | 最多 17.3 kB（`zh-CN/development/kpp/anthropic-messages`） | 每页 24 kB |
 
 框架随代码变化，并随每个页面略有增长，因为站点模块携带侧边栏以及每个页面的标题和描述，从而让侧边栏与框架一同绘制、从不发生位移。德语和中文还会加载库中对应语言的文案，约 5 kB。上限是最大框架的实测大小再留出少许余量。页面内容有自己的预算，因此无论谁编辑，过长的页面都会连同其地址一起报错失败；解决办法是拆成两个页面。
@@ -65,7 +65,7 @@ order: 8
 | `AppFrame`、`Sidebar`、导航侧滑面板 | 框架；`Sidebar` 带入了 Base UI 的菜单 |
 | `Select` | 侧边栏底部的语言和主题选择框 |
 | 提示框、`IconButton` | 搜索和折叠控件 |
-| 页面及其渲染器 | `Text`、`Link`、`Code`、`CodeBlock`（其高亮器只在有代码块时加载）、`Banner`、`Table`、`ScrollArea`、`Checkbox`、`Separator`、`TableOfContents` |
+| 页面及其渲染器 | `Text`、`Link`、`Code`、`CodeBlock`（其高亮器只在有代码块时加载）、`Banner`、`Table`、`ScrollArea`、`Checkbox`、`Separator`、`TableOfContents`，以及更新日志所用的 `Badge` 和日期格式化 |
 | 侧边栏以及每个页面的标题和描述 | 该语言的 `site` 模块，从而让侧边栏与框架一同绘制、从不发生位移 |
 
 - 来自 `@logicplanes/kaeso-ui` 的导入在构建时被改写为库中各组件的入口（`apps/docs/vite.config.ts` 中的 `uiEntryImports`），因此框架只包含站点使用的组件。

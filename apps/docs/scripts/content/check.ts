@@ -10,8 +10,8 @@ export interface CheckResult {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export function checkContent(root: string, dir: string, version: string): CheckResult {
-  const docs = buildDocs(join(root, dir), root, version);
+export function checkContent(root: string, dir: string, version: string, changelog?: string): CheckResult {
+  const docs = buildDocs(join(root, dir), root, version, changelog && join(root, changelog));
   if (docs.problems.length) return { ok: false, lines: [`content: ${docs.problems.length} to fix in ${dir}/`, ...docs.problems.map((p) => `  ${p}`)] };
   const pages = docs.sites.en.metas.length;
   return { ok: true, lines: [`content: ${plural(pages, "page", "pages")} in ${plural(LOCALES.length, "language", "languages")}, every link checked`] };
@@ -19,7 +19,7 @@ export function checkContent(root: string, dir: string, version: string): CheckR
 
 if (import.meta.main) {
   const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-  const result = checkContent(root, process.env.KAESO_DOCS_CONTENT ?? "content", kaesoVersion(root));
+  const result = checkContent(root, process.env.KAESO_DOCS_CONTENT ?? "content", kaesoVersion(root), process.env.KAESO_DOCS_CHANGELOG ?? "../../CHANGELOG.md");
   for (const line of result.lines) (result.ok ? console.log : console.error)(line);
   process.exitCode = result.ok ? 0 : 1;
 }

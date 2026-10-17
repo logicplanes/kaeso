@@ -11,6 +11,7 @@ export default defineConfig({
     kaesoDocs({
       root,
       contentDir: "e2e/fixtures/content",
+      changelog: "e2e/fixtures/CHANGELOG.md",
       editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
       siteUrl: "https://docs.kaeso.app",
       version: kaesoVersion(root),
@@ -29,7 +30,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "eslint/**/*.js"],
       exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts"],
       reporter: ["text", "text-summary", "json-summary", "html"],
-      thresholds: { statements: 93.9, branches: 84, functions: 96, lines: 95.2 },
+      thresholds: { statements: 94.6, branches: 85.3, functions: 96.5, lines: 95.8 },
     },
   },
 });

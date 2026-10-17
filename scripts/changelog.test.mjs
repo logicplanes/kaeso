@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
-import { notes, releasable, release } from "./changelog.mjs";
+import { history, notes, releasable, release } from "./changelog.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = "https://github.com/logicplanes/kaeso";
@@ -138,4 +138,161 @@ test("every changelog a release writes is formatted as Prettier formats it", asy
   }
   assert.match(notes(text, "0.2.0"), /#### Model API\n\n- Batches\./);
   assert.equal(notes(text, "0.1.0"), notes(real, "0.1.0"));
+});
+
+const sample = changelog(
+  [
+    withUnreleased("### Added\n\n#### Console\n\n### Fixed"),
+    `## [0.3.0-rc.1] - 2026-12-01
+
+### Added
+
+- Batches, which run:
+  - in the background,
+  - with [their own limits][limits].`,
+    "## [0.2.1] - 2026-11-20 [YANKED]\n\n### Fixed\n\n- Streams end cleanly.",
+    `## [0.2.0] - 2026-11-15
+
+A release about batches.
+
+### Added
+
+- A batch page.
+
+#### Model API
+
+- Batch results that span
+  two lines.
+
+### Added
+
+- A second list under the same heading.
+
+### Security
+
+- Keys are checked twice.`,
+    first,
+  ],
+  ["Unreleased", "0.3.0-rc.1", "0.2.1", "0.2.0", "0.1.0"],
+).replace("[0.2.0]: ", "[limits]: https://docs.kaeso.app/console/limits\n[0.2.0]: ");
+
+test("the history leaves out an [Unreleased] section with nothing but headings", () => {
+  assert.equal(history(sample).unreleased, null);
+  assert.equal(history(changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"])).unreleased, null);
+});
+
+test("the history keeps lines under [Unreleased] apart from every release, with the compare view since the newest one", () => {
+  const text = sample.replace("### Fixed\n", "### Fixed\n\n- Quiet streams time out.\n");
+  assert.deepEqual(history(text).unreleased, {
+    id: "unreleased",
+    intro: "",
+    sections: [{ name: "Fixed", id: "unreleased-fixed", markdown: "- Quiet streams time out.", topics: [] }],
+    since: "0.3.0-rc.1",
+    compare: `${repo}/compare/v0.3.0-rc.1...HEAD`,
+  });
+});
+
+const summary = ({ id, version, date, prerelease, yanked, latest, previous, url, compare }) => ({
+  id,
+  version,
+  date,
+  prerelease,
+  yanked,
+  latest,
+  previous,
+  url,
+  compare,
+});
+
+test("every release has a stable anchor, its date, its release and the compare view against the release before it", () => {
+  const { repository, releases } = history(sample);
+  assert.equal(repository, repo);
+  assert.deepEqual(releases.map(summary), [
+    {
+      id: "v0.3.0-rc.1",
+      version: "0.3.0-rc.1",
+      date: "2026-12-01",
+      prerelease: true,
+      yanked: false,
+      latest: false,
+      previous: "0.2.1",
+      url: `${repo}/releases/tag/v0.3.0-rc.1`,
+      compare: `${repo}/compare/v0.2.1...v0.3.0-rc.1`,
+    },
+    {
+      id: "v0.2.1",
+      version: "0.2.1",
+      date: "2026-11-20",
+      prerelease: false,
+      yanked: true,
+      latest: false,
+      previous: "0.2.0",
+      url: `${repo}/releases/tag/v0.2.1`,
+      compare: `${repo}/compare/v0.2.0...v0.2.1`,
+    },
+    {
+      id: "v0.2.0",
+      version: "0.2.0",
+      date: "2026-11-15",
+      prerelease: false,
+      yanked: false,
+      latest: true,
+      previous: "0.1.0",
+      url: `${repo}/releases/tag/v0.2.0`,
+      compare: `${repo}/compare/v0.1.0...v0.2.0`,
+    },
+    {
+      id: "v0.1.0",
+      version: "0.1.0",
+      date: "2026-10-16",
+      prerelease: false,
+      yanked: false,
+      latest: false,
+      previous: null,
+      url: `${repo}/releases/tag/v0.1.0`,
+      compare: null,
+    },
+  ]);
+});
+
+test("a release keeps its introduction, its sections and their topics, with the Markdown of every entry as written", () => {
+  const { releases } = history(sample);
+  const release = releases.find(({ version }) => version === "0.2.0");
+  assert.equal(release.intro, "A release about batches.");
+  assert.deepEqual(release.sections, [
+    {
+      name: "Added",
+      id: "v0.2.0-added",
+      markdown: "- A batch page.",
+      topics: [{ name: "Model API", id: "v0.2.0-added-model-api", markdown: "- Batch results that span\n  two lines." }],
+    },
+    { name: "Added", id: "v0.2.0-added-2", markdown: "- A second list under the same heading.", topics: [] },
+    { name: "Security", id: "v0.2.0-security", markdown: "- Keys are checked twice.", topics: [] },
+  ]);
+  assert.equal(releases[0].sections[0].markdown, "- Batches, which run:\n  - in the background,\n  - with [their own limits][limits].");
+});
+
+test("the history hands on the link definitions, so reference links in entries resolve", () => {
+  assert.match(
+    history(sample).definitions,
+    /^\[Unreleased\]: .+\n\[0\.3\.0-rc\.1\]: [\s\S]*\n\[limits\]: https:\/\/docs\.kaeso\.app\/console\/limits\n\[0\.2\.0\]: /,
+  );
+});
+
+test("a changelog without releases has no history, and one without an [Unreleased] link no addresses", () => {
+  assert.deepEqual(history("# Changelog\n"), { repository: null, definitions: "", unreleased: null, releases: [] });
+  const [only] = history(`# Changelog\n\n${first}\n`).releases;
+  assert.equal(only.url, null);
+  assert.equal(only.compare, null);
+  assert.equal(only.latest, true);
+});
+
+test("every release in CHANGELOG.md has a date and the anchor v and its version, and one is the latest", () => {
+  const { releases } = history(readFileSync(join(root, "CHANGELOG.md"), "utf8"));
+  assert.ok(releases.length > 0);
+  for (const { version, date, id } of releases) {
+    assert.match(date ?? "", /^\d{4}-\d{2}-\d{2}$/, version);
+    assert.equal(id, `v${version}`);
+  }
+  assert.equal(releases.filter(({ latest }) => latest).length, 1);
 });

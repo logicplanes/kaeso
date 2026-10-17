@@ -87,6 +87,25 @@ describe("links", () => {
     expect(s).toContain('"kind":"page","href":"/guides/keys#limits"');
     expect(out.problems).toEqual(["links to #nope, which is not a heading on this page"]);
   });
+
+  it("keeps reference links as text in pages, and follows them only where references are asked for", () => {
+    const body = "See [the logs][logs].\n\n[logs]: https://docs.kaeso.app/console/request-logs";
+    const resolver: Resolver = { anchors: new Set(), resolve: () => ({ kind: "problem", message: "no" }) };
+    const page = compile(lex(body), resolver);
+    expect(page.blocks[0]).toEqual({ t: "paragraph", c: [{ t: "text", v: "See [the logs][logs]." }] });
+    expect(json(page.blocks[1])).toContain('"v":"[logs]: "');
+    const changelog = compile(lex(body, { references: true }), resolver);
+    expect(changelog.blocks).toEqual([
+      {
+        t: "paragraph",
+        c: [
+          { t: "text", v: "See " },
+          { t: "link", kind: "external", href: "https://docs.kaeso.app/console/request-logs", c: [{ t: "text", v: "the logs" }] },
+          { t: "text", v: "." },
+        ],
+      },
+    ]);
+  });
 });
 
 describe("blocks", () => {

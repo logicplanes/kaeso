@@ -55,6 +55,8 @@ A release adds the heading `## [X.Y.Z] - YYYY-MM-DD` below `## [Unreleased]`, so
 
 A stable release after pre-releases of its version, such as `0.2.0` after `0.2.0-rc.1` and `0.2.0-rc.2`, folds their sections and anything new under `[Unreleased]` into the one section `## [0.2.0] - YYYY-MM-DD`: the lines under each heading, such as `### Added`, and under each topic within it, such as `#### Model API`, come together, newest first, and the pre-releases' sections and links go. `scripts/changelog.mjs` makes these changes, and the release's notes on GitHub are the section it writes. Its notes then list everything the version changes since the last stable release.
 
+Both sites show the changelog at `/changelog`: the documentation ([the changelog page](architecture/docs-site.md#the-changelog)) and the showcase at ui.kaeso.app read `CHANGELOG.md` with `history` from `scripts/changelog.mjs`, so a release needs no other step for them. Built from a release's tag, they have nothing under `[Unreleased]` and leave it out; built from `dev`, they show those lines first, marked as not released yet.
+
 ## Making a release
 
 1. **Get `dev` ready.** Every check of the [definition of done](testing.md#before-a-change-is-done) passes, `pnpm release:check` included, CI on `dev` is green, and `CHANGELOG.md` says everything the release changes.

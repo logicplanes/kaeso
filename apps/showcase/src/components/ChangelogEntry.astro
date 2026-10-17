@@ -1,0 +1,35 @@
+---
+import type { RenderedChangelog } from "~/lib/changelog";
+import { CHANGELOG_GROUPS } from "~/lib/changelog";
+import { docsText } from "~/lib/locale";
+import { docsLangOf } from "~/lib/languages";
+import { pinToRelease } from "~/lib/release";
+
+interface Props {
+  entry: RenderedChangelog["releases"][number] | NonNullable<RenderedChangelog["unreleased"]>;
+}
+const { entry } = Astro.props;
+const lang = docsLangOf(Astro.params.lang);
+const written = lang === "en" ? undefined : "en";
+---
+
+{entry.intro && <div class="prose-k" lang={written} set:html={pinToRelease(entry.intro)} />}
+{entry.sections.map((section) => {
+  const known = CHANGELOG_GROUPS.includes(section.name);
+  return (
+    <div class="flex flex-col gap-8">
+      <h3 id={section.id} lang={known ? undefined : written} class="scroll-mt-40 text-title-sm font-semibold text-fg text-balance">
+        {known ? docsText(lang, section.name) : section.name}
+      </h3>
+      {section.html && <div class="prose-k" lang={written} set:html={pinToRelease(section.html)} />}
+      {section.topics.map((topic) => (
+        <div class="mt-8 flex flex-col">
+          <h4 id={topic.id} lang={written} class="scroll-mt-40 text-body-lg font-semibold text-fg text-balance">
+            {topic.name}
+          </h4>
+          <div class="prose-k" lang={written} set:html={pinToRelease(topic.html)} />
+        </div>
+      ))}
+    </div>
+  );
+})}

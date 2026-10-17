@@ -10,6 +10,7 @@ import { kaesoDocs } from "./scripts/content/plugin.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const contentDir = process.env.KAESO_DOCS_CONTENT ?? "content";
+const changelog = process.env.KAESO_DOCS_CHANGELOG ?? "../../CHANGELOG.md";
 const editBase = "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/";
 const siteUrl = "https://docs.kaeso.app";
 const port = Number(process.env.KAESO_DOCS_PORT ?? 4480);
@@ -138,7 +139,7 @@ function uiEntryImports(): Plugin {
 export default defineConfig({
   cacheDir: process.env.KAESO_VITE_CACHE ?? "node_modules/.vite",
   plugins: [
-    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root) }),
+    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root), changelog }),
     uiEntryImports(),
     themeInit(),
     themeColor(),
@@ -165,6 +166,7 @@ export default defineConfig({
       "@tanstack/react-router",
       "@logicplanes/kaeso-ui",
       "@logicplanes/kaeso-ui/i18n",
+      "@logicplanes/kaeso-ui/format",
       "@logicplanes/kaeso-ui/toast",
       "@logicplanes/kaeso-ui/command-palette",
     ],

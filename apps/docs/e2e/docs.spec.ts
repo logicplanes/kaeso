@@ -36,6 +36,7 @@ test("every page is built with its own title, description and alternates", async
   const sitemap = await (await request.get("/sitemap.xml")).text();
   const english = [
     "/",
+    "/changelog",
     "/guides",
     "/guides/keys-and-limits",
     "/guides/provider-keys",

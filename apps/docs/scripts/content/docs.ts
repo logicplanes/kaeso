@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { DEFAULT_LOCALE, LANGUAGE_NAMES, LOCALES, localeOfPath, localePrefix, type Locale } from "../../src/i18n/locales.ts";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
+import { buildChangelog, changelogClash, withChangelog } from "./changelog.ts";
 import { buildSite, type Site, type SitePage } from "./site.ts";
 
 export interface Docs {
@@ -57,7 +58,7 @@ const siteOptions = (locale: Locale, version: string) => {
   return { prefix: localePrefix(locale), labels: { home: messages["nav.introduction"], overview: messages["nav.overview"] }, version };
 };
 
-export function buildDocs(contentDir: string, repoRoot: string, version: string): Docs {
+export function buildDocs(contentDir: string, repoRoot: string, version: string, changelogFile?: string): Docs {
   const rel = posix(relative(repoRoot, contentDir));
   if (!existsSync(contentDir)) {
     const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot, siteOptions(DEFAULT_LOCALE, version));
@@ -74,5 +75,9 @@ export function buildDocs(contentDir: string, repoRoot: string, version: string)
     ...reservedAddresses(sites[DEFAULT_LOCALE]),
     ...translationProblems(sites, repoRoot),
   ];
-  return { contentDir, sites, problems };
+  if (!changelogFile) return { contentDir, sites, problems };
+  const changelog = buildChangelog(changelogFile, repoRoot);
+  const clashes = LOCALES.flatMap((l) => changelogClash(sites[l], localePrefix(l)));
+  const logged = Object.fromEntries(LOCALES.map((l) => [l, withChangelog(sites[l], changelog, localePrefix(l), MESSAGES[l])])) as Record<Locale, Site>;
+  return { contentDir, sites: logged, problems: [...problems, ...changelog.problems, ...clashes] };
 }

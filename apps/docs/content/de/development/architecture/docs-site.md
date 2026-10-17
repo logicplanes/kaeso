@@ -40,6 +40,7 @@ Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Sat
 | `compile.ts` | Eine Seite: der Lexer von marked mit abgeschaltetem Roh-HTML, dann das Seitenformat aus `src/markdown/ast.ts`; geprüfte Links; Callouts; Suchwörter |
 | `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links so aufgelöst, wie GitHub sie auflöst, Bilder und ihre Größen, Suche |
 | `docs.ts` | Alle Sprachen: je eine Website mit ihrem Präfix und ihren Beschriftungen, und die Prüfungen, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
+| `changelog.ts` | Die Seite Änderungen, in jeder Sprache aus `CHANGELOG.md` erzeugt ([das Changelog](#das-changelog)) |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen bei einer Änderung in der Entwicklung, eine HTML-Datei pro Seite und Sprache mit ihrem Kopf für Suchmaschinen und Linkvorschauen, `404.html`-Dateien und die Sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: dieselben Prüfungen, ohne die App zu bauen |
 
@@ -52,6 +53,12 @@ Seiten werden im Browser auf GitHub bearbeitet, daher behandelt der Build sie al
 ### Links, die auf GitHub und auf der Website funktionieren
 
 Ein Link wird zwischen Dateien geschrieben, so wie GitHub ihm folgt: `[keys](../console/api-keys.md#create-a-key)`. Der Build löst ihn relativ zum Ordner der Datei auf, prüft, dass Seite und Überschrift existieren, und schreibt die Adresse der Website in der Sprache der Seite (`/de/console/api-keys#schlüssel-erstellen`). Überschriften verwenden GitHubs Anker, sodass derselbe Anker an beiden Orten funktioniert; eine übersetzte Seite verlinkt auf den Anker der übersetzten Überschrift.
+
+### Das Changelog
+
+`/changelog` ist in jeder Sprache die eine Seite, die keine Datei in `content/` ist: Der Build erzeugt sie aus `CHANGELOG.md` im Wurzelverzeichnis des Repositorys, sodass das Changelog eine einzige Quelle hat und nie von Hand übersetzt wird. `history` in `scripts/changelog.mjs`, derselbe Code, der das Changelog bei einem Release verschiebt, teilt die Datei in Releases, Abschnitte wie `### Added` und Themen wie `#### Model API`; `changelog.ts` kompiliert jeden Teil wie eine Seite und folgt dabei den Linkreferenzen der Datei. Ein Link auf etwas anderes als eine vollständige Adresse oder eine Version auf der Seite lässt den Build scheitern, wie ein kaputter Link in einer Seite.
+
+Die Seite folgt in der Seitenleiste auf die Einführung. Ihre eigenen Wörter, die Namen der Abschnitte eingeschlossen, gehören der Website und sind übersetzt; die Einträge bleiben auf Englisch, auf den deutschen und chinesischen Seiten mit `lang="en"` markiert, und diese sagen es unter ihrer Beschreibung. Der Anker jeder Version ist `v` und die Version, wie ihr Git-Tag, in jeder Sprache: `/de/changelog#v{{version}}`. Das neueste stabile Release ist als Aktuell markiert, wie auf GitHub, Pre-Releases sind als solche markiert, und jedes Release zeigt sein Datum in der Sprache der Seite und verlinkt sein GitHub-Release und die Änderungen seit dem Release davor. `[Unreleased]` entfällt, wenn darunter nichts steht, wie an den Release-Tags, aus denen die Websites gebaut werden; mit Einträgen steht es zuerst und sagt, dass sie noch in keinem Release sind. Die Seite nennt Feedreadern den Feed der Releases auf GitHub, und ihre Wörter sind in der Suche, nach allen anderen Seiten. Die Unit-Tests und die E2E-Suite lesen `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_CHANGELOG` wählt eine andere Datei.
 
 ## Die App
 
