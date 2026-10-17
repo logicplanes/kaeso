@@ -13,6 +13,10 @@ export const KAESO_CODE_VARIANTS = {
       classes: "inline box-decoration-clone",
       description: "Breaks with the sentence around it, each line keeping its fill and corners; for long code in running text",
     },
+    cell: {
+      classes: "inline",
+      description: "Breaks with the text around it and ends square at a break, so no padding hangs past a narrow table cell; for long code in a table",
+    },
   },
 } as const;
 export const KAESO_CODE_DEFAULT_VARIANTS = { shape: "auto", flow: "box" } as const;

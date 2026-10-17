@@ -21,6 +21,13 @@ describe("Code", () => {
     expect(code).not.toHaveClass("inline-block");
   });
 
+  it("breaks long code in a table cell with its text and ends square, so no padding hangs past the cell", () => {
+    render(<Code flow="cell">docker compose exec gateway kaeso openapi</Code>);
+    const code = screen.getByText("docker compose exec gateway kaeso openapi");
+    expect(code).toHaveClass("inline");
+    expect(code).not.toHaveClass("inline-block", "box-decoration-clone");
+  });
+
   it("pads inside the chip only, never outside it", () => {
     render(
       <>

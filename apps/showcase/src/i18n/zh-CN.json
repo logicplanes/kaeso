@@ -969,7 +969,7 @@
   "The key, shown once after the last step": "最后一步之后仅显示一次的密钥",
   "Content that grows and shrinks": "会变高和变矮的内容",
   "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.": "在其发起的操作进行期间保持对话框打开：Escape、点击外部、关闭按钮、Dialog.Close 和 ⌘Enter 都不起作用，因此请求不会被中途放弃，也不会重复发送。",
-  "`text` for long code in running text, so it breaks with the sentence instead of jumping to its own line as one box.": "`text` 用于正文中的长代码，使其随句子换行，而不是作为一个整体跳到单独的一行。",
+  "`text` for long code in running text, so it breaks with the sentence instead of jumping to its own line as one box; `cell` for the same in a table cell.": "`text` 用于正文中的长代码，使其随句子换行，而不是作为一个整体跳到单独的一行；`cell` 用于表格单元格中的同类代码。",
   "A diagram in both themes": "两种主题下的图示",
   "An image drawn twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, and prints the light one.": "绘制两次的图片，每种主题一张，例如图示：它跟随主题设置而不仅仅是系统设置，打印时使用浅色那张。",
   "The id of a longer description, such as a diagram's text alternative.": "较长描述的 id，例如图示的文本替代。",

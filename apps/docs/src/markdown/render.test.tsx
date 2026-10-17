@@ -157,6 +157,9 @@ describe("Markdown", () => {
     expect(screen.getByText("metrics_listen").querySelector("wbr")).toBeNull();
     const long = screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
     expect(long.querySelectorAll("wbr")).toHaveLength(2);
+    expect(long).toHaveClass("inline");
+    expect(long).not.toHaveClass("inline-block", "box-decoration-clone");
+    expect(screen.getByText("metrics_listen")).toHaveClass("inline", "whitespace-nowrap");
   });
 
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {
@@ -183,7 +186,7 @@ describe("Markdown", () => {
     expect(screen.getByRole("cell", { name: "启动网关控制台和数据库" })).toBeInTheDocument();
   });
 
-  it("lets long code break with its sentence and keeps short code in one piece", () => {
+  it("lets long code break with its sentence and keeps short code in one piece beside its punctuation", () => {
     const c = draw([
       {
         t: "paragraph",
@@ -197,7 +200,8 @@ describe("Markdown", () => {
     const [long, short] = [...c.querySelectorAll("code")];
     expect(long).toHaveClass("inline", "box-decoration-clone");
     expect(long).not.toHaveClass("inline-block");
-    expect(short).toHaveClass("inline-block");
+    expect(short).toHaveClass("inline");
+    expect(short).not.toHaveClass("inline-block");
   });
 
   it("draws a diagram as one labelled region with its light and dark image and its description for screen readers", () => {
