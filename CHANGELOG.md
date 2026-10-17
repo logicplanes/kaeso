@@ -12,6 +12,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Both sites list every page in every language in `sitemap.xml`, with its `hreflang` alternates and `x-default`, and name it in `robots.txt`; every page has a canonical address, Open Graph and Twitter tags with a preview image of the Kaeso logo, and its language's alternates, and the showcase has a web manifest. Not-found pages and the showcase's examples and states pages are kept out of search results.
 - Web apps can call the model API from a browser: `KAESO_CORS_ALLOWED_ORIGINS` lists their origins, which then get CORS headers on `/v1`, preflights answered without a key and readable `kaeso-*` and `retry-after` headers. Nothing changes while it is empty, the default, and `*` is refused.
 - `DialogScope` in `@logicplanes/kaeso-ui`: the component inside it mounts anew each time its dialog opens and unmounts once the dialog has finished closing, so a dialog's fields, steps, results and secrets never come back on the next open.
+- Both sites ship their Content Security Policy: every page carries it in a `<meta>`, and the build writes it to `csp.txt` and `_headers` for the response header. The documentation runs under `script-src 'self'; style-src 'self'` with nothing inline, and the showcase allows only the inline scripts and styles of its build, by hash.
+- Each release pulls both images for both platforms without signing in, and fails with what to do when ghcr.io refuses because a package is private.
 
 ### Changed
 
@@ -21,6 +23,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The showcase's View source links, its `llms.txt` and the links in its changelog open the source of the release the site was built for, at its tag, instead of the `dev` branch.
 - The project catalogue knows whether each model's provider serves it to the project's provider key: **Check availability** on the **Models** page (`POST …/models/check`) asks the provider, requests teach it too, and a model marked **Unavailable** is left out of `GET /v1/models`; changing a provider key resets its models to **Not checked**. Models models.dev marks deprecated show **Deprecated** and have `lifecycle: "deprecated"` in Anthropic model listings.
 - Smaller console downloads: a project's overview loads 25 kB less JavaScript and the sign-in page 4 kB less, the documentation site's frame 3.6 kB less, and a page's code is requested while the console starts instead of after its first render. `AppFrame` loads its phone navigation sheet once the page is idle or on the first tap, and the charts no longer need d3-scale's colour and number-format modules.
+- The install, quick start, upgrade and reverse proxy guides start Kaeso with `docker compose up -d --wait`, which returns once every service is healthy, also without the bundled Caddy, and fails when one isn't; the reverse proxy guide shows how to reach Kaeso from a proxy in Docker over a network of its own, under names that can't collide with other stacks.
 
 ### Fixed
 
@@ -38,6 +41,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The console's dialogs open fresh every time: Create key starts on an empty first step again after a key was created, and transfer ownership, add owner, send test email, change email, change password, export requests and add models no longer keep what was typed or chosen before they were cancelled. A key's sheet shows only the key it opened for.
 - The command palette keeps its results while it closes instead of emptying first, and the documentation search opens with an empty query instead of the last search's headings.
 - A request for a catalogue model that the provider does not serve to the project's provider key, such as a retired model or one the key has no access to, now fails with 404 and `param: model` in the app's format, with a message that names the provider and the model and says to check the key's access or remove the model, instead of the provider's bare `model: …`; Kaeso confirms it with the provider's model endpoint first and never retries.
+- The console image sets the permissions of its files itself, so an image built from a checkout with a strict umask serves the console instead of restarting without a word; when it can't read its files, it says which and stops.
+- ScrollArea and Select no longer add an inline `<style>` element, which a strict Content Security Policy blocks; the stylesheet hides their native scrollbars.
 
 ### Security
 

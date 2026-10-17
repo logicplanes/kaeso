@@ -139,10 +139,11 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 | Sync dev | Brings the release into `dev`: a fast-forward when `dev` has nothing new, otherwise the merge commit "Merge release X.Y.Z into dev" when it merges cleanly. When it conflicts, when the release changes a workflow file that `dev` lacks, or when `dev` moves meanwhile, it fails and its summary says how to merge by hand |
 | Image | Builds each image for each platform from the tag, with full build provenance and an SBOM |
 | Image manifest | Joins both platforms under the image tags above, copies the images' `org.opencontainers.image` labels onto the joined index as annotations, and attests the build's provenance |
+| Anonymous pull | Pulls both images of the version for `linux/amd64` and `linux/arm64` with no credentials at all, as an install does. When ghcr.io refuses with 401 or 403, the packages are private: the job fails and says to make them public in the package's settings, after which re-running the failed jobs finishes the release |
 | Pack npm packages | Builds the libraries and runs the package check with the release's version |
 | npm | Publishes `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui` |
 | crates.io | Publishes `kaeso-kpp` and `kaeso-codecs` |
-| GitHub release | Downloads the published tarballs and crates and creates the release with its files and notes |
+| GitHub release | Once anyone can pull the images, downloads the published tarballs and crates and creates the release with its files and notes |
 
 The npm and crates.io jobs authenticate with trusted publishing, so the repository holds no registry tokens. They skip a version that is already published, so when a publishing job fails, re-running the run's failed jobs finishes the release.
 
@@ -165,3 +166,17 @@ pnpm --filter kaeso-showcase build
 `apps/docs/dist` holds the documentation and `apps/showcase/dist` the showcase, every page already rendered in English, German and Simplified Chinese. The sites describe the release they were built from: the showcase's View source links, its `llms.txt` and the links its changelog makes into the repository point at the release's tag, `v` and the version in the root `package.json`, while the documentation's Edit on GitHub links point at `dev`, where changes to pages are proposed.
 
 Each folder is ready to upload as it is: `robots.txt`, which allows everything and names the sitemap, `sitemap.xml` with every page in every language and its `hreflang` alternates, a `404.html` per language marked `noindex`, `site.webmanifest`, the icons and `og.png`, the image link previews show. A static host only has to answer `/guides` with `guides.html` and an unknown address with the `404.html` of its language. Both builds end with `scripts/check-site.mjs`, which fails the build when a page that search engines may index is missing from `sitemap.xml`, the sitemap lists an address that isn't a page of the build, or a page lacks its canonical address, its alternates in the three languages and `x-default`, its own title and description, its Open Graph and Twitter tags with an image that is in the build, its icons or its web manifest. The sitemap has no `lastmod`, because nothing in the build knows when a page last changed.
+
+### Content Security Policy
+
+Both builds end by writing the policy their site runs under, with `scripts/csp.mjs`. They put it into every page as a `<meta http-equiv="content-security-policy">` right after the charset, so it holds on any host, and write it for the response header to `csp.txt`, and to `_headers` for hosts that read that file. Send it as the `Content-Security-Policy` header as well: only the header can add `frame-ancestors 'none'`, which keeps the sites out of other pages' frames. The build fails on an inline event handler or a `javascript:` URL, which no policy without `'unsafe-inline'` allows, and on a policy over 4 KB, too long for some servers' headers.
+
+The documentation has no inline scripts or styles, and its build fails on one, so its header is always:
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+```
+
+The showcase's pages carry inline scripts that Astro and React write, the islands' loader and the end of streamed Suspense boundaries, beside the showcase's own language and theme scripts, which must run before the first paint. Its policy lists the SHA-256 hash of each of them, and of its few inline `<style>` elements, in `script-src` and `style-src`, and allows `style` attributes with `style-src-attr 'unsafe-inline'`: the components' server-rendered HTML sets them, and CSS in an attribute can't run code. The hashes change whenever those scripts do, so take the showcase's header from the `csp.txt` of the build you deploy.
+
+The end-to-end suites of both sites load their pages under the header from `csp.txt`, in both themes and in every language, and fail on any `securitypolicyviolation`.

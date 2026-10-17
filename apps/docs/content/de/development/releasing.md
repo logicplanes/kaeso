@@ -139,10 +139,11 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 | Sync dev | Bringt das Release nach `dev`: als Fast-Forward, wenn `dev` nichts Neues hat, sonst als Merge-Commit „Merge release X.Y.Z into dev“, wenn sich das sauber mergen lässt. Bei einem Konflikt, wenn das Release eine Workflow-Datei ändert, die `dev` fehlt, oder wenn sich `dev` inzwischen bewegt, schlägt er fehl, und seine Zusammenfassung sagt, wie man von Hand mergt |
 | Image | Baut jedes Image für jede Plattform aus dem Tag, mit vollständiger Build-Provenienz und einer SBOM |
 | Image manifest | Fasst beide Plattformen unter den Image-Tags oben zusammen, überträgt die `org.opencontainers.image`-Labels der Images als Annotationen auf den gemeinsamen Index und bestätigt die Provenienz des Builds |
+| Anonymous pull | Lädt beide Images der Version für `linux/amd64` und `linux/arm64` ganz ohne Zugangsdaten, wie eine Installation es tut. Lehnt ghcr.io mit 401 oder 403 ab, sind die Pakete privat: Der Job schlägt fehl und sagt, sie in den Einstellungen des Pakets öffentlich zu machen; danach schließt das erneute Ausführen der fehlgeschlagenen Jobs das Release ab |
 | Pack npm packages | Baut die Bibliotheken und führt die Paketprüfung mit der Version des Releases aus |
 | npm | Veröffentlicht `@logicplanes/kaeso-tokens` und `@logicplanes/kaeso-ui` |
 | crates.io | Veröffentlicht `kaeso-kpp` und `kaeso-codecs` |
-| GitHub release | Lädt die veröffentlichten Tarballs und Crates herunter und erstellt das Release mit seinen Dateien und Release Notes |
+| GitHub release | Lädt, sobald jeder die Images laden kann, die veröffentlichten Tarballs und Crates herunter und erstellt das Release mit seinen Dateien und Release Notes |
 
 Die Jobs für npm und crates.io melden sich über Trusted Publishing an, sodass das Repository keine Registry-Tokens enthält. Sie überspringen eine Version, die schon veröffentlicht ist; schlägt ein Veröffentlichungsjob fehl, schließt das erneute Ausführen der fehlgeschlagenen Jobs des Laufs das Release ab.
 
@@ -165,3 +166,17 @@ pnpm --filter kaeso-showcase build
 `apps/docs/dist` enthält die Dokumentation und `apps/showcase/dist` den Showcase, jede Seite schon fertig in Englisch, Deutsch und vereinfachtem Chinesisch. Die Websites beschreiben das Release, aus dem sie gebaut wurden: Die Links „Quelltext“ des Showcase, seine `llms.txt` und die Links seines Changelogs ins Repository zeigen auf den Tag des Releases, `v` und die Version aus der `package.json` im Wurzelverzeichnis, während die Links „Auf GitHub bearbeiten“ der Dokumentation auf `dev` zeigen, wo Änderungen an Seiten vorgeschlagen werden.
 
 Jeder Ordner kann so, wie er ist, hochgeladen werden: `robots.txt`, die alles erlaubt und die Sitemap nennt, `sitemap.xml` mit jeder Seite in jeder Sprache und ihren `hreflang`-Alternativen, eine `404.html` pro Sprache mit `noindex`, `site.webmanifest`, die Icons und `og.png`, das Bild, das Linkvorschauen zeigen. Ein statischer Host muss nur `/guides` mit `guides.html` und eine unbekannte Adresse mit der `404.html` ihrer Sprache beantworten. Beide Builds enden mit `scripts/check-site.mjs`, das den Build scheitern lässt, wenn eine Seite, die Suchmaschinen indexieren dürfen, in `sitemap.xml` fehlt, die Sitemap eine Adresse nennt, die keine Seite des Builds ist, oder einer Seite ihre kanonische Adresse, ihre Alternativen in den drei Sprachen und `x-default`, ihr eigener Titel und ihre eigene Beschreibung, ihre Open-Graph- und Twitter-Tags mit einem Bild aus dem Build, ihre Icons oder ihr Web-Manifest fehlen. Die Sitemap hat kein `lastmod`, weil nichts im Build weiß, wann sich eine Seite zuletzt geändert hat.
+
+### Content Security Policy
+
+Beide Builds schreiben zum Schluss mit `scripts/csp.mjs` die Policy, unter der ihre Website läuft. Sie fügen sie jeder Seite direkt nach dem Charset als `<meta http-equiv="content-security-policy">` hinzu, sodass sie auf jedem Host gilt, und schreiben sie für den Response-Header in `csp.txt` und für Hosts, die diese Datei lesen, in `_headers`. Sie zusätzlich als Header `Content-Security-Policy` senden: Nur der Header kann `frame-ancestors 'none'` hinzufügen, das die Websites aus den Frames anderer Seiten heraushält. Der Build schlägt bei einem Inline-Event-Handler oder einer `javascript:`-URL fehl, die keine Policy ohne `'unsafe-inline'` erlaubt, und bei einer Policy über 4 KB, zu lang für die Header mancher Server.
+
+Die Dokumentation hat keine Inline-Skripte oder -Styles, und ihr Build schlägt bei einem fehl, daher lautet ihr Header immer:
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+```
+
+Die Seiten des Showcase enthalten Inline-Skripte, die Astro und React schreiben, den Lader der Islands und das Ende gestreamter Suspense-Grenzen, neben den eigenen Sprach- und Theme-Skripten des Showcase, die vor dem ersten Zeichnen laufen müssen. Seine Policy nennt den SHA-256-Hash jedes dieser Skripte und seiner wenigen Inline-`<style>`-Elemente in `script-src` und `style-src` und erlaubt `style`-Attribute mit `style-src-attr 'unsafe-inline'`: Das serverseitig gerenderte HTML der Komponenten setzt sie, und CSS in einem Attribut kann keinen Code ausführen. Die Hashes ändern sich, sobald sich diese Skripte ändern, daher den Header des Showcase aus der `csp.txt` des Builds nehmen, der veröffentlicht wird.
+
+Die End-to-End-Suites beider Websites laden ihre Seiten unter dem Header aus `csp.txt`, in beiden Themes und in jeder Sprache, und schlagen bei jeder `securitypolicyviolation` fehl.

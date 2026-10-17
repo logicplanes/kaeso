@@ -4,7 +4,9 @@ import { neutral } from "@logicplanes/kaeso-tokens";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { writeSitePolicy } from "../../scripts/csp.mjs";
 import { kaesoVersion } from "./scripts/content/docs.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
 
@@ -28,7 +30,7 @@ function themeInit(): Plugin {
     generateBundle() {
       this.emitFile({ type: "asset", fileName: file, source: themeScript });
     },
-    transformIndexHtml: () => [{ tag: "script", attrs: { src: `/${file}` }, injectTo: "head-prepend" }],
+    transformIndexHtml: () => [{ tag: "script", attrs: { src: `/${file}` }, injectTo: "head" }],
   };
 }
 
@@ -55,6 +57,24 @@ function fontPreload(): Plugin {
         const font = Object.keys(ctx.bundle ?? {}).find((f) => /(^|\/)inter-latin-opsz-normal-[\w-]+\.woff2$/.test(f));
         if (!font) throw new Error("kaeso-font-preload: the interface font isn't in the bundle; preload the one the stylesheet uses");
         return [{ tag: "link", attrs: { rel: "preload", href: `/${font}`, as: "font", type: "font/woff2", crossorigin: true }, injectTo: "head" }];
+      },
+    },
+  };
+}
+
+function contentSecurityPolicy(): Plugin {
+  let outDir = "";
+  return {
+    name: "kaeso-content-security-policy",
+    apply: "build",
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    closeBundle: {
+      order: "post",
+      sequential: true,
+      handler() {
+        this.info(writeSitePolicy(outDir));
       },
     },
   };
@@ -146,6 +166,7 @@ export default defineConfig({
     fontPreload(),
     react(),
     tailwindcss(),
+    contentSecurityPolicy(),
   ],
   resolve: {
     alias: [
