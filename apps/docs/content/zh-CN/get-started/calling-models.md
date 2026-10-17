@@ -1,32 +1,33 @@
 ---
 title: 调用模型
-description: 通过 Kaeso 使用 OpenAI 和 Anthropic SDK、curl 以及流式传输调用模型。
+description: 通过 Kaeso，使用 OpenAI 和 Anthropic SDK、curl 以及流式方式调用模型。
 order: 2
 ---
 
-应用使用它们已有的官方 SDK 调用 Kaeso。只需更改基础 URL 和密钥，任何 SDK 都可以调用项目目录中的任何模型：OpenAI SDK 可以调用 Claude 模型，Anthropic SDK 也可以调用 OpenAI 模型。Kaeso 会转换请求和回复。
+应用使用已有的官方 SDK 调用 Kaeso，只需更改基础 URL 和密钥。任何 SDK 都能调用项目目录中的任意聊天模型：OpenAI SDK 可以调用 Claude，Anthropic SDK 也可以调用 OpenAI 模型。Kaeso 会转换请求和回复。
 
-| SDK | 基础 URL | 密钥 |
+| SDK | 基础 URL | 密钥的发送方式 |
 | --- | --- | --- |
-| OpenAI | `https://kaeso.example.com/v1` | `api_key`，以 `Authorization: Bearer` 发送 |
-| Anthropic | `https://kaeso.example.com` | `api_key`，以 `x-api-key` 发送 |
+| OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
+| Anthropic | `https://kaeso.example.com` | `x-api-key` |
 
-示例使用在项目的 **API 密钥**下创建的密钥（如[快速开始](quick-start.md#创建-api-密钥)所示）和模型 `claude-haiku-4-5`。请使用项目目录中已有的模型。
+示例从 `KAESO_API_KEY` 读取 API 密钥（按[快速开始](quick-start.md#创建-api-密钥)中的步骤创建），并调用 `claude-haiku-4-5`。请使用项目目录中的模型。
 
 ## OpenAI SDK
 
-Python 中的 Responses API：
+在 Python 中调用 Responses API：
 
 ```python
+import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key="sk-kso-…")
+client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
 
 response = client.responses.create(model="claude-haiku-4-5", input="Write a haiku about gateways.")
 print(response.output_text)
 ```
 
-同一个客户端也支持 Chat Completions：
+同一个客户端也能调用 Chat Completions：
 
 ```python
 completion = client.chat.completions.create(
@@ -49,10 +50,13 @@ console.log(response.output_text);
 
 ## Anthropic SDK
 
+在 Python 中：
+
 ```python
+import os
 from anthropic import Anthropic
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key="sk-kso-…")
+client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
 
 message = client.messages.create(
     model="claude-haiku-4-5",
@@ -79,7 +83,7 @@ console.log(message.content);
 
 ## 流式传输
 
-流式传输适用于所有格式，并带有 SDK 所期望的事件。使用上面的 Anthropic 客户端：
+每种格式都支持流式传输，事件与其 SDK 预期的一致。使用上面的 Anthropic 客户端：
 
 ```python
 with client.messages.stream(
@@ -91,11 +95,11 @@ with client.messages.stream(
         print(text, end="")
 ```
 
-当流暂时没有数据时，例如模型正在思考，Kaeso 会发送 SDK 会忽略的保活消息，使途经的代理保持连接打开。参见[长时间的流](../self-hosting/domains-and-tls.md#长时间的流)。
+流处于静默状态时，例如模型正在思考，Kaeso 会发送 SDK 会忽略的保活消息，让沿途的代理保持连接（[长时间的流](../self-hosting/domains-and-tls.md#长时间的流)）。
 
 ## curl
 
-OpenAI 格式以 Bearer Token 的形式接收密钥：
+OpenAI 格式：
 
 ```bash
 curl https://kaeso.example.com/v1/chat/completions \
@@ -104,7 +108,7 @@ curl https://kaeso.example.com/v1/chat/completions \
   -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-Anthropic 格式在 `x-api-key` 中接收密钥：
+Anthropic 格式：
 
 ```bash
 curl https://kaeso.example.com/v1/messages \
@@ -114,10 +118,14 @@ curl https://kaeso.example.com/v1/messages \
   -d '{"model": "claude-haiku-4-5", "max_tokens": 200, "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-模型 API 的每个端点都接受这两种请求头中的任意一种。[模型 API](../api/model-api.md) 列出了所有端点。
+每个端点都接受放在任一请求头中的密钥。[模型 API](../api/model-api.md) 列出了所有端点。
+
+## 从浏览器调用
+
+只有当网页的源列在 `KAESO_CORS_ALLOWED_ORIGINS` 中时，Kaeso 才会响应它的请求；而且使用该网页的每个人都能读到其中的密钥。[从浏览器调用](../api/model-api.md#从浏览器调用)对这两点都有说明。
 
 ## 再次找到请求
 
-在项目中打开**请求日志**。每个请求都列在那里，附有状态、模型、Token、费用和耗时。Kaeso 的每个响应都带有一个 `kaeso-request-id` 响应头，其中是相同的 ID，因此可以从应用自己的日志中找到对应的请求。
+在项目中打开**请求日志**：每个请求都列在那里，附有状态、模型、Token、费用和耗时。每个响应都带有 `kaeso-request-id` 请求头，其 ID 与日志中显示的一致，因此可以从应用自己的日志在 Kaeso 中找到对应的请求。
 
-如果请求失败，错误会以 SDK 所期望的格式说明原因。[错误](../api/errors.md)列出了所有错误。
+失败的请求会以其 SDK 预期的格式返回错误并说明原因。[错误](../api/errors.md)列出了所有错误。
