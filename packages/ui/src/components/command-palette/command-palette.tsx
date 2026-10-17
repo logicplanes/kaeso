@@ -4,6 +4,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
 import { focusInputOnPress } from "../../utils/field-press.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
+import { useOpenSession, useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { KbdSequence, Kbd } from "../kbd/kbd.js";
@@ -240,9 +241,11 @@ export function CommandPalette(props: CommandPaletteProps) {
   const focus = useRestoreFocus(isOpen);
   const t = useUiText();
   const container = usePortalContainer();
+  const settled = useScopedDialog(isOpen);
+  const session = useOpenSession(isOpen);
   if (inline) return <Palette {...props} close={() => undefined} />;
   return (
-    <BaseDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)}>
+    <BaseDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)} onOpenChangeComplete={settled}>
       <BaseDialog.Portal container={container}>
         <BaseDialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-motion" />
         <BaseDialog.Viewport className="fixed inset-0 z-50 flex items-start justify-center px-16 pt-palette">
@@ -252,7 +255,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             finalFocus={focus.finalFocus}
             className="w-640 max-w-full overflow-hidden rounded-palette bg-raised text-fg shadow-dialog outline-none dialog-motion"
           >
-            {isOpen && <Palette {...props} close={() => setOpen(false)} />}
+            <Palette key={session} {...props} close={() => setOpen(false)} />
           </BaseDialog.Popup>
         </BaseDialog.Viewport>
       </BaseDialog.Portal>

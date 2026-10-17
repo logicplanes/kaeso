@@ -20,8 +20,8 @@ order: 8
 
 | 路由 | 文件 | 目标 | 上限 | gzip 后实测 |
 | --- | --- | --: | --: | --: |
-| 登录 | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 126.0 kB |
-| 项目概览 | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205.9 kB |
+| 登录 | `src/routes/sign-in.tsx` | 120 kB | 127 kB | 126.0 kB |
+| 项目概览 | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 207 kB | 206.0 kB |
 
 1 kB 为 1,024 字节。两个路由目前都未达到目标。在登录页的 126.0 kB 中，`framework` chunk（带调度器的 React 和 React DOM、TanStack Router 和 Query、openapi-fetch，以及控制台的 API 客户端、会话和格式化）占 98.1 kB，`ui` chunk（库的 `cn` 及其专门配置的 `tailwind-merge`、其按钮、文本、字段、输入框和标志、页面标题以及公开页面的布局）占 14.3 kB，带路由树及其预加载列表的入口占 9.5 kB，其余为登录页自己的 chunk。项目概览在此基础上增加了控制台的框架（侧边栏及其 Base UI 和 Floating UI 部件；其菜单在页面空闲时或首次悬停、聚焦或按下时加载，库的日期选择器也是如此）、统计卡片和图表及其 d3 模块，以及页面本身。
 

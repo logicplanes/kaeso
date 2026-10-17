@@ -34,7 +34,7 @@ export function KeySheet({ org, project, keyId, onClose }: { org: string; projec
       size="md"
       title={keyId ? <SheetTitle org={org} project={project} keyId={keyId} /> : ""}
     >
-      {keyId && <KeyBody org={org} project={project} keyId={keyId} onClose={onClose} />}
+      {keyId && <KeyBody key={keyId} org={org} project={project} keyId={keyId} onClose={onClose} />}
     </Sheet>
   );
 }

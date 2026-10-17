@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Code, Dialog, Input, NumberInput, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Switch, Text } from "@logicplanes/kaeso-ui";
+import {
+  Button,
+  Code,
+  Dialog,
+  DialogScope,
+  Input,
+  NumberInput,
+  SettingsGroup,
+  SettingsRow,
+  SettingsSection,
+  StatusDot,
+  Switch,
+  Text,
+} from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSettingsQuery } from "~/api/queries/instance";
@@ -219,17 +232,6 @@ function SignIn({ settings }: { settings: SettingsView }) {
 
 function Mail({ settings }: { settings: SettingsView }) {
   const [open, setOpen] = useState(false);
-  const [to, setTo] = useState("");
-  const send = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/instance/settings/test-email", { body: to.trim() ? { to: to.trim() } : {} })),
-    onSuccess: (r) => {
-      setOpen(false);
-      setTo("");
-      toast.success(t("instance.testEmailSent", "Test email sent to {email}", { email: r.to }));
-    },
-  });
-  const reason =
-    to.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? t("instance.emailOrEmpty", "Enter an email address, or leave it empty") : undefined;
   const mail = settings.mail;
   return (
     <SettingsSection
@@ -246,39 +248,51 @@ function Mail({ settings }: { settings: SettingsView }) {
         {mail.host && <SettingsRow title={t("instance.host", "Host")} control={<Code>{`${mail.host}:${mail.port}`}</Code>} />}
         <SettingsRow title={t("instance.from", "From")} control={<Text tone="secondary">{mail.from}</Text>} />
       </SettingsGroup>
-      <Dialog
-        open={open}
-        onOpenChange={setOpen}
-        size="sm"
-        title={t("instance.testEmailTitle", "Send a test email")}
-        description={t("instance.testEmailHint", "Checks that the gateway can send mail.")}
-        onSubmit={() => !reason && send.mutate()}
-        footer={
-          <>
-            <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
-            <Button
-              variant="primary"
-              disabled={!!reason}
-              {...(reason ? { disabledReason: reason } : {})}
-              loading={send.isPending}
-              onClick={() => send.mutate()}
-            >
-              {t("instance.sendTestEmail", "Send test email")}
-            </Button>
-          </>
-        }
-      >
-        <Input
-          label={t("instance.recipient", "Recipient")}
-          optional
-          description={t("instance.recipientHint", "Leave it empty to send it to yourself.")}
-          type="email"
-          autoComplete="off"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          autoFocus
-        />
-      </Dialog>
+      <DialogScope open={open}>
+        <TestEmailDialog open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function TestEmailDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [to, setTo] = useState("");
+  const send = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/instance/settings/test-email", { body: to.trim() ? { to: to.trim() } : {} })),
+    onSuccess: (r) => {
+      setOpen(false);
+      toast.success(t("instance.testEmailSent", "Test email sent to {email}", { email: r.to }));
+    },
+  });
+  const reason =
+    to.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? t("instance.emailOrEmpty", "Enter an email address, or leave it empty") : undefined;
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      size="sm"
+      title={t("instance.testEmailTitle", "Send a test email")}
+      description={t("instance.testEmailHint", "Checks that the gateway can send mail.")}
+      onSubmit={() => !reason && send.mutate()}
+      footer={
+        <>
+          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Button variant="primary" disabled={!!reason} {...(reason ? { disabledReason: reason } : {})} loading={send.isPending} onClick={() => send.mutate()}>
+            {t("instance.sendTestEmail", "Send test email")}
+          </Button>
+        </>
+      }
+    >
+      <Input
+        label={t("instance.recipient", "Recipient")}
+        optional
+        description={t("instance.recipientHint", "Leave it empty to send it to yourself.")}
+        type="email"
+        autoComplete="off"
+        value={to}
+        onChange={(e) => setTo(e.target.value)}
+        autoFocus
+      />
+    </Dialog>
   );
 }

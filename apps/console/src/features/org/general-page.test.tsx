@@ -200,6 +200,37 @@ describe("transferring ownership", () => {
     expect(requests("POST", "orgs/:org/ownership-transfer").map((r) => r.body)).toEqual([{ user_id: "usr_hedy" }]);
   });
 
+  it("says the members are loading until they arrive", async () => {
+    signedIn();
+    let release: () => void = () => undefined;
+    on("GET", "orgs/:org/members", () => new Promise((resolve) => (release = () => resolve(page(members)))));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Transfer ownership" }));
+    const dialog = await screen.findByRole("dialog", { name: "Transfer ownership" });
+    expect(within(dialog).getByRole("combobox", { name: "New owner" })).toHaveAttribute("placeholder", "Loading members…");
+    release();
+    await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "New owner" })).toHaveAttribute("placeholder", "Choose a member"));
+  });
+
+  it("forgets the chosen member when cancelled, so it opens with no one chosen", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", page(members));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Transfer ownership" }));
+    const dialog = await screen.findByRole("dialog", { name: "Transfer ownership" });
+    await user.click(within(dialog).getByRole("combobox", { name: "New owner" }));
+    await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
+    expect(await within(dialog).findByText("Grace Hopper becomes an owner and you become an admin.")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Transfer ownership" })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Transfer ownership" }));
+    const again = await screen.findByRole("dialog", { name: "Transfer ownership" });
+    expect(within(again).getByText("Choose the member who becomes an owner; you become an admin.")).toBeInTheDocument();
+    expect(within(again).getByRole("combobox", { name: "New owner" })).toHaveValue("");
+    expect(within(again).getByRole("button", { name: "Transfer ownership" })).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("closes without transferring when cancelled", async () => {
     signedIn();
     on("GET", "orgs/:org/members", page(members));

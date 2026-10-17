@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Combobox, Dialog, Input, Radio, RadioCards, SecretReveal, Select, StepDialog, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Combobox, Dialog, DialogScope, Input, Radio, RadioCards, SecretReveal, Select, StepDialog, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { CreatedKey_KeyView } from "~/api/generated/types";
 import { catalogueQuery } from "~/api/queries/models";
@@ -21,27 +21,31 @@ type Access = "inference" | "platform" | "both";
 
 const EXAMPLE_NAME = "checkout-web";
 
-export function CreateKeyDialog({
-  org,
-  project,
-  open,
-  onClose,
-  fixedServiceAccount,
-}: {
+interface CreateKeyProps {
   org: string;
   project: string;
   open: boolean;
   onClose: () => void;
   fixedServiceAccount?: { id: string; name: string } | undefined;
-}) {
+}
+
+export function CreateKeyDialog(props: CreateKeyProps) {
+  return (
+    <DialogScope open={props.open}>
+      <CreateKeyFlow {...props} />
+    </DialogScope>
+  );
+}
+
+function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: CreateKeyProps) {
   const [created, setCreated] = useState<{ key: CreatedKey_KeyView; models: string[] } | null>(null);
-  if (!open) return null;
   return created ? (
-    <RevealStep org={org} project={project} created={created.key} models={created.models} onDone={onClose} />
+    <RevealStep org={org} project={project} open={open} created={created.key} models={created.models} onDone={onClose} />
   ) : (
     <FormStep
       org={org}
       project={project}
+      open={open}
       onClose={onClose}
       onCreated={(key, models) => setCreated({ key, models })}
       fixedServiceAccount={fixedServiceAccount}
@@ -52,12 +56,14 @@ export function CreateKeyDialog({
 function FormStep({
   org,
   project,
+  open,
   onClose,
   onCreated,
   fixedServiceAccount,
 }: {
   org: string;
   project: string;
+  open: boolean;
   onClose: () => void;
   onCreated: (k: CreatedKey_KeyView, models: string[]) => void;
   fixedServiceAccount?: { id: string; name: string } | undefined;
@@ -139,7 +145,7 @@ function FormStep({
 
   return (
     <StepDialog
-      open
+      open={open}
       onOpenChange={(o) => !o && onClose()}
       title={t("kaeso.createKey.title", "Create key")}
       submitLabel={t("kaeso.createKey.title", "Create key")}
@@ -253,12 +259,14 @@ function FormStep({
 function RevealStep({
   org,
   project,
+  open,
   created,
   models,
   onDone,
 }: {
   org: string;
   project: string;
+  open: boolean;
   created: CreatedKey_KeyView;
   models: string[];
   onDone: () => void;
@@ -271,7 +279,7 @@ function RevealStep({
   return (
     <>
       <Dialog
-        open
+        open={open}
         onOpenChange={(o) => !o && done()}
         size="lg"
         title={t("kaeso.createKey.created", "Key created")}

@@ -5,6 +5,7 @@ import {
   Button,
   Combobox,
   Dialog,
+  DialogScope,
   InlineCopyText,
   Input,
   KeyValue,
@@ -17,6 +18,7 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import type { MemberView } from "~/api/generated/types";
 import { orgMembersQuery, orgQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
@@ -145,18 +147,8 @@ function TransferOwnership({ org }: { org: string }) {
   const session = useSession();
   const rights = useOrgRights(org);
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
-  const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<string | null>(null);
   const candidates = (members.data ?? []).filter((m) => m.user.id !== session.user.id && m.user.state === "active");
-  const chosen = candidates.find((m) => m.user.id === user);
-  const transfer = useApiMutation({
-    mutationFn: async (id: string) => data(await api.POST("/platform/v1/orgs/{org}/ownership-transfer", { params: { path: { org } }, body: { user_id: id } })),
-    invalidates: [["orgs", org, "members"], ["session"], ["me", "memberships"]],
-    onSuccess: (m) => {
-      setOpen(false);
-      toast.success(t("org.ownership.transferred", "{name} is an owner now; you're an admin", { name: m.user.name }));
-    },
-  });
+  const [open, setOpen] = useState(false);
   return (
     <SettingsSection title={t("org.ownership.title", "Ownership")}>
       <SettingsGroup>
@@ -170,46 +162,76 @@ function TransferOwnership({ org }: { org: string }) {
           }
         />
       </SettingsGroup>
-      <Dialog
-        open={open}
-        onOpenChange={setOpen}
-        size="sm"
-        title={t("org.ownership.transfer", "Transfer ownership")}
-        description={
-          chosen
-            ? t("org.ownership.becomes", "{name} becomes an owner and you become an admin.", { name: chosen.user.name })
-            : t("org.ownership.choose", "Choose the member who becomes an owner; you become an admin.")
-        }
-        onSubmit={() => user && transfer.mutate(user)}
-        footer={
-          <>
-            <Button onClick={() => setOpen(false)}>{common.cancel()}</Button>
-            <Button
-              variant="primary"
-              disabled={!user}
-              {...(user ? {} : { disabledReason: t("org.ownership.chooseMember", "Choose a member") })}
-              loading={transfer.isPending}
-              onClick={() => user && transfer.mutate(user)}
-            >
-              {t("org.ownership.transfer", "Transfer ownership")}
-            </Button>
-          </>
-        }
-      >
-        <Combobox
-          label={t("org.ownership.newOwner", "New owner")}
-          placeholder={members.isPending ? t("org.ownership.loadingMembers", "Loading members…") : t("org.ownership.chooseMember", "Choose a member")}
-          options={candidates.map((m) => ({
-            value: m.user.id,
-            label: m.user.name,
-            description: m.user.email ?? undefined,
-            leading: <Avatar name={m.user.name} {...(m.user.avatar_url ? { src: m.user.avatar_url } : {})} size={20} decorative />,
-          }))}
-          value={user}
-          onValueChange={(v: string | null) => setUser(v)}
-        />
-      </Dialog>
+      <DialogScope open={open}>
+        <TransferDialog org={org} candidates={candidates} loading={members.isPending} open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function TransferDialog({
+  org,
+  candidates,
+  loading,
+  open,
+  onOpenChange: setOpen,
+}: {
+  org: string;
+  candidates: MemberView[];
+  loading: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [user, setUser] = useState<string | null>(null);
+  const chosen = candidates.find((m) => m.user.id === user);
+  const transfer = useApiMutation({
+    mutationFn: async (id: string) => data(await api.POST("/platform/v1/orgs/{org}/ownership-transfer", { params: { path: { org } }, body: { user_id: id } })),
+    invalidates: [["orgs", org, "members"], ["session"], ["me", "memberships"]],
+    onSuccess: (m) => {
+      setOpen(false);
+      toast.success(t("org.ownership.transferred", "{name} is an owner now; you're an admin", { name: m.user.name }));
+    },
+  });
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      size="sm"
+      title={t("org.ownership.transfer", "Transfer ownership")}
+      description={
+        chosen
+          ? t("org.ownership.becomes", "{name} becomes an owner and you become an admin.", { name: chosen.user.name })
+          : t("org.ownership.choose", "Choose the member who becomes an owner; you become an admin.")
+      }
+      onSubmit={() => user && transfer.mutate(user)}
+      footer={
+        <>
+          <Button onClick={() => setOpen(false)}>{common.cancel()}</Button>
+          <Button
+            variant="primary"
+            disabled={!user}
+            {...(user ? {} : { disabledReason: t("org.ownership.chooseMember", "Choose a member") })}
+            loading={transfer.isPending}
+            onClick={() => user && transfer.mutate(user)}
+          >
+            {t("org.ownership.transfer", "Transfer ownership")}
+          </Button>
+        </>
+      }
+    >
+      <Combobox
+        label={t("org.ownership.newOwner", "New owner")}
+        placeholder={loading ? t("org.ownership.loadingMembers", "Loading members…") : t("org.ownership.chooseMember", "Choose a member")}
+        options={candidates.map((m) => ({
+          value: m.user.id,
+          label: m.user.name,
+          description: m.user.email ?? undefined,
+          leading: <Avatar name={m.user.name} {...(m.user.avatar_url ? { src: m.user.avatar_url } : {})} size={20} decorative />,
+        }))}
+        value={user}
+        onValueChange={(v: string | null) => setUser(v)}
+      />
+    </Dialog>
   );
 }
 

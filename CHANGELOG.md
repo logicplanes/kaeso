@@ -11,6 +11,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - On phones, the documentation site and the UI library's showcase open the search from a button in the header, beside the navigation toggle; `AppFrame` takes `phoneActions` for such buttons.
 - Both sites list every page in every language in `sitemap.xml`, with its `hreflang` alternates and `x-default`, and name it in `robots.txt`; every page has a canonical address, Open Graph and Twitter tags with a preview image of the Kaeso logo, and its language's alternates, and the showcase has a web manifest. Not-found pages and the showcase's examples and states pages are kept out of search results.
 - Web apps can call the model API from a browser: `KAESO_CORS_ALLOWED_ORIGINS` lists their origins, which then get CORS headers on `/v1`, preflights answered without a key and readable `kaeso-*` and `retry-after` headers. Nothing changes while it is empty, the default, and `*` is refused.
+- `DialogScope` in `@logicplanes/kaeso-ui`: the component inside it mounts anew each time its dialog opens and unmounts once the dialog has finished closing, so a dialog's fields, steps, results and secrets never come back on the next open.
 
 ### Changed
 
@@ -27,6 +28,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Tables in the documentation keep their words whole and scroll inside a named region when they are wider than the screen, and the previous and next links show their label above the page title; a ScrollArea with an `aria-label` is now a region screen readers announce.
 - The component registry in `@logicplanes/kaeso-ui` lists every component's default variants again, without an extra `_DEFAULT` entry per component.
 - Turning two-factor authentication on or off, or changing your password, no longer signs you out when the console was loading something at the same moment.
+- The console's dialogs open fresh every time: Create key starts on an empty first step again after a key was created, and transfer ownership, add owner, send test email, change email, change password, export requests and add models no longer keep what was typed or chosen before they were cancelled. A key's sheet shows only the key it opened for.
+- The command palette keeps its results while it closes instead of emptying first, and the documentation search opens with an empty query instead of the last search's headings.
+
+### Security
+
+- The console no longer shows an API key's secret again after its dialog was closed: until the page was reloaded, the next Create key opened on the last key's secret. The secret now leaves the page and the console's memory once the dialog has closed.
 
 ## [0.1.0] - 2026-10-16
 

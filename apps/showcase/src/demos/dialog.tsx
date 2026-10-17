@@ -38,7 +38,7 @@ export function Steps() {
   const [name, setName] = useState("");
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="primary" onClick={() => (setName(""), setOpen(true))}>
         Create key
       </Button>
       <StepDialog
@@ -166,7 +166,7 @@ export function StepHeights() {
   const [level, setLevel] = useState("project");
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="primary" onClick={() => (setLevel("project"), setOpen(true))}>
         Add limit
       </Button>
       <StepDialog

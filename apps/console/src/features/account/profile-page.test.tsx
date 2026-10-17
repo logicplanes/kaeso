@@ -91,6 +91,25 @@ describe("profile page", () => {
     expect(requests("POST", "me/email").map((r) => r.body)).toEqual([{ email: "ada@example.org" }]);
   });
 
+  it("opens with an empty address and no error after a refused or cancelled change", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("POST", "me/email", apiError(409, "conflict", "Another account uses this address.", { param: "email" }));
+    const { user } = await renderApp("/settings/account/profile");
+    await user.click(await screen.findByRole("button", { name: "Change email" }));
+    const dialog = await screen.findByRole("dialog", { name: "Change email" });
+    await user.type(within(dialog).getByLabelText("New email"), "grace@example.com");
+    await user.click(within(dialog).getByRole("button", { name: "Send confirmation link" }));
+    await waitFor(() => expect(within(dialog).getByLabelText("New email")).toHaveAccessibleDescription("Another account uses this address."));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Change email" })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Change email" }));
+    const again = await screen.findByRole("dialog", { name: "Change email" });
+    expect(within(again).getByLabelText("New email")).toHaveValue("");
+    expect(within(again).getByLabelText("New email")).not.toHaveAccessibleDescription("Another account uses this address.");
+    expect(within(again).getByRole("button", { name: "Send confirmation link" })).toBeDisabled();
+  });
+
   it("marks the address the gateway refused", async () => {
     signedIn();
     on("GET", "me", me());

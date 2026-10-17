@@ -221,6 +221,25 @@ describe("appointing an owner", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add an owner" })).not.toBeInTheDocument());
   });
 
+  it("opens with no user chosen after a choice was cancelled", async () => {
+    signedIn();
+    orgData();
+    on("GET", "instance/users", paged([instanceUser(), instanceUser({ id: "usr_linus", name: "Linus Park", email: null })]));
+    const { user } = await renderApp(path());
+    await user.click(await screen.findByRole("button", { name: "Add owner" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add an owner" });
+    await user.click(within(dialog).getByRole("combobox", { name: "User" }));
+    await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
+    expect(within(dialog).getByRole("combobox", { name: "User" })).toHaveValue("Grace Hopper");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add an owner" })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Add owner" }));
+    const again = await screen.findByRole("dialog", { name: "Add an owner" });
+    expect(within(again).getByRole("combobox", { name: "User" })).toHaveValue("");
+    expect(within(again).getByRole("button", { name: "Add owner" })).toHaveAttribute("aria-disabled", "true");
+    expect(requests("POST", "instance/orgs/:org/owner")).toHaveLength(0);
+  });
+
   it("makes you an owner of an organization without one", async () => {
     signedIn();
     orgData({ view: instanceOrg({ id: OTHER, name: "Contoso", owners: 0 }), members: [GRACE] });

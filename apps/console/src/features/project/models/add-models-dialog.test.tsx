@@ -116,6 +116,28 @@ describe("AddModelsDialog", () => {
     expect(screen.getByRole("searchbox", { name: "Search models" })).toBeInTheDocument();
   });
 
+  it("opens on an empty search with nothing chosen after a cancelled one", async () => {
+    setUp();
+    const { user, dialog } = await open();
+
+    await within(dialog).findByText("gpt-5-mini");
+    await user.click(within(dialog).getByRole("checkbox", { name: "Select gpt-5" }));
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search models" }), "mini");
+    await user.click(within(dialog).getByRole("button", { name: "Add a custom model" }));
+    const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
+    await user.type(within(custom).getByRole("textbox", { name: "Model id" }), "acme-internal-1");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    await user.click(screen.getAllByRole("button", { name: "Add models" })[0] as HTMLElement);
+    const again = await screen.findByRole("dialog", { name: /Add models/ });
+    expect(within(again).getByRole("searchbox", { name: "Search models" })).toHaveValue("");
+    expect(await within(again).findByRole("checkbox", { name: "Select gpt-5" })).not.toBeChecked();
+    expect(within(again).getByRole("button", { name: "Add models" })).toBeDisabled();
+    expect(within(again).queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("acme-internal-1")).not.toBeInTheDocument();
+  });
+
   it("searches by name, includes deprecated models and switches provider", async () => {
     setUp();
     const { user, dialog } = await open();

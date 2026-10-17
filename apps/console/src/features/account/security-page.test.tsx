@@ -207,6 +207,29 @@ describe("turning on two-factor authentication", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
   });
 
+  it("starts a new setup with an empty code after one was cancelled half-way", async () => {
+    signedIn();
+    on("GET", "me", me());
+    const second = { secret: "KRSXG5CTMVRXEZLU", otpauth_uri: "otpauth://totp/Kaeso:owner@example.com?secret=KRSXG5CTMVRXEZLU&issuer=Kaeso" };
+    let setups = 0;
+    on("POST", "me/totp", () => (++setups === 1 ? SETUP : second));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Set up" }));
+    const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    await within(dialog).findByText(SETUP.secret);
+    await user.type(within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement, "123");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Set up" }));
+    const again = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    expect(await within(again).findByText(second.secret)).toBeInTheDocument();
+    expect(screen.queryByText(SETUP.secret)).not.toBeInTheDocument();
+    expect((within(again).getAllByLabelText("Code from the app")[0] as HTMLInputElement).value).toBe("");
+    expect(within(again).getByRole("button", { name: "Turn on" })).toBeDisabled();
+    expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
+  });
+
   it("cancels the setup", async () => {
     signedIn();
     on("GET", "me", me());
@@ -262,5 +285,28 @@ describe("with two-factor authentication on", () => {
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
+  });
+
+  it("shows only the new recovery codes when they are regenerated again", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    let rounds = 0;
+    on("POST", "me/recovery-codes", () => ({ recovery_codes: ++rounds === 1 ? ["eeee-ffff"] : ["gggg-hhhh"] }));
+    const { user } = await renderApp(PATH);
+    for (const [shown, gone] of [
+      ["eeee-ffff", null],
+      ["gggg-hhhh", "eeee-ffff"],
+    ] as const) {
+      await user.click(await screen.findByRole("button", { name: "Regenerate" }));
+      await user.click(within(await screen.findByRole("alertdialog", { name: "Regenerate recovery codes?" })).getByRole("button", { name: "Regenerate" }));
+      const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
+      expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent(shown);
+      if (gone) expect(screen.queryByText(gone, { exact: false })).not.toBeInTheDocument();
+      expect(within(codes).getByRole("checkbox", { name: "I stored these codes" })).not.toBeChecked();
+      await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
+      await user.click(within(codes).getByRole("button", { name: "Done" }));
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
+      expect(screen.queryByText(shown, { exact: false })).not.toBeInTheDocument();
+    }
   });
 });

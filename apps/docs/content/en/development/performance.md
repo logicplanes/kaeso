@@ -20,8 +20,8 @@ A route fails the build when it is over its ceiling. The target is the size a ro
 
 | Route | File | Target | Ceiling | Measured, gzipped |
 | --- | --- | --: | --: | --: |
-| Sign-in | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 126.0 kB |
-| Project overview | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205.9 kB |
+| Sign-in | `src/routes/sign-in.tsx` | 120 kB | 127 kB | 126.0 kB |
+| Project overview | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 207 kB | 206.0 kB |
 
 1 kB is 1,024 bytes. Neither route meets its target yet. Of sign-in's 126.0 kB, the `framework` chunk (React and React DOM with the scheduler, TanStack Router and Query, openapi-fetch, and the console's API client, session and formatting) is 98.1 kB, the `ui` chunk (the library's `cn` with its own `tailwind-merge` setup, its button, text, field, input and logo, the page title and the public page's layout) 14.3 kB, the entry with the route tree and its preload lists 9.5 kB, and the sign-in page's own chunks the rest. The project overview adds the console's frame (the sidebar with its Base UI and Floating UI parts; its menus load once the page is idle or on first hover, focus or press, as the library's date pickers do), the stat tiles and charts with their d3 modules, and the page.
 

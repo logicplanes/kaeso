@@ -5,6 +5,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { AlertDialog as BaseAlertDialog } from "@base-ui/react/alert-dialog";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
+import { useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -136,12 +137,14 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
   const { open, defaultOpen, onOpenChange, trigger, size = "md", inline } = props;
   const focus = useRestoreFocus(open, focusFirstControl);
   const container = usePortalContainer();
+  const settled = useScopedDialog(open);
   if (inline) return <DialogFrame {...props} />;
   return (
     <BaseDialog.Root
       {...(open !== undefined ? { open } : {})}
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
+      onOpenChangeComplete={settled}
     >
       {trigger && <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
@@ -273,9 +276,10 @@ export function AlertDialog(props: AlertDialogProps) {
   };
   const focus = useRestoreFocus(isOpen);
   const container = usePortalContainer();
+  const settled = useScopedDialog(isOpen);
   if (inline) return <AlertFrame {...props} close={() => undefined} />;
   return (
-    <BaseAlertDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)}>
+    <BaseAlertDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)} onOpenChangeComplete={settled}>
       {trigger && <BaseAlertDialog.Trigger render={trigger} />}
       <BaseAlertDialog.Portal container={container}>
         <BaseAlertDialog.Backdrop className={BACKDROP} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge, Banner, Button, Empty, Input, LayerDialog, List, ModelLabel, SearchInput, Segmented, Switch, Text } from "@logicplanes/kaeso-ui";
+import { Badge, Banner, Button, DialogScope, Empty, Input, LayerDialog, List, ModelLabel, SearchInput, Segmented, Switch, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -26,7 +26,22 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
-export function AddModelsDialog({ org, project, open, onClose }: { org: string; project: string; open: boolean; onClose: () => void }) {
+interface AddModelsProps {
+  org: string;
+  project: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+export function AddModelsDialog(props: AddModelsProps) {
+  return (
+    <DialogScope open={props.open}>
+      <AddModels {...props} />
+    </DialogScope>
+  );
+}
+
+function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>("search");
   const [provider, setProvider] = useState("openai");
@@ -38,13 +53,6 @@ export function AddModelsDialog({ org, project, open, onClose }: { org: string; 
   const search = useDebounced(q.trim(), 250);
   const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open });
 
-  const close = () => {
-    onClose();
-    setView("search");
-    setSelected(new Set());
-    setReview(null);
-    setCustom(emptyCustom());
-  };
   const invalidates = [["orgs", org, "projects", project, "models"]];
 
   const batch = useApiMutation({

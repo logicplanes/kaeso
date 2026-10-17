@@ -50,6 +50,32 @@ test("profile, notifications, sessions and memberships", async ({ page }) => {
   await expect(page.getByText("Owner of the organization")).toBeVisible();
 });
 
+test("two-factor authentication: a setup cancelled half-way starts again with a new key and an empty code", async ({ page }) => {
+  await signInAsOwner(page);
+  await page.goto("/settings/account/security");
+  const setUp = page.getByRole("button", { name: "Set up" });
+  const dialog = page.getByRole("dialog", { name: "Set up two-factor authentication" });
+  const key = dialog.locator("code").first();
+  const code = dialog.getByRole("textbox", { name: "Code from the app" });
+  await setUp.click();
+  await expect(key).toHaveText(/^[A-Z2-7]+=*$/);
+  const first = (await key.textContent()) ?? "";
+  await code.fill("123");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+  expect(await page.content()).not.toContain(first);
+
+  await setUp.click();
+  await expect(key).toHaveText(/^[A-Z2-7]+=*$/);
+  await expect(key).not.toHaveText(first);
+  await expect(code).toHaveValue("");
+  await expect(dialog.getByRole("button", { name: "Turn on" })).toBeDisabled();
+  expect(await page.content()).not.toContain(first);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(setUp).toBeVisible();
+});
+
 test("two-factor authentication: set up with the QR code's key, sign in with a code and a recovery code, then off", async ({ page, browser }) => {
   await signInAsOwner(page);
   await page.goto("/settings/account/security");

@@ -110,6 +110,23 @@ describe("search", () => {
     expect(router.state.location.hash).toBe("rate-limits");
   });
 
+  it("opens with an empty query each time, without the last search's results", async () => {
+    const user = userEvent.setup();
+    app("/");
+    await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
+    await user.keyboard("{Control>}k{/Control}");
+    await user.type(await screen.findByPlaceholderText("Search the documentation"), "rate");
+    expect(await screen.findByRole("option", { name: /Rate limits/ })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByPlaceholderText("Search the documentation")).toBeNull());
+    await user.keyboard("{Control>}k{/Control}");
+    expect(await screen.findByPlaceholderText("Search the documentation")).toHaveValue("");
+    expect(await screen.findByRole("option", { name: /^Kaeso documentation/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Rate limits/ })).toBeNull();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByPlaceholderText("Search the documentation")).toBeNull());
+  });
+
   it("opens from the phone bar, beside the navigation toggle, in the page's language", async () => {
     const user = userEvent.setup();
     app("/de/guides");

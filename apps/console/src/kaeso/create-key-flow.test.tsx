@@ -3,7 +3,7 @@ import type { UserEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { org, project, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
-import { access, catalogueModel, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { access, apiKey, catalogueModel, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey, model } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -11,6 +11,7 @@ import { renderApp } from "~/test/render";
 const sonnet = catalogueModel({ effective: { ...catalogueModel().effective, display_name: "Sonnet 4.5" } });
 
 const KEYS = "orgs/:org/projects/:project/keys";
+const SECRET = createdKey().secret;
 
 async function openDialog(path = "keys?create=true") {
   const view = await renderApp(projectPath(path));
@@ -53,6 +54,59 @@ describe("CreateKeyDialog", () => {
     await user.click(within(screen.getByRole("dialog", { name: "Key created" })).getByRole("button", { name: "Done" }));
     await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
+  });
+
+  it("opens on the first step with an empty name after a key was shown, without the old key", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    on("POST", KEYS, createdKey());
+    const { user } = await renderApp(projectPath("keys"));
+    await screen.findByRole("gridcell", { name: /checkout-web/ });
+
+    for (const name of ["checkout-web", "nightly-batch"]) {
+      await user.click(screen.getByRole("button", { name: "Create key" }));
+      const dialog = await screen.findByRole("dialog", { name: /Create key/ });
+      expect(within(dialog).getByText("Step 1 of 4")).toBeInTheDocument();
+      expect(within(dialog).getByRole("heading", { name: "What is it for?" })).toBeVisible();
+      expect(within(dialog).getByRole("textbox", { name: "Name" })).toHaveValue("");
+      expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+      await user.type(within(dialog).getByRole("textbox", { name: "Name" }), `${name}{Enter}`);
+      await next(user, dialog, "What can it call?");
+      await next(user, dialog, "Models and limits");
+      await user.click(within(dialog).getByRole("button", { name: "Create key" }));
+      const reveal = await screen.findByRole("dialog", { name: "Key created" });
+      expect(within(reveal).getByRole("textbox", { name: /^Secret for/ })).toHaveTextContent(SECRET);
+      await user.click(within(reveal).getByRole("button", { name: "Done" }));
+      await user.click(
+        within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }),
+      );
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
+      expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+    }
+    expect(requests("POST", KEYS).map((r) => (r.body as { name: string }).name)).toEqual(["checkout-web", "nightly-batch"]);
+  });
+
+  it("opens on the first step again after cancelling half-way", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    const { user } = await renderApp(projectPath("keys"));
+    await screen.findByRole("gridcell", { name: /checkout-web/ });
+
+    await user.click(screen.getByRole("button", { name: "Create key" }));
+    const dialog = await screen.findByRole("dialog", { name: /Create key/ });
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "checkout-web{Enter}");
+    await next(user, dialog, "What can it call?");
+    await user.click(within(dialog).getByRole("radio", { name: /^Platform/ }));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Create key/ })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Create key" }));
+    const again = await screen.findByRole("dialog", { name: /Create key/ });
+    expect(within(again).getByRole("heading", { name: "What is it for?" })).toBeVisible();
+    expect(within(again).getByRole("textbox", { name: "Name" })).toHaveValue("");
+    await user.type(within(again).getByRole("textbox", { name: "Name" }), "web{Enter}");
+    await next(user, again, "What can it call?");
+    expect(within(again).getByRole("radio", { name: /^Inference(?! and)/ })).toBeChecked();
   });
 
   it("closes without asking once the key is copied", async () => {

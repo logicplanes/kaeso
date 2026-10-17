@@ -20,8 +20,8 @@ Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt.
 
 | Route | Datei | Ziel | Obergrenze | Gemessen, gzip |
 | --- | --- | --: | --: | --: |
-| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 126,0 kB |
-| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205,9 kB |
+| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 127 kB | 126,0 kB |
+| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 207 kB | 206,0 kB |
 
 1 kB sind 1.024 Bytes. Noch erreicht keine der beiden Routen ihr Ziel. Von den 126,0 kB der Anmeldung entfallen 98,1 kB auf den Chunk `framework` (React und React DOM mit dem Scheduler, TanStack Router und Query, openapi-fetch sowie API-Client, Sitzung und Formatierung der Konsole), 14,3 kB auf den Chunk `ui` (`cn` der Bibliothek mit seiner eigenen Einrichtung von `tailwind-merge`, ihr Button, Text, Feld, Eingabefeld und Logo, der Seitentitel und das Layout der öffentlichen Seiten), 9,5 kB auf den Entry mit dem Routenbaum und seinen Preload-Listen und der Rest auf die eigenen Chunks der Anmeldeseite. Die Projektübersicht fügt den Rahmen der Konsole hinzu (die Seitenleiste mit ihren Teilen aus Base UI und Floating UI; ihre Menüs laden, sobald die Seite im Leerlauf ist oder beim ersten Hover, Fokus oder Drücken, ebenso wie die Datumsauswahlen der Bibliothek), die Kennzahlenkacheln und Diagramme mit ihren d3-Modulen und die Seite selbst.
 

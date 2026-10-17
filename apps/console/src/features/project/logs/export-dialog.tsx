@@ -1,21 +1,13 @@
 import { useNeedsRight } from "~/auth/needs-right";
 import { useState } from "react";
-import { KeyValue, Radio, RadioCards, StepDialog } from "@logicplanes/kaeso-ui";
+import { DialogScope, KeyValue, Radio, RadioCards, StepDialog } from "@logicplanes/kaeso-ui";
 import type { LogFilters } from "~/api/queries/logs";
 import { startExport } from "~/shell/export-job";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { JSON_LINES, exportFilters, exportRequest, exportSummary, type ExportFormat, type ExportNames } from "./export";
 
-export function ExportDialog({
-  org,
-  project,
-  filters,
-  names,
-  canContent,
-  open,
-  onOpenChange,
-}: {
+interface ExportDialogProps {
   org: string;
   project: string;
   filters: LogFilters;
@@ -23,7 +15,17 @@ export function ExportDialog({
   canContent: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export function ExportDialog(props: ExportDialogProps) {
+  return (
+    <DialogScope open={props.open}>
+      <ExportSteps {...props} />
+    </DialogScope>
+  );
+}
+
+function ExportSteps({ org, project, filters, names, canContent, open, onOpenChange }: ExportDialogProps) {
   const [format, setFormat] = useState<ExportFormat>("csv");
   const needs = useNeedsRight(org, project);
   const applied = exportFilters(filters, names);
