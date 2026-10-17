@@ -32,14 +32,14 @@ const Bar = ({ orientation }: { orientation: "vertical" | "horizontal" }) => (
 );
 
 export const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(function ScrollArea(
-  { children, orientation = "vertical", className, viewportClassName, ...props },
+  { children, orientation = "vertical", className, viewportClassName, "aria-label": label },
   ref,
 ) {
   return (
     <BaseScrollArea.Root ref={ref} className={cn("relative min-h-0 overflow-hidden", className)}>
       <BaseScrollArea.Viewport
         className={cn("size-full overscroll-contain focus-ring-inset", KAESO_SCROLL_AREA_VARIANTS.orientation[orientation].classes, viewportClassName)}
-        {...props}
+        {...(label ? { role: "region", "aria-label": label } : {})}
       >
         {children}
       </BaseScrollArea.Viewport>

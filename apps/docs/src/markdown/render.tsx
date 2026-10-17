@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { Banner, Checkbox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text } from "@logicplanes/kaeso-ui";
-import { useText, type Translate } from "~/i18n/text";
+import type { Locale } from "~/i18n/locales";
+import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
 import type { Block, CalloutKind, Inline, ListItem } from "./ast";
 
@@ -9,6 +10,8 @@ interface Ctx {
   size: Size;
   tone: "default" | "secondary";
   t: Translate;
+  locale: Locale;
+  cell?: boolean;
 }
 
 const CALLOUT: Record<CalloutKind, { key: MessageKey; tone: "neutral" | "info" | "success" | "warning" }> = {
@@ -21,6 +24,21 @@ const CALLOUT: Record<CalloutKind, { key: MessageKey; tone: "neutral" | "info" |
 
 function plainText(xs: Inline[]): string {
   return xs.map((x) => (x.t === "text" || x.t === "code" ? x.v : x.t === "img" ? x.alt : x.t === "br" ? " " : "c" in x ? plainText(x.c) : "")).join("");
+}
+
+const LIST_SEPARATOR: Record<Locale, string> = { en: ", ", de: ", ", "zh-CN": "、" };
+const SHORT_COLUMN = 20;
+const WHOLE_CODE = 16;
+const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
+
+function width(s: string): number {
+  let n = 0;
+  for (const ch of s) n += WIDE.test(ch) ? 2 : 1;
+  return n;
+}
+
+function shortColumns(rows: Inline[][][], columns: number): boolean[] {
+  return Array.from({ length: columns }, (_, j) => rows.every((row) => width(plainText(row[j] ?? [])) <= SHORT_COLUMN));
 }
 
 const SOFT_BREAK = /(?<=\w[./_:,]+)(?=\w)/;
@@ -50,8 +68,12 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
       case "del":
         return <del key={i}>{inline(x.c, ctx)}</del>;
       case "code":
-        return (
-          <Code key={i} shape="rounded" className="wrap-anywhere">
+        return ctx.cell && x.v.length <= WHOLE_CODE ? (
+          <Code key={i} shape="rounded" className="whitespace-nowrap">
+            {x.v}
+          </Code>
+        ) : (
+          <Code key={i} shape="rounded" className={ctx.cell ? undefined : "wrap-anywhere"}>
             {codeText(x.v)}
           </Code>
         );
@@ -66,7 +88,7 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
             href={x.href}
             external={leaves && !bare}
             {...(x.title ? { title: x.title } : {})}
-            className={leaves && !bare ? "max-w-full wrap-anywhere" : "inline wrap-anywhere"}
+            className={`${leaves && !bare ? "max-w-full" : "inline"}${ctx.cell ? "" : " wrap-anywhere"}`}
           >
             {inline(x.c, ctx)}
           </Link>
@@ -167,10 +189,12 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       );
     }
     case "table": {
-      const cell: Ctx = { ...ctx, size: "body", tone: "default" };
+      const cell: Ctx = { ...ctx, size: "body", tone: "default", cell: true };
+      const short = shortColumns(b.rows, b.head.length);
+      const columns = b.head.map(plainText).join(LIST_SEPARATOR[ctx.locale]);
       return (
-        <ScrollArea key={i} orientation="horizontal" aria-label={ctx.t("page.table")}>
-          <Table className="min-w-640">
+        <ScrollArea key={i} orientation="horizontal" aria-label={ctx.t("page.table").replace("{columns}", columns)}>
+          <Table>
             <Table.Head>
               <Table.Row>
                 {b.head.map((c, j) => (
@@ -184,7 +208,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
               {b.rows.map((row, r) => (
                 <Table.Row key={r}>
                   {row.map((c, j) => (
-                    <Table.Cell key={j} align={b.align[j] ?? "start"}>
+                    <Table.Cell key={j} align={b.align[j] ?? "start"} className={`align-top ${short[j] ? "whitespace-nowrap" : "min-w-140"}`}>
                       {inline(c, cell)}
                     </Table.Cell>
                   ))}
@@ -206,5 +230,6 @@ function blocks(bs: Block[], ctx: Ctx): ReactNode[] {
 
 export function Markdown({ blocks: bs, className }: { blocks: Block[]; className?: string }) {
   const t = useText();
-  return <div className={`flex min-w-0 flex-col gap-16${className ? ` ${className}` : ""}`}>{blocks(bs, { size: "body-lg", tone: "default", t })}</div>;
+  const locale = useSiteLocale();
+  return <div className={`flex min-w-0 flex-col gap-16${className ? ` ${className}` : ""}`}>{blocks(bs, { size: "body-lg", tone: "default", t, locale })}</div>;
 }
