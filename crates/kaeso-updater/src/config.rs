@@ -116,7 +116,11 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    const TOKEN: &str = "0123456789abcdef0123456789abcdef";
+    static TOKEN_TEXT: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| "t".repeat(32));
+
+    fn token() -> &'static str {
+        TOKEN_TEXT.as_str()
+    }
 
     fn load(vars: &[(&str, &str)]) -> Result<Config, ConfigError> {
         let map: HashMap<String, String> = vars
@@ -126,7 +130,7 @@ mod tests {
         Config::load(
             |name| map.get(name).cloned(),
             |path| match path.to_str() {
-                Some("/run/secrets/updater_token") => Ok(format!("{TOKEN}\n")),
+                Some("/run/secrets/updater_token") => Ok(format!("{}\n", token())),
                 _ => Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
             },
         )
@@ -134,10 +138,10 @@ mod tests {
 
     #[test]
     fn defaults_fill_everything_but_the_token() {
-        let c = load(&[("KAESO_UPDATER_TOKEN", TOKEN), ("HOSTNAME", "abc123")]).unwrap();
+        let c = load(&[("KAESO_UPDATER_TOKEN", token()), ("HOSTNAME", "abc123")]).unwrap();
         assert_eq!(c.listen.to_string(), DEFAULT_LISTEN);
         assert_eq!(c.docker.as_str(), "http://docker-proxy:2375/");
-        assert_eq!(c.token.expose_secret(), TOKEN);
+        assert_eq!(c.token.expose_secret(), token());
         let s = c.settings();
         assert_eq!(s.hostname, "abc123");
         assert_eq!(s.gateway_timeout, Duration::from_secs(600));
@@ -150,7 +154,7 @@ mod tests {
             ("HOSTNAME", "h"),
         ])
         .unwrap();
-        assert_eq!(c.token.expose_secret(), TOKEN);
+        assert_eq!(c.token.expose_secret(), token());
         assert_eq!(
             load(&[("HOSTNAME", "h")]).unwrap_err(),
             ConfigError::NoToken
@@ -161,7 +165,7 @@ mod tests {
         );
         assert_eq!(
             load(&[
-                ("KAESO_UPDATER_TOKEN", TOKEN),
+                ("KAESO_UPDATER_TOKEN", token()),
                 ("KAESO_UPDATER_TOKEN_FILE", "/x"),
                 ("HOSTNAME", "h")
             ])
@@ -178,7 +182,7 @@ mod tests {
     fn addresses_and_the_hostname_are_checked() {
         assert_eq!(
             load(&[
-                ("KAESO_UPDATER_TOKEN", TOKEN),
+                ("KAESO_UPDATER_TOKEN", token()),
                 ("HOSTNAME", "h"),
                 ("KAESO_UPDATER_LISTEN", "nope")
             ])
@@ -187,7 +191,7 @@ mod tests {
         );
         assert_eq!(
             load(&[
-                ("KAESO_UPDATER_TOKEN", TOKEN),
+                ("KAESO_UPDATER_TOKEN", token()),
                 ("HOSTNAME", "h"),
                 ("KAESO_UPDATER_DOCKER_HOST", "unix:///var/run/docker.sock")
             ])
@@ -195,7 +199,7 @@ mod tests {
             ConfigError::Address("KAESO_UPDATER_DOCKER_HOST")
         );
         assert_eq!(
-            load(&[("KAESO_UPDATER_TOKEN", TOKEN)]).unwrap_err(),
+            load(&[("KAESO_UPDATER_TOKEN", token())]).unwrap_err(),
             ConfigError::NoHostname
         );
     }
@@ -217,9 +221,9 @@ mod tests {
             ConfigError::TwoTokens,
             ConfigError::NoToken,
         ] {
-            assert!(!e.to_string().contains(TOKEN));
+            assert!(!e.to_string().contains(token()));
         }
-        let c = load(&[("KAESO_UPDATER_TOKEN", TOKEN), ("HOSTNAME", "h")]).unwrap();
-        assert!(!format!("{c:?}").contains(TOKEN));
+        let c = load(&[("KAESO_UPDATER_TOKEN", token()), ("HOSTNAME", "h")]).unwrap();
+        assert!(!format!("{c:?}").contains(token()));
     }
 }

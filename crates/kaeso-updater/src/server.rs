@@ -114,24 +114,16 @@ mod tests {
 
     #[test]
     fn only_the_exact_bearer_token_is_authorized() {
-        let token = SecretString::from("0123456789abcdef0123456789abcdef");
-        assert!(authorized(
-            &token,
-            Some("Bearer 0123456789abcdef0123456789abcdef")
-        ));
-        assert!(!authorized(
-            &token,
-            Some("Bearer 0123456789abcdef0123456789abcdee")
-        ));
-        assert!(!authorized(&token, Some("Bearer 0123456789abcdef")));
-        assert!(!authorized(
-            &token,
-            Some("0123456789abcdef0123456789abcdef")
-        ));
-        assert!(!authorized(
-            &token,
-            Some("Basic 0123456789abcdef0123456789abcdef")
-        ));
+        let text = "t".repeat(32);
+        let token = SecretString::from(text.clone());
+        let bearer = |value: &str| format!("Bearer {value}");
+        assert!(authorized(&token, Some(&bearer(&text))));
+        let mut other = text.clone();
+        other.replace_range(31.., "u");
+        assert!(!authorized(&token, Some(&bearer(&other))));
+        assert!(!authorized(&token, Some(&bearer(&text[..16]))));
+        assert!(!authorized(&token, Some(&text)));
+        assert!(!authorized(&token, Some(&format!("Basic {text}"))));
         assert!(!authorized(&token, None));
     }
 
