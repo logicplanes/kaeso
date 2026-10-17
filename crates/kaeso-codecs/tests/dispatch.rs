@@ -161,3 +161,129 @@ fn every_codec_type_has_the_same_traits() {
         DIALECTS
     );
 }
+
+fn with(mut body: serde_json::Value, extra: serde_json::Value) -> serde_json::Value {
+    if let (Some(body), serde_json::Value::Object(extra)) = (body.as_object_mut(), extra) {
+        body.extend(extra);
+    }
+    body
+}
+
+#[test]
+fn cross_format_refusals_name_the_field_the_app_sent() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C, OpenAiResponses as R};
+    use serde_json::json;
+    let refusal = |app: DialectId, body: serde_json::Value, target: DialectId| {
+        let body = serde_json::to_vec(&body).unwrap();
+        let req = dispatch::decode_request(app, RequestKind::Generate, &body, &HeaderList::new())
+            .unwrap_or_else(|e| panic!("{app:?} cannot decode the request: {e}"));
+        dispatch::check(target, &req, &EgressCtx::new(&req)).unwrap_err()
+    };
+    let chat = |extra| {
+        with(
+            json!({"model": "m", "messages": [{"role": "user", "content": "hi"}]}),
+            extra,
+        )
+    };
+    let anthropic = |extra| {
+        with(
+            json!({"model": "m", "max_tokens": 1024, "messages": [{"role": "user", "content": "hi"}]}),
+            extra,
+        )
+    };
+    let responses = |extra| with(json!({"model": "m", "input": "hi"}), extra);
+    let cases = [
+        (
+            C,
+            chat(json!({"max_completion_tokens": 10})),
+            R,
+            "max_completion_tokens",
+        ),
+        (C, chat(json!({"max_tokens": 10})), R, "max_tokens"),
+        (
+            C,
+            chat(json!({"max_tokens": 10, "max_completion_tokens": 10})),
+            R,
+            "max_completion_tokens",
+        ),
+        (A, anthropic(json!({"max_tokens": 10})), R, "max_tokens"),
+        (C, chat(json!({})), A, "max_completion_tokens"),
+        (R, responses(json!({})), A, "max_output_tokens"),
+        (
+            A,
+            anthropic(json!({"stop_sequences": ["a", "b", "c", "d", "e"]})),
+            C,
+            "stop_sequences",
+        ),
+        (
+            A,
+            anthropic(json!({"stop_sequences": ["a"]})),
+            R,
+            "stop_sequences",
+        ),
+        (
+            C,
+            chat(json!({"max_tokens": 64, "response_format": {"type": "json_object"}})),
+            A,
+            "response_format",
+        ),
+        (
+            R,
+            responses(
+                json!({"max_output_tokens": 64, "text": {"format": {"type": "json_object"}}}),
+            ),
+            A,
+            "text.format",
+        ),
+        (
+            C,
+            chat(json!({"max_tokens": 64, "reasoning_effort": "minimal"})),
+            A,
+            "reasoning_effort",
+        ),
+        (
+            R,
+            responses(json!({"max_output_tokens": 64, "reasoning": {"effort": "minimal"}})),
+            A,
+            "reasoning.effort",
+        ),
+    ];
+    for (app, body, target, field) in cases {
+        let err = refusal(app, body, target);
+        assert_eq!(
+            err.param.as_deref(),
+            Some(field),
+            "{app:?} to {target:?}: {err:?}"
+        );
+        if app != A {
+            let sent: serde_json::Value =
+                serde_json::from_slice(&dispatch::encode_error(app, &err).body).unwrap();
+            assert_eq!(
+                sent["error"]["param"], field,
+                "{app:?} to {target:?}: {sent}"
+            );
+        }
+    }
+    assert_eq!(
+        refusal(C, chat(json!({"max_completion_tokens": 10})), R).message,
+        "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model."
+    );
+    assert_eq!(
+        refusal(C, chat(json!({})), A).message,
+        "Anthropic Messages requires an output limit. Set `max_completion_tokens` for the request."
+    );
+}
+
+#[test]
+fn refusals_of_requests_built_in_code_name_the_target_field() {
+    let mut generate = GenerateRequest::new("m").with_message(Message::user("hi"));
+    generate.sampling.max_output_tokens = Some(10);
+    let req = Request::Generate(generate.clone());
+    let err = dispatch::check(DialectId::OpenAiResponses, &req, &EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("max_output_tokens"));
+    generate.sampling.max_output_tokens = None;
+    let req = Request::Generate(generate);
+    let err =
+        dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("max_tokens"));
+}

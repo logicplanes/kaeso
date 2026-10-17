@@ -22,7 +22,7 @@ mod tests_regressions;
 mod tests_stream;
 
 use kaeso_kpp::{
-    DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
+    DialectId, Extras, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
 };
 
 use crate::codec::{
@@ -38,6 +38,13 @@ pub(crate) fn kind_feature(kind: RequestKind) -> &'static str {
         RequestKind::CountTokens => "token counting",
         RequestKind::Embed => "embeddings",
         _ => "this endpoint",
+    }
+}
+
+pub(crate) fn output_limit_field(extras: &Extras) -> &'static str {
+    match extras.form_str(DIALECT, request::FORM_MAX_TOKENS) {
+        Some("max_tokens") => "max_tokens",
+        _ => "max_completion_tokens",
     }
 }
 

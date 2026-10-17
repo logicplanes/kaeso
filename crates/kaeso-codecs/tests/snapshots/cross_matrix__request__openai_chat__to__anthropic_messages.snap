@@ -5,14 +5,17 @@ expression: outcomes
 {
   "all-params-sdk": {
     "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "audio"
   },
   "audio-output": {
     "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "modalities"
   },
   "content-array-all-roles": {
     "message": "`system message` is not supported by Anthropic Messages. Kaeso sends mid-conversation system messages to Anthropic only from Anthropic Messages requests. Move the instructions into the leading system prompt or into a user message.",
+    "param": "messages[2]",
     "unsupported": "system message"
   },
   "explicit-nulls": {
@@ -61,6 +64,7 @@ expression: outcomes
   },
   "file-pdf-file-id": {
     "message": "`file id` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Provider file ids (here `file-6F2ksmvXxt4VdoqmHRw6kL`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "file id"
   },
   "functions-tool-choice-auto-doc": {
@@ -111,6 +115,7 @@ expression: outcomes
   },
   "identifiers-metadata-store": {
     "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "metadata"
   },
   "image-base64-detail": {
@@ -184,22 +189,27 @@ expression: outcomes
   },
   "json-object": {
     "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
+    "param": "response_format",
     "unsupported": "json_object output"
   },
   "json-schema": {
     "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
+    "param": "response_format",
     "unsupported": "output schema description"
   },
   "legacy-functions": {
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "functions"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "logit_bias"
   },
   "logprobs-top-logprobs-doc": {
     "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "logprobs"
   },
   "max-tokens-length": {
@@ -222,6 +232,7 @@ expression: outcomes
   },
   "moderation": {
     "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "moderation"
   },
   "n-2": {
@@ -253,14 +264,17 @@ expression: outcomes
   },
   "prediction-doc": {
     "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prediction"
   },
   "prompt-cache-breakpoint": {
     "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prompt_cache_options"
   },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "verbosity"
   },
   "refusal": {
@@ -349,6 +363,7 @@ expression: outcomes
   },
   "stop-string-seed-penalties": {
     "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
     "unsupported": "seed"
   },
   "stream-doc": {
@@ -403,10 +418,12 @@ expression: outcomes
   },
   "system-name-multiturn": {
     "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "system[0]",
     "unsupported": "system[0].message.name"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
     "unsupported": "tool_choice `allowed_tools`"
   },
   "tool-choice-function": {
@@ -537,6 +554,7 @@ expression: outcomes
   },
   "tools-custom-grammar": {
     "message": "`custom tool` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[0]",
     "unsupported": "custom tool"
   },
   "tools-parallel": {
@@ -800,18 +818,22 @@ expression: outcomes
   },
   "unknown-choice-and-schema": {
     "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
     "unsupported": "tool_choice `x_future_choice`"
   },
   "unknown-edge-shapes": {
     "message": "`response_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "response_format"
   },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "x_future_field"
   },
   "web-search": {
     "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "web_search_options"
   }
 }

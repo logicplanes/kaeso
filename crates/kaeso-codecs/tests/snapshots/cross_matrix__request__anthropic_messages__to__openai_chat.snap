@@ -89,30 +89,37 @@ expression: outcomes
   },
   "context-management-clear-tool-uses": {
     "message": "`context_management` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "param": null,
     "unsupported": "context_management"
   },
   "document-custom-content": {
     "message": "`document content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "document content block"
   },
   "document-file-and-text": {
     "message": "`file id` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Provider file ids (here `file_011CPMxVD3fHLUhvTqtsQA5w`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "file id"
   },
   "document-pdf-base64": {
     "message": "`document citations` is not supported by OpenAI Chat Completions. Route the request to an Anthropic model to cite documents.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "document citations"
   },
   "document-pdf-url": {
     "message": "`document URL` is not supported by OpenAI Chat Completions. Send the PDF as base64 data or an uploaded file id instead.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "document URL"
   },
   "document-text-citations": {
     "message": "`text document` is not supported by OpenAI Chat Completions. Send the text as a text content part instead, or route the request to an Anthropic model.",
+    "param": "messages[0].blocks[0]",
     "unsupported": "text document"
   },
   "explicit-nulls": {
     "message": "`inference_geo` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "inference_geo"
   },
   "image-base64": {
@@ -141,6 +148,7 @@ expression: outcomes
   },
   "image-url-and-file": {
     "message": "`file id` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Provider file ids (here `file_011CNha8iCJcU1wXNR6q4V8w`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[1]",
     "unsupported": "file id"
   },
   "max-tokens": {
@@ -158,6 +166,7 @@ expression: outcomes
   },
   "metadata-service-tier": {
     "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "service_tier"
   },
   "mid-conversation-system-tool-results": {
@@ -236,6 +245,7 @@ expression: outcomes
   },
   "pause-turn-continuation": {
     "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[1].blocks[1]",
     "unsupported": "server_tool_use content block"
   },
   "refusal": {
@@ -253,6 +263,7 @@ expression: outcomes
   },
   "sampling-stop-sequences": {
     "message": "`top_k` is not supported by OpenAI Chat Completions. Remove `top_k`, or route the request to an Anthropic model.",
+    "param": "top_k",
     "unsupported": "top_k"
   },
   "sampling-top-p": {
@@ -271,6 +282,7 @@ expression: outcomes
   },
   "service-tier-standard-only": {
     "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "service_tier"
   },
   "structured-output-json-schema": {
@@ -407,6 +419,7 @@ expression: outcomes
   },
   "task-budget": {
     "message": "`output_config.task_budget` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "param": null,
     "unsupported": "output_config.task_budget"
   },
   "text-simple": {
@@ -518,6 +531,7 @@ expression: outcomes
   },
   "thinking-between-tools": {
     "message": "`reasoning.mode` is not supported by OpenAI Chat Completions. It does not know the reasoning mode `between_tools`; remove the thinking setting or use `reasoning_effort`.",
+    "param": "thinking",
     "unsupported": "reasoning.mode"
   },
   "thinking-disabled": {
@@ -971,10 +985,12 @@ expression: outcomes
   },
   "tool-result-multi-turn": {
     "message": "`image in system, developer and tool messages` is not supported by OpenAI Chat Completions. It only accepts that content in other roles; move or remove the image.",
+    "param": "messages[2].blocks[1].content[1]",
     "unsupported": "image in system, developer and tool messages"
   },
   "tool-search-deferred-tools": {
     "message": "`tool_reference content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format. From Claude Code, unset `ENABLE_TOOL_SEARCH` or set it to `false`.",
+    "param": "messages[2].blocks[0].content[0]",
     "unsupported": "tool_reference content block"
   },
   "tools-parallel": {
@@ -1083,22 +1099,27 @@ expression: outcomes
   },
   "unknown-choice-and-format": {
     "message": "`output_config.format` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "output_config.format"
   },
   "unknown-fields": {
     "message": "`x_future_field` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "x_future_field"
   },
   "unknown-tool-choice-without-name": {
     "message": "tool_choice `tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
     "unsupported": "tool_choice `tool`"
   },
   "web-search-result-replay": {
     "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[1].blocks[1]",
     "unsupported": "server_tool_use content block"
   },
   "web-search-server-tool": {
     "message": "`web_search_20250305 tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Input tag 'web_search_20250305' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[0]",
     "unsupported": "web_search_20250305 tool"
   }
 }

@@ -4,7 +4,7 @@ use kaeso_kpp::{
 };
 
 use super::DIALECT;
-use crate::cross;
+use crate::cross::{self, Setting, app_field};
 
 const MAX_STOP: usize = 4;
 
@@ -44,10 +44,11 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
         ));
     }
     if r.sampling.stop.len() > MAX_STOP {
+        let field = app_field(r, Setting::StopSequences, DIALECT);
         return Err(unsupported(
-            "stop",
+            field,
             "It accepts at most four stop sequences.",
-            "stop",
+            field,
         ));
     }
     if let Some(reasoning) = &r.reasoning {
@@ -57,7 +58,7 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
                 &format!(
                     "It does not know the reasoning mode `{value}`; remove the thinking setting or use `reasoning_effort`."
                 ),
-                "reasoning",
+                app_field(r, Setting::Reasoning, DIALECT),
             ));
         }
         let own = reasoning.extras.is_from(DIALECT);
@@ -83,7 +84,7 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
                 &format!(
                     "It does not know the effort `{value}`; use none, minimal, low, medium, high, xhigh or max."
                 ),
-                "reasoning",
+                app_field(r, Setting::ReasoningEffort, DIALECT),
             ));
         }
     }

@@ -211,7 +211,7 @@ fn requests_cross_every_dialect() {
                             feature.is_some(),
                             "{a}->{b} {name}: refused without a feature name: {e:?}"
                         );
-                        json!({"unsupported": feature, "message": e.message})
+                        json!({"unsupported": feature, "message": e.message, "param": e.param})
                     }
                 };
                 outcomes.insert(name.clone(), outcome);
@@ -393,7 +393,7 @@ fn token_counting_crosses_between_anthropic_and_responses() {
                     json!({"path": enc.path, "body": pretty(&enc.body)})
                 }
                 Err(e) => {
-                    json!({"unsupported": e.unsupported_feature().expect("refusals name a feature"), "message": e.message})
+                    json!({"unsupported": e.unsupported_feature().expect("refusals name a feature"), "message": e.message, "param": e.param})
                 }
             };
             outcomes.insert(name, outcome);

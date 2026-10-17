@@ -54,7 +54,7 @@ OpenAI Responses，即 `POST /v1/responses`（含流式）和 `POST /v1/response
 | `reasoning` `{}` | `reasoning` = 空配置 | 形式 `object`。 |
 | `include[]` `"reasoning.encrypted_content"` | `reasoning.include_encrypted` 类型化 | 没有 `reasoning` 对象时：配置上的形式 `no_object`。来自其他方言的请求只要（经推理强度换算后）发送了 `none` 以外的推理强度，就总会请求它；当 `EgressCtx::reasoning = Some(true)` 时，没有推理强度的 Anthropic `adaptive` 或 `enabled` 思考也会请求它（参见[可读推理与摘要](cross-format.md#可读推理与摘要)）。在 `store: false` 下，这是在下一轮交还推理的唯一途径（参见[推理数据块](cross-format.md#推理数据块)）。 |
 | `include[]` 其他值 | extras `include`（整个列表） | `message.output_text.logprobs`、`web_search_call.action.sources` 等。 |
-| `max_output_tokens` | `sampling.max_output_tokens` 类型化 | `CreateResponse` 规定最小值为 16：更小的值为 `InvalidRequest`（`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be at least 16. ``，参数 `max_output_tokens`）；`TokenCountsBody` 没有该字段。来自其他方言、`sampling.max_output_tokens` 更小的请求在 `check()` 中为 `Unsupported`，从不调高（[采样参数](cross-format.md#采样参数)）。 |
+| `max_output_tokens` | `sampling.max_output_tokens` 类型化 | `CreateResponse` 规定最小值为 16：更小的值为 `InvalidRequest`（`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be at least 16. ``，参数 `max_output_tokens`）；`TokenCountsBody` 没有该字段。来自其他方言、`sampling.max_output_tokens` 更小的请求在 `check()` 中为 `Unsupported`，从不调高，并注明应用自己的字段，例如 `max_completion_tokens`（[采样参数](cross-format.md#采样参数)）。 |
 | `temperature`、`top_p` | `sampling.temperature`、`sampling.top_p` 类型化 | 规范写法是浮点数（`1.0`）；`1` 是带 `canon` 的形式 `set`（参见[原始写法如何保留](#原始写法如何保留)），因此只要值未变，就以 `1` 写回。其他方言得到 `1.0`。 |
 | `safety_identifier` | `user` 类型化 | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。 |
 | `user`（已弃用） | 没有 `safety_identifier` 时为 `user` 类型化（形式 `user_key`）；否则为 extras `user` | |

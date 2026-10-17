@@ -50,14 +50,17 @@ expression: outcomes
   },
   "file-input-base64-file-id": {
     "message": "`messages[0].blocks[2].detail` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[2]",
     "unsupported": "messages[0].blocks[2].detail"
   },
   "file-input-url": {
     "message": "`document URL` is not supported by OpenAI Chat Completions. Send the PDF as base64 data or an uploaded file id instead.",
+    "param": "messages[0].blocks[1]",
     "unsupported": "document URL"
   },
   "function-call-output-array": {
     "message": "`image in system, developer and tool messages` is not supported by OpenAI Chat Completions. It only accepts that content in other roles; move or remove the image.",
+    "param": "messages[2].blocks[0].content[1]",
     "unsupported": "image in system, developer and tool messages"
   },
   "function-call-stream": {
@@ -116,6 +119,7 @@ expression: outcomes
   },
   "image-base64-file-id": {
     "message": "`image file id` is not supported by OpenAI Chat Completions. Images must be sent as a URL or base64 data.",
+    "param": "messages[0].blocks[2]",
     "unsupported": "image file id"
   },
   "image-url": {
@@ -143,6 +147,7 @@ expression: outcomes
   },
   "item-reference-breakpoint": {
     "message": "`prompt_cache_options` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prompt_cache_options"
   },
   "json-object-mode": {
@@ -163,6 +168,7 @@ expression: outcomes
   },
   "logprobs-no-obfuscation-stream": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "top_logprobs"
   },
   "max-output-tokens-incomplete": {
@@ -197,6 +203,7 @@ expression: outcomes
   },
   "multi-turn-roles": {
     "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "text.verbosity"
   },
   "reasoning-effort-high": {
@@ -428,6 +435,7 @@ expression: outcomes
   },
   "sampling-and-ids": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "top_logprobs"
   },
   "stateful-background": {
@@ -523,6 +531,7 @@ expression: outcomes
   },
   "tool-choice-allowed-tools": {
     "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[2]",
     "unsupported": "web_search tool"
   },
   "tool-choice-none": {
@@ -827,18 +836,22 @@ expression: outcomes
   },
   "unknown-item-type": {
     "message": "`future_item content block` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[1].blocks[0]",
     "unsupported": "future_item content block"
   },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "x_future_field"
   },
   "web-search": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "include"
   },
   "web-search-stream": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "include"
   }
 }

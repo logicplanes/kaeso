@@ -5,10 +5,12 @@ expression: outcomes
 {
   "all-params-sdk": {
     "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
     "unsupported": "seed"
   },
   "audio-output": {
     "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "modalities"
   },
   "content-array-all-roles": {
@@ -167,6 +169,7 @@ expression: outcomes
   },
   "identifiers-metadata-store": {
     "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "metadata"
   },
   "image-base64-detail": {
@@ -298,14 +301,17 @@ expression: outcomes
   },
   "legacy-functions": {
     "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "functions"
   },
   "logit-bias": {
     "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "logit_bias"
   },
   "logprobs-top-logprobs-doc": {
     "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "logprobs"
   },
   "max-tokens-length": {
@@ -324,6 +330,7 @@ expression: outcomes
   },
   "moderation": {
     "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "moderation"
   },
   "n-2": {
@@ -345,14 +352,17 @@ expression: outcomes
   },
   "prediction-doc": {
     "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prediction"
   },
   "prompt-cache-breakpoint": {
     "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prompt_cache_options"
   },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "verbosity"
   },
   "refusal": {
@@ -411,10 +421,12 @@ expression: outcomes
   },
   "stop-array": {
     "message": "`stop sequences` is not supported by OpenAI Responses. The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.",
+    "param": "stop",
     "unsupported": "stop sequences"
   },
   "stop-string-seed-penalties": {
     "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
     "unsupported": "seed"
   },
   "stream-doc": {
@@ -452,10 +464,12 @@ expression: outcomes
   },
   "system-name-multiturn": {
     "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": "system[0]",
     "unsupported": "system[0].message.name"
   },
   "tool-choice-allowed-tools": {
     "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
     "unsupported": "tool_choice `allowed_tools`"
   },
   "tool-choice-function": {
@@ -577,6 +591,7 @@ expression: outcomes
   },
   "tools-custom-grammar": {
     "message": "`custom tool` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[0]",
     "unsupported": "custom tool"
   },
   "tools-parallel": {
@@ -796,18 +811,22 @@ expression: outcomes
   },
   "unknown-choice-and-schema": {
     "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
     "unsupported": "tool_choice `x_future_choice`"
   },
   "unknown-edge-shapes": {
     "message": "`response_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "response_format"
   },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "x_future_field"
   },
   "web-search": {
     "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "web_search_options"
   }
 }
