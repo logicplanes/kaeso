@@ -155,6 +155,64 @@ async fn turning_on_totp_keeps_the_time_of_the_last_sign_in() {
     s.cleanup().await;
 }
 
+fn refused_keeping_the_cookie(r: &common::Resp) {
+    assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+    assert!(
+        r.headers.get("set-cookie").is_none(),
+        "{:?}",
+        r.headers.get("set-cookie")
+    );
+}
+
+#[tokio::test]
+async fn a_request_still_carrying_a_replaced_session_leaves_the_new_cookie_alone() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let other = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": PASSWORD }),
+            None,
+        )
+        .await
+        .cookie()
+        .unwrap();
+
+    let with_totp = turn_on_totp(&app, &owner.cookie).await;
+    refused_keeping_the_cookie(&app.get("/auth/session", &owner.cookie).await);
+    refused_keeping_the_cookie(&app.get("/me", &owner.cookie).await);
+    assert_eq!(
+        app.get("/auth/session", &with_totp).await.status,
+        StatusCode::OK
+    );
+
+    let r = app
+        .post(
+            "/me/password",
+            json!({ "current_password": PASSWORD, "new_password": "a brand new passphrase" }),
+            Some(&with_totp),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let after_password = r.cookie().unwrap();
+    refused_keeping_the_cookie(&app.get("/auth/session", &with_totp).await);
+    assert_eq!(
+        app.get("/auth/session", &after_password).await.status,
+        StatusCode::OK
+    );
+
+    let ended = app.get("/auth/session", &other).await;
+    assert_eq!(ended.status, StatusCode::UNAUTHORIZED, "{:?}", ended.body);
+    assert!(
+        ended.headers["set-cookie"]
+            .to_str()
+            .unwrap()
+            .contains("Max-Age=0")
+    );
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn guesses_of_the_current_password_are_limited() {
     let s = TestServices::start().await;

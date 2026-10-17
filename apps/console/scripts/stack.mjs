@@ -68,6 +68,10 @@ export function down(stack) {
   compose(stack, ["down", "--volumes", "--remove-orphans"], { stdio: "inherit" });
 }
 
+export function resetTwoFactor(stack, email) {
+  compose(stack, ["exec", "--no-TTY", "gateway", "kaeso", "user", "reset-2fa", email], { stdio: ["ignore", "pipe", "inherit"] });
+}
+
 export function setupToken(stack) {
   const logs = compose(stack, ["logs", "--no-log-prefix", "gateway"], { stdio: ["ignore", "pipe", "inherit"] });
   return [...logs.matchAll(/"setup_url":"[^"#]*#token=([^"]+)"/g)].at(-1)?.[1] ?? null;

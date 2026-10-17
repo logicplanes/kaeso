@@ -1,7 +1,15 @@
 import { createHmac } from "node:crypto";
+import { resetUserTwoFactor } from "./stack";
 import { expect, test, NEW_PASSWORD, OWNER, expectSignedIn, signInAsOwner, signInWithPassword } from "./support";
 
 test.describe.configure({ mode: "serial" });
+
+let ownerTwoFactorMayBeOn = false;
+
+test.afterEach(() => {
+  if (ownerTwoFactorMayBeOn) resetUserTwoFactor(OWNER.email);
+  ownerTwoFactorMayBeOn = false;
+});
 
 function totp(secret: string, at = Date.now()): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -50,6 +58,7 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
   await expect(dialog.getByRole("img", { name: "QR code to add Kaeso to an authenticator app" })).toBeVisible();
   const secret = (await dialog.locator("code").first().textContent()) ?? "";
   expect(secret).toMatch(/^[A-Z2-7]+=*$/);
+  ownerTwoFactorMayBeOn = true;
   await dialog.getByRole("textbox", { name: "Code from the app" }).fill(totp(secret));
 
   const codes = page.getByRole("dialog", { name: "Store your recovery codes" });
@@ -86,5 +95,6 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
   await page.getByRole("button", { name: "Turn off" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Turn off" }).click();
   await expect(page.getByText("Two-factor authentication turned off")).toBeVisible();
+  ownerTwoFactorMayBeOn = false;
   await expect(page.getByRole("button", { name: "Set up" })).toBeVisible();
 });

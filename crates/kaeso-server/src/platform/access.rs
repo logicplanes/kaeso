@@ -350,10 +350,13 @@ async fn authorize(
         }
         Err(e) => {
             let stale_cookie = matches!(e, ApiError::Authentication(_))
-                && !parts.headers.contains_key(header::AUTHORIZATION)
-                && cookies::session_token(&state, &parts.headers).is_some();
+                && !parts.headers.contains_key(header::AUTHORIZATION);
+            let clear = match cookies::session_token(&state, &parts.headers) {
+                Some(token) if stale_cookie => !replaced(&state, &token).await,
+                _ => false,
+            };
             let mut response = e.into_response();
-            if stale_cookie {
+            if clear {
                 response
                     .headers_mut()
                     .append(header::SET_COOKIE, cookies::clear(&state));
@@ -361,6 +364,15 @@ async fn authorize(
             response
         }
     }
+}
+
+async fn replaced(state: &AppState, token: &str) -> bool {
+    sessions::was_replaced(state, token)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(error = %e, "could not tell whether a session was replaced");
+            false
+        })
 }
 
 async fn check(

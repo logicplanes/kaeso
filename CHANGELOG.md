@@ -7,6 +7,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 ### Fixed
 
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
+- Turning two-factor authentication on or off, or changing your password, no longer signs you out when the console was loading something at the same moment.
 
 ## [0.1.0] - 2026-10-16
 
