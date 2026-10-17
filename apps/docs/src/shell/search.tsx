@@ -15,8 +15,16 @@ export default function Search({ index }: { index: SearchEntry[] }) {
   const t = useText();
   const locale = useSiteLocale();
   const switchLocale = useSwitchLocale();
-  const [first] = useState(takeTypedQuery);
+  const [first, setFirst] = useState(takeTypedQuery);
   const [query, setQuery] = useState(first);
+  const [openedWith, setOpenedWith] = useState(open);
+  if (openedWith !== open) {
+    setOpenedWith(open);
+    if (open) {
+      setFirst("");
+      setQuery("");
+    }
+  }
 
   const groups = useMemo<CommandGroup[]>(() => {
     const run = (action: () => void) => () => {
