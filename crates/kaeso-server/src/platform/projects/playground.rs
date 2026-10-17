@@ -468,6 +468,7 @@ mod tests {
             err,
             served: crate::model_api::errors::Served::default(),
             stage,
+            provider_said: None,
         }
     }
 

@@ -65,15 +65,19 @@ fn percent_decode(text: &str) -> Result<String, KppError> {
 
 pub(crate) const MODELS_PATH: &str = "/v1/models";
 
-pub(crate) fn model_path(model: &str) -> String {
-    let mut path = format!("{MODELS_PATH}/");
-    for b in model.bytes() {
+pub(crate) fn percent_encode(out: &mut String, text: &str) {
+    for b in text.bytes() {
         if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~' | b':' | b'@') {
-            path.push(char::from(b));
+            out.push(char::from(b));
         } else {
-            let _ = write!(path, "%{b:02X}");
+            let _ = write!(out, "%{b:02X}");
         }
     }
+}
+
+pub(crate) fn model_path(model: &str) -> String {
+    let mut path = format!("{MODELS_PATH}/");
+    percent_encode(&mut path, model);
     path
 }
 

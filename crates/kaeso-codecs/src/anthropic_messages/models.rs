@@ -7,8 +7,8 @@ use serde_json::Value;
 use super::common::D as DIALECT;
 use crate::codec::{EncodedRequest, HeaderList};
 use crate::models::{
-    EPOCH_RFC3339, add_query_extra, bad_listing, decode_date, encode_date, format_rfc3339,
-    model_path, none_or, parse_rfc3339, query_pairs, record_none,
+    EPOCH_RFC3339, MODELS_PATH, add_query_extra, bad_listing, decode_date, encode_date,
+    format_rfc3339, model_path, none_or, parse_rfc3339, percent_encode, query_pairs, record_none,
 };
 use crate::wire::{
     Ext, Maybe, extra_for, extras_from, to_body, verbatim_from_form, without_position,
@@ -360,4 +360,34 @@ pub(super) fn retrieve_request(model: &str) -> EncodedRequest {
         model_path(model),
         HeaderList::new().with("anthropic-version", super::ANTHROPIC_VERSION),
     )
+}
+
+pub(super) fn list_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError> {
+    if !query.extras.is_empty() {
+        return Err(KppError::unsupported_by(
+            "query parameters",
+            DIALECT,
+            "Only `limit`, `after_id`, `before_id` and `lifecycle` are sent.",
+        ));
+    }
+    let limit = query.limit.map(|n| n.to_string());
+    let pairs = [
+        ("limit", limit.as_deref()),
+        ("after_id", query.after_id.as_deref()),
+        ("before_id", query.before_id.as_deref()),
+    ]
+    .into_iter()
+    .filter_map(|(name, value)| value.map(|v| (name, v)))
+    .chain(query.lifecycle.iter().map(|l| ("lifecycle[]", l.as_wire())));
+    let mut path = MODELS_PATH.to_owned();
+    for (i, (name, value)) in pairs.enumerate() {
+        path.push(if i == 0 { '?' } else { '&' });
+        percent_encode(&mut path, name);
+        path.push('=');
+        percent_encode(&mut path, value);
+    }
+    Ok(EncodedRequest::get(
+        path,
+        HeaderList::new().with("anthropic-version", super::ANTHROPIC_VERSION),
+    ))
 }

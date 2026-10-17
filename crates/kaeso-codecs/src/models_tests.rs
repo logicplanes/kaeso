@@ -712,3 +712,81 @@ fn a_retrieved_model_id_stays_one_path_segment() {
     let req = dispatch::encode_model_request(OPENAI[0], "modèle").unwrap();
     assert_eq!(req.path, "/v1/models/mod%C3%A8le");
 }
+
+#[test]
+fn a_model_listing_is_requested_with_a_get() {
+    let anthropic = dispatch::encode_models_request(A, &ModelsQuery::default()).unwrap();
+    assert_eq!(
+        (anthropic.method, anthropic.path.as_str()),
+        ("GET", "/v1/models")
+    );
+    assert_eq!(
+        anthropic.headers.get("anthropic-version"),
+        Some("2023-06-01")
+    );
+    assert!(anthropic.body.is_empty());
+    for d in OPENAI {
+        let openai = dispatch::encode_models_request(d, &ModelsQuery::default()).unwrap();
+        assert_eq!((openai.method, openai.path.as_str()), ("GET", "/v1/models"));
+        assert!(openai.headers.is_empty(), "{d}");
+        assert!(openai.body.is_empty());
+    }
+}
+
+#[test]
+fn an_anthropic_listing_request_pages_with_its_query_parameters() {
+    let mut query = ModelsQuery::default();
+    query.limit = Some(1000);
+    query.after_id = Some("claude haiku/4&5".to_owned());
+    query.lifecycle = vec![ModelLifecycle::Active, ModelLifecycle::Deprecated];
+    let req = dispatch::encode_models_request(A, &query).unwrap();
+    assert_eq!(
+        req.path,
+        "/v1/models?limit=1000&after_id=claude%20haiku%2F4%265&lifecycle%5B%5D=active&lifecycle%5B%5D=deprecated"
+    );
+    let decoded = dispatch::decode_models_query(A, req.path.split_once('?').unwrap().1).unwrap();
+    assert_eq!(
+        (decoded.limit, decoded.after_id, decoded.lifecycle),
+        (query.limit, query.after_id, query.lifecycle)
+    );
+    let mut before = ModelsQuery::default();
+    before.before_id = Some("claude-opus-5".to_owned());
+    assert_eq!(
+        dispatch::encode_models_request(A, &before).unwrap().path,
+        "/v1/models?before_id=claude-opus-5"
+    );
+}
+
+#[test]
+fn a_listing_request_refuses_what_the_provider_cannot_take() {
+    let unknown = dispatch::decode_models_query(A, "x_future=1").unwrap();
+    let e = dispatch::encode_models_request(A, &unknown).unwrap_err();
+    assert_eq!(e.unsupported_feature(), Some("query parameters"));
+    assert!(e.message.contains("Anthropic"), "{}", e.message);
+    let mut paged = ModelsQuery::default();
+    paged.after_id = Some("gpt-4o".to_owned());
+    let mut limited = ModelsQuery::default();
+    limited.limit = Some(5);
+    let mut before = ModelsQuery::default();
+    before.before_id = Some("gpt-4o".to_owned());
+    let mut active = ModelsQuery::default();
+    active.lifecycle = vec![ModelLifecycle::Active];
+    let extra = dispatch::decode_models_query(OPENAI[0], "x_future=1").unwrap();
+    for d in OPENAI {
+        for (query, param) in [
+            (&limited, "limit"),
+            (&paged, "after_id"),
+            (&before, "before_id"),
+            (&active, "lifecycle"),
+            (&extra, "query parameters"),
+        ] {
+            let e = dispatch::encode_models_request(d, query).unwrap_err();
+            assert_eq!(e.unsupported_feature(), Some(param), "{d}");
+            assert!(
+                e.message.ends_with("send the listing without it."),
+                "{}",
+                e.message
+            );
+        }
+    }
+}

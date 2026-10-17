@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
 use kaeso_crypto::{CryptoError, Sealed};
 use kaeso_store::StoreError;
-use kaeso_store::pg::credentials::{self, SealedRow};
+use kaeso_store::pg::credentials::{self, KeyInUse, SealedRow};
 use secrecy::SecretString;
 use uuid::Uuid;
 
@@ -15,8 +15,18 @@ pub fn aad(id: CredentialId) -> Vec<u8> {
 
 pub struct Resolved {
     pub id: CredentialId,
+    pub revision: i64,
     pub secret: SecretString,
     last_touched: AtomicI64,
+}
+
+impl Resolved {
+    pub fn key(&self) -> KeyInUse {
+        KeyInUse {
+            id: self.id.uuid(),
+            revision: self.revision,
+        }
+    }
 }
 
 impl std::fmt::Debug for Resolved {
@@ -88,6 +98,7 @@ fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, Cr
     let secret = String::from_utf8(text.clone()).map_err(|_| CryptoError::Malformed)?;
     Ok(Resolved {
         id,
+        revision: row.revision,
         secret: SecretString::from(secret),
         last_touched: AtomicI64::new(0),
     })

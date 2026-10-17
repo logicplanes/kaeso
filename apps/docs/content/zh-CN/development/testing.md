@@ -189,7 +189,7 @@ e2e/.venv/bin/pytest -q e2e/sdk
 
 需要开发数据库。它会构建网关和 `kaeso-testkit`，创建新的数据库，启动模拟服务商和网关，并通过 Platform API 设置第一个用户、一个组织和项目、服务商密钥、目录中的模型、一个别名和 API 密钥。测试覆盖流式、经由静默服务商的保活、工具、图片、PDF、推理、跨服务商的双向转换、Token 计数、嵌入、模型列表、每一类错误、限额、SDK 重试和断开连接。
 
-模拟服务商根据请求中的标记选择回复（`crates/kaeso-testkit/src/mock_provider.rs`）；`[mock:fixture=NAME]` 指定该服务商格式的一个 fixture，`[mock:gate=NAME]` 则让请求停住，直到测试打开这道闸门。`MockProvider::gate()` 创建一道闸门，并返回写入提示词的标记；`wait_for(n)` 在有 `n` 个请求到达后返回，`open()` 放行所有请求。测试就是这样不靠 sleep 让请求保持在处理中的。
+模拟服务商根据请求中的标记选择回复（`crates/kaeso-testkit/src/mock_provider.rs`）；`[mock:fixture=NAME]` 指定该服务商格式的一个 fixture，`[mock:gate=NAME]` 则让请求停住，直到测试打开这道闸门。以 `unserved-` 开头的模型 ID 会收到该格式的“找不到模型”。服务商密钥中的标记作用于 `GET /v1/models` 和 `GET /v1/models/{id}`：`[mock:gate=NAME]` 让它们停住，`[mock:models=absent]` 对两者都只回复一个裸 404，`[mock:models=list-only]` 只对后者这样回复，`[mock:models=endless]` 让 Anthropic 列表一直停在第一页。`MockProvider::gate()` 创建一道闸门，并返回写入提示词的标记；`wait_for(n)` 在有 `n` 个请求到达后返回，`open()` 放行所有请求。测试就是这样不靠 sleep 让请求保持在处理中的。
 
 ### 安装测试
 

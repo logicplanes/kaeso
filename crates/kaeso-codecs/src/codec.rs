@@ -52,6 +52,8 @@ pub trait Codec: sealed::Sealed {
     fn decode_model(status: u16, headers: &HeaderList, body: &[u8]) -> Result<ModelInfo, KppError>;
 
     fn encode_model_request(model: &str) -> EncodedRequest;
+
+    fn encode_models_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError>;
 }
 
 pub(crate) mod sealed {

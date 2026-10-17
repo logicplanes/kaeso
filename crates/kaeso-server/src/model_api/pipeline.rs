@@ -13,6 +13,7 @@ use kaeso_core::catalogue::resolve::{ResolveError, access_message, resolve};
 use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
+use kaeso_store::pg::catalogue::Answer;
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use url::Url;
 
@@ -22,7 +23,7 @@ use super::hooks::{Admission, CLIENT_DISCONNECTED, Caller, Outcome, SHUT_DOWN, S
 use super::input_count::InputCounter;
 use super::listing::project_models;
 use super::stream;
-use crate::services::availability::{self, Probe};
+use crate::services::availability::{self, Listings, Probe};
 use crate::services::continuity;
 use crate::services::credentials::{self, ResolveError as CredentialError};
 use crate::state::AppState;
@@ -177,6 +178,7 @@ pub struct Failure {
     pub err: KppError,
     pub served: Served,
     pub stage: Stage,
+    pub provider_said: Option<KppError>,
 }
 
 impl Failure {
@@ -185,7 +187,12 @@ impl Failure {
             err,
             served: Served::default(),
             stage,
+            provider_said: None,
         }
+    }
+
+    pub fn logged(&self) -> &KppError {
+        self.provider_said.as_ref().unwrap_or(&self.err)
     }
 }
 
@@ -245,7 +252,7 @@ pub async fn serve_with(
         }
         Err(failure) => {
             let resp = answer(&failure);
-            rec.fail(&failure.err, resp.status().as_u16()).await;
+            rec.fail(failure.logged(), resp.status().as_u16()).await;
             resp
         }
     }
@@ -442,7 +449,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
     let fail = |stage: Stage| {
         let served = served.clone();
-        move |err: KppError| Failure { err, served, stage }
+        move |err: KppError| Failure {
+            err,
+            served,
+            stage,
+            provider_said: None,
+        }
     };
     {
         let o = rec.outcome();
@@ -572,8 +584,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .with_created_at(u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0));
     let status = resp.status;
     let success = (200..300).contains(&status);
+    let learnt = |availability: Availability| Answer {
+        org_id: caller.org_id,
+        project_id: caller.project_id,
+        entry: entry.id,
+        provider: eff.provider.id,
+        key: credential.key(),
+        availability,
+        at: state.clock.now(),
+    };
     if success && entry.is_unavailable() {
-        availability::record(state, caller.project_id, entry.id, Availability::Available).await;
+        availability::record(state, &learnt(Availability::Available)).await;
     }
 
     match resp.body {
@@ -652,17 +673,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 count_upstream_error(err.kind.as_str(), provider);
                 if err.kind == ErrorKind::NotFound
                     && let Probe::Unserved =
-                        availability::probe(state, &credential.secret, &eff).await
+                        availability::probe(state, &credential, &eff, &Listings::default()).await
                 {
                     tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
-                    availability::record(
-                        state,
-                        caller.project_id,
-                        entry.id,
-                        Availability::Unavailable,
-                    )
-                    .await;
-                    return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+                    availability::record(state, &learnt(Availability::Unavailable)).await;
+                    let mut failure = fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff));
+                    failure.provider_said = Some(err);
+                    return Err(failure);
                 }
                 return Err(fail(Stage::Provider)(err));
             }

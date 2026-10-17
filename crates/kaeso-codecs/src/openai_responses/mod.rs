@@ -115,4 +115,8 @@ impl Codec for OpenAiResponses {
     fn encode_model_request(model: &str) -> EncodedRequest {
         crate::openai_models::retrieve_request(model)
     }
+
+    fn encode_models_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError> {
+        crate::openai_models::list_request(DIALECT, query)
+    }
 }

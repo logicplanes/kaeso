@@ -17,6 +17,7 @@ use tokio::sync::watch;
 pub struct Received {
     pub method: String,
     pub path: String,
+    pub query: Option<String>,
     pub headers: Vec<(String, String)>,
     pub body: Bytes,
 }
@@ -262,6 +263,7 @@ async fn handle(
         received.push_back(Received {
             method: method.to_string(),
             path: path.clone(),
+            query: uri.query().map(str::to_owned),
             headers: headers
                 .iter()
                 .filter_map(|(n, v)| {
@@ -301,6 +303,16 @@ async fn handle(
         };
         return error_response(&dir, name);
     }
+    let key = key_text(&headers);
+    let asks_models = method == Method::GET && path.starts_with(MODELS);
+    let hold =
+        marker(&text, "gate").or_else(|| asks_models.then(|| marker(&key, "gate")).flatten());
+    if let Some(name) = hold {
+        ctx.shared.gate(name).pass().await;
+    }
+    if asks_models && answers_route_not_found(marker(&key, "models"), &path) {
+        return route_not_found();
+    }
     if is_unserved(&path, &body) {
         let (dir, name) = match dialect {
             "anthropic_messages" => (dir.clone(), "not-found"),
@@ -308,9 +320,6 @@ async fn handle(
             _ => (ctx.fixtures.join("openai_chat"), "model-not-found"),
         };
         return error_response(&dir, name);
-    }
-    if let Some(name) = marker(&text, "gate") {
-        ctx.shared.gate(name).pass().await;
     }
     if let Some(name) = marker(&text, "error") {
         return error_response(&dir, name);
@@ -323,10 +332,11 @@ async fn handle(
         std::future::pending::<()>().await;
     }
     if method == Method::GET {
-        let file = if path == "/v1/models" {
-            "list.json"
-        } else {
-            "retrieve.json"
+        let endless = marker(&key, "models") == Some("endless");
+        let file = match (path == MODELS, anthropic, uri.query().is_none() || endless) {
+            (true, true, true) => "list-page.json",
+            (true, _, _) => "list.json",
+            (false, _, _) => "retrieve.json",
         };
         let models = if anthropic {
             dir.join("models")
@@ -412,6 +422,32 @@ async fn handle(
 }
 
 pub const UNSERVED_PREFIX: &str = "unserved-";
+
+const MODELS: &str = "/v1/models";
+
+fn key_text(headers: &HeaderMap) -> String {
+    ["x-api-key", "authorization"]
+        .into_iter()
+        .filter_map(|name| headers.get(name).and_then(|v| v.to_str().ok()))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn answers_route_not_found(models: Option<&str>, path: &str) -> bool {
+    match models {
+        Some("absent") => true,
+        Some("list-only") => path != MODELS,
+        _ => false,
+    }
+}
+
+fn route_not_found() -> Response {
+    Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .header("content-type", "application/json")
+        .body(Body::from(r#"{"detail":"Not Found"}"#))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
 
 fn is_unserved(path: &str, body: &[u8]) -> bool {
     let named = path
