@@ -4,29 +4,30 @@ description: Modelle über Kaeso mit den SDKs von OpenAI und Anthropic, mit curl
 order: 2
 ---
 
-Apps rufen Kaeso mit den offiziellen SDKs auf, die sie schon nutzen. Nur die Basis-URL und der Schlüssel ändern sich, und jedes SDK kann jedes Modell im Katalog des Projekts aufrufen: ein OpenAI-SDK ein Claude-Modell und ein Anthropic-SDK ein OpenAI-Modell. Kaeso übersetzt Anfrage und Antwort.
+Apps rufen Kaeso mit den offiziellen SDKs auf, die sie ohnehin nutzen; nur Basis-URL und Schlüssel ändern sich. Jedes SDK kann jedes Chat-Modell im Katalog des Projekts aufrufen, ein OpenAI-SDK also auch Claude und ein Anthropic-SDK ein OpenAI-Modell. Kaeso übersetzt Anfrage und Antwort.
 
-| SDK | Basis-URL | Schlüssel |
+| SDK | Basis-URL | Der Schlüssel geht als |
 | --- | --- | --- |
-| OpenAI | `https://kaeso.example.com/v1` | `api_key`, gesendet als `Authorization: Bearer` |
-| Anthropic | `https://kaeso.example.com` | `api_key`, gesendet als `x-api-key` |
+| OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
+| Anthropic | `https://kaeso.example.com` | `x-api-key` |
 
-Die Beispiele nutzen einen Schlüssel, der in einem Projekt unter **API-Schlüssel** erstellt wurde, wie im [Schnellstart](quick-start.md#einen-api-schlüssel-erstellen), und das Modell `claude-haiku-4-5`. Ein Modell verwenden, das im Katalog des eigenen Projekts steht.
+Die Beispiele lesen einen API-Schlüssel aus `KAESO_API_KEY`, erstellt wie im [Schnellstart](quick-start.md#einen-api-schlüssel-erstellen), und rufen `claude-haiku-4-5` auf. Ein Modell aus dem Katalog des eigenen Projekts verwenden.
 
 ## OpenAI-SDK
 
-Die Responses API, in Python:
+Die Responses API in Python:
 
 ```python
+import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key="sk-kso-…")
+client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
 
 response = client.responses.create(model="claude-haiku-4-5", input="Write a haiku about gateways.")
 print(response.output_text)
 ```
 
-Derselbe Client bedient auch Chat Completions:
+Derselbe Client ruft Chat Completions auf:
 
 ```python
 completion = client.chat.completions.create(
@@ -49,10 +50,13 @@ console.log(response.output_text);
 
 ## Anthropic-SDK
 
+In Python:
+
 ```python
+import os
 from anthropic import Anthropic
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key="sk-kso-…")
+client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
 
 message = client.messages.create(
     model="claude-haiku-4-5",
@@ -79,7 +83,7 @@ console.log(message.content);
 
 ## Streaming
 
-Streams funktionieren in jedem Format, mit den Events, die das SDK erwartet. Mit dem Anthropic-Client von oben:
+Jedes Format streamt, mit den Events, die sein SDK erwartet. Mit dem Anthropic-Client von oben:
 
 ```python
 with client.messages.stream(
@@ -91,11 +95,11 @@ with client.messages.stream(
         print(text, end="")
 ```
 
-Solange ein Stream still ist, etwa während ein Modell nachdenkt, sendet Kaeso Keepalives, die die SDKs ignorieren, sodass Proxys auf dem Weg die Verbindung offen halten. Siehe [lange Streams](../self-hosting/domains-and-tls.md#lange-streams).
+Solange ein Stream still ist, etwa während das Modell nachdenkt, sendet Kaeso Keepalives, die die SDKs ignorieren, damit Proxys auf dem Weg die Verbindung offen halten ([lange Streams](../self-hosting/domains-and-tls.md#lange-streams)).
 
 ## curl
 
-Die OpenAI-Formate nehmen den Schlüssel als Bearer-Token:
+Die OpenAI-Formate:
 
 ```bash
 curl https://kaeso.example.com/v1/chat/completions \
@@ -104,7 +108,7 @@ curl https://kaeso.example.com/v1/chat/completions \
   -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-Das Anthropic-Format nimmt ihn in `x-api-key`:
+Das Anthropic-Format:
 
 ```bash
 curl https://kaeso.example.com/v1/messages \
@@ -114,10 +118,14 @@ curl https://kaeso.example.com/v1/messages \
   -d '{"model": "claude-haiku-4-5", "max_tokens": 200, "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-Kaeso akzeptiert beide Header an jedem Endpunkt der Modell-API. Die [Modell-API](../api/model-api.md) listet jeden Endpunkt auf.
+Jeder Endpunkt nimmt den Schlüssel in beiden Headern an. Die [Modell-API](../api/model-api.md) listet die Endpunkte auf.
+
+## Aus dem Browser
+
+Kaeso beantwortet Anfragen einer Webseite nur, wenn ihr Origin in `KAESO_CORS_ALLOWED_ORIGINS` steht, und jeder, der die Seite nutzt, kann den Schlüssel darin lesen. [Aufrufe aus dem Browser](../api/model-api.md#aufrufe-aus-dem-browser) behandelt beides.
 
 ## Eine Anfrage wiederfinden
 
-Im Projekt **Anfrageprotokolle** öffnen. Dort steht jede Anfrage mit Status, Modell, Tokens, Kosten und Zeiten. Jede Antwort von Kaeso trägt einen Header `kaeso-request-id` mit derselben ID, sodass sich eine Anfrage aus den Protokollen der eigenen App heraus finden lässt.
+Im Projekt **Anfrageprotokolle** öffnen: Dort steht jede Anfrage mit Status, Modell, Tokens, Kosten und Zeiten. Jede Antwort trägt einen Header `kaeso-request-id` mit der ID, die das Protokoll zeigt, sodass sich eine Anfrage aus den Logs der eigenen App in Kaeso wiederfinden lässt.
 
-Schlägt eine Anfrage fehl, nennt der Fehler den Grund, im Format, das das SDK erwartet. [Fehler](../api/errors.md) listet sie auf.
+Eine fehlgeschlagene Anfrage erhält einen Fehler im Format, das ihr SDK erwartet, mit dem Grund. [Fehler](../api/errors.md) listet sie auf.

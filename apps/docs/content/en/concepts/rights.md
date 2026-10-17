@@ -4,20 +4,20 @@ description: Every right in an organization and a project, which roles hold it, 
 order: 3
 ---
 
-A right allows one kind of action, and every right is written `resource.action`, such as `keys.all.view`. Every Platform API operation under `orgs/{org}` checks exactly one right, on the organization or the project in its path. Roles are named sets of rights; [members and roles](../console/members-and-roles.md) explains how they are given in the console.
+A right allows one kind of action and is written `resource.action`, such as `keys.all.view`. Every Platform API operation under `orgs/{org}` checks exactly one right, on the organization or the project in its path. Roles are named sets of rights; [members and roles](../console/members-and-roles.md) shows how the console gives them.
 
-- Instance administration is not a right but a flag on a user. It gives no rights in organizations or projects.
+- Instance administration is not a right but a flag on a user, and gives no rights in organizations or projects.
 - A person's own account needs no rights.
-- Every organization right also needs `org.view`, and every project right `project.view`. A right that **needs** another comes with it: a change that gives a right without what it needs is refused. Rights already stored are never changed by this rule.
+- Every organization right also needs `org.view`, and every project right `project.view`. Some rights **need** others, listed below: a change that gives a right without what it needs is refused. Rights already stored are never changed by this rule.
 - **Sensitive** rights expose sensitive data or are hard to undo; give them with care.
-- **Recent sign-in** rights, used with a console session, need a sign-in in the last 15 minutes.
+- **Recent sign-in** rights need a sign-in in the last 15 minutes when used from a console session.
 - **Kaeso Cloud only** rights have no effect on a self-hosted install.
 
 ## Roles
 
-Every organization member has one organization role, and every project member and service account one project role. Each can have rights added or removed on top of its role. Roles are linked: a change to a role changes everyone who has it.
+Every organization member has one organization role, and every project member and service account one project role. Each of them can also have rights added or removed on top of the role. A change to a role changes everyone who holds it.
 
-**Built-in roles** are the same in every organization and can't be changed. In the Platform API their ids are their lowercase names.
+**Built-in roles** are the same in every organization and can't be changed. Their ids in the Platform API are their names in lowercase.
 
 | Organization role | Description |
 | --- | --- |
@@ -53,26 +53,26 @@ An organization role also holds **rights in every project**, on top of the membe
 | Developer | The Viewer's, and `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view` |
 | Viewer | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
 
-Two organization rights also reach into every project: `projects.view.all` gives `project.view`, and `projects.archive.any` gives `project.view` and `project.archive`. A member's rights in a project are therefore their project role's, plus their organization role's rights in every project, plus what these two rights reach.
+Two organization rights also reach into every project: `projects.view.all` gives `project.view`, and `projects.archive.any` gives `project.view` and `project.archive`. A member's rights in a project are the sum of their project role's, their organization role's rights in every project, and what these two rights reach.
 
-The default project: Owners and Admins join it as project Admin, Developers as Developer, and every other organization role, custom roles included, as Viewer.
+In the default project, Owners and Admins start as project Admin, Developers as Developer, and every other organization role, custom roles included, as Viewer.
 
 ### Custom roles
 
 - Each organization can define up to 50 custom roles, of organization or project scope, with `roles.manage`. Organization roles hold organization rights and rights in every project; project roles hold project rights. Anyone with `org.view` sees them.
 - A name is 1 to 50 characters, unique per organization and scope without regard to case, and neither the name of a built-in role of that scope nor `custom`; a description is at most 200 characters.
 - Custom roles can't make owners: Owner is only the built-in role.
-- A role that someone holds, a member, an active service account or a pending invitation, can't be deleted, nor the role chosen for people who arrive through single sign-on.
+- A role that a member, an active service account or a pending invitation holds can't be deleted, and neither can the role chosen for people who arrive through single sign-on.
 
 ## Grant rules
 
 1. **Give only what you hold.** Changing a member's role or rights, inviting, adding a project member, creating or changing a service account, creating, changing or deleting a custom role, and choosing the role for people who arrive through single sign-on may only give rights the caller holds: organization rights in the organization, project rights in that project, and rights in every project only if the caller holds them in every project.
 2. **Act only on peers.** A member's role and rights are changed, or the member removed, only by someone who holds every right the member holds in that scope.
 3. **Owners** are made, changed, removed and invited only by owners. An organization never loses its last owner.
-4. **Needs** are checked for every right a change gives, and a change removes no right that a right staying in the grant or role needs, even when that right already lacks another of its needs. A change to a custom role is refused when it would leave one of its holders with a right, added to them or given by the role, without one it needs; nobody's own rights change with it.
+4. **Needs** are checked for every right a change gives. A change can't remove a right that a remaining right needs, even when that remaining right already lacks another of its needs. A change to a custom role is refused when it would leave one of its holders with a right, added to them or given by the role, without one it needs; the holders' own rights never change with it.
 5. **Keys have no rights of their own.** An API key acts as its member or service account in its project, and an organization platform key with the Admin role's rights in its organization.
 
-The Platform API's routes for rights, roles and grants are described under [Platform API](../api/platform-api.md).
+[Platform API](../api/platform-api.md) describes the routes for rights, roles and grants.
 
 ## Organization rights
 
