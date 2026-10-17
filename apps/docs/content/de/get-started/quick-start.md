@@ -67,10 +67,10 @@ Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte und muss d
 ## Kaeso starten
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 ```
 
-Der erste Start dauert ein bis zwei Minuten: Die Images werden heruntergeladen, die Datenbanken starten, das Gateway bereitet sie vor, und Caddy beantragt das Zertifikat. `docker compose ps` zeigt jeden Dienst als healthy, sobald er bereit ist.
+Der erste Start dauert ein bis zwei Minuten: Die Images werden heruntergeladen, die Datenbanken starten, das Gateway bereitet sie vor, und Caddy beantragt das Zertifikat. Mit `--wait` kehrt der Befehl erst zurück, wenn jeder Dienst bereit ist, und schlägt mit dem Namen des Dienstes fehl, wenn einer es nicht wird; `docker compose ps` zeigt jeden Dienst als healthy.
 
 ## Mit dem Einrichtungslink anmelden
 

@@ -37,6 +37,8 @@ services:
       - "127.0.0.1:3000:3000"
 ```
 
+用 `docker compose up -d --wait` 启动 Kaeso。没有 Caddy 时，没有任何服务会等待网关和控制台，因此不加 `--wait` 时 Compose 会在它们能应答之前就返回；加上 `--wait` 后会等两者都报告 healthy 后才返回，有一个达不到时命令失败。
+
 然后按如下方式路由：
 
 | 路径 | 目标 |
@@ -48,6 +50,34 @@ services:
 - 为 `/v1/` 关闭响应缓冲，使流式回复一到达就传给应用。
 - 传递 `X-Forwarded-For`。网关只信任来自 `KAESO_TRUSTED_PROXIES` 中地址的该请求头，默认是各私有网络。如果前面是不受信任的代理，所有客户端看起来都是该代理：日志显示代理的地址，登录限流和 [API 密钥限流](configuration.md#api-密钥限流)会将所有客户端合并计数。
 - 切勿路由指标端口 9100。
+
+### 在 Docker 中运行的代理
+
+如果代理在同一台服务器上的 Docker 中运行，就通过网络把它连接到网关和控制台，而不是发布它们的端口。Compose 会把每个服务的名称注册为该服务加入的每个网络中的 DNS 名称，因此在其他栈也在使用的网络中，`gateway` 和 `console` 可能解析到其他栈的容器，Kaeso 的容器也可能响应发给那些容器的请求。为代理和 Kaeso 单独创建一个网络，并在其中给这两个服务起不会冲突的名称：
+
+```bash
+docker network create kaeso-proxy
+```
+
+```yaml
+services:
+  caddy:
+    profiles: [disabled]
+  gateway:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-gateway]
+  console:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-console]
+
+networks:
+  kaeso-proxy:
+    external: true
+```
+
+把代理的容器加入 `kaeso-proxy`，并路由到 `kaeso-gateway:8080` 和 `kaeso-console:3000`。服务仍叫 `gateway` 和 `console`，因此 `docker compose logs gateway` 等命令保持不变。
 
 ## 长时间的流
 

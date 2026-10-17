@@ -37,7 +37,7 @@ VALKEY_PASSWORD=$(openssl rand -hex 24)
 EOF
 docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
 chmod 644 master-keys
-docker compose up -d
+docker compose up -d --wait
 ```
 
 Open the setup link that `docker compose logs gateway | grep setup_url` prints, connect a provider and create an API key. The [quick start](https://docs.kaeso.app/get-started/quick-start) walks through the first request and running on your own domain with email; the [self-hosting guide](https://docs.kaeso.app/self-hosting) covers everything after that.

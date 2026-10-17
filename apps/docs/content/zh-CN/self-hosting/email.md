@@ -8,7 +8,7 @@ Kaeso 会发送登录链接、邀请、密码重置、密钥到期提醒、预�
 
 ## 设置 SMTP
 
-将 SMTP 服务器添加到 `.env`，然后用 `docker compose up -d` 应用：
+将 SMTP 服务器添加到 `.env`，然后用 `docker compose up -d --wait` 应用：
 
 ```bash
 KAESO_SMTP_HOST=smtp.example.com

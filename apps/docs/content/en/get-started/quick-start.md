@@ -67,10 +67,10 @@ The gateway runs as an unprivileged user inside its container and must be able t
 ## Start Kaeso
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 ```
 
-The first start takes a minute or two: the images download, the databases start, the gateway prepares them, and Caddy requests the certificate. `docker compose ps` shows each service as healthy once it is ready.
+The first start takes a minute or two: the images download, the databases start, the gateway prepares them, and Caddy requests the certificate. `--wait` makes the command return only once every service is ready, and fail with the service's name if one isn't; `docker compose ps` shows each service as healthy.
 
 ## Sign in with the setup link
 

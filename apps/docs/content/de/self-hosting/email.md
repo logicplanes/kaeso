@@ -8,7 +8,7 @@ Kaeso sendet E-Mails für Anmeldelinks, Einladungen, das Zurücksetzen von Passw
 
 ## SMTP einrichten
 
-Den SMTP-Server in `.env` eintragen und mit `docker compose up -d` übernehmen:
+Den SMTP-Server in `.env` eintragen und mit `docker compose up -d --wait` übernehmen:
 
 ```bash
 KAESO_SMTP_HOST=smtp.example.com

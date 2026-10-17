@@ -37,6 +37,8 @@ services:
       - "127.0.0.1:3000:3000"
 ```
 
+Start Kaeso with `docker compose up -d --wait`. Without Caddy, no service waits for the gateway and the console, so without `--wait` Compose returns before they answer; with it, Compose returns once both report healthy, and fails if one doesn't.
+
 Then route:
 
 | Path | To |
@@ -48,6 +50,34 @@ Then route:
 - Turn off response buffering for `/v1/`, so streamed replies reach apps as they arrive.
 - Pass `X-Forwarded-For`. The gateway believes it only from addresses in `KAESO_TRUSTED_PROXIES`, which are the private networks by default. With an untrusted proxy in front, every client looks like the proxy: logs show the proxy's address, and sign-in and [API key throttling](configuration.md#api-key-throttling) count every client together.
 - Never route the metrics port, 9100.
+
+### A proxy in Docker
+
+When your proxy runs in Docker on the same server, connect it to the gateway and the console over a network instead of publishing their ports. Compose makes each service's name a DNS name on every network the service joins, so on a network other stacks share, `gateway` and `console` can resolve to another stack's container, and Kaeso's containers can answer requests meant for theirs. Create a network for the proxy and Kaeso alone, and give the two services names there that can't collide:
+
+```bash
+docker network create kaeso-proxy
+```
+
+```yaml
+services:
+  caddy:
+    profiles: [disabled]
+  gateway:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-gateway]
+  console:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-console]
+
+networks:
+  kaeso-proxy:
+    external: true
+```
+
+Join your proxy's container to `kaeso-proxy` and route to `kaeso-gateway:8080` and `kaeso-console:3000`. The services keep their names `gateway` and `console`, so commands such as `docker compose logs gateway` stay the same.
 
 ## Long streams
 
