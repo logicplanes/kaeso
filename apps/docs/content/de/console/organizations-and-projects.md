@@ -1,67 +1,101 @@
 ---
 title: Organisationen und Projekte
-description: Organisationen und Projekte erstellen und wechseln und ihre Nutzung ablesen.
+description: Organisationen und Projekte erstellen und wechseln, ihre Nutzung ablesen und ihre Einstellungen verwalten.
 order: 1
 ---
 
-Eine **Organisation** enthält Mitglieder, Anbieter-Schlüssel und Projekte. Ein **Projekt** enthält einen Modellkatalog, API-Schlüssel, Limits und Anfrageprotokolle. Personen gehören einer Organisation und einigen ihrer Projekte an, jeweils mit einer Rolle.
+Eine **Organisation** umfasst Mitglieder, Anbieter-Schlüssel und Projekte. Ein **Projekt** umfasst einen Modellkatalog, API-Schlüssel, Dienstkonten, Limits und Anfrageprotokolle. Personen gehören einer Organisation mit einer Organisationsrolle an und einigen ihrer Projekte mit je einer Projektrolle ([Mitglieder und Rollen](members-and-roles.md)).
 
 ## Organisationen
 
-Eine neue Organisation entsteht über das Menü am Fuß der Seitenleiste mit **Organisation erstellen**. Das eigene Konto wird ihr Inhaber, und sie beginnt mit einem Standardprojekt. Ob Organisationen erstellt werden dürfen, entscheidet die Installation; siehe [Instanzverwaltung](instance-administration.md#einstellungen).
-
-Dasselbe Menü listet die eigenen Organisationen und wechselt zwischen ihnen.
+**Organisation erstellen** im Menü am Fuß der Seitenleiste macht die eigene Person zum Inhaber der neuen Organisation und legt ein Standardprojekt an. Wer Organisationen erstellen darf, entscheidet die Installation ([Instanzeinstellungen](instance-administration.md#einstellungen)). Dasselbe Menü listet die eigenen Organisationen und wechselt zwischen ihnen.
 
 ### Übersicht
 
-Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen wählbaren Zeitraum, von heute bis seit Beginn, die Kosten nach Projekt und eine Aufschlüsselung nach Projekt, Modell oder Mitglied. Die Nutzung erfordert das Recht **Gesamtnutzung ansehen**, die Kosten **Gesamtkosten ansehen**.
+Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum von heute bis zur gesamten Laufzeit, die Kosten nach Projekt und eine Aufschlüsselung der Nutzung nach Projekt, Modell oder Mitglied. Die Nutzung erfordert das Recht **Gesamtnutzung ansehen**, die Kosten **Gesamtkosten ansehen**.
 
 ### Einstellungen
 
-Unter **Organisationseinstellungen**, im Menü am Fuß der Seitenleiste, hat die Organisation diese Seiten:
+Die **Organisationseinstellungen** im Menü am Fuß der Seitenleiste haben diese Seiten:
 
 | Seite | Inhalt |
 | --- | --- |
-| Allgemein | Bild, Name und ID, Übertragen der Inhaberschaft, Löschen der Organisation |
-| Mitglieder | Mitglieder, Einladungen und Rollen; siehe [Mitglieder und Rollen](members-and-roles.md) |
+| Allgemein | Bild, Name und Organisations-ID; **Inhaberschaft übertragen**; die Organisation löschen |
+| Mitglieder | Mitglieder, Einladungen und Rollen ([Mitglieder und Rollen](members-and-roles.md)) |
 | Sicherheit | Single Sign-on, verlangtes Single Sign-on und verlangte Zwei-Faktor-Authentifizierung, die maximale Schlüssellaufzeit |
-| Plattform-Schlüssel | Schlüssel für Skripte, die die Organisation verwalten; siehe [API-Schlüssel](api-keys.md#plattform-schlüssel) |
-| Protokollierung | Inhaltsprotokollierung, Aufbewahrung, Speicher und Löschen von Protokollen; siehe [Anfrageprotokolle](request-logs.md#aufbewahrung) |
-| Audit-Log | Jede Änderung in der Organisation, mit Urheber und Zeitpunkt; exportierbar als JSON Lines |
+| Plattform-Schlüssel | Schlüssel für Skripte, die die Organisation verwalten ([Plattform-Schlüssel](api-keys.md#plattform-schlüssel)) |
+| Protokollierung | Inhaltsprotokollierung, Aufbewahrung, Speicher und das Löschen von Protokollen ([Anfrageprotokolle](request-logs.md#aufbewahrung)) |
+| Audit-Log | Jede Änderung in der Organisation ([Audit-Log](#audit-log)) |
+
+Bilder sind PNG-, JPEG- oder WebP-Dateien und werden quadratisch zugeschnitten.
 
 ### Single Sign-on
 
-Unter **Sicherheit** **Identitätsanbieter verbinden** wählen, damit sich Personen über den eigenen OpenID-Connect-Anbieter anmelden. Die Issuer-URL eingeben, Client-ID und Secret der dort registrierten App und die E-Mail-Domains, die sich darüber anmelden. Festlegen, ob Personen ohne Einladung beitreten können und mit welcher Rolle; das gilt nur für Personen, die neu bei Kaeso sind, denn ein bestehendes Konto meldet sich erst über Single Sign-on an, wenn es Mitglied der Organisation ist. Internationalisierte Domains lassen sich in beiden Formen eingeben, `bücher.example` oder `xn--bcher-kva.example`. Die Seite zeigt die Weiterleitungs-URL, die beim Anbieter zu registrieren ist.
+Unter **Sicherheit** meldet **Identitätsanbieter verbinden** Mitglieder über den eigenen OpenID-Connect-Anbieter an. Zuerst beim Anbieter eine App für Kaeso anlegen, dann fünf Schritte ausfüllen:
 
-Der letzte Schritt legt fest, wie die Anmeldeseite den Anbieter anbietet: den Namen auf seiner Schaltfläche, etwa **Weiter mit Acme ID**, und **Ohne Klick starten**, das Personen direkt zum Anbieter schickt, sobald die Seite nur ihn anbietet, außer direkt nach dem Abmelden oder nachdem der Anbieter sie abgelehnt hat. Der **Anmeldelink** öffnet die Anmeldeseite mit der Schaltfläche dieses Anbieters, ohne dass eine Adresse einzugeben ist; ihn mit den Mitgliedern teilen, etwa im Intranet. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) beschreibt die Regeln.
+1. **Wo ist Ihr Identitätsanbieter?** Die Issuer-URL der App, etwa `https://login.example.com`.
+2. **Welche App meldet Personen an?** Ihre Client-ID und ihr Client-Secret.
+3. **Welche E-Mail-Domains melden sich darüber an?** Personen mit einer Adresse unter diesen Domains werden zum Anbieter geleitet. Internationalisierte Domains funktionieren in beiden Schreibweisen, `bücher.example` oder `xn--bcher-kva.example`.
+4. **Beitritt ohne Einladung möglich?** **Nur mit Einladung** oder die Rolle, mit der neue Personen ohne Kaeso-Konto beitreten. Inhaber ist nicht möglich.
+5. **Wie bietet die Anmeldeseite ihn an?** Der **Name auf der Schaltfläche**, etwa `Acme ID` für **Weiter mit Acme ID**; leer lautet sie **Weiter mit SSO**. **Ohne Klick starten** leitet Personen direkt zum Anbieter weiter, wenn die Anmeldeseite nur ihn anbietet, außer direkt nach dem Abmelden oder nachdem der Anbieter die Anmeldung abgelehnt hat.
 
-Sobald die Verbindung steht, macht **Single Sign-on verlangen** es zum einzigen Weg in die Organisation. **Zwei-Faktor-Authentifizierung verlangen** gilt für die Anmeldung mit Passwort, nicht für Anmeldelinks oder Single Sign-on.
+Nach dem Verbinden zeigt die Seite:
+
+- die **Weiterleitungs-URL**, die beim Anbieter als Callback der Anmeldung einzutragen ist;
+- den **Anmeldelink**, der die Anmeldeseite mit der Schaltfläche dieses Anbieters öffnet, ohne dass eine Adresse einzugeben ist; er lässt sich mit den Mitgliedern teilen, etwa im Intranet.
+
+**Single Sign-on bearbeiten** ändert die Verbindung; ein leeres Secret behält das gespeicherte. **Trennen** entfernt sie, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
+
+Ein bestehendes Kaeso-Konto meldet sich über Single Sign-on nur in Organisationen an, denen es schon angehört: Es wird eingeladen und nimmt die Einladung nach einer Anmeldung auf anderem Weg an. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
+
+### Anforderungen
+
+Ebenfalls unter **Sicherheit**:
+
+| Einstellung | Wirkung |
+| --- | --- |
+| Single Sign-on verlangen | Mitglieder gelangen nur über den Identitätsanbieter in die Organisation; andere Sitzungen gelten weiter für ihre übrigen Organisationen. Setzt einen verbundenen Anbieter voraus |
+| Zwei-Faktor-Authentifizierung verlangen | Wer sich mit Passwort anmeldet, braucht Zwei-Faktor-Authentifizierung. Anmeldelinks und Single Sign-on sind nicht betroffen |
+| Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und Projekte können ein kürzeres Limit setzen |
+
+Wer selbst nicht über den Anbieter angemeldet ist oder noch keine Zwei-Faktor-Authentifizierung nutzt, sperrt sich mit der jeweiligen Anforderung selbst aus der Organisation aus, bis das nachgeholt ist; die Konsole weist vor dem Speichern darauf hin.
 
 ### Eine Organisation löschen
 
-Wenn die Installation es erlaubt, löscht ein Inhaber die Organisation unter **Allgemein** › **Organisation löschen** und bestätigt mit ihrem Namen; das erfordert eine kürzliche Anmeldung, und die Mitglieder werden per E-Mail informiert. Ihre Schlüssel funktionieren sofort nicht mehr; sie bleibt für eine Wartezeit, standardmäßig 7 Tage, schreibgeschützt und wiederherstellbar und wird dann endgültig gelöscht. Bis dahin zeigt jede Seite einen Hinweis, und **Organisation wiederherstellen** holt sie zurück.
+Erlaubt die Installation das Löschen, wählt jemand mit dem Recht **Organisation löschen**, standardmäßig ein Inhaber, unter **Allgemein** **Organisation löschen** und bestätigt mit dem Namen der Organisation.
+
+- Alle API-Schlüssel der Organisation hören sofort auf zu funktionieren, und die Mitglieder werden per E-Mail informiert.
+- Während der Schonfrist, 7 Tage, sofern die Installation nichts anderes festlegt, ist die Organisation schreibgeschützt, jede Seite zeigt einen Hinweis, und ein Inhaber kann sie mit **Organisation wiederherstellen** zurückholen.
+- Danach werden Projekte, Schlüssel, Anbieter-Schlüssel, Einstellungen, Nutzung und Protokolle endgültig gelöscht.
+
+### Audit-Log
+
+Das **Audit-Log** der Organisation in ihren Einstellungen verzeichnet jede Änderung in der Organisation, das **Audit-Log** eines Projekts in dessen Seitenleiste jede Änderung im Projekt. Jeder Eintrag zeigt Zeitpunkt, Akteur, Aktion und Ziel; gefiltert wird nach Akteur, Aktion, Ziel-ID und Tagen. Ein Eintrag zeigt außerdem IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher.
+
+| Aktion | Recht |
+| --- | --- |
+| Das Audit-Log der Organisation lesen | **Audit-Log ansehen** |
+| Es mit den aktuellen Filtern als JSON Lines **exportieren** | **Audit-Log exportieren** |
+| Das Audit-Log eines Projekts lesen | **Projekt-Audit-Log ansehen** |
 
 ## Projekte
 
-**Projekte** listet die Projekte der Organisation; archivierte stehen unter **Alle**. **Projekt erstellen** fragt nach einem Namen; das eigene Konto wird Admin des Projekts. Projekte zu erstellen erfordert das Recht **Projekte erstellen**.
+**Projekte** listet die Projekte der Organisation, archivierte unter **Alle**. **Projekt erstellen** fragt nach einem Namen und macht die eigene Person zum Admin des Projekts; dafür ist das Recht **Projekte erstellen** nötig.
 
-Das **Standardprojekt** ist das Projekt, dem jedes Mitglied angehört und in dem neue Mitglieder beginnen. Um es zu ändern, im Menü eines anderen Projekts **Als Standard festlegen** wählen; das erfordert das Recht **Organisation bearbeiten**.
+Das **Standardprojekt** ist das Projekt, dem jedes Mitglied angehört und in dem neue Mitglieder beginnen. **Als Standard festlegen** im Menü eines anderen Projekts verlegt es dorthin; das bisherige bleibt ein Projekt mit seinen Mitgliedern. Dafür ist das Recht **Organisation bearbeiten** nötig.
 
 ### Übersicht
 
-Die **Übersicht** eines Projekts zeigt seine Anfragen, Token, Kosten und Fehler über einen Zeitraum, eine Aufschlüsselung nach Zeit, Modell, Schlüssel oder Mitglied, seine Limits mit dem Verbrauch und die letzten Fehler.
+Die **Übersicht** eines Projekts zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum, eine Aufschlüsselung nach Zeit, Modell, Schlüssel oder Mitglied, die Limits des Projekts mit ihrem Verbrauch und die letzten Fehler.
 
 ### Einstellungen
 
 | Einstellung | Wirkung |
 | --- | --- |
-| Bild, Name | Erscheinen in der Seitenleiste und in den Anfrageprotokollen |
-| Schlüssellaufzeit | **Vorgabe der Organisation verwenden** oder ein kürzeres Maximum für neue Schlüssel dieses Projekts |
-| Inhaltsprotokollierung | Ob Anfragen und Antworten mit dem Protokolleintrag gespeichert werden; sie kann nicht eingeschaltet sein, wenn die Organisation sie abgeschaltet hat |
-| Projekt archivieren | Archiviert das Projekt samt Schlüsseln und Dienstkonten, endgültig, sodass seine Schlüssel nicht mehr funktionieren; das Standardprojekt lässt sich nicht archivieren |
+| Bild, Projektname | Erscheinen in der Seitenleiste und in den Anfrageprotokollen |
+| Projekt-ID | Die ID, die die Platform API verwendet |
+| Maximale Schlüssellaufzeit | **Vorgabe der Organisation verwenden** oder ein kürzeres Maximum für neue Schlüssel dieses Projekts |
+| Inhaltsprotokollierung | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden; lässt sich nicht einschalten, solange die Organisation sie ausgeschaltet hat |
+| Projekt archivieren | Archiviert das Projekt mit seinen Schlüsseln und Dienstkonten dauerhaft; seine Schlüssel hören sofort auf zu funktionieren |
 
-Projekte werden archiviert, nie gelöscht; so bleiben ihre Nutzung und Protokolle erhalten.
-
-### Audit-Log
-
-Das **Audit-Log** eines Projekts listet jede Änderung im Projekt mit Urheber und Zeitpunkt, filterbar nach Aktion, Akteur und Tagen. Es erfordert das Recht **Projekt-Audit-Log ansehen**.
+Projekte werden archiviert, nie gelöscht, damit ihre Nutzung und Protokolle erhalten bleiben. Das Standardprojekt lässt sich nicht archivieren; vorher ein anderes Projekt zum Standard machen.

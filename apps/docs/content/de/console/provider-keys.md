@@ -4,34 +4,38 @@ description: Die OpenAI- und Anthropic-Schlüssel der Organisation verbinden und
 order: 3
 ---
 
-Anbieter-Schlüssel sind die Schlüssel, mit denen Kaeso OpenAI und Anthropic aufruft. Sie gehören der Organisation, liegen verschlüsselt unter dem Hauptschlüssel der Installation und werden nach dem Hinzufügen nie wieder angezeigt. Apps sehen sie nie; sie nutzen Kaesos [API-Schlüssel](api-keys.md).
-
-Kaeso ruft zwei Anbieter auf: OpenAI und Anthropic.
+Anbieter-Schlüssel sind die Schlüssel der Organisation für OpenAI und Anthropic, die beiden Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an; Apps bekommen sie nie zu sehen und rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
 
 ## Schlüssel hinzufügen
 
-**Anbieter** öffnen und **Schlüssel hinzufügen** wählen, oder **Verbinden** neben einem Anbieter ohne Schlüssel.
+Unter **Anbieter** **Schlüssel hinzufügen** wählen, oder **Verbinden** neben einem Anbieter ohne Schlüssel.
 
-1. Den Anbieter wählen.
-2. Den Schlüssel einfügen: Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`, ein Anthropic-Schlüssel von console.anthropic.com mit `sk-ant-`. Ihm einen Namen geben, etwa `Production`.
-3. Hat der Anbieter schon einen Standardschlüssel, wählen, ob dieser zum Standard wird.
+1. **Für welchen Anbieter ist der Schlüssel?**
+2. Den Schlüssel einfügen und benennen, etwa `Production`. Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`, ein Anthropic-Schlüssel von console.anthropic.com mit `sk-ant-`.
+3. Hat der Anbieter schon einen Standardschlüssel, wählen, ob dieser neue zum Standard wird.
 
-Einen Schlüssel hinzuzufügen erfordert das Recht **Anbieter-Schlüssel hinzufügen**. Ersetzen, Umbenennen, Zuweisen und Festlegen als Standard erfordern **Anbieter-Schlüssel ändern**, Löschen **Anbieter-Schlüssel löschen**. Hinzufügen und Ändern von Schlüsseln erfordern eine kürzliche Anmeldung.
+| Aktion | Recht |
+| --- | --- |
+| Schlüssel hinzufügen | **Anbieter-Schlüssel hinzufügen** |
+| Schlüssel ersetzen, umbenennen, zuweisen oder zum Standard machen | **Anbieter-Schlüssel ändern** |
+| Schlüssel löschen | **Anbieter-Schlüssel löschen** |
+
+Jede Aktion außer dem Löschen erfordert zusätzlich eine kürzliche Anmeldung.
 
 ## Standard und Zuweisungen
 
-Jeder Anbieter hat einen **Standard**-Schlüssel, den jedes Projekt ohne zugewiesenen Schlüssel nutzt. Der erste Schlüssel eines Anbieters wird sein Standard; **Als Standard festlegen** im Menü eines anderen Schlüssels verschiebt ihn.
+Jeder Anbieter hat einen **Standardschlüssel**, den jedes Projekt ohne zugewiesenen Schlüssel nutzt. Der erste Schlüssel eines Anbieters wird sein Standard; **Als Standard festlegen** im Menü eines anderen Schlüssels verlegt ihn.
 
-Um einigen Projekten einen anderen Schlüssel zu geben, im Menü des Schlüssels **Projekten zuweisen** wählen. Diese Projekte nutzen ihn für diesen Anbieter statt des Standards. Ein Projekt nutzt einen Schlüssel pro Anbieter.
+**Projekten zuweisen** im Menü eines Schlüssels lässt die gewählten Projekte für diesen Anbieter diesen Schlüssel statt des Standards nutzen. Ein Projekt nutzt je Anbieter einen Schlüssel.
 
 ## Schlüssel ändern oder entfernen
 
+Die Liste zeigt zu jedem Schlüssel Name, die letzten vier Zeichen, die Projekte, die ihn nutzen, wer ihn hinzugefügt hat und wann er zuletzt genutzt wurde. Das Menü eines Schlüssels hat diese Aktionen:
+
 | Aktion | Wirkung |
 | --- | --- |
-| Ersetzen | Ein neues Secret für denselben Schlüssel einfügen, etwa nach dem Rotieren beim Anbieter |
+| Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem er beim Anbieter rotiert wurde |
 | Umbenennen | Ändert den Namen in der Konsole |
-| Löschen | Entfernt den Schlüssel; seine Projekte nutzen wieder den Standard. Wird der Standard gelöscht, wird der zuletzt hinzugefügte andere Schlüssel des Anbieters zum Standard; ohne einen solchen schlagen Anfragen an diesen Anbieter fehl. Der Dialog sagt, was zutrifft |
+| Löschen | Entfernt den Schlüssel; seine Projekte nutzen wieder den Standard. War er der Standard, wird der zuletzt hinzugefügte andere Schlüssel des Anbieters zum Standard; gibt es keinen, schlagen Anfragen an diesen Anbieter fehl. Der Dialog sagt, was zutrifft |
 
-Die Tabelle zeigt für jeden Schlüssel die letzten vier Zeichen, seine Projekte, wer ihn hinzugefügt hat und wann er zuletzt genutzt wurde.
-
-Ein Schlüssel entscheidet, welche Modelle ein Anbieter einem Projekt anbietet. Einen Schlüssel hinzuzufügen, zu ersetzen, zuzuweisen, zum Standard zu machen oder zu löschen setzt die [Verfügbarkeit](models-and-aliases.md#verfügbarkeit) der Modelle dieses Anbieters in jedem Projekt der Organisation auf **Nicht geprüft** zurück; **Verfügbarkeit prüfen** auf der Seite **Modelle** eines Projekts fragt den Anbieter erneut.
+Welchen Schlüssel ein Projekt nutzt, bestimmt, welche Modelle der Anbieter ihm bereitstellt. Hinzufügen, Ersetzen, Zuweisen, zum Standard Machen oder Löschen eines Schlüssels setzt deshalb die [Verfügbarkeit](models-and-aliases.md#verfügbarkeit) der Modelle dieses Anbieters in jedem Projekt der Organisation auf **Nicht geprüft** zurück; **Verfügbarkeit prüfen** auf der Seite **Modelle** eines Projekts fragt den Anbieter erneut.

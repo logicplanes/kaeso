@@ -4,34 +4,30 @@ description: Send a prompt to up to four models side by side.
 order: 8
 ---
 
-The **Playground** sends a prompt to one or more models of the project and shows their replies side by side, up to four at once. Each column is its own conversation.
+The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.
 
-Playground requests are real requests. They use the project's provider keys, your model access, and your and the project's limits and budgets. They are charged to the project and appear in the request logs with the source **Playground**. Key limits don't apply, as no key is used.
+Playground requests are real requests. They use the project's provider keys, your model access, and your and the project's limits; they are charged to the project and appear in the [request logs](request-logs.md) with the source **Playground**. Key limits don't apply, because no key is used.
 
-## Use it
+## Compare models
 
-1. Choose a model for the first column; **Add column** adds more.
-2. Type a prompt and send it.
+1. Choose a model for the first column, and **Add column** for each further one. A model whose provider has no key for this project can't be chosen.
+2. Send a prompt to every model.
 3. Each reply shows the time to the first token, the total time, the tokens and the cost.
 
 **Clear** empties every column's conversation.
 
-A model whose provider has no key for this project can't be chosen.
+The models and parameters are part of the page's address, so a link opens the same comparison. A prompt you haven't sent yet stays in your browser; conversations are not saved.
 
 ## Parameters
 
-**Parameters** sets what is sent with every column:
+**Parameters** sets what every column sends:
 
 | Parameter | What it does |
 | --- | --- |
 | System instructions | Instructions sent before the conversation |
-| Temperature, Top P | Sampling, sent only to models that take temperature |
+| Temperature, Top P | Sampling, sent only to models that accept temperature |
 | Max output tokens | The longest reply |
-| Reasoning effort | How hard a reasoning model thinks, from none to max |
-| Reasoning summary | Whether a reasoning model's thinking is summarized: auto, concise, detailed or off |
+| Reasoning effort | How much a reasoning model thinks, from **None** to **Max** |
+| Reasoning summary | Whether a reasoning model's thinking is summarized: **Auto**, **Concise**, **Detailed** or **Off** |
 
-**Reset to defaults** clears every parameter but the system instructions.
-
-The models and parameters are part of the page's address, so a link to it opens the same comparison. The prompt you haven't sent yet is kept in your browser; conversations are not saved.
-
-Using the Playground needs the right **Use the Playground**, which project admins and developers have.
+**Reset to defaults** clears every parameter except the system instructions.
