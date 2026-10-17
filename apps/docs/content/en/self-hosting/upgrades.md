@@ -9,7 +9,7 @@ Releases follow semantic versioning, and every part of Kaeso shares the release'
 ## Upgrade
 
 1. Read the release notes for anything that needs action.
-2. [Back up](backups.md) PostgreSQL.
+2. [Back up](backups.md) PostgreSQL, and ClickHouse too, so that a [downgrade](#downgrade) stays possible.
 3. Download the new release's `compose.yaml` over the old one. Your settings in `.env`, `master-keys` and `compose.override.yaml` stay.
 
 ```bash
@@ -40,4 +40,6 @@ Run Compose in your install's folder without `-p` or `COMPOSE_PROJECT_NAME`, so 
 
 ## Downgrade
 
-A gateway refuses to start against a database that a newer version migrated, and says so. To go back to an older version, restore the backup taken before the upgrade, then start the older `compose.yaml`.
+Migrations can't be undone. A gateway refuses to start against a PostgreSQL database that a newer release migrated, and says so. Against a ClickHouse database a newer release migrated, it starts but writes no request logs, and logs `ClickHouse migrations failed; request logs are not written`.
+
+To go back to an older release, restore the PostgreSQL backup taken before the upgrade, and the [ClickHouse backup](backups.md#clickhouse) too if the newer release migrated ClickHouse, then start the older `compose.yaml`.

@@ -23,13 +23,13 @@ KAESO_SMTP_FROM=Kaeso <kaeso@example.com>
 | --- | --- |
 | `KAESO_SMTP_TLS` | `starttls` on port 587, `tls` for implicit TLS (usually port 465), `none` only for a local mail catcher |
 | `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD` | Leave both out for a server that needs no sign-in; a password needs a user |
-| `KAESO_SMTP_FROM` | The sender of every email, as an address or `Name <address>`. The Compose file sets `Kaeso <kaeso@` and your domain; use an address your SMTP server may send from |
+| `KAESO_SMTP_FROM` | The sender of every email, as an address or `Name <address>`. Defaults to `Kaeso <kaeso@` and your domain; use an address your SMTP server may send from |
 
-Every setting is listed under [configuration](configuration.md#email). The gateway refuses to start without `KAESO_SMTP_HOST` unless email is only logged.
+The gateway refuses to start without `KAESO_SMTP_HOST` unless email is only logged. [Configuration](configuration.md#email) lists every email setting.
 
 ## Without a mail server
 
-To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway then only logs that an email would have been sent, with its kind, never its recipient or content. Signing in with a password works, and `kaeso setup-link` prints the setup link either way; sign-in links, invitations and alerts are not delivered.
+To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway then only logs that an email would have been sent, with its kind, never its recipient or content. Signing in with a password works, and `kaeso setup-link` prints the setup link either way, but sign-in links, invitations and alerts never arrive.
 
 ## What Kaeso sends
 
@@ -54,31 +54,31 @@ To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway 
 | Budget alert | {scope} used {percent}% of its {budget} | A budget reaches one of its alert thresholds |
 | Test | Kaeso test email | An instance admin sends a test email |
 
-Security and organization notices are always sent. Alerts say in their footer how to turn them off; people choose which alerts they get under **Settings** › **Account** › **Notifications**.
+Security and organization notices are always sent. Alerts say in their footer how to turn them off, and each person chooses which ones they get under **Settings** › **Account** › **Notifications**.
 
 ## Languages
 
-Every email exists in English, German and Simplified Chinese, with dates and numbers written as each language writes them.
+Every email exists in English, German and Simplified Chinese, with dates and numbers written the way each language writes them.
 
 | Recipient | Language |
 | --- | --- |
-| A person with an account | The language they chose under **Settings** › **Account**; on Automatic, the language of the browser that caused the email; else English |
-| Someone without an account yet, for an invitation or a sign-up link | The language of the person who invited them or asked, else English; an invitee who already has an account gets their own choice |
-| Emails sent without a browser: key expiry warnings, budget alerts, organization deletion notices | Each recipient's choice, else English |
+| A person with an account | Their choice under **Settings** › **Account** › **Appearance**; on Automatic, the language of the browser that caused the email; otherwise English |
+| Someone without an account yet, for an invitation or a sign-up link | The language of the person who invited them or asked, otherwise English; an invitee who already has an account gets their own choice |
+| Emails sent without a browser: key expiry warnings, budget alerts, organization deletion notices | Each recipient's choice, otherwise English |
 
 ## How emails look
 
-Every email has the console's look: the Kaeso wordmark at the top left, one heading, one sentence, at most one button, and a footer that names the install. The HTML never shows a raw link, and a plain-text part says the same words with the link in full.
+Every email has the console's look: the Kaeso wordmark at the top left, one heading, one sentence, at most one button, and a footer that names the install. The HTML part never shows a raw link; the plain-text part says the same with the link in full.
 
-- **Light and dark.** Mail apps that follow the system's dark mode get Kaeso's dark colors; Outlook.com's own dark mode gets the same values; apps that invert colors by themselves get a light design built to survive the inversion.
+- **Light and dark.** Mail apps that follow the system's dark mode, and Outlook.com's own dark mode, get Kaeso's dark colors. Apps that invert colors themselves get a light design built to survive the inversion.
 - **Nothing from outside.** The wordmark images travel inside the email, so they always show and never load anything from your install. There are no web fonts, external images, scripts or tracking pixels.
 
 ## Delivery
 
-Emails wait in a queue in the gateway's memory and are sent one after another. A delivery that fails is tried three more times, after 1, 5 and 30 seconds, then given up and logged. Emails still queued when the gateway stops are not sent.
+Emails wait in a queue in the gateway's memory, up to 1,024 of them, and up to 16 are delivered at a time. When the SMTP server fails temporarily, the gateway tries three more times, after 1, 5 and 30 seconds; when it refuses an email for good, the gateway doesn't retry. Either way, an email that can't be delivered is logged. When the gateway stops, it waits up to 10 seconds for queued emails; any still unsent are lost.
 
-The metric `kaeso_emails_total{kind, outcome}` counts emails by `outcome`: `sent`, `failed`, or `dropped` when the queue is full. See [health and metrics](monitoring.md).
+`kaeso_emails_total{kind, outcome}` counts emails by `outcome`: `sent`, `failed`, or `dropped` when the queue was full. See [health and metrics](monitoring.md).
 
 ## Test it
 
-In the console, open **Settings** › **Instance** › **Settings**. The **Mail** section shows the transport, the SMTP host and the sender; choose **Send test email** to send one to yourself, or to the recipient you enter. If it fails or doesn't arrive, the gateway's log says what the SMTP server answered; [troubleshooting](troubleshooting.md#email-doesnt-arrive) has more.
+In the console, open **Settings** › **Instance** › **Settings**. The **Mail** section shows the transport, the SMTP host and the sender; **Send test email** sends one to you, or to the recipient you enter. If it fails or doesn't arrive, the gateway's log has the SMTP server's answer, and [troubleshooting](troubleshooting.md#email-doesnt-arrive) has more.

@@ -8,14 +8,16 @@ Der [Schnellstart](../get-started/quick-start.md) ist die Kurzfassung dieser Sei
 
 ## Die Dateien
 
-Eine Installation ist ein Ordner, den nur der eigene Benutzer lesen kann, mit diesen Dateien:
+Eine Installation ist ein Ordner, auf den nur der eigene Benutzer zugreifen kann, mit diesen Dateien:
 
-| Datei | Was sie enthält |
+| Datei | Inhalt |
 | --- | --- |
 | `compose.yaml` | Die Dienste, aus dem Kaeso-Release. Für ein Upgrade durch die Datei des neuen Releases ersetzen. |
-| `.env` | Die eigenen Einstellungen: die Domain, die Datenbankpasswörter, E-Mail. Docker Compose liest sie aus demselben Ordner. |
-| `master-keys` | Die Hauptschlüssel, dem Gateway als Docker-Secret `master_keys` übergeben. |
+| `.env` | Die eigenen Einstellungen: Domain, Datenbankpasswörter, E-Mail. Docker Compose liest sie aus demselben Ordner. |
+| `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` erhält. |
 | `compose.override.yaml` | Optional: eigene Änderungen an den Diensten, die erhalten bleiben, wenn `compose.yaml` ersetzt wird. |
+
+Ordner anlegen, `compose.yaml` herunterladen, `.env` mit zufälligen Passwörtern schreiben und einen Hauptschlüssel erzeugen:
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
@@ -31,51 +33,53 @@ docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > m
 chmod 644 master-keys
 ```
 
-Jedes Release bringt außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit, jede Variable von `.env` mit einem Beispielwert, und [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), jede Einstellung des Gateways; diese Links laden wie das `curl` oben die Dateien des neuesten stabilen Releases. Um ein bestimmtes Release zu installieren, stattdessen dessen Dateien von seinem Tag herunterladen, etwa `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`.
+Das Gateway läuft in seinem Container als Benutzer ohne Rechte, daher muss `master-keys` lesbar sein; die Rechte des Ordners halten andere Benutzer des Servers fern. Kopien von `.env` und `master-keys` getrennt von den Datenbank-Backups aufbewahren; siehe [Backups und Hauptschlüssel](backups.md).
 
-Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte und liest `master-keys` von dort, daher ist die Datei selbst lesbar; der Ordner hält sie vor anderen Benutzern des Servers verschlossen. `.env` und `master-keys` getrennt von den Datenbank-Backups sichern; siehe [Backups und Hauptschlüssel](backups.md).
+Das `curl` oben lädt das neueste stabile Release. Für ein bestimmtes Release stattdessen von dessen Tag laden, etwa `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`. Jedes Release enthält außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit jeder Variable der `.env` und einem Beispielwert sowie [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) mit jeder Einstellung des Gateways.
 
 ## Die Datei .env
 
-`compose.yaml` liest diese Variablen aus `.env`:
+`compose.yaml` liest diese Variablen aus der `.env`:
 
-| Variable | Erforderlich | Was sie festlegt |
+| Variable | Pflicht | Was sie festlegt |
 | --- | --- | --- |
-| `KAESO_DOMAIN` | ja | Die Domain, die Caddy bereitstellt und für die es ein Zertifikat holt. Die öffentliche URL ist `https://` und die Domain. |
-| `POSTGRES_PASSWORD` | ja | Das Passwort des PostgreSQL-Benutzers `kaeso`, mit dem sich das Gateway anmeldet. Ihm gehört die Datenbank `kaeso`, und er ist kein Superuser. |
-| `POSTGRES_SUPERUSER_PASSWORD` | ja | Das Passwort des PostgreSQL-Superusers `postgres`, für die eigene Administration. Kaeso verwendet es nie, und `docker compose exec postgres psql -U postgres` meldet sich ohne es an. |
+| `KAESO_DOMAIN` | ja | Die Domain, die Caddy bedient und für die er ein Zertifikat holt. Die öffentliche URL ist `https://` und die Domain. |
+| `POSTGRES_PASSWORD` | ja | Das Passwort des PostgreSQL-Benutzers `kaeso`, als der sich das Gateway anmeldet. Ihm gehört die Datenbank `kaeso`; ein Superuser ist er nicht. |
+| `POSTGRES_SUPERUSER_PASSWORD` | ja | Das Passwort des PostgreSQL-Superusers `postgres`, für die eigene Administration. Kaeso nutzt es nie, und `docker compose exec postgres psql -U postgres` meldet sich ohne es an. |
 | `CLICKHOUSE_PASSWORD` | ja | Das Passwort des ClickHouse-Benutzers `kaeso`. |
 | `VALKEY_PASSWORD` | ja | Das Passwort, das Valkey von jeder Verbindung verlangt. |
 | `KAESO_PUBLIC_URL` | nein | Die öffentliche URL, wenn sie nicht `https://` und `KAESO_DOMAIN` ist, etwa hinter einem eigenen Proxy. |
-| `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, außer E-Mails werden nur protokolliert | Wie das Gateway E-Mails sendet. Siehe [E-Mail](email.md). |
-| `KAESO_MAIL_TRANSPORT` | nein | `log`, um E-Mails nur zu protokollieren statt sie zu senden, zum Ausprobieren von Kaeso. |
+| `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, außer E-Mails werden nur protokolliert | Wie das Gateway E-Mails versendet. Siehe [E-Mail](email.md). |
+| `KAESO_MAIL_TRANSPORT` | nein | `log`, um E-Mails nur zu protokollieren statt zu senden, zum Ausprobieren. |
 
-Die Passwörter stehen in Verbindungs-URLs, daher nur Buchstaben und Ziffern verwenden, wie `openssl rand -hex` sie schreibt. Die Passwörter von PostgreSQL und ClickHouse wirken, wenn die Datenbanken zum ersten Mal in ihren Volumes angelegt werden; sie später in `.env` zu ändern, ändert nicht die Passwörter, die die Datenbanken schon haben. Valkey liest sein Passwort bei jedem Start aus `.env`.
+In den Passwörtern nur Buchstaben und Ziffern verwenden, wie `openssl rand -hex` sie erzeugt, denn sie landen in Verbindungs-URLs. PostgreSQL und ClickHouse übernehmen ihre Passwörter, wenn ihre Volumes zum ersten Mal angelegt werden; eine spätere Änderung in der `.env` ändert die Passwörter der Datenbanken nicht. Valkey liest sein Passwort bei jedem Start aus der `.env`.
 
-Compose liest aus `.env` nur diese Variablen. Jede andere [Einstellung](configuration.md) gehört in `compose.override.yaml`, wie [lokale Änderungen](#lokale-änderungen) zeigt.
+Compose reicht nur diese Variablen weiter. Jede andere [Einstellung](configuration.md) gehört in die `compose.override.yaml`, wie [Lokale Änderungen](#lokale-änderungen) zeigt.
 
 ## Was beim ersten Start geschieht
+
+Die Installation starten, dann den Einrichtungslink ausgeben:
 
 ```bash
 docker compose up -d --wait
 docker compose exec gateway kaeso setup-link
 ```
 
-Mit `--wait` kehrt `docker compose up` zurück, sobald jeder Dienst läuft und healthy meldet, und schlägt fehl, wenn einer das nicht tut. Der Healthcheck von Caddy fragt Caddy selbst auf seiner Loopback-Adresse, daher ist Caddy healthy, sobald es Anfragen bedient, während das Zertifikat für eine neue Domain noch unterwegs sein kann ([Zertifikate](domains-and-tls.md#zertifikate)). Ohne `--wait` kehrt Compose zurück, sobald es die Container gestartet hat: Mit dem mitgelieferten Caddy, der auf ein healthy Gateway und eine healthy Konsole wartet, ist das spät genug, hinter [einem eigenen Reverse Proxy](domains-and-tls.md#ein-eigener-reverse-proxy) aber sofort, bevor das Gateway für `kaeso setup-link` bereit ist. Danach gibt `kaeso setup-link` den Einrichtungslink aus.
+Mit `--wait` kehrt Compose erst zurück, wenn jeder Dienst healthy meldet, und schlägt fehl, wenn einer das nicht schafft. Caddy gilt als healthy, sobald er Anfragen bedient; das Zertifikat für eine neue Domain kann dann noch unterwegs sein, siehe [Zertifikate](domains-and-tls.md#zertifikate). Ohne `--wait` kehrt Compose zurück, sobald die Container existieren; hinter einem [eigenen Reverse Proxy](domains-and-tls.md#ein-eigener-reverse-proxy), wo kein Caddy auf das Gateway wartet, ist das zu früh für `kaeso setup-link`.
 
-1. PostgreSQL, ClickHouse und Valkey starten; Compose wartet, bis PostgreSQL und Valkey healthy melden.
-2. Das Gateway prüft seine Einstellungen und hält mit einer Meldung an, die die Einstellung nennt, wenn eine fehlt oder falsch ist. Geheime Werte gibt es nie aus.
-3. Es migriert PostgreSQL auf seine Version, bevor es irgendetwas bereitstellt, und ClickHouse im Hintergrund, mit Wiederholungen, bis ClickHouse antwortet; bis dahin meldet `/readyz` `degraded`. Migrationen laufen unter einem Lock, sodass nur eine Gateway-Instanz migriert, während die anderen warten.
-4. Solange die Installation keine Benutzer hat, protokolliert es, dass sie noch nicht eingerichtet ist und wie man den Einrichtungslink erhält, nie den Link selbst: Wer das Log liest, könnte damit die Installation übernehmen. `docker compose exec gateway kaeso setup-link` gibt den Link im Terminal aus; er funktioniert einmal, 24 Stunden lang, und jeder neue macht die älteren ungültig.
-5. Sobald Gateway und Konsole healthy sind, startet Caddy, meldet healthy, sobald es Anfragen bedient, und holt im Hintergrund ein Zertifikat für `KAESO_DOMAIN`.
+1. PostgreSQL, ClickHouse und Valkey starten. Das Gateway wartet, bis PostgreSQL und Valkey healthy melden.
+2. Das Gateway prüft seine Einstellungen. Fehlt eine oder ist sie ungültig, hält es mit einer Meldung an, die die Einstellung nennt, nie ihren Wert.
+3. Es migriert PostgreSQL, bevor es irgendetwas bereitstellt, und ClickHouse im Hintergrund, mit neuen Versuchen, bis ClickHouse antwortet; bis dahin meldet `/readyz` `degraded`. Migrationen laufen unter einem Lock, sodass nur eine Gateway-Instanz migriert und die anderen warten.
+4. Solange die Installation keine Benutzer hat, protokolliert das Gateway, dass sie noch nicht eingerichtet ist und wie man den Einrichtungslink erhält, aber nie den Link selbst: Wer das Log lesen kann, könnte sonst die Installation übernehmen. `kaeso setup-link` gibt den Link im Terminal aus. Er funktioniert einmal, 24 Stunden lang, und jeder neue Link macht die älteren ungültig.
+5. Sobald Gateway und Konsole healthy sind, startet Caddy, meldet healthy, sobald er Anfragen bedient, und holt im Hintergrund ein Zertifikat für `KAESO_DOMAIN`.
 
-Die Einrichtungsseite legt den ersten Benutzer an, der Instanz-Admin und Inhaber der ersten Organisation wird, mit einem Standardprojekt, in dem er Admin ist. Danach kommen Personen per Einladung hinzu oder durch Registrierung, wo die Instanz sie erlaubt; siehe [Instanzverwaltung](../console/instance-administration.md).
+Der Einrichtungslink legt den ersten Benutzer an. Er wird Instanz-Admin, Inhaber der ersten Organisation und Admin ihres Standardprojekts. Alle anderen kommen per Einladung dazu oder registrieren sich, wo die Instanz das erlaubt; siehe [Instanzverwaltung](../console/instance-administration.md). Eine Installation, die sich nur per Single Sign-on anmelden soll, wird eingerichtet, wie [Eine Installation ohne Passwörter](sign-in.md#eine-installation-ohne-passwörter) beschreibt.
 
 ## Auf dem eigenen Rechner ausprobieren
 
-`KAESO_DOMAIN=localhost` setzen und `https://localhost` öffnen. Caddy stellt die Seite mit einem Zertifikat seiner eigenen lokalen Zertifizierungsstelle bereit, das der Browser einmal bestätigen lässt. `KAESO_MAIL_TRANSPORT=log` zu `.env` hinzufügen, wenn kein Mailserver zur Hand ist.
+`KAESO_DOMAIN=localhost` setzen und `https://localhost` öffnen. Caddy liefert die Seite mit einem Zertifikat seiner eigenen lokalen Zertifizierungsstelle aus, das der Browser einmal bestätigen lässt. Ohne Mailserver zur Hand `KAESO_MAIL_TRANSPORT=log` in die `.env` aufnehmen.
 
-curl und die SDKs vertrauen Caddys lokaler Zertifizierungsstelle nicht. Ihr Zertifikat aus dem Container kopieren und ihnen übergeben:
+curl und die SDKs vertrauen Caddys lokaler Zertifizierungsstelle nicht. Ihr Stammzertifikat aus dem Container kopieren und ihnen übergeben:
 
 ```bash
 docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
@@ -86,7 +90,7 @@ Die Python-SDKs lesen es aus `SSL_CERT_FILE=caddy-root.crt`, die TypeScript-SDKs
 
 ## Lokale Änderungen
 
-Um eine Einstellung eines Dienstes zu ändern oder hinzuzufügen, sie in `compose.override.yaml` neben `compose.yaml` eintragen. Docker Compose führt beide zusammen, und ein Upgrade, das `compose.yaml` ersetzt, behält die eigenen Änderungen.
+Eigene Änderungen an den Diensten gehören in die `compose.override.yaml` neben der `compose.yaml`. Docker Compose führt beide Dateien zusammen, und ein Upgrade, das `compose.yaml` ersetzt, behält die Änderungen:
 
 ```yaml
 services:
@@ -96,24 +100,22 @@ services:
       KAESO_INSTANCE_ACCOUNT_CREATION: everyone
 ```
 
-Jede Einstellung steht unter [Konfiguration](configuration.md). Änderungen mit `docker compose up -d --wait` übernehmen; Compose erstellt nur die Dienste neu, deren Einstellungen sich geändert haben.
+[Konfiguration](configuration.md) listet jede Einstellung. Änderungen mit `docker compose up -d --wait` übernehmen; Compose erstellt nur die Dienste neu, deren Einstellungen sich geändert haben.
 
 ## Die Kommandozeile
 
-Das Gateway-Image ist zugleich seine Kommandozeile. Seine Befehle im laufenden Container ausführen, wo sie die Einstellungen des Gateways nutzen:
-
-| Befehl | Was er tut |
-| --- | --- |
-| `kaeso setup-link` | Gibt einen neuen Einrichtungslink aus, solange die Installation keine Benutzer hat; ältere Links funktionieren dann nicht mehr |
-| `kaeso master-key generate` | Gibt einen neuen Hauptschlüssel als `id:base64` aus |
-| `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch genutzt werden; siehe [den Hauptschlüssel rotieren](backups.md#den-hauptschlüssel-rotieren) |
-| `kaeso user reset-2fa <email>` | Entfernt die Zwei-Faktor-Authentifizierung und die Wiederherstellungscodes eines Benutzers, beendet seine Sitzungen und benachrichtigt ihn per E-Mail |
-| `kaeso user sign-in-link <email>` | Gibt einen einmaligen Anmeldelink für einen Benutzer aus, 15 Minuten gültig, auch wenn Anmeldelinks per E-Mail ausgeschaltet sind; für den Fall, dass kein anderer Weg hineinführt, etwa bevor Single Sign-on eingerichtet ist; siehe [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) |
-| `kaeso migrate` | Führt die Migrationen von PostgreSQL und ClickHouse aus und beendet sich dann |
-| `kaeso serve` | Startet das Gateway; der Standardbefehl des Images |
-
-Zum Beispiel:
+Das Gateway-Image ist zugleich die Kommandozeile von Kaeso. Ihre Befehle im laufenden Container ausführen, wo sie die Einstellungen des Gateways verwenden:
 
 ```bash
 docker compose exec gateway kaeso user reset-2fa owner@example.com
 ```
+
+| Befehl | Was er tut |
+| --- | --- |
+| `kaeso setup-link` | Gibt einen neuen Einrichtungslink aus, solange die Installation keine Benutzer hat; ältere Links werden ungültig |
+| `kaeso master-key generate` | Gibt einen neuen Hauptschlüssel als `id:base64` aus |
+| `kaeso master-key rewrap` | Verschlüsselt gespeicherte Geheimnisse mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden; siehe [Den Hauptschlüssel rotieren](backups.md#den-hauptschlüssel-rotieren) |
+| `kaeso user reset-2fa <email>` | Entfernt die Zwei-Faktor-Authentifizierung und die Wiederherstellungscodes eines Benutzers, beendet seine Sitzungen, benachrichtigt ihn per E-Mail und verzeichnet das im Audit-Log der Instanz |
+| `kaeso user sign-in-link <email>` | Gibt einen einmaligen Anmeldelink für einen aktiven Benutzer aus, 15 Minuten gültig, für den Fall, dass kein anderer Weg hinein funktioniert; siehe [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) |
+| `kaeso migrate` | Führt die Migrationen von PostgreSQL und ClickHouse aus und beendet sich |
+| `kaeso serve` | Startet das Gateway; der Standardbefehl des Images |
