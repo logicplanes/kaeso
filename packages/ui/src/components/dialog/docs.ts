@@ -22,7 +22,7 @@ export const docs = {
   },
   Dialog: {
     description:
-      "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.",
+      "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. It stays centered while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.",
     props: {
       children: "The dialog's content and actions.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
@@ -67,13 +67,15 @@ export const docs = {
   },
   StepDialog: {
     description:
-      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a field and ⌘/Ctrl+Enter continue. The dialog takes each step's height: it grows or shrinks 200ms as the step changes, its top stays where it opened, and the new step drifts in from the side it comes from. Within a step it never shrinks, so nothing jumps while a step's content changes; it grows once if the content does. Steps a few pixels apart share one height. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
+      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and stays centered: it grows or shrinks 200ms from the size it has as the step changes, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
     props: {
       defaultStep: "Start on this step (state matrices).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
       onOpenChange: "Called when it opens or closes.",
       onSubmit: "Called when the last step is submitted.",
       open: "Whether it is open, when you control it.",
+      result:
+        "What the last step made, shown in the same dialog once it exists: its title, description, content, footer and size. Pass it after `onSubmit` succeeds, such as the created key with SecretReveal.",
       size: "The dialog's width.",
       steps: "The steps, each with its title, content and whether it can be continued.",
       submitLabel: 'The last step\'s button: "Create key".',

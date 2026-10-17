@@ -965,5 +965,7 @@
   "Create a key, then another": "创建一个密钥，再创建一个",
   "The key is shown once; closing the dialog forgets it, so the next key starts on the first step.": "密钥只显示一次；关闭对话框后即被遗忘，因此下一个密钥从第一步开始。",
   "The component that keeps the flow's state and renders the dialog with the same `open`.": "保存流程状态、并以相同 `open` 渲染对话框的组件。",
-  "Whether the dialog inside is open; pass the value its `open` gets.": "其中的对话框是否打开；传入与其 `open` 相同的值。"
+  "Whether the dialog inside is open; pass the value its `open` gets.": "其中的对话框是否打开；传入与其 `open` 相同的值。",
+  "The key, shown once after the last step": "最后一步之后仅显示一次的密钥",
+  "Content that grows and shrinks": "会变高和变矮的内容"
 }

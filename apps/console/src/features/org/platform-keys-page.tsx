@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   Button,
-  Dialog,
   Empty,
   FilterRow,
   IconButton,
@@ -16,6 +15,7 @@ import {
   StepDialog,
   Text,
   type CodeTab,
+  type StepDialogResult,
 } from "@logicplanes/kaeso-ui";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
@@ -191,34 +191,38 @@ function CreatePlatformKeyDialog({ org, onClose }: { org: string; onClose: () =>
     invalidates: [["orgs", org, "platform-keys"]],
     onSuccess: setCreated,
   });
-  if (created) return <PlatformKeyReveal org={org} created={created} onDone={onClose} />;
+  const reveal = usePlatformKeyReveal(org, created, onClose);
   return (
-    <StepDialog
-      open
-      onOpenChange={(o) => !o && onClose()}
-      title={t("org.platformKeys.create", "Create platform key")}
-      submitLabel={t("org.platformKeys.createKey", "Create key")}
-      submitting={create.isPending}
-      onSubmit={() => name.trim() && (expiry !== "date" || date) && create.mutate()}
-      steps={[
-        {
-          id: "name",
-          title: t("org.platformKeys.whatUses", "What uses it?"),
-          description: t("org.platformKeys.whatUsesHint", "A script or tool, like Terraform; it acts with the Admin role's rights in this organization."),
-          blockedReason: name.trim() ? undefined : t("org.platformKeys.nameIt", "Give the key a name"),
-          content: (
-            <Input aria-label={common.name()} placeholder="Terraform" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
-          ),
-        },
-        {
-          id: "expiry",
-          title: t("org.platformKeys.whenExpires", "When does it expire?"),
-          description: t("org.platformKeys.whenExpiresHint", "Creating a platform key needs a recent sign-in."),
-          blockedReason: expiry === "date" && !date ? t("org.platformKeys.chooseDate", "Choose the expiry date") : undefined,
-          content: <ExpiryPicker value={expiry} onChange={setExpiry} date={date} onDateChange={setDate} maxDays={maxDays} scope="org" />,
-        },
-      ]}
-    />
+    <>
+      <StepDialog
+        open
+        onOpenChange={(o) => !o && (created ? reveal.done() : onClose())}
+        result={reveal.result}
+        title={t("org.platformKeys.create", "Create platform key")}
+        submitLabel={t("org.platformKeys.createKey", "Create key")}
+        submitting={create.isPending}
+        onSubmit={() => name.trim() && (expiry !== "date" || date) && create.mutate()}
+        steps={[
+          {
+            id: "name",
+            title: t("org.platformKeys.whatUses", "What uses it?"),
+            description: t("org.platformKeys.whatUsesHint", "A script or tool, like Terraform; it acts with the Admin role's rights in this organization."),
+            blockedReason: name.trim() ? undefined : t("org.platformKeys.nameIt", "Give the key a name"),
+            content: (
+              <Input aria-label={common.name()} placeholder="Terraform" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
+            ),
+          },
+          {
+            id: "expiry",
+            title: t("org.platformKeys.whenExpires", "When does it expire?"),
+            description: t("org.platformKeys.whenExpiresHint", "Creating a platform key needs a recent sign-in."),
+            blockedReason: expiry === "date" && !date ? t("org.platformKeys.chooseDate", "Choose the expiry date") : undefined,
+            content: <ExpiryPicker value={expiry} onChange={setExpiry} date={date} onDateChange={setDate} maxDays={maxDays} scope="org" />,
+          },
+        ]}
+      />
+      {reveal.confirm}
+    </>
   );
 }
 
@@ -227,28 +231,31 @@ function platformSnippets(org: string, secret: string): CodeTab[] {
   return [{ label: "curl", lang: "bash", code: `curl ${url} \\\n  -H "Authorization: Bearer ${secret}"` }];
 }
 
-function PlatformKeyReveal({ org, created, onDone }: { org: string; created: CreatedKey_OrgKeyView; onDone: () => void }) {
+function usePlatformKeyReveal(org: string, created: CreatedKey_OrgKeyView | null, onDone: () => void) {
   const [copied, setCopied] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const done = () => (copied ? onDone() : setConfirm(true));
-  return (
-    <>
-      <Dialog
-        open
-        onOpenChange={(o) => !o && done()}
-        size="lg"
-        title={t("org.platformKeys.created", "Platform key created")}
-        description={t("org.platformKeys.createdHint", "Copy the key for {name} now; it's shown once and Kaeso stores only a hash.", { name: created.name })}
-        footer={<Button onClick={done}>{common.done()}</Button>}
-      >
-        <SecretReveal
-          secret={created.secret}
-          name={created.name}
-          baseUrl={window.location.origin}
-          snippets={platformSnippets(org, created.secret)}
-          onCopied={() => setCopied(true)}
-        />
-      </Dialog>
+  const result: StepDialogResult | undefined = created
+    ? {
+        size: "lg",
+        title: t("org.platformKeys.created", "Platform key created"),
+        description: t("org.platformKeys.createdHint", "Copy the key for {name} now; it's shown once and Kaeso stores only a hash.", { name: created.name }),
+        footer: <Button onClick={done}>{common.done()}</Button>,
+        content: (
+          <SecretReveal
+            secret={created.secret}
+            name={created.name}
+            baseUrl={window.location.origin}
+            snippets={platformSnippets(org, created.secret)}
+            onCopied={() => setCopied(true)}
+          />
+        ),
+      }
+    : undefined;
+  return {
+    result,
+    done,
+    confirm: (
       <AlertDialog
         open={confirm}
         onOpenChange={setConfirm}
@@ -259,6 +266,6 @@ function PlatformKeyReveal({ org, created, onDone }: { org: string; created: Cre
         cancelLabel={t("org.platformKeys.goBack", "Go back")}
         onConfirm={onDone}
       />
-    </>
-  );
+    ),
+  };
 }

@@ -192,6 +192,7 @@ describe("creating a platform key", () => {
     expect(within(dialog).getByRole("combobox", { name: "Expires" })).toHaveTextContent("In 90 days");
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
     const reveal = await screen.findByRole("dialog", { name: "Platform key created" });
+    expect(reveal).toBe(dialog);
     expect(within(reveal).getByText("Copy the key for Billing sync now; it's shown once and Kaeso stores only a hash.")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/platform-keys").map((r) => r.body)).toEqual([{ name: "Billing sync", expires_in_days: 90 }]);
     await user.click(within(reveal).getByRole("button", { name: "Done" }));

@@ -1,7 +1,20 @@
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Combobox, Dialog, DialogScope, Input, Radio, RadioCards, SecretReveal, Select, StepDialog, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Button,
+  Combobox,
+  DialogScope,
+  Input,
+  Radio,
+  RadioCards,
+  SecretReveal,
+  Select,
+  StepDialog,
+  icons,
+  type StepDialogResult,
+} from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { CreatedKey_KeyView } from "~/api/generated/types";
 import { catalogueQuery } from "~/api/queries/models";
@@ -38,36 +51,6 @@ export function CreateKeyDialog(props: CreateKeyProps) {
 }
 
 function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: CreateKeyProps) {
-  const [created, setCreated] = useState<{ key: CreatedKey_KeyView; models: string[] } | null>(null);
-  return created ? (
-    <RevealStep org={org} project={project} open={open} created={created.key} models={created.models} onDone={onClose} />
-  ) : (
-    <FormStep
-      org={org}
-      project={project}
-      open={open}
-      onClose={onClose}
-      onCreated={(key, models) => setCreated({ key, models })}
-      fixedServiceAccount={fixedServiceAccount}
-    />
-  );
-}
-
-function FormStep({
-  org,
-  project,
-  open,
-  onClose,
-  onCreated,
-  fixedServiceAccount,
-}: {
-  org: string;
-  project: string;
-  open: boolean;
-  onClose: () => void;
-  onCreated: (k: CreatedKey_KeyView, models: string[]) => void;
-  fixedServiceAccount?: { id: string; name: string } | undefined;
-}) {
   const session = useSession();
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
@@ -86,6 +69,8 @@ function FormStep({
   const [models, setModels] = useState<string[]>([]);
   const [limits, setLimits] = useState<LimitDraft[]>([]);
   const lastLimit = useRef<HTMLDivElement>(null);
+  const [created, setCreated] = useState<{ key: CreatedKey_KeyView; models: string[] } | null>(null);
+  const reveal = useKeyReveal(org, project, created, onClose);
 
   const principal: Principal = owner === "me" ? { kind: "user", id: session.user.id } : { kind: "service_account", id: owner };
   const effective = useQuery({ ...modelAccessQuery(org, project, principal), enabled: rights.has("limits.view") });
@@ -120,7 +105,7 @@ function FormStep({
       ["orgs", org, "projects", project, "keys"],
       ["me", "keys"],
     ],
-    onSuccess: (k) => onCreated(k, keptModels),
+    onSuccess: (k) => setCreated({ key: k, models: keptModels }),
   });
 
   const ownerOptions = [
@@ -144,156 +129,150 @@ function FormStep({
     ) : null;
 
   return (
-    <StepDialog
-      open={open}
-      onOpenChange={(o) => !o && onClose()}
-      title={t("kaeso.createKey.title", "Create key")}
-      submitLabel={t("kaeso.createKey.title", "Create key")}
-      submitting={create.isPending}
-      onSubmit={() => ready && create.mutate()}
-      steps={[
-        {
-          id: "name",
-          title: fixedServiceAccount
-            ? t("kaeso.createKey.keyFor", "A key for {name}", { name: fixedServiceAccount.name })
-            : t("kaeso.createKey.whatFor", "What is it for?"),
-          description: t("kaeso.createKey.nameHint", "Applications send the key with every request; its name shows in request logs and alerts."),
-          blockedReason: name.trim() ? undefined : t("kaeso.createKey.enterName", "Enter a name"),
-          content: (
-            <div className="flex flex-col gap-16">
-              <Input
-                label={t("common.name", "Name")}
-                placeholder={EXAMPLE_NAME}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-                maxLength={100}
-              />
-              {forStep}
-            </div>
-          ),
-        },
-        {
-          id: "expiry",
-          title: t("kaeso.createKey.whenExpires", "When does it expire?"),
-          blockedReason: expiry === "date" && !date ? t("kaeso.createKey.pickDay", "Pick the day it expires") : undefined,
-          content: <ExpiryPicker value={expiry} onChange={setExpiry} date={date} onDateChange={setDate} maxDays={maxDays} />,
-        },
-        {
-          id: "access",
-          title: t("kaeso.createKey.whatCalls", "What can it call?"),
-          content: (
-            <RadioCards aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
-              <Radio
-                value="inference"
-                label={t("format.access.inference", "Inference")}
-                description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
-              />
-              <Radio
-                value="platform"
-                label={t("format.access.platform", "Platform")}
-                description={
-                  canPlatform
-                    ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
-                    : needs("keys.platform_access.grant")
-                }
-                disabled={!canPlatform}
-              />
-              <Radio
-                value="both"
-                label={t("kaeso.createKey.both", "Inference and platform")}
-                description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
-                disabled={!canPlatform}
-              />
-            </RadioCards>
-          ),
-        },
-        {
-          id: "narrow",
-          title: t("kaeso.createKey.narrow", "Models and limits"),
-          description: t("kaeso.createKey.narrowHint", "Optional: without them it may call what its owner may, within the owner's and the project's limits."),
-          blockedReason: problems[0] ?? undefined,
-          content: (
-            <div className="flex flex-col gap-16">
-              <Combobox
-                label={t("common.models", "Models")}
-                multiple
-                options={allowedModels.map(modelOption)}
-                value={keptModels}
-                onValueChange={(v: string[]) => setModels(v)}
-                placeholder={t("kaeso.limits.allModels", "All models")}
-              />
-              {keptLimits.map((l, i) => (
-                <div key={i} ref={i === keptLimits.length - 1 ? lastLimit : undefined} className="flex flex-col gap-12">
-                  <LimitEditor value={l} onChange={(d) => setLimits(keptLimits.map((x, j) => (j === i ? d : x)))} models={allowedModels} />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leadingIcon={icons.delete}
-                    onClick={() => setLimits(keptLimits.filter((_, j) => j !== i))}
-                    className="self-start"
-                  >
-                    {t("kaeso.limits.removeThis", "Remove this limit")}
-                  </Button>
-                </div>
-              ))}
-              <Button
-                size="sm"
-                leadingIcon={icons.add}
-                onClick={() => {
-                  flushSync(() => setLimits([...keptLimits, newLimit()]));
-                  lastLimit.current?.querySelector<HTMLElement>("button")?.focus();
-                }}
-                className="self-start"
-              >
-                {t("kaeso.limits.add", "Add limit")}
-              </Button>
-            </div>
-          ),
-        },
-      ]}
-    />
+    <>
+      <StepDialog
+        open={open}
+        onOpenChange={(o) => !o && (created ? reveal.done() : onClose())}
+        result={reveal.result}
+        title={t("kaeso.createKey.title", "Create key")}
+        submitLabel={t("kaeso.createKey.title", "Create key")}
+        submitting={create.isPending}
+        onSubmit={() => ready && create.mutate()}
+        steps={[
+          {
+            id: "name",
+            title: fixedServiceAccount
+              ? t("kaeso.createKey.keyFor", "A key for {name}", { name: fixedServiceAccount.name })
+              : t("kaeso.createKey.whatFor", "What is it for?"),
+            description: t("kaeso.createKey.nameHint", "Applications send the key with every request; its name shows in request logs and alerts."),
+            blockedReason: name.trim() ? undefined : t("kaeso.createKey.enterName", "Enter a name"),
+            content: (
+              <div className="flex flex-col gap-16">
+                <Input
+                  label={t("common.name", "Name")}
+                  placeholder={EXAMPLE_NAME}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoFocus
+                  maxLength={100}
+                />
+                {forStep}
+              </div>
+            ),
+          },
+          {
+            id: "expiry",
+            title: t("kaeso.createKey.whenExpires", "When does it expire?"),
+            blockedReason: expiry === "date" && !date ? t("kaeso.createKey.pickDay", "Pick the day it expires") : undefined,
+            content: <ExpiryPicker value={expiry} onChange={setExpiry} date={date} onDateChange={setDate} maxDays={maxDays} />,
+          },
+          {
+            id: "access",
+            title: t("kaeso.createKey.whatCalls", "What can it call?"),
+            content: (
+              <RadioCards aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
+                <Radio
+                  value="inference"
+                  label={t("format.access.inference", "Inference")}
+                  description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
+                />
+                <Radio
+                  value="platform"
+                  label={t("format.access.platform", "Platform")}
+                  description={
+                    canPlatform
+                      ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
+                      : needs("keys.platform_access.grant")
+                  }
+                  disabled={!canPlatform}
+                />
+                <Radio
+                  value="both"
+                  label={t("kaeso.createKey.both", "Inference and platform")}
+                  description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
+                  disabled={!canPlatform}
+                />
+              </RadioCards>
+            ),
+          },
+          {
+            id: "narrow",
+            title: t("kaeso.createKey.narrow", "Models and limits"),
+            description: t("kaeso.createKey.narrowHint", "Optional: without them it may call what its owner may, within the owner's and the project's limits."),
+            blockedReason: problems[0] ?? undefined,
+            content: (
+              <div className="flex flex-col gap-16">
+                <Combobox
+                  label={t("common.models", "Models")}
+                  multiple
+                  options={allowedModels.map(modelOption)}
+                  value={keptModels}
+                  onValueChange={(v: string[]) => setModels(v)}
+                  placeholder={t("kaeso.limits.allModels", "All models")}
+                />
+                {keptLimits.map((l, i) => (
+                  <div key={i} ref={i === keptLimits.length - 1 ? lastLimit : undefined} className="flex flex-col gap-12">
+                    <LimitEditor value={l} onChange={(d) => setLimits(keptLimits.map((x, j) => (j === i ? d : x)))} models={allowedModels} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leadingIcon={icons.delete}
+                      onClick={() => setLimits(keptLimits.filter((_, j) => j !== i))}
+                      className="self-start"
+                    >
+                      {t("kaeso.limits.removeThis", "Remove this limit")}
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  size="sm"
+                  leadingIcon={icons.add}
+                  onClick={() => {
+                    flushSync(() => setLimits([...keptLimits, newLimit()]));
+                    lastLimit.current?.querySelector<HTMLElement>("button")?.focus();
+                  }}
+                  className="self-start"
+                >
+                  {t("kaeso.limits.add", "Add limit")}
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
+      {reveal.confirm}
+    </>
   );
 }
 
-function RevealStep({
-  org,
-  project,
-  open,
-  created,
-  models,
-  onDone,
-}: {
-  org: string;
-  project: string;
-  open: boolean;
-  created: CreatedKey_KeyView;
-  models: string[];
-  onDone: () => void;
-}) {
+function useKeyReveal(org: string, project: string, created: { key: CreatedKey_KeyView; models: string[] } | null, onDone: () => void) {
   const [copied, setCopied] = useState(false);
   const catalogue = useQuery(catalogueQuery(org, project));
+  const models = created?.models ?? [];
   const model = catalogue.data?.find((m) => !models.length || models.includes(m.id))?.model_id;
   const [confirm, setConfirm] = useState(false);
   const done = () => (copied ? onDone() : setConfirm(true));
-  return (
-    <>
-      <Dialog
-        open={open}
-        onOpenChange={(o) => !o && done()}
-        size="lg"
-        title={t("kaeso.createKey.created", "Key created")}
-        description={t("kaeso.createKey.createdHint", "Copy the key now: it's shown once, and Kaeso keeps only a hash of it.")}
-        footer={<Button onClick={done}>{t("common.done", "Done")}</Button>}
-      >
-        <SecretReveal
-          secret={created.secret}
-          name={created.name}
-          baseUrl={window.location.origin}
-          {...(model ? { model } : {})}
-          onCopied={() => setCopied(true)}
-        />
-      </Dialog>
+  const result: StepDialogResult | undefined = created
+    ? {
+        size: "lg",
+        title: t("kaeso.createKey.created", "Key created"),
+        description: t("kaeso.createKey.createdHint", "Copy the key now: it's shown once, and Kaeso keeps only a hash of it."),
+        footer: <Button onClick={done}>{t("common.done", "Done")}</Button>,
+        content: (
+          <SecretReveal
+            secret={created.key.secret}
+            name={created.key.name}
+            baseUrl={window.location.origin}
+            {...(model ? { model } : {})}
+            onCopied={() => setCopied(true)}
+          />
+        ),
+      }
+    : undefined;
+  return {
+    result,
+    done,
+    confirm: (
       <AlertDialog
         open={confirm}
         onOpenChange={setConfirm}
@@ -304,6 +283,6 @@ function RevealStep({
         cancelLabel={t("kaeso.createKey.goBack", "Go back")}
         onConfirm={onDone}
       />
-    </>
-  );
+    ),
+  };
 }

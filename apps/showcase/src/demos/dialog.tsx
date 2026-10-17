@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Checkbox, CheckboxGroup, Dialog, Input, Segmented, Select, StepDialog, toast, type DialogStep } from "@logicplanes/kaeso-ui";
+import { Button, Checkbox, CheckboxGroup, Dialog, Input, SecretReveal, Segmented, Select, StepDialog, toast, type DialogStep } from "@logicplanes/kaeso-ui";
+import { SECRET, projects } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -19,13 +20,15 @@ export const meta = {
     "The title names the dialog; the description is its accessible description.",
     "The footer line appears only while content scrolls under it.",
     "In steps, Continue and Back move focus to the new step's first field, or by the same rule to its primary or safe action when it has none, and the step's number and question are announced.",
-    "In steps, the dialog takes each step's height and keeps its top; with reduced motion the step and the height change at once.",
+    "The dialog stays centered while its content changes: it grows or shrinks to the new height from the size it has, and the body scrolls between the header and the footer when the content is taller than the screen. With reduced motion the size and the step change at once.",
   ],
 };
 export const examples = [
   { id: "form", title: "Create a key", fn: "Form" },
   { id: "steps", title: "In steps, one question at a time", fn: "Steps" },
   { id: "step-heights", title: "Steps of different heights", fn: "StepHeights" },
+  { id: "result", title: "The key, shown once after the last step", fn: "WithResult" },
+  { id: "changing", title: "Content that grows and shrinks", fn: "Changing" },
   { id: "sizes", title: "Sizes", fn: "Sizes" },
 ];
 const expiry = [
@@ -182,6 +185,115 @@ export function StepHeights() {
         steps={limitSteps(level, setLevel)}
       />
     </>
+  );
+}
+export function WithResult() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [created, setCreated] = useState(false);
+  const close = () => setOpen(false);
+  const start = () => {
+    setName("");
+    setCreated(false);
+    setOpen(true);
+  };
+  return (
+    <>
+      <Button variant="primary" onClick={start}>
+        Create key
+      </Button>
+      <StepDialog
+        open={open}
+        onOpenChange={(o) => !o && close()}
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => setCreated(true)}
+        steps={[
+          {
+            id: "name",
+            title: "What is it for?",
+            description: "Shown in request logs and alerts.",
+            blockedReason: name.trim() ? undefined : "Enter a name",
+            content: <Input aria-label="Name" placeholder="checkout-web" value={name} onChange={(e) => setName(e.target.value)} autoFocus />,
+          },
+          {
+            id: "expiry",
+            title: "When does it expire?",
+            content: <Select aria-label="Expires" options={expiry} defaultValue="90" fullWidth />,
+          },
+        ]}
+        result={
+          created
+            ? {
+                title: "Key created",
+                description: "Copy the key now: it's shown once, and Kaeso keeps only a hash of it.",
+                size: "lg",
+                content: <SecretReveal secret={SECRET} name={name.trim()} baseUrl="https://gateway.northwind.example" model="gpt-5-mini" />,
+                footer: <Button onClick={close}>Done</Button>,
+              }
+            : undefined
+        }
+      />
+    </>
+  );
+}
+export function Changing() {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [tried, setTried] = useState(false);
+  const [toProjects, setToProjects] = useState(false);
+  const invalid = tried && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+  const send = () => {
+    setTried(true);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+    setOpen(false);
+    toast.success(`Invitation sent to ${email}`);
+  };
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (o) {
+          setEmail("");
+          setTried(false);
+          setToProjects(false);
+        }
+        setOpen(o);
+      }}
+      trigger={<Button variant="primary">Invite member</Button>}
+      title="Invite member"
+      description="The link works for 21 days."
+      onSubmit={send}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>Cancel</Button>
+          </Dialog.Close>
+          <Button variant="primary" onClick={send}>
+            Send invitation
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-20">
+        <Input
+          label="Email address"
+          placeholder="ana@northwind.example"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={invalid ? "Enter a full address, like ana@northwind.example" : undefined}
+          autoFocus
+        />
+        <Checkbox label="Add them to projects now" checked={toProjects} onCheckedChange={setToProjects} />
+        {toProjects && (
+          <CheckboxGroup aria-label="Projects" defaultValue={projects.slice(0, 1).map((p) => p.id)} className="flex flex-col">
+            {projects.map((p) => (
+              <Checkbox key={p.id} value={p.id} label={p.name} />
+            ))}
+          </CheckboxGroup>
+        )}
+      </div>
+    </Dialog>
   );
 }
 export function Form() {

@@ -965,5 +965,7 @@
   "Create a key, then another": "Einen Schlüssel erstellen, dann noch einen",
   "The key is shown once; closing the dialog forgets it, so the next key starts on the first step.": "Der Schlüssel wird einmal gezeigt; das Schließen des Dialogs vergisst ihn, sodass der nächste Schlüssel beim ersten Schritt beginnt.",
   "The component that keeps the flow's state and renders the dialog with the same `open`.": "Die Komponente, die den Zustand des Ablaufs hält und den Dialog mit demselben `open` rendert.",
-  "Whether the dialog inside is open; pass the value its `open` gets.": "Ob der Dialog darin geöffnet ist; übergib den Wert, den sein `open` erhält."
+  "Whether the dialog inside is open; pass the value its `open` gets.": "Ob der Dialog darin geöffnet ist; übergib den Wert, den sein `open` erhält.",
+  "The key, shown once after the last step": "Der Schlüssel, einmal gezeigt nach dem letzten Schritt",
+  "Content that grows and shrinks": "Inhalt, der wächst und schrumpft"
 }

@@ -96,6 +96,31 @@ describe("CommandPalette", () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
   });
 
+  it("keeps its top while the results change, and watches each row so its height follows them smoothly", async () => {
+    const watched: Element[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe(el: Element) {
+          watched.push(el);
+        }
+        unobserve(el: Element) {
+          watched.splice(watched.indexOf(el), 1);
+        }
+        disconnect() {
+          watched.length = 0;
+        }
+      },
+    );
+    render(<CommandPalette open groups={groups()} />);
+    const palette = await screen.findByRole("dialog", { name: "Command palette" });
+    expect(palette.parentElement).toHaveClass("items-start", "pt-palette");
+    expect(palette).toHaveClass("flex", "flex-col");
+    expect(watched).toContain(screen.getByRole("option", { name: /API keys/ }));
+    await userEvent.type(screen.getByRole("combobox"), "keys");
+    expect(watched.filter((el) => el.getAttribute("role") === "option").map((el) => el.textContent)).toEqual(["API keys"]);
+    vi.unstubAllGlobals();
+  });
   it("follows a controlled open and ignores the hotkey when it is turned off", () => {
     const onOpenChange = vi.fn();
     render(<CommandPalette open hotkey={false} groups={groups()} onOpenChange={onOpenChange} />);

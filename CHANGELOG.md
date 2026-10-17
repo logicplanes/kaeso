@@ -18,6 +18,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Setup on an install with passwords off asks for no password and opens the organization's Security page to connect the identity provider; `kaeso user sign-in-link <email>` prints a one-time sign-in link, audited, for when no other way in works.
 - Documentation pages show the current version wherever they write `{{version}}`, replaced at build time from the repository's version in text, code and frontmatter, so a release never needs a page edited; a backslash before it keeps it literal.
 - Ideas and questions have a home in GitHub Discussions: the issue chooser links to it, an Ideas discussion asks for the idea in a sentence or two, and the contributing page explains the categories and how an agreed idea becomes a feature request.
+- `StepDialog` takes `result`: what the last step made, such as a key shown once, takes the steps' place in the same dialog at its own size.
 
 ### Changed
 
@@ -60,6 +61,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - A single sign-on refused by the identity provider, such as with `access_denied`, ends its sign-in flow and returns to the sign-in page with the page asked for in `next`, as other refusals do; a refused sign-in that began from an organization's sign-in link or button also keeps `org`, so the page shows that organization's button again beside the reason.
 - Requests refused before they reach a model in another API format name the field the app sent, in `param` and in the output limit messages, instead of the target's: `max_completion_tokens` or `max_tokens` rather than `max_output_tokens` for an OpenAI Chat Completions app on an OpenAI Responses model, `max_tokens` and `stop_sequences` for Anthropic Messages apps, and `response_format`, `text.format`, `reasoning_effort`, `reasoning.effort` or `thinking` rather than `output` and `reasoning`.
 - The bundled Caddy has a health check, so `docker compose up -d --wait` returns only once Caddy serves too; the guides say that the certificate for a new domain may still be on its way then.
+- Dialogs whose content changes, such as the steps of a `StepDialog`, a `LayerDialog`'s layers, fields that appear or content that loads, stay centered and grow or shrink smoothly to the new size from the size they have, instead of keeping their top and jumping; a sheet from the bottom grows upwards. In the console, creating a key or a platform key shows the new key, and setting up two-factor authentication shows the recovery codes, in the same dialog instead of a second one.
 
 ### Security
 

@@ -45,6 +45,8 @@ describe("CreateKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
 
     const reveal = await screen.findByRole("dialog", { name: "Key created" });
+    expect(reveal).toBe(dialog);
+    expect(within(reveal).queryByRole("heading", { name: "Models and limits" })).not.toBeInTheDocument();
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ name: "checkout-web", access: "inference", expires_in_days: 90 }]);
     expect(within(reveal).getByText("Copy the key now: it's shown once, and Kaeso keeps only a hash of it.")).toBeInTheDocument();
     await user.click(within(reveal).getByRole("button", { name: "Done" }));

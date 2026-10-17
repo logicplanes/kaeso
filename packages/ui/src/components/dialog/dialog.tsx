@@ -1,6 +1,17 @@
 import { InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactElement, type ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { AlertDialog as BaseAlertDialog } from "@base-ui/react/alert-dialog";
 import { cn } from "../../utils/cn.js";
@@ -12,6 +23,7 @@ import { IconButton } from "../icon-button/icon-button.js";
 import { Button } from "../button/button.js";
 import { Input } from "../input/input.js";
 import { focusDialogSection, initialDialogControl } from "./focus.js";
+import { useResizeMotion } from "../../utils/resize-motion.js";
 
 export const KAESO_DIALOG_VARIANTS = {
   size: {
@@ -29,30 +41,40 @@ const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden round
 function useScrolledUnder<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [under, setUnder] = useState(false);
+  const check = useCallback(() => {
+    const el = ref.current;
+    if (el && !el.closest("[data-resizing]")) setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+  }, []);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const check = () => setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
     check();
     el.addEventListener("scroll", check, { passive: true });
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
-    const observe = () => {
-      for (const child of el.children) ro?.observe(child);
-    };
-    ro?.observe(el);
-    observe();
-    const mo = new MutationObserver(() => {
-      observe();
-      check();
-    });
-    mo.observe(el, { childList: true });
+    window.addEventListener("resize", check);
     return () => {
       el.removeEventListener("scroll", check);
-      ro?.disconnect();
-      mo.disconnect();
+      window.removeEventListener("resize", check);
     };
-  }, []);
-  return { ref, under };
+  }, [check]);
+  return { ref, under, check };
+}
+
+function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
+  const rendered = useRef(false);
+  useEffect(() => {
+    const first = !rendered.current;
+    rendered.current = true;
+    const active = document.activeElement;
+    if (first || inline || !box || (active && active !== document.body) || box.matches("[data-ending-style], [data-closed]")) return;
+    const frame = box.querySelector<HTMLElement>("[data-dialog-frame]");
+    if (frame) initialDialogControl(frame)?.focus({ preventScroll: true });
+  });
+}
+
+function useBox(inline: boolean | undefined) {
+  const [box, setBox] = useState<HTMLElement | null>(null);
+  const ref = useCallback((el: HTMLElement | null) => setBox(inline ? el : (el?.parentElement ?? null)), [inline]);
+  return [box, ref] as const;
 }
 
 export interface DialogProps {
@@ -73,7 +95,10 @@ export interface DialogProps {
 }
 
 function DialogFrame({ title, description, children, footer, onSubmit, hideClose, headerStart, size = "md", className, inline }: DialogProps) {
-  const { ref, under } = useScrolledUnder<HTMLDivElement>();
+  const { ref, under, check } = useScrolledUnder<HTMLDivElement>();
+  const [box, boxRef] = useBox(inline);
+  useResizeMotion(box, check);
+  useKeepFocus(box, inline);
   const t = useUiText();
   const Title = inline ? "h2" : BaseDialog.Title;
   const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} />;
@@ -81,8 +106,14 @@ function DialogFrame({ title, description, children, footer, onSubmit, hideClose
   const Description = inline ? "p" : BaseDialog.Description;
   return (
     <div
+      ref={boxRef}
       data-dialog-frame=""
-      className={cn("flex min-h-0 flex-col", inline && "rounded-dialog bg-raised shadow-dialog", inline && KAESO_DIALOG_VARIANTS.size[size].classes, className)}
+      className={cn(
+        "flex min-h-0 flex-col",
+        inline ? "rounded-dialog bg-raised shadow-dialog" : "flex-1 self-center dialog-limits",
+        KAESO_DIALOG_VARIANTS.size[size].classes,
+        className,
+      )}
       onKeyDown={(e: KeyboardEvent) => {
         if (onSubmit && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
@@ -215,6 +246,8 @@ function AlertFrame({
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const t = useUiText();
+  const [box, boxRef] = useBox(inline);
+  useResizeMotion(box);
   const cancelLabel = cancelProp ?? t("alertDialog.cancel", "Cancel");
   const [typeBefore, typeAfter = ""] = t("alertDialog.typeToConfirm", "Type {text} to confirm").split("{text}");
   const Title = inline ? "h2" : BaseAlertDialog.Title;
@@ -235,7 +268,7 @@ function AlertFrame({
     if (done) close();
   };
   return (
-    <div className={cn("flex flex-col gap-20 p-24", inline && "w-440 rounded-dialog bg-raised shadow-dialog")}>
+    <div ref={boxRef} className={cn("flex w-440 flex-col gap-20 p-24", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}>
       <div className="flex flex-col gap-6">
         <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
         <Description className="text-body text-fg-secondary text-pretty">{description}</Description>

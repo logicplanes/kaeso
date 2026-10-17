@@ -117,6 +117,8 @@ describe("turning on two-factor authentication", () => {
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
     await user.type(within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement, "123456");
     const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
+    expect(codes).toBe(dialog);
+    expect(within(codes).getByRole("checkbox", { name: "I stored these codes" })).toHaveFocus();
     expect(requests("POST", "me/totp/confirm").map((r) => r.body)).toEqual([{ code: "123456" }]);
     await waitFor(() => expect(requests("GET", "me").length).toBeGreaterThan(1));
     expect(requests("POST", "me/totp")).toHaveLength(1);
