@@ -1,5 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { EDIT_BASE, FIXTURES } from "../playwright.config";
 import { expect, test } from "./support";
 
@@ -45,6 +47,40 @@ test("every page is built with its own title, description and alternates", async
   const locs = [...sitemap.matchAll(/<loc>https:\/\/docs\.kaeso\.app([^<]*)<\/loc>/g)].map((m) => m[1] || "/");
   expect(locs.filter((l) => !/^\/(de|zh-CN)(\/|$)/.test(l))).toEqual(english);
   expect(locs).toHaveLength(english.length * 3);
+  expect(sitemap).not.toContain("<lastmod>");
+});
+
+test("the build passes the site check: every page in the sitemap, with its alternates and link previews", () => {
+  const docs = fileURLToPath(new URL("..", import.meta.url));
+  const out = execFileSync("node", ["../../scripts/check-site.mjs", "dist-e2e", "https://docs.kaeso.app"], { cwd: docs, encoding: "utf8" });
+  expect(out).toMatch(/^site: 24 pages, all 24 in sitemap\.xml/);
+});
+
+test("a page names its language, its preview image and what it is", async ({ request }) => {
+  const html = await (await request.get("/zh-CN/guides/keys-and-limits")).text();
+  for (const tag of [
+    '<meta property="og:url" content="https://docs.kaeso.app/zh-CN/guides/keys-and-limits" />',
+    '<meta property="og:locale" content="zh_CN" />',
+    '<meta property="og:locale:alternate" content="en_US" />',
+    '<meta property="og:locale:alternate" content="de_DE" />',
+    '<meta property="og:image" content="https://docs.kaeso.app/og.png" />',
+    '<meta property="og:type" content="website" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
+    '<link rel="alternate" hreflang="x-default" href="https://docs.kaeso.app/guides/keys-and-limits" />',
+  ])
+    expect(html).toContain(tag);
+  const data = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(html)?.[1] ?? "{}");
+  expect(data).toMatchObject({ "@type": "TechArticle", inLanguage: "zh-CN", url: "https://docs.kaeso.app/zh-CN/guides/keys-and-limits" });
+  expect(html).not.toContain("noindex");
+  for (const path of ["/404.html", "/de/404.html", "/zh-CN/404.html"]) {
+    const notFound = await (await request.get(path)).text();
+    expect(notFound).toContain('<meta name="robots" content="noindex" />');
+    expect(notFound).not.toContain('rel="canonical"');
+  }
+  const png = Buffer.from(await (await request.get("/og.png")).body());
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+  expect(await (await request.get("/robots.txt")).text()).toContain("Sitemap: https://docs.kaeso.app/sitemap.xml");
+  expect(((await (await request.get("/site.webmanifest")).json()) as { name: string }).name).toBe("Kaeso documentation");
 });
 
 test("the sidebar opens pages in place, with their title and contents", async ({ page }) => {
@@ -84,6 +120,7 @@ test("Edit on GitHub opens the page's file", async ({ page }) => {
   await page.goto("/reference/platform-api/keys");
   const edit = page.getByRole("link", { name: /Edit on GitHub/ });
   await expect(edit).toHaveAttribute("href", `${EDIT_BASE}${FIXTURES}/en/reference/platform-api/keys.md`);
+  await expect(edit).toHaveAttribute("href", /^https:\/\/github\.com\/logicplanes\/kaeso\/edit\/dev\//);
   await expect(edit).toHaveAttribute("target", "_blank");
 });
 
@@ -147,6 +184,47 @@ test.describe("on a phone", () => {
     await expect(sheet).toBeHidden();
     await expect(page.getByRole("heading", { level: 1, name: "Models" })).toBeVisible();
   });
+
+  for (const [path, search, navigation, placeholder, query, option] of [
+    ["/", "Search", "Open navigation", "Search the documentation", "alias", /^Aliases/],
+    ["/de", "Suchen", "Navigation öffnen", "Dokumentation durchsuchen", "Anbieter", /^Anbieter-Schlüssel/],
+    ["/zh-CN", "搜索", "打开导航", "搜索文档", "密钥", /^服务商密钥/],
+  ] as const) {
+    test(`the search opens from the header at ${path}, beside the navigation toggle`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const bar = page.getByRole("banner");
+      const button = bar.getByRole("button", { name: search, exact: true });
+      await expect(button).toBeVisible();
+      await expect(button).toHaveAttribute("aria-haspopup", "dialog");
+      const [own, toggle] = [await button.boundingBox(), await bar.getByRole("button", { name: navigation }).boundingBox()];
+      expect(own && toggle && own.x + own.width <= toggle.x && own.y === toggle.y).toBe(true);
+      await button.click();
+      const input = page.getByPlaceholder(placeholder);
+      await expect(input).toBeFocused();
+      await input.fill(query);
+      await page.getByRole("option", { name: option }).first().click();
+      await expect(input).toBeHidden();
+      await expect(page.getByRole("heading", { level: 1 })).not.toHaveText(/^Kaeso/);
+    });
+  }
+
+  test("⌘K still opens the search on a phone", async ({ page }) => {
+    await page.goto("/guides");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+k");
+    await expect(page.getByPlaceholder("Search the documentation")).toBeFocused();
+  });
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`the header passes axe in the ${theme} theme`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("/de/guides");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const results = await new AxeBuilder({ page }).include("header").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+      expect(results.violations.map((v) => v.id)).toEqual([]);
+    });
+  }
 
   test("a wide table scrolls inside the page, which never scrolls sideways", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");

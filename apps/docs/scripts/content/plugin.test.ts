@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import type { Plugin, Rollup } from "vite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildDocs } from "./docs.ts";
-import { absoluteUrl, alternatesFor, htmlFiles, kaesoDocs, pageHtml, pageModuleId, sitemap, type PageHead } from "./plugin.ts";
+import { absoluteUrl, alternatesFor, htmlFiles, kaesoDocs, pageHtml, pageModuleId, sitemap, structuredData, type PageHead } from "./plugin.ts";
 
 let root = "";
 afterEach(() => root && rmSync(root, { recursive: true, force: true }));
@@ -86,6 +86,9 @@ describe("addresses and HTML", () => {
       url: "https://docs.kaeso.app/de/keys",
       alternates: [{ hreflang: "en", href: "https://docs.kaeso.app/keys" }],
       preloads: ["assets/page.js"],
+      image: "https://docs.kaeso.app/og.png",
+      indexed: true,
+      structured: null,
     };
     const html = pageHtml(TEMPLATE, head);
     expect(html).toContain('<html lang="de">');
@@ -95,7 +98,60 @@ describe("addresses and HTML", () => {
     expect(html).toContain('<link rel="canonical" href="https://docs.kaeso.app/de/keys" />');
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://docs.kaeso.app/keys" />');
     expect(html).toContain('<link rel="modulepreload" crossorigin href="/assets/page.js" />');
-    expect(pageHtml(TEMPLATE, { ...head, url: "", alternates: [], preloads: [] })).not.toContain("canonical");
+    expect(html).not.toContain("noindex");
+    const missing = pageHtml(TEMPLATE, { ...head, url: "", alternates: [], preloads: [], indexed: false });
+    expect(missing).not.toContain("canonical");
+    expect(missing).not.toContain("og:url");
+    expect(missing).not.toContain("application/ld+json");
+    expect(missing).toContain('<meta name="robots" content="noindex" />');
+  });
+
+  it("describes the page for link previews in its language, with the others as alternates", () => {
+    const html = pageHtml(TEMPLATE, {
+      lang: "de",
+      title: "Schlüssel · Kaeso-Dokumentation",
+      description: "Schlüssel anlegen.",
+      siteName: "Kaeso-Dokumentation",
+      url: "https://docs.kaeso.app/de/keys",
+      alternates: [],
+      preloads: [],
+      image: "https://docs.kaeso.app/og.png",
+      indexed: true,
+      structured: { "@type": "TechArticle", headline: "a </script> b" },
+    });
+    expect(html).toContain('<meta property="og:url" content="https://docs.kaeso.app/de/keys" />');
+    expect(html).toContain('<meta property="og:locale" content="de_DE" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="en_US" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="zh_CN" />');
+    expect(html).not.toContain('<meta property="og:locale:alternate" content="de_DE" />');
+    expect(html).toContain('<meta property="og:image" content="https://docs.kaeso.app/og.png" />');
+    expect(html).toContain('<meta property="og:image:width" content="1200" />');
+    expect(html).toContain('<meta property="og:image:height" content="630" />');
+    expect(html).toContain('<meta property="og:image:alt" content="Kaeso" />');
+    expect(html).toContain('<meta name="twitter:title" content="Schlüssel · Kaeso-Dokumentation" />');
+    expect(html).toContain('<meta name="twitter:description" content="Schlüssel anlegen." />');
+    expect(html).toContain('<meta name="twitter:image" content="https://docs.kaeso.app/og.png" />');
+    expect(html).toContain('<script type="application/ld+json">{"@type":"TechArticle","headline":"a \\u003c/script> b"}</script>');
+  });
+
+  it("calls a language's home page a website and every other page a technical article of it", () => {
+    expect(structuredData("https://docs.kaeso.app", "Kaeso-Dokumentation", "de", { path: "/de", title: "Kaeso", description: "Alles über Kaeso." })).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Kaeso-Dokumentation",
+      url: "https://docs.kaeso.app/de",
+      inLanguage: "de",
+      description: "Alles über Kaeso.",
+    });
+    expect(structuredData("https://docs.kaeso.app", "Kaeso documentation", "en", { path: "/guides/keys", title: "Keys", description: "About keys." })).toEqual({
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline: "Keys",
+      description: "About keys.",
+      inLanguage: "en",
+      url: "https://docs.kaeso.app/guides/keys",
+      isPartOf: { "@type": "WebSite", name: "Kaeso documentation", url: "https://docs.kaeso.app/", inLanguage: "en" },
+    });
   });
 
   it("writes a title and description with dollar signs exactly as the author wrote them", () => {
@@ -107,6 +163,9 @@ describe("addresses and HTML", () => {
       url: "",
       alternates: [],
       preloads: [],
+      image: "https://docs.kaeso.app/og.png",
+      indexed: true,
+      structured: null,
     });
     expect(html).toContain("<title>Costs in $1 and $&amp; steps</title>");
     expect(html).toContain(`<meta name="description" content="Pay $2 or $$ per $' key." />`);
@@ -209,7 +268,12 @@ describe("the Vite plugin", () => {
     expect(keys).not.toContain('href="/assets/framework.js"');
     expect(existsSync(join(outDir, "guides.html")) && existsSync(join(outDir, "guides/index.html"))).toBe(true);
     expect(readFileSync(join(outDir, "zh-CN/404.html"), "utf8")).toContain("<title>未找到 · Kaeso 文档</title>");
-    expect(readFileSync(join(outDir, "404.html"), "utf8")).not.toContain("canonical");
+    const notFound = readFileSync(join(outDir, "404.html"), "utf8");
+    expect(notFound).not.toContain("canonical");
+    expect(notFound).toContain('<meta name="robots" content="noindex" />');
+    expect(keys).not.toContain("noindex");
+    expect(keys).toContain('"@type":"TechArticle","headline":"Keys"');
+    expect(readFileSync(join(outDir, "de.html"), "utf8")).toContain('"@type":"WebSite","name":"Kaeso-Dokumentation","url":"https://docs.kaeso.app/de"');
     expect(readFileSync(join(outDir, "sitemap.xml"), "utf8")).toContain("<loc>https://docs.kaeso.app/de/guides/keys</loc>");
     const { "assets/ui-de.js": _, ...withoutGerman } = bundle;
     expect(() => p.writeBundle({ dir: outDir }, withoutGerman)).toThrow("@logicplanes/kaeso-ui's de messages are not in the bundle");

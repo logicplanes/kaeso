@@ -6,6 +6,11 @@ import type { NavGroup } from "~/markdown/ast";
 import { LanguageSelect } from "./language-select";
 import { openSearch } from "./search-store";
 
+export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
+  const t = useText();
+  return <IconButton icon={icons.search} aria-label={t("search.open")} aria-haspopup="dialog" tooltip={tooltip} onClick={openSearch} />;
+}
+
 export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
   const t = useText();
   const locale = useSiteLocale();
@@ -13,7 +18,7 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
   return (
     <Sidebar aria-label={t("site.navigation")}>
       <Sidebar.Brand href={homePath(locale)} label={t("site.home")}>
-        <IconButton icon={icons.search} aria-label={t("search.open")} onClick={openSearch} />
+        <SearchButton />
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
       <Sidebar.Content>

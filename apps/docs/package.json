@@ -17,7 +17,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/budget.ts",
+    "build": "tsc -b && vite build && node scripts/budget.ts && node ../../scripts/check-site.mjs dist https://docs.kaeso.app",
     "preview": "vite preview",
     "check:content": "node scripts/content/check.ts",
     "lint": "eslint . && pnpm check:content",

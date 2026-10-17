@@ -49,7 +49,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 | `pnpm test` | 带覆盖率阈值的 Vitest，在两个库、控制台和文档中运行；随后用 `node --test` 运行仓库 `scripts/` 中脚本的测试，例如变更日志脚本的测试；版本检查的测试也会检查仓库本身（[仓库中的版本号](releasing.md#仓库中的版本号)） |
 | `pnpm i18n` | 控制台的每条文本都有德语和中文版本，占位符一致且没有多余条目（[翻译](translations.md#检查)） |
 | `pnpm knip` | 未使用的文件、导出和依赖 |
-| `pnpm build` | 所有生产构建，最后检查打包体积预算（[性能](performance.md)） |
+| `pnpm build` | 所有生产构建，最后检查打包体积预算（[性能](performance.md)）；两个网站的构建随后运行站点检查（[网站](releasing.md#网站)） |
 | `pnpm licenses:check` | 构建之后：代码随产品发布的每个包的许可证（[依赖与许可证](dependencies.md#许可证政策)） |
 | `pnpm release:check` | 构建之后：像 npm 一样打包两个库，检查它们必须发布的每个文件都在其中，且版本一致 |
 | `pnpm e2e` | 依次在控制台、文档和展示站点中运行 Playwright；展示站点的测试套件针对其构建产物运行，因此要先运行 `pnpm build` |
@@ -79,11 +79,11 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 
 ### 文档站点
 
-单元测试和端到端测试套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，因此修改文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对这些页面的生产构建运行 Playwright（包括 axe）。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建过程检查。
+单元测试和端到端测试套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，因此修改文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对这些页面的生产构建运行 Playwright（包括 axe）。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建过程检查。该套件还会对其构建运行站点检查，并在 375×812 像素下以每种语言从手机顶栏打开搜索；站点检查自身的测试位于 `scripts/check-site.test.mjs`。
 
 ### UI 库与展示站点
 
-组件测试使用 Testing Library 在 happy-dom 中运行，断言用户看到的内容。展示站点没有单元测试；它的端到端测试套件针对其生产构建运行 Playwright，因此要先运行 `pnpm build`：在浅色和深色主题下运行 axe，检查键盘操作和焦点环，对照令牌检查字号层级、动效和几何尺寸，检查菜单在原位打开，检查每个组件页面在手机宽度下不会横向滚动，并检查德语和中文页面在任何脚本运行之前就以其语言呈现，且水合时没有不一致。
+组件测试使用 Testing Library 在 happy-dom 中运行，断言用户看到的内容。展示站点没有单元测试；它的端到端测试套件针对其生产构建运行 Playwright，因此要先运行 `pnpm build`：在浅色和深色主题下运行 axe，检查键盘操作和焦点环，对照令牌检查字号层级、动效和几何尺寸，检查菜单在原位打开，检查每个组件页面在手机宽度下不会横向滚动，检查德语和中文页面在任何脚本运行之前就以其语言呈现，且水合时没有不一致，在 375×812 像素下以每种语言从手机顶栏打开搜索，检查站点地图和每类页面的 head，并检查指向仓库的链接都使用该版本的标签。
 
 ## Rust
 

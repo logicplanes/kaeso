@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -5,6 +6,8 @@ import { AppFrame } from "./app-frame.js";
 import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
+import { IconButton } from "../icon-button/icon-button.js";
+import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
 import zhCN from "../../i18n/locales/zh-CN.js";
@@ -35,12 +38,13 @@ describe("AppFrame.Settings", () => {
   });
 });
 
-function Shell({ brandHref }: { brandHref?: string }) {
+function Shell({ brandHref, phoneActions }: { brandHref?: string; phoneActions?: ReactNode }) {
   return (
     <Sidebar.Provider shortcut={false}>
       <AppFrame
         brandHref={brandHref}
         brandLabel="Kaeso home"
+        phoneActions={phoneActions}
         sidebar={
           <Sidebar aria-label="Console">
             <Sidebar.Brand href="/" label="Kaeso home">
@@ -76,6 +80,19 @@ describe("AppFrame's phone bar", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveAttribute("aria-haspopup", "dialog");
     expect(bar.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+  it("puts its own actions between the wordmark and the navigation toggle", async () => {
+    let searched = 0;
+    render(<Shell brandHref="/" phoneActions={<IconButton icon={icons.search} aria-label="Search" tooltip={false} onClick={() => (searched += 1)} />} />);
+    const bar = document.querySelector<HTMLElement>("[data-phone-bar]")!;
+    expect(
+      within(bar)
+        .getAllByRole("button")
+        .map((b) => b.getAttribute("aria-label")),
+    ).toEqual(["Search", "Open navigation"]);
+    await userEvent.click(within(bar).getByRole("button", { name: "Search" }));
+    expect(searched).toBe(1);
+    expect(within(bar).getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
   });
   it("shows the plain wordmark, named, without a home link", () => {
     render(<Shell />);

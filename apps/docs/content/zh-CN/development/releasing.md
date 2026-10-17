@@ -160,4 +160,6 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
-`apps/docs/dist` 包含文档，`apps/showcase/dist` 包含组件展示站，每个页面都已用英语、德语和简体中文渲染好。网站描述的是构建它们时所基于的版本。
+`apps/docs/dist` 包含文档，`apps/showcase/dist` 包含组件展示站，每个页面都已用英语、德语和简体中文渲染好。网站描述的是构建它们时所基于的版本：组件展示站的“查看源码”链接、它的 `llms.txt` 以及其更新日志中指向仓库的链接都指向该版本的标签，即 `v` 加上根目录 `package.json` 中的版本；而文档的“在 GitHub 上编辑”链接指向 `dev`，页面的修改在那里提出。
+
+每个文件夹都可以原样上传：允许抓取全部内容并指向站点地图的 `robots.txt`；列出每种语言的每个页面及其 `hreflang` 备用链接的 `sitemap.xml`；每种语言一个标记为 `noindex` 的 `404.html`；`site.webmanifest`、图标，以及链接预览显示的图片 `og.png`。静态托管只需用 `guides.html` 响应 `/guides`，并用对应语言的 `404.html` 响应未知地址。两次构建最后都运行 `scripts/check-site.mjs`：当允许搜索引擎索引的页面不在 `sitemap.xml` 中、站点地图列出了构建中不存在的页面地址，或页面缺少规范地址、三种语言加 `x-default` 的备用链接、自己的标题和描述、带有构建中图片的 Open Graph 和 Twitter 标签、图标或 Web 应用清单时，构建就会失败。站点地图不含 `lastmod`，因为构建中没有任何信息能说明页面上次修改的时间。

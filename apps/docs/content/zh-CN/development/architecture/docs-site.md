@@ -40,7 +40,7 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一个简短的�
 | `compile.ts` | 单个页面：关闭原始 HTML 的 marked 词法分析器，然后转换为 `src/markdown/ast.ts` 中的页面格式；检查链接；标注块；搜索词 |
 | `site.ts` | 单种语言：地址、侧边栏、上一页和下一页、按 GitHub 的方式解析的相对链接、图片及其尺寸、搜索 |
 | `docs.ts` | 所有语言：每种语言一个站点，带有各自的前缀和标签，并检查它们以相同顺序包含相同的页面 |
-| `plugin.ts` | Vite 插件：虚拟模块、开发时在内容变化后重新加载、每个页面和语言各一个 HTML 文件、`404.html` 和站点地图 |
+| `plugin.ts` | Vite 插件：虚拟模块、开发时在内容变化后重新加载、每个页面和语言各一个 HTML 文件（带有面向搜索引擎和链接预览的 head）、`404.html` 和站点地图 |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`：不构建应用而执行相同的检查 |
 
 每个问题都会指明其文件：指向不存在的页面或标题的链接、没有替代文本或来自 `content/` 之外的图片、使用 http、https 或 mailto 以外协议的链接、第二个 `#` 标题、两个文件对应同一地址、某种语言缺少某个页面或其 `order` 不同。开发时这些问题会被打印出来，页面仍会渲染；构建和 `check:content` 则会因此失败。
@@ -64,9 +64,9 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一个简短的�
 | `src/shell/` | 带有侧边栏的 `AppFrame`、搜索、语言和主题选择框、经由路由器的链接、提示消息 |
 | `src/i18n/` | 各种语言及其地址、记住的偏好，以及 `messages/` 中站点自己的文案 |
 
-框架与控制台相同：带有“跳到主要内容”链接和 `Sidebar` 的 `AppFrame`，文字标志单独位于左上角，距左边和上边各 28px，面板嵌在外框之内，宽度低于 1024px 时显示手机顶栏和导航侧滑面板。页面的布局与控制台的设置页面相同：`title-lg` 标题和 `body-lg` 描述位于 640px 宽的列中；正文为 `body-lg`，标题为 `title`（`##`）和 `title-sm`（`###`），代码放在 `CodeBlock` 中，标注块放在 `Banner` 中，表格放在水平 `ScrollArea` 内的 `Table` 中。宽度从 1280px 起，“本页内容”（`TableOfContents`）位于右侧；没有它的页面也保留这一列，因此正文在页面之间从不移动。
+框架与控制台相同：带有“跳到主要内容”链接和 `Sidebar` 的 `AppFrame`，文字标志单独位于左上角，距左边和上边各 28px，面板嵌在外框之内，宽度低于 1024px 时显示手机顶栏和导航侧滑面板；手机顶栏中的搜索按钮位于导航开关旁边。页面的布局与控制台的设置页面相同：`title-lg` 标题和 `body-lg` 描述位于 640px 宽的列中；正文为 `body-lg`，标题为 `title`（`##`）和 `title-sm`（`###`），代码放在 `CodeBlock` 中，标注块放在 `Banner` 中，表格放在水平 `ScrollArea` 内的 `Table` 中。宽度从 1280px 起，“本页内容”（`TableOfContents`）位于右侧；没有它的页面也保留这一列，因此正文在页面之间从不移动。
 
-悬停或聚焦链接时会加载页面的 chunk（`defaultPreload: "intent"`），因此页面能立即打开。搜索（`CommandPalette`）及其索引在首次绘制后片刻加载；⌘K 或 Ctrl+K 打开搜索，加载完成前输入的内容会成为它的查询。它按标题、描述和正文词语查找页面，按标题自身的词语查找标题，并提供主题和其他语言的切换。
+悬停或聚焦链接时会加载页面的 chunk（`defaultPreload: "intent"`），因此页面能立即打开。搜索（`CommandPalette`）及其索引在首次绘制后片刻加载；侧边栏或手机顶栏中的搜索按钮、⌘K 或 Ctrl+K 都能打开搜索，加载完成前输入的内容会成为它的查询。它按标题、描述和正文词语查找页面，按标题自身的词语查找标题，并提供主题和其他语言的切换。
 
 首次访问英语地址时，会依据浏览器的语言偏好跳转到 `/de` 或 `/zh-CN`，而不触发页面导航；在菜单或搜索中选择一种语言会以该语言打开同一页面，并记为 `kaeso-docs:locale`。主题沿用库的主题：跟随系统、浅色或深色，由主题脚本在首次绘制之前应用。
 
@@ -85,6 +85,6 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一个简短的�
 
 ## 构建产物
 
-`pnpm --filter kaeso-docs build` 写出 `apps/docs/dist`：应用本身；每种语言中每个页面的 `<path>.html`，包含其 `lang`、`<title>`、描述、Open Graph 标题和描述、规范地址以及 `hreflang` 备用链接（`/de/console/api-keys` 对应 `de/console/api-keys.html`）；每种语言一个 `404.html`；`sitemap.xml`、`robots.txt` 和 `CNAME`。任何静态托管都能提供服务：对 `/console/api-keys` 的请求得到 `console/api-keys.html`，未知地址得到 `404.html`，它在框架中显示“未找到”。由维护者将其发布到 docs.kaeso.app。
+`pnpm --filter kaeso-docs build` 写出 `apps/docs/dist`：应用本身；每种语言中每个页面的 `<path>.html`（`/de/console/api-keys` 对应 `de/console/api-keys.html`）；每种语言一个标记为 `noindex` 的 `404.html`；列出每种语言的每个页面及其 `hreflang` 备用链接的 `sitemap.xml`；允许抓取全部内容并指向站点地图的 `robots.txt`；`site.webmanifest`、图标、`og.png` 和 `CNAME`。页面的 head 包含其 `lang`、`<title>` 和描述、规范地址、三种语言加 `x-default` 的 `hreflang` 备用链接、带 `og.png` 的 Open Graph 和 Twitter 标签、其 `og:locale` 以及作为备用的另外两种语言，还有结构化数据：每种语言的首页为 `WebSite`，其他页面为 `TechArticle`。站点地图不含 `lastmod`，因为构建并不知道页面上次修改的时间。任何静态托管都能提供服务：对 `/console/api-keys` 的请求得到 `console/api-keys.html`，未知地址得到 `404.html`，它在框架中显示“未找到”。由维护者将其发布到 docs.kaeso.app。
 
-`vite.config.ts` 做的事与控制台的相同：把从 `@logicplanes/kaeso-ui` 的导入改写为库中各组件的入口（`uiEntryImports`），并将主题脚本作为 `/theme-init.js` 提供；它还会添加 `theme-color` meta 标签，并预加载界面字体。构建最后运行 `scripts/budget.ts`，按[打包体积预算](../performance.md#文档站点)检查框架和每个页面；之后 `pnpm --filter kaeso-docs licenses:check`（`scripts/licenses.ts`）检查其中每个包的许可证。
+`vite.config.ts` 做的事与控制台的相同：把从 `@logicplanes/kaeso-ui` 的导入改写为库中各组件的入口（`uiEntryImports`），并将主题脚本作为 `/theme-init.js` 提供；它还会添加 `theme-color` meta 标签，并预加载界面字体。构建最后运行 `scripts/budget.ts`，按[打包体积预算](../performance.md#文档站点)检查框架和每个页面；再运行站点检查（`scripts/check-site.mjs`，见[网站](../releasing.md#网站)）；之后 `pnpm --filter kaeso-docs licenses:check`（`scripts/licenses.ts`）检查其中每个包的许可证。

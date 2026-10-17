@@ -28,11 +28,12 @@ export interface AppFrameProps {
   fill?: keyof typeof KAESO_APP_FRAME_VARIANTS.fill | undefined;
   brandHref?: string | undefined;
   brandLabel?: string | undefined;
+  phoneActions?: ReactNode | undefined;
   className?: string | undefined;
 }
 
 const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
-  { sidebar, children, corner, fill = "screen", brandHref, brandLabel, className },
+  { sidebar, children, corner, fill = "screen", brandHref, brandLabel, phoneActions, className },
   ref,
 ) {
   const [navOpen, setNavOpen] = useState(false);
@@ -51,7 +52,15 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
       >
         <SkipLink target={mainId} />
         <div className="hidden h-full lg:flex">{sidebar}</div>
-        <PhoneBar banner={fill === "screen"} href={brandHref} label={brandLabel} open={navOpen} onOpen={() => setNavOpen(true)} toggleRef={toggle} />
+        <PhoneBar
+          banner={fill === "screen"}
+          href={brandHref}
+          label={brandLabel}
+          actions={phoneActions}
+          open={navOpen}
+          onOpen={() => setNavOpen(true)}
+          toggleRef={toggle}
+        />
         <Main
           id={mainId}
           className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel outline-none safe-area-panel lg:my-8 lg:mr-8 lg:rounded-panel lg:shadow-panel"
@@ -93,6 +102,7 @@ function PhoneBar({
   banner,
   href,
   label,
+  actions,
   open,
   onOpen,
   toggleRef,
@@ -100,6 +110,7 @@ function PhoneBar({
   banner: boolean;
   href: string | undefined;
   label: string | undefined;
+  actions: ReactNode;
   open: boolean;
   onOpen: () => void;
   toggleRef: RefObject<HTMLButtonElement | null>;
@@ -110,15 +121,18 @@ function PhoneBar({
     <Bar data-phone-bar="" className="shrink-0 bg-panel safe-area-bar lg:hidden">
       <div className="mt-8 flex h-52 items-center justify-between pr-20 pl-28">
         <BrandWordmark href={href} label={label} />
-        <IconButton
-          ref={toggleRef}
-          icon={icons.sidebar}
-          aria-label={t("appFrame.openNavigation", "Open navigation")}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          tooltip={false}
-          onClick={onOpen}
-        />
+        <span className="flex items-center">
+          {actions}
+          <IconButton
+            ref={toggleRef}
+            icon={icons.sidebar}
+            aria-label={t("appFrame.openNavigation", "Open navigation")}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            tooltip={false}
+            onClick={onOpen}
+          />
+        </span>
       </div>
     </Bar>
   );

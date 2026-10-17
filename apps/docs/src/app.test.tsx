@@ -9,6 +9,12 @@ import { RouterLink } from "~/shell/router-link";
 
 afterEach(() => localStorage.clear());
 
+function phoneBar() {
+  const bar = document.querySelector<HTMLElement>("[data-phone-bar]");
+  if (!bar) throw new Error("the page has no phone bar");
+  return within(bar);
+}
+
 function app(path: string) {
   const history = createMemoryHistory({ initialEntries: [path] });
   const router = createDocsRouter(history);
@@ -96,12 +102,25 @@ describe("search", () => {
     const user = userEvent.setup();
     const router = app("/");
     await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
-    await user.click(screen.getByRole("button", { name: "Search" }));
+    await user.click(within(screen.getByRole("navigation", { name: "Documentation" })).getByRole("button", { name: "Search" }));
     const input = await screen.findByPlaceholderText("Search the documentation");
     await user.type(input, "rate");
     await user.click(await screen.findByRole("option", { name: /Rate limits/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/guides/keys-and-limits"));
     expect(router.state.location.hash).toBe("rate-limits");
+  });
+
+  it("opens from the phone bar, beside the navigation toggle, in the page's language", async () => {
+    const user = userEvent.setup();
+    app("/de/guides");
+    await screen.findByRole("heading", { level: 1, name: "Anleitungen" });
+    const bar = phoneBar();
+    expect(bar.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Suchen", "Navigation öffnen"]);
+    expect(bar.getByRole("button", { name: "Suchen" })).toHaveAttribute("aria-haspopup", "dialog");
+    await user.click(bar.getByRole("button", { name: "Suchen" }));
+    expect(await screen.findByPlaceholderText("Dokumentation durchsuchen")).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByPlaceholderText("Dokumentation durchsuchen")).toBeNull());
   });
 
   it("switches the language from the search", async () => {
@@ -118,7 +137,7 @@ describe("search", () => {
     const user = userEvent.setup();
     app("/");
     await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
-    await user.click(screen.getByRole("button", { name: "Search" }));
+    await user.click(phoneBar().getByRole("button", { name: "Search" }));
     await user.type(await screen.findByPlaceholderText("Search the documentation"), "dark");
     await user.click(await screen.findByRole("option", { name: "Use the dark theme" }));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));

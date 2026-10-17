@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { registry } from "~/lib/registry";
+import { sourceUrl } from "~/lib/release";
 import agents from "../../../../packages/ui/AGENTS.md?raw";
 
 export const GET: APIRoute = () => {
@@ -10,7 +11,7 @@ export const GET: APIRoute = () => {
     "> Kaeso's React component library on Base UI, Tailwind CSS v4 and the Kaeso tokens. Pure white and pure black, pill controls, a monochrome interface.",
     "",
     "- Registry: https://ui.kaeso.app/components.json",
-    "- Source: https://github.com/logicplanes/kaeso/tree/dev/packages/ui",
+    `- Source: ${sourceUrl("packages/ui")}`,
     "",
     rules.trim(),
     "",
