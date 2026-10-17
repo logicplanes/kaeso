@@ -212,6 +212,24 @@ expression: outcomes
     "param": null,
     "unsupported": "logprobs"
   },
+  "max-completion-tokens-legacy-null": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a haiku about the sea.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1"
+    },
+    "path": "/v1/messages"
+  },
   "max-tokens-length": {
     "body": {
       "max_tokens": 16,
@@ -220,6 +238,24 @@ expression: outcomes
           "content": [
             {
               "text": "Write a haiku about the sea, then explain it line by line.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4.1"
+    },
+    "path": "/v1/messages"
+  },
+  "max-tokens-null": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Write a haiku about the sea.",
               "type": "text"
             }
           ],

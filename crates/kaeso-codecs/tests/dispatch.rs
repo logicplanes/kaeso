@@ -211,6 +211,12 @@ fn cross_format_refusals_name_the_field_the_app_sent() {
         (C, chat(json!({"max_tokens": null})), A, "max_tokens"),
         (
             C,
+            chat(json!({"max_completion_tokens": 10, "max_tokens": null})),
+            R,
+            "max_completion_tokens",
+        ),
+        (
+            C,
             chat(json!({"max_completion_tokens": null})),
             A,
             "max_completion_tokens",
@@ -299,4 +305,25 @@ fn refusals_of_requests_built_in_code_name_the_target_field() {
     let err =
         dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req)).unwrap_err();
     assert_eq!(err.param.as_deref(), Some("max_tokens"));
+}
+
+#[test]
+fn a_chat_fixture_with_a_null_max_tokens_is_refused_for_anthropic_under_that_name() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures/openai_chat/requests/max-tokens-null.json");
+    let body = std::fs::read(path).unwrap();
+    let req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &body,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let err =
+        dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("max_tokens"));
+    assert_eq!(
+        err.message,
+        "Anthropic Messages requires an output limit. Set `max_tokens` for the request."
+    );
 }

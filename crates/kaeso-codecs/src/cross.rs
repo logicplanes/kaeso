@@ -240,7 +240,7 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
     let app = r.extras.origin.as_ref().map_or(target, |o| o.dialect);
     match (setting, app) {
         (Setting::OutputLimit, A) => "max_tokens",
-        (Setting::OutputLimit, C) => crate::openai_chat::output_limit_field(&r.extras),
+        (Setting::OutputLimit, C) => crate::openai_chat::output_limit_field(r),
         (Setting::OutputLimit, _) => "max_output_tokens",
         (Setting::StopSequences, A) => "stop_sequences",
         (Setting::StopSequences, _) => "stop",
