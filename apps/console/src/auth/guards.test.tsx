@@ -6,6 +6,9 @@ import { ssoStart } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { queryClient } from "~/query";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const CONTOSO = "org_contoso";

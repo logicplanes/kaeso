@@ -5,6 +5,9 @@ import { ALL_ORG_RIGHTS, ORG, membership, org, signedIn, whoAmI, withRights } fr
 import { OTHER_USER, THIRD_USER, hoverReason, member, notifications, roleGrant } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const PATH = `/settings/orgs/${ORG}/general`;
 

@@ -6,6 +6,9 @@ import { instanceOrg, instanceUser, member, orgUsage } from "~/test/fixtures/ins
 import { hoverReason, notifications, paged } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const OTHER = "org_contoso";
 const path = (org = ORG) => `/settings/instance/orgs/${org}`;

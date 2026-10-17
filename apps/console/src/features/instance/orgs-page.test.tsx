@@ -7,6 +7,9 @@ import { instanceOrg, instanceUser } from "~/test/fixtures/instance-account";
 import { hoverReason, notifications, paged } from "~/test/fixtures/org";
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { atFixtureTime } from "~/test/clock";
+
+atFixtureTime();
 
 const PATH = "/settings/instance/orgs";
 const NORTHWIND = instanceOrg();
