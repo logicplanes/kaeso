@@ -30,6 +30,7 @@ interface FakeAnimation {
   options: KeyframeAnimationOptions;
   cancel: () => void;
   cancelled: boolean;
+  currentTime: number;
   onfinish: (() => void) | null;
 }
 
@@ -67,6 +68,7 @@ function animate(keyframes: Keyframe[], options: KeyframeAnimationOptions) {
     keyframes,
     options,
     cancelled: false,
+    currentTime: 0,
     onfinish: null,
     cancel() {
       run.cancelled = true;
@@ -201,18 +203,34 @@ describe("useResizeMotion", () => {
     change({ h: 360 });
     expect(runs).toHaveLength(1);
   });
-  it("stops a running animation and settles when the size returns to where it is", () => {
+  it("lets a running animation carry on from where it is when a notification keeps its target", () => {
     const settled = vi.fn();
     render(<Box rows={["Name"]} onSettle={settled} />);
     observer().fire();
     change({ h: 400 });
+    runs[0]!.currentTime = 80;
     settled.mockClear();
-    reached = { w: 560, h: 400 };
+    reached = { w: 560, h: 340 };
     observer().fire();
     expect(runs[0]!.cancelled).toBe(true);
+    expect(runs[1]!.keyframes).toEqual(runs[0]!.keyframes);
+    expect(runs[1]!.currentTime).toBe(80);
+    expect(box()).toHaveAttribute("data-resizing");
+    expect(settled).not.toHaveBeenCalled();
+  });
+  it("measures on a render that changed the content, before the observer reports it, so no frame shows the new size first", () => {
+    const { rerender } = render(<Box rows={["Name"]} />);
+    observer().fire();
+    size = { w: 560, h: 420 };
+    rerender(<Box rows={["Name"]} />);
     expect(runs).toHaveLength(1);
-    expect(box()).not.toHaveAttribute("data-resizing");
-    expect(settled).toHaveBeenCalledOnce();
+    expect(runs[0]!.keyframes).toEqual([
+      { width: "560px", height: "300px" },
+      { width: "560px", height: "420px" },
+    ]);
+    observer().fire();
+    expect(runs).toHaveLength(2);
+    expect(runs[1]!.keyframes).toEqual(runs[0]!.keyframes);
   });
   it("watches rows that appear and measures again when one goes away", () => {
     const { rerender } = render(<Box rows={["Name"]} />);
