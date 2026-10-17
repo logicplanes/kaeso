@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:2e173a0056f3a2fed6c4c04d8f29efcad9185f5fc11de003aea2694cd88acb48",
+      "size": 4467,
+      "platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:323fa7db19cea08d25ab35ee8dbda5f1db4db35f5e199c5373658623dfe3bfb9",
+      "size": 1111,
+      "annotations": {
+        "vnd.docker.reference.digest": "sha256:2e173a0056f3a2fed6c4c04d8f29efcad9185f5fc11de003aea2694cd88acb48",
+        "vnd.docker.reference.type": "attestation-manifest"
+      },
+      "platform": {
+        "architecture": "unknown",
+        "os": "unknown"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:f8fa47df75b4f94aac296679e7c7049ba9a054e322e3aad9d910c64b518be5c4",
+      "size": 4467,
+      "platform": {
+        "architecture": "arm64",
+        "os": "linux"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:0cd3ddb2432bdffa2f9e46c4fb64c4879af0b9a26d834242ca1285b8f365ea26",
+      "size": 1111,
+      "annotations": {
+        "vnd.docker.reference.digest": "sha256:f8fa47df75b4f94aac296679e7c7049ba9a054e322e3aad9d910c64b518be5c4",
+        "vnd.docker.reference.type": "attestation-manifest"
+      },
+      "platform": {
+        "architecture": "unknown",
+        "os": "unknown"
+      }
+    }
+  ],
+  "annotations": {
+    "org.opencontainers.image.description": "The Kaeso gateway: one OpenAI- and Anthropic-compatible API for your applications, with keys, routing, limits and usage under your control.",
+    "org.opencontainers.image.documentation": "https://docs.kaeso.app",
+    "org.opencontainers.image.licenses": "MIT",
+    "org.opencontainers.image.source": "https://github.com/logicplanes/kaeso",
+    "org.opencontainers.image.title": "Kaeso gateway",
+    "org.opencontainers.image.url": "https://kaeso.app",
+    "org.opencontainers.image.version": "0.1.0"
+  }
+}

@@ -13,6 +13,8 @@ Rules for the Rust workspace: the gateway and KPP. The root [`AGENTS.md`](../AGE
 | `kaeso-upstream`  | Provider transport: reqwest clients, auth headers, base URLs, timeouts, streaming bodies, cancellation.                                                                                   |
 | `kaeso-crypto`    | Envelope encryption (AES-256-GCM), the master key ring, passwords, TOTP, redacting secret types.                                                                                          |
 | `kaeso-mail`      | SMTP via lettre; every email in one layout, in English, German and Simplified Chinese.                                                                                                    |
+| `kaeso-update`    | Updates without I/O: the release manifest, the update policy (channels, major versions, steps by hand) and the updater's protocol, shared by the gateway and the updater.                 |
+| `kaeso-updater`   | The optional updater binary: verifies a release's signed provenance and switches a Compose install to it, through a Docker socket proxy. The only crate that talks to Docker.         |
 | `kaeso-testkit`   | Test-only: development and test databases, the mock provider built from KPP's fixtures, a mock identity provider.                                                                        |
 | `kaeso-kpp`       | KPP's types, `validate()` and `required_capabilities()`. No codec logic, no I/O. Published on crates.io.                                                                                  |
 | `kaeso-codecs`    | One sans-IO codec per dialect, plus `dispatch`, `cross`, `continuity`, `keepalive`, `sse` and `testing`; the fixtures in `crates/kaeso-codecs/fixtures`. Published on crates.io.          |

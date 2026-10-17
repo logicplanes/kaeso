@@ -48,6 +48,10 @@ Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern e
 
 **System** zeigt Version und Zustand des Gateways, ob PostgreSQL, ClickHouse und Valkey laufen, den Puffer der Anfrageprotokolle und den Speicher. Die Seite prüft alle 10 Sekunden, **Jetzt prüfen** sofort.
 
+## Updates
+
+Die Version, die die Installation ausführt, das neueste Kaeso-Release mit den Notizen aller Releases seither und wann das Gateway zuletzt danach gesucht hat; eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen zeigt, dass ein neueres Release erschienen ist. **Jetzt prüfen** sucht sofort. Die Einstellungen der Seite schalten die Prüfung zweimal täglich ab, bieten Vorabversionen an und schalten Updates mit einem Klick über den [Updater](../self-hosting/upgrades.md#updates-mit-einem-klick) ein. Mit dem Updater aktualisiert **Auf … aktualisieren** die Installation nach einer Bestätigung und verfolgt jeden Schritt, bis Kaeso wieder da ist; ohne ihn, oder für ein Release, das Schritte von Hand verlangt, zeigt die Seite die Befehle und die Upgrade-Anleitung. Der Verlauf listet jedes Update mit dem, der es gestartet hat, und wie es endete.
+
 ## Audit-Log
 
 Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, mit Urheber und Zeitpunkt.

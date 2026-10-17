@@ -58,6 +58,7 @@ jobs:
               - fuzz/**
               - e2e/**
               - deploy/compose.dev.yaml
+              - deploy/compose.yaml
             node:
               - package.json
               - pnpm-lock.yaml
@@ -511,6 +512,16 @@ jobs:
             type=gha,scope=ci-gateway
             type=gha,scope=ci-mock
           cache-to: type=gha,mode=max,scope=ci-mock
+      - name: Updater image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/updater.Dockerfile
+          build-args: VERSION=${{ steps.version.outputs.gateway }}
+          tags: kaeso-updater:ci
+          outputs: type=docker,dest=${{ runner.temp }}/images/updater.tar
+          cache-from: type=gha,scope=ci-updater
+          cache-to: type=gha,mode=max,scope=ci-updater
       - name: Console image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
@@ -548,6 +559,7 @@ jobs:
       KAESO_TEST_GATEWAY_IMAGE: kaeso-gateway:ci
       KAESO_TEST_MOCK_IMAGE: kaeso-mock:ci
       KAESO_TEST_CONSOLE_IMAGE: kaeso-console:ci
+      KAESO_TEST_UPDATER_IMAGE: kaeso-updater:ci
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

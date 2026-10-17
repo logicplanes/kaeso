@@ -55,6 +55,7 @@ Das baut das Image des Gateways aus dem Checkout (`kaeso-dev-gateway`, aus `depl
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
 | `provider` | Eine nachgebildete OpenAI- und Anthropic-API, sodass kein echter Anbieter-Schlüssel nötig ist | Nur innerhalb des Stacks |
 | `idp` | Ein nachgebildeter OpenID-Connect-Anbieter für Single Sign-on | `http://idp.localhost:18091` |
+| `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Instanz-Einstellungen → Updates**; `POST /__scenario` mit `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) und `outcome` (`succeeded`, `rolled_back`) ändert, was sie antworten | `http://127.0.0.1:18092` |
 | `master-key` | Schreibt den Hauptschlüssel des Gateways vor dessen Start in ein Volume | |
 
 Der Stack ist das Compose-Projekt `kaeso-dev`, definiert in `deploy/compose.dev.yaml`. Die Rust-Tests brauchen nur die Datenbanken und Mailpit, die auch ohne Gateway starten:
@@ -86,13 +87,14 @@ Als `owner@example.com` anmelden, Instanz-Admin und Inhaber der Organisation, od
 ```mermaid
 flowchart TD
   accTitle: Der Entwicklungs-Stack
-  accDescr: Der Browser öffnet Vite auf localhost:3000; Vite leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter und liefert für alles andere die Konsole aus. Das Gateway ruft die Mock-Anbieter, Mailpit und den Mock-Identitätsanbieter auf.
+  accDescr: Der Browser öffnet Vite auf localhost:3000; Vite leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter und liefert für alles andere die Konsole aus. Das Gateway ruft die Mock-Anbieter, Mailpit, den Mock-Identitätsanbieter und die Mock-Releases mit dem Mock-Updater auf.
   browser[Browser] --> vite[Vite auf localhost:3000]
   vite -- /platform, /v1 --> gateway[Gateway auf 127.0.0.1:18080]
   vite -- alles andere --> console[Die Konsole]
   gateway --> provider[Mock-OpenAI und -Anthropic]
   gateway --> mail[Mailpit]
   gateway --> idp[Mock-Single-Sign-on]
+  gateway --> releases[Mock-Releases von GitHub und Mock-Updater]
 ```
 
 Die öffentliche URL des Gateways ist die Adresse des Entwicklungsservers. So ist das Sitzungscookie ein First-Party-Cookie, und der Browser sendet den `Origin`, den das Gateway erwartet. In Produktion liefert ein Reverse Proxy Konsole und Gateway auf die gleiche Weise unter einer Domain aus.

@@ -1,7 +1,8 @@
-import { useState, type SyntheticEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode, type SyntheticEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { SearchInput, Sidebar, Text } from "@logicplanes/kaeso-ui";
+import { Badge, SearchInput, Sidebar, Text } from "@logicplanes/kaeso-ui";
+import { updatesQuery } from "~/api/queries/instance";
 import { prefetchSettingsPath } from "~/api/queries/settings-prefetch";
 import { useMemberships, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
@@ -19,6 +20,9 @@ export function SettingsSidebar() {
   const orgRights = useOrgRights(org);
   const [query, setQuery] = useState("");
   const pathname = useLocation({ select: (l) => l.pathname });
+  const updates = useQuery({ ...updatesQuery, enabled: session.user.is_instance_admin });
+  const trailing = (p: SettingsPage) =>
+    p.id === "updates" && updates.data?.latest ? <Badge tone="info">{t("shell.settings.updateNew", "New")}</Badge> : undefined;
   const back = last ? placePath(last) : org ? orgPath(org) : "/";
   const match = (p: SettingsPage) => !query.trim() || p.label().toLowerCase().includes(query.trim().toLowerCase());
   const orgPages = org ? ORG_SETTINGS_PAGES.filter((p) => !p.right || orgRights.has(p.right)) : [];
@@ -34,7 +38,7 @@ export function SettingsSidebar() {
     ...(session.user.is_instance_admin ? INSTANCE_PAGES.filter(match).map((p) => `/settings/instance/${p.path}`) : []),
   ];
   const anyMatch = matches.length > 0;
-  const group = (label: string, base: string, pages: SettingsPage[]) => {
+  const group = (label: string, base: string, pages: SettingsPage[], extra?: (p: SettingsPage) => ReactNode) => {
     const shown = pages.filter(match);
     if (!shown.length) return null;
     return (
@@ -45,6 +49,7 @@ export function SettingsSidebar() {
             icon={p.icon}
             href={`${base}/${p.path}`}
             active={pathname === `${base}/${p.path}` || pathname.startsWith(`${base}/${p.path}/`)}
+            trailing={extra?.(p)}
           >
             {p.label()}
           </Sidebar.Item>
@@ -71,7 +76,7 @@ export function SettingsSidebar() {
         </div>
         {group(t("shell.account", "Account"), "/settings/account", ACCOUNT_PAGES)}
         {org && group(orgName, `/settings/orgs/${org}`, orgPages)}
-        {session.user.is_instance_admin && group(t("shell.instance", "Instance"), "/settings/instance", INSTANCE_PAGES)}
+        {session.user.is_instance_admin && group(t("shell.instance", "Instance"), "/settings/instance", INSTANCE_PAGES, trailing)}
         {query.trim() && !anyMatch && (
           <Text variant="small" tone="secondary" className="mx-12">
             {t("shell.noSettingsMatch", "No settings match")}

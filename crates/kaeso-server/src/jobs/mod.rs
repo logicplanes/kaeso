@@ -2,6 +2,7 @@ pub mod cleanup;
 pub mod key_expiry;
 pub mod models_dev;
 pub mod org_deletion;
+pub mod update_check;
 
 use std::time::Duration;
 
@@ -60,6 +61,12 @@ pub fn all() -> Vec<Job> {
             every: Duration::from_secs(300),
             lock: 4,
             run: |s| Box::pin(models_dev::run(s)),
+        },
+        Job {
+            name: "update_check",
+            every: Duration::from_secs(300),
+            lock: 6,
+            run: |s| Box::pin(update_check::run(s)),
         },
     ]
 }

@@ -30,6 +30,7 @@ Four connections hold the parts together:
 | [Console](console.md) | How the web console reads data, draws pages, loads code and shows errors |
 | [Documentation site](docs-site.md) | How the Markdown pages become docs.kaeso.app |
 | [Emails](emails.md) | How the gateway builds the emails it sends |
+| [Updates](updates.md) | How the gateway learns about releases and how the updater applies one |
 | [KPP internals](../kpp/index.md) | The canonical format, the codecs and every wire mapping |
 
 ## The Rust workspace
@@ -43,6 +44,8 @@ Four connections hold the parts together:
 | `kaeso-upstream` | Provider transport: HTTP clients, auth headers, base URLs, timeouts, streaming bodies and cancellation. |
 | `kaeso-crypto` | Envelope encryption (AES-256-GCM), the master key ring, passwords, TOTP and the redacting secret types. |
 | `kaeso-mail` | SMTP delivery and every email in one layout, in three languages ([emails](emails.md)). |
+| `kaeso-update` | Updates without I/O: the release manifest, the update policy (channels, major versions, steps by hand) and the updater's protocol, shared by the gateway and the updater ([updates](updates.md)). |
+| `kaeso-updater` | The optional updater: verifies a release's signatures and switches a Compose install to it; the only part of Kaeso that talks to Docker ([updates](updates.md)). |
 | `kaeso-testkit` | Test-only: development and test databases, the mock provider built from KPP's fixtures, and a mock identity provider. |
 | `kaeso-kpp`, `kaeso-codecs` | KPP's types and codecs, published to crates.io ([KPP internals](../kpp/index.md)). |
 | `kpp-conformance` | A server that hands KPP's encoder output to the official Python SDKs for the [conformance suite](../testing.md#sdk-conformance). |

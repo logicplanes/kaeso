@@ -32,5 +32,6 @@ export const INSTANCE_PAGES: SettingsPage[] = [
   { id: "settings", label: () => t("common.settings", "Settings"), icon: icons.settings, path: "settings" },
   { id: "model-sources", label: () => t("shell.settings.modelSources", "Model sources"), icon: icons.model, path: "model-sources" },
   { id: "system", label: () => t("shell.settings.system", "System"), icon: icons.gateway, path: "system" },
+  { id: "updates", label: () => t("shell.settings.updates", "Updates"), icon: icons.update, path: "updates" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log" },
 ];

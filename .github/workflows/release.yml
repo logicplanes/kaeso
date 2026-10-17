@@ -7,6 +7,11 @@ on:
         description: Version to release, for example 0.2.0 or 0.2.0-rc.1
         required: true
         type: string
+      manual:
+        description: Needs steps by hand, so installs never apply it in one click
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -303,7 +308,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        image: [gateway, console]
+        image: [gateway, console, updater]
         arch: [amd64, arm64]
         include:
           - arch: amd64
@@ -362,7 +367,7 @@ jobs:
     needs: [validate, image]
     strategy:
       matrix:
-        image: [gateway, console]
+        image: [gateway, console, updater]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
@@ -414,12 +419,20 @@ jobs:
           docker buildx imagetools create "${annotations[@]}" "${tags[@]}" "${sources[@]}"
           digest="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' | jq -r .digest)"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/published"
+          echo "$digest" > "$RUNNER_TEMP/published/${IMAGE##*/kaeso-}"
           echo "Published \`$IMAGE:$VERSION\` ($digest)." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: published-${{ matrix.image }}
+          path: ${{ runner.temp }}/published/*
+          if-no-files-found: error
+          retention-days: 1
 
   public-images:
     name: Anonymous pull
@@ -430,14 +443,14 @@ jobs:
     env:
       VERSION: ${{ needs.validate.outputs.version }}
     steps:
-      - name: Pull both images for both platforms without signing in
+      - name: Pull every image for both platforms without signing in
         run: |
           set -euo pipefail
           export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"
           mkdir -p "$DOCKER_CONFIG"
           echo '{}' > "$DOCKER_CONFIG/config.json"
           failed=0
-          for image in kaeso-gateway kaeso-console; do
+          for image in kaeso-gateway kaeso-console kaeso-updater; do
             ref="ghcr.io/logicplanes/$image:$VERSION"
             for platform in linux/amd64 linux/arm64; do
               if out="$(docker pull --quiet --platform "$platform" "$ref" 2>&1)"; then
@@ -574,18 +587,27 @@ jobs:
     environment: release
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       VERSION: ${{ needs.validate.outputs.version }}
       PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+      MANUAL: ${{ inputs.manual }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: v${{ needs.validate.outputs.version }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: published-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/published
       - name: Collect the assets
         run: |
           set -euo pipefail
@@ -599,7 +621,17 @@ jobs:
           for crate in kaeso-kpp kaeso-codecs; do
             curl -fsSL --retry 5 --retry-all-errors -o "$assets/$crate-$VERSION.crate" "https://static.crates.io/crates/$crate/$crate-$VERSION.crate"
           done
+          previous="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname --merged HEAD | grep -vxF "v$VERSION" | head -n 1 || true)"
+          if [[ -n "$previous" ]]; then git show "$previous:deploy/compose.yaml" > "$RUNNER_TEMP/previous-compose.yaml"; fi
+          node scripts/release-manifest.mjs --version "$VERSION" --commit "$(git rev-parse HEAD)" --digests "$RUNNER_TEMP/published" \
+            --compose deploy/compose.yaml --manual "$MANUAL" ${previous:+--previous "$RUNNER_TEMP/previous-compose.yaml"} > "$assets/release.json"
+          if [[ "$(jq -r .manual "$assets/release.json")" == true ]]; then
+            echo "Installs update to $VERSION by hand: it was marked so, or it changes compose.yaml beyond the image versions." >> "$GITHUB_STEP_SUMMARY"
+          fi
           ls -l "$assets"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: ${{ runner.temp }}/assets/release.json
       - name: Create the release
         run: |
           set -euo pipefail

@@ -9,6 +9,8 @@ import type {
   ProjectView,
   SettingsView,
   SystemView,
+  UpdateJobView,
+  UpdatesView,
 } from "../generated/types";
 import { allPages, nextPageParam } from "../paging";
 
@@ -92,3 +94,20 @@ export const systemQuery = queryOptions({
   queryKey: ["instance", "system"],
   queryFn: async (): Promise<SystemView> => data(await api.GET("/platform/v1/instance/system")),
 });
+
+export const updatesQuery = queryOptions({
+  queryKey: ["instance", "updates"],
+  queryFn: async (): Promise<UpdatesView> => data(await api.GET("/platform/v1/instance/updates")),
+  staleTime: 60_000,
+});
+
+export const updateJobsQuery = queryOptions({
+  queryKey: ["instance", "updates", "jobs"],
+  queryFn: async (): Promise<UpdateJobView[]> => data(await api.GET("/platform/v1/instance/updates/jobs", { params: { query: { limit: 20 } } })).data,
+});
+
+export const updateJobQuery = (update: string) =>
+  queryOptions({
+    queryKey: ["instance", "updates", "jobs", update],
+    queryFn: async (): Promise<UpdateJobView> => data(await api.GET("/platform/v1/instance/updates/jobs/{update}", { params: { path: { update } } })),
+  });

@@ -22,6 +22,7 @@ kaeso-server = { path = "crates/kaeso-server" }
 kaeso-store = { path = "crates/kaeso-store" }
 kaeso-testkit = { path = "crates/kaeso-testkit" }
 kaeso-upstream = { path = "crates/kaeso-upstream" }
+kaeso-update = { path = "crates/kaeso-update" }
 
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal", "io-util", "fs"] }
 axum = { version = "0.8.9", default-features = false, features = ["http1", "http2", "json", "query", "tokio", "tower-log", "matched-path", "original-uri"] }
@@ -79,6 +80,10 @@ ipnet = { version = "2.12", features = ["serde"] }
 indexmap = { version = "2.14", features = ["serde"] }
 moka = { version = "0.12", features = ["future"] }
 toml = "0.9"
+semver = { version = "1.0", features = ["serde"] }
+sigstore = { version = "0.14", default-features = false, features = ["verify"] }
+rustls-pki-types = "1.15"
+aws-lc-rs = "1.18"
 percent-encoding = "2.3"
 
 thiserror = "2"

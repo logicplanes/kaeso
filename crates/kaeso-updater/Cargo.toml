@@ -1,0 +1,41 @@
+[package]
+name = "kaeso-updater"
+description = "The Kaeso updater: the optional service that verifies a release and switches a Compose install to it, the only part of Kaeso that talks to Docker."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "kaeso-updater"
+path = "src/main.rs"
+
+[dependencies]
+kaeso-update.workspace = true
+axum.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+secrecy.workspace = true
+subtle.workspace = true
+sha2.workspace = true
+base64.workspace = true
+url.workspace = true
+time.workspace = true
+futures.workspace = true
+sigstore.workspace = true
+rustls-pki-types.workspace = true
+aws-lc-rs.workspace = true
+
+[dev-dependencies]
+tower.workspace = true
+
+[lints]
+workspace = true

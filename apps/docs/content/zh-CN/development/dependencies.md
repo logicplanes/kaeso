@@ -64,6 +64,20 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 | `http-body-util`（仅测试） | 在服务器的测试中读取响应体 | MIT |
 | `rsa`、`chrono` | `kaeso-testkit` 中的模拟身份提供方，仅用于测试 | MIT OR Apache-2.0 |
 
+### 更新器
+
+更新器（`crates/kaeso-updater`）与网关一样使用 `tokio`、`axum`、`reqwest`、`serde`、`serde_json`、`tracing`、`secrecy`、`subtle`、`sha2`、`base64`、`url`、`time`、`futures` 和 `thiserror`，另外还使用：
+
+| Crate | 用途 | 许可证 |
+| --- | --- | --- |
+| `kaeso-update` | 版本清单、更新规则和更新器协议，来自同一工作区；网关也使用它 | MIT |
+| `semver` | 在网关和更新器中比较版本号 | MIT OR Apache-2.0 |
+| `sigstore`（仅 `verify` 特性） | 校验发布工作流的构建来源证明：到 Sigstore 证书颁发机构的证书链、证书透明度证明、工作流身份、DSSE 签名和透明日志条目 | Apache-2.0 |
+| `rustls-pki-types` | 供 `sigstore` 使用的信任根证书 | MIT OR Apache-2.0 |
+| `aws-lc-rs` | 用 Rekor 密钥校验透明日志的签名条目时间戳（`sigstore` 不做这一步） | ISC AND (Apache-2.0 OR ISC) |
+
+自托管包在 `updater` 配置文件中运行 [`wollomatic/socket-proxy`](https://github.com/wollomatic/socket-proxy)（MIT，部分为 Apache-2.0）作为更新器的 Docker 套接字代理。
+
 ### KPP
 
 `kaeso-kpp` 和 `kaeso-codecs` 的库代码只能使用 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`；其他任何依赖都需要维护者同意，并在这里添加一行。目前使用的有：

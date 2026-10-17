@@ -87,6 +87,8 @@
   "shell.settings.security": "安全",
   "shell.settings.sessions": "会话",
   "shell.settings.system": "系统",
+  "shell.settings.updateNew": "新",
+  "shell.settings.updates": "更新",
   "shell.settings.users": "用户",
   "shell.shortcut.auditLog": "前往审计日志",
   "shell.shortcut.close": "关闭对话框或面板",

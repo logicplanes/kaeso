@@ -1,0 +1,620 @@
+use std::sync::LazyLock;
+use std::time::Duration;
+
+use kaeso_core::id::UpdateId;
+use kaeso_store::StoreError;
+use kaeso_store::pg::updates::{self, Choices, Finish, JobRow, ReleaseRow, Settings};
+use kaeso_store::pg::{self, locks};
+use kaeso_update::Version;
+use kaeso_update::manifest::{self, Manifest};
+use kaeso_update::policy::{self, Channel, Plan, Release};
+use kaeso_update::protocol::{JobState, Reason};
+use reqwest::StatusCode;
+use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, RETRY_AFTER};
+use serde::Deserialize;
+use serde_json::json;
+use time::OffsetDateTime;
+
+use crate::services::updater::{self, UpdaterError};
+use crate::state::AppState;
+
+pub const CHECK_INTERVAL: time::Duration = time::Duration::hours(12);
+pub const RETRY_INTERVAL: time::Duration = time::Duration::hours(1);
+pub const LOST_AFTER: time::Duration = time::Duration::hours(1);
+const JITTER_SECONDS: u32 = 3600;
+const PER_PAGE: &str = "50";
+const MAX_LIST: usize = 4 << 20;
+const MAX_NOTES: usize = 64 << 10;
+
+static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .connect_timeout(Duration::from_secs(10))
+        .user_agent(concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .inspect_err(|e| tracing::error!(error = %e, "cannot build the release client"))
+        .ok()
+});
+
+pub fn running() -> Version {
+    Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_else(|_| Version::new(0, 0, 0))
+}
+
+pub fn defaults(config: &crate::config::Config) -> Choices {
+    let u = &config.updates;
+    Choices {
+        check_enabled: u.check,
+        channel: u.channel.as_str().to_owned(),
+        apply_enabled: u.apply,
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Known {
+    pub version: Version,
+    pub row: ReleaseRow,
+    pub manifest: Option<Manifest>,
+}
+
+impl Release for Known {
+    fn version(&self) -> &Version {
+        &self.version
+    }
+
+    fn needs_manual_steps(&self) -> bool {
+        self.manifest.as_ref().is_some_and(|m| m.manual)
+    }
+
+    fn prepared(&self) -> bool {
+        self.manifest.is_some()
+    }
+}
+
+pub fn known(rows: Vec<ReleaseRow>) -> Vec<Known> {
+    rows.into_iter()
+        .filter_map(|row| {
+            let version = Version::parse(&row.version).ok()?;
+            let manifest = row
+                .manifest
+                .as_ref()
+                .and_then(|m| serde_json::from_value::<Manifest>(m.clone()).ok());
+            Some(Known {
+                version,
+                row,
+                manifest,
+            })
+        })
+        .collect()
+}
+
+pub fn channel(settings: &Settings) -> Channel {
+    Channel::parse(&settings.channel).unwrap_or(Channel::Stable)
+}
+
+pub fn plan<'a>(settings: &Settings, releases: &'a [Known]) -> Option<Plan<'a, Known>> {
+    policy::plan(&running(), channel(settings), releases)
+}
+
+#[derive(Debug, thiserror::Error)]
+enum CheckError {
+    #[error("{0} cannot be reached ({1})")]
+    Unreachable(String, &'static str),
+    #[error("{0} refused more requests for now")]
+    RateLimited(String, Option<time::Duration>),
+    #[error("{0} answered {1}")]
+    Status(String, u16),
+    #[error("the release list from {0} does not parse: {1}")]
+    Parse(String, String),
+    #[error("the release list from {0} is larger than 4 MiB")]
+    TooLarge(String),
+    #[error("no HTTP client")]
+    Client,
+}
+
+impl CheckError {
+    fn retry_after(&self) -> Option<time::Duration> {
+        match self {
+            CheckError::RateLimited(_, after) => *after,
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubRelease {
+    tag_name: String,
+    #[serde(default)]
+    draft: bool,
+    #[serde(default)]
+    prerelease: bool,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    published_at: Option<OffsetDateTime>,
+    #[serde(default)]
+    body: Option<String>,
+    html_url: String,
+    #[serde(default)]
+    assets: Vec<GitHubAsset>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubAsset {
+    name: String,
+    browser_download_url: String,
+}
+
+enum Fetched {
+    NotModified,
+    Releases {
+        etag: Option<String>,
+        releases: Vec<GitHubRelease>,
+    },
+}
+
+fn host_of(url: &url::Url) -> String {
+    url.host_str().unwrap_or("the release server").to_owned()
+}
+
+fn kind_of(e: &reqwest::Error) -> &'static str {
+    if e.is_timeout() {
+        "timed out"
+    } else if e.is_connect() {
+        "no connection"
+    } else {
+        "request failed"
+    }
+}
+
+async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, CheckError> {
+    let url = &state.config.updates.releases_url;
+    let host = host_of(url);
+    let client = HTTP.as_ref().ok_or(CheckError::Client)?;
+    let mut paged = url.clone();
+    paged.query_pairs_mut().append_pair("per_page", PER_PAGE);
+    let mut req = client
+        .get(paged)
+        .header(ACCEPT, "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28");
+    if let Some(tag) = etag {
+        req = req.header(IF_NONE_MATCH, tag);
+    }
+    let mut resp = req
+        .send()
+        .await
+        .map_err(|e| CheckError::Unreachable(host.clone(), kind_of(&e)))?;
+    let status = resp.status();
+    if status == StatusCode::NOT_MODIFIED {
+        return Ok(Fetched::NotModified);
+    }
+    if status == StatusCode::TOO_MANY_REQUESTS || status == StatusCode::FORBIDDEN {
+        return Err(CheckError::RateLimited(
+            host,
+            rate_limit_wait(resp.headers(), state.clock.now()),
+        ));
+    }
+    if !status.is_success() {
+        return Err(CheckError::Status(host, status.as_u16()));
+    }
+    let etag = resp
+        .headers()
+        .get(ETAG)
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_owned);
+    let mut body = Vec::new();
+    while let Some(chunk) = resp
+        .chunk()
+        .await
+        .map_err(|e| CheckError::Unreachable(host.clone(), kind_of(&e)))?
+    {
+        if body.len() + chunk.len() > MAX_LIST {
+            return Err(CheckError::TooLarge(host));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let releases =
+        serde_json::from_slice(&body).map_err(|e| CheckError::Parse(host, e.to_string()))?;
+    Ok(Fetched::Releases { etag, releases })
+}
+
+fn rate_limit_wait(
+    headers: &reqwest::header::HeaderMap,
+    now: OffsetDateTime,
+) -> Option<time::Duration> {
+    let number = |name| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.trim().parse::<i64>().ok())
+    };
+    if let Some(seconds) = number(RETRY_AFTER.as_str()) {
+        return Some(time::Duration::seconds(seconds.max(0)));
+    }
+    number("x-ratelimit-reset")
+        .map(|reset| time::Duration::seconds((reset - now.unix_timestamp()).max(0)))
+}
+
+async fn fetch_manifest(url: &str, version: &Version) -> Result<Manifest, String> {
+    let client = HTTP.as_ref().ok_or_else(|| "no HTTP client".to_owned())?;
+    let mut resp = client
+        .get(url)
+        .header(ACCEPT, "application/octet-stream")
+        .send()
+        .await
+        .map_err(|e| format!("the release manifest cannot be fetched ({})", kind_of(&e)))?;
+    if !resp.status().is_success() {
+        return Err(format!(
+            "the release manifest answered {}",
+            resp.status().as_u16()
+        ));
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = resp
+        .chunk()
+        .await
+        .map_err(|e| format!("the release manifest cannot be fetched ({})", kind_of(&e)))?
+    {
+        if body.len() + chunk.len() > manifest::MAX_BYTES {
+            return Err(manifest::ManifestError::TooLarge.to_string());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Manifest::parse(&body, version).map_err(|e| e.to_string())
+}
+
+fn notes(body: Option<String>) -> String {
+    let mut text = body.unwrap_or_default();
+    if text.len() > MAX_NOTES {
+        let mut end = MAX_NOTES;
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
+        text.truncate(end);
+    }
+    text
+}
+
+async fn rows_of(releases: Vec<GitHubRelease>, previous: &[Known]) -> Vec<ReleaseRow> {
+    let current = running();
+    let mut rows = Vec::new();
+    for r in releases.into_iter().filter(|r| !r.draft) {
+        let Some(version) = policy::parse_tag(&r.tag_name) else {
+            continue;
+        };
+        if rows
+            .iter()
+            .any(|row: &ReleaseRow| row.version == version.to_string())
+        {
+            continue;
+        }
+        let asset = r
+            .assets
+            .iter()
+            .find(|a| a.name == manifest::ASSET)
+            .map(|a| a.browser_download_url.clone());
+        let kept = previous
+            .iter()
+            .find(|k| k.version == version && k.manifest.is_some());
+        let (manifest, manifest_error) = match (kept, asset) {
+            (Some(k), _) => (k.row.manifest.clone(), None),
+            (None, _) if version <= current => (None, None),
+            (None, None) => (None, Some("the release has no release manifest".to_owned())),
+            (None, Some(url)) => match fetch_manifest(&url, &version).await {
+                Ok(m) => (serde_json::to_value(m).ok(), None),
+                Err(e) => (None, Some(e)),
+            },
+        };
+        rows.push(ReleaseRow {
+            version: version.to_string(),
+            published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+            prerelease: r.prerelease || !version.pre.is_empty(),
+            notes: notes(r.body),
+            url: r.html_url,
+            manifest,
+            manifest_error,
+        });
+    }
+    rows
+}
+
+fn jitter() -> time::Duration {
+    let random = u32::from_le_bytes(kaeso_crypto::random_bytes::<4>());
+    time::Duration::seconds(i64::from(random % JITTER_SECONDS))
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Checked {
+    Unchanged,
+    Changed,
+    Failed(String),
+}
+
+pub async fn check(state: &AppState) -> Result<Checked, StoreError> {
+    let st = state.clone();
+    pg::with_advisory_lock(&state.pg, locks::UPDATE_CHECK, || async move {
+        check_locked(&st).await
+    })
+    .await
+}
+
+async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
+    let settings = updates::settings(&state.pg).await?;
+    let previous = known(updates::releases(&state.pg).await?);
+    let current = running();
+    let incomplete = previous
+        .iter()
+        .any(|k| k.version > current && k.manifest.is_none());
+    let etag = settings
+        .etag
+        .as_deref()
+        .filter(|_| !previous.is_empty() && !incomplete);
+    let fetched = fetch_list(state, etag).await;
+    let now = state.clock.now();
+    match fetched {
+        Ok(Fetched::NotModified) => {
+            updates::record_check(&state.pg, now, None, None, now + CHECK_INTERVAL + jitter())
+                .await?;
+            Ok(Checked::Unchanged)
+        }
+        Ok(Fetched::Releases { etag, releases }) => {
+            let rows = rows_of(releases, &previous).await;
+            let mut tx = state.pg.begin().await?;
+            updates::replace_releases(&mut tx, &rows, etag.as_deref()).await?;
+            updates::record_check(&mut *tx, now, None, None, now + CHECK_INTERVAL + jitter())
+                .await?;
+            tx.commit().await?;
+            tracing::info!(releases = rows.len(), "fetched the Kaeso release list");
+            Ok(Checked::Changed)
+        }
+        Err(e) => {
+            let message = e.to_string();
+            if settings.last_error.as_deref() == Some(message.as_str()) {
+                tracing::debug!(error = %message, "the update check failed again");
+            } else {
+                tracing::warn!(error = %message, "the update check failed; it tries again later");
+            }
+            let wait = e
+                .retry_after()
+                .map_or(RETRY_INTERVAL, |w| w.max(RETRY_INTERVAL));
+            updates::record_check(&state.pg, now, None, Some(&message), now + wait + jitter())
+                .await?;
+            Ok(Checked::Failed(message))
+        }
+    }
+}
+
+pub async fn due(state: &AppState) -> Result<bool, StoreError> {
+    let settings = updates::settings(&state.pg).await?;
+    Ok(settings.check_enabled
+        && settings
+            .next_check_at
+            .is_none_or(|at| state.clock.now() >= at))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UpdaterState {
+    NotInstalled,
+    Unreachable,
+    Ready,
+    Outdated,
+}
+
+impl UpdaterState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            UpdaterState::NotInstalled => "not_installed",
+            UpdaterState::Unreachable => "unreachable",
+            UpdaterState::Ready => "ready",
+            UpdaterState::Outdated => "outdated",
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct UpdaterProbe {
+    pub state: UpdaterState,
+    pub version: Option<String>,
+}
+
+pub async fn probe(state: &AppState, required: Option<u32>) -> UpdaterProbe {
+    let Some(client) = updater::of(state) else {
+        return UpdaterProbe {
+            state: UpdaterState::NotInstalled,
+            version: None,
+        };
+    };
+    match client.status().await {
+        Ok(status) => {
+            let speaks = updater::speaks(&status, required.unwrap_or(0));
+            UpdaterProbe {
+                state: if speaks && status.docker {
+                    UpdaterState::Ready
+                } else if speaks {
+                    UpdaterState::Unreachable
+                } else {
+                    UpdaterState::Outdated
+                },
+                version: Some(status.version),
+            }
+        }
+        Err(e) => {
+            tracing::debug!(error = %e, "the updater does not answer");
+            UpdaterProbe {
+                state: UpdaterState::Unreachable,
+                version: None,
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Outcome<'a> {
+    pub state: JobState,
+    pub step: &'a str,
+    pub reason: Option<Reason>,
+    pub detail: Option<&'a str>,
+}
+
+pub async fn finish(
+    state: &AppState,
+    job: &JobRow,
+    outcome: &Outcome<'_>,
+) -> Result<bool, StoreError> {
+    let now = state.clock.now();
+    let mut tx = state.pg.begin().await?;
+    let finished = updates::finish_job(
+        &mut *tx,
+        job.id,
+        &Finish {
+            state: outcome.state.as_str(),
+            step: outcome.step,
+            reason: outcome.reason.map(Reason::as_str),
+            detail: outcome.detail,
+            at: now,
+        },
+    )
+    .await?;
+    if finished {
+        crate::platform::audit::system_event(
+            &mut tx,
+            None,
+            "instance.update_finish",
+            Some(("update", UpdateId::from_uuid(job.id).to_string())),
+            Some(json!({ "version": job.from_version })),
+            Some(json!({
+                "version": job.to_version,
+                "result": outcome.state.as_str(),
+                "reason": outcome.reason.map(Reason::as_str),
+            })),
+            now,
+        )
+        .await?;
+    }
+    tx.commit().await?;
+    if finished {
+        tracing::info!(
+            from = %job.from_version,
+            to = %job.to_version,
+            result = outcome.state.as_str(),
+            reason = outcome.reason.map(Reason::as_str),
+            "update finished"
+        );
+    }
+    Ok(finished)
+}
+
+pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreError> {
+    if job.state != JobState::Running.as_str() {
+        return Ok(job);
+    }
+    let id = UpdateId::from_uuid(job.id).to_string();
+    let seen = match updater::of(state) {
+        None => Err(UpdaterError::Unreachable("not configured".into())),
+        Some(client) => client.job(&id).await,
+    };
+    match seen {
+        Ok(Some(remote)) if remote.state.is_finished() => {
+            finish(
+                state,
+                &job,
+                &Outcome {
+                    state: remote.state,
+                    step: remote.step.as_str(),
+                    reason: remote.reason,
+                    detail: remote.detail.as_deref(),
+                },
+            )
+            .await?;
+        }
+        Ok(Some(remote)) => {
+            if remote.step.as_str() != job.step {
+                updates::set_step(&state.pg, job.id, remote.step.as_str()).await?;
+            }
+        }
+        Ok(None) => {
+            finish(
+                state,
+                &job,
+                &Outcome {
+                    state: JobState::Failed,
+                    step: &job.step,
+                    reason: Some(Reason::Interrupted),
+                    detail: Some("the updater has no record of this update"),
+                },
+            )
+            .await?;
+        }
+        Err(e) if state.clock.now() - job.started_at > LOST_AFTER => {
+            tracing::warn!(error = %e, "the updater lost touch with a running update");
+            finish(
+                state,
+                &job,
+                &Outcome {
+                    state: JobState::Failed,
+                    step: &job.step,
+                    reason: Some(Reason::UpdaterUnreachable),
+                    detail: Some("the updater did not answer for an hour"),
+                },
+            )
+            .await?;
+        }
+        Err(e) => tracing::debug!(error = %e, "the updater does not answer about a running update"),
+    }
+    Ok(updates::job(&state.pg, job.id).await?.unwrap_or(job))
+}
+
+pub async fn reconcile_running(state: &AppState) -> Result<Option<JobRow>, StoreError> {
+    match updates::running_job(&state.pg).await? {
+        Some(job) => reconcile(state, job).await.map(Some),
+        None => Ok(None),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use reqwest::header::{HeaderMap, HeaderValue};
+
+    #[test]
+    fn notes_are_cut_at_64_kib_on_a_character_boundary() {
+        let long = "ä".repeat(MAX_NOTES);
+        let cut = notes(Some(long));
+        assert!(cut.len() <= MAX_NOTES);
+        assert!(cut.chars().all(|c| c == 'ä'));
+        assert_eq!(notes(None), "");
+    }
+
+    #[test]
+    fn rate_limits_wait_for_retry_after_or_the_reset_time() {
+        let now = OffsetDateTime::from_unix_timestamp(1_000).unwrap();
+        let mut h = HeaderMap::new();
+        assert_eq!(rate_limit_wait(&h, now), None);
+        h.insert("x-ratelimit-reset", HeaderValue::from_static("4600"));
+        assert_eq!(
+            rate_limit_wait(&h, now),
+            Some(time::Duration::seconds(3600))
+        );
+        h.insert(RETRY_AFTER, HeaderValue::from_static("120"));
+        assert_eq!(rate_limit_wait(&h, now), Some(time::Duration::seconds(120)));
+    }
+
+    #[test]
+    fn the_jitter_stays_within_an_hour() {
+        for _ in 0..100 {
+            let j = jitter();
+            assert!(j >= time::Duration::ZERO && j < time::Duration::hours(1));
+        }
+    }
+
+    #[test]
+    fn updater_states_have_stable_names() {
+        let names: Vec<&str> = [
+            UpdaterState::NotInstalled,
+            UpdaterState::Unreachable,
+            UpdaterState::Ready,
+            UpdaterState::Outdated,
+        ]
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+        assert_eq!(names, ["not_installed", "unreachable", "ready", "outdated"]);
+    }
+}
