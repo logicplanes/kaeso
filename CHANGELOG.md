@@ -59,6 +59,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - A provider that answers 404 to `GET /v1/models/{model}`, such as an OpenAI-compatible service without that endpoint, no longer makes every model **Unavailable**: Kaeso marks a model unavailable only when the provider's model listing answers and lacks it, and otherwise passes the provider's 404 through, keeps the availability and reports the check as `inconclusive`.
 - A single sign-on refused by the identity provider, such as with `access_denied`, ends its sign-in flow and returns to the sign-in page with the page asked for in `next`, as other refusals do; a refused sign-in that began from an organization's sign-in link or button also keeps `org`, so the page shows that organization's button again beside the reason.
 - Requests refused before they reach a model in another API format name the field the app sent, in `param` and in the output limit messages, instead of the target's: `max_completion_tokens` or `max_tokens` rather than `max_output_tokens` for an OpenAI Chat Completions app on an OpenAI Responses model, `max_tokens` and `stop_sequences` for Anthropic Messages apps, and `response_format`, `text.format`, `reasoning_effort`, `reasoning.effort` or `thinking` rather than `output` and `reasoning`.
+- The bundled Caddy has a health check, so `docker compose up -d --wait` returns only once Caddy serves too; the guides say that the certificate for a new domain may still be on its way then.
 
 ### Security
 

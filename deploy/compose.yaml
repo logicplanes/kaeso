@@ -20,6 +20,12 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2080/"]
+      interval: 5s
+      timeout: 3s
+      start_period: 30s
+      retries: 6
     depends_on:
       gateway:
         condition: service_healthy
@@ -140,6 +146,11 @@ configs:
       	handle {
       		reverse_proxy console:3000
       	}
+      }
+
+      http://127.0.0.1:2080 {
+      	bind 127.0.0.1
+      	respond "ok"
       }
 
 secrets:

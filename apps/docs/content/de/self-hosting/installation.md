@@ -61,13 +61,13 @@ docker compose up -d --wait
 docker compose exec gateway kaeso setup-link
 ```
 
-Mit `--wait` kehrt `docker compose up` zurück, sobald jeder Dienst läuft und jeder Dienst mit Healthcheck, also alle außer Caddy, healthy meldet, und schlägt fehl, wenn einer das nicht tut. Ohne `--wait` kehrt Compose zurück, sobald es die Container gestartet hat: Mit dem mitgelieferten Caddy, der auf ein healthy Gateway und eine healthy Konsole wartet, ist das spät genug, hinter [einem eigenen Reverse Proxy](domains-and-tls.md#ein-eigener-reverse-proxy) aber sofort, bevor das Gateway für `kaeso setup-link` bereit ist. Danach gibt `kaeso setup-link` den Einrichtungslink aus.
+Mit `--wait` kehrt `docker compose up` zurück, sobald jeder Dienst läuft und healthy meldet, und schlägt fehl, wenn einer das nicht tut. Der Healthcheck von Caddy fragt Caddy selbst auf seiner Loopback-Adresse, daher ist Caddy healthy, sobald es Anfragen bedient, während das Zertifikat für eine neue Domain noch unterwegs sein kann ([Zertifikate](domains-and-tls.md#zertifikate)). Ohne `--wait` kehrt Compose zurück, sobald es die Container gestartet hat: Mit dem mitgelieferten Caddy, der auf ein healthy Gateway und eine healthy Konsole wartet, ist das spät genug, hinter [einem eigenen Reverse Proxy](domains-and-tls.md#ein-eigener-reverse-proxy) aber sofort, bevor das Gateway für `kaeso setup-link` bereit ist. Danach gibt `kaeso setup-link` den Einrichtungslink aus.
 
 1. PostgreSQL, ClickHouse und Valkey starten; Compose wartet, bis PostgreSQL und Valkey healthy melden.
 2. Das Gateway prüft seine Einstellungen und hält mit einer Meldung an, die die Einstellung nennt, wenn eine fehlt oder falsch ist. Geheime Werte gibt es nie aus.
 3. Es migriert PostgreSQL auf seine Version, bevor es irgendetwas bereitstellt, und ClickHouse im Hintergrund, mit Wiederholungen, bis ClickHouse antwortet; bis dahin meldet `/readyz` `degraded`. Migrationen laufen unter einem Lock, sodass nur eine Gateway-Instanz migriert, während die anderen warten.
 4. Solange die Installation keine Benutzer hat, protokolliert es, dass sie noch nicht eingerichtet ist und wie man den Einrichtungslink erhält, nie den Link selbst: Wer das Log liest, könnte damit die Installation übernehmen. `docker compose exec gateway kaeso setup-link` gibt den Link im Terminal aus; er funktioniert einmal, 24 Stunden lang, und jeder neue macht die älteren ungültig.
-5. Sobald Gateway und Konsole healthy sind, startet Caddy und holt ein Zertifikat für `KAESO_DOMAIN`.
+5. Sobald Gateway und Konsole healthy sind, startet Caddy, meldet healthy, sobald es Anfragen bedient, und holt im Hintergrund ein Zertifikat für `KAESO_DOMAIN`.
 
 Die Einrichtungsseite legt den ersten Benutzer an, der Instanz-Admin und Inhaber der ersten Organisation wird, mit einem Standardprojekt, in dem er Admin ist. Danach kommen Personen per Einladung hinzu oder durch Registrierung, wo die Instanz sie erlaubt; siehe [Instanzverwaltung](../console/instance-administration.md).
 

@@ -17,6 +17,8 @@ Caddy 在首次启动时从公共证书颁发机构为 `KAESO_DOMAIN` 获取证�
 - 首次启动之前，域名的 DNS 记录必须已指向该服务器。
 - 80 和 443 端口必须可以从互联网访问。
 
+`docker compose up -d --wait` 不会等待证书：Caddy 一开始提供服务就报告 healthy，并在后台获取新域名的证书，因此只有在 Caddy 拿到证书后，该域名才能通过 HTTPS 应答。
+
 Caddy 将证书保存在 `caddy_data` 卷中。如果无法签发证书，`docker compose logs caddy` 会说明原因。修正 DNS 记录或防火墙，然后用 `docker compose restart caddy` 重启 Caddy。
 
 使用 `KAESO_DOMAIN=localhost` 时，Caddy 改用其本地证书颁发机构签发的证书，浏览器会要求确认接受一次。

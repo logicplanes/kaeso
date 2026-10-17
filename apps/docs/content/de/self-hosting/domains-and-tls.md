@@ -17,6 +17,8 @@ Caddy holt beim ersten Start ein Zertifikat für `KAESO_DOMAIN` von einer öffen
 - Der DNS-Eintrag der Domain muss vor dem ersten Start auf den Server zeigen.
 - Die Ports 80 und 443 müssen aus dem Internet erreichbar sein.
 
+`docker compose up -d --wait` wartet nicht auf das Zertifikat: Caddy meldet healthy, sobald es Anfragen bedient, und holt das Zertifikat einer neuen Domain im Hintergrund, daher antwortet die Domain erst über HTTPS, wenn Caddy es hat.
+
 Caddy speichert seine Zertifikate im Volume `caddy_data`. Lässt sich das Zertifikat nicht ausstellen, nennt `docker compose logs caddy` den Grund. Den DNS-Eintrag oder die Firewall korrigieren und Caddy mit `docker compose restart caddy` neu starten.
 
 Mit `KAESO_DOMAIN=localhost` nutzt Caddy stattdessen ein Zertifikat seiner eigenen lokalen Zertifizierungsstelle, das der Browser einmal bestätigen lässt.

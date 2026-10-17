@@ -70,7 +70,7 @@ The gateway runs as an unprivileged user inside its container and must be able t
 docker compose up -d --wait
 ```
 
-The first start takes a minute or two: the images download, the databases start, the gateway prepares them, and Caddy requests the certificate. `--wait` makes the command return only once every service is ready, and fail with the service's name if one isn't; `docker compose ps` shows each service as healthy.
+The first start takes a minute or two: the images download, the databases start, and the gateway prepares them. `--wait` makes the command return only once every service reports healthy, Caddy included, and fail with the service's name if one doesn't; `docker compose ps` shows each service as healthy. Caddy is healthy as soon as it serves, and requests the certificate for a new domain in the background, so HTTPS requests to the domain can still fail until it has one; `docker compose logs caddy` shows when it gets it, or why it can't.
 
 ## Sign in with the setup link
 
