@@ -53,7 +53,7 @@ A provider id is lowercase letters and digits, with single hyphens between them:
 | File | Holds |
 | --- | --- |
 | `models-dev.json` | A snapshot of [models.dev](https://models.dev), filtered to the providers Kaeso calls, so a fresh install works without network access. The folder's `README.md` records when it was fetched and its SHA-256. |
-| `supplement.toml` | Fields models.dev doesn't have, with every entry's source in the folder's `README.md`: `adaptive_thinking` for Anthropic models, `efforts` where models.dev lists none, and `egress_dialect`, the format Kaeso sends to an OpenAI model. |
+| `supplement.toml` | Fields models.dev doesn't have, with every entry's source in the folder's `README.md`: `adaptive_thinking` for Anthropic models, `forced_tool_choice: false` for models that refuse a forced tool choice, `efforts` where models.dev lists none, and `egress_dialect`, the format Kaeso sends to an OpenAI model. |
 
 A catalogue entry's value is its override, else models.dev, else the supplement, else empty. When the gateway syncs, every 24 hours by default, it applies the same filter and stores the result in PostgreSQL; at startup the newer of the stored and the built-in snapshot wins. Only the providers in `crates/kaeso-core/src/provider.rs` are kept.
 

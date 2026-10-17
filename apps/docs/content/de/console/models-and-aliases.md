@@ -27,6 +27,7 @@ Das Sheet eines Modells zeigt die verwendeten Werte und woher jeder stammt: von 
 | Sendet als | Das API-Format, in dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Unterstützt Temperatur | Ob das Modell `temperature` annimmt |
+| Unterstützt erzwungene Tool-Wahl | Ob das Modell `tool_choice` `required`, `any` oder ein benanntes Tool annimmt; bei einem Modell, das es nicht tut, lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
 | Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Aufwandsstufen es annimmt |
 | Zeitlimit | Sekunden für eine Anfrage an dieses Modell; ohne Wert gilt das Anfrage-Zeitlimit der Installation |
 | Veröffentlicht | Das Veröffentlichungsdatum des Modells |

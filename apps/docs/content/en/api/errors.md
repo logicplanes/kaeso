@@ -35,7 +35,7 @@ Chat Completions, Responses and Embeddings share one error shape:
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` is in whole seconds, rounded up; when the wait has a fraction of a second, `retry-after-ms` has it in milliseconds.
+`Retry-After` is in whole seconds, rounded up; when the wait has a fraction of a second, `retry-after-ms` has it in milliseconds. The OpenAI shape has no field for the request's id; it is in the `kaeso-request-id` header.
 
 ## Anthropic format
 
@@ -45,9 +45,12 @@ Chat Completions, Responses and Embeddings share one error shape:
   "error": {
     "type": "rate_limit_error",
     "message": "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds."
-  }
+  },
+  "request_id": "req_…"
 }
 ```
+
+`request_id` is the request's id, the same as in `kaeso-request-id`, also on a provider's own error.
 
 | Status | `error.type` |
 | --- | --- |
@@ -65,13 +68,13 @@ Chat Completions, Responses and Embeddings share one error shape:
 
 ## Provider errors
 
-When the app and the provider speak the same format, a provider's error comes back as the provider sent it, with its status. Otherwise it keeps its meaning in the app's format: a provider key the provider refuses comes back as 401 or 403, the provider's own rate limit as 429, its billing refusal as 402 or 429, and its other server errors with their 5xx status. The request log keeps the provider's own message.
+When the app and the provider speak the same format, a provider's error comes back as the provider sent it, with its status; an Anthropic error carries Kaeso's request id in `request_id`. Otherwise it keeps its meaning in the app's format: a provider key the provider refuses comes back as 401 or 403, the provider's own rate limit as 429, its billing refusal as 402 or 429, and its other server errors with their 5xx status. The request log keeps the provider's own message.
 
 ## Why requests fail
 
 | Status | Cause |
 | --- | --- |
-| 400 | The request can't be read, a field can't be carried to the provider, the context is too long, a model id is served by several providers in the project, or no provider key is set up for the model's provider |
+| 400 | The request can't be read, the model doesn't take a setting it uses, a field can't be carried to the provider, the context is too long, a model id is served by several providers in the project, or no provider key is set up for the model's provider |
 | 401 | No key, or the key is unknown, disabled, archived or expired, its member or service account is no longer active, or its project or organization can't be used |
 | 403 | The key has platform access only, is an organization platform key, or may not call models (`api.request`), or the key or its member may not use this model |
 | 404 | The model isn't in the project's catalogue, or the path isn't served |

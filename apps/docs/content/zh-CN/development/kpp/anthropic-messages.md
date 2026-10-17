@@ -35,7 +35,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 数组形式的 `messages[].content` | `blocks` | `[]` → form `content: "array"`。 |
 | 字符串形式的 `system` | `system: [Text]` | form `system: "string"`。 |
 | 数组形式的 `system`（`RequestTextBlock[]`） | `system` | `[]` → form `system: "array"`。 |
-| `max_tokens` | `sampling.max_output_tokens` | 生成请求必需：缺少时 `check()` 返回 `InvalidRequest`（参数 `max_tokens`）。 |
+| `max_tokens` | `sampling.max_output_tokens` | 生成请求必需（`CreateMessageParams`）：缺少该字段的请求在解码时即为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `max_tokens` is required. ``，参数 `max_tokens`），因此网关从不为 Anthropic 应用补上该字段；Token 计数没有 `max_tokens`。`0` 是有效值，即规范中的最小值：它只填充提示缓存，不生成回答。来自其他方言、没有 `sampling.max_output_tokens` 的请求在 `check()` 中为 `InvalidRequest`。 |
 | `temperature`、`top_p`、`top_k` | `sampling.temperature`、`.top_p`、`.top_k` | 在规范中已弃用，SDK 1.13.0 中也没有，但仍会映射。`temperature` 和 `top_p` 保留其写法：写成整数（`1`）的键会列在 form `integers` 中，只要值仍是整数，就会再次写成整数，因此 `temperature: 1` 返回时仍是 `1`，而不是 `1.0`；改变后的值按新值写出。来自其他方言的请求使用 Anthropic 自己的写法（`1.0`）（[采样参数](cross-format.md#采样参数)）。 |
 | `stop_sequences` | `sampling.stop` | `[]` → verbatim。 |
 | `stream: true` | `stream = On { include_usage: true }` | Anthropic 总是报告用量。`stream: false` → verbatim。 |
@@ -204,7 +204,7 @@ Schema `MessageStreamEvent`。
 - **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](cross-format.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
 - **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：每个外来的额外事件一帧，每 1,024 字节隐藏文本一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。
-- **错误：**KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
+- **错误：**KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
 
 ## 错误
 
@@ -227,7 +227,8 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - `error.message` → `message`；整个响应体（含 `request_id` 和 `error.details`）→ `raw`；HTTP 状态码 → `status`；`retry-after-ms` 或 `retry-after` → `retry_after`，写回时为 `retry-after`，向上取整为整秒。
 - 提示过长与其他错误一样是 400 `invalid_request_error`，只有消息能区分它。如果 Anthropic 改变措辞，该错误会被解码为 `InvalidRequest`。
 - 未知的 `error.type`，或不是 `ErrorResponse` 的响应体（例如 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，或顶层带有 Kaeso 无法承载的键的 JSON），按状态码确定类型：400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`，408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`，其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
-- 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"}}`。
+- 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
+- `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID；网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
 
 ## 模型

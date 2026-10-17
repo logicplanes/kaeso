@@ -24,7 +24,7 @@ Typisierte Zahlenfelder laufen über `u32`, `u64`, `i64` (`seed`) oder `f64`. Ei
 | `model` | `GenerateRequest.model` typisiert | |
 | `messages` | `system` + `messages` typisiert | Siehe [Nachrichten](#nachrichten-chatcompletionrequestmessage). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typisiert | Als Ganzzahl geschrieben (`1`): Form `integers`, die Liste der so geschriebenen Schlüssel. Der Encoder schreibt einen solchen Schlüssel als Ganzzahl, solange sein Wert noch ganzzahlig ist, sodass `temperature: 1` als `1` zurückkommt, nicht als `1.0`; ein geänderter Wert wird als der neue Wert geschrieben. Aus anderen Dialekten: die `f64`-Schreibweise (`1.0`). |
-| `max_completion_tokens` | `sampling.max_output_tokens` typisiert | Die Schreibweise, die für Anfragen aus jedem Quelldialekt geschrieben wird. |
+| `max_completion_tokens` | `sampling.max_output_tokens` typisiert | Die Schreibweise, die für Anfragen aus jedem Quelldialekt geschrieben wird. `CreateChatCompletionRequest` setzt dafür und für `max_tokens` kein Minimum, daher bleibt jede nicht negative Ganzzahl erhalten, auch `0`; eine negative ist `InvalidRequest`. |
 | `max_tokens` (veraltet) | `sampling.max_output_tokens` typisiert | Form `max_tokens: "max_tokens"`. Beide mit demselben Wert vorhanden: Form `"both"`. Mit verschiedenen Werten gewinnt `max_completion_tokens`, und `max_tokens` wird zum Extra `max_tokens (differs from max_completion_tokens)`, das als `max_tokens` zurückgesendet wird; der Schlüssel benennt den Konflikt, wenn ein anderer Dialekt ihn ablehnt. |
 | `stop` | `sampling.stop` typisiert | Schreibweise als String: Form `stop: "string"`; `[]`: Form `"array"`. Mehr als vier Sequenzen: `Unsupported` (`stop`). |
 | `seed` | `sampling.seed` typisiert | |

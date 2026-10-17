@@ -22,6 +22,11 @@ All notable changes to Kaeso are documented in this file. The format is based on
 ### Fixed
 
 - The console's audit logs show the actor's profile picture, in the Actor column and in the actor filter, instead of only an initial, and a project's API keys show their owner's picture.
+- Anthropic Messages requests without `max_tokens` are refused with Anthropic's 400 `invalid_request_error`, as Anthropic refuses them, instead of getting the model's output limit; requests in the OpenAI formats still get it.
+- OpenAI Responses requests with `max_output_tokens` below 16, the API's minimum, are refused before anything is sent, and so are requests from other formats whose output limit would reach an OpenAI Responses model below it.
+- Error bodies in the Anthropic format carry the request's id in `request_id`, the same as `kaeso-request-id`, also on errors from Anthropic; the OpenAI formats have no such field and keep the id in the header.
+- Claude Fable 5.1, Opus 5.5 and Sonnet 5.5 requests with a forced tool choice are refused before sending, in the app's own words (`tool_choice` `required`, `any`, `tool` or a named function), instead of returning Anthropic's sentence about `tool` and `any`; the catalogue has a new field, **Accepts a forced tool choice**, to change it per model.
+- Anthropic Messages requests with adaptive thinking for a Claude model without it, such as Claude Opus 4.5, are refused before sending, and capability refusals name the app's own field, such as `reasoning.effort` for OpenAI Responses and `output_config.effort` for Anthropic Messages.
 - The descriptions of the showcase's home and changelog pages are in German and Chinese on the German and Chinese pages, and the showcase's German search placeholder fits on a phone.
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.
 - Tables in the documentation keep their words whole and scroll inside a named region when they are wider than the screen, and the previous and next links show their label above the page title; a ScrollArea with an `aria-label` is now a region screen readers announce.

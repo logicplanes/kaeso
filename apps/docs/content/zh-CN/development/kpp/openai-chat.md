@@ -24,7 +24,7 @@ OpenAI Chat Completions，`POST /v1/chat/completions`，包括流式。编解码
 | `model` | `GenerateRequest.model`（类型化） | |
 | `messages` | `system` + `messages`（类型化） | 见[消息](#消息chatcompletionrequestmessage)。 |
 | `temperature`、`top_p` | `sampling.temperature`、`sampling.top_p`（类型化） | 写成整数（`1`）时：形式标记 `integers`，即以整数写出的键的列表。只要值仍是整数，编码器就把这样的键写成整数，因此 `temperature: 1` 写回时仍是 `1`，而不是 `1.0`；值改变后写出新值。来自其他方言时：`f64` 写法（`1.0`）。 |
-| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式。 |
+| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式。`CreateChatCompletionRequest` 没有为它或 `max_tokens` 规定最小值，因此任何非负整数都会保留，包括 `0`；负数为 `InvalidRequest`。 |
 | `max_tokens`（已弃用） | `sampling.max_output_tokens`（类型化） | 形式标记 `max_tokens: "max_tokens"`。两者都存在且值相同：形式标记 `"both"`。值不同时以 `max_completion_tokens` 为准，`max_tokens` 成为 extra `max_tokens (differs from max_completion_tokens)`，发回时写作 `max_tokens`；当其他方言拒绝它时，这个键名说明了冲突所在。 |
 | `stop` | `sampling.stop`（类型化） | 字符串写法：形式标记 `stop: "string"`；`[]`：形式标记 `"array"`。超过四个序列：`Unsupported`（`stop`）。 |
 | `seed` | `sampling.seed`（类型化） | |

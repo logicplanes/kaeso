@@ -171,7 +171,7 @@ Sampling settings a target can't honour are `Unsupported`, never dropped or resc
 | --- | --- |
 | Anthropic | `seed`, frequency and presence penalties, and a `temperature` outside 0 to 1, Anthropic's range |
 | OpenAI Chat Completions | `top_k`, and more than four stop sequences |
-| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have |
+| OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum |
 
 Numbers keep their spelling within a dialect: `temperature: 1` comes back as `1` and `1.0` as `1.0` while the value is unchanged. Across dialects the target's own spelling is used, so `temperature: 1` from Chat reaches Anthropic as `1.0`.
 

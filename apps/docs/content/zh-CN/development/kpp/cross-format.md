@@ -171,7 +171,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 | --- | --- |
 | Anthropic | `seed`、频率惩罚和存在惩罚，以及超出 Anthropic 取值范围 0 到 1 的 `temperature` |
 | OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
-| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数 |
+| OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值 |
 
 数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
 

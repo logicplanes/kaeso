@@ -27,6 +27,7 @@ A model's sheet shows the values in use and where each comes from: models.dev, K
 | Sends as | The API format Kaeso uses to call the model: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
 | Accepts temperature | Whether the model takes `temperature` |
+| Accepts a forced tool choice | Whether the model takes `tool_choice` `required`, `any` or a named tool; Kaeso refuses such requests for a model that doesn't, before calling the provider |
 | Adaptive thinking, effort levels | How the model's reasoning is turned on, and the efforts it takes |
 | Timeout | Seconds for a request to this model; empty uses the install's request timeout |
 | Released | The model's release date |

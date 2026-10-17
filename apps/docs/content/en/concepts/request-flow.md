@@ -27,11 +27,12 @@ The model name is resolved in the project's catalogue: an alias first, then `pro
 The catalogue entry gives the model's limits, prices, capabilities, the format the provider is called in, whether it reasons, whether it has adaptive thinking, and its timeout. The request is checked against it and refused with 400 when it needs what the model lacks:
 
 - images, PDFs, tools, a JSON schema or reasoning;
-- an effort level the model doesn't list;
+- an effort level the model doesn't list, or adaptive thinking for a Claude model without it;
+- a forced tool choice (`required`, `any` or a named tool) for a model that takes none, such as Claude Fable 5.1, Opus 5.5 and Sonnet 5.5; the message names the app's own field and value;
 - a temperature other than 1, for a model that accepts none, unless Kaeso turns Claude's thinking on and leaves the temperature out;
 - embeddings from a generation model, or text from an embedding model.
 
-A request for a Claude model without a maximum number of output tokens gets the model's output limit.
+A request in an OpenAI format for a Claude model without a maximum number of output tokens gets the model's output limit. Anthropic Messages requires `max_tokens`, so a Messages request without it is refused with 400, as Anthropic refuses it.
 
 ## Limits
 

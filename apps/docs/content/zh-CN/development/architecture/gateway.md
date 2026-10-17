@@ -53,7 +53,7 @@ console, scripts ─▶ /platform/v1 ─▶ session cookie | API key with platfo
 | 文件 | 内容 |
 | --- | --- |
 | `models-dev.json` | [models.dev](https://models.dev) 的快照，只保留 Kaeso 调用的服务商，因此全新安装无需网络访问即可工作。该文件夹的 `README.md` 记录了获取时间及其 SHA-256。 |
-| `supplement.toml` | models.dev 没有的字段，每个条目的来源记录在该文件夹的 `README.md` 中：Anthropic 模型的 `adaptive_thinking`、models.dev 未列出时的 `efforts`，以及 `egress_dialect`，即 Kaeso 向 OpenAI 模型发送请求时使用的格式。 |
+| `supplement.toml` | models.dev 没有的字段，每个条目的来源记录在该文件夹的 `README.md` 中：Anthropic 模型的 `adaptive_thinking`、拒绝强制工具选择的模型的 `forced_tool_choice: false`、models.dev 未列出时的 `efforts`，以及 `egress_dialect`，即 Kaeso 向 OpenAI 模型发送请求时使用的格式。 |
 
 目录条目的值依次取其覆盖值、models.dev、补充数据，否则为空。网关同步时（默认每 24 小时一次）会应用相同的过滤规则并将结果存入 PostgreSQL；启动时，已存储的快照和内置快照中较新的那个生效。只保留 `crates/kaeso-core/src/provider.rs` 中列出的服务商。
 

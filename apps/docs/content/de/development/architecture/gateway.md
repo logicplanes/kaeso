@@ -53,7 +53,7 @@ Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern, mit einzelnen Bindestr
 | Datei | Inhalt |
 | --- | --- |
 | `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugriff funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde, und seinen SHA-256. |
-| `supplement.toml` | Felder, die models.dev nicht hat, mit der Quelle jedes Eintrags in der `README.md` des Ordners: `adaptive_thinking` für Anthropic-Modelle, `efforts`, wo models.dev keine angibt, und `egress_dialect`, das Format, in dem Kaeso an ein OpenAI-Modell sendet. |
+| `supplement.toml` | Felder, die models.dev nicht hat, mit der Quelle jedes Eintrags in der `README.md` des Ordners: `adaptive_thinking` für Anthropic-Modelle, `forced_tool_choice: false` für Modelle, die eine erzwungene Tool-Wahl ablehnen, `efforts`, wo models.dev keine angibt, und `egress_dialect`, das Format, in dem Kaeso an ein OpenAI-Modell sendet. |
 
 Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement, sonst leer. Beim Synchronisieren, standardmäßig alle 24 Stunden, wendet das Gateway denselben Filter an und speichert das Ergebnis in PostgreSQL; beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot. Nur die Anbieter in `crates/kaeso-core/src/provider.rs` bleiben erhalten.
 
