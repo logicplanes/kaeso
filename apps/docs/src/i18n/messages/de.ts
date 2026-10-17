@@ -6,7 +6,7 @@ export const de: Messages = {
   "site.navigation": "Dokumentation",
   "nav.introduction": "Einführung",
   "nav.overview": "Übersicht",
-  "language.current": "Sprache: {language}",
+  "language.label": "Sprache",
   "search.open": "Suchen",
   "search.placeholder": "Dokumentation durchsuchen",
   "search.empty": "Keine Treffer. Ein anderes Wort versuchen.",

@@ -1,7 +1,6 @@
 import { useSyncExternalStore, type ReactNode } from "react";
 import { navigate } from "astro:transitions/client";
-import { Select, useTheme, type ThemePreference } from "@logicplanes/kaeso-ui";
-import { useUiText } from "@logicplanes/kaeso-ui/i18n";
+import { Select } from "@logicplanes/kaeso-ui";
 import { LocaleProvider, loadUiMessages, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
 import { DOCS_LANGUAGES, DOCS_LANG_STORAGE_KEY, docsLangOf, localizedPath, pageOfPath, parseDocsLang, type DocsLang } from "./languages";
 
@@ -190,27 +189,7 @@ export function DocsLanguageSelect() {
       fullWidth
       value={lang}
       onValueChange={(v) => setDocsLang(parseDocsLang(v) ?? "en")}
-      options={DOCS_LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
-    />
-  );
-}
-
-export function DocsThemeSelect() {
-  const { theme, setTheme } = useTheme();
-  const t = useUiText();
-  return (
-    <Select
-      aria-label={t("themeMenu.theme", "Theme")}
-      size="sm"
-      appearance="ghost"
-      fullWidth
-      value={theme}
-      onValueChange={(v) => setTheme(v as ThemePreference)}
-      options={[
-        { value: "system", label: t("themeMenu.system", "System") },
-        { value: "light", label: t("themeMenu.light", "Light") },
-        { value: "dark", label: t("themeMenu.dark", "Dark") },
-      ]}
+      options={DOCS_LANGUAGES.map((l) => ({ value: l.value, label: <span lang={l.value}>{l.label}</span>, textValue: l.label }))}
     />
   );
 }

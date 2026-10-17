@@ -39,15 +39,20 @@ describe("the site", () => {
     await waitFor(() => expect(document.title).toBe("Keys and limits · Kaeso documentation"));
   });
 
-  it("opens the same page in another language from the language menu, and remembers the choice", async () => {
+  it("opens the same page in another language from the language select, and remembers the choice", async () => {
     const user = userEvent.setup();
     const router = app("/guides/keys-and-limits");
     await screen.findByRole("heading", { level: 1, name: "Keys and limits" });
-    await user.click(screen.getByRole("button", { name: "Language: English" }));
-    await user.click(await screen.findByRole("menuitemradio", { name: "Deutsch" }));
+    const language = screen.getByRole("combobox", { name: "Language" });
+    expect(language).toHaveTextContent("English");
+    await user.click(language);
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
+    await user.click(screen.getByRole("option", { name: "Deutsch" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/de/guides/keys-and-limits"));
     expect(await screen.findByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Dokumentation" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Sprache" })).toHaveTextContent("Deutsch");
+    expect(screen.getByRole("combobox", { name: "Design" })).toHaveTextContent("System");
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("de");
     await waitFor(() => expect(document.documentElement.lang).toBe("de"));
   });
@@ -55,7 +60,8 @@ describe("the site", () => {
   it("shows the Chinese pages with their own text", async () => {
     app("/zh-CN");
     expect(await screen.findByRole("navigation", { name: "文档" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "语言：简体中文" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "语言" })).toHaveTextContent("简体中文");
+    expect(screen.getByRole("combobox", { name: "主题" })).toHaveTextContent("跟随系统");
   });
 
   it("says when an address has no page, in the frame and in its language", async () => {
@@ -96,5 +102,6 @@ describe("search", () => {
     await user.type(await screen.findByPlaceholderText("Search the documentation"), "dark");
     await user.click(await screen.findByRole("option", { name: "Use the dark theme" }));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
+    expect(screen.getByRole("combobox", { name: "Theme" })).toHaveTextContent("Dark");
   });
 });

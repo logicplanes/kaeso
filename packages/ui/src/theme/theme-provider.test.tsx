@@ -112,6 +112,25 @@ describe("ThemeProvider", () => {
     expect(screen.getByRole("status")).toHaveTextContent("dark/dark");
   });
 
+  it("keeps every provider on the page on the same theme", async () => {
+    mockSystem(false);
+    const { unmount } = render(
+      <>
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>
+      </>,
+    );
+    await userEvent.click(screen.getAllByRole("button", { name: "Dark" })[0]!);
+    expect(screen.getAllByRole("status").map((s) => s.textContent)).toEqual(["dark/dark", "dark/dark"]);
+    await userEvent.click(screen.getAllByRole("button", { name: "System" })[1]!);
+    expect(screen.getAllByRole("status").map((s) => s.textContent)).toEqual(["system/light", "system/light"]);
+    unmount();
+  });
+
   it("works without a provider, in light", () => {
     render(<Probe />);
     expect(screen.getByRole("status")).toHaveTextContent("system/light");

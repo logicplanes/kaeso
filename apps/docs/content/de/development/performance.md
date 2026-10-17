@@ -20,10 +20,10 @@ Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt.
 
 | Route | Datei | Ziel | Obergrenze | Gemessen, gzip |
 | --- | --- | --: | --: | --: |
-| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 125,9 kB |
-| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205,8 kB |
+| Anmeldung | `src/routes/sign-in.tsx` | 120 kB | 126 kB | 126,0 kB |
+| Projektübersicht | `src/routes/_app/orgs/$org/projects/$project/index.tsx` | 180 kB | 206 kB | 205,9 kB |
 
-1 kB sind 1.024 Bytes. Noch erreicht keine der beiden Routen ihr Ziel. Von den 125,9 kB der Anmeldung entfallen 98,1 kB auf den Chunk `framework` (React und React DOM mit dem Scheduler, TanStack Router und Query, openapi-fetch sowie API-Client, Sitzung und Formatierung der Konsole), 14,3 kB auf den Chunk `ui` (`cn` der Bibliothek mit seiner eigenen Einrichtung von `tailwind-merge`, ihr Button, Text, Feld, Eingabefeld und Logo, der Seitentitel und das Layout der öffentlichen Seiten), 9,4 kB auf den Entry mit dem Routenbaum und seinen Preload-Listen und der Rest auf die eigenen Chunks der Anmeldeseite. Die Projektübersicht fügt den Rahmen der Konsole hinzu (die Seitenleiste mit ihren Teilen aus Base UI und Floating UI; ihre Menüs laden, sobald die Seite im Leerlauf ist oder beim ersten Hover, Fokus oder Drücken, ebenso wie die Datumsauswahlen der Bibliothek), die Kennzahlenkacheln und Diagramme mit ihren d3-Modulen und die Seite selbst.
+1 kB sind 1.024 Bytes. Noch erreicht keine der beiden Routen ihr Ziel. Von den 126,0 kB der Anmeldung entfallen 98,1 kB auf den Chunk `framework` (React und React DOM mit dem Scheduler, TanStack Router und Query, openapi-fetch sowie API-Client, Sitzung und Formatierung der Konsole), 14,3 kB auf den Chunk `ui` (`cn` der Bibliothek mit seiner eigenen Einrichtung von `tailwind-merge`, ihr Button, Text, Feld, Eingabefeld und Logo, der Seitentitel und das Layout der öffentlichen Seiten), 9,5 kB auf den Entry mit dem Routenbaum und seinen Preload-Listen und der Rest auf die eigenen Chunks der Anmeldeseite. Die Projektübersicht fügt den Rahmen der Konsole hinzu (die Seitenleiste mit ihren Teilen aus Base UI und Floating UI; ihre Menüs laden, sobald die Seite im Leerlauf ist oder beim ersten Hover, Fokus oder Drücken, ebenso wie die Datumsauswahlen der Bibliothek), die Kennzahlenkacheln und Diagramme mit ihren d3-Modulen und die Seite selbst.
 
 ### Was die Zahlen bewegt
 
@@ -52,18 +52,19 @@ Eine Route lässt den Build fehlschlagen, wenn sie über ihrer Obergrenze liegt.
 
 | Budget | Was gezählt wird | Gemessen | Obergrenze |
 | --- | --- | --: | --: |
-| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 205,1 kB (Englisch), 210,6 kB (Deutsch), 211,1 kB (Chinesisch) | 216 kB |
+| Der Rahmen in jeder Sprache | Der Entry mit seinen statischen Importen und dem Stylesheet, das Website-Modul der Sprache und die Texte der Bibliothek | 202,1 kB (Englisch), 207,6 kB (Deutsch), 208,1 kB (Chinesisch) | 216 kB |
 | Der Inhalt einer Seite | Der eigene Chunk jeder Seite: ihre Blöcke und ihr Inhaltsverzeichnis | höchstens 17,3 kB (`zh-CN/development/kpp/anthropic-messages`) | 24 kB pro Seite |
 
 Der Rahmen ändert sich mit dem Code und wächst mit jeder Seite ein wenig, weil das Website-Modul die Seitenleiste und Titel und Beschreibung jeder Seite enthält, sodass die Seitenleiste mit dem Rahmen rendert und nie springt. Deutsch und Chinesisch laden außerdem die Texte der Bibliothek für ihre Sprache, etwa 5 kB. Die Obergrenze ist die gemessene Größe des größten Rahmens mit etwas Luft. Der Inhalt einer Seite hat ein eigenes Budget, sodass eine zu lang gewordene Seite mit ihrer Adresse fehlschlägt, wer auch immer sie bearbeitet; die Lösung sind zwei Seiten.
 
-Die Suche mit ihrem Index, der Toaster und die Grammatiken der Syntaxhervorhebung laden nach dem ersten Rendern und werden nicht mitgezählt. Der Build gibt die Größe der Suche aus, 3,3 kB ohne den Index.
+Die Suche mit ihrem Index, der Toaster und die Grammatiken der Syntaxhervorhebung laden nach dem ersten Rendern und werden nicht mitgezählt. Der Build gibt die Größe der Suche aus, 3,5 kB ohne den Index.
 
 | Teil des Rahmens | Warum er da ist |
 | --- | --- |
 | React und TanStack Router (`framework`) | Jede Seite |
-| `AppFrame`, `Sidebar`, das Navigations-Sheet | Der Rahmen; `Sidebar` bringt das Menü von Base UI mit, das auch das Theme- und das Sprachmenü nutzen |
-| Tooltips, `IconButton` | Die Bedienelemente für Suche, Einklappen und Theme |
+| `AppFrame`, `Sidebar`, das Navigations-Sheet | Der Rahmen; `Sidebar` bringt das Menü von Base UI mit |
+| `Select` | Die Sprach- und Theme-Auswahl am Fuß der Seitenleiste |
+| Tooltips, `IconButton` | Die Bedienelemente für Suche und Einklappen |
 | Die Seite und ihr Renderer | `Text`, `Link`, `Code`, `CodeBlock` (seine Syntaxhervorhebung lädt nur mit einem Codeblock), `Banner`, `Table`, `ScrollArea`, `Checkbox`, `Separator`, `TableOfContents` |
 | Die Seitenleiste und Titel und Beschreibung jeder Seite | Das Modul `site` der Sprache, sodass die Seitenleiste mit dem Rahmen rendert und nie springt |
 

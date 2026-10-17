@@ -4,6 +4,15 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `ThemeSelect`, a select for the system, light or dark theme with its label and choices in the provider's language, beside `ThemeMenu`.
+
+### Changed
+
+- The documentation site's sidebar shows the same language and theme selects, side by side at its foot, as the UI library's showcase.
+- Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
+
 ### Fixed
 
 - Collapsible, Accordion and the sidebar no longer shift their content while they open or close, so a press during the animation is no longer lost.

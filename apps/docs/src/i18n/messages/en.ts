@@ -4,7 +4,7 @@ export const en = {
   "site.navigation": "Documentation",
   "nav.introduction": "Introduction",
   "nav.overview": "Overview",
-  "language.current": "Language: {language}",
+  "language.label": "Language",
   "search.open": "Search",
   "search.placeholder": "Search the documentation",
   "search.empty": "Nothing matches. Try another word.",

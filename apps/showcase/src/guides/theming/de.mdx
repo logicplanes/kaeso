@@ -11,7 +11,7 @@ Jede Farbe ist eine CSS-Variable mit einem hellen und einem dunklen Wert. Die du
 
 ## Ein Theme wählen
 
-`ThemeProvider` merkt sich die Wahl der Person (System, Hell oder Dunkel) und setzt `data-theme` am Dokument. `ThemeMenu` ist das Steuerelement dafür; `useTheme()` liest und setzt sie (`theme` ist die Wahl, `resolvedTheme` das, was angezeigt wird).
+`ThemeProvider` merkt sich die Wahl der Person (System, Hell oder Dunkel) und setzt `data-theme` am Dokument. `ThemeMenu` (ein Icon-Button mit Menü) und `ThemeSelect` (eine Auswahl, die die Wahl in Worten zeigt) sind die Steuerelemente dafür; `useTheme()` liest und setzt sie (`theme` ist die Wahl, `resolvedTheme` das, was angezeigt wird). Jeder `ThemeProvider` auf der Seite folgt derselben Wahl.
 
 <CodeView
   code={`import { Button, ThemeMenu, useTheme } from "@logicplanes/kaeso-ui";
