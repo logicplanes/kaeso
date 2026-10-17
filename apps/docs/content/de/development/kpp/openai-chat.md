@@ -4,18 +4,20 @@ description: Wie jedes Feld des Formats OpenAI Chat Completions auf KPP abgebild
 order: 5
 ---
 
-OpenAI Chat Completions, `POST /v1/chat/completions`, einschließlich Streaming. Codec: `kaeso_codecs::openai_chat::OpenAiChat`.
+- **Codec:** `kaeso_codecs::openai_chat::OpenAiChat` (`crates/kaeso-codecs/src/openai_chat/`)
+- **Endpunkte:** `POST /v1/chat/completions` (JSON und SSE) und die [Modell-Endpunkte](#modelle), die alle OpenAI-Codecs teilen
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_chat/`
 
-Quellen: die OpenAPI-Spezifikation von OpenAI im Commit `e95c0fe615f45a19e8878af923a729948445a6bd` (die Schemanamen unten), die [Referenz zum Erstellen](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), die [Referenz der Streaming-Events](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events) und der [Leitfaden zu Fehlercodes](https://developers.openai.com/api/docs/guides/error-codes).
+**Quellen.** Die OpenAPI-Spezifikation von OpenAI im Commit `e95c0fe615f45a19e8878af923a729948445a6bd` (die Schemanamen unten), die [Referenz zum Erstellen](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), die [Referenz der Streaming-Events](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events) und der [Leitfaden zu Fehlercodes](https://developers.openai.com/api/docs/guides/error-codes).
 
-Die Tabellen verwenden diese Begriffe:
+## Lesart der Tabellen
 
 - **typisiert**: ein typisiertes KPP-Feld.
 - **Extras**: `Extras::fields` des genannten Elements, gebunden an `openai_chat`. Sie bleiben in diesem Dialekt; ein anderer Dialekt lehnt sie mit `Unsupported` ab ([Extras](cross-format.md#extras)). Verschachtelte Schlüssel verwenden Schlüsselpfade (`image_url.detail`).
 - **Form**: eine Codec-eigene Markierung in `Extras::form`. Sie betrifft nur die Darstellung, und andere Dialekte ignorieren sie. `verbatim`-Markierungen bewahren die Schreibweisen `null` und `[]` deklarierter Schlüssel sowie nicht deklarierter Schlüssel mit dem Wert `null`.
 - **Unsupported**: Das Dekodieren oder `check()` schlägt mit `ErrorKind::Unsupported { feature }` fehl; das Feature steht in Klammern.
 
-Typisierte Zahlenfelder laufen über `u32`, `u64`, `i64` (`seed`) oder `f64`. Ein Wert außerhalb ihres Bereichs lässt das Dekodieren fehlschlagen, als `InvalidRequest` in einer Anfrage und als `ProviderError` in einer Antwort, statt verändert zu werden. Unbekannte Felder bleiben Byte für Byte erhalten, außer Schlüsseln mit Namen, die Kaeso nicht tragen kann ([unten](#anfrage-createchatcompletionrequest)).
+**Zahlen.** Typisierte Zahlenfelder laufen über `u32`, `u64`, `i64` (`seed`) oder `f64`. Ein Wert außerhalb ihres Bereichs lässt das Dekodieren fehlschlagen, als `InvalidRequest` in einer Anfrage und als `ProviderError` in einer Antwort, statt verändert zu werden. Unbekannte Felder bleiben Byte für Byte erhalten, außer Schlüsseln mit Namen, die Kaeso nicht tragen kann ([unten](#schlüssel-die-kaeso-nicht-tragen-kann)).
 
 ## Anfrage: `CreateChatCompletionRequest`
 
@@ -46,7 +48,7 @@ Typisierte Zahlenfelder laufen über `u32`, `u64`, `i64` (`seed`) oder `f64`. Ei
 | `stream` | `stream` typisiert | `false`: Form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typisiert | `stream_options` fehlt: Form `stream_options: "absent"`; ohne `include_usage`: Form `"no_include_usage"`; andere Schlüssel (`include_obfuscation`) sind Extras `stream_options.<key>`; bei ausgeschaltetem `stream`: das ganze Objekt als Form `stream_options_off`. Anfragen aus anderen Dialekten verlangen immer `include_usage: true`. Das Gateway braucht die Nutzung, setzt deshalb bei jeder Streaming-Anfrage `include_usage: true` und behält die ursprüngliche Anfrage der App in `EncodeCtx`; der Stream-Encoder der App blendet den Nutzungs-Chunk dann für Apps aus, die nicht danach gefragt haben. |
 | `audio`, `functions` und `function_call` (veraltet, oberste Ebene), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | Extras | Keine Entsprechung in KPP; über Dialektgrenzen abgelehnt ([Extras](cross-format.md#extras), [Sampling](cross-format.md#sampling)), außer `prompt_cache_key`, das auf der [Extras-Allowlist](extras-allowlist.md) steht und weggelassen wird. `null`-Werte sind Form. Gegenüber Anthropic etwa schlägt `functions` fehl mit `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
-| unbekannte Schlüssel | Extras | Ein Schlüssel, der mit `header:` beginnt oder `.` enthält, wird abgelehnt (siehe unten). |
+| unbekannte Schlüssel | Extras | Ein Schlüssel, der mit `header:` beginnt oder `.` enthält, wird abgelehnt ([Schlüssel, die Kaeso nicht tragen kann](#schlüssel-die-kaeso-nicht-tragen-kann)). |
 | Header `openai-beta` | Extras `header:openai-beta` | Wird nur weitergeleitet, wenn die Anfrage an Chat geht; steht auf der [Extras-Allowlist](extras-allowlist.md), andere Dialekte verwerfen ihn also. |
 
 ### Nachrichten (`ChatCompletionRequestMessage`)
@@ -86,7 +88,17 @@ Für KPP aus anderen Dialekten lehnt `check()` ab: Textdokumente, Dokument-URLs,
 
 Ein Body, den der Codec nicht lesen kann, ist `InvalidRequest` und nennt das Feld und was es sein muss, mit gesetztem `param`, nie eine Parserposition: `` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
-Ein unbekannter Schlüssel, dessen Name mit `header:` beginnt oder `.` enthält, kann nicht getragen werden, weil KPP Header und Schlüsselpfade so schreibt. Er wird überall abgelehnt, wo der Codec ein Objekt Schlüssel für Schlüssel liest: im Body, in `stream_options`, in einem `response_format` vom Typ `text`, `json_object` oder `json_schema` und dessen `json_schema`, in Function-Tools und ihrem `function`, in einer benannten `tool_choice` und ihrem `function`, in `system`-, `developer`-, `user`-, `assistant`- und `tool`-Nachrichten, in `text`-, `refusal`-, `image_url`- und `file`-Teilen mit ihren Objekten `image_url`, `file` und `prompt_cache_breakpoint` sowie in Function-Tool-Aufrufen mit ihrem `function`. Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. `` oder, bei einer Nachricht, `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. `` (ein Name über 64 Bytes wird gekürzt und endet auf `…`). In ganz aufbewahrte Objekte, etwa unbekannte Teile, Tools und Tool-Auswahlen, Custom-Tool-Aufrufe, `function`-Nachrichten und andere `response_format`-Typen, wird nicht hineingesehen. In Antworten und Stream-Chunks ergibt dieselbe Regel einen `ProviderError` (in einem Stream ein `Error`-Event).
+### Schlüssel, die Kaeso nicht tragen kann
+
+Ein unbekannter Schlüssel, dessen Name mit `header:` beginnt oder `.` enthält, kann nicht getragen werden, weil KPP Header und Schlüsselpfade so schreibt. Er wird überall abgelehnt, wo der Codec ein Objekt Schlüssel für Schlüssel liest:
+
+- im Body, in `stream_options`, in einem `response_format` vom Typ `text`, `json_object` oder `json_schema` und dessen `json_schema`;
+- in Function-Tools und ihrem `function` sowie in einer benannten `tool_choice` und ihrem `function`;
+- in `system`-, `developer`-, `user`-, `assistant`- und `tool`-Nachrichten;
+- in `text`-, `refusal`-, `image_url`- und `file`-Teilen mit ihren Objekten `image_url`, `file` und `prompt_cache_breakpoint`;
+- in Function-Tool-Aufrufen und ihrem `function`.
+
+Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. `` oder, bei einer Nachricht, `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. `` Ein Name über 64 Bytes wird gekürzt und endet auf `…`. In ganz aufbewahrte Objekte, etwa unbekannte Teile, Tools und Tool-Auswahlen, Custom-Tool-Aufrufe, `function`-Nachrichten und andere `response_format`-Typen, wird nicht hineingesehen. In Antworten und Stream-Chunks ergibt dieselbe Regel einen `ProviderError` (in einem Stream ein `Error`-Event).
 
 ### Tool-Aufrufe (`ChatCompletionMessageToolCall`)
 

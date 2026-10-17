@@ -4,18 +4,20 @@ description: OpenAI Chat Completions 格式的每个字段如何映射到 KPP �
 order: 5
 ---
 
-OpenAI Chat Completions，`POST /v1/chat/completions`，包括流式。编解码器：`kaeso_codecs::openai_chat::OpenAiChat`。
+- **编解码器：**`kaeso_codecs::openai_chat::OpenAiChat`（`crates/kaeso-codecs/src/openai_chat/`）
+- **端点：**`POST /v1/chat/completions`（JSON 和 SSE），以及所有 OpenAI 编解码器共用的[模型端点](#模型)
+- **Fixture：**`crates/kaeso-codecs/fixtures/openai_chat/`
 
-来源：OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（下文的 schema 名称出自这里）、[创建接口参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[流式事件参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
+**来源。** OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（下文的 schema 名称出自这里）、[创建接口参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[流式事件参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
 
-表格中使用以下术语：
+## 表格的读法
 
 - **类型化**：一个类型化的 KPP 字段。
 - **extras**：所述条目的 `Extras::fields`，绑定到 `openai_chat`。它们只在本方言内使用；其他方言会以 `Unsupported` 拒绝（[Extras](cross-format.md#extras)）。嵌套的键使用键路径（`image_url.detail`）。
 - **形式标记**：编解码器私有的 `Extras::form` 标记。它只关乎呈现，其他方言会忽略它。`verbatim` 标记保留已声明键的 `null` 和 `[]` 写法，以及值为 `null` 的未声明键。
 - **Unsupported**：解码或 `check()` 以 `ErrorKind::Unsupported { feature }` 失败；括号中给出 feature。
 
-类型化的数值字段经过 `u32`、`u64`、`i64`（`seed`）或 `f64`。超出其范围的值会导致解码失败，在请求中为 `InvalidRequest`，在回复中为 `ProviderError`，而不会被改动。未知字段逐字节保留，但名称无法由 Kaeso 承载的键除外（[见下文](#请求createchatcompletionrequest)）。
+**数字。** 类型化的数值字段经过 `u32`、`u64`、`i64`（`seed`）或 `f64`。超出其范围的值会导致解码失败，在请求中为 `InvalidRequest`，在回复中为 `ProviderError`，而不会被改动。未知字段逐字节保留，但名称无法由 Kaeso 承载的键除外（[见下文](#kaeso-无法承载的键)）。
 
 ## 请求：`CreateChatCompletionRequest`
 
@@ -46,7 +48,7 @@ OpenAI Chat Completions，`POST /v1/chat/completions`，包括流式。编解码
 | `stream` | `stream`（类型化） | `false`：形式标记 `stream_false`。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
 | `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](extras-allowlist.md)中，会被丢弃。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
-| 未知键 | extras | 以 `header:` 开头或包含 `.` 的键会被拒绝（见下文）。 |
+| 未知键 | extras | 以 `header:` 开头或包含 `.` 的键会被拒绝（[Kaeso 无法承载的键](#kaeso-无法承载的键)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只在请求发往 Chat 时转发；在 [Extras 允许列表](extras-allowlist.md)中，因此其他方言会丢弃它。 |
 
 ### 消息（`ChatCompletionRequestMessage`）
@@ -86,7 +88,17 @@ OpenAI Chat Completions，`POST /v1/chat/completions`，包括流式。编解码
 
 编解码器无法读取的请求体为 `InvalidRequest`，错误会指明字段及其应有的形式并设置 `param`，而不会给出解析器位置：`` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
-名称以 `header:` 开头或包含 `.` 的未知键无法承载，因为 KPP 用这种写法表示请求头和键路径。凡是编解码器逐键读取对象的地方都会拒绝它：请求体、`stream_options`、类型为 `text`、`json_object` 或 `json_schema` 的 `response_format` 及其 `json_schema`、function 工具及其 `function`、具名的 `tool_choice` 及其 `function`、`system`、`developer`、`user`、`assistant` 和 `tool` 消息、`text`、`refusal`、`image_url` 和 `file` 部分及其 `image_url`、`file` 和 `prompt_cache_breakpoint` 对象，以及 function 工具调用及其 `function`。此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``（超过 64 字节的名称会被截断并以 `…` 结尾）。整体保留的对象，例如未知部分、工具和工具选择、custom 工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
+### Kaeso 无法承载的键
+
+名称以 `header:` 开头或包含 `.` 的未知键无法承载，因为 KPP 用这种写法表示请求头和键路径。凡是编解码器逐键读取对象的地方都会拒绝它：
+
+- 请求体、`stream_options`、类型为 `text`、`json_object` 或 `json_schema` 的 `response_format` 及其 `json_schema`；
+- function 工具及其 `function`，以及具名的 `tool_choice` 及其 `function`；
+- `system`、`developer`、`user`、`assistant` 和 `tool` 消息；
+- `text`、`refusal`、`image_url` 和 `file` 部分及其 `image_url`、`file` 和 `prompt_cache_breakpoint` 对象；
+- function 工具调用及其 `function`。
+
+此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``。超过 64 字节的名称会被截断并以 `…` 结尾。整体保留的对象，例如未知部分、工具和工具选择、custom 工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
 
 ### 工具调用（`ChatCompletionMessageToolCall`）
 

@@ -4,9 +4,11 @@ description: Anthropic Messages 格式的每个字段如何映射到 KPP 并映�
 order: 4
 ---
 
-编解码器：`kaeso_codecs::anthropic_messages::AnthropicMessages`（`crates/kaeso-codecs/src/anthropic_messages/`）。端点：`POST /v1/messages`（JSON 和 SSE）以及 `POST /v1/messages/count_tokens`。
+- **编解码器：**`kaeso_codecs::anthropic_messages::AnthropicMessages`（`crates/kaeso-codecs/src/anthropic_messages/`）
+- **端点：**`POST /v1/messages`（JSON 和 SSE）、`POST /v1/messages/count_tokens`，以及[模型端点](#模型)
+- **Fixture：**`crates/kaeso-codecs/fixtures/anthropic_messages/`
 
-来源：Anthropic 的 OpenAPI 规范 `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml`（`anthropic-sdk-python/.stats.yml` 中最后一个 `openapi_spec_url`，SDK 提交 `41aa7674`）、`anthropic-sdk-python@b4b7916d`（1.13.0）中的 SDK 类型，以及 [Claude 文档](https://platform.claude.com/docs/en/)（`api/messages/create`、`api/messages/count_tokens`、`api/errors`、`api/versioning`、`build-with-claude/streaming`、`…/thinking`、`…/extended-thinking`、`…/effort`、`…/prompt-caching`、`…/structured-outputs`、`…/citations`、`…/pdf-support`、`…/vision`、`agents-and-tools/tool-use/*`、`…/handling-stop-reasons`）。SDK 类型比规范新的地方以 SDK 类型为准，只在 SDK 类型中出现的字段会注明这一点。下文的 schema 名称均指规范中的名称。
+**来源。** Anthropic 的 OpenAPI 规范 `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml`（`anthropic-sdk-python/.stats.yml` 中最后一个 `openapi_spec_url`，SDK 提交 `41aa7674`）、`anthropic-sdk-python@b4b7916d`（1.13.0）中的 SDK 类型，以及 [Claude 文档](https://platform.claude.com/docs/en/)（`api/messages/create`、`api/messages/count_tokens`、`api/errors`、`api/versioning`、`build-with-claude/streaming`、`…/thinking`、`…/extended-thinking`、`…/effort`、`…/prompt-caching`、`…/structured-outputs`、`…/citations`、`…/pdf-support`、`…/vision`、`agents-and-tools/tool-use/*`、`…/handling-stop-reasons`）。SDK 类型比规范新的地方以 SDK 类型为准，只在 SDK 类型中出现的字段会注明这一点。下文的 schema 名称均指规范中的名称。
 
 ## 表格的读法
 
@@ -14,11 +16,14 @@ order: 4
 - **fields**：原样保存在 `Extras::fields` 中。这些字段是语义字段：只会写回 Anthropic；发往其他方言时会以 `Unsupported` 拒绝（[Extras](cross-format.md#extras)），除非[允许列表](extras-allowlist.md)允许将其丢弃；在发给其他方言的回复中会被省略（[回复](cross-format.md#回复)）。嵌套对象使用带点的键路径（`metadata.x`）。
 - **form**：`Extras::form` 中编解码器私有的形式标记，其他方言会忽略它。`verbatim` 指 `wire::Ext` 的通用机制（`null`、`false` 和 `[]` 的写法）。
 - **raw**：完整保存在 `RawItem`、`Citation` 或 `RawUsage` 中。
-- “自有”指 extras 或来源为 `anthropic_messages` 的数据；“外来”指来自其他方言的数据。
+- **自有**数据的 extras 或来源为 `anthropic_messages`；**外来**数据来自其他方言。
 
-类型化的数值字段按 `u32` 或 `u64` 读取，`temperature` 和 `top_p` 按 JSON 数字读取，KPP 以 `f64` 保存它们。超出其范围的值不会被修改，而是解码失败：在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``），在服务商回复中为 `ProviderError`。
+**数字。** 类型化的数值字段按 `u32` 或 `u64` 读取，`temperature` 和 `top_p` 按 JSON 数字读取，KPP 以 `f64` 保存它们。超出其范围的值不会被修改，而是解码失败：在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``），在服务商回复中为 `ProviderError`。
 
-Kaeso 逐字段读取的每个对象都会把未知键保存为 fields，但以 `header:` 开头或包含 `.` 的键除外：这样的键会被误认为转发的请求头或嵌套的键路径，因此整个对象会被拒绝（[Wire 结构体](index.md#wire-结构体)）。在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。这些对象包括：请求体、消息、`metadata`、`output_config`、`thinking`、`tool_choice`、函数工具、[内容块](#内容块)表格中的已知块类型及其 `source`、`cache_control` 和 `citations` 对象、回复、Token 计数、流事件及其增量、模型信息和模型列表。完整保存的内容不做检查：未知的块和工具、`input_schema`、工具输入、引用、`usage` 和 `output_config.format`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
+**Kaeso 无法承载的键。** Kaeso 逐字段读取的每个对象都会把未知键保存为 fields，但以 `header:` 开头或包含 `.` 的键除外：这样的键会被误认为转发的请求头或嵌套的键路径，因此整个对象会被拒绝（[Wire 结构体](index.md#wire-结构体)）。在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
+
+- **逐字段读取**：请求体、消息、`metadata`、`output_config`、`thinking`、`tool_choice`、函数工具、[内容块](#内容块)表格中的已知块类型及其 `source`、`cache_control` 和 `citations` 对象、回复、Token 计数、流事件及其增量、模型信息和模型列表。
+- **完整保存，不做检查**：未知的块和工具、`input_schema`、工具输入、引用、`usage` 和 `output_config.format`。
 
 ## 请求
 
@@ -96,7 +101,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `Block::Refusal` | `Unsupported`（`refusal block`） | |
 | `Text.cache`、任何 `CacheHint` | `cache_control {type: ephemeral, ttl?}` | 外来提示的 extras 会被丢弃。 |
 | 不匹配 `^[a-zA-Z0-9_-]+$` 的 `ToolCall.id` 或 `ToolResult.call_id` | 改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制 FNV-1a 哈希），并记录在 `EgressCtx::tool_ids` 中 | 在回复和流中映射回原值。 |
-| 不匹配 `^[a-zA-Z0-9_-]{1,128}$` 的工具名称 | 以同样方式改写并截短到 128 个字符，记录在 `EgressCtx::tool_names` 中 | 应用于 `tools[].name`、`tool_choice.name` 和 `tool_use.name`。 |
+| 不匹配 `^[a-zA-Z0-9_-]{1,128}$` 的工具名称 | 以同样方式改写，包括哈希在内最多 128 个字符，记录在 `EgressCtx::tool_names` 中 | 应用于 `tools[].name`、`tool_choice.name` 和 `tool_use.name`。 |
 | `FunctionTool.parameters: None` | `input_schema: {"type":"object","properties":{}}` | 在 OpenAI 中，没有参数即表示参数列表为空。 |
 | 没有 `tool_choice` 的 `parallel_tool_calls: Some(false)` | `tool_choice: {type: auto, disable_parallel_tool_use: true}` | 不会添加到 `none`，因为它的 schema 中没有这个键。 |
 | 没有模式或预算的 `reasoning.effort` `low` 到 `max` | `thinking: {type: adaptive}` 加 `output_config.effort`；在不支持自适应思考的模型上（`EgressCtx::adaptive_thinking = Some(false)`），按[推理强度与预算](cross-format.md#推理强度与预算)的表格得到 `thinking: {type: enabled, budget_tokens}`（`low` 2,048，`medium` 8,192，`high`、`xhigh` 和 `max` 24,576，并调整为至少 1,024 且小于 `max_tokens`；当 `max_tokens` 为 1,024 或更小时，将其增加 1,024，预算为 1,024） | [推理](cross-format.md#推理)。 |
@@ -204,7 +209,7 @@ Schema `MessageStreamEvent`。
 - **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](cross-format.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
 - **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：每个外来的额外事件一帧，每 1,024 字节隐藏文本一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。
-- **错误：**KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
+- **错误**：KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
 
 ## 错误
 

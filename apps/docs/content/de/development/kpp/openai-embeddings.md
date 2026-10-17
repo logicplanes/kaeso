@@ -4,11 +4,13 @@ description: Wie jedes Feld des Formats OpenAI Embeddings auf KPP abgebildet wir
 order: 7
 ---
 
-OpenAI Embeddings, `POST /v1/embeddings`. Codec: `kaeso_codecs::openai_embeddings::OpenAiEmbeddings`.
+- **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)
+- **Endpunkte:** `POST /v1/embeddings` und die [Modell-Endpunkte](#modelle), die alle OpenAI-Codecs teilen
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_embeddings/`
 
-Quellen: die OpenAPI-Spezifikation von OpenAI im Commit `e95c0fe615f45a19e8878af923a729948445a6bd` (`CreateEmbeddingRequest`, `CreateEmbeddingResponse`, `Embedding`, `ErrorResponse`), die [Referenz zum Erstellen](https://developers.openai.com/api/reference/resources/embeddings/methods/create) und der [Leitfaden zu Fehlercodes](https://developers.openai.com/api/docs/guides/error-codes).
+**Quellen.** Die OpenAPI-Spezifikation von OpenAI im Commit `e95c0fe615f45a19e8878af923a729948445a6bd` (`CreateEmbeddingRequest`, `CreateEmbeddingResponse`, `Embedding`, `ErrorResponse`), die [Referenz zum Erstellen](https://developers.openai.com/api/reference/resources/embeddings/methods/create) und der [Leitfaden zu Fehlercodes](https://developers.openai.com/api/docs/guides/error-codes).
 
-Die Tabellen verwenden diese Begriffe:
+## Lesart der Tabellen
 
 - **typisiert**: ein typisiertes KPP-Feld.
 - **Extras**: `Extras::fields`, gebunden an `openai_embeddings`; ein anderer Dialekt lehnt sie ab ([Extras](cross-format.md#extras)).
