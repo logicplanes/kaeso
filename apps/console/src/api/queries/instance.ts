@@ -101,9 +101,12 @@ export const updatesQuery = queryOptions({
   staleTime: 60_000,
 });
 
-export const updateJobsQuery = queryOptions({
+export const updateJobsQuery = infiniteQueryOptions({
   queryKey: ["instance", "updates", "jobs"],
-  queryFn: async (): Promise<UpdateJobView[]> => data(await api.GET("/platform/v1/instance/updates/jobs", { params: { query: { limit: 20 } } })).data,
+  initialPageParam: undefined as string | undefined,
+  queryFn: async ({ pageParam, signal }) =>
+    data(await api.GET("/platform/v1/instance/updates/jobs", { params: { query: { limit: 20, ...(pageParam ? { after: pageParam } : {}) } }, signal })),
+  getNextPageParam: nextPageParam,
 });
 
 export const updateJobQuery = (update: string) =>

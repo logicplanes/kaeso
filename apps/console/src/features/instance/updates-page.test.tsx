@@ -14,6 +14,30 @@ function history(jobs: ReturnType<typeof updateJob>[] = []) {
 }
 
 describe("instance updates page", () => {
+  it("loads older updates on request", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates());
+    on("GET", "instance/updates/jobs", ({ query }: { query: URLSearchParams }) =>
+      query.get("after") === "cur_2"
+        ? page([
+            updateJob({
+              id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz3",
+              from: "0.4.0",
+              to: "0.4.1",
+              state: "succeeded",
+              step: "online",
+              finished_at: "2026-09-01T12:01:00Z",
+            }),
+          ])
+        : page([updateJob({ state: "succeeded", step: "online", finished_at: "2026-10-15T12:01:00Z" })], "cur_2"),
+    );
+    const { user } = await renderApp(PATH);
+    const table = await screen.findByRole("table", { name: "History" });
+    expect(await within(table).findByText("0.4.2 to 0.4.3")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    expect(await within(table).findByText("0.4.0 to 0.4.1")).toBeInTheDocument();
+  });
+
   it("says the install is up to date and when it last looked", async () => {
     signedIn();
     on("GET", "instance/updates", updates());

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   Badge,
   Banner,
@@ -316,8 +316,8 @@ function Choices({ u }: { u: UpdatesView }) {
 }
 
 function History() {
-  const jobs = useQuery(updateJobsQuery);
-  const rows = jobs.data ?? [];
+  const jobs = useInfiniteQuery(updateJobsQuery);
+  const rows = useMemo(() => jobs.data?.pages.flatMap((p) => p.data) ?? [], [jobs.data]);
   const columns = [
     col.custom(
       { id: "when", header: t("instance.updates.when", "When"), size: 160, priority: 1 },
@@ -369,6 +369,9 @@ function History() {
         loading={jobs.isPending}
         error={jobs.isError && rows.length === 0 ? t("instance.updates.historyFailed", "The update history couldn't load") : undefined}
         onRetry={() => void jobs.refetch()}
+        hasMore={jobs.hasNextPage}
+        loadingMore={jobs.isFetchingNextPage}
+        onLoadMore={() => void jobs.fetchNextPage()}
         empty={
           <Empty
             title={t("instance.updates.noHistory", "No updates yet")}
