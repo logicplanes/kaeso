@@ -20,11 +20,20 @@ export default defineConfig({
   ],
   resolve: { alias: { "~": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    environment: "happy-dom",
-    environmentOptions: { happyDOM: { url: "http://localhost:4480/" } },
-    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts", "eslint/**/*.test.js"],
-    setupFiles: ["./src/test/setup.ts"],
     css: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "site",
+          environment: "happy-dom",
+          environmentOptions: { happyDOM: { url: "http://localhost:4480/" } },
+          include: ["src/**/*.test.{ts,tsx}"],
+          setupFiles: ["./src/test/setup.ts"],
+        },
+      },
+      { extends: true, test: { name: "build", environment: "node", include: ["scripts/**/*.test.ts", "eslint/**/*.test.js"] } },
+    ],
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "eslint/**/*.js"],
