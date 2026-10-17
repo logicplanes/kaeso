@@ -1,0 +1,8 @@
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What you would like Kaeso to do, and what it would help you with. A sentence or two is enough.
+    validations:
+      required: true

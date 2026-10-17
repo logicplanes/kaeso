@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in Kaeso. Issues are welcome: bug reports, questions and ideas. Pull requests from outside contributors are reviewed at the maintainer's discretion; for anything larger than a small fix, open an issue first so the approach can be agreed.
+Thank you for your interest in Kaeso. Ideas and questions are welcome in [Discussions](https://github.com/logicplanes/kaeso/discussions), bug reports and concrete feature requests in issues. Pull requests from outside contributors are reviewed at the maintainer's discretion; for anything larger than a small fix, open an issue first so the approach can be agreed.
 
 Everything about working on Kaeso is in the documentation:
 

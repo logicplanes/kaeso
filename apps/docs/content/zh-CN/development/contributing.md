@@ -1,10 +1,23 @@
 ---
 title: 参与贡献
-description: 报告问题、提出变更，以及每个 Kaeso 变更都要遵守的规则。
+description: 讨论想法、报告问题、提出变更，以及每个 Kaeso 变更都要遵守的规则。
 order: 10
 ---
 
-欢迎在[仓库](https://github.com/logicplanes/kaeso/issues)中提交 issue：缺陷、疑问和想法都可以。外部贡献者的拉取请求由维护者酌情审阅；对于比小修复更大的改动，请先开一个 issue，以便就方案达成一致。所有参与者都遵守[行为准则](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md)。
+欢迎在 [Discussions](https://github.com/logicplanes/kaeso/discussions) 中分享想法和提问，缺陷和具体的功能请求请提交 [issue](https://github.com/logicplanes/kaeso/issues)。外部贡献者的拉取请求由维护者酌情审阅；对于比小修复更大的改动，请先开一个 issue，以便就方案达成一致。所有参与者都遵守[行为准则](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md)。
+
+## Discussions
+
+[Discussions](https://github.com/logicplanes/kaeso/discussions) 用于在做出任何决定之前先交流想法，双方都无需承诺：
+
+| 分类 | 用途 |
+| --- | --- |
+| Ideas | 用一两句话描述希望拥有的功能；其他人可以补充自己的使用场景或为其投票 |
+| Q&A | 关于安装、运行或使用 Kaeso 的问题；将解决问题的回复标记为答案 |
+| Show and tell | 用 Kaeso 构建的作品 |
+| Announcements | 维护者发布的消息，例如新版本 |
+
+达成一致的想法会成为一个功能请求 issue。
 
 ## Issue
 
