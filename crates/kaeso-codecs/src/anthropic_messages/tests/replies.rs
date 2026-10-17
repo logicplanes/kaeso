@@ -376,7 +376,7 @@ fn errors_from_elsewhere_get_anthropic_shapes_and_statuses() {
         let body: Value = serde_json::from_slice(&enc.body).unwrap();
         assert_eq!(
             body,
-            json!({"type": "error", "error": {"type": ty, "message": err.message}})
+            json!({"type": "error", "error": {"type": ty, "message": err.message}, "request_id": null})
         );
         assert_eq!(enc.headers.get("content-type"), Some("application/json"));
     }
@@ -388,6 +388,35 @@ fn errors_from_elsewhere_get_anthropic_shapes_and_statuses() {
             .get("retry-after"),
         Some("2")
     );
+}
+
+#[test]
+fn error_bodies_carry_the_gateway_request_id() {
+    use kaeso_kpp::KppError;
+    let ours = KppError::invalid_request("bad").with_param("max_tokens");
+    let enc = AnthropicMessages::encode_error_for_request(&ours, "req_kaeso_1");
+    assert_eq!(enc.status, 400);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&enc.body).unwrap(),
+        json!({"type": "error", "error": {"type": "invalid_request_error", "message": "bad"}, "request_id": "req_kaeso_1"})
+    );
+    for (name, status) in [("recorded-thinking", 400), ("overloaded", 529)] {
+        let (_, raw) = fixtures(DIALECT, "errors", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap();
+        let theirs = AnthropicMessages::decode_error(status, &HeaderList::new(), &raw);
+        let enc = AnthropicMessages::encode_error_for_request(&theirs, "req_kaeso_2");
+        let mut expected: Value = serde_json::from_slice(&raw).unwrap();
+        expected["request_id"] = json!("req_kaeso_2");
+        assert_eq!(enc.status, status, "{name}");
+        assert_eq!(
+            serde_json::from_slice::<Value>(&enc.body).unwrap(),
+            expected,
+            "{name}"
+        );
+        assert_json_eq(name, &raw, &AnthropicMessages::encode_error(&theirs).body);
+    }
 }
 
 #[test]

@@ -602,13 +602,19 @@ async fn rejections_are_errors_in_the_apps_format() {
             content_type.starts_with("application/json"),
             "{what}: {content_type}"
         );
+        let request_id = resp.headers()["kaeso-request-id"]
+            .to_str()
+            .unwrap()
+            .to_owned();
         let bytes = resp.into_body().collect().await.unwrap().to_bytes();
         let body: serde_json::Value = serde_json::from_slice(&bytes)
             .unwrap_or_else(|_| panic!("{what}: not JSON: {}", String::from_utf8_lossy(&bytes)));
         if anthropic {
             assert_eq!(body["type"], "error", "{what}: {body}");
             assert!(body["error"]["type"].as_str().is_some(), "{what}: {body}");
+            assert_eq!(body["request_id"], request_id.as_str(), "{what}: {body}");
         } else {
+            assert!(!String::from_utf8_lossy(&bytes).contains(&request_id), "{what}");
             assert!(body["error"]["type"].as_str().is_some(), "{what}: {body}");
             assert!(body.get("type").is_none(), "{what}: {body}");
         }
@@ -619,6 +625,74 @@ async fn rejections_are_errors_in_the_apps_format() {
             "{what}: {body}"
         );
     }
+}
+
+#[tokio::test]
+async fn anthropic_apps_must_send_max_tokens_and_errors_name_the_request_id() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    let mut body = messages("claude-haiku-4-5", "Hi");
+    body.as_object_mut().unwrap().remove("max_tokens");
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body.clone())).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json(),
+        json!({
+            "type": "error",
+            "error": {
+                "type": "invalid_request_error",
+                "message": "The request body is not a valid Anthropic Messages request: `max_tokens` is required.",
+            },
+            "request_id": r.header("kaeso-request-id").unwrap(),
+        })
+    );
+    body["model"] = json!("gpt-4o");
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("claude-haiku-4-5", "[mock:error=recorded-thinking]")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let id = r.header("kaeso-request-id").unwrap();
+    assert_eq!(
+        r.json(),
+        json!({
+            "type": "error",
+            "error": {
+                "type": "invalid_request_error",
+                "message": "messages.1.content.0: Invalid `signature` in `thinking` block",
+            },
+            "request_id": id,
+        })
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("claude-haiku-4-5", "[mock:error=recorded-thinking]")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let id = r.header("kaeso-request-id").unwrap();
+    assert!(!r.text().contains(id), "{}", r.text());
+    assert!(r.json().get("request_id").is_none(), "{}", r.text());
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().json()["max_tokens"], 64000);
 }
 
 #[tokio::test]

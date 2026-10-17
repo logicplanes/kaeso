@@ -112,27 +112,53 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
     }
 }
 
-fn body_value(err: &KppError) -> Value {
-    if err.origin.as_ref().is_some_and(|o| o.is(D))
-        && let Some(raw @ Value::Object(map)) = &err.raw
-        && map.get("type").and_then(Value::as_str) == Some("error")
-        && map.get("error").is_some_and(Value::is_object)
-    {
-        return raw.clone();
+fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {
+    match &err.raw {
+        Some(Value::Object(map))
+            if err.origin.as_ref().is_some_and(|o| o.is(D))
+                && map.get("type").and_then(Value::as_str) == Some("error")
+                && map.get("error").is_some_and(Value::is_object) =>
+        {
+            Some(map)
+        }
+        _ => None,
     }
-    let (_, ty) = wire_for_kind(&err.kind);
-    let body = ErrorResponseW {
-        ty: "error".into(),
-        error: ErrorObjectW {
-            ty: ty.into(),
-            message: err.message.clone(),
-        },
-        request_id: None,
-    };
-    serde_json::to_value(&body).unwrap_or(Value::Null)
 }
 
-pub(crate) fn encode_error(err: &KppError) -> EncodedError {
+fn error_object(err: &KppError) -> ErrorObjectW {
+    let (_, ty) = wire_for_kind(&err.kind);
+    ErrorObjectW {
+        ty: ty.into(),
+        message: err.message.clone(),
+    }
+}
+
+fn body_value(err: &KppError, request_id: Option<&str>) -> Value {
+    match own_body(err) {
+        Some(map) => {
+            let mut map = map.clone();
+            if let Some(id) = request_id {
+                map.insert("request_id".to_owned(), Value::from(id));
+            }
+            Value::Object(map)
+        }
+        None => serde_json::to_value(ErrorResponseW {
+            ty: "error".into(),
+            error: error_object(err),
+            request_id: request_id.map(str::to_owned),
+        })
+        .unwrap_or(Value::Null),
+    }
+}
+
+fn stream_value(err: &KppError) -> Value {
+    match own_body(err) {
+        Some(map) => Value::Object(map.clone()),
+        None => serde_json::json!({ "type": "error", "error": error_object(err) }),
+    }
+}
+
+pub(crate) fn encode_error(err: &KppError, request_id: Option<&str>) -> EncodedError {
     let (status, _) = wire_for_kind(&err.kind);
     let own = err.origin.as_ref().is_some_and(|o| o.is(D));
     let status = match err.status {
@@ -144,10 +170,10 @@ pub(crate) fn encode_error(err: &KppError) -> EncodedError {
     if let Some(retry) = err.retry_after {
         crate::codec::push_retry_headers(&mut headers, retry, false);
     }
-    let body = serde_json::to_vec(&body_value(err)).unwrap_or_default();
+    let body = serde_json::to_vec(&body_value(err, request_id)).unwrap_or_default();
     EncodedError::new(status, headers, body)
 }
 
 pub(crate) fn stream_error_data(err: &KppError) -> String {
-    serde_json::to_string(&body_value(err)).unwrap_or_default()
+    serde_json::to_string(&stream_value(err)).unwrap_or_default()
 }

@@ -58,14 +58,25 @@ pub fn stream_encoder(
 }
 
 pub fn encode_error(dialect: DialectId, err: &KppError) -> EncodedError {
-    dispatch!(dialect, encode_error(err)).unwrap_or_else(|_| {
-        let body = serde_json::json!({ "error": { "message": err.message } });
-        EncodedError::new(
-            err.status.unwrap_or(500),
-            HeaderList::new().with("content-type", "application/json"),
-            serde_json::to_vec(&body).unwrap_or_default(),
-        )
-    })
+    dispatch!(dialect, encode_error(err)).unwrap_or_else(|_| no_codec_error(err))
+}
+
+pub fn encode_error_for_request(
+    dialect: DialectId,
+    err: &KppError,
+    request_id: &str,
+) -> EncodedError {
+    dispatch!(dialect, encode_error_for_request(err, request_id))
+        .unwrap_or_else(|_| no_codec_error(err))
+}
+
+fn no_codec_error(err: &KppError) -> EncodedError {
+    let body = serde_json::json!({ "error": { "message": err.message } });
+    EncodedError::new(
+        err.status.unwrap_or(500),
+        HeaderList::new().with("content-type", "application/json"),
+        serde_json::to_vec(&body).unwrap_or_default(),
+    )
 }
 
 pub fn check(dialect: DialectId, req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
