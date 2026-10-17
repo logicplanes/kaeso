@@ -107,7 +107,7 @@ Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen i
 
 | Wire-Feld | KPP | Anmerkungen |
 | --- | --- | --- |
-| `id`, `model` | `Response.id`, `.model` typisiert | |
+| `id`, `model` | `Response.id`, `.model` typisiert | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `status` `completed` | `stop = EndTurn`, oder `ToolUse`, wenn `output` einen `function_call` enthält | |
 | `status` `incomplete` + `incomplete_details.reason` `max_output_tokens` / `content_filter` / anderer | `stop = MaxTokens` / `ContentFilter` / `Other(reason)` | Andere Status (`in_progress`, `cancelled`, `queued`): `Other(status)`; das genaue `status` und `incomplete_details` kommen aus den Overrides zurück. |
 | `status` `failed` + `error {code, message}` | `decode_response` gibt den Fehler zurück | Art allein aus `error.code` (`ResponseErrorCode`), nach jedem Code der [Fehlertabelle](#fehler-errorresponse) und den darunter aufgeführten Codes, zum Beispiel `server_error` → `ProviderError`, `rate_limit_exceeded` → `RateLimited`, `vector_store_timeout` → `Timeout`, `invalid_prompt` → `InvalidRequest`, `cyber_policy` → `ContentFiltered`; andere oder fehlende Codes → `ProviderError`. Ohne Meldung: `The provider reported that the response failed.` Das ganze Objekt bleibt in `raw`. Es ist kein Fehler-Body, daher bekommt eine Responses-App eine `ErrorResponse` mit der Meldung sowie Status, `type` und `code` der Art. |

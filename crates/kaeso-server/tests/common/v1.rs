@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode};
 use http_body_util::BodyExt;
-use kaeso_server::model_api::hooks::{Outcome, Sink};
+use kaeso_server::model_api::hooks::{Limits, Outcome, Sink};
 use kaeso_testkit::mock_provider::MockProvider;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
@@ -45,6 +45,14 @@ pub struct Env {
 }
 
 pub async fn env(capture: Option<Arc<Capture>>, extra: Option<&[(&str, &str)]>) -> Env {
+    env_hooked(capture, None, extra).await
+}
+
+pub async fn env_hooked(
+    capture: Option<Arc<Capture>>,
+    limits: Option<Arc<dyn Limits>>,
+    extra: Option<&[(&str, &str)]>,
+) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
     let mut settings = vec![
@@ -53,7 +61,7 @@ pub async fn env(capture: Option<Arc<Capture>>, extra: Option<&[(&str, &str)]>) 
     ];
     settings.extend_from_slice(extra.unwrap_or(&[]));
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
-    let app = App::start_hooked(&s, &settings, None, sink).await;
+    let app = App::start_hooked(&s, &settings, limits, sink).await;
     let capture = capture.unwrap_or_default();
     let owner = app.setup().await;
     let project = app

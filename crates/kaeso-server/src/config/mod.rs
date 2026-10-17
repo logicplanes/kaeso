@@ -11,6 +11,8 @@ use secrecy::SecretString;
 use serde::Deserialize;
 use url::Url;
 
+pub use crate::http::cors::AllowedOrigins;
+
 pub use load::{ConfigError, MapSource, ProcessSource, Source, load};
 pub use settings::{
     Kind, PROVIDER_ENV_PREFIX, PROVIDER_FIELDS, ProviderField, ProviderVarError, REQUIRED, Setting,
@@ -33,6 +35,8 @@ pub struct Config {
     #[serde(with = "humantime_serde")]
     pub shutdown_grace: Duration,
     pub server: ServerConfig,
+    #[serde(default)]
+    pub cors: CorsConfig,
     pub postgres: PostgresConfig,
     pub clickhouse: ClickHouseConfig,
     pub valkey: ValkeyConfig,
@@ -57,6 +61,15 @@ pub struct Config {
 pub struct ServerConfig {
     #[serde(with = "humantime_serde")]
     pub header_read_timeout: Duration,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CorsConfig {
+    #[serde(default)]
+    pub allowed_origins: String,
+    #[serde(skip)]
+    pub origins: AllowedOrigins,
 }
 
 #[derive(Debug, Deserialize)]

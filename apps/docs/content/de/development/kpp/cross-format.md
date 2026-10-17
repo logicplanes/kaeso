@@ -181,6 +181,10 @@ KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren a
 
 `previous_response_id`, `conversation`, `store: true` und `background: true` brauchen Zustand bei OpenAI, und der Codec lehnt sie mit `Unsupported` ab; das Gateway, nicht der Codec, müsste sie vor KPP auflösen.
 
+## IDs von Antworten
+
+Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die App auch spricht: Eine Claude-Antwort erreicht eine OpenAI-Chat-Completions- oder Responses-App mit ihrer Anthropic-ID (`msg_…`), und eine OpenAI-Antwort erreicht eine Anthropic-Messages-App mit der ID von OpenAI (`chatcmpl-…` oder `resp_…`). Streams tragen dieselbe ID. Die Codecs erfinden nie eine ID im Muster der App, weil die ID des Anbieters die Antwort beim Anbieter benennt; Apps behandeln IDs von Antworten als undurchsichtige Zeichenketten. Ausgabe-Items von Responses, die andere Formate nicht haben, sind die Ausnahme ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)).
+
 ## Speicherung und IDs bei Responses
 
 - Anfragen aus anderen Dialekten, die für OpenAI Responses kodiert werden, tragen `"store": false`. Kaeso ist zustandslos, und ohne dieses Feld würde OpenAI jede übersetzte Unterhaltung speichern. Aus Responses dekodierte Anfragen behalten die Schreibweise der App, daher bedeutet ein fehlendes `store` weiterhin, dass OpenAI die Antwort speichert.

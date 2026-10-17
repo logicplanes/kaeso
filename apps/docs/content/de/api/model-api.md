@@ -75,6 +75,20 @@ Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-
 | `kaeso-provider` | Der Anbieter, der die Anfrage bedient hat, sobald das Modell bekannt ist, auch bei Fehlern |
 | `kaeso-model` | Die Modell-ID des Anbieters, sobald das Modell bekannt ist, auch bei Fehlern |
 
+## Aufrufe aus dem Browser
+
+Ein Browser lässt eine Webseite die API eines anderen Origins nur aufrufen, wenn diese API mit CORS-Headern antwortet. Kaeso sendet keine, bis `KAESO_CORS_ALLOWED_ORIGINS` die Origins Ihrer Web-Apps nennt, etwa `https://app.example.com,http://localhost:5173`; siehe [Browser-Apps](../self-hosting/configuration.md#browser-apps). Dann gilt, nur auf `/v1`:
+
+- **Preflights.** Eine `OPTIONS`-Anfrage mit `Origin` und `Access-Control-Request-Method` von einem eingetragenen Origin wird ohne Schlüssel mit 204 und ohne Body beantwortet: `Access-Control-Allow-Origin` mit diesem Origin, `Access-Control-Allow-Methods: GET, POST`, `Access-Control-Max-Age: 7200` und in `Access-Control-Allow-Headers` die angefragten Header unter denen, die die offiziellen SDKs senden: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` und `x-stainless-…`. Ein Preflight ist keine Modellanfrage: Er wird weder protokolliert noch abgerechnet noch auf Limits angerechnet.
+- **Antworten.** Jede Antwort an einen eingetragenen Origin, auch Fehler, trägt `Access-Control-Allow-Origin` mit diesem Origin und `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, retry-after, retry-after-ms`, damit die App diese Header lesen kann.
+- **Andere Origins** bekommen keine CORS-Header, also blockiert der Browser den Aufruf; ihre Preflights bekommen ein leeres 204. Jede Antwort auf `/v1` trägt `Vary: Origin`, damit Caches die Antworten auseinanderhalten.
+- **Exakte Origins.** Schema, Host und Port müssen übereinstimmen: `https://app.example.com` lässt weder `http://app.example.com` noch `https://www.app.example.com` zu. `*` wird abgelehnt, weil damit jede Website Anfragen mit den Schlüsseln ihrer Besucher senden könnte.
+- **Keine Cookies.** Kaeso sendet nie `Access-Control-Allow-Credentials`, denn Schlüssel stehen in Headern. Die Platform API, die Health-Checks und die Metriken beantworten nie Anfragen von anderen Origins.
+
+Beide SDKs laufen im Browser nur, wenn die App `dangerouslyAllowBrowser: true` übergibt.
+
+> Jeder, der eine Seite benutzt, kann den Schlüssel lesen, den sie enthält. Geben Sie einer Browser-App einen eigenen Schlüssel nur mit Inferenz-Zugriff, kurzer Laufzeit, nur den nötigen Modellen und engen Limits, oder lassen Sie Ihr eigenes Backend kurzlebige Schlüssel ausgeben; siehe [API-Schlüssel](../console/api-keys.md).
+
 ## Was Kaeso nicht tut
 
 - **Wiederholungen.** Kaeso sendet jede Anfrage einmal. Die SDKs wiederholen selbst, wo der Fehler es zulässt.

@@ -181,6 +181,10 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 `previous_response_id`、`conversation`、`store: true` 和 `background: true` 需要在 OpenAI 端保存状态，编解码器以 `Unsupported` 拒绝它们；要支持它们，必须由网关而不是编解码器在进入 KPP 之前解析。
 
+## 回复 ID
+
+无论应用使用哪种格式，回复都保留服务商的 ID 不变：Claude 的回复以其 Anthropic ID（`msg_…`）到达 OpenAI Chat Completions 或 Responses 应用，OpenAI 的回复以 OpenAI 的 ID（`chatcmpl-…` 或 `resp_…`）到达 Anthropic Messages 应用。流中携带同一个 ID。编解码器从不按应用自身格式的样式编造 ID，因为服务商的 ID 才是在服务商处标识该回复的 ID；应用应把回复 ID 当作不透明的字符串。例外是其他格式没有的 Responses 输出项（[Responses 的存储与 ID](#responses-的存储与-id)）。
+
 ## Responses 的存储与 ID
 
 - 来自其他方言、编码给 OpenAI Responses 的请求带有 `"store": false`。Kaeso 是无状态的，没有这一项，OpenAI 会存储每一段经过转换的对话。从 Responses 解码的请求保留应用自己的写法，因此缺少 `store` 仍意味着 OpenAI 会存储该响应。

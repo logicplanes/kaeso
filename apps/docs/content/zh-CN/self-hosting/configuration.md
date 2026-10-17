@@ -32,6 +32,12 @@ order: 3
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | 收到关闭信号后，进行中的请求和流还可以继续运行多久。届时仍未结束的请求会以应用所用格式的错误（503）结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | 客户端发送一个请求的请求头最多可用多久，以及一个连接在两个请求之间最多可空闲多久，超时后网关会关闭该连接；1 秒到 10 分钟。正在应答的请求（例如长流）不会因此被中断。 |
 
+### 浏览器应用
+
+| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- | --- |
+| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | text | — | 以逗号分隔的 Web 应用源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`：协议、主机和端口，不带路径。只有这些源会收到 CORS 响应头，且只在 `/v1` 上；未列出任何源时，Kaeso 完全不发送 CORS 响应头。`*` 以及不是源的值会使网关在启动时停止。请参阅[从浏览器调用](../api/model-api.md#从浏览器调用)。 |
+
 ### 数据库
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |

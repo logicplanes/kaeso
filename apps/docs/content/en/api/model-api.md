@@ -75,6 +75,20 @@ Chat Completions has no field for a model's reasoning. When a Chat Completions a
 | `kaeso-provider` | The provider that served the request, once the model is known, errors included |
 | `kaeso-model` | The provider's model id, once the model is known, errors included |
 
+## Calling from a browser
+
+A browser lets a web page call another origin's API only when that API answers with CORS headers. Kaeso sends none until `KAESO_CORS_ALLOWED_ORIGINS` lists the origins of your web apps, such as `https://app.example.com,http://localhost:5173`; see [browser apps](../self-hosting/configuration.md#browser-apps). Then, on `/v1` only:
+
+- **Preflights.** An `OPTIONS` request with `Origin` and `Access-Control-Request-Method` from a listed origin is answered with 204 and no body, without a key: `Access-Control-Allow-Origin` with that origin, `Access-Control-Allow-Methods: GET, POST`, `Access-Control-Max-Age: 7200`, and in `Access-Control-Allow-Headers` the requested headers among those the official SDKs send: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` and `x-stainless-…`. A preflight is no model request: it isn't logged, charged or counted against limits.
+- **Answers.** Every answer to a listed origin, errors included, carries `Access-Control-Allow-Origin` with that origin and `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, retry-after, retry-after-ms`, so the app can read those headers.
+- **Other origins** get no CORS headers, so the browser blocks the call; their preflights get an empty 204. Every answer on `/v1` carries `Vary: Origin`, so caches keep the answers apart.
+- **Exact origins.** Scheme, host and port must match: `https://app.example.com` admits neither `http://app.example.com` nor `https://www.app.example.com`. `*` is refused, because it would let every website send requests with the keys its visitors hold.
+- **No cookies.** Kaeso never sends `Access-Control-Allow-Credentials`, since keys travel in headers. The Platform API, the health checks and the metrics never answer cross-origin requests.
+
+Both SDKs refuse to run in a browser unless the app passes `dangerouslyAllowBrowser: true`.
+
+> Everyone who uses a page can read the key it holds. Give a browser app its own key with inference access only, a short expiry, only the models it needs and tight limits, or have your own backend hand out short-lived keys; see [API keys](../console/api-keys.md).
+
 ## What Kaeso doesn't do
 
 - **Retries.** Kaeso sends each request once. The SDKs retry on their own where the error allows it.

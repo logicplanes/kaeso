@@ -101,7 +101,7 @@ OpenAI Chat Completions，`POST /v1/chat/completions`，包括流式。编解码
 
 | Wire 字段 | KPP | 说明 |
 |---|---|---|
-| `id`、`model` | `Response.id`、`.model` | |
+| `id`、`model` | `Response.id`、`.model` | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `object` | 无 | 始终为 `chat.completion`；其他值或没有该字段：形式标记 `object`。 |
 | `created`、`service_tier`、`system_fingerprint`、`metadata`、`moderation` | extras | extras 中没有 `created` 的回复（例如来自其他方言的回复）取 `EncodeCtx::created_at`，没有时为 `0`。 |
 | `choices` | `choices[0]` | 多于一个 choice：`Unsupported`（`n`）；没有 choice：`ProviderError`；`index` 不为 0：extras `choice.index`。 |

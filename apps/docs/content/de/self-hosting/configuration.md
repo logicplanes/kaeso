@@ -32,6 +32,12 @@ Das Gateway wird mit `KAESO_*`-Umgebungsvariablen konfiguriert, optional ergänz
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach einem Shutdown-Signal weiterlaufen dürfen. Die dann noch offenen enden mit einem Fehler im Format der App (503) und werden abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen darf und wie lange eine Verbindung zwischen zwei Anfragen ungenutzt bleiben darf, bevor das Gateway sie schließt; 1 s bis 10 min. Eine Anfrage, die gerade beantwortet wird, etwa ein langer Stream, wird dadurch nie unterbrochen. |
 
+### Browser-Apps
+
+| Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- | --- |
+| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | Text | — | Kommagetrennte Origins der Web-Apps, die die Modell-API aus einem Browser aufrufen dürfen, etwa `https://app.example.com,http://localhost:5173`: Schema, Host und Port, ohne Pfad. Nur sie bekommen CORS-Header, und nur auf `/v1`; ist keiner eingetragen, sendet Kaeso überhaupt keine CORS-Header. `*` und Werte, die kein Origin sind, verhindern den Start des Gateways. Siehe [Aufrufe aus dem Browser](../api/model-api.md#aufrufe-aus-dem-browser). |
+
 ### Datenbanken
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
