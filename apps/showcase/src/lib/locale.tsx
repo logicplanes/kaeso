@@ -45,7 +45,7 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     Dark: "Dunkel",
     "All examples": "Alle Beispiele",
     "All states · light and dark": "Alle Zustände · hell und dunkel",
-    "Search pages, components and props": "Seiten, Komponenten und Props suchen",
+    "Search pages, components and props": "Seiten, Komponenten, Props suchen",
     "Nothing matches. Try a component or a prop name.": "Keine Treffer. Suchen Sie nach einer Komponente oder einem Prop.",
   },
   "zh-CN": {

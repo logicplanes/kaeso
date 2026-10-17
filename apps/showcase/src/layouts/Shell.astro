@@ -25,16 +25,27 @@ const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(la
         <a href={localizedPath(lang, "/")} aria-label={t("Kaeso UI home")} class="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
           <svg viewBox="72 69.3 881.9 177.7" width="60" height="12" fill="currentColor" aria-hidden="true" id="mobile-wordmark"></svg>
         </a>
-        <button
-          type="button"
-          data-open-nav
-          aria-label={t("Open navigation")}
-          aria-haspopup="dialog"
-          aria-expanded="false"
-          class="inline-flex size-32 cursor-pointer items-center justify-center rounded-pill material-ghost transition-control focus-ring"
-        >
-          <Icon icon={icons.sidebar} size="sm" />
-        </button>
+        <span class="flex items-center">
+          <button
+            type="button"
+            data-open-search
+            aria-label={t("Search")}
+            aria-haspopup="dialog"
+            class="inline-flex size-32 cursor-pointer items-center justify-center rounded-pill material-ghost transition-control focus-ring"
+          >
+            <Icon icon={icons.search} size="sm" />
+          </button>
+          <button
+            type="button"
+            data-open-nav
+            aria-label={t("Open navigation")}
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            class="inline-flex size-32 cursor-pointer items-center justify-center rounded-pill material-ghost transition-control focus-ring"
+          >
+            <Icon icon={icons.sidebar} size="sm" />
+          </button>
+        </span>
       </div>
     </header>
     <main class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel safe-area-panel lg:my-8 lg:mr-8 lg:rounded-panel lg:shadow-panel">
@@ -57,6 +68,7 @@ const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(la
   import { wordmark } from "../../../../packages/ui/src/components/logo/paths";
   function setup() {
     document.querySelectorAll<HTMLButtonElement>("[data-open-nav]").forEach((b) => (b.onclick = () => window.dispatchEvent(new Event("kaeso:open-nav"))));
+    document.querySelectorAll<HTMLButtonElement>("[data-open-search]").forEach((b) => (b.onclick = () => window.dispatchEvent(new Event("kaeso:open-search"))));
     document.querySelectorAll<HTMLButtonElement>("[data-sidebar-expand]").forEach((b) => {
       let intent: ReturnType<typeof setTimeout> | undefined;
       b.onclick = () => {

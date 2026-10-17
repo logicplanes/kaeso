@@ -14,6 +14,7 @@ const lang = docsLangOf(Astro.params.lang);
   title={`${page.title} · ${docsText(lang, "States")}`}
   description={`Every state of ${page.title}, in light and dark.`}
   path={`/components/${page.slug}/states`}
+  noindex
 >
   <main class="min-h-dvh bg-panel" data-states-page={page.slug}>
     <header class="flex h-52 items-center gap-12 px-24 hairline-b">

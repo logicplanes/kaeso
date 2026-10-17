@@ -49,7 +49,7 @@ Then run the suites of the parts you changed: the [end-to-end tests](#end-to-end
 | `pnpm test` | Vitest with coverage thresholds, in both libraries, the console and the docs, then the tests of the repository's scripts in `scripts/`, such as the changelog's, with `node --test` |
 | `pnpm i18n` | Every text of the console in German and Chinese, with the same placeholders and nothing left over ([translations](translations.md#checking)) |
 | `pnpm knip` | Unused files, exports and dependencies |
-| `pnpm build` | Every production build, ending with its bundle budgets ([performance](performance.md)) |
+| `pnpm build` | Every production build, ending with its bundle budgets ([performance](performance.md)); both sites' builds then run the site check ([the sites](releasing.md#the-sites)) |
 | `pnpm licenses:check` | After a build: the license of every package whose code is shipped ([dependencies](dependencies.md#license-policy)) |
 | `pnpm release:check` | After a build: packs both libraries as npm would and checks that every file they must ship is there, at one version |
 | `pnpm e2e` | Playwright in the console, the docs and the showcase, one after the other; the showcase's suite runs against its build, so `pnpm build` comes first |
@@ -79,11 +79,11 @@ A test fails on any error the browser reports while it runs: an uncaught error o
 
 ### The documentation site
 
-The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/fixtures/content`, never the real pages, so a change to the documentation never breaks a test. `pnpm --filter kaeso-docs e2e` runs Playwright, axe included, against a production build of those pages. The real pages are checked by `pnpm --filter kaeso-docs check:content` and by the build.
+The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/fixtures/content`, never the real pages, so a change to the documentation never breaks a test. `pnpm --filter kaeso-docs e2e` runs Playwright, axe included, against a production build of those pages. The real pages are checked by `pnpm --filter kaeso-docs check:content` and by the build. The suite also runs the site check on its build and opens the search from the phone bar at 375 by 812 pixels in every language; the site check's own tests are in `scripts/check-site.test.mjs`.
 
 ### The UI library and the showcase
 
-Component tests run in happy-dom with Testing Library and assert on what a person sees. The showcase has no unit tests; its end-to-end suite runs Playwright against its production build, so `pnpm build` comes first: axe in the light and dark themes, the keyboard and focus rings, the type scale, motion and geometry against the tokens, menus that open in place, every component page at phone width without sideways scrolling, and the German and Chinese pages, written in their language before any script runs and hydrated without a mismatch.
+Component tests run in happy-dom with Testing Library and assert on what a person sees. The showcase has no unit tests; its end-to-end suite runs Playwright against its production build, so `pnpm build` comes first: axe in the light and dark themes, the keyboard and focus rings, the type scale, motion and geometry against the tokens, menus that open in place, every component page at phone width without sideways scrolling, the German and Chinese pages, written in their language before any script runs and hydrated without a mismatch, the search opened from the phone header at 375 by 812 pixels in every language, the sitemap and the head of every kind of page, and links into the repository that name the release's tag.
 
 ## Rust
 

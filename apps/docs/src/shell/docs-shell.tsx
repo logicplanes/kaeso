@@ -5,7 +5,7 @@ import { homePath, type Locale } from "~/i18n/locales";
 import { useText } from "~/i18n/text";
 import type { NavGroup, SearchEntry } from "~/markdown/ast";
 import { loadSearchIndex } from "~/site/data";
-import { DocsSidebar } from "./docs-sidebar";
+import { DocsSidebar, SearchButton } from "./docs-sidebar";
 import { listenForSearchKey, setSearchOpen, useSearchOpen } from "./search-store";
 import { toast } from "./toast";
 
@@ -64,7 +64,7 @@ export function DocsShell({ locale, nav }: { locale: Locale; nav: NavGroup[] }) 
   return (
     <TooltipProvider>
       <Sidebar.Provider storageKey="kaeso-docs:sidebar">
-        <AppFrame sidebar={<DocsSidebar nav={nav} />} brandHref={homePath(locale)} brandLabel={t("site.home")}>
+        <AppFrame sidebar={<DocsSidebar nav={nav} />} brandHref={homePath(locale)} brandLabel={t("site.home")} phoneActions={<SearchButton tooltip={false} />}>
           <Outlet />
         </AppFrame>
       </Sidebar.Provider>
