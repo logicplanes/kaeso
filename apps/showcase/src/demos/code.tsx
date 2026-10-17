@@ -26,6 +26,9 @@ export function States() {
         <Code shape="pill">auto</Code>
         <Code shape="rounded">rounded</Code>
       </div>
+      <p className="mt-16 max-w-320 text-body text-fg-secondary">
+        Print the document with <Code flow="text">docker compose exec gateway kaeso openapi</Code>; every operation names its right.
+      </p>
     </StateSection>
   );
 }

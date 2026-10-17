@@ -32,6 +32,7 @@ t.viz.forEach((v, i) => {
 for (const [name, m] of Object.entries(t.weight)) both(`weight-${name}`, m);
 for (const [name, m] of Object.entries(t.shadow)) both(`shadow-${name}`, m);
 for (const [name, m] of Object.entries(t.material)) both(name, m);
+for (const [name, m] of Object.entries(t.themeDisplay)) both(name, m);
 light.push("  color-scheme: light;");
 dark.push("  color-scheme: dark;");
 
