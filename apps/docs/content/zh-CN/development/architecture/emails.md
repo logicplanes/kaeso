@@ -8,20 +8,14 @@ Kaeso 发送的每封邮件都来自网关的 `crates/kaeso-mail`：一个布局
 
 ## 邮件的构成
 
-```text
-KAESO                                   the wordmark alone, top left, 28px in and 28px down
-
-Sign in to Kaeso                        heading: title-lg, 28/34, semibold
-The link works once and expires in      one sentence: body-lg, 15/22, secondary
-15 minutes.
-
-( Sign in )                             one button: the xl pill, ink on white
-
-If you did not ask to sign in, you      one quiet line: small, 13/18, tertiary
-can ignore this email.
-
-Sent by Kaeso at kaeso.example.com.     footer: caption, 12/16; the install, and why
-```
+| 部分 | 登录邮件中的内容 | 样式 |
+| --- | --- | --- |
+| 文字标识 | Kaeso | 单独放在左上角，距左 28px、距上 28px |
+| 标题 | 登录 Kaeso | `title-lg`，28/34，semibold |
+| 一句话 | 此链接仅可使用一次，15 分钟后过期。 | `body-lg`，15/22，次要色 |
+| 一个按钮 | 登录 | `xl` 胶囊按钮，白底墨色 |
+| 一行弱化文字 | 如果您没有请求登录，可以忽略此邮件。 | `small`，13/18，三级色 |
+| 页脚 | 此邮件由 kaeso.example.com 上的 Kaeso 发送。 | `caption`，12/16；说明安装实例和发送原因 |
 
 - **没有卡片。** 只有一个左对齐的栏，最宽 562px，直接放在画布上，与控制台一样：浅色模式为白色，深色模式为黑色。没有面板，没有边框，四周也没有灰色背景。
 - **文案。** 主题最多 60 个字符且不带句号，标题最多 48 个字符，然后最多一句话、一个按钮和一行次要说明，例如链接的有效期，或者如果不是本人操作该怎么办。句子遵循网关的文案规则：一句话，第二层意思用分号连接，以句号结尾，最多 100 个字符。有测试强制执行这些上限。

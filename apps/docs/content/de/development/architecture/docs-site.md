@@ -6,11 +6,15 @@ order: 3
 
 Die Dokumentation ist das Paket `kaeso-docs` in `apps/docs`: Markdown-Seiten in drei Sprachen, gebaut zu einer statischen Website, die aussieht und funktioniert wie die Konsole und nur mit `@logicplanes/kaeso-ui` gezeichnet ist. [Dokumentation schreiben](../documentation.md) erklärt, wie eine Seite geschrieben wird; diese Seite erklärt, wie die Website funktioniert.
 
-```text
-content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─▶ virtual modules ─▶ src/ (React, @logicplanes/kaeso-ui) ─▶ dist/
-                              frontmatter · marked's lexer · links,          site/<language>: sidebar, titles, previous/next, a loader per page
-                              anchors and images checked · search words      page/<language>/<path>: one page's blocks, its own chunk
-                              the same pages in every language               search/<language>: the index, loaded with the search
+```mermaid
+flowchart TD
+  accTitle: Von Markdown zur Website
+  accDescr: Beim Build liest scripts/content die Seiten in content und die gezeichneten Diagramme in diagrams, prüft sie und schreibt virtuelle Module für die Website jeder Sprache, jede Seite und die Suche. Die React-App in src zeichnet sie mit der UI-Bibliothek, und Vite schreibt dist.
+  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>Frontmatter, Links, Anker, Bilder,<br>Suchwörter, jede Sprache]
+  diagrams[diagrams/*.svg<br>Mermaid-Blöcke, gezeichnet] --> content
+  content --> modules[Virtuelle Module<br>Website, Seite und Suche pro Sprache]
+  modules --> app[src/, React und kaeso-ui]
+  app --> dist[dist/]
 ```
 
 ## Inhaltsmodell
@@ -23,8 +27,9 @@ content/<language>/**/*.md ─▶ scripts/content (at build time, in Vite) ─�
 | Eine Gruppe in der Seitenleiste | Ein Ordner in einer Sprache | Benannt nach dem `title` ihrer `index.md` oder nach dem Ordnernamen; platziert nach der `order` dieser `index.md` |
 | Eine verschachtelte Seite | Ein Ordner in einer Gruppe, mit `index.md` | Ihre Seiten erscheinen eingerückt darunter; höchstens drei Ordnerebenen |
 | Reihenfolge in einem Ordner | Frontmatter `order` | Zuerst die `index.md` des Ordners, dann nach `order`, dann nach Beschriftung |
-| Beschriftung einer Seite in der Seitenleiste | Frontmatter `nav` | Standard ist der Titel; für `index.md` das „Übersicht“ der Sprache (für die Startseite „Einführung“) |
+| Beschriftung einer Seite in der Seitenleiste | Frontmatter `nav` | Standard ist der Titel; für das `index.md` einer Gruppe das „Übersicht“ der Sprache (auf der Startseite „Einführung“), für das `index.md` eines verschachtelten Ordners sein Titel |
 | Bilder und Dateien | Überall in `content/` | Nur veröffentlicht, wenn eine Seite sie zeigt oder verlinkt; ihre Größe wird beim Build gelesen |
+| Ein Diagramm | Ein `mermaid`-Codeblock in einer Seite | In Chromium als helles und dunkles SVG in `apps/docs/diagrams/` gezeichnet, benannt nach einem Hash seiner Quelle und des Looks der Website, und als Bilder gezeigt, die dem Theme folgen; `accTitle` ist Pflicht |
 | Entwürfe und private Notizen | Namen, die mit `_` oder `.` beginnen | Nicht Teil der Website |
 
 Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Satz, höchstens 140 Zeichen) sind Pflicht, `order` und `nav` optional. Jedes andere Feld ist ein Fehler, damit ein Tippfehler nie stillschweigend wirkungslos bleibt.
@@ -41,6 +46,9 @@ Das Frontmatter hat genau vier Felder: `title` und `description` (ein kurzer Sat
 | `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links aufgelöst wie auf GitHub, Bilder und ihre Größen, die Suche |
 | `docs.ts` | Alle Sprachen: je eine Website mit Präfix und Beschriftungen, und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
 | `changelog.ts` | Die Changelog-Seite, in jeder Sprache aus `CHANGELOG.md` erzeugt ([das Changelog](#das-changelog)) |
+| `diagram.ts` | Titel und Beschreibung eines Diagramms, die Mermaid-Konfiguration aus Kaesos Tokens und der Hash, der seine Zeichnungen benennt |
+| `mermaid.ts` | Zeichnet Diagramme mit dem Paket `mermaid` in Headless-Chromium, mit geladener Inter, und macht aus jedem ein helles und ein dunkles SVG ohne Stylesheet oder Skript |
+| `diagrams.ts` | `pnpm --filter kaeso-docs diagrams`: zeichnet fehlende Diagramme nach `apps/docs/diagrams/` und entfernt ungenutzte |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen bei Änderungen in der Entwicklung, eine HTML-Datei pro Seite und Sprache mit ihrem Head für Suchmaschinen und Linkvorschauen, `404.html`-Dateien und die Sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: dieselben Prüfungen, ohne die App zu bauen |
 
@@ -68,6 +76,12 @@ Seiten werden im Browser auf GitHub bearbeitet, daher behandelt der Build sie al
 ### Links, die auf GitHub und auf der Website funktionieren
 
 Ein Link wird zwischen Dateien geschrieben, so wie GitHub ihm folgt: `[keys](../console/api-keys.md#create-a-key)`. Der Build löst ihn relativ zum Ordner der Datei auf, prüft, dass Seite und Überschrift existieren, und schreibt die Adresse der Website in der Sprache der Seite (`/de/console/api-keys#schlüssel-erstellen`). Überschriften verwenden die Anker von GitHub, daher funktioniert derselbe Anker an beiden Orten; eine übersetzte Seite verlinkt auf den Anker der übersetzten Überschrift.
+
+### Diagramme
+
+Ein `mermaid`-Codeblock wird beim Build zu einem Diagramm, sodass Lesende zwei statische SVG-Dateien und keinen Mermaid-Code erhalten und die strikte Content Security Policy bleibt, wie sie ist. `mermaid.ts` rendert jedes Diagramm zweimal in Headless-Chromium, mit Farben, Schrift und Radius aus `@logicplanes/kaeso-tokens` als Theme-Variablen von Mermaid und Beschriftungen als SVG-Text, gemessen in Inter. Danach schreibt es jeden berechneten Stil an sein Element und entfernt das Stylesheet, die Schatten und die erzeugten Attribute, sodass ein mit `<img>` gezeigtes SVG nichts von der Seite braucht. Die Zeichnungen liegen in `apps/docs/diagrams/`, benannt nach einem Hash aus der Quelle des Diagramms, der Mermaid-Version und der Konfiguration; sie sind committet, sodass ein Build ohne Chromium sie nur liest. `pnpm build` und der Dev-Server zeichnen Fehlendes, und `check:content` schlägt bei einem Diagramm fehl, das für eine ältere Quelle gezeichnet wurde, und bei einer Zeichnung, die keine Seite nutzt.
+
+Die Seite zeigt ein Diagramm als `ThemeImage` aus `@logicplanes/kaeso-ui`: beide Bilder, von denen nur das zum aktuellen Theme angezeigt wird; es folgt der Theme-Einstellung der Website und druckt das helle. Sein Alternativtext ist das `accTitle` des Diagramms, `accDescr` seine Beschreibung für Screenreader, und beide sind mit den Beschriftungen des Diagramms Suchwörter. Ein Diagramm schrumpft auf die Spalte eines Telefons um höchstens ein Viertel und scrollt darüber hinaus seitwärts in seinem eigenen Bereich, nie die Seite. Ein Diagramm, das sich nicht parsen lässt, lässt den Build mit Datei und Zeile scheitern; ebenso ein Codeblock, der ein Diagramm mit Rahmenzeichen oder Pfeilen zeichnet.
 
 ### Das Changelog
 

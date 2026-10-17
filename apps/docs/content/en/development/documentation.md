@@ -80,10 +80,10 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 Put the image next to the page or in an `images/` folder beside it, and give it alt text that says what it shows:
 
 ```markdown
-![The request flow: app, key, model, limits, provider](images/request-flow.svg)
+![The API keys page with one key](images/api-keys.png)
 ```
 
-PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, and an image without alt text fails the build. Choose images that read on light and dark backgrounds; an SVG can switch its own colours with `@media (prefers-color-scheme: dark)`. Linking any other file in `content/` publishes that file.
+PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, and an image without alt text fails the build. Choose images that read on light and dark backgrounds; an SVG can switch its own colours with `@media (prefers-color-scheme: dark)`. Linking any other file in `content/` publishes that file. An image never shows a diagram: draw it as a [Mermaid block](#diagrams).
 
 ## Callouts
 
@@ -95,6 +95,33 @@ GitHub's alerts, with the kind alone on the first line:
 ```
 
 `NOTE`, `TIP`, `IMPORTANT`, `WARNING` and `CAUTION` each have their own look and title. Use them sparingly.
+
+## Diagrams
+
+Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a Mermaid block. The build draws it in Kaeso's own look, as a light and a dark image that follow the site's theme; no Mermaid code reaches the reader. A diagram is never drawn with box-drawing characters or arrows in a code block, and never shown as a screenshot or an image: the build fails on a code block that draws with characters such as `─`, `│`, `└`, `▶` or `→`.
+
+````markdown
+```mermaid
+sequenceDiagram
+  accTitle: Request flow
+  accDescr: The app sends a request to the gateway, which sends it on to the provider and returns the reply in the app's format.
+  participant App
+  participant Gateway
+  participant Provider
+  App->>Gateway: Request in the app's format
+  Gateway->>Provider: Request in the provider's format
+  Provider-->>Gateway: Reply
+  Gateway-->>App: Reply in the app's format
+```
+````
+
+- Choose the type that fits: `flowchart` for parts and how they connect, `sequenceDiagram` for requests and replies between parties, `stateDiagram-v2` for a lifecycle. `flowchart TD`, top to bottom, stays readable on a phone; a diagram wider than the column scrolls inside its own frame.
+- `accTitle:` names the diagram in a few words and is required. `accDescr:` says in one or two sentences what it shows; screen readers read both, and search finds them with the diagram's labels.
+- Keep labels short, in the page's language; names from the code stay as they are. `<br>` breaks a label onto a second line.
+- Draw a diagram only where it helps; a short list or a table is often clearer.
+- No `%%` comments and no `%%{init}`: the site sets the colours, the type and the radius from Kaeso's tokens.
+
+The drawings are committed in `apps/docs/diagrams/`. `pnpm --filter kaeso-docs diagrams` draws new and changed diagrams with Chromium and removes the ones no page uses; the dev server and `pnpm build` draw what is missing as you go. `check:content` fails when a diagram has changed since it was drawn, and a diagram that doesn't parse fails with its file and line.
 
 ## Everything else
 

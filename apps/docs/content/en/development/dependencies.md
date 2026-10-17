@@ -156,6 +156,7 @@ The font files are unmodified subsets and keep their names. `pnpm release:check`
 | `@tanstack/react-router` | MIT | One route tree per language; every address loads its page's chunk |
 | `marked` (build only) | MIT | The Markdown lexer of the content build; pages are compiled at build time, so it never reaches the browser |
 | `image-size` (build only) | MIT | The width and height of every image, so pages don't shift as images load |
+| `mermaid` (build only) | MIT | Draws the pages' diagrams into SVG files at build time, in headless Chromium; none of its code reaches the browser |
 
 ### Build, test and showcase tools
 
@@ -173,7 +174,7 @@ None of these is part of a published package or of the console's or the document
 | `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Sample traffic through the gateway in `pnpm seed` |
 | `vitest`, `@vitest/coverage-v8`, `happy-dom` | MIT | Unit and component tests with coverage |
 | `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom` | MIT | Tests from what a person sees |
-| `@playwright/test` | Apache-2.0 | End-to-end tests |
+| `@playwright/test` | Apache-2.0 | End-to-end tests, and the headless Chromium that draws the documentation's diagrams |
 | `@axe-core/playwright`, `axe-core` | MPL-2.0 | Accessibility checks in the end-to-end tests |
 | `pngjs` | MIT | Reads screenshots in the showcase's geometry checks |
 | `astro`, `@astrojs/react`, `@astrojs/mdx` | MIT | The showcase |

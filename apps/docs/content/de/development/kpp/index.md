@@ -26,6 +26,26 @@ let reply = dispatch::decode_response(DialectId::OpenAiChat, status, &reply_head
 let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &EncodeCtx::for_request(req))?;
 ```
 
+```mermaid
+sequenceDiagram
+  accTitle: Der Weg einer Anfrage durch KPP
+  accDescr: Der Codec für Anthropic Messages dekodiert die Anfrage der App nach KPP, wo sie validiert wird. Der Codec für OpenAI Chat Completions prüft und kodiert sie, und das Gateway sendet sie an den Anbieter. Derselbe Codec dekodiert die Antwort des Anbieters nach KPP, und der Codec der App kodiert sie im Format der App.
+  participant App
+  participant In as Codec Anthropic Messages
+  participant KPP
+  participant Out as Codec OpenAI Chat
+  participant Provider as Anbieter
+  App->>In: Body und Header
+  In->>KPP: 1 dekodieren
+  Note over KPP: 2 validieren
+  KPP->>Out: 3 prüfen und kodieren
+  Out->>Provider: Anfrage des Anbieters
+  Provider-->>Out: Antwort
+  Out-->>KPP: 4 Antwort dekodieren
+  KPP-->>In: 5 Antwort kodieren
+  In-->>App: Antwort im Format der App
+```
+
 1. **Dekodieren.** Der Codec der App liest Body und Header in einen KPP-`Request`. `decode_request` nimmt eine `RequestKind` entgegen, weil sich die Bodies von Anthropics `/v1/messages` und `/v1/messages/count_tokens` ohne den Endpunkt nicht unterscheiden lassen. Was KPP nicht modelliert, wird in `Extras` aufbewahrt, gebunden an den Dialekt, aus dem es kam.
 2. **Validieren.** `validate()` prüft, was jeder Dialekt braucht, etwa ein Modell, Nachrichten mit Inhalt, eindeutige Tool-Aufruf-IDs und Tool-Namen und eine `tool_choice`, die ein definiertes Tool nennt.
 3. **Prüfen und kodieren.** `encode_request` führt zuerst `check()` des Ziels aus, das mit `Unsupported` ablehnt, was das Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird ([Formatwechsel](cross-format.md)). Danach schreibt es die Anfrage an den Anbieter. `EgressCtx` trägt, was das Gateway über das Ziel weiß: Art der Anfrage und Stream-Modus, den Anbieter und ob das Modell Reasoning beherrscht oder adaptives Thinking hat. Der Encoder ergänzt die Tool-IDs und -Namen, die er umschreiben musste.
@@ -115,6 +135,21 @@ Die Typen sind davon geprägt, was die Codecs brauchen, um verlustfrei zu bleibe
 ## Streams
 
 Ein KPP-Stream ist `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, wobei `Error` an jeder Stelle möglich ist und `Extra` Dialekt-Events trägt, die KPP nicht modelliert.
+
+```mermaid
+stateDiagram-v2
+  accTitle: Die Reihenfolge der Events eines KPP-Streams
+  accDescr: Ein Stream beginnt mit ResponseStart. Dann folgen beliebig viele Blöcke, jeder aus BlockStart, beliebig vielen BlockDelta und BlockStop, dann beliebig viele ResponseDelta, und ResponseStop beendet ihn. Error ist an jeder Stelle möglich.
+  [*] --> ResponseStart
+  ResponseStart --> BlockStart
+  BlockStart --> BlockDelta: beliebig viele
+  BlockDelta --> BlockStop
+  BlockStop --> BlockStart: nächster Block
+  BlockStop --> ResponseDelta: beliebig viele
+  ResponseStart --> ResponseDelta: keine Blöcke
+  ResponseDelta --> ResponseStop
+  ResponseStop --> [*]
+```
 
 - **Blockindizes** gehören KPP selbst: 0, 1, 2, … in der Reihenfolge, in der Blöcke beginnen. Blöcke dürfen sich überlappen (OpenAI streamt parallele Tool-Aufrufe so), daher nennt jedes Event seinen Block.
 - **Jedes Lifecycle-Event trägt `Extras`**, sodass eine Wiedergabe im selben Dialekt die ursprünglichen Events exakt reproduziert, einschließlich Feldern einzelner Events wie OpenAIs `obfuscation`.

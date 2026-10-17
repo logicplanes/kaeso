@@ -89,7 +89,7 @@ Ein Test schlägt bei jedem Fehler fehl, den der Browser während des Laufs meld
 
 ### Die Dokumentations-Website
 
-Unit-Tests und End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixtures/content`, nie die echten Seiten, sodass eine Änderung an der Dokumentation nie einen Test bricht. `pnpm --filter kaeso-docs e2e` führt Playwright samt axe gegen einen Produktions-Build der Fixtures aus; die Suite führt auch die Website-Prüfung an diesem Build aus und öffnet die Suche aus der Telefonleiste bei 375 × 812 Pixeln in jeder Sprache. Die echten Seiten prüfen `pnpm --filter kaeso-docs check:content` und der Build. Die Tests der Website-Prüfung selbst stehen in `scripts/check-site.test.mjs`.
+Unit-Tests und End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixtures/content`, nie die echten Seiten, sodass eine Änderung an der Dokumentation nie einen Test bricht. `pnpm --filter kaeso-docs e2e` führt Playwright samt axe gegen einen Produktions-Build der Fixtures aus; die Suite führt auch die Website-Prüfung an diesem Build aus und öffnet die Suche aus der Telefonleiste bei 375 × 812 Pixeln in jeder Sprache. Die echten Seiten prüfen `pnpm --filter kaeso-docs check:content` und der Build. Die Tests der Website-Prüfung selbst stehen in `scripts/check-site.test.mjs`. Die Tests des Diagramm-Renderers zeichnen in Chromium, wie der Build, daher braucht `pnpm test` das Chromium, das Playwright installiert.
 
 ### Die UI-Bibliothek und der Showcase
 
@@ -171,12 +171,18 @@ e2e/.venv/bin/pytest -q e2e/conformance
 
 Diese Suite prüft, dass die SDKs alles akzeptieren, was die Encoder von KPP erzeugen. Sie baut und startet `kpp-conformance` (`crates/kpp-conformance`, ein Release-Build auf einem zufälligen Port); `KPP_CONFORMANCE_URL=http://127.0.0.1:8787` nutzt stattdessen einen Server, der mit `cargo run --release -p kpp-conformance` gestartet wurde.
 
-```text
-SDK request ──▶ server: decode with the endpoint's codec (ingress decode)
-                 model = "<source dialect>:<fixture>"
-                 fixture ──▶ decode with the SOURCE codec (egress decode) ──▶ KPP
-                 KPP ──▶ encode with the endpoint's codec (ingress encode)
-SDK parses ◀── response / SSE stream / error
+```mermaid
+sequenceDiagram
+  accTitle: Eine Konformitätsanfrage
+  accDescr: Das SDK sendet eine Anfrage, deren Modell einen Quelldialekt und eine Fixture nennt. Der Server decodiert sie mit dem Codec des Endpunkts, decodiert die Fixture mit dem Codec des Quelldialekts nach KPP, codiert das mit dem Codec des Endpunkts und gibt die Antwort, den Stream oder den Fehler zurück, den das SDK dann liest.
+  participant SDK
+  participant Server as kpp-conformance
+  SDK->>Server: Anfrage, model "dialect:fixture"
+  Note over Server: Mit dem Codec des Endpunkts decodieren
+  Note over Server: Die Fixture mit dem Codec<br>des Quelldialekts nach KPP decodieren
+  Note over Server: Mit dem Codec des Endpunkts codieren
+  Server-->>SDK: Antwort, SSE-Stream oder Fehler
+  Note over SDK: Liest sie
 ```
 
 | Endpunkt | Codec | SDK-Aufrufe |

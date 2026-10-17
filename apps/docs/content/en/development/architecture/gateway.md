@@ -8,13 +8,37 @@ The gateway is the one server of an install. Apps call it with the official Open
 
 ## The request path
 
-```text
-app ─▶ /v1 ─▶ 1 key ─▶ 2 decode (KPP) ─▶ 3 model ─▶ 4 limits ─▶ 5 provider key ─▶ 6 encode (KPP) + send ─▶ provider
-app ◀──────── 8 encode reply (KPP) ◀── 7 decode reply (KPP) ◀───────────────────────────────────────────── provider
-                                               └─▶ 9 charge usage (Valkey, PostgreSQL) · 10 log (ClickHouse)
+```mermaid
+sequenceDiagram
+  accTitle: The model API's request path
+  accDescr: The gateway checks the key, decodes the request with KPP, resolves the model, checks the limits, picks the provider key, encodes the request with KPP and sends it. It decodes the reply and encodes it for the app with KPP, then charges usage in Valkey and PostgreSQL and logs the request in ClickHouse.
+  participant App
+  participant Gateway
+  participant KPP
+  participant Provider
+  participant Stores as Valkey, PostgreSQL,<br>ClickHouse
+  App->>Gateway: Request on /v1
+  Gateway->>Gateway: 1 key
+  Gateway->>KPP: 2 decode
+  Gateway->>Gateway: 3 model, 4 limits,<br>5 provider key
+  Gateway->>KPP: 6 encode
+  Gateway->>Provider: 6 send
+  Provider-->>Gateway: Reply
+  Gateway->>KPP: 7 decode reply,<br>8 encode reply
+  Gateway-->>App: Reply
+  Gateway->>Stores: 9 charge usage, 10 log
+```
 
-console, scripts ─▶ /platform/v1 ─▶ session cookie | API key with platform access | platform key
-                                  ─▶ exactly one right per endpoint ─▶ service ─▶ PostgreSQL + audit event
+A Platform API request takes this path:
+
+```mermaid
+flowchart TD
+  accTitle: The Platform API's request path
+  accDescr: The console and scripts call /platform/v1 with a session cookie, an API key with platform access or a platform key. Each endpoint checks exactly one right, then a service changes PostgreSQL and writes an audit event.
+  callers[Console, scripts] -- /platform/v1 --> auth[Session cookie, API key with<br>platform access or platform key]
+  auth --> right[Exactly one right per endpoint]
+  right --> service[Service]
+  service --> db[(PostgreSQL and an audit event)]
 ```
 
 | Code | Where |

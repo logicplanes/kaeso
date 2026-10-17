@@ -136,6 +136,20 @@ Ein Hotfix korrigiert das neueste Release ohne das, was sich seitdem auf `dev` a
 
 `.github/workflows/release.yml` wird von Hand mit einer Version gestartet, und es läuft immer nur ein Lauf; ein zweiter wartet auf den ersten. Validate, Prepare, Checks und Tag laufen nacheinander. Sobald der Tag gepusht ist, starten Sync dev und die Veröffentlichungs-Jobs.
 
+```mermaid
+flowchart TD
+  accTitle: Die Reihenfolge der Jobs im Release-Workflow
+  accDescr: Validate, Prepare, Checks und Tag laufen nacheinander. Nach Tag starten Sync dev, die Images, die npm-Pakete und crates.io. Die Images werden in Image manifest zusammengeführt und ohne Anmeldung gezogen, die npm-Pakete gepackt und veröffentlicht, und GitHub release läuft, sobald Anonymous pull, npm und crates.io fertig sind.
+  validate[Validate] --> prepare[Prepare] --> checks[Checks] --> tag[Tag]
+  tag --> sync[Sync dev]
+  tag --> image[Image] --> manifest[Image manifest] --> pull[Anonymous pull]
+  tag --> pack[Pack npm packages] --> npm[npm]
+  tag --> crates[crates.io]
+  pull --> release[GitHub release]
+  npm --> release
+  crates --> release
+```
+
 Die Jobs, die ins Repository schreiben oder etwas veröffentlichen, laufen in der Umgebung `release`, die nur Läufe von `prod` annimmt. Tag und Sync dev sind die einzigen Jobs, die ins Repository pushen: Sie bauen nichts, führen nur git aus und pushen mit dem eigenen Token des Laufs, sodass ihre Pushes die CI nicht erneut starten.
 
 | Job | Was er tut |

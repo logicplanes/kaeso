@@ -83,10 +83,16 @@ pnpm dev
 
 以 `owner@example.com`（实例管理员兼组织所有者）或 `lin@example.com`（开发者）登录。两者的密码都是 `correct horse battery staple`。邮件会出现在 Mailpit 中：http://127.0.0.1:58025 。
 
-```text
-browser ─▶ http://localhost:3000 (Vite) ─▶ /platform, /v1 sent on to the gateway on 127.0.0.1:18080
-                                         └▶ everything else: the console
-gateway ─▶ provider (mock OpenAI and Anthropic), mail (Mailpit), idp (mock single sign-on)
+```mermaid
+flowchart TD
+  accTitle: 开发环境
+  accDescr: 浏览器打开 localhost:3000 上的 Vite；Vite 把 /platform 和 /v1 转发到 127.0.0.1:18080 上的网关，其他请求则返回控制台。网关调用模拟服务商、Mailpit 和模拟身份提供方。
+  browser[浏览器] --> vite[localhost:3000 上的 Vite]
+  vite -- /platform、/v1 --> gateway[127.0.0.1:18080 上的网关]
+  vite -- 其他所有请求 --> console[控制台]
+  gateway --> provider[模拟 OpenAI 和 Anthropic]
+  gateway --> mail[Mailpit]
+  gateway --> idp[模拟单点登录]
 ```
 
 网关的公开 URL 就是开发服务器的地址，因此会话 Cookie 是第一方 Cookie，浏览器发送的 `Origin` 也正是网关期望的值。在生产环境中，反向代理以同样的方式在同一个域名下提供控制台和网关。

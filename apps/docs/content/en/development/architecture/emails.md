@@ -8,20 +8,14 @@ Every email Kaeso sends comes from the gateway's `crates/kaeso-mail`: one layout
 
 ## What an email is
 
-```text
-KAESO                                   the wordmark alone, top left, 28px in and 28px down
-
-Sign in to Kaeso                        heading: title-lg, 28/34, semibold
-The link works once and expires in      one sentence: body-lg, 15/22, secondary
-15 minutes.
-
-( Sign in )                             one button: the xl pill, ink on white
-
-If you did not ask to sign in, you      one quiet line: small, 13/18, tertiary
-can ignore this email.
-
-Sent by Kaeso at kaeso.example.com.     footer: caption, 12/16; the install, and why
-```
+| Part | In the sign-in email | Style |
+| --- | --- | --- |
+| Wordmark | Kaeso | Alone, top left, 28px in and 28px down |
+| Heading | Sign in to Kaeso | `title-lg`, 28/34, semibold |
+| One sentence | The link works once and expires in 15 minutes. | `body-lg`, 15/22, secondary |
+| One button | Sign in | The `xl` pill, ink on white |
+| One quiet line | If you did not ask to sign in, you can ignore this email. | `small`, 13/18, tertiary |
+| Footer | Sent by Kaeso at kaeso.example.com. | `caption`, 12/16; the install, and why |
 
 - **No card.** A single left-aligned column, at most 562px wide, on the canvas, as in the console: white in light mode, black in dark mode. No panel, no border, no grey page around it.
 - **Copy.** A subject of at most 60 characters without a period, a heading of at most 48, then at most one sentence, one button and one quiet line, such as the expiry or what to do if it wasn't you. Sentences follow the gateway's copy rules: one sentence, a semicolon for a second thought, a period at the end, at most 100 characters. A test enforces the limits.

@@ -83,10 +83,16 @@ This builds the libraries in `packages/`, starts the stack (rebuilding the gatew
 
 Sign in as `owner@example.com`, an instance admin and the organization's owner, or as `lin@example.com`, a developer. Both use the password `correct horse battery staple`. Emails arrive in Mailpit at http://127.0.0.1:58025.
 
-```text
-browser ─▶ http://localhost:3000 (Vite) ─▶ /platform, /v1 sent on to the gateway on 127.0.0.1:18080
-                                         └▶ everything else: the console
-gateway ─▶ provider (mock OpenAI and Anthropic), mail (Mailpit), idp (mock single sign-on)
+```mermaid
+flowchart TD
+  accTitle: The development stack
+  accDescr: The browser opens Vite on localhost:3000, which sends /platform and /v1 on to the gateway on 127.0.0.1:18080 and serves the console for everything else. The gateway calls the mock providers, Mailpit and the mock identity provider.
+  browser[Browser] --> vite[Vite on localhost:3000]
+  vite -- /platform, /v1 --> gateway[Gateway on 127.0.0.1:18080]
+  vite -- everything else --> console[The console]
+  gateway --> provider[Mock OpenAI and Anthropic]
+  gateway --> mail[Mailpit]
+  gateway --> idp[Mock single sign-on]
 ```
 
 The gateway's public URL is the development server's address, so the session cookie is first-party and the browser sends the `Origin` the gateway expects. In production a reverse proxy serves the console and the gateway on one domain in the same way.

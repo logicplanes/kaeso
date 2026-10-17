@@ -6,10 +6,20 @@ order: 1
 
 每个模型请求在网关中都经过相同的路径。每个请求都会被转换，从不原样透传；每个请求只发送一次，从不重试。任何一步的拒绝都会以应用自身格式的错误返回给应用。
 
-```text
-app ─▶ key ─▶ decode ─▶ model ─▶ limits ─▶ provider key ─▶ encode and send ─▶ provider
-app ◀─ encode reply ◀─ decode reply ◀──────────────────────────────────────── provider
-                             └─▶ usage, cost and request log
+```mermaid
+sequenceDiagram
+  accTitle: 请求流程
+  accDescr: 应用以自己的格式发送请求。网关检查密钥、解码请求、解析模型、检查限额并选择服务商密钥，然后编码请求并发送给服务商。它解码服务商的回复，以应用的格式编码后返回，并记录用量、费用和请求日志。
+  participant App as 应用
+  participant Gateway as 网关
+  participant Provider as 服务商
+  App->>Gateway: 应用格式的请求
+  Note over Gateway: 密钥、解码、模型、<br>限额、服务商密钥
+  Gateway->>Provider: 服务商格式的请求
+  Provider-->>Gateway: 回复
+  Note over Gateway: 解码回复，<br>为应用编码
+  Gateway-->>App: 应用格式的回复
+  Note over Gateway: 用量、费用和请求日志
 ```
 
 ## 密钥

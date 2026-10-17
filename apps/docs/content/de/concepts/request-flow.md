@@ -6,10 +6,20 @@ order: 1
 
 Jede Modellanfrage nimmt denselben Weg durch das Gateway. Jede Anfrage wird übersetzt, nie unverändert durchgereicht, und einmal gesendet, nie wiederholt. Eine Ablehnung in irgendeinem Schritt erreicht die App als Fehler in ihrem eigenen Format.
 
-```text
-app ─▶ key ─▶ decode ─▶ model ─▶ limits ─▶ provider key ─▶ encode and send ─▶ provider
-app ◀─ encode reply ◀─ decode reply ◀──────────────────────────────────────── provider
-                             └─▶ usage, cost and request log
+```mermaid
+sequenceDiagram
+  accTitle: Ablauf einer Anfrage
+  accDescr: Die App sendet eine Anfrage in ihrem eigenen Format. Das Gateway prüft den Schlüssel, decodiert die Anfrage, löst das Modell auf, prüft die Limits und wählt den Anbieter-Schlüssel, codiert die Anfrage und sendet sie an den Anbieter. Es decodiert die Antwort des Anbieters, codiert sie im Format der App und gibt sie zurück, und es erfasst Nutzung, Kosten und das Anfrageprotokoll.
+  participant App
+  participant Gateway
+  participant Provider as Anbieter
+  App->>Gateway: Anfrage im Format der App
+  Note over Gateway: Schlüssel, Decodieren, Modell,<br>Limits, Anbieter-Schlüssel
+  Gateway->>Provider: Anfrage im Format des Anbieters
+  Provider-->>Gateway: Antwort
+  Note over Gateway: Antwort decodieren,<br>für die App codieren
+  Gateway-->>App: Antwort im Format der App
+  Note over Gateway: Nutzung, Kosten und Anfrageprotokoll
 ```
 
 ## Schlüssel

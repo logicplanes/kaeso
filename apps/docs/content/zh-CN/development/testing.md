@@ -89,7 +89,7 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 
 ### 文档站点
 
-单元测试和端到端套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，因此修改文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对这些 fixture 的生产构建运行 Playwright（包括 axe）；它还会对该构建运行网站检查，并在每种语言下以 375 × 812 像素从手机顶栏打开搜索。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建来检查。网站检查本身的测试位于 `scripts/check-site.test.mjs`。
+单元测试和端到端套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，因此修改文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对这些 fixture 的生产构建运行 Playwright（包括 axe）；它还会对该构建运行网站检查，并在每种语言下以 375 × 812 像素从手机顶栏打开搜索。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建来检查。网站检查本身的测试位于 `scripts/check-site.test.mjs`。图示渲染器的测试与构建一样在 Chromium 中绘制，因此 `pnpm test` 需要 Playwright 安装的 Chromium。
 
 ### UI 库与展示站点
 
@@ -171,12 +171,18 @@ e2e/.venv/bin/pytest -q e2e/conformance
 
 该套件检查 SDK 是否接受 KPP 编码器产生的一切。它会构建并启动 `kpp-conformance`（`crates/kpp-conformance`，随机端口上的 release 构建）；设置 `KPP_CONFORMANCE_URL=http://127.0.0.1:8787` 则改用你通过 `cargo run --release -p kpp-conformance` 启动的服务器。
 
-```text
-SDK request ──▶ server: decode with the endpoint's codec (ingress decode)
-                 model = "<source dialect>:<fixture>"
-                 fixture ──▶ decode with the SOURCE codec (egress decode) ──▶ KPP
-                 KPP ──▶ encode with the endpoint's codec (ingress encode)
-SDK parses ◀── response / SSE stream / error
+```mermaid
+sequenceDiagram
+  accTitle: 一次一致性测试请求
+  accDescr: SDK 发送一个请求，其模型名指定源方言和夹具。服务器用端点的编解码器解码请求，用源方言的编解码器把夹具解码为 KPP，再用端点的编解码器编码，并返回响应、流或错误，由 SDK 解析。
+  participant SDK
+  participant Server as kpp-conformance
+  SDK->>Server: 请求，model "dialect:fixture"
+  Note over Server: 用端点的编解码器解码
+  Note over Server: 用源方言的编解码器<br>把夹具解码为 KPP
+  Note over Server: 用端点的编解码器编码
+  Server-->>SDK: 响应、SSE 流或错误
+  Note over SDK: 解析
 ```
 
 | 端点 | 编解码器 | SDK 调用 |

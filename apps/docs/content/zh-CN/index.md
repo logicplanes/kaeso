@@ -20,10 +20,13 @@ Kaeso 位于应用与模型服务商 OpenAI 和 Anthropic 之间。应用使用�
 
 ## 各部分如何配合
 
-```text
-app ──▶ gateway ──▶ OpenAI or Anthropic
-          ▲
-console ──┘
+```mermaid
+flowchart LR
+  accTitle: 各部分如何配合
+  accDescr: 应用通过 /v1 调用网关，控制台通过 /platform/v1 调用网关；网关调用 OpenAI 或 Anthropic。
+  apps[应用] -- /v1 --> gateway[网关]
+  console[控制台] -- /platform/v1 --> gateway
+  gateway --> providers[OpenAI 或 Anthropic]
 ```
 
 | 部分 | 说明 |

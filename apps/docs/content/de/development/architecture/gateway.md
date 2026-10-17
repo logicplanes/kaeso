@@ -8,13 +8,37 @@ Das Gateway ist der eine Server einer Installation. Apps rufen es mit den offizi
 
 ## Der Anfrageweg
 
-```text
-app ─▶ /v1 ─▶ 1 key ─▶ 2 decode (KPP) ─▶ 3 model ─▶ 4 limits ─▶ 5 provider key ─▶ 6 encode (KPP) + send ─▶ provider
-app ◀──────── 8 encode reply (KPP) ◀── 7 decode reply (KPP) ◀───────────────────────────────────────────── provider
-                                               └─▶ 9 charge usage (Valkey, PostgreSQL) · 10 log (ClickHouse)
+```mermaid
+sequenceDiagram
+  accTitle: Der Weg einer Anfrage an die Modell-API
+  accDescr: Das Gateway prüft den Schlüssel, decodiert die Anfrage mit KPP, löst das Modell auf, prüft die Limits, wählt den Anbieter-Schlüssel, codiert die Anfrage mit KPP und sendet sie. Es decodiert die Antwort und codiert sie mit KPP für die App, verbucht dann die Nutzung in Valkey und PostgreSQL und protokolliert die Anfrage in ClickHouse.
+  participant App
+  participant Gateway
+  participant KPP
+  participant Provider as Anbieter
+  participant Stores as Valkey, PostgreSQL,<br>ClickHouse
+  App->>Gateway: Anfrage an /v1
+  Gateway->>Gateway: 1 Schlüssel
+  Gateway->>KPP: 2 decodieren
+  Gateway->>Gateway: 3 Modell, 4 Limits,<br>5 Anbieter-Schlüssel
+  Gateway->>KPP: 6 codieren
+  Gateway->>Provider: 6 senden
+  Provider-->>Gateway: Antwort
+  Gateway->>KPP: 7 Antwort decodieren,<br>8 Antwort codieren
+  Gateway-->>App: Antwort
+  Gateway->>Stores: 9 Nutzung verbuchen, 10 protokollieren
+```
 
-console, scripts ─▶ /platform/v1 ─▶ session cookie | API key with platform access | platform key
-                                  ─▶ exactly one right per endpoint ─▶ service ─▶ PostgreSQL + audit event
+Eine Anfrage an die Platform API nimmt diesen Weg:
+
+```mermaid
+flowchart TD
+  accTitle: Der Weg einer Anfrage an die Platform API
+  accDescr: Die Konsole und Skripte rufen /platform/v1 mit einem Sitzungs-Cookie, einem API-Schlüssel mit Plattformzugriff oder einem Plattformschlüssel auf. Jeder Endpunkt prüft genau ein Recht, dann ändert ein Service PostgreSQL und schreibt ein Audit-Ereignis.
+  callers[Konsole, Skripte] -- /platform/v1 --> auth[Sitzungs-Cookie, API-Schlüssel mit<br>Plattformzugriff oder Plattformschlüssel]
+  auth --> right[Genau ein Recht pro Endpunkt]
+  right --> service[Service]
+  service --> db[(PostgreSQL und ein Audit-Ereignis)]
 ```
 
 | Code | Ort |

@@ -136,6 +136,20 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
 
 `.github/workflows/release.yml` 由人工填入版本号启动，同一时间只运行一次；第二次运行会等待第一次结束。Validate、Prepare、Checks 和 Tag 依次运行。标签推送之后，Sync dev 和各个发布作业开始运行。
 
+```mermaid
+flowchart TD
+  accTitle: Release 工作流中作业的顺序
+  accDescr: Validate、Prepare、Checks 和 Tag 依次运行。Tag 之后，Sync dev、镜像、npm 包和 crates.io 开始运行。镜像在 Image manifest 中合并，并在不登录的情况下拉取；npm 包先打包再发布；Anonymous pull、npm 和 crates.io 都完成后运行 GitHub release。
+  validate[Validate] --> prepare[Prepare] --> checks[Checks] --> tag[Tag]
+  tag --> sync[Sync dev]
+  tag --> image[Image] --> manifest[Image manifest] --> pull[Anonymous pull]
+  tag --> pack[Pack npm packages] --> npm[npm]
+  tag --> crates[crates.io]
+  pull --> release[GitHub release]
+  npm --> release
+  crates --> release
+```
+
 写入仓库或发布任何内容的作业都在 `release` 环境中运行，该环境只接受来自 `prod` 的运行。Tag 和 Sync dev 是仅有的会推送到仓库的作业：它们不构建任何东西，只运行 git，并使用本次运行自己的令牌推送，因此它们的推送不会再次触发 CI。
 
 | 作业 | 作用 |

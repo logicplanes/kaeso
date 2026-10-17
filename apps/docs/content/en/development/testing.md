@@ -89,7 +89,7 @@ A test fails on any error the browser reports while it runs: an uncaught error o
 
 ### The documentation site
 
-The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/fixtures/content`, never the real pages, so editing documentation never breaks a test. `pnpm --filter kaeso-docs e2e` runs Playwright, axe included, against a production build of the fixtures; it also runs the site check on that build and opens the search from the phone bar at 375 by 812 pixels in every language. The real pages are checked by `pnpm --filter kaeso-docs check:content` and by the build. The site check's own tests are in `scripts/check-site.test.mjs`.
+The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/fixtures/content`, never the real pages, so editing documentation never breaks a test. `pnpm --filter kaeso-docs e2e` runs Playwright, axe included, against a production build of the fixtures; it also runs the site check on that build and opens the search from the phone bar at 375 by 812 pixels in every language. The real pages are checked by `pnpm --filter kaeso-docs check:content` and by the build. The site check's own tests are in `scripts/check-site.test.mjs`. The tests of the diagram renderer draw in Chromium, as the build does, so `pnpm test` needs the Chromium that Playwright installs.
 
 ### The UI library and the showcase
 
@@ -171,12 +171,18 @@ e2e/.venv/bin/pytest -q e2e/conformance
 
 This suite checks that the SDKs accept everything KPP's encoders produce. It builds and starts `kpp-conformance` (`crates/kpp-conformance`, a release build on a random port); `KPP_CONFORMANCE_URL=http://127.0.0.1:8787` uses a server you started with `cargo run --release -p kpp-conformance` instead.
 
-```text
-SDK request ──▶ server: decode with the endpoint's codec (ingress decode)
-                 model = "<source dialect>:<fixture>"
-                 fixture ──▶ decode with the SOURCE codec (egress decode) ──▶ KPP
-                 KPP ──▶ encode with the endpoint's codec (ingress encode)
-SDK parses ◀── response / SSE stream / error
+```mermaid
+sequenceDiagram
+  accTitle: A conformance request
+  accDescr: The SDK sends a request whose model names a source dialect and a fixture. The server decodes it with the endpoint's codec, decodes the fixture with the source dialect's codec into KPP, encodes that with the endpoint's codec and returns the response, stream or error for the SDK to parse.
+  participant SDK
+  participant Server as kpp-conformance
+  SDK->>Server: Request, model "dialect:fixture"
+  Note over Server: Decode with the endpoint's codec
+  Note over Server: Decode the fixture with the<br>source dialect's codec into KPP
+  Note over Server: Encode with the endpoint's codec
+  Server-->>SDK: Response, SSE stream or error
+  Note over SDK: Parses it
 ```
 
 | Endpoint | Codec | SDK calls |

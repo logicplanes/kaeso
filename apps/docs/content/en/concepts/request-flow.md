@@ -6,10 +6,20 @@ order: 1
 
 Every model request takes the same path through the gateway. Each request is translated, never passed through as it came, and sent once, never retried. A refusal at any step reaches the app as an error in its own format.
 
-```text
-app ─▶ key ─▶ decode ─▶ model ─▶ limits ─▶ provider key ─▶ encode and send ─▶ provider
-app ◀─ encode reply ◀─ decode reply ◀──────────────────────────────────────── provider
-                             └─▶ usage, cost and request log
+```mermaid
+sequenceDiagram
+  accTitle: Request flow
+  accDescr: The app sends a request in its own format. The gateway checks the key, decodes the request, resolves the model, checks the limits and picks the provider key, then encodes the request and sends it to the provider. It decodes the provider's reply, encodes it in the app's format and returns it, and records usage, cost and the request log.
+  participant App
+  participant Gateway
+  participant Provider
+  App->>Gateway: Request in the app's format
+  Note over Gateway: Key, decode, model,<br>limits, provider key
+  Gateway->>Provider: Request in the provider's format
+  Provider-->>Gateway: Reply
+  Note over Gateway: Decode reply,<br>encode it for the app
+  Gateway-->>App: Reply in the app's format
+  Note over Gateway: Usage, cost and request log
 ```
 
 ## Key

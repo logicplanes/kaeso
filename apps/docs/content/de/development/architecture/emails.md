@@ -8,20 +8,14 @@ Jede E-Mail, die Kaeso sendet, stammt aus `crates/kaeso-mail` im Gateway: ein La
 
 ## Was eine E-Mail ist
 
-```text
-KAESO                                   the wordmark alone, top left, 28px in and 28px down
-
-Sign in to Kaeso                        heading: title-lg, 28/34, semibold
-The link works once and expires in      one sentence: body-lg, 15/22, secondary
-15 minutes.
-
-( Sign in )                             one button: the xl pill, ink on white
-
-If you did not ask to sign in, you      one quiet line: small, 13/18, tertiary
-can ignore this email.
-
-Sent by Kaeso at kaeso.example.com.     footer: caption, 12/16; the install, and why
-```
+| Teil | In der Anmelde-E-Mail | Stil |
+| --- | --- | --- |
+| Wortmarke | Kaeso | Allein, oben links, 28px eingerückt und 28px von oben |
+| Überschrift | Bei Kaeso anmelden | `title-lg`, 28/34, semibold |
+| Ein Satz | Der Link funktioniert einmal und läuft in 15 Minuten ab. | `body-lg`, 15/22, sekundär |
+| Ein Button | Anmelden | Die `xl`-Pille, Tinte auf Weiß |
+| Eine leise Zeile | Wenn Sie keine Anmeldung angefordert haben, können Sie diese E-Mail ignorieren. | `small`, 13/18, tertiär |
+| Fußzeile | Gesendet von Kaeso unter kaeso.example.com. | `caption`, 12/16; die Installation und der Grund |
 
 - **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 562px breit, auf der Arbeitsfläche, wie in der Konsole: weiß im hellen Modus, schwarz im dunklen. Kein Panel, kein Rahmen, keine graue Seite drumherum.
 - **Text.** Ein Betreff mit höchstens 60 Zeichen ohne Punkt, eine Überschrift mit höchstens 48, dann höchstens ein Satz, ein Button und eine leise Zeile, etwa der Ablauf eines Links oder was zu tun ist, wenn man es nicht selbst war. Sätze folgen den Textregeln des Gateways: ein Satz, ein Semikolon für einen zweiten Gedanken, ein Punkt am Ende, höchstens 100 Zeichen. Ein Test erzwingt die Grenzen.
