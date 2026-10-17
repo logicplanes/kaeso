@@ -7,6 +7,7 @@ import {
   CodeBlock,
   CopyButton,
   Dialog,
+  DialogScope,
   Field,
   Code,
   Link,
@@ -50,30 +51,6 @@ export function SecurityPage() {
 
 function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const save = useApiMutation({
-    mutationFn: async () =>
-      data(await api.POST("/platform/v1/me/password", { body: { new_password: next, ...(hasPassword ? { current_password: current } : {}) } })),
-    invalidates: [["me"], ["me", "sessions"]],
-    onSuccess: () => {
-      setOpen(false);
-      setCurrent("");
-      setNext("");
-      toast.success(
-        hasPassword
-          ? t("account.passwordChanged", "Password changed; other sessions signed out")
-          : t("account.passwordSet", "Password set; other sessions signed out"),
-      );
-    },
-  });
-  const ready = passwordOk(next) && (!hasPassword || current.length > 0);
-  const close = () => {
-    setOpen(false);
-    setCurrent("");
-    setNext("");
-    save.reset();
-  };
   return (
     <SettingsSection title={t("account.password", "Password")}>
       <SettingsGroup>
@@ -91,43 +68,67 @@ function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
           }
         />
       </SettingsGroup>
-      <Dialog
-        open={open}
-        onOpenChange={(o) => !o && close()}
-        size="sm"
-        title={hasPassword ? t("account.changePassword", "Change password") : t("account.setAPassword", "Set a password")}
-        onSubmit={() => ready && save.mutate()}
-        footer={
-          <>
-            <Button onClick={close}>{t("common.cancel", "Cancel")}</Button>
-            <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={() => save.mutate()}>
-              {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-16">
-          {hasPassword && (
-            <SensitiveInput
-              label={t("account.currentPassword", "Current password")}
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              autoFocus
-              error={fieldError(save.error, "current_password")}
-            />
-          )}
-          <SensitiveInput
-            label={t("account.newPassword", "New password")}
-            autoComplete="new-password"
-            description={passwordHint(next)}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            error={fieldError(save.error, "new_password")}
-          />
-        </div>
-      </Dialog>
+      <DialogScope open={open}>
+        <PasswordDialog hasPassword={hasPassword} open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassword: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const save = useApiMutation({
+    mutationFn: async () =>
+      data(await api.POST("/platform/v1/me/password", { body: { new_password: next, ...(hasPassword ? { current_password: current } : {}) } })),
+    invalidates: [["me"], ["me", "sessions"]],
+    onSuccess: () => {
+      setOpen(false);
+      toast.success(
+        hasPassword
+          ? t("account.passwordChanged", "Password changed; other sessions signed out")
+          : t("account.passwordSet", "Password set; other sessions signed out"),
+      );
+    },
+  });
+  const ready = passwordOk(next) && (!hasPassword || current.length > 0);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      size="sm"
+      title={hasPassword ? t("account.changePassword", "Change password") : t("account.setAPassword", "Set a password")}
+      onSubmit={() => ready && save.mutate()}
+      footer={
+        <>
+          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={() => save.mutate()}>
+            {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-16">
+        {hasPassword && (
+          <SensitiveInput
+            label={t("account.currentPassword", "Current password")}
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            autoFocus
+            error={fieldError(save.error, "current_password")}
+          />
+        )}
+        <SensitiveInput
+          label={t("account.newPassword", "New password")}
+          autoComplete="new-password"
+          description={passwordHint(next)}
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          error={fieldError(save.error, "new_password")}
+        />
+      </div>
+    </Dialog>
   );
 }
 

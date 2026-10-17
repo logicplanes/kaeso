@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Button, Dialog, InlineCopyText, Input, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Dialog, DialogScope, InlineCopyText, Input, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -98,55 +98,68 @@ function NameRow({ name }: { name: string }) {
 
 function EmailRow({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
-  const [next, setNext] = useState("");
   const [sent, setSent] = useState<string | null>(null);
-  const change = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/me/email", { body: { email: next.trim() } })),
-    onSuccess: () => {
-      setSent(next.trim());
-      toast.success(t("account.emailLinkSent", "Confirmation link sent; your old address was notified"));
-      setOpen(false);
-      setNext("");
-    },
-  });
   return (
     <>
       <SettingsRow
         title={t("common.email", "Email")}
         description={sent ? t("account.emailPending", "{email} · link sent to {next}", { email, next: sent }) : email}
         control={
-          <Button size="sm" onClick={() => (change.reset(), setOpen(true))}>
+          <Button size="sm" onClick={() => setOpen(true)}>
             {t("account.changeEmail", "Change email")}
           </Button>
         }
       />
-      <Dialog
-        open={open}
-        onOpenChange={setOpen}
-        size="sm"
-        title={t("account.changeEmail", "Change email")}
-        description={t("account.changeEmailHint", "We send a confirmation link to the new address; the change takes effect when you open it.")}
-        onSubmit={() => next.trim() && change.mutate()}
-        footer={
-          <>
-            <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
-            <Button variant="primary" disabled={!next.trim()} loading={change.isPending} onClick={() => change.mutate()}>
-              {t("account.sendConfirmation", "Send confirmation link")}
-            </Button>
-          </>
-        }
-      >
-        <Input
-          label={t("account.newEmail", "New email")}
-          type="email"
-          autoComplete="email"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          autoFocus
-          error={fieldError(change.error, "email")}
+      <DialogScope open={open}>
+        <ChangeEmailDialog
+          open={open}
+          onOpenChange={setOpen}
+          onSent={(next) => {
+            setSent(next);
+            setOpen(false);
+          }}
         />
-      </Dialog>
+      </DialogScope>
     </>
+  );
+}
+
+function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: boolean; onOpenChange: (open: boolean) => void; onSent: (email: string) => void }) {
+  const [next, setNext] = useState("");
+  const change = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/me/email", { body: { email: next.trim() } })),
+    onSuccess: () => {
+      toast.success(t("account.emailLinkSent", "Confirmation link sent; your old address was notified"));
+      onSent(next.trim());
+    },
+  });
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      size="sm"
+      title={t("account.changeEmail", "Change email")}
+      description={t("account.changeEmailHint", "We send a confirmation link to the new address; the change takes effect when you open it.")}
+      onSubmit={() => next.trim() && change.mutate()}
+      footer={
+        <>
+          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Button variant="primary" disabled={!next.trim()} loading={change.isPending} onClick={() => change.mutate()}>
+            {t("account.sendConfirmation", "Send confirmation link")}
+          </Button>
+        </>
+      }
+    >
+      <Input
+        label={t("account.newEmail", "New email")}
+        type="email"
+        autoComplete="email"
+        value={next}
+        onChange={(e) => setNext(e.target.value)}
+        autoFocus
+        error={fieldError(change.error, "email")}
+      />
+    </Dialog>
   );
 }
 

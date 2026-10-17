@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test, signInToProject, submitSteps } from "./support";
+import { expect, test, signInToProject, stepTo, submitSteps } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -38,6 +38,47 @@ test("a new key is shown once, and closing without copying asks first", async ({
   await ask.getByRole("button", { name: "Close without copying" }).click();
   await expect(row(page, "checkout-web")).toBeVisible();
   await expect(row(page, "checkout-web").getByText("Expires in 90 d")).toBeVisible();
+});
+
+test("the next key starts on an empty first step, and the last key's secret is no longer on the page", async ({ page }) => {
+  expect(secret).toMatch(/^sk-kso-/);
+  await openKeys(page);
+  const create = page.getByRole("button", { name: "Create key" }).first();
+  const dialog = page.getByRole("dialog", { name: "Create key" });
+  await create.click();
+  await expect(dialog.getByText("Step 1 of 4")).toBeVisible();
+  await expect(dialog.getByLabel("Name")).toHaveValue("");
+  expect(await page.content()).not.toContain(secret);
+
+  await dialog.getByLabel("Name").fill("deploy-preview");
+  await submitSteps(dialog, "Create key");
+  const reveal = page.getByRole("dialog", { name: "Key created" });
+  const field = reveal.getByRole("textbox", { name: "Secret for deploy-preview" });
+  await expect(field).toHaveText(/^sk-kso-/);
+  const next = (await field.textContent()) ?? "";
+  expect(next).not.toBe(secret);
+  await reveal.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
+  await expect(reveal).toBeHidden();
+  await expect(row(page, "deploy-preview")).toBeVisible();
+  expect(await page.content()).not.toContain(next);
+
+  await create.click();
+  await expect(dialog.getByText("Step 1 of 4")).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "What is it for?" })).toBeVisible();
+  await expect(dialog.getByLabel("Name")).toHaveValue("");
+  await expect(reveal).toHaveCount(0);
+  expect(await page.content()).not.toContain(next);
+  await dialog.getByLabel("Name").fill("half-way");
+  await stepTo(dialog, dialog.getByRole("heading", { name: "What can it call?" }));
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await create.click();
+  await expect(dialog.getByText("Step 1 of 4")).toBeVisible();
+  await expect(dialog.getByLabel("Name")).toHaveValue("");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
 });
 
 test("the key authenticates with the gateway", async ({ request }) => {

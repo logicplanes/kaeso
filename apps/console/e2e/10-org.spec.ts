@@ -83,6 +83,45 @@ test("invites: an invitation is sent, resent and revoked on the Members page's I
   await expect(page.getByRole("tab", { name: "Invites", exact: true })).toHaveAttribute("aria-selected", "true");
 });
 
+test("invites: the dialog opens empty on its first step after a cancelled or a sent invitation", async ({ page }) => {
+  await openOrgSettings(page, "Members");
+  await page.getByRole("tab", { name: "Invites", exact: true }).click();
+  const invite = page.getByRole("button", { name: "Invite member" });
+  const dialog = page.getByRole("dialog", { name: "Invite members" });
+  const emails = dialog.getByRole("combobox", { name: "Email addresses" });
+  await invite.click();
+  await emails.fill("fresh@example.com");
+  await emails.press("Enter");
+  await expect(dialog.getByText("fresh@example.com")).toBeVisible();
+  await stepTo(dialog, dialog.getByRole("heading", { name: "What can they do in the organization?" }));
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await invite.click();
+  await expect(dialog.getByText("Step 1 of 3")).toBeVisible();
+  await expect(emails).toHaveValue("");
+  await expect(dialog.getByText("fresh@example.com")).toHaveCount(0);
+  await emails.fill("fresh@example.com");
+  await emails.press("Enter");
+  await submitSteps(dialog, "Send invitation");
+  await expect(toastText(page, "Invitation sent to fresh@example.com")).toBeVisible();
+  await expect(dialog).toBeHidden();
+
+  await invite.click();
+  await expect(dialog.getByText("Step 1 of 3")).toBeVisible();
+  await expect(emails).toHaveValue("");
+  await expect(dialog.getByText("fresh@example.com")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Continue", exact: true })).toHaveAttribute("aria-disabled", "true");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  const row = page.getByRole("gridcell").filter({ hasText: "fresh@example.com" });
+  await row.getByRole("button", { name: "Actions for the invitation to fresh@example.com" }).click();
+  await page.getByRole("menuitem", { name: "Revoke" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Revoke invitation" }).click();
+  await expect(toastText(page, "Invitation revoked")).toBeVisible();
+});
+
 test("projects: the settings address opens the organization's Projects page; a project is created there", async ({ page }) => {
   await openOrgSettings(page, "General");
   await expect(page.locator(`nav[aria-label="Settings"] a[href^="/settings/orgs/"]`).getByText("Projects", { exact: true })).toHaveCount(0);

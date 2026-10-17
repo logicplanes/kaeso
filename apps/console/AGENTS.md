@@ -78,6 +78,7 @@ pnpm --filter kaeso-console e2e
 9. **No setup checklists.** No numbered step lists, onboarding blocks or banners in their place. A new project shows its normal pages with the library's empty states. A task in several steps is a `StepDialog`.
 10. **Every word in English, German and Simplified Chinese** (the catalogs in `src/i18n/locales`, checked by `scripts/i18n.mjs`): text goes through `t("area.key", "English")`, whole sentences with placeholders, never fragments. `pnpm lint` refuses literal text; `pnpm i18n` checks the catalogs.
 11. **Tests assert on what a person sees.** The coverage thresholds are in `vitest.config.ts`.
+12. **Dialogs open fresh.** A dialog's fields, step, result and any secret it shows live in a component that mounts anew on every open, never beside the dialog in the page: inside a `DialogScope` with the dialog's `open`, which also keeps the close animation and forgets a secret once the dialog has closed. A sheet for a row keys its body by the row's id.
 
 ## Descriptions
 

@@ -6,6 +6,7 @@ import {
   Button,
   Combobox,
   Dialog,
+  DialogScope,
   Empty,
   InlineCopyText,
   Input,
@@ -260,74 +261,91 @@ function Projects({ org, count }: { org: string; count: number }) {
 }
 
 function AppointOwner({ org, hasOwner }: { org: string; hasOwner: boolean }) {
-  const session = useSession();
   const [open, setOpen] = useState(false);
+  const members = useQuery(instanceOrgMembersQuery(org));
+  const owners = new Set((members.data ?? []).filter((m) => m.grant.role.id === "owner").map((m) => m.user.id));
+  return (
+    <>
+      <Button size="sm" variant={hasOwner ? "secondary" : "primary"} onClick={() => setOpen(true)}>
+        {t("instance.addOwner", "Add owner")}
+      </Button>
+      <DialogScope open={open}>
+        <AppointOwnerDialog org={org} owners={owners} open={open} onOpenChange={setOpen} />
+      </DialogScope>
+    </>
+  );
+}
+
+function AppointOwnerDialog({
+  org,
+  owners,
+  open,
+  onOpenChange: setOpen,
+}: {
+  org: string;
+  owners: Set<string>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const session = useSession();
   const [user, setUser] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const users = useInfiniteQuery({ ...instanceUsersQuery(query, "active"), enabled: open, placeholderData: keepPreviousData });
-  const members = useQuery(instanceOrgMembersQuery(org));
-  const owners = new Set((members.data ?? []).filter((m) => m.grant.role.id === "owner").map((m) => m.user.id));
   const me = session.user.id;
   const appoint = useApiMutation({
     mutationFn: async (id: string) => data(await api.POST("/platform/v1/instance/orgs/{org}/owner", { params: { path: { org } }, body: { user_id: id } })),
     invalidates: TOUCHED,
     onSuccess: (_o, id) => {
       setOpen(false);
-      setUser(null);
       toast.success(id === me ? t("instance.youreOwner", "You're an owner now") : t("instance.ownerAdded", "Owner added"));
     },
   });
   return (
-    <>
-      <Button size="sm" variant={hasOwner ? "secondary" : "primary"} onClick={() => setOpen(true)}>
-        {t("instance.addOwner", "Add owner")}
-      </Button>
-      <Dialog
-        open={open}
-        onOpenChange={setOpen}
-        size="sm"
-        title={t("instance.addOwnerTitle", "Add an owner")}
-        description={t("instance.addOwnerHint", "They manage it with every right; it's recorded in its audit log.")}
-        onSubmit={() => user && appoint.mutate(user)}
-        footer={
-          <>
-            <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
-            <Button
-              variant="primary"
-              disabled={!user}
-              {...(user ? {} : { disabledReason: t("instance.chooseUser", "Choose a user") })}
-              loading={appoint.isPending && appoint.variables === user}
-              onClick={() => user && appoint.mutate(user)}
-            >
-              {t("instance.addOwnerSubmit", "Add owner")}
-            </Button>
-          </>
-        }
-      >
-        <Combobox
-          label={t("instance.user", "User")}
-          placeholder={t("instance.searchUsers", "Search users")}
-          options={(users.data?.pages.flatMap((p) => p.data) ?? [])
-            .filter((u) => !owners.has(u.id))
-            .map((u) => ({
-              value: u.id,
-              label: u.name,
-              description: u.email ?? undefined,
-              leading: <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />,
-            }))}
-          loading={users.isFetching}
-          onInputValueChange={setQuery}
-          value={user}
-          onValueChange={(v: string | null) => setUser(v)}
-          emptyText={t("instance.noUsersMatch", "No users match")}
-        />
-        {!owners.has(me) && (
-          <Button size="sm" className="mt-12 self-start" loading={appoint.isPending && appoint.variables === me} onClick={() => appoint.mutate(me)}>
-            {t("instance.addMe", "Add me")}
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      size="sm"
+      title={t("instance.addOwnerTitle", "Add an owner")}
+      description={t("instance.addOwnerHint", "They manage it with every right; it's recorded in its audit log.")}
+      onSubmit={() => user && appoint.mutate(user)}
+      footer={
+        <>
+          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Button
+            variant="primary"
+            disabled={!user}
+            {...(user ? {} : { disabledReason: t("instance.chooseUser", "Choose a user") })}
+            loading={appoint.isPending && appoint.variables === user}
+            onClick={() => user && appoint.mutate(user)}
+          >
+            {t("instance.addOwnerSubmit", "Add owner")}
           </Button>
-        )}
-      </Dialog>
-    </>
+        </>
+      }
+    >
+      <Combobox
+        label={t("instance.user", "User")}
+        placeholder={t("instance.searchUsers", "Search users")}
+        options={(users.data?.pages.flatMap((p) => p.data) ?? [])
+          .filter((u) => !owners.has(u.id))
+          .map((u) => ({
+            value: u.id,
+            label: u.name,
+            description: u.email ?? undefined,
+            leading: <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />,
+          }))}
+        loading={users.isFetching}
+        onInputValueChange={setQuery}
+        value={user}
+        onValueChange={(v: string | null) => setUser(v)}
+        emptyText={t("instance.noUsersMatch", "No users match")}
+      />
+      {!owners.has(me) && (
+        <Button size="sm" className="mt-12 self-start" loading={appoint.isPending && appoint.variables === me} onClick={() => appoint.mutate(me)}>
+          {t("instance.addMe", "Add me")}
+        </Button>
+      )}
+    </Dialog>
   );
 }
 

@@ -609,6 +609,25 @@ describe("Export dialog", () => {
     click.mockRestore();
   });
 
+  it("opens on CSV again after another format was picked and the dialog cancelled", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user } = await renderApp(projectPath("logs"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    const dialog = await screen.findByRole("dialog", { name: "Export requests" });
+    await user.click(within(dialog).getByRole("radio", { name: "JSON Lines", description: /^Metadata/ }));
+    expect(within(dialog).getByRole("radio", { name: "JSON Lines", description: /^Metadata/ })).toBeChecked();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Export requests" })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    const again = await screen.findByRole("dialog", { name: "Export requests" });
+    expect(within(again).getByRole("radio", { name: "CSV" })).toBeChecked();
+    expect(within(again).getByRole("radio", { name: "JSON Lines", description: /^Metadata/ })).not.toBeChecked();
+  });
+
   it("adds the content with the right, and explains who can give it without", async () => {
     signedIn({ projectRights: without("logs.content.view") });
     projectData();

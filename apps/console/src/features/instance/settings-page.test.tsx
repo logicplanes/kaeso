@@ -192,6 +192,21 @@ describe("the test email", () => {
     expect(requests("POST", "instance/settings/test-email").map((r) => r.body)).toEqual([{ to: "ops@example.com" }]);
   });
 
+  it("opens with an empty recipient after one was typed and cancelled", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Send test email" }));
+    const dialog = await screen.findByRole("dialog", { name: "Send a test email" });
+    await user.type(within(dialog).getByRole("textbox", { name: /Recipient/ }), "ops");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Send a test email" })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Send test email" }));
+    const again = await screen.findByRole("dialog", { name: "Send a test email" });
+    expect(within(again).getByRole("textbox", { name: /Recipient/ })).toHaveValue("");
+    expect(within(again).getByRole("button", { name: "Send test email" })).not.toHaveAttribute("aria-disabled", "true");
+  });
+
   it("keeps the dialog open and shows why sending failed", async () => {
     signedIn();
     settingsApi();

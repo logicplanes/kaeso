@@ -41,6 +41,22 @@ describe("KeySheet", () => {
     expect(requests("GET", "orgs/:org/projects/:project/limits").some((r) => r.query.get("key") === "key_web")).toBe(true);
   });
 
+  it("shows the other key's own details when another row opens in the sheet", async () => {
+    signedIn();
+    const batch = apiKey({ id: "key_batch", name: "nightly-batch", access: "both" });
+    projectData({ keys: [apiKey(), batch] });
+    on("GET", KEY, ({ params }: { params: Record<string, string> }) => (params.key === "key_batch" ? batch : apiKey()));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    const first = await sheet();
+    expect(first).toHaveTextContent("key_web");
+    await user.click(screen.getByRole("gridcell", { name: /nightly-batch/ }));
+    const second = await sheet("nightly-batch");
+    await waitFor(() => expect(second).toHaveTextContent("key_batch"));
+    expect(second).toHaveTextContent("Inference + platform");
+    expect(second).not.toHaveTextContent("key_web");
+  });
+
   it("names a service account's key and says when it expired", async () => {
     signedIn();
     projectData({ keys: [apiKey()], accounts: [serviceAccount()], members: [projectMember()] });
