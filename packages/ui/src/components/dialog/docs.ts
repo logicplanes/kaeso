@@ -21,7 +21,8 @@ export const docs = {
     },
   },
   Dialog: {
-    description: "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits.",
+    description:
+      "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.",
     props: {
       children: "The dialog's content and actions.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
@@ -37,6 +38,14 @@ export const docs = {
       size: "The dialog's width.",
       title: "The dialog's heading, also its accessible name.",
       trigger: "The trigger, a single element.",
+    },
+  },
+  DialogScope: {
+    description:
+      "Opens a dialog's flow fresh every time: its children mount anew when `open` turns true and unmount once the Dialog, StepDialog, LayerDialog, AlertDialog, Sheet or CommandPalette inside has finished closing. Fields, steps, errors, results and secrets shown once never come back on the next open, and nothing changes while the dialog animates out.",
+    props: {
+      children: "The component that keeps the flow's state and renders the dialog with the same `open`.",
+      open: "Whether the dialog inside is open; pass the value its `open` gets.",
     },
   },
   LayerDialog: {

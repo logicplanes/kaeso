@@ -4,6 +4,7 @@ import { forwardRef, type ReactElement, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
+import { useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { useUiText } from "../../i18n/context.js";
@@ -73,6 +74,7 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(props
   );
   const focus = useRestoreFocus(open, () => modal);
   const container = usePortalContainer();
+  const settled = useScopedDialog(open);
   if (inline)
     return (
       <div ref={ref} className={cn(box, "h-560")}>
@@ -85,6 +87,7 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(props
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       modal={modal}
+      onOpenChangeComplete={settled}
     >
       {trigger && <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>

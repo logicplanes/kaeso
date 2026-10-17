@@ -960,5 +960,10 @@
   "Draggable right edge (232–280px), remembered.": "可拖动的右边缘（232–280px），会被记住。",
   "Icon buttons in the phone bar before the navigation toggle, such as search, so it is one tap away; pass `tooltip={false}` to each.": "手机顶栏中位于导航开关之前的图标按钮，例如搜索，让它一点即达；为每个按钮传入 `tooltip={false}`。",
   "Kaeso's UI library: pure white and pure black, pill controls, a monochrome interface.": "Kaeso 的 UI 库：纯白与纯黑、胶囊形控件、单色界面。",
-  "Every change to Kaeso, the UI library included, release by release.": "Kaeso 的每一项变更，包括 UI 库，按版本列出。"
+  "Every change to Kaeso, the UI library included, release by release.": "Kaeso 的每一项变更，包括 UI 库，按版本列出。",
+  "Opens a dialog's flow fresh every time: the first step, empty fields, no earlier result or secret. The content stays as it was while the dialog closes.": "每次都以全新状态打开对话框的流程：第一步、空白字段，没有之前的结果或机密。对话框关闭期间，内容保持原样。",
+  "Create a key, then another": "创建一个密钥，再创建一个",
+  "The key is shown once; closing the dialog forgets it, so the next key starts on the first step.": "密钥只显示一次；关闭对话框后即被遗忘，因此下一个密钥从第一步开始。",
+  "The component that keeps the flow's state and renders the dialog with the same `open`.": "保存流程状态、并以相同 `open` 渲染对话框的组件。",
+  "Whether the dialog inside is open; pass the value its `open` gets.": "其中的对话框是否打开；传入与其 `open` 相同的值。"
 }

@@ -28,11 +28,13 @@ export function Wizard() {
   const [model, setModel] = useState("");
   const [custom, setCustom] = useState("");
   const m = models.find((x) => x.model === model);
-  const close = () => {
-    setOpen(false);
+  const start = () => {
     setView("pick");
+    setModel("");
     setCustom("");
+    setOpen(true);
   };
+  const close = () => setOpen(false);
   const add = (id: string) => {
     close();
     toast.success(`Added ${id}`);
@@ -96,7 +98,7 @@ export function Wizard() {
   };
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="primary" onClick={start}>
         Add model
       </Button>
       <LayerDialog

@@ -97,6 +97,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | One of many options                      | `Select`; searchable: `Combobox`                                |
 | A confirmation of an irreversible action | `AlertDialog`; deletion: the `DeleteResource` block             |
 | A task in several steps                  | `StepDialog`                                                    |
+| A dialog that opens fresh every time     | `DialogScope` around the component that keeps its state         |
 | Feedback after an action                 | `toast()`, with Undo for reversible actions                     |
 | A secret shown once                      | `SecretReveal`                                                  |
 | Numbers at a glance                      | `MetricRow` with `Stat`; over time: `TimeseriesChart`           |
