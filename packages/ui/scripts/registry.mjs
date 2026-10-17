@@ -3,6 +3,7 @@ import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import docgen from "react-docgen-typescript";
+import { unpairedVariantExports } from "./variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = join(root, "src");
@@ -42,16 +43,17 @@ if (missingDocs.length) fail(missingDocs);
 
 const dataScript = `(async () => {
 const entries = ${JSON.stringify(entries.map((e) => `${e.kind}/${e.entry}`))};
+const { variantExport } = await import(${JSON.stringify(join(root, "scripts/variant-exports.mjs"))});
 const out = { variants: {}, docs: {}, common: (await import(${JSON.stringify(join(src, "component-docs.ts"))})).COMMON_PROP_DOCS };
 for (const e of entries) {
   out.docs[e] = (await import(${JSON.stringify(`${src}/`)} + e + "/docs.ts")).docs;
   const m = await import(${JSON.stringify(`${src}/`)} + e + "/index.ts");
   for (const [k, v] of Object.entries(m)) {
-    const match = /^KAESO_(.+)_(VARIANTS|DEFAULT_VARIANTS)$/.exec(k);
-    if (!match) continue;
-    out.variants[match[1]] ??= { entry: e };
-    if (match[2] === "VARIANTS") out.variants[match[1]].variants = Object.fromEntries(Object.entries(v).map(([axis, keys]) => [axis, Object.fromEntries(Object.entries(keys).map(([key, val]) => [key, val.description]))]));
-    else out.variants[match[1]].defaults = v;
+    const found = variantExport(k);
+    if (!found) continue;
+    const target = (out.variants[found.component] ??= { entry: e });
+    if (found.part === "variants") target.variants = Object.fromEntries(Object.entries(v).map(([axis, keys]) => [axis, Object.fromEntries(Object.entries(keys).map(([key, val]) => [key, val.description]))]));
+    else target.defaults = v;
   }
 }
 process.stdout.write(JSON.stringify(out));
@@ -59,6 +61,8 @@ process.stdout.write(JSON.stringify(out));
 `;
 const tsx = join(root, "node_modules/.bin/tsx");
 const data = JSON.parse(execFileSync(tsx, ["--eval", dataScript], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }));
+const unpaired = unpairedVariantExports(data.variants);
+if (unpaired.length) fail(unpaired);
 
 function fail(problems) {
   writeSync(2, `registry: ${problems.length} problem${problems.length === 1 ? "" : "s"}:\n  ${problems.join("\n  ")}\n`);
