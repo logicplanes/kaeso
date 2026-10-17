@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2 AS mock
 COPY --from=mock-build --chmod=0555 /kaeso-testkit /usr/local/bin/kaeso-testkit
-COPY --from=mock-build --chmod=a=rX /src/crates/kaeso-codecs/fixtures /fixtures
+COPY --from=mock-build --chmod=0555 /src/crates/kaeso-codecs/fixtures /fixtures
 USER nonroot:nonroot
 ENV KAESO_KPP_FIXTURES=/fixtures
 EXPOSE 8080

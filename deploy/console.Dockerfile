@@ -27,7 +27,7 @@ RUN apk add --no-cache --virtual .setcap libcap-utils \
 ENV XDG_DATA_HOME=/var/lib/console/data XDG_CONFIG_HOME=/var/lib/console/config
 COPY --chmod=0444 deploy/console/Caddyfile /etc/caddy/Caddyfile
 COPY --chmod=0555 deploy/console/serve.sh /usr/local/bin/kaeso-console
-COPY --from=build --chmod=a=rX /app/apps/console/dist /srv
+COPY --from=build --chmod=0555 /app/apps/console/dist /srv
 USER console
 RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 EXPOSE 3000

@@ -89,7 +89,7 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
             capture_output=True,
             text=True,
         ).stdout.splitlines()
-        assert files == ["444 root /etc/caddy/Caddyfile", "755 root /srv", "444 root /srv/index.html", "555 root /srv/assets"]
+        assert files == ["444 root /etc/caddy/Caddyfile", "755 root /srv", "555 root /srv/index.html", "555 root /srv/assets"]
     finally:
         subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
 
