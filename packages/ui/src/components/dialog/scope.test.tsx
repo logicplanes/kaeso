@@ -229,6 +229,22 @@ describe("DialogScope", () => {
     expect(screen.getByRole("textbox")).toHaveValue("");
     expect(screen.getByRole("button", { name: "Delete organization" })).toBeDisabled();
   });
+  it("starts a new session for a flow reopened before its dialog has finished closing", async () => {
+    const animations = holdAnimations();
+    try {
+      render(<KeysPage />);
+      await createKey();
+      await userEvent.click(screen.getByRole("button", { name: "Done" }));
+      await frames();
+      expect(screen.getByText(SECRET)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "New key", hidden: true }));
+      await frames();
+      expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("");
+    } finally {
+      animations.restore();
+    }
+  });
 });
 
 describe("CommandPalette", () => {
@@ -270,6 +286,37 @@ describe("CommandPalette", () => {
       await frames();
       expect(screen.getByRole("combobox")).toHaveValue("");
       expect(screen.getAllByRole("option")).toHaveLength(2);
+    } finally {
+      animations.restore();
+    }
+  });
+
+  it("opens with an empty query when it opens again before it has finished closing", async () => {
+    const animations = holdAnimations();
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <Button onClick={() => setOpen(true)}>Search</Button>
+          <CommandPalette
+            open={open}
+            onOpenChange={setOpen}
+            hotkey={false}
+            groups={[{ label: "Go to", items: [{ id: "logs", label: "Request logs", onSelect: () => setOpen(false) }] }]}
+          />
+        </>
+      );
+    }
+    try {
+      render(<Host />);
+      await frames();
+      await userEvent.type(screen.getByRole("combobox"), "logs");
+      await userEvent.keyboard("{Escape}");
+      await frames();
+      expect(screen.getByRole("combobox")).toHaveValue("logs");
+      await userEvent.click(screen.getByRole("button", { name: "Search", hidden: true }));
+      await frames();
+      expect(screen.getByRole("combobox")).toHaveValue("");
     } finally {
       animations.restore();
     }

@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useId } from "react";
+import { createContext, use, useEffect, useId, useState } from "react";
 
 export interface DialogScopeTracker {
   showing: (id: string) => void;
@@ -17,4 +17,10 @@ export function useScopedDialog(open: boolean | undefined): (open: boolean) => v
   return (settled: boolean) => {
     if (!settled) scope?.hidden(id);
   };
+}
+
+export function useOpenSession(open: boolean): number {
+  const [seen, setSeen] = useState({ open, session: 0 });
+  if (seen.open !== open) setSeen({ open, session: open ? seen.session + 1 : seen.session });
+  return seen.session;
 }
