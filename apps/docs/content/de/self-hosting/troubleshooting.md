@@ -12,7 +12,7 @@ docker compose logs --tail 100 gateway
 
 ## Das Gateway startet nicht
 
-Das Gateway prüft beim Start seine Einstellungen und hält mit einer Meldung an, die die Einstellung nennt. `docker compose up -d` bricht dann mit einem Fehler zum Container des Gateways ab, und `docker compose ps` zeigt, dass er neu startet.
+Das Gateway prüft beim Start seine Einstellungen und hält mit einer Meldung an, die die Einstellung nennt. `docker compose up -d --wait` bricht dann mit einem Fehler zum Container des Gateways ab, und `docker compose ps` zeigt, dass er neu startet.
 
 - Prüfen, ob `.env` `KAESO_DOMAIN`, `POSTGRES_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD`, `CLICKHOUSE_PASSWORD` und `VALKEY_PASSWORD` setzt und ob `master-keys` neben `compose.yaml` liegt. Compose selbst startet ohne eine dieser Variablen nicht und nennt die fehlende.
 - Eine Meldung zu `KAESO_SMTP_HOST` bedeutet, dass E-Mails kein Ziel haben: den SMTP-Server eintragen oder `KAESO_MAIL_TRANSPORT=log` setzen, um Kaeso ohne ihn auszuprobieren. Siehe [E-Mail](email.md).

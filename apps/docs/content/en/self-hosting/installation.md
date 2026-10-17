@@ -57,11 +57,11 @@ Compose reads only these variables from `.env`. Every other [setting](configurat
 ## What happens at the first start
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 docker compose logs gateway | grep setup_url
 ```
 
-`docker compose up -d` returns once the gateway is healthy. The setup link is the `setup_url` of the line it finds.
+With `--wait`, `docker compose up` returns once every service is running and every service with a health check, which is all of them but Caddy, reports healthy, and it fails when one doesn't. Without it, Compose returns as soon as it has started the containers: with the bundled Caddy, which waits for a healthy gateway and console, that is late enough, but behind [your own reverse proxy](domains-and-tls.md#your-own-reverse-proxy) it is at once, before the gateway has printed its setup link. The setup link is the `setup_url` of the line `grep` finds.
 
 1. PostgreSQL, ClickHouse and Valkey start; Compose waits until PostgreSQL and Valkey report healthy.
 2. The gateway checks its settings and stops with a message that names the setting if one is missing or wrong. It never prints secret values.
@@ -96,7 +96,7 @@ services:
       KAESO_INSTANCE_ACCOUNT_CREATION: everyone
 ```
 
-Every setting is listed under [configuration](configuration.md). Apply changes with `docker compose up -d`; Compose recreates only the services whose settings changed.
+Every setting is listed under [configuration](configuration.md). Apply changes with `docker compose up -d --wait`; Compose recreates only the services whose settings changed.
 
 ## The command line
 

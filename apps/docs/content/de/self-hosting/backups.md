@@ -31,7 +31,7 @@ docker compose exec -T postgres pg_restore -U kaeso -d kaeso --clean --if-exists
 docker compose start gateway
 ```
 
-Auf einem neuen Server zuerst `compose.yaml`, `.env` und `master-keys` zurücklegen, nur PostgreSQL mit `docker compose up -d postgres` starten, wiederherstellen und dann den Rest mit `docker compose up -d` starten.
+Auf einem neuen Server zuerst `compose.yaml`, `.env` und `master-keys` zurücklegen, nur PostgreSQL mit `docker compose up -d --wait postgres` starten, wiederherstellen und dann den Rest mit `docker compose up -d --wait` starten.
 
 ## ClickHouse
 
@@ -64,7 +64,7 @@ chmod 644 master-keys
 2. Das Gateway neu erstellen, damit es die neue Datei liest:
 
 ```bash
-docker compose up -d --force-recreate gateway
+docker compose up -d --wait --force-recreate gateway
 ```
 
 3. Jedes gespeicherte Secret mit dem neuen Schlüssel neu verschlüsseln:

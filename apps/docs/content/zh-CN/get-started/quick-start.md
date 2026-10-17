@@ -67,10 +67,10 @@ chmod 644 master-keys
 ## 启动 Kaeso
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 ```
 
-首次启动需要一两分钟：下载镜像、启动数据库、网关准备数据库，以及 Caddy 申请证书。服务就绪后，`docker compose ps` 会将其显示为 healthy。
+首次启动需要一两分钟：下载镜像、启动数据库、网关准备数据库，以及 Caddy 申请证书。`--wait` 让命令等到每个服务都就绪后才返回；有服务未能就绪时，命令会失败并给出该服务的名称。`docker compose ps` 会将每个服务显示为 healthy。
 
 ## 通过设置链接登录
 

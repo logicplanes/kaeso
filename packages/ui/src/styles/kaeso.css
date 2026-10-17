@@ -940,6 +940,13 @@
   max-height: min(560px, calc(100dvh - 25vh));
 }
 
+.base-ui-disable-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 .k-toast {
   position: absolute;
   right: 0;

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { localizedHeadingIds } from "./scripts/localized-heading-ids.mjs";
 import { folderIndexes } from "./scripts/folder-indexes.mjs";
 import { sitemap } from "./scripts/sitemap.mjs";
+import { contentSecurityPolicy } from "./scripts/content-security-policy.mjs";
 
 const ui = fileURLToPath(new URL("../../packages/ui/src", import.meta.url));
 
@@ -14,7 +15,7 @@ export default defineConfig({
   output: "static",
   trailingSlash: "never",
   build: { format: "file" },
-  integrations: [react(), mdx(), folderIndexes(), sitemap()],
+  integrations: [react(), mdx(), folderIndexes(), sitemap(), contentSecurityPolicy()],
   markdown: { syntaxHighlight: false, rehypePlugins: [localizedHeadingIds] },
   devToolbar: { enabled: false },
   prefetch: { prefetchAll: true, defaultStrategy: "hover" },

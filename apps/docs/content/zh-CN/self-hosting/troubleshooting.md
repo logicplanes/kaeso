@@ -12,7 +12,7 @@ docker compose logs --tail 100 gateway
 
 ## 网关无法启动
 
-网关在启动时检查其设置，出错时会停止并给出指明该设置的消息。此时 `docker compose up -d` 会因网关容器出错而中止，`docker compose ps` 会显示它在不断重启。
+网关在启动时检查其设置，出错时会停止并给出指明该设置的消息。此时 `docker compose up -d --wait` 会因网关容器出错而中止，`docker compose ps` 会显示它在不断重启。
 
 - 检查 `.env` 是否设置了 `KAESO_DOMAIN`、`POSTGRES_PASSWORD`、`POSTGRES_SUPERUSER_PASSWORD`、`CLICKHOUSE_PASSWORD` 和 `VALKEY_PASSWORD`，以及 `compose.yaml` 旁边是否存在 `master-keys`。缺少其中任何一个变量时，Compose 本身就会拒绝启动并指明缺少的那一个。
 - 关于 `KAESO_SMTP_HOST` 的消息表示邮件无处可发：添加 SMTP 服务器，或者设置 `KAESO_MAIL_TRANSPORT=log`，在没有邮件服务器的情况下试用 Kaeso。参见[电子邮件](email.md)。

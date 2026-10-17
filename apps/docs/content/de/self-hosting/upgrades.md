@@ -20,8 +20,10 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ```bash
 docker compose pull
-docker compose up -d
+docker compose up -d --wait
 ```
+
+`--wait` kehrt zurück, sobald das neue Gateway und die neue Konsole healthy melden, und schlägt fehl, wenn einer der beiden das nicht tut, sodass ein Skript oder eine Person, die das Upgrade ausführt, einen gescheiterten Start sofort sieht.
 
 Das Gateway migriert PostgreSQL und ClickHouse beim Start unter einem Lock, sodass mehrere Instanzen gleichzeitig starten können und nur eine migriert. Migrationen laufen nur vorwärts und der Reihe nach, sodass ein Upgrade Versionen überspringen kann. Kaeso 0.1.0 legt das ganze Schema aus einem ersten Satz von Migrationen an; spätere Releases fügen ihre eigenen danach an.
 

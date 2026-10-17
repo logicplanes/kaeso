@@ -16,8 +16,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
  && cp target/release/kaeso-testkit /kaeso-testkit
 
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2 AS mock
-COPY --from=mock-build /kaeso-testkit /usr/local/bin/kaeso-testkit
-COPY --from=mock-build /src/crates/kaeso-codecs/fixtures /fixtures
+COPY --from=mock-build --chmod=0555 /kaeso-testkit /usr/local/bin/kaeso-testkit
+COPY --from=mock-build --chmod=0555 /src/crates/kaeso-codecs/fixtures /fixtures
 USER nonroot:nonroot
 ENV KAESO_KPP_FIXTURES=/fixtures
 EXPOSE 8080
@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.title="Kaeso gateway" \
       org.opencontainers.image.url="https://kaeso.app" \
       org.opencontainers.image.documentation="https://docs.kaeso.app" \
       org.opencontainers.image.licenses="MIT"
-COPY --from=build /kaeso /usr/local/bin/kaeso
+COPY --from=build --chmod=0555 /kaeso /usr/local/bin/kaeso
 USER nonroot:nonroot
 ENV KAESO_LISTEN=0.0.0.0:8080 KAESO_METRICS_LISTEN=0.0.0.0:9100
 EXPOSE 8080 9100

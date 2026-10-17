@@ -139,10 +139,11 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 | Sync dev | 把版本带回 `dev`：如果 `dev` 没有新提交，就快进；否则在能干净合并时创建合并提交“Merge release X.Y.Z into dev”。如果发生冲突、版本修改了 `dev` 没有的工作流文件，或 `dev` 在此期间发生了移动，它会失败，并在摘要中说明如何手动合并 |
 | Image | 从标签为每个平台构建每个镜像，附带完整的构建来源证明和 SBOM |
 | Image manifest | 将两个平台合并到上述镜像标签下，把镜像的 `org.opencontainers.image` 标签作为注解复制到合并后的索引上，并证明构建的来源 |
+| Anonymous pull | 像安装时一样，完全不使用凭据拉取该版本 `linux/amd64` 和 `linux/arm64` 的两个镜像。如果 ghcr.io 以 401 或 403 拒绝，说明包是私有的：该作业失败，并提示在包的设置中将其设为公开；之后重新运行失败的作业即可完成发布 |
 | Pack npm packages | 构建这些库，并用该版本号运行包检查 |
 | npm | 发布 `@logicplanes/kaeso-tokens` 和 `@logicplanes/kaeso-ui` |
 | crates.io | 发布 `kaeso-kpp` 和 `kaeso-codecs` |
-| GitHub release | 下载已发布的 tarball 和 crate，并创建附带文件和发布说明的版本 |
+| GitHub release | 在任何人都能拉取镜像后，下载已发布的 tarball 和 crate，并创建附带文件和发布说明的版本 |
 
 npm 和 crates.io 作业通过可信发布（trusted publishing）进行身份验证，因此仓库中不保存任何注册表令牌。它们会跳过已经发布的版本，因此某个发布作业失败时，重新运行该次运行中失败的作业即可完成发布。
 
@@ -165,3 +166,17 @@ pnpm --filter kaeso-showcase build
 `apps/docs/dist` 包含文档，`apps/showcase/dist` 包含组件展示站，每个页面都已用英语、德语和简体中文渲染好。网站描述的是构建它们时所基于的版本：组件展示站的“查看源码”链接、它的 `llms.txt` 以及其更新日志中指向仓库的链接都指向该版本的标签，即 `v` 加上根目录 `package.json` 中的版本；而文档的“在 GitHub 上编辑”链接指向 `dev`，页面的修改在那里提出。
 
 每个文件夹都可以原样上传：允许抓取全部内容并指向站点地图的 `robots.txt`；列出每种语言的每个页面及其 `hreflang` 备用链接的 `sitemap.xml`；每种语言一个标记为 `noindex` 的 `404.html`；`site.webmanifest`、图标，以及链接预览显示的图片 `og.png`。静态托管只需用 `guides.html` 响应 `/guides`，并用对应语言的 `404.html` 响应未知地址。两次构建最后都运行 `scripts/check-site.mjs`：当允许搜索引擎索引的页面不在 `sitemap.xml` 中、站点地图列出了构建中不存在的页面地址，或页面缺少规范地址、三种语言加 `x-default` 的备用链接、自己的标题和描述、带有构建中图片的 Open Graph 和 Twitter 标签、图标或 Web 应用清单时，构建就会失败。站点地图不含 `lastmod`，因为构建中没有任何信息能说明页面上次修改的时间。
+
+### 内容安全策略
+
+两次构建最后都用 `scripts/csp.mjs` 写出网站运行所依据的策略。它们把策略作为 `<meta http-equiv="content-security-policy">` 放到每个页面中紧跟字符集声明之后，使其在任何托管上都生效；同时把用于响应头的策略写入 `csp.txt`，并为读取该文件的托管写入 `_headers`。还要把它作为 `Content-Security-Policy` 响应头发送：只有响应头才能加上 `frame-ancestors 'none'`，使网站不被嵌入其他页面的框架。遇到内联事件处理程序或 `javascript:` URL（不含 `'unsafe-inline'` 的策略都不允许它们），或策略超过 4 KB（对某些服务器的响应头来说太长）时，构建会失败。
+
+文档没有内联脚本或样式，出现一个构建就会失败，因此它的响应头始终是：
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+```
+
+组件展示站的页面包含 Astro 和 React 写入的内联脚本，即 islands 的加载器和流式 Suspense 边界的收尾脚本，此外还有组件展示站自己必须在首次绘制前运行的语言和主题脚本。它的策略在 `script-src` 和 `style-src` 中列出其中每个脚本以及少数几个内联 `<style>` 元素的 SHA-256 哈希，并用 `style-src-attr 'unsafe-inline'` 允许 `style` 属性：组件在服务器端渲染的 HTML 会设置它们，而属性中的 CSS 无法运行代码。这些脚本一变，哈希就会变，因此组件展示站的响应头要取自所部署构建的 `csp.txt`。
+
+两个网站的端到端测试都会在 `csp.txt` 的响应头下，以两种主题和每种语言加载页面，出现任何 `securitypolicyviolation` 即失败。

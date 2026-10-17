@@ -8,7 +8,7 @@ Kaeso sends email for sign-in links, invitations, password resets, key expiry wa
 
 ## Set up SMTP
 
-Add your SMTP server to `.env` and apply it with `docker compose up -d`:
+Add your SMTP server to `.env` and apply it with `docker compose up -d --wait`:
 
 ```bash
 KAESO_SMTP_HOST=smtp.example.com

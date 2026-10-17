@@ -25,9 +25,11 @@ RUN apk add --no-cache --virtual .setcap libcap-utils \
   && mkdir -p /var/lib/console/data /var/lib/console/config \
   && chown -R console:console /var/lib/console
 ENV XDG_DATA_HOME=/var/lib/console/data XDG_CONFIG_HOME=/var/lib/console/config
-COPY deploy/console/Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /app/apps/console/dist /srv
+COPY --chmod=0444 deploy/console/Caddyfile /etc/caddy/Caddyfile
+COPY --chmod=0555 deploy/console/serve.sh /usr/local/bin/kaeso-console
+COPY --from=build --chmod=0555 /app/apps/console/dist /srv
 USER console
+RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s CMD ["wget", "-qO-", "http://127.0.0.1:3000/healthz"]
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+CMD ["/usr/local/bin/kaeso-console"]

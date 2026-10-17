@@ -37,6 +37,8 @@ services:
       - "127.0.0.1:3000:3000"
 ```
 
+Kaeso mit `docker compose up -d --wait` starten. Ohne Caddy wartet kein Dienst auf Gateway und Konsole, sodass Compose ohne `--wait` zurückkehrt, bevor sie antworten; mit `--wait` kehrt es zurück, sobald beide healthy melden, und schlägt fehl, wenn einer es nicht tut.
+
 Dann so weiterleiten:
 
 | Pfad | An |
@@ -48,6 +50,34 @@ Dann so weiterleiten:
 - Das Puffern von Antworten für `/v1/` abschalten, damit gestreamte Antworten die Apps erreichen, sobald sie eintreffen.
 - `X-Forwarded-For` weitergeben. Das Gateway glaubt ihm nur von Adressen in `KAESO_TRUSTED_PROXIES`, standardmäßig die privaten Netzwerke. Mit einem nicht vertrauenswürdigen Proxy davor sieht jeder Client wie der Proxy aus: Logs zeigen die Adresse des Proxys, und die Drosselung von Anmeldungen und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) zählen alle Clients zusammen.
 - Den Metrik-Port 9100 nie weiterleiten.
+
+### Ein Proxy in Docker
+
+Läuft der Proxy in Docker auf demselben Server, ihn über ein Netzwerk mit Gateway und Konsole verbinden, statt deren Ports zu veröffentlichen. Compose macht den Namen jedes Dienstes zu einem DNS-Namen in jedem Netzwerk, dem der Dienst beitritt. In einem Netzwerk, das andere Stacks mitnutzen, können `gateway` und `console` daher auf den Container eines anderen Stacks zeigen, und die Container von Kaeso können Anfragen beantworten, die für dessen Container gedacht sind. Ein Netzwerk nur für den Proxy und Kaeso anlegen und den beiden Diensten dort Namen geben, die nicht kollidieren können:
+
+```bash
+docker network create kaeso-proxy
+```
+
+```yaml
+services:
+  caddy:
+    profiles: [disabled]
+  gateway:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-gateway]
+  console:
+    networks:
+      kaeso-proxy:
+        aliases: [kaeso-console]
+
+networks:
+  kaeso-proxy:
+    external: true
+```
+
+Den Container des Proxys mit `kaeso-proxy` verbinden und an `kaeso-gateway:8080` und `kaeso-console:3000` weiterleiten. Die Dienste behalten ihre Namen `gateway` und `console`, sodass Befehle wie `docker compose logs gateway` gleich bleiben.
 
 ## Lange Streams
 

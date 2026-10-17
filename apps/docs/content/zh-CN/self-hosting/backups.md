@@ -30,7 +30,7 @@ docker compose exec -T postgres pg_restore -U kaeso -d kaeso --clean --if-exists
 docker compose start gateway
 ```
 
-在新服务器上，先放回 `compose.yaml`、`.env` 和 `master-keys`，用 `docker compose up -d postgres` 只启动 PostgreSQL，完成恢复后再用 `docker compose up -d` 启动其余服务。
+在新服务器上，先放回 `compose.yaml`、`.env` 和 `master-keys`，用 `docker compose up -d --wait postgres` 只启动 PostgreSQL，完成恢复后再用 `docker compose up -d --wait` 启动其余服务。
 
 ## ClickHouse
 
@@ -63,7 +63,7 @@ chmod 644 master-keys
 2. 重新创建网关容器，使其读取新文件：
 
 ```bash
-docker compose up -d --force-recreate gateway
+docker compose up -d --wait --force-recreate gateway
 ```
 
 3. 用新密钥重新加密每个已保存的机密：

@@ -57,11 +57,11 @@ Compose 只从 `.env` 中读取这些变量。其他所有[设置](configuration
 ## 首次启动时发生的事情
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 docker compose logs gateway | grep setup_url
 ```
 
-网关处于 healthy 状态后，`docker compose up -d` 才会返回。找到的那一行中的 `setup_url` 就是设置链接。
+加上 `--wait` 后，`docker compose up` 要等每个服务都在运行、且每个带健康检查的服务（除 Caddy 外的所有服务）都报告 healthy 才返回；有服务达不到时命令失败。不加 `--wait` 时，Compose 启动容器后立即返回：使用自带的 Caddy 时，Caddy 会等网关和控制台变为 healthy，因此返回得足够晚；但在[自己的反向代理](domains-and-tls.md#自己的反向代理)之后会立即返回，此时网关还没有输出设置链接。`grep` 找到的那一行中的 `setup_url` 就是设置链接。
 
 1. PostgreSQL、ClickHouse 和 Valkey 启动；Compose 会等待 PostgreSQL 和 Valkey 报告为 healthy。
 2. 网关检查其设置，如果某项设置缺失或错误，就会停止并给出指明该设置的消息。它从不输出机密值。
@@ -96,7 +96,7 @@ services:
       KAESO_INSTANCE_ACCOUNT_CREATION: everyone
 ```
 
-所有设置都列在[配置](configuration.md)中。用 `docker compose up -d` 应用修改；Compose 只会重新创建设置发生变化的服务。
+所有设置都列在[配置](configuration.md)中。用 `docker compose up -d --wait` 应用修改；Compose 只会重新创建设置发生变化的服务。
 
 ## 命令行
 

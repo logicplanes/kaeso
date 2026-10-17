@@ -57,11 +57,11 @@ Compose liest aus `.env` nur diese Variablen. Jede andere [Einstellung](configur
 ## Was beim ersten Start geschieht
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 docker compose logs gateway | grep setup_url
 ```
 
-`docker compose up -d` kehrt zurück, sobald das Gateway healthy ist. Der Einrichtungslink ist die `setup_url` der gefundenen Zeile.
+Mit `--wait` kehrt `docker compose up` zurück, sobald jeder Dienst läuft und jeder Dienst mit Healthcheck, also alle außer Caddy, healthy meldet, und schlägt fehl, wenn einer das nicht tut. Ohne `--wait` kehrt Compose zurück, sobald es die Container gestartet hat: Mit dem mitgelieferten Caddy, der auf ein healthy Gateway und eine healthy Konsole wartet, ist das spät genug, hinter [einem eigenen Reverse Proxy](domains-and-tls.md#ein-eigener-reverse-proxy) aber sofort, bevor das Gateway seinen Einrichtungslink ausgegeben hat. Der Einrichtungslink ist die `setup_url` der Zeile, die `grep` findet.
 
 1. PostgreSQL, ClickHouse und Valkey starten; Compose wartet, bis PostgreSQL und Valkey healthy melden.
 2. Das Gateway prüft seine Einstellungen und hält mit einer Meldung an, die die Einstellung nennt, wenn eine fehlt oder falsch ist. Geheime Werte gibt es nie aus.
@@ -96,7 +96,7 @@ services:
       KAESO_INSTANCE_ACCOUNT_CREATION: everyone
 ```
 
-Jede Einstellung steht unter [Konfiguration](configuration.md). Änderungen mit `docker compose up -d` übernehmen; Compose erstellt nur die Dienste neu, deren Einstellungen sich geändert haben.
+Jede Einstellung steht unter [Konfiguration](configuration.md). Änderungen mit `docker compose up -d --wait` übernehmen; Compose erstellt nur die Dienste neu, deren Einstellungen sich geändert haben.
 
 ## Die Kommandozeile
 

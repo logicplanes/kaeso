@@ -20,8 +20,10 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ```bash
 docker compose pull
-docker compose up -d
+docker compose up -d --wait
 ```
+
+`--wait` 会等新的网关和控制台报告 healthy 后才返回，有一个达不到时命令失败，因此执行升级的脚本或人员会立即发现启动失败。
 
 网关在启动时于锁的保护下迁移 PostgreSQL 和 ClickHouse，因此多个实例可以同时启动，只有一个执行迁移。迁移只向前进行且按顺序运行，因此升级时可以跳过版本。Kaeso 0.1.0 通过一组初始迁移创建完整的数据库结构；之后的版本在其后添加各自的迁移。
 

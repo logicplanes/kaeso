@@ -386,6 +386,38 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
+  public-images:
+    name: Anonymous pull
+    needs: [validate, manifest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions: {}
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - name: Pull both images for both platforms without signing in
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"
+          mkdir -p "$DOCKER_CONFIG"
+          echo '{}' > "$DOCKER_CONFIG/config.json"
+          failed=0
+          for image in kaeso-gateway kaeso-console; do
+            ref="ghcr.io/logicplanes/$image:$VERSION"
+            for platform in linux/amd64 linux/arm64; do
+              if out="$(docker pull --quiet --platform "$platform" "$ref" 2>&1)"; then
+                echo "Anyone can pull \`$ref\` for $platform." >> "$GITHUB_STEP_SUMMARY"
+              elif grep -qiE 'denied|unauthorized|forbidden|\b40[13]\b' <<< "$out"; then
+                echo "::error::ghcr.io refused an anonymous pull of $ref for $platform, so installs can't download it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/$image/settings, Danger Zone, Change visibility, then re-run this job."
+                failed=1
+              else
+                echo "::error::Pulling $ref for $platform without signing in failed: ${out//$'\n'/ }"
+                failed=1
+              fi
+            done
+          done
+          exit "$failed"
+
   pack:
     name: Pack npm packages
     needs: [validate, tag]
@@ -501,7 +533,7 @@ jobs:
 
   github-release:
     name: GitHub release
-    needs: [validate, manifest, npm, crates]
+    needs: [validate, manifest, public-images, npm, crates]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
