@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Ideas and questions
+    url: https://github.com/logicplanes/kaeso/discussions
+    about: Share an idea, ask a question or show what you built, without opening an issue.
   - name: Documentation
     url: https://docs.kaeso.app
     about: Guides and references for installing, running, using and developing Kaeso.

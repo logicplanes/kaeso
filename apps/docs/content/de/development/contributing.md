@@ -1,10 +1,23 @@
 ---
 title: Mitwirken
-description: Issues melden, Änderungen vorschlagen und die Regeln, denen jede Änderung an Kaeso folgt.
+description: Ideen besprechen, Issues melden, Änderungen vorschlagen und die Regeln, denen jede Änderung an Kaeso folgt.
 order: 10
 ---
 
-Issues sind im [Repository](https://github.com/logicplanes/kaeso/issues) willkommen: Fehler, Fragen und Ideen. Pull Requests von externen Mitwirkenden prüft der Maintainer nach eigenem Ermessen; für alles, was größer ist als eine kleine Korrektur, zuerst ein Issue eröffnen, damit sich der Ansatz abstimmen lässt. Alle Beteiligten folgen dem [Verhaltenskodex](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
+Ideen und Fragen sind in den [Discussions](https://github.com/logicplanes/kaeso/discussions) willkommen, Fehler und konkrete Feature-Wünsche in [Issues](https://github.com/logicplanes/kaeso/issues). Pull Requests von externen Mitwirkenden prüft der Maintainer nach eigenem Ermessen; für alles, was größer ist als eine kleine Korrektur, zuerst ein Issue eröffnen, damit sich der Ansatz abstimmen lässt. Alle Beteiligten folgen dem [Verhaltenskodex](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
+
+## Discussions
+
+[Discussions](https://github.com/logicplanes/kaeso/discussions) sind dafür da, Dinge durchzusprechen, bevor etwas entschieden ist, ohne Verpflichtung für irgendeine Seite:
+
+| Kategorie | Für |
+| --- | --- |
+| Ideas | Ein gewünschtes Feature in ein, zwei Sätzen; andere können ihren Anwendungsfall ergänzen oder dafür stimmen |
+| Q&A | Eine Frage zur Installation, zum Betrieb oder zur Nutzung von Kaeso; die Antwort, die geholfen hat, als Lösung markieren |
+| Show and tell | Etwas, das mit Kaeso gebaut wurde |
+| Announcements | Neuigkeiten des Maintainers, etwa Releases |
+
+Eine abgestimmte Idee wird zu einem Feature-Request-Issue.
 
 ## Issues
 

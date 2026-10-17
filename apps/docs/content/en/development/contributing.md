@@ -1,10 +1,23 @@
 ---
 title: Contributing
-description: Report issues, propose changes, and the rules every change to Kaeso follows.
+description: Discuss ideas, report issues, propose changes, and the rules every change to Kaeso follows.
 order: 10
 ---
 
-Issues are welcome in [the repository](https://github.com/logicplanes/kaeso/issues): bugs, questions and ideas. Pull requests from outside contributors are reviewed at the maintainer's discretion; for anything larger than a small fix, open an issue first so the approach can be agreed. Everyone taking part follows the [Code of Conduct](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
+Ideas and questions are welcome in [Discussions](https://github.com/logicplanes/kaeso/discussions), bugs and concrete feature requests in [issues](https://github.com/logicplanes/kaeso/issues). Pull requests from outside contributors are reviewed at the maintainer's discretion; for anything larger than a small fix, open an issue first so the approach can be agreed. Everyone taking part follows the [Code of Conduct](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
+
+## Discussions
+
+[Discussions](https://github.com/logicplanes/kaeso/discussions) are for talking things through before anything is decided, with no commitment on either side:
+
+| Category | For |
+| --- | --- |
+| Ideas | A feature you would like, in a sentence or two; others can add their use case or vote for it |
+| Q&A | A question about installing, running or using Kaeso; mark the reply that answered it |
+| Show and tell | Something you built with Kaeso |
+| Announcements | News from the maintainer, such as releases |
+
+An idea that is agreed becomes a feature request issue.
 
 ## Issues
 
