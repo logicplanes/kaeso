@@ -684,6 +684,20 @@
 @utility bidi-plaintext {
   unicode-bidi: plaintext;
 }
+@utility scroll-axis-x {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain;
+}
+@utility scroll-axis-y {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+}
+@utility scroll-axis-both {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
 @utility scroll-fade-y {
   mask-image: linear-gradient(
     to bottom,

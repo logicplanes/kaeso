@@ -28,7 +28,7 @@ export const Code = forwardRef<HTMLElement, CodeProps>(function Code({ shape = "
     <code
       ref={ref}
       className={cn(
-        "mono bg-fill-1 px-6 py-2 align-baseline text-small leading-none text-fg",
+        "mono bg-fill-1 px-4 py-2 align-baseline text-small leading-none text-fg",
         KAESO_CODE_VARIANTS.flow[flow].classes,
         shape === "auto" ? (oneWord ? "rounded-pill" : "rounded-code") : KAESO_CODE_VARIANTS.shape[shape].classes,
         className,

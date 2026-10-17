@@ -20,4 +20,29 @@ describe("Code", () => {
     expect(code).toHaveClass("inline", "box-decoration-clone", "rounded-code");
     expect(code).not.toHaveClass("inline-block");
   });
+
+  it("pads inside the chip only, never outside it", () => {
+    render(
+      <>
+        <Code>10s</Code>
+        <Code flow="text">5m</Code>
+      </>,
+    );
+    for (const name of ["10s", "5m"]) {
+      const classes = screen.getByText(name).className.split(" ");
+      expect(classes).toContain("px-4");
+      expect(classes.filter((c) => /^-?m[xylrtb]?-/.test(c))).toEqual([]);
+    }
+  });
+
+  it("stays an inline box in the text flow, so punctuation after it stays beside it", () => {
+    render(
+      <p>
+        Sizes such as <Code flow="text">32MiB</Code>, <Code flow="text">1MB</Code>, or a number.
+      </p>,
+    );
+    const chip = screen.getByText("32MiB");
+    expect(chip).toHaveClass("inline");
+    expect(chip.nextSibling?.textContent).toBe(", ");
+  });
 });
