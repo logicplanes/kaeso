@@ -206,7 +206,7 @@ export function updateJob(overrides: Partial<UpdateJobView> = {}): UpdateJobView
     from: "0.4.2",
     to: "0.4.3",
     state: "running",
-    step: "downloading",
+    step: "verifying",
     reason: null,
     detail: null,
     started_by: { id: USER, name: "Ada Okafor" },

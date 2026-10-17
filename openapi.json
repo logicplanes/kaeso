@@ -2589,7 +2589,7 @@
           "instance"
         ],
         "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-        "description": "The updater checks the release's signed provenance, downloads the images, switches the gateway and the console, waits for the gateway's migrations and health, and goes back to the previous version when the new one fails. Poll `instance/updates/jobs/{update}` for the progress.\n\n**Access:** a console session of an instance admin.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin.",
         "operationId": "postInstanceUpdatesApply",
         "requestBody": {
           "content": {
@@ -19255,7 +19255,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Why it did not succeed, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted` or `updater_unreachable`."
+                  "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."
                 },
                 "started_at": {
                   "type": "string",
@@ -19275,12 +19275,12 @@
                 },
                 "state": {
                   "type": "string",
-                  "description": "`running`, `succeeded`, `failed` (nothing changed), `rolled_back` (the previous version runs again) or `rollback_failed`.",
+                  "description": "`running`, `succeeded` (with a `reason` when compose.yaml still needs the new version by hand), `failed` (nothing changed), `rolled_back` (the previous version runs again), `rollback_failed` (the previous version did not start again) or `needs_attention` (the new gateway may have migrated the database and did not start; someone has to look).",
                   "example": "running"
                 },
                 "step": {
                   "type": "string",
-                  "description": "The step it is on or ended on: `downloading`, `verifying`, `switching`, `migrating` or `online`.",
+                  "description": "The step it is on or ended on: `verifying`, `downloading`, `switching`, `migrating` or `online`.",
                   "example": "verifying"
                 },
                 "to": {
@@ -22974,7 +22974,7 @@
               "string",
               "null"
             ],
-            "description": "Why it did not succeed, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted` or `updater_unreachable`."
+            "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused` or `state_unwritable`."
           },
           "started_at": {
             "type": "string",
@@ -22994,12 +22994,12 @@
           },
           "state": {
             "type": "string",
-            "description": "`running`, `succeeded`, `failed` (nothing changed), `rolled_back` (the previous version runs again) or `rollback_failed`.",
+            "description": "`running`, `succeeded` (with a `reason` when compose.yaml still needs the new version by hand), `failed` (nothing changed), `rolled_back` (the previous version runs again), `rollback_failed` (the previous version did not start again) or `needs_attention` (the new gateway may have migrated the database and did not start; someone has to look).",
             "example": "running"
           },
           "step": {
             "type": "string",
-            "description": "The step it is on or ended on: `downloading`, `verifying`, `switching`, `migrating` or `online`.",
+            "description": "The step it is on or ended on: `verifying`, `downloading`, `switching`, `migrating` or `online`.",
             "example": "verifying"
           },
           "to": {

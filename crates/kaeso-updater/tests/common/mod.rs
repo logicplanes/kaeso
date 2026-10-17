@@ -42,7 +42,12 @@ pub enum Health {
     Unhealthy,
     Starting,
     Crash,
+    Restarting,
+    Slow,
 }
+
+pub const SLOW_INSPECTIONS: u32 = 4;
+pub const FROM_MIGRATIONS: &str = "20261017120001_updates";
 
 #[derive(Clone, Debug)]
 pub struct Container {
@@ -54,7 +59,10 @@ pub struct Container {
     pub env: Vec<String>,
     pub running: bool,
     pub health: Health,
+    pub inspected: u32,
 }
+
+pub type Hook = Box<dyn Fn() + Send>;
 
 #[derive(Default)]
 pub struct Daemon {
@@ -66,6 +74,9 @@ pub struct Daemon {
     pub new_health: HashMap<String, Health>,
     pub old_health_after_restart: Option<Health>,
     pub next_id: u32,
+    pub created: Vec<Value>,
+    pub on_start: Option<Hook>,
+    pub version_failures: u32,
 }
 
 pub fn index_of(service: Service) -> Vec<u8> {
@@ -109,6 +120,7 @@ impl Daemon {
                 labels: BTreeMap::from([
                     ("com.docker.compose.project".into(), "kaeso".into()),
                     ("com.docker.compose.service".into(), service.as_str().into()),
+                    ("com.docker.compose.oneoff".into(), "False".into()),
                 ]),
                 env: vec![
                     "PATH=/usr/bin".into(),
@@ -116,6 +128,7 @@ impl Daemon {
                 ],
                 running: true,
                 health: Health::Healthy,
+                inspected: 0,
             });
         }
         d
@@ -131,17 +144,21 @@ impl Daemon {
             .find(|c| c.id == key || c.id.starts_with(key) || c.name == key)
     }
 
-    fn inspect(c: &Container) -> Value {
-        let health = match (c.running, c.health) {
-            (_, Health::Healthy) => "healthy",
-            (_, Health::Unhealthy) => "unhealthy",
+    fn inspect(c: &mut Container) -> Value {
+        c.inspected += 1;
+        let health = match c.health {
+            Health::Healthy => "healthy",
+            Health::Unhealthy => "unhealthy",
+            Health::Slow if c.inspected > SLOW_INSPECTIONS => "healthy",
+            Health::Slow => "unhealthy",
             _ => "starting",
         };
+        let restarts = u32::from(c.health == Health::Restarting);
         json!({
             "Id": c.id,
             "Name": format!("/{}", c.name),
             "Image": c.image,
-            "RestartCount": 0,
+            "RestartCount": restarts,
             "Config": {
                 "Hostname": c.id.get(..12).unwrap_or(&c.id),
                 "Image": c.reference,
@@ -187,6 +204,10 @@ async fn daemon(
             .into_response()
     };
     match (method.as_str(), path.as_str()) {
+        ("GET", "version") if d.version_failures > 0 => {
+            d.version_failures -= 1;
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
         ("GET", "version") => axum::Json(json!({ "Version": "29.0.0" })).into_response(),
         ("GET", "containers/json") => {
             let filters: Value =
@@ -204,7 +225,7 @@ async fn daemon(
                 .containers
                 .iter()
                 .filter(|c| wanted.iter().all(|(k, v)| c.labels.get(k) == Some(v)))
-                .map(|c| json!({ "Id": c.id }))
+                .map(|c| json!({ "Id": c.id, "Names": [format!("/{}", c.name)] }))
                 .collect();
             axum::Json(Value::Array(list)).into_response()
         }
@@ -238,6 +259,7 @@ async fn daemon(
                     .into_response();
             }
             let spec: Value = serde_json::from_slice(&body).unwrap();
+            d.created.push(spec.clone());
             let reference = spec["Image"].as_str().unwrap().to_owned();
             let Some(image) = d.images.get(&reference).cloned() else {
                 return not_found();
@@ -263,6 +285,7 @@ async fn daemon(
                 env,
                 running: false,
                 health,
+                inspected: 0,
             });
             (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }
@@ -280,6 +303,12 @@ async fn daemon(
             let rest = &p["containers/".len()..];
             let (key, action) = rest.split_once('/').unwrap_or((rest, ""));
             let restart_health = d.old_health_after_restart;
+            if (m, action) == ("POST", "start")
+                && key.starts_with("new")
+                && let Some(hook) = &d.on_start
+            {
+                hook();
+            }
             if m == "DELETE" {
                 let before = d.containers.len();
                 d.containers.retain(|c| c.id != key);
@@ -305,6 +334,7 @@ async fn daemon(
                         c.health = h;
                     }
                     c.running = c.health != Health::Crash;
+                    c.inspected = 0;
                     StatusCode::NO_CONTENT.into_response()
                 }
                 ("POST", "stop") => {
@@ -336,6 +366,41 @@ pub struct Release {
 #[derive(Default)]
 pub struct Releases {
     pub by_version: HashMap<String, Release>,
+}
+
+impl Releases {
+    pub fn add(&mut self, version: &str, shape: &Shape<'_>) {
+        let compose = compose_text(version);
+        self.by_version.insert(
+            version.to_owned(),
+            Release {
+                manifest: manifest_for(version, &compose, shape),
+                compose,
+            },
+        );
+    }
+
+    pub fn standard() -> Releases {
+        let mut releases = Releases::default();
+        releases.add(TO, &Shape::default());
+        releases.add(FROM, &Shape::default());
+        releases.add("1.0.0", &Shape::default());
+        releases.add(
+            "0.3.0",
+            &Shape {
+                manual: true,
+                ..Shape::default()
+            },
+        );
+        releases.add(
+            "0.2.2",
+            &Shape {
+                manual_since: Some("0.2.1"),
+                ..Shape::default()
+            },
+        );
+        releases
+    }
 }
 
 async fn release_server(
@@ -395,13 +460,36 @@ pub fn compose_text(version: &str) -> Vec<u8> {
     .into_bytes()
 }
 
-pub fn manifest_for(version: &str, compose: &[u8], manual: bool) -> Vec<u8> {
+pub struct Shape<'a> {
+    pub manual: bool,
+    pub manual_since: Option<&'a str>,
+    pub postgres: &'a str,
+}
+
+impl Default for Shape<'_> {
+    fn default() -> Self {
+        Shape {
+            manual: false,
+            manual_since: None,
+            postgres: FROM_MIGRATIONS,
+        }
+    }
+}
+
+pub fn manifest_for(version: &str, compose: &[u8], shape: &Shape<'_>) -> Vec<u8> {
     let image = |s: Service| json!({ "name": s.image(), "digest": digest_of(s) });
+    let since = if shape.manual {
+        Some(version)
+    } else {
+        shape.manual_since
+    };
     serde_json::to_vec(&json!({
         "schema": 1,
         "version": version,
         "commit": COMMIT,
-        "manual": manual,
+        "manual": shape.manual,
+        "manual_since": since,
+        "migrations": { "postgres": shape.postgres, "clickhouse": "0002_usage_rollups" },
         "updater_protocol": 1,
         "images": {
             "gateway": image(Service::Gateway),
@@ -438,6 +526,7 @@ pub fn settings(dir: &std::path::Path) -> Settings {
         gateway_timeout: Duration::from_millis(400),
         console_timeout: Duration::from_millis(400),
         rollback_timeout: Duration::from_millis(400),
+        docker_wait: Duration::from_millis(400),
         stop_seconds: 0,
     }
 }
@@ -449,23 +538,7 @@ impl World {
         std::fs::create_dir_all(dir.join("maintenance")).unwrap();
         std::fs::create_dir_all(dir.join("state")).unwrap();
         std::fs::write(dir.join("compose.yaml"), compose_text(FROM)).unwrap();
-        let mut releases = Releases::default();
-        for (version, manual) in [
-            (TO, false),
-            ("1.0.0", false),
-            ("0.3.0", true),
-            (FROM, false),
-        ] {
-            let compose = compose_text(version);
-            releases.by_version.insert(
-                version.to_owned(),
-                Release {
-                    manifest: manifest_for(version, &compose, manual),
-                    compose,
-                },
-            );
-        }
-        World::with(dir, daemon, releases, verifier).await
+        World::with(dir, daemon, Releases::standard(), verifier).await
     }
 
     pub async fn with(
@@ -530,6 +603,10 @@ impl World {
 
     pub fn maintenance(&self) -> bool {
         self.dir.join("maintenance/active").exists()
+    }
+
+    pub fn container(&self, name: &str) -> Option<Container> {
+        self.daemon.lock().unwrap().container(name).cloned()
     }
 
     pub fn running(&self, name: &str) -> Container {

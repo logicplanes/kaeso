@@ -25,7 +25,7 @@ pub struct Endpoints {
 impl Endpoints {
     pub fn github() -> Result<Endpoints, url::ParseError> {
         Ok(Endpoints {
-            releases: Url::parse("https://github.com/logicplanes/kaeso/releases/download/")?,
+            releases: Url::parse(kaeso_update::DOWNLOADS)?,
             attestations: Url::parse(
                 "https://api.github.com/repos/logicplanes/kaeso/attestations/",
             )?,

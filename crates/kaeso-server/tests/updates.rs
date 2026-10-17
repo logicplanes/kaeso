@@ -45,6 +45,8 @@ fn manifest(version: &str, manual: bool) -> Value {
         "version": version,
         "commit": "5388ad0b98aa3d957fea99e200259842bf746680",
         "manual": manual,
+        "manual_since": if manual { json!(version) } else { Value::Null },
+        "migrations": { "postgres": "20261017120001_updates", "clickhouse": "0002_usage_rollups" },
         "updater_protocol": 1,
         "images": { "gateway": image("gateway"), "console": image("console"), "updater": image("updater") },
         "compose": { "name": "compose.yaml", "sha256": hex(&Sha256::digest(b"compose")) },
@@ -57,6 +59,8 @@ struct GitHub {
     status: Option<(u16, Option<&'static str>)>,
     requests: Vec<Option<String>>,
     base: String,
+    download_base: Option<String>,
+    downloads: u32,
 }
 
 fn etag_of(releases: &[(String, bool, bool)]) -> String {
@@ -83,7 +87,7 @@ async fn list(State(gh): State<Arc<Mutex<GitHub>>>, headers: HeaderMap) -> Respo
     if conditional.as_deref() == Some(etag.as_str()) {
         return StatusCode::NOT_MODIFIED.into_response();
     }
-    let base = gh.base.clone();
+    let base = gh.download_base.clone().unwrap_or_else(|| gh.base.clone());
     let body: Vec<Value> = gh
         .releases
         .iter()
@@ -104,7 +108,8 @@ async fn list(State(gh): State<Arc<Mutex<GitHub>>>, headers: HeaderMap) -> Respo
 }
 
 async fn download(State(gh): State<Arc<Mutex<GitHub>>>, OriginalUri(uri): OriginalUri) -> Response {
-    let gh = gh.lock().unwrap();
+    let mut gh = gh.lock().unwrap();
+    gh.downloads += 1;
     let tag = uri.path().split('/').nth(2).unwrap_or_default().to_owned();
     let version = tag.trim_start_matches('v');
     match gh.releases.iter().find(|(v, _, _)| v == version) {
@@ -134,6 +139,8 @@ struct Updater {
     started: Vec<Value>,
     finish_as: Option<&'static str>,
     refuse: bool,
+    fail_start: Option<u16>,
+    garbled: bool,
     unauthorized: u32,
 }
 
@@ -178,12 +185,18 @@ async fn updater_start(
     if u.refuse {
         return StatusCode::CONFLICT.into_response();
     }
+    if let Some(status) = u.fail_start {
+        return StatusCode::from_u16(status).unwrap().into_response();
+    }
     u.started.push(body.clone());
+    if u.garbled {
+        return (StatusCode::ACCEPTED, "{\"half").into_response();
+    }
     let j = job(
         body["id"].as_str().unwrap(),
         body["version"].as_str().unwrap(),
         "running",
-        "downloading",
+        "verifying",
         None,
     );
     (StatusCode::ACCEPTED, axum::Json(j)).into_response()
@@ -691,7 +704,26 @@ async fn a_rolled_back_update_and_an_updater_that_refuses_are_failures() {
     );
     let first = app.get("/instance/updates/jobs", &owner.cookie).await;
     assert_eq!(first.body["data"][0]["state"], "failed");
-    assert_eq!(first.body["data"][0]["reason"], "updater_unreachable");
+    assert_eq!(first.body["data"][0]["reason"], "updater_refused");
+
+    updater.lock().unwrap().refuse = false;
+    updater.lock().unwrap().fail_start = Some(503);
+    let unavailable = app
+        .post(
+            "/instance/updates/apply",
+            version.clone(),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(unavailable.status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(
+        unavailable.body["error"]["message"],
+        "The updater refused the update; nothing was changed."
+    );
+    let second = app.get("/instance/updates/jobs", &owner.cookie).await;
+    assert_eq!(second.body["data"][0]["state"], "failed");
+    assert_eq!(second.body["data"][0]["reason"], "updater_refused");
+    updater.lock().unwrap().fail_start = None;
 
     updater.lock().unwrap().refuse = false;
     updater.lock().unwrap().finish_as = Some("rolled_back");
@@ -745,8 +777,147 @@ async fn a_running_update_the_updater_forgot_is_marked_interrupted() {
     let r = app
         .get(&format!("/instance/updates/jobs/{id}"), &owner.cookie)
         .await;
+    assert_eq!(
+        r.body["state"], "running",
+        "an update the updater hasn't taken up yet gets a grace period"
+    );
+    app.clock.advance(time::Duration::minutes(3));
+    let r = app
+        .get(&format!("/instance/updates/jobs/{id}"), &owner.cookie)
+        .await;
     assert_eq!(r.body["state"], "failed");
     assert_eq!(r.body["reason"], "interrupted");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_start_the_updater_does_not_confirm_stays_running_until_it_reports() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let (updater, updater_url) = updater().await;
+    updater.lock().unwrap().garbled = true;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATES_APPLY", "true"),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    let started = app
+        .post(
+            "/instance/updates/apply",
+            json!({ "version": next_patch() }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::ACCEPTED, "{:?}", started.body);
+    assert_eq!(started.body["state"], "running");
+    let id = started.body["id"].as_str().unwrap().to_owned();
+    let r = app
+        .get(&format!("/instance/updates/jobs/{id}"), &owner.cookie)
+        .await;
+    assert_eq!(r.body["state"], "running");
+    assert_eq!(r.body["step"], "migrating");
+    updater.lock().unwrap().finish_as = Some("needs_attention");
+    let r = app
+        .get(&format!("/instance/updates/jobs/{id}"), &owner.cookie)
+        .await;
+    assert_eq!(r.body["state"], "needs_attention");
+    assert_eq!(r.body["reason"], "unhealthy");
+    let finish = audit(&app, &owner, "instance.update_finish").await;
+    assert_eq!(finish[0]["after"]["result"], "needs_attention");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_manual_check_honours_githubs_wait() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable()).await;
+    gh.lock().unwrap().status = Some((429, Some("600")));
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let first = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert!(
+        first.body["check"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("refused more requests")
+    );
+    gh.lock().unwrap().status = None;
+    let waiting = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(waiting.status, StatusCode::OK);
+    assert_eq!(waiting.body["check"]["error"], first.body["check"]["error"]);
+    assert_eq!(gh.lock().unwrap().requests.len(), 1, "GitHub asked to wait");
+    app.clock.advance(time::Duration::minutes(11));
+    let after = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(after.body["check"]["error"], Value::Null);
+    assert_eq!(after.body["state"], "available");
+    assert_eq!(gh.lock().unwrap().requests.len(), 2);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_release_manifest_from_elsewhere_is_ignored() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable()).await;
+    let elsewhere = gh.lock().unwrap().base.replace("127.0.0.1", "localhost");
+    gh.lock().unwrap().download_base = Some(elsewhere);
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["latest"]["version"], next_patch());
+    assert_eq!(r.body["manual"], "not_prepared");
+    assert_eq!(gh.lock().unwrap().downloads, 0);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn many_new_releases_are_fetched_a_dozen_at_a_time() {
+    let s = TestServices::start().await;
+    let v = semver::Version::parse(RUNNING).unwrap();
+    let releases: Vec<(String, bool, bool)> = (1..=15)
+        .map(|p| {
+            (
+                format!("{}.{}.{}", v.major, v.minor, v.patch + p),
+                false,
+                false,
+            )
+        })
+        .collect();
+    let (gh, url) = github(releases).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(
+        r.body["manual"],
+        Value::Null,
+        "the newest are fetched first"
+    );
+    assert_eq!(gh.lock().unwrap().downloads, 12);
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(gh.lock().unwrap().downloads, 15);
+    assert_eq!(
+        gh.lock().unwrap().requests.last().unwrap(),
+        &None,
+        "an incomplete list is fetched again in full"
+    );
     s.cleanup().await;
 }
 
@@ -823,9 +994,8 @@ async fn only_instance_admins_see_or_change_updates() {
     s.cleanup().await;
 }
 
-#[test]
-fn the_updater_token_must_be_long() {
-    let s = kaeso_server::config::MapSource::new()
+fn minimal() -> kaeso_server::config::MapSource {
+    kaeso_server::config::MapSource::new()
         .set("KAESO_PUBLIC_URL", "https://kaeso.example.com")
         .set("KAESO_POSTGRES_URL", "postgres://x")
         .set("KAESO_CLICKHOUSE_URL", "http://x")
@@ -835,8 +1005,25 @@ fn the_updater_token_must_be_long() {
             "k1:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
         )
         .set("KAESO_MAIL_TRANSPORT", "log")
-        .set("KAESO_UPDATER_TOKEN", "short");
+}
+
+#[test]
+fn the_updater_token_must_be_long() {
+    let s = minimal().set("KAESO_UPDATER_TOKEN", "short");
     let err = kaeso_server::config::load(&s).unwrap_err().to_string();
     assert!(err.contains("at least 32 characters"), "{err}");
     assert!(!err.contains("short"), "{err}");
+}
+
+#[test]
+fn the_updater_token_comes_from_a_compose_secret_too() {
+    let s = minimal()
+        .set("KAESO_UPDATER_TOKEN", "")
+        .set("KAESO_UPDATER_TOKEN_FILE", "/run/secrets/updater_token")
+        .file("/run/secrets/updater_token", format!("{TOKEN}\n"));
+    let config = kaeso_server::config::load(&s).unwrap();
+    assert_eq!(
+        secrecy::ExposeSecret::expose_secret(config.updater.token.as_ref().unwrap()),
+        TOKEN
+    );
 }

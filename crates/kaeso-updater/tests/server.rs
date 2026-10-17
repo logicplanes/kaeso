@@ -111,7 +111,7 @@ async fn an_update_starts_once_and_reports_its_progress() {
     .await;
     assert_eq!(status, StatusCode::ACCEPTED, "{body}");
     assert_eq!(body["state"], "running");
-    assert_eq!(body["step"], "downloading");
+    assert_eq!(body["step"], "verifying");
     let (status, _) = call(
         &router,
         Method::POST,
@@ -134,6 +134,28 @@ async fn an_update_starts_once_and_reports_its_progress() {
     assert_eq!(body["state"], "rolled_back", "{body}");
     assert_eq!(body["reason"], "unhealthy");
     assert_eq!(body["from"], FROM);
+}
+
+#[tokio::test]
+async fn an_update_whose_state_cannot_be_saved_is_refused_as_unavailable() {
+    let world = World::new("api-state", Daemon::install(), Verifier::default()).await;
+    std::fs::remove_dir_all(world.dir.join("state")).unwrap();
+    let router = kaeso_updater::server::router(world.engine.clone(), SecretString::from(TOKEN));
+    let (status, body) = call(
+        &router,
+        Method::POST,
+        "/v1/updates",
+        Some(TOKEN),
+        Some(json!({ "id": JOB, "version": TO })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert!(
+        body["error"]
+            .as_str()
+            .unwrap()
+            .contains("cannot save the update's state")
+    );
 }
 
 #[tokio::test]

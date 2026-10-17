@@ -34,6 +34,21 @@ pub enum ConfigError {
     NoHostname,
 }
 
+pub fn healthcheck_address(listen: Option<&str>) -> String {
+    let listen = listen
+        .filter(|v| !v.trim().is_empty())
+        .and_then(|v| v.parse::<SocketAddr>().ok())
+        .or_else(|| DEFAULT_LISTEN.parse().ok());
+    match listen {
+        Some(addr) if addr.ip().is_unspecified() => {
+            let local = if addr.is_ipv6() { "[::1]" } else { "127.0.0.1" };
+            format!("{local}:{}", addr.port())
+        }
+        Some(addr) => addr.to_string(),
+        None => "127.0.0.1:8081".to_owned(),
+    }
+}
+
 #[derive(Debug)]
 pub struct Config {
     pub listen: SocketAddr,
@@ -90,6 +105,7 @@ impl Config {
             gateway_timeout: Duration::from_secs(600),
             console_timeout: Duration::from_secs(120),
             rollback_timeout: Duration::from_secs(300),
+            docker_wait: Duration::from_secs(120),
             stop_seconds: 40,
         }
     }
@@ -182,6 +198,16 @@ mod tests {
             load(&[("KAESO_UPDATER_TOKEN", TOKEN)]).unwrap_err(),
             ConfigError::NoHostname
         );
+    }
+
+    #[test]
+    fn the_healthcheck_asks_the_address_the_updater_listens_on() {
+        assert_eq!(healthcheck_address(None), "127.0.0.1:8081");
+        assert_eq!(healthcheck_address(Some("")), "127.0.0.1:8081");
+        assert_eq!(healthcheck_address(Some("0.0.0.0:9000")), "127.0.0.1:9000");
+        assert_eq!(healthcheck_address(Some("[::]:9001")), "[::1]:9001");
+        assert_eq!(healthcheck_address(Some("10.0.0.5:8082")), "10.0.0.5:8082");
+        assert_eq!(healthcheck_address(Some("nonsense")), "127.0.0.1:8081");
     }
 
     #[test]

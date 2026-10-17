@@ -1,12 +1,12 @@
 use std::process::ExitCode;
 
-use kaeso_updater::config::{Config, DEFAULT_LISTEN};
+use kaeso_updater::config::{Config, healthcheck_address};
 
 #[tokio::main]
 async fn main() -> ExitCode {
     if std::env::args().nth(1).as_deref() == Some("healthcheck") {
-        let port = DEFAULT_LISTEN.rsplit(':').next().unwrap_or("8081");
-        return if kaeso_updater::healthcheck(&format!("127.0.0.1:{port}")).await {
+        let listen = std::env::var("KAESO_UPDATER_LISTEN").ok();
+        return if kaeso_updater::healthcheck(&healthcheck_address(listen.as_deref())).await {
             ExitCode::SUCCESS
         } else {
             ExitCode::FAILURE

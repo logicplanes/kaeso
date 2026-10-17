@@ -165,7 +165,9 @@ The jobs that write to the repository or publish anything run in the `release` e
 | Pack npm packages | Builds the libraries from the tag and packs them with the package check at the release's version |
 | npm | Publishes `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui` |
 | crates.io | Publishes `kaeso-kpp` and `kaeso-codecs` |
-| GitHub release | Once anyone can pull the images and both registries have the packages, downloads the published tarballs and crates and creates the release with its files and notes |
+| Release manifest | Writes `release.json` for the [updater](../self-hosting/upgrades.md#one-click-updates): the published image digests, the hash of `compose.yaml`, the latest migrations, whether the release or one before it asks for steps by hand, and the commit the run started on, which its attestations name. It can only read the repository |
+| Attest release.json | Attests the build provenance of `release.json`; it sees nothing but that file and can do nothing but attest |
+| GitHub release | Once anyone can pull the images and both registries have the packages, checks with `gh attestation verify` that `release.json` and every image verify against this workflow on `prod` and the commit `release.json` names, as installs will, downloads the published tarballs and crates and creates the release with its files and notes |
 
 The npm and crates.io jobs authenticate with trusted publishing, so the repository holds no registry tokens. Both skip a version that is already published, so when a publishing job fails, re-running the run's failed jobs finishes the release.
 

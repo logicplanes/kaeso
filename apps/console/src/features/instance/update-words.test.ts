@@ -18,6 +18,8 @@ const REASONS = [
   "unhealthy",
   "interrupted",
   "updater_unreachable",
+  "updater_refused",
+  "state_unwritable",
 ];
 
 describe("update words", () => {
@@ -31,9 +33,25 @@ describe("update words", () => {
   });
 
   it("names every step and every result", () => {
-    expect(STEPS.map(stepLabel)).toEqual(["Download the release", "Check its signatures", "Switch to the new version", "Migrate the database", "Back online"]);
+    expect(STEPS.map(stepLabel)).toEqual([
+      "Check the release's signatures",
+      "Download the images",
+      "Switch to the new version",
+      "Migrate the database",
+      "Back online",
+    ]);
     expect(jobResult(updateJob()).label).toBe("Running");
     expect(jobResult(updateJob({ state: "succeeded" }))).toEqual({ tone: "success", label: "Updated", detail: null });
+    expect(jobResult(updateJob({ state: "succeeded", reason: "compose_unwritable" }))).toEqual({
+      tone: "warning",
+      label: "Updated",
+      detail: "The updater couldn't write compose.yaml.",
+    });
+    expect(jobResult(updateJob({ state: "needs_attention", reason: "unhealthy" }))).toEqual({
+      tone: "danger",
+      label: "Needs attention",
+      detail: "The new version didn't start.",
+    });
     expect(jobResult(updateJob({ state: "rolled_back", reason: "unhealthy" }))).toEqual({
       tone: "warning",
       label: "Rolled back",

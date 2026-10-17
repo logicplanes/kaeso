@@ -52,7 +52,7 @@ function Confirm({ release, open, onOpenChange }: Shown & { release: ReleaseView
           <Text tone="secondary">
             {t(
               "instance.updates.verifyNote",
-              "The updater installs only images built and signed by Kaeso's release workflow, and goes back to this version if the new one doesn't start.",
+              "The updater installs only images built and signed by Kaeso's release workflow; if the new version doesn't start, it goes back to this one unless the database was already migrated.",
             )}
           </Text>
           <Link href={BACKUP_DOCS} external>
@@ -126,13 +126,28 @@ function Progress({ id, open, onOpenChange }: Shown & { id: string }) {
             })}
           </SettingsGroup>
         )}
-        {finished && result && j.state !== "succeeded" && (
-          <Banner tone={result.tone === "danger" ? "danger" : "warning"} title={result.label}>
+        {finished && result && (j.state !== "succeeded" || j.reason) && (
+          <Banner
+            tone={result.tone === "danger" ? "danger" : "warning"}
+            title={j.state === "succeeded" ? t("instance.updates.leftToDo", "One step is left") : result.label}
+          >
             <span className="flex flex-col gap-8">
               <span>{reasonText(j.reason) ?? t("instance.updates.whyUnknown", "The update didn't finish.")}</span>
+              {j.state === "succeeded" && (
+                <span>{t("instance.updates.composeByHand", "Set the Kaeso images in compose.yaml to {version} by hand.", { version: j.to })}</span>
+              )}
               {j.state === "rolled_back" && <span>{t("instance.updates.rolledBackHint", "Kaeso {version} runs again, unchanged.", { version: j.from })}</span>}
               {j.state === "rollback_failed" && (
-                <span>{t("instance.updates.rollbackFailedHint", "Neither version runs; follow the upgrade guide to recover from the backup.")}</span>
+                <span>{t("instance.updates.rollbackFailedHint", "The previous version didn't start again; follow the upgrade guide to recover.")}</span>
+              )}
+              {j.state === "needs_attention" && (
+                <span>
+                  {t(
+                    "instance.updates.needsAttentionHint",
+                    "The new gateway may have migrated the database, so Kaeso {version} wasn't started again; follow the upgrade guide.",
+                    { version: j.from },
+                  )}
+                </span>
               )}
               {j.detail && <Code>{j.detail}</Code>}
             </span>

@@ -65,14 +65,22 @@ pub struct Asset {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Migrations {
+    pub postgres: String,
+    pub clickhouse: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Manifest {
     pub schema: u32,
     pub version: String,
     pub commit: String,
     pub manual: bool,
+    pub manual_since: Option<String>,
     pub updater_protocol: u32,
     pub images: Images,
     pub compose: Asset,
+    pub migrations: Migrations,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -93,6 +101,12 @@ pub enum ManifestError {
     Commit,
     #[error("the release manifest names `{0}` where compose.yaml belongs")]
     Compose(String),
+    #[error("the release manifest names `{0}` as the last release with steps by hand")]
+    ManualSince(String),
+    #[error("the release manifest asks for steps by hand but doesn't name itself as their release")]
+    ManualUnnamed,
+    #[error("the release manifest names the malformed migration `{0}`")]
+    Migration(String),
 }
 
 impl Manifest {
@@ -140,7 +154,29 @@ impl Manifest {
         if !is_sha256_hex(&self.compose.sha256) {
             return Err(ManifestError::Digest(self.compose.sha256.clone()));
         }
+        for name in [&self.migrations.postgres, &self.migrations.clickhouse] {
+            if !is_migration(name) {
+                return Err(ManifestError::Migration(name.clone()));
+            }
+        }
+        match self.manual_since.as_deref().map(|v| (v, Version::parse(v))) {
+            None if self.manual => return Err(ManifestError::ManualUnnamed),
+            Some((text, Ok(since))) if since > *expected || (self.manual && since != *expected) => {
+                return Err(ManifestError::ManualSince(text.to_owned()));
+            }
+            Some((text, Err(_))) => return Err(ManifestError::ManualSince(text.to_owned())),
+            _ => {}
+        }
         Ok(())
+    }
+
+    pub fn asks_for_steps_after(&self, from: &Version) -> bool {
+        self.manual
+            || self
+                .manual_since
+                .as_deref()
+                .and_then(|v| Version::parse(v).ok())
+                .is_some_and(|since| since > *from)
     }
 
     pub fn image(&self, service: Service) -> &Image {
@@ -158,6 +194,13 @@ fn is_lower_hex(b: u8) -> bool {
 
 pub fn is_sha256_hex(s: &str) -> bool {
     s.len() == 64 && s.bytes().all(is_lower_hex)
+}
+
+fn is_migration(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 100
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.'))
 }
 
 pub fn is_digest(s: &str) -> bool {
@@ -184,6 +227,8 @@ mod tests {
                 "updater": { "name": "ghcr.io/logicplanes/kaeso-updater", "digest": format!("sha256:{D}") },
             },
             "compose": { "name": "compose.yaml", "sha256": D },
+            "migrations": { "postgres": "20261017120001_updates", "clickhouse": "0002_usage_rollups" },
+            "manual_since": "0.1.4",
             "notes": "fields this version doesn't know are ignored",
         })
     }
@@ -236,6 +281,29 @@ mod tests {
                 |v| v["compose"]["sha256"] = json!("ABC"),
                 ManifestError::Digest("ABC".into()),
             ),
+            (
+                |v| v["migrations"]["postgres"] = json!("../x y"),
+                ManifestError::Migration("../x y".into()),
+            ),
+            (
+                |v| v["manual_since"] = json!("0.3.0"),
+                ManifestError::ManualSince("0.3.0".into()),
+            ),
+            (
+                |v| v["manual_since"] = json!("soon"),
+                ManifestError::ManualSince("soon".into()),
+            ),
+            (
+                |v| v["manual"] = json!(true),
+                ManifestError::ManualSince("0.1.4".into()),
+            ),
+            (
+                |v| {
+                    v["manual"] = json!(true);
+                    v["manual_since"] = json!(null);
+                },
+                ManifestError::ManualUnnamed,
+            ),
         ];
         for (change, expected) in cases {
             let mut v = valid();
@@ -261,6 +329,27 @@ mod tests {
         assert_eq!(
             Manifest::parse(&vec![b' '; MAX_BYTES + 1], &version),
             Err(ManifestError::TooLarge)
+        );
+    }
+
+    #[test]
+    fn steps_by_hand_count_from_the_running_version_on() {
+        let m = parse(&valid()).unwrap();
+        assert!(m.asks_for_steps_after(&Version::parse("0.1.3").unwrap()));
+        assert!(!m.asks_for_steps_after(&Version::parse("0.1.4").unwrap()));
+        let mut v = valid();
+        v["manual_since"] = json!(null);
+        assert!(
+            !parse(&v)
+                .unwrap()
+                .asks_for_steps_after(&Version::parse("0.0.1").unwrap())
+        );
+        v["manual"] = json!(true);
+        v["manual_since"] = json!("0.2.0");
+        assert!(
+            parse(&v)
+                .unwrap()
+                .asks_for_steps_after(&Version::parse("0.1.9").unwrap())
         );
     }
 

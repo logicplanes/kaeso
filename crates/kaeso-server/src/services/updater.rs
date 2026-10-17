@@ -25,6 +25,8 @@ static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
 #[derive(Debug, thiserror::Error)]
 pub enum UpdaterError {
     #[error("the updater cannot be reached: {0}")]
+    NotSent(String),
+    #[error("the updater did not answer: {0}")]
     Unreachable(String),
     #[error("the updater refused the token")]
     Unauthorized,
@@ -53,7 +55,7 @@ impl Updater<'_> {
     fn endpoint(&self, path: &str) -> Result<Url, UpdaterError> {
         self.url
             .join(path)
-            .map_err(|e| UpdaterError::Unreachable(e.to_string()))
+            .map_err(|e| UpdaterError::NotSent(e.to_string()))
     }
 
     fn bearer(&self) -> Result<HeaderValue, UpdaterError> {
@@ -71,7 +73,13 @@ impl Updater<'_> {
             .header(AUTHORIZATION, self.bearer()?)
             .send()
             .await
-            .map_err(|e| UpdaterError::Unreachable(without_url(&e)))?;
+            .map_err(|e| {
+                if e.is_connect() || e.is_builder() {
+                    UpdaterError::NotSent(without_url(&e))
+                } else {
+                    UpdaterError::Unreachable(without_url(&e))
+                }
+            })?;
         let status = resp.status();
         let mut body = Vec::new();
         while let Some(chunk) = resp
@@ -89,7 +97,7 @@ impl Updater<'_> {
 
     fn client() -> Result<&'static reqwest::Client, UpdaterError> {
         HTTP.as_ref()
-            .ok_or_else(|| UpdaterError::Unreachable("no HTTP client".into()))
+            .ok_or_else(|| UpdaterError::NotSent("no HTTP client".into()))
     }
 
     pub async fn status(&self) -> Result<Status, UpdaterError> {
@@ -145,6 +153,19 @@ fn without_url(e: &reqwest::Error) -> String {
         "request failed"
     };
     kind.to_owned()
+}
+
+impl UpdaterError {
+    pub fn refused(&self) -> bool {
+        matches!(
+            self,
+            UpdaterError::Busy | UpdaterError::Unauthorized | UpdaterError::Status(_)
+        )
+    }
+
+    pub fn certain(&self) -> bool {
+        self.refused() || matches!(self, UpdaterError::NotSent(_))
+    }
 }
 
 pub fn speaks(status: &Status, required: u32) -> bool {

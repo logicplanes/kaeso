@@ -8,6 +8,7 @@ CREATE TABLE update_settings (
     last_success_at timestamptz,
     last_error text,
     next_check_at timestamptz,
+    blocked_until timestamptz,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -25,8 +26,8 @@ CREATE TABLE update_jobs (
     id uuid PRIMARY KEY,
     from_version text NOT NULL,
     to_version text NOT NULL,
-    state text NOT NULL CHECK (state IN ('running', 'succeeded', 'failed', 'rolled_back', 'rollback_failed')),
-    step text NOT NULL CHECK (step IN ('downloading', 'verifying', 'switching', 'migrating', 'online')),
+    state text NOT NULL CHECK (state IN ('running', 'succeeded', 'failed', 'rolled_back', 'rollback_failed', 'needs_attention')),
+    step text NOT NULL CHECK (step IN ('verifying', 'downloading', 'switching', 'migrating', 'online')),
     reason text,
     detail text,
     started_by uuid REFERENCES users (id) ON DELETE SET NULL,

@@ -29,8 +29,8 @@ macro_rules! names {
 }
 
 names!(Step {
-    Downloading => "downloading",
     Verifying => "verifying",
+    Downloading => "downloading",
     Switching => "switching",
     Migrating => "migrating",
     Online => "online",
@@ -42,6 +42,7 @@ names!(JobState {
     Failed => "failed",
     RolledBack => "rolled_back",
     RollbackFailed => "rollback_failed",
+    NeedsAttention => "needs_attention",
 });
 
 names!(Reason {
@@ -60,6 +61,8 @@ names!(Reason {
     Unhealthy => "unhealthy",
     Interrupted => "interrupted",
     UpdaterUnreachable => "updater_unreachable",
+    UpdaterRefused => "updater_refused",
+    StateUnwritable => "state_unwritable",
 });
 
 impl JobState {

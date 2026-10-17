@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 const PORT = Number(process.env.PORT ?? 8080);
 const TOKEN = process.env.UPDATER_TOKEN ?? "";
 const RUNNING = JSON.parse(readFileSync(process.env.VERSION_FILE ?? "/version/package.json", "utf8")).version;
-const STEPS = ["downloading", "verifying", "switching", "migrating", "online"];
+const STEPS = ["verifying", "downloading", "switching", "migrating", "online"];
 
 const [major, minor, patch] = RUNNING.split("-")[0].split(".").map(Number);
 const VERSIONS = {
@@ -55,6 +55,8 @@ function manifest(version) {
     version,
     commit: sha(version).slice(0, 40),
     manual: !!r?.manual,
+    manual_since: r?.manual ? version : null,
+    migrations: { postgres: "20261017120001_updates", clickhouse: "0002_usage_rollups" },
     updater_protocol: 1,
     images: { gateway: image("gateway"), console: image("console"), updater: image("updater") },
     compose: { name: "compose.yaml", sha256: sha(`compose ${version}`) },
@@ -64,8 +66,8 @@ function manifest(version) {
 function job(entry) {
   const at = Math.min(entry.polls, STEPS.length - 1);
   const done = entry.polls >= STEPS.length;
-  const failed = scenario.outcome === "rolled_back" && entry.polls >= 3;
-  const state = failed ? "rolled_back" : done ? "succeeded" : "running";
+  const failed = scenario.outcome !== "succeeded" && entry.polls >= 3;
+  const state = failed ? scenario.outcome : done ? "succeeded" : "running";
   return {
     id: entry.id,
     from: RUNNING,
@@ -73,7 +75,7 @@ function job(entry) {
     state,
     step: failed ? "migrating" : STEPS[at],
     reason: failed ? "unhealthy" : null,
-    detail: failed ? "the new gateway reported itself unhealthy" : null,
+    detail: failed ? "the new gateway was not healthy within 600 seconds" : null,
     started_at: entry.started,
     finished_at: state === "running" ? null : new Date().toISOString(),
   };
