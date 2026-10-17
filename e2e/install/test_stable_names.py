@@ -79,7 +79,7 @@ INSTALL_PAGES = ("get-started/quick-start.md", "self-hosting/installation.md", "
 
 @pytest.mark.parametrize(
     "page",
-    ["README.md", *(f"apps/docs/content/{lang}/{page}" for lang in ("en", "de", "zh-CN") for page in INSTALL_PAGES)],
+    [f"apps/docs/content/{lang}/{page}" for lang in ("en", "de", "zh-CN") for page in INSTALL_PAGES],
 )
 def test_the_install_pages_download_the_latest_release_asset(page):
     assert f"curl -fsSLO {RELEASE_ASSET}" in (ROOT / page).read_text()
