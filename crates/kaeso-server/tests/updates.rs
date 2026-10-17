@@ -14,7 +14,11 @@ use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-const TOKEN: &str = "0123456789abcdef0123456789abcdef";
+static TOKEN_TEXT: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| "t".repeat(32));
+
+fn token() -> &'static str {
+    TOKEN_TEXT.as_str()
+}
 const RUNNING: &str = env!("CARGO_PKG_VERSION");
 
 fn hex(bytes: &[u8]) -> String {
@@ -164,7 +168,7 @@ fn authorized(u: &mut Updater, headers: &HeaderMap) -> bool {
     let ok = headers
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
-        == Some(&format!("Bearer {TOKEN}"));
+        == Some(&format!("Bearer {}", token()));
     if !ok {
         u.unauthorized += 1;
     }
@@ -353,7 +357,7 @@ async fn a_major_or_manual_release_is_never_offered_in_one_click() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -599,7 +603,7 @@ async fn an_update_runs_once_is_audited_and_its_result_is_recorded() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -705,7 +709,7 @@ async fn a_rolled_back_update_and_an_updater_that_refuses_are_failures() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -783,7 +787,7 @@ async fn a_running_update_the_updater_forgot_is_marked_interrupted() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -827,7 +831,7 @@ async fn a_start_the_updater_does_not_confirm_stays_running_until_it_reports() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -956,7 +960,7 @@ async fn an_unreachable_updater_changes_nothing() {
         &[
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", "http://127.0.0.1:9/"),
-            ("KAESO_UPDATER_TOKEN", TOKEN),
+            ("KAESO_UPDATER_TOKEN", token()),
             ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
@@ -1046,10 +1050,10 @@ fn the_updater_token_comes_from_a_compose_secret_too() {
     let s = minimal()
         .set("KAESO_UPDATER_TOKEN", "")
         .set("KAESO_UPDATER_TOKEN_FILE", "/run/secrets/updater_token")
-        .file("/run/secrets/updater_token", format!("{TOKEN}\n"));
+        .file("/run/secrets/updater_token", format!("{}\n", token()));
     let config = kaeso_server::config::load(&s).unwrap();
     assert_eq!(
         secrecy::ExposeSecret::expose_secret(config.updater.token.as_ref().unwrap()),
-        TOKEN
+        token()
     );
 }
