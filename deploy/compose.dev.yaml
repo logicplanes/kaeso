@@ -111,7 +111,9 @@ services:
     command:
       - sh
       - -c
-      - psql -h postgres -U kaeso -d kaeso -tAc "SELECT 1 FROM pg_database WHERE datname = 'kaeso_sso'" | grep -q 1 || psql -h postgres -U kaeso -d kaeso -c "CREATE DATABASE kaeso_sso"
+      - >-
+        n=0; until pg_isready -h postgres -U kaeso -d kaeso -q; do n=$$((n + 1)); [ $$n -lt 60 ] || exit 1; sleep 1; done;
+        psql -h postgres -U kaeso -d kaeso -tAc "SELECT 1 FROM pg_database WHERE datname = 'kaeso_sso'" | grep -q 1 || psql -h postgres -U kaeso -d kaeso -c "CREATE DATABASE kaeso_sso"
     depends_on:
       postgres:
         condition: service_healthy
