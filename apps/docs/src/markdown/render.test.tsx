@@ -32,16 +32,16 @@ describe("Markdown", () => {
         t: "paragraph",
         c: [
           { t: "code", v: "sampling.max_output_tokens" },
-          { t: "code", v: "Role::System" },
-          { t: "code", v: "/v1/messages" },
+          { t: "code", v: "Role::SystemMessage" },
+          { t: "code", v: "/v1/chat/completions" },
         ],
       },
     ]);
     const [field, role, path] = [...c.querySelectorAll("code")];
     expect(field).toHaveTextContent("sampling.max_output_tokens");
     expect([...(field?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("sampling.|max_|output_|tokens");
-    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|System");
-    expect([...(path?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("/v1/|messages");
+    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|SystemMessage");
+    expect([...(path?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("/v1/|chat/|completions");
   });
 
   it("renders text that looks like HTML as text", () => {
@@ -200,8 +200,9 @@ describe("Markdown", () => {
     const [long, short] = [...c.querySelectorAll("code")];
     expect(long).toHaveClass("inline", "box-decoration-clone");
     expect(long).not.toHaveClass("inline-block");
-    expect(short).toHaveClass("inline");
+    expect(short).toHaveClass("inline", "whitespace-nowrap");
     expect(short).not.toHaveClass("inline-block");
+    expect(short?.querySelector("wbr")).toBeNull();
   });
 
   it("draws a diagram as one labelled region with its light and dark image and its description for screen readers", () => {

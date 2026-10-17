@@ -395,7 +395,7 @@ test.describe("tables and inline code", () => {
   });
 
   for (const path of MODELS) {
-    test(`a code chip hugs the punctuation after it, and the punctuation never starts a line, at ${path}`, async ({ page }) => {
+    test(`a code chip stays whole and hugs the punctuation after it, which never starts a line, at ${path}`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
@@ -406,9 +406,11 @@ test.describe("tables and inline code", () => {
           const loose: string[] = [];
           const detached: string[] = [];
           const margins: string[] = [];
+          const split: string[] = [];
           let followed = 0;
           for (const chip of chips) {
             const style = getComputedStyle(chip);
+            if ((chip.textContent ?? "").length <= 16 && chip.getClientRects().length > 1) split.push(chip.textContent ?? "");
             if (style.marginLeft !== "0px" || style.marginRight !== "0px") margins.push(chip.textContent ?? "");
             const next = chip.nextSibling;
             if (next?.nodeType !== Node.TEXT_NODE || !punctuation.test(next.nodeValue ?? "")) continue;
@@ -423,10 +425,10 @@ test.describe("tables and inline code", () => {
             if (Math.abs(mark.left - last.right) > 0.5) detached.push(`${chip.textContent}${next.nodeValue?.[0]}`);
             if (mark.top + mark.height / 2 < last.top || mark.top + mark.height / 2 > last.bottom) loose.push(`${chip.textContent}${next.nodeValue?.[0]}`);
           }
-          return { followed, detached, loose, margins };
+          return { followed, detached, loose, margins, split };
         });
         expect(found.followed, `chips followed by punctuation at ${width} px`).toBeGreaterThan(0);
-        expect(found, `at ${width} px`).toEqual({ followed: found.followed, detached: [], loose: [], margins: [] });
+        expect(found, `at ${width} px`).toEqual({ followed: found.followed, detached: [], loose: [], margins: [], split: [] });
       }
     });
   }
