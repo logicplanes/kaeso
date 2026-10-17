@@ -64,6 +64,34 @@ describe("ModelSheet", () => {
     expect(await within(await sheet("Claude Sonnet 4.5")).findByText("No longer listed")).toBeInTheDocument();
   });
 
+  it("says whether the provider serves the model and whether it is deprecated", async () => {
+    setUp([
+      catalogueModel({ availability: "unavailable", availability_checked_at: "2026-10-16T08:00:00Z", deprecated: true }),
+      catalogueModel({ id: "cm_ok", model_id: "claude-haiku-4-5", availability: "available", availability_checked_at: "2026-10-16T08:00:00Z" }),
+      catalogueModel({ id: "cm_new", model_id: "claude-opus-4-1" }),
+      catalogueModel({ id: "cm_quiet", model_id: "claude-3-opus", availability: "unavailable" }),
+      catalogueModel({ id: "cm_seen", model_id: "claude-3-5-haiku", availability: "available" }),
+    ]);
+    const { router } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Claude Sonnet 4.5");
+    expect(await within(s).findByText("Unavailable")).toBeInTheDocument();
+    expect(within(s).getByText("Deprecated")).toBeInTheDocument();
+    expect(within(s).getByText("Anthropic doesn't serve it to this project's provider key; check the key's access or remove the model.")).toBeInTheDocument();
+    expect(within(s).getByText("models.dev marks it deprecated; plan a move to a newer model.")).toBeInTheDocument();
+    expect(s).toHaveTextContent("AvailabilityUnavailable since 16 Oct 2026");
+    for (const [id, text] of [
+      ["cm_ok", "AvailabilityAvailable, checked 16 Oct 2026"],
+      ["cm_new", "AvailabilityNot checked"],
+      ["cm_quiet", "AvailabilityUnavailableAdded"],
+      ["cm_seen", "AvailabilityAvailableAdded"],
+    ] as const) {
+      await router.navigate({ to: projectPath("models"), search: { model: id } });
+      await waitFor(() => expect(screen.getByRole("dialog")).toHaveTextContent(text));
+    }
+    expect(within(screen.getByRole("dialog")).queryByText("Deprecated")).not.toBeInTheDocument();
+  });
+
   it("shows a custom model's values as set here, without resets", async () => {
     setUp([catalogueModel({ custom: true, listed: false, overrides: { display_name: "Claude Sonnet 4.5" } })]);
     await renderApp(projectPath("models?model=cm_sonnet"));

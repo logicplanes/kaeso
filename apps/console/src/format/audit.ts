@@ -4,7 +4,7 @@ import { joinList } from "./labels";
 export const AUDIT_ACTIONS: Record<string, string[]> = {
   alias: ["alias.create", "alias.update", "alias.delete"],
   audit_log: ["audit_log.export"],
-  catalogue_model: ["catalogue_model.create", "catalogue_model.update", "catalogue_model.price_change", "catalogue_model.delete"],
+  catalogue_model: ["catalogue_model.create", "catalogue_model.update", "catalogue_model.price_change", "catalogue_model.check", "catalogue_model.delete"],
   credential: ["credential.create", "credential.replace", "credential.rename", "credential.default", "credential.assign", "credential.delete"],
   instance: ["instance.setup", "instance.invite", "instance.settings_update"],
   invite: ["invite.create", "invite.resend", "invite.revoke", "invite.accept"],

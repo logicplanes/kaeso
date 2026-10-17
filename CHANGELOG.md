@@ -19,6 +19,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The documentation site's sidebar shows the same language and theme selects, side by side at its foot, as the UI library's showcase.
 - Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
 - The showcase's View source links, its `llms.txt` and the links in its changelog open the source of the release the site was built for, at its tag, instead of the `dev` branch.
+- The project catalogue knows whether each model's provider serves it to the project's provider key: **Check availability** on the **Models** page (`POST …/models/check`) asks the provider, requests teach it too, and a model marked **Unavailable** is left out of `GET /v1/models`; changing a provider key resets its models to **Not checked**. Models models.dev marks deprecated show **Deprecated** and have `lifecycle: "deprecated"` in Anthropic model listings.
 
 ### Fixed
 
@@ -35,6 +36,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Turning two-factor authentication on or off, or changing your password, no longer signs you out when the console was loading something at the same moment.
 - The console's dialogs open fresh every time: Create key starts on an empty first step again after a key was created, and transfer ownership, add owner, send test email, change email, change password, export requests and add models no longer keep what was typed or chosen before they were cancelled. A key's sheet shows only the key it opened for.
 - The command palette keeps its results while it closes instead of emptying first, and the documentation search opens with an empty query instead of the last search's headings.
+- A request for a catalogue model that the provider does not serve to the project's provider key, such as a retired model or one the key has no access to, now fails with 404 and `param: model` in the app's format, with a message that names the provider and the model and says to check the key's access or remove the model, instead of the provider's bare `model: …`; Kaeso confirms it with the provider's model endpoint first and never retries.
 
 ### Security
 

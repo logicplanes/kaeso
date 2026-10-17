@@ -382,6 +382,7 @@ const messages = (): Rule[] => [
   rule("errors.modelsUnavailable", () => t("errors.modelsUnavailable", "Kaeso cannot load this project's models right now; try again shortly.")),
   rule("errors.ambiguousModel", (v) => t("errors.ambiguousModel", "Several providers serve `{model}` here; name it as `provider/{model}`.", v)),
   rule("errors.modelNotAllowed", (v) => t("errors.modelNotAllowed", "The model `{model}` is not among the models you may use in this project.", v)),
+  rule("errors.modelUnserved", (v) => t("errors.modelUnserved", "The provider does not serve `{model}` to this project's key; check the key's access.", v)),
   rule("errors.modelCannotTake", () => t("errors.modelCannotTake", "The model cannot take this request as it is; check its settings.")),
   rule("errors.budgetsUnavailable", () => t("errors.budgetsUnavailable", "Kaeso cannot check this project's budgets right now; try again shortly.")),
   rule("errors.limitRefused", () => t("errors.limitRefused", "A limit of this project refused the request; try again later.")),

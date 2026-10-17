@@ -28,7 +28,7 @@ order: 1
 
 生成类端点可以调用目录中的所有生成模型，无论其服务商是谁。`/v1/embeddings` 只调用嵌入模型，而嵌入模型只有 OpenAI 提供，且嵌入模型不服务于其他任何端点；两种混用都会以 400 拒绝。
 
-请求带有 `anthropic-version` 头时，`GET /v1/models` 以 Anthropic 格式响应，否则以 OpenAI 格式响应。它先列出目录中密钥可调用的模型，再列出指向这些模型的项目别名。在 Anthropic 格式下，列表通过 `limit`（默认 20）、`after_id` 和 `before_id` 分页。`GET /v1/models/{model}` 接受任何[模型名称](#模型名称)，对不在目录中或密钥无权使用的模型返回 404。
+请求带有 `anthropic-version` 头时，`GET /v1/models` 以 Anthropic 格式响应，否则以 OpenAI 格式响应。它先列出目录中密钥可调用的模型，再列出指向这些模型的项目别名。服务商不向项目的服务商密钥提供的模型（[可用性](../console/models-and-aliases.md#可用性)）不会列出，models.dev 标记为已弃用的模型在 Anthropic 格式下带有 `lifecycle: "deprecated"`。在 Anthropic 格式下，列表通过 `limit`（默认 20）、`after_id` 和 `before_id` 分页。`GET /v1/models/{model}` 接受任何[模型名称](#模型名称)，对不在目录中、密钥无权使用或服务商不提供的模型返回 404。
 
 `/v1` 下的其他任何路径都返回 404，以错误方法调用已知路径则返回 405。请求带有 `anthropic-version` 头时，这两种错误都采用 Anthropic 格式，否则采用 OpenAI 格式。
 

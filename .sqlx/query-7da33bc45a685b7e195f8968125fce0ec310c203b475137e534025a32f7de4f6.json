@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE project_id = $1 AND id = $2 FOR UPDATE",
+  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE provider = $1 AND model_id = $2 AND NOT custom",
   "describe": {
     "columns": [
       {
@@ -104,6 +104,28 @@
       },
       {
         "ordinal": 9,
+        "name": "availability",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "availability"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "availability_checked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "availability_checked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -114,7 +136,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -125,7 +147,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -136,7 +158,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +169,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -160,8 +182,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Uuid"
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
@@ -174,6 +196,8 @@
       false,
       true,
       true,
+      true,
+      true,
       false,
       true,
       false,
@@ -181,5 +205,5 @@
       false
     ]
   },
-  "hash": "5acd4c86ceda7cdef8fbed76f16fd23e298f5c60b268f967aa6f16d5f3c95aab"
+  "hash": "7da33bc45a685b7e195f8968125fce0ec310c203b475137e534025a32f7de4f6"
 }

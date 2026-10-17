@@ -284,7 +284,7 @@ Namen und Werte werden prozentdekodiert (`+` ist ein Leerzeichen); ein fehlerhaf
 
 Verlustbehaftet gegenüber Anthropic-Apps: `owned_by` (OpenAI) hat hier kein Feld, und Extras aus anderen Dialekten werden weggelassen ([Antworten](cross-format.md#antworten)). Ein Modell aus einem anderen Dialekt erhält die Standardwerte oben (`display_name` ist die ID, `lifecycle: "active"`, `capabilities: null`, `line`, `max_*` und Datumswerte `null`).
 
-Auf der Egress-Seite nehmen `decode_models` und `decode_model` die Antwort eines Anbieters entgegen; ein Status außer 2xx geht an `decode_error`. Dekodierte Extras tragen die Herkunft `anthropic_messages` ohne Anbieter, weil diese Funktionen keinen `EgressCtx` erhalten.
+Auf der Egress-Seite baut `encode_model_request` `GET /v1/models/{model_id}` mit `anthropic-version: 2023-06-01` und ohne Body, was auch einen Alias wie `claude-sonnet-4-5` auflöst (die Seite [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md)), und `decode_models` und `decode_model` nehmen die Antwort eines Anbieters entgegen; ein Status außer 2xx geht an `decode_error`. Dekodierte Extras tragen die Herkunft `anthropic_messages` ohne Anbieter, weil diese Funktionen keinen `EgressCtx` erhalten.
 
 ## Round Trips
 

@@ -70,6 +70,20 @@ Chat Completions, Responses and Embeddings share one error shape:
 
 When the app and the provider speak the same format, a provider's error comes back as the provider sent it, with its status; an Anthropic error carries Kaeso's request id in `request_id`. Otherwise it keeps its meaning in the app's format: a provider key the provider refuses comes back as 401 or 403, the provider's own rate limit as 429, its billing refusal as 402 or 429, and its other server errors with their 5xx status. The request log keeps the provider's own message.
 
+One provider error is Kaeso's own in every format: when the provider answers 404 for a model in the catalogue, Kaeso asks the provider's model endpoint (`GET /v1/models/{model}`) with the same provider key whether it serves the model. If it doesn't, because the model is retired or the key has no access to it, the app gets 404 with `param: model` and a message that names the provider and the model and says what to do:
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "not_found_error",
+    "message": "Anthropic does not serve the model `claude-sonnet-4-5` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
+  }
+}
+```
+
+Kaeso then marks the model **Unavailable** in the catalogue ([availability](../console/models-and-aliases.md#availability)). If the provider does serve the model, the 404 was about something else, such as a file id, and comes back as the provider sent it. Kaeso never sends the request again or to another model.
+
 ## Why requests fail
 
 | Status | Cause |
@@ -77,7 +91,7 @@ When the app and the provider speak the same format, a provider's error comes ba
 | 400 | The request can't be read, the model doesn't take a setting it uses, a field can't be carried to the provider, the context is too long, a model id is served by several providers in the project, or no provider key is set up for the model's provider |
 | 401 | No key, or the key is unknown, disabled, archived or expired, its member or service account is no longer active, or its project or organization can't be used |
 | 403 | The key has platform access only, is an organization platform key, or may not call models (`api.request`), or the key or its member may not use this model |
-| 404 | The model isn't in the project's catalogue, or the path isn't served |
+| 404 | The model isn't in the project's catalogue, the provider doesn't serve it to the project's provider key, or the path isn't served |
 | 405 | The path doesn't take this method |
 | 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default |
 | 429 | A rate limit or budget, or too many unknown keys from the same address; `Retry-After` says when to try again, except for a used-up budget, whose message says when it resets |

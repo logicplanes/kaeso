@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
 use kaeso_core::provider::ProviderId;
+use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -202,6 +203,21 @@ async fn view(db: &mut sqlx::PgConnection, org: Uuid, id: Uuid) -> ApiResult<Cre
     Ok(CredentialView::new(&row, &assigned))
 }
 
+async fn reset_availability(
+    tx: &mut sqlx::PgConnection,
+    org: Uuid,
+    provider: &str,
+) -> ApiResult<Vec<Uuid>> {
+    Ok(catalogue::clear_availability(&mut *tx, org, provider).await?)
+}
+
+async fn forget(state: &AppState, org: Uuid, projects: Vec<Uuid>) {
+    service::forget_org(state, org).await;
+    for p in projects {
+        crate::services::catalogue::forget(state, p).await;
+    }
+}
+
 fn parse_id(id: &str) -> ApiResult<Uuid> {
     Ok(id_param::<CredentialId>(id, "credential")?.uuid())
 }
@@ -258,8 +274,9 @@ pub async fn create(
         .after(&view)
         .write(&mut tx)
         .await?;
+    let projects = reset_availability(&mut tx, org, provider.id).await?;
     tx.commit().await?;
-    service::forget_org(&state, org).await;
+    forget(&state, org, projects).await;
     Ok((StatusCode::CREATED, Json(view)))
 }
 
@@ -360,8 +377,9 @@ pub async fn replace(
         .after(&after)
         .write(&mut tx)
         .await?;
+    let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
-    service::forget_org(&state, org).await;
+    forget(&state, org, projects).await;
     Ok(Json(after))
 }
 
@@ -431,8 +449,9 @@ pub async fn make_default(
         .after(&after)
         .write(&mut tx)
         .await?;
+    let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
-    service::forget_org(&state, org).await;
+    forget(&state, org, projects).await;
     Ok(Json(after))
 }
 
@@ -480,8 +499,9 @@ pub async fn assign(
         .after(&after)
         .write(&mut tx)
         .await?;
+    let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
-    service::forget_org(&state, org).await;
+    forget(&state, org, projects).await;
     Ok(Json(after))
 }
 
@@ -529,8 +549,9 @@ pub async fn delete(
             .write(&mut tx)
             .await?;
     }
+    let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
-    service::forget_org(&state, org).await;
+    forget(&state, org, projects).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

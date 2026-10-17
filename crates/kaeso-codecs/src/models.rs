@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use kaeso_kpp::{DialectId, Extras, KppError, RawJson};
 use serde_json::{Map, Value};
 
@@ -59,6 +61,20 @@ fn percent_decode(text: &str) -> Result<String, KppError> {
             Short(text, 100)
         ))
     })
+}
+
+pub(crate) const MODELS_PATH: &str = "/v1/models";
+
+pub(crate) fn model_path(model: &str) -> String {
+    let mut path = format!("{MODELS_PATH}/");
+    for b in model.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~' | b':' | b'@') {
+            path.push(char::from(b));
+        } else {
+            let _ = write!(path, "%{b:02X}");
+        }
+    }
+    path
 }
 
 pub(crate) fn add_query_extra(extras: &mut Extras, name: &str, value: &str) {

@@ -33,3 +33,5 @@ Um einigen Projekten einen anderen Schlüssel zu geben, im Menü des Schlüssels
 | Löschen | Entfernt den Schlüssel; seine Projekte nutzen wieder den Standard. Wird der Standard gelöscht, wird der zuletzt hinzugefügte andere Schlüssel des Anbieters zum Standard; ohne einen solchen schlagen Anfragen an diesen Anbieter fehl. Der Dialog sagt, was zutrifft |
 
 Die Tabelle zeigt für jeden Schlüssel die letzten vier Zeichen, seine Projekte, wer ihn hinzugefügt hat und wann er zuletzt genutzt wurde.
+
+Ein Schlüssel entscheidet, welche Modelle ein Anbieter einem Projekt anbietet. Einen Schlüssel hinzuzufügen, zu ersetzen, zuzuweisen, zum Standard zu machen oder zu löschen setzt die [Verfügbarkeit](models-and-aliases.md#verfügbarkeit) der Modelle dieses Anbieters in jedem Projekt der Organisation auf **Nicht geprüft** zurück; **Verfügbarkeit prüfen** auf der Seite **Modelle** eines Projekts fragt den Anbieter erneut.

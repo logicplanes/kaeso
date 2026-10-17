@@ -284,7 +284,7 @@ wire 上的 `ListResponse[ModelInfo]` 与 KPP 中的 `ModelList`。
 
 对 Anthropic 应用有损的部分：`owned_by`（OpenAI）在这里没有对应字段，来自其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。来自其他方言的模型会得到上述默认值（`display_name` 为 ID，`lifecycle: "active"`，`capabilities: null`，`line`、`max_*` 和日期为 `null`）。
 
-在出站一侧，`decode_models` 和 `decode_model` 接收服务商的响应；非 2xx 状态码交给 `decode_error`。解码出的 extras 带有来源 `anthropic_messages`，但没有服务商，因为这些函数不接收 `EgressCtx`。
+在出站一侧，`encode_model_request` 构建带 `anthropic-version: 2023-06-01`、不带请求体的 `GET /v1/models/{model_id}`，它也能解析 `claude-sonnet-4-5` 这样的别名（[get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) 页面），`decode_models` 和 `decode_model` 接收服务商的响应；非 2xx 状态码交给 `decode_error`。解码出的 extras 带有来源 `anthropic_messages`，但没有服务商，因为这些函数不接收 `EgressCtx`。
 
 ## 往返
 

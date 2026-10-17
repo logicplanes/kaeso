@@ -448,6 +448,30 @@ impl Supplement {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Availability {
+    Available,
+    Unavailable,
+}
+
+impl Availability {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Availability::Available => "available",
+            Availability::Unavailable => "unavailable",
+        }
+    }
+
+    pub fn parse(text: &str) -> Option<Availability> {
+        match text {
+            "available" => Some(Availability::Available),
+            "unavailable" => Some(Availability::Unavailable),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Entry {
     pub id: uuid::Uuid,
@@ -457,6 +481,21 @@ pub struct Entry {
     pub custom: bool,
     pub delisted: bool,
     pub last_known: Option<models_dev::Model>,
+    #[serde(default)]
+    pub availability: Option<Availability>,
+}
+
+impl Entry {
+    pub fn is_unavailable(&self) -> bool {
+        self.availability == Some(Availability::Unavailable)
+    }
+
+    pub fn is_deprecated(&self, snapshot: &models_dev::Snapshot) -> bool {
+        snapshot
+            .model(&self.provider, &self.model_id)
+            .or(self.last_known.as_ref())
+            .is_some_and(models_dev::Model::is_deprecated)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

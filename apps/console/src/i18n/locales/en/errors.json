@@ -156,6 +156,7 @@
   "errors.modelIdsOrAllCurrent": "Send either `model_ids` or `all_current: true`.",
   "errors.modelNotAllowed": "The model `{model}` is not among the models you may use in this project.",
   "errors.modelNotInCatalogue": "The model `{model}` is not in this project's catalogue.",
+  "errors.modelUnserved": "The provider does not serve `{model}` to this project's key; check the key's access.",
   "errors.modelsDevUnavailable": "The models.dev data could not be fetched; the gateway log says why.",
   "errors.modelsUnavailable": "Kaeso cannot load this project's models right now; try again shortly.",
   "errors.nameRecipient": "Name a recipient.",

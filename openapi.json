@@ -11447,6 +11447,78 @@
         "x-kaeso-access": "right:models.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/models/check": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Asks each model's provider, with the project's provider key, whether it\nserves the model, and records the answer.",
+        "description": "A model the provider does not serve to the key, because it is retired\nor the key has no access, becomes `unavailable`: model listings leave it\nout, and requests for it still go to the provider and fail there. Kaeso\nalso learns this from requests the provider answers with model not found.\nChanging a provider key of the org resets its provider's models to\n`unchecked`.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectModelsCheck",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/models/preview": {
       "get": {
         "tags": [
@@ -14701,6 +14773,15 @@
           }
         }
       },
+      "AvailabilityState": {
+        "type": "string",
+        "description": "Whether the provider serves a model to the project's provider key.",
+        "enum": [
+          "available",
+          "unavailable",
+          "unchecked"
+        ]
+      },
       "AvatarUpload": {
         "type": "object",
         "description": "A picture to set.",
@@ -14760,6 +14841,8 @@
           "model_id",
           "custom",
           "listed",
+          "deprecated",
+          "availability",
           "overrides",
           "effective",
           "egress_dialect",
@@ -14776,6 +14859,18 @@
               "type": "string"
             },
             "description": "Aliases pointing at it."
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilityState",
+            "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found."
+          },
+          "availability_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When Kaeso last found out, by a check or a request; `null` while\n`unchecked`."
           },
           "created_at": {
             "type": "string",
@@ -14797,6 +14892,10 @@
             ],
             "format": "date-time",
             "description": "When models.dev stopped listing it."
+          },
+          "deprecated": {
+            "type": "boolean",
+            "description": "Whether models.dev marks it deprecated."
           },
           "effective": {
             "$ref": "#/components/schemas/Fields",
@@ -14867,6 +14966,74 @@
               "$ref": "#/components/schemas/RightView"
             },
             "description": "Its rights, in display order."
+          }
+        }
+      },
+      "CheckFailure": {
+        "type": "object",
+        "description": "A model the check could not decide; it keeps its earlier availability.",
+        "required": [
+          "catalogue_model_id",
+          "provider",
+          "model_id",
+          "reason",
+          "message"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue entry."
+          },
+          "message": {
+            "type": "string",
+            "description": "What is wrong, as one sentence."
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "claude-sonnet-4-5"
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider.",
+            "example": "anthropic"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/CheckFailureReason",
+            "description": "Why."
+          }
+        }
+      },
+      "CheckFailureReason": {
+        "type": "string",
+        "description": "Why a model could not be checked.",
+        "enum": [
+          "no_key",
+          "key_refused",
+          "provider_error"
+        ]
+      },
+      "CheckResult": {
+        "type": "object",
+        "description": "What a check of the catalogue found.",
+        "required": [
+          "models",
+          "failed"
+        ],
+        "properties": {
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckFailure"
+            },
+            "description": "The entries the check could not decide."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogueModelView"
+            },
+            "description": "Every entry of the catalogue, with its availability after the check."
           }
         }
       },
@@ -16977,6 +17144,8 @@
                 "model_id",
                 "custom",
                 "listed",
+                "deprecated",
+                "availability",
                 "overrides",
                 "effective",
                 "egress_dialect",
@@ -16993,6 +17162,18 @@
                     "type": "string"
                   },
                   "description": "Aliases pointing at it."
+                },
+                "availability": {
+                  "$ref": "#/components/schemas/AvailabilityState",
+                  "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found."
+                },
+                "availability_checked_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When Kaeso last found out, by a check or a request; `null` while\n`unchecked`."
                 },
                 "created_at": {
                   "type": "string",
@@ -17014,6 +17195,10 @@
                   ],
                   "format": "date-time",
                   "description": "When models.dev stopped listing it."
+                },
+                "deprecated": {
+                  "type": "boolean",
+                  "description": "Whether models.dev marks it deprecated."
                 },
                 "effective": {
                   "$ref": "#/components/schemas/Fields",

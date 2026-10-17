@@ -33,3 +33,5 @@ To give some projects a different key, choose **Assign to projects** in the key'
 | Delete | Removes the key; its projects use the default again. Deleting the default makes the most recently added other key of the provider the default; without one, requests to that provider fail. The dialog says which applies |
 
 The table shows each key's last four characters, its projects, who added it and when it was last used.
+
+A key decides which models a provider serves to a project. Adding, replacing, assigning, making default or deleting a key resets the [availability](models-and-aliases.md#availability) of that provider's models in every project of the organization to **Not checked**; **Check availability** on a project's **Models** page asks the provider again.

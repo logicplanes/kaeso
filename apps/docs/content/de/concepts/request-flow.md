@@ -64,7 +64,7 @@ Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage
 
 ## Antwort
 
-Ein Fehler des Anbieters kommt so an, wie der Anbieter ihn gesendet hat, wenn die App das Format des Anbieters spricht, und behält sonst seine Bedeutung im Format der App ([Fehler des Anbieters](../api/errors.md#fehler-des-anbieters)). Eine Antwort wird in das kanonische Format decodiert und im Format der App codiert, bei einem Stream Event für Event. Eine Antwort wird nie wegen ihres Inhalts abgelehnt: Was das Format der App nicht ausdrücken kann, fehlt in dem, was die App erhält, und bleibt im Anfrageprotokoll erhalten, wenn die Inhaltsprotokollierung eingeschaltet ist.
+Ein Fehler des Anbieters kommt so an, wie der Anbieter ihn gesendet hat, wenn die App das Format des Anbieters spricht, und behält sonst seine Bedeutung im Format der App; für ein Modell, das der Anbieter dem Schlüssel nicht anbietet, kommt Kaesos eigene Meldung ([Fehler des Anbieters](../api/errors.md#fehler-des-anbieters)). Eine Antwort wird in das kanonische Format decodiert und im Format der App codiert, bei einem Stream Event für Event. Eine Antwort wird nie wegen ihres Inhalts abgelehnt: Was das Format der App nicht ausdrücken kann, fehlt in dem, was die App erhält, und bleibt im Anfrageprotokoll erhalten, wenn die Inhaltsprotokollierung eingeschaltet ist.
 
 Antworten tragen `kaeso-model` und `kaeso-provider`. Die Header eines Streams werden gesendet, sobald der Anbieter antwortet. Solange ein Stream offen und still ist, schreibt das Gateway Keepalives, die das SDK der App ignoriert ([lange Streams](../self-hosting/domains-and-tls.md#lange-streams)).
 
