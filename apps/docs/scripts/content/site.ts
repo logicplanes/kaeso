@@ -11,6 +11,7 @@ const IMAGE_TYPES = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", 
 export interface SiteOptions {
   prefix: string;
   labels: { home: string; overview: string };
+  version: string;
 }
 
 export interface SitePage {
@@ -52,14 +53,16 @@ interface Section {
   entries: Entry[];
 }
 
-const DEFAULT_OPTIONS: SiteOptions = { prefix: "", labels: { home: "Introduction", overview: "Overview" } };
-
 const hidden = (name: string) => name.startsWith("_") || name.startsWith(".");
 const posix = (p: string) => p.split(sep).join("/");
 const byOrder = (a: { page: SitePage; name: string }, b: { page: SitePage; name: string }) =>
   (a.page.meta.order ?? Infinity) - (b.page.meta.order ?? Infinity) || a.name.localeCompare(b.name);
 
-export function buildSite(contentDir: string, repoRoot: string, options: SiteOptions = DEFAULT_OPTIONS): Site {
+const VERSION_TOKEN = "{{version}}";
+
+const withVersion = (source: string, version: string) => source.replace(/(\\?)\{\{version\}\}/g, (_, escaped: string) => (escaped ? VERSION_TOKEN : version));
+
+export function buildSite(contentDir: string, repoRoot: string, options: SiteOptions): Site {
   const problems: string[] = [];
   const pages: SitePage[] = [];
   const byFile = new Map<string, SitePage>();
@@ -70,7 +73,7 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
   if (!existsSync(contentDir)) return { contentDir, pages, nav: [], metas: [], search: [], assets: new Set(), problems: [`${rel(contentDir)} does not exist`] };
 
   const read = (file: string, segments: string[]) => {
-    const parsed = parseFrontmatter(readFileSync(file, "utf8"));
+    const parsed = parseFrontmatter(withVersion(readFileSync(file, "utf8"), options.version));
     const name = file.split(sep).pop() ?? "";
     const isIndex = name.toLowerCase() === "index.md";
     const path = address([...segments, ...(isIndex ? [] : [pathSegment(name)])]);

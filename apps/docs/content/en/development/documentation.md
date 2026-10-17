@@ -108,6 +108,8 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 
 TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML and diff are highlighted; other languages show as plain text. Raw HTML is not rendered: it shows as text. Code blocks never contain comments: explain a command in the sentence before it.
 
+Write the current version as `\{{version}}`. The site's build puts the release's version in its place, in text, code and frontmatter alike, so no page states a version that the next release leaves behind. A backslash in front keeps the characters as they are, as on this page.
+
 ## Writing
 
 - Every statement describes Kaeso as its code does: check settings against the gateway's configuration, labels against the console's English catalog, and behaviour against the gateway, KPP and the console before you write it. Never document a feature that doesn't exist.

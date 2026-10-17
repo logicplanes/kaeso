@@ -21,7 +21,7 @@ pub struct InstanceStorageView {
 #[schema(description = "The state of the install.")]
 pub struct SystemView {
     #[doc = "The gateway version."]
-    #[schema(example = "0.1.0")]
+    #[schema(example = json!(env!("CARGO_PKG_VERSION")))]
     pub version: &'static str,
     #[doc = "`ready`, `degraded` or `not_ready`."]
     pub status: &'static str,

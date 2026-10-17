@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { readFileSync } from "node:fs";
 import { EDIT_BASE, FIXTURES } from "../playwright.config";
 import { expect, test } from "./support";
 
@@ -8,6 +9,17 @@ test("the home page renders its title, description and text", async ({ page }) =
   await expect(page.getByText("Fixture pages for the end-to-end suite and the visual review.")).toBeVisible();
   await expect(page).toHaveTitle("Kaeso documentation");
   await expect(page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "Introduction" })).toHaveAttribute("aria-current", "page");
+});
+
+test("pages show the version of the release they were built from, in every language", async ({ page }) => {
+  const { version } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as { version: string };
+  await page.goto("/");
+  await expect(page.getByText(`They describe Kaeso ${version}.`)).toBeVisible();
+  await page.goto("/de");
+  await expect(page.getByText(`Sie beschreiben Kaeso ${version}.`)).toBeVisible();
+  await page.goto("/zh-CN");
+  await expect(page.getByText(`它们描述的是 Kaeso ${version}。`)).toBeVisible();
+  await expect(page.getByText("{{version}}")).toHaveCount(0);
 });
 
 test("every page is built with its own title, description and alternates", async ({ request }) => {

@@ -46,7 +46,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 | `pnpm lint` | 在每个包中运行 ESLint 或 oxlint，并带有 Kaeso 自己的规则：类名只用于布局、令牌之外不使用颜色、不在控制台界面中直接写入文本；对于文档，用 `check:content` 检查每个页面 |
 | `pnpm format:check` | Prettier |
 | `pnpm typecheck` | 先构建 `packages/` 中的库，再运行 TypeScript 类型检查 |
-| `pnpm test` | 带覆盖率阈值的 Vitest，在两个库、控制台和文档中运行；随后用 `node --test` 运行仓库 `scripts/` 中脚本的测试，例如变更日志脚本的测试 |
+| `pnpm test` | 带覆盖率阈值的 Vitest，在两个库、控制台和文档中运行；随后用 `node --test` 运行仓库 `scripts/` 中脚本的测试，例如变更日志脚本的测试；版本检查的测试也会检查仓库本身（[仓库中的版本号](releasing.md#仓库中的版本号)） |
 | `pnpm i18n` | 控制台的每条文本都有德语和中文版本，占位符一致且没有多余条目（[翻译](translations.md#检查)） |
 | `pnpm knip` | 未使用的文件、导出和依赖 |
 | `pnpm build` | 所有生产构建，最后检查打包体积预算（[性能](performance.md)） |
@@ -251,7 +251,7 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求、每次推送
 | Test KPP | `cargo coverage-kpp` 和 `cargo test --doc -p kaeso-kpp -p kaeso-codecs` |
 | Minimum Rust version | 分别用 `kaeso-kpp` 和 `kaeso-codecs` 的 `rust-version` 所写的 Rust 版本，对它们运行 `cargo check` 和 `cargo test` |
 | Test gateway | `cargo coverage-gateway`，使用开发环境栈 |
-| Repository tooling | `cargo test -p xtask -p kpp-conformance` 和 `cargo test -p kaeso-server --test docs_paths` |
+| Repository tooling | `node scripts/version.mjs check`、`cargo test -p xtask -p kpp-conformance` 和 `cargo test -p kaeso-server --test docs_paths` |
 | Query data | 先应用 PostgreSQL 迁移，再运行 `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `cargo run -q -p kaeso -- openapi \| diff - openapi.json` |
 | Rust dependencies | `cargo deny check`，分别使用工作区的策略和 KPP 的策略 |

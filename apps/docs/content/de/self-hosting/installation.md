@@ -31,7 +31,7 @@ docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > m
 chmod 644 master-keys
 ```
 
-Jedes Release bringt außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit, jede Variable von `.env` mit einem Beispielwert, und [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), jede Einstellung des Gateways; diese Links laden wie das `curl` oben die Dateien des neuesten stabilen Releases. Um ein bestimmtes Release zu installieren, stattdessen dessen Dateien von seinem Tag herunterladen, etwa `https://github.com/logicplanes/kaeso/releases/download/v0.1.0/compose.yaml`.
+Jedes Release bringt außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit, jede Variable von `.env` mit einem Beispielwert, und [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml), jede Einstellung des Gateways; diese Links laden wie das `curl` oben die Dateien des neuesten stabilen Releases. Um ein bestimmtes Release zu installieren, stattdessen dessen Dateien von seinem Tag herunterladen, etwa `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`.
 
 Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte und liest `master-keys` von dort, daher ist die Datei selbst lesbar; der Ordner hält sie vor anderen Benutzern des Servers verschlossen. `.env` und `master-keys` getrennt von den Datenbank-Backups sichern; siehe [Backups und Hauptschlüssel](backups.md).
 

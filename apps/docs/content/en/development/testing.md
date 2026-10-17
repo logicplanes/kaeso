@@ -46,7 +46,7 @@ Then run the suites of the parts you changed: the [end-to-end tests](#end-to-end
 | `pnpm lint` | ESLint or oxlint in every package, with Kaeso's own rules: layout-only class names, no colours outside the tokens, no text written straight into the console's interface; for the docs, every page with `check:content` |
 | `pnpm format:check` | Prettier |
 | `pnpm typecheck` | TypeScript, after building the libraries in `packages/` |
-| `pnpm test` | Vitest with coverage thresholds, in both libraries, the console and the docs, then the tests of the repository's scripts in `scripts/`, such as the changelog's, with `node --test` |
+| `pnpm test` | Vitest with coverage thresholds, in both libraries, the console and the docs, then the tests of the repository's scripts in `scripts/`, such as the changelog's, with `node --test`; the version check's tests include the repository itself ([the version in the repository](releasing.md#the-version-in-the-repository)) |
 | `pnpm i18n` | Every text of the console in German and Chinese, with the same placeholders and nothing left over ([translations](translations.md#checking)) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm build` | Every production build, ending with its bundle budgets ([performance](performance.md)) |
@@ -251,7 +251,7 @@ The CI workflow (`.github/workflows/ci.yml`) runs on every pull request, on ever
 | Test KPP | `cargo coverage-kpp` and `cargo test --doc -p kaeso-kpp -p kaeso-codecs` |
 | Minimum Rust version | `cargo check` and `cargo test` of `kaeso-kpp` and of `kaeso-codecs`, each with the Rust version its `rust-version` names |
 | Test gateway | `cargo coverage-gateway`, with the development stack |
-| Repository tooling | `cargo test -p xtask -p kpp-conformance` and `cargo test -p kaeso-server --test docs_paths` |
+| Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` and `cargo test -p kaeso-server --test docs_paths` |
 | Query data | The PostgreSQL migrations, then `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `cargo run -q -p kaeso -- openapi \| diff - openapi.json` |
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |

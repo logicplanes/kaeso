@@ -9,7 +9,7 @@ Applications call Kaeso with the official OpenAI or Anthropic SDKs and a Kaeso A
 
 New here? The [quick start](get-started/quick-start.md) runs Kaeso with Docker Compose and sends a first request in a few minutes.
 
-This documentation describes Kaeso 0.1.0.
+This documentation describes Kaeso {{version}}.
 
 ## What you get
 

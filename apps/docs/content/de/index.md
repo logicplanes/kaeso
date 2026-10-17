@@ -9,7 +9,7 @@ Anwendungen rufen Kaeso mit den offiziellen SDKs von OpenAI oder Anthropic und e
 
 Neu hier? Der [Schnellstart](get-started/quick-start.md) startet Kaeso mit Docker Compose und sendet in wenigen Minuten eine erste Anfrage.
 
-Diese Dokumentation beschreibt Kaeso 0.1.0.
+Diese Dokumentation beschreibt Kaeso {{version}}.
 
 ## Was Kaeso bietet
 

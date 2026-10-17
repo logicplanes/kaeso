@@ -8,9 +8,17 @@ Kaeso wird als Ganzes veröffentlicht: Das Gateway, die Konsole, die Crates von 
 
 ## Versionen
 
-Versionen folgen [Semantic Versioning](https://semver.org). Ein Release, das von Betreibern von Kaeso einen manuellen Schritt verlangt, etwa eine Migration, die nicht von selbst laufen kann, ist ein Major-Release. Ein Pre-Release hängt ein Suffix an, etwa `0.2.0-rc.1`. Der Git-Tag eines Releases ist `v` gefolgt von seiner Version, etwa `v0.1.0`.
+Versionen folgen [Semantic Versioning](https://semver.org). Ein Release, das von Betreibern von Kaeso einen manuellen Schritt verlangt, etwa eine Migration, die nicht von selbst laufen kann, ist ein Major-Release. Ein Pre-Release hängt ein Suffix an, etwa `0.2.0-rc.1`. Der Git-Tag eines Releases ist `v` gefolgt von seiner Version, etwa `v0.2.0`.
 
 Gateway und Konsole eines Releases gehören immer zusammen: Die `compose.yaml` des Releases legt beide Images auf diese Version fest, und die Konsole erwartet genau die Platform API ihres Gateways.
+
+## Die Version im Repository
+
+Die `package.json` im Wurzelverzeichnis hält die Version des Repositorys, und nur ein Release ändert sie, mit `node scripts/version.mjs set`. Dieser Befehl schreibt die Version in jede Datei, die sie nennt: jede `package.json`, die Manifeste der Crates über `cargo set-version`, `Cargo.lock` und `fuzz/Cargo.lock`, `openapi.json`, beide Image-Tags in `deploy/compose.yaml` und die Abhängigkeitszeilen in den READMEs der Crates, etwa `kaeso-kpp = "0.2"`. Alles andere übernimmt die Version von dort, statt sie selbst zu schreiben: Eine Seite der Dokumentation schreibt `\{{version}}`, das der Build der Website ersetzt ([eine Seite bearbeiten](documentation.md#alles-andere)), das Gateway liest `env!("CARGO_PKG_VERSION")`, und das Showcase und die erzeugten Dateien der npm-Pakete lesen ihre `package.json`.
+
+`node scripts/version.mjs check` schlägt fehl, wenn diese Dateien nicht übereinstimmen oder die aktuelle Version in einer anderen Datei steht, und nennt Datei und Zeile. `pnpm test` führt es aus, ebenso der Job **Repository tooling** der CI für jeden Pull Request. Geschichte und Beispiele dürfen Versionen nennen: `CHANGELOG.md`, Testdaten, Demodaten, diese Seite und die wenigen Zeilen über das erste Release stehen in `ALLOWED` im Skript, jeweils mit ihrem Grund.
+
+Mit einer Version listet `node scripts/version.mjs check 0.2.0` die Dateien auf, die diese Version schon von Hand nennen, etwa ein Test, dessen Testdaten sie zufällig verwenden. Der Release-Workflow führt das zuerst aus und lehnt das Release ab, bis sie auf `dev` korrigiert oder in `ALLOWED` aufgenommen sind.
 
 ## Branches
 
@@ -122,10 +130,10 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 | Job | Was er tut |
 | --- | --- |
-| Validate | Lehnt einen Lauf auf einem anderen Branch als `prod` ab, eine Version, die nicht semantisch ist, einen Tag, den es schon gibt, eine Version, die nicht neuer als der letzte Tag ist, und ein `CHANGELOG.md` ohne Einträge unter `[Unreleased]` und ohne Abschnitt für die Version oder, bei einer stabilen Version, für ein Pre-Release davon |
-| Prepare | Setzt die Version in jedem Crate mit `cargo set-version`, in `Cargo.lock` und `fuzz/Cargo.lock` sowie in jeder `package.json`; schreibt `openapi.json` neu; legt beide Images in `deploy/compose.yaml` fest; verschiebt das Changelog und fasst dabei die Abschnitte der Pre-Releases einer stabilen Version in deren eigenem zusammen. Er kann das Repository nur lesen, hat keine Git-Zugangsdaten und gibt diese Änderungen als Patch an Tag weiter |
+| Validate | Lehnt einen Lauf auf einem anderen Branch als `prod` ab, eine Version, die nicht semantisch ist, einen Tag, den es schon gibt, eine Version, die nicht neuer als der letzte Tag ist, ein `CHANGELOG.md` ohne Einträge unter `[Unreleased]` und ohne Abschnitt für die Version oder, bei einer stabilen Version, für ein Pre-Release davon, sowie eine Version, die eine Datei schon von Hand nennt |
+| Prepare | Führt `node scripts/version.mjs set` mit der Version aus, das sie in jede Datei schreibt, die sie nennt ([die Version im Repository](#die-version-im-repository)), und abbricht, wenn die Version anderswo noch von Hand geschrieben steht; verschiebt das Changelog und fasst dabei die Abschnitte der Pre-Releases einer stabilen Version in deren eigenem zusammen. Er kann das Repository nur lesen, hat keine Git-Zugangsdaten und gibt diese Änderungen als Patch an Tag weiter |
 | Checks | Führt den ganzen CI-Workflow aus, jeden Job, egal was sich geändert hat |
-| Tag | Wendet den Patch an und lehnt einen ab, der eine Datei anlegt, löscht oder umbenennt oder eine andere Datei ändert als die, die Prepare schreibt. Ändert der Patch eine Datei, committet er „Release X.Y.Z“ auf `prod`; ändert er keine, wie bei `0.1.0`, kommt der Tag auf den Commit von `prod` selbst. Er bricht ab, wenn sich `prod` seit dem Start des Laufs bewegt hat, taggt `vX.Y.Z` und pusht `prod` und den Tag gemeinsam, beides oder keins |
+| Tag | Wendet den Patch an und lehnt einen ab, der eine Datei anlegt, löscht oder umbenennt oder eine andere Datei ändert als `CHANGELOG.md` und die, die `node scripts/version.mjs files` auflistet. Ändert der Patch eine Datei, committet er „Release X.Y.Z“ auf `prod`; ändert er keine, wie bei `0.1.0`, kommt der Tag auf den Commit von `prod` selbst. Er bricht ab, wenn sich `prod` seit dem Start des Laufs bewegt hat, taggt `vX.Y.Z` und pusht `prod` und den Tag gemeinsam, beides oder keins |
 | Sync dev | Bringt das Release nach `dev`: als Fast-Forward, wenn `dev` nichts Neues hat, sonst als Merge-Commit „Merge release X.Y.Z into dev“, wenn sich das sauber mergen lässt. Bei einem Konflikt, wenn das Release eine Workflow-Datei ändert, die `dev` fehlt, oder wenn sich `dev` inzwischen bewegt, schlägt er fehl, und seine Zusammenfassung sagt, wie man von Hand mergt |
 | Image | Baut jedes Image für jede Plattform aus dem Tag, mit vollständiger Build-Provenienz und einer SBOM |
 | Image manifest | Fasst beide Plattformen unter den Image-Tags oben zusammen, überträgt die `org.opencontainers.image`-Labels der Images als Annotationen auf den gemeinsamen Index und bestätigt die Provenienz des Builds |

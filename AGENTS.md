@@ -24,7 +24,7 @@ Kaeso, the open-source, self-hosted AI gateway ([kaeso.app](https://kaeso.app)):
 | `e2e/`          | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install                  |                                                      |
 | `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                    |                                                      |
 | `openapi.json`  | The Platform API document, generated from the gateway's code                                                |                                                      |
-| `scripts/`      | The npm package and licence checks, and the changelog steps of a release                                    |                                                      |
+| `scripts/`      | The npm package and licence checks, and the version and changelog steps of a release                        |                                                      |
 | `.github/`      | CI and Release workflows, templates                                                                         |                                                      |
 
 ## Setup
@@ -95,4 +95,5 @@ CI runs these checks for every area a pull request changes, and all of them on `
 - Work on `dev` or on a branch from `dev`, and open pull requests into `dev`. Never push to `prod`: the maintainer pushes `dev` there to make a release.
 - Never create tags or releases and never publish crates, npm packages, images or sites: the maintainer runs the Release workflow and deploys the sites.
 - Every user-visible change gets a line under `[Unreleased]` in `CHANGELOG.md`, in the same pull request.
+- Never write the current version by hand. Only a release changes it, with `node scripts/version.mjs set`; pages write `{{version}}`, code reads `package.json` or `env!("CARGO_PKG_VERSION")`. `node scripts/version.mjs check`, part of `pnpm test`, fails on a version anywhere else and names the file and line.
 - Commit messages say what changed and why.

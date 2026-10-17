@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { DEFAULT_LOCALE, LANGUAGE_NAMES, LOCALES, localeOfPath, localePrefix, type Locale } from "../../src/i18n/locales.ts";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
@@ -48,20 +48,26 @@ function reservedAddresses(site: Site): string[] {
 
 const orderOf = (page: SitePage) => (page.meta.order === undefined ? "not set" : String(page.meta.order));
 
-export function buildDocs(contentDir: string, repoRoot: string): Docs {
+export function kaesoVersion(docsRoot: string): string {
+  return (JSON.parse(readFileSync(join(docsRoot, "..", "..", "package.json"), "utf8")) as { version: string }).version;
+}
+
+const siteOptions = (locale: Locale, version: string) => {
+  const messages = MESSAGES[locale];
+  return { prefix: localePrefix(locale), labels: { home: messages["nav.introduction"], overview: messages["nav.overview"] }, version };
+};
+
+export function buildDocs(contentDir: string, repoRoot: string, version: string): Docs {
   const rel = posix(relative(repoRoot, contentDir));
   if (!existsSync(contentDir)) {
-    const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot);
+    const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot, siteOptions(DEFAULT_LOCALE, version));
     const sites = Object.fromEntries(LOCALES.map((l) => [l, empty])) as Record<Locale, Site>;
     return { contentDir, sites, problems: [`${rel} does not exist`] };
   }
-  const sites = Object.fromEntries(
-    LOCALES.map((locale) => {
-      const messages = MESSAGES[locale];
-      const options = { prefix: localePrefix(locale), labels: { home: messages["nav.introduction"], overview: messages["nav.overview"] } };
-      return [locale, buildSite(join(contentDir, locale), repoRoot, options)];
-    }),
-  ) as Record<Locale, Site>;
+  const sites = Object.fromEntries(LOCALES.map((locale) => [locale, buildSite(join(contentDir, locale), repoRoot, siteOptions(locale, version))])) as Record<
+    Locale,
+    Site
+  >;
   const problems = [
     ...strayEntries(contentDir, repoRoot),
     ...LOCALES.flatMap((l) => sites[l].problems),

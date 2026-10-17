@@ -46,7 +46,7 @@ Dann die Suiten der geänderten Teile ausführen: die [End-to-End-Tests](#end-to
 | `pnpm lint` | ESLint oder oxlint in jedem Paket, mit Kaesos eigenen Regeln: Klassennamen nur für Layout, keine Farben außerhalb der Tokens, kein direkt in die Oberfläche der Konsole geschriebener Text; für die Dokumentation jede Seite mit `check:content` |
 | `pnpm format:check` | Prettier |
 | `pnpm typecheck` | TypeScript, nach dem Build der Bibliotheken in `packages/` |
-| `pnpm test` | Vitest mit Coverage-Schwellen, in beiden Bibliotheken, der Konsole und der Dokumentation, danach die Tests der Skripte des Repositorys in `scripts/`, etwa die des Changelogs, mit `node --test` |
+| `pnpm test` | Vitest mit Coverage-Schwellen, in beiden Bibliotheken, der Konsole und der Dokumentation, danach die Tests der Skripte des Repositorys in `scripts/`, etwa die des Changelogs, mit `node --test`; die Tests der Versionsprüfung prüfen auch das Repository selbst ([die Version im Repository](releasing.md#die-version-im-repository)) |
 | `pnpm i18n` | Jeden Text der Konsole auf Deutsch und Chinesisch, mit denselben Platzhaltern und ohne Überbleibsel ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
 | `pnpm build` | Jeden Produktions-Build, am Ende mit seinen Bundle-Budgets ([Performance](performance.md)) |
@@ -251,7 +251,7 @@ Der CI-Workflow (`.github/workflows/ci.yml`) läuft bei jedem Pull Request, bei 
 | Test KPP | `cargo coverage-kpp` und `cargo test --doc -p kaeso-kpp -p kaeso-codecs` |
 | Minimum Rust version | `cargo check` und `cargo test` von `kaeso-kpp` und von `kaeso-codecs`, jeweils mit der Rust-Version aus seiner `rust-version` |
 | Test gateway | `cargo coverage-gateway`, mit dem Entwicklungs-Stack |
-| Repository tooling | `cargo test -p xtask -p kpp-conformance` und `cargo test -p kaeso-server --test docs_paths` |
+| Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` und `cargo test -p kaeso-server --test docs_paths` |
 | Query data | Die PostgreSQL-Migrationen, dann `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `cargo run -q -p kaeso -- openapi \| diff - openapi.json` |
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspace und der von KPP |

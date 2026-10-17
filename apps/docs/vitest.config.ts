@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
+import { kaesoVersion } from "./scripts/content/docs.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -12,6 +13,7 @@ export default defineConfig({
       contentDir: "e2e/fixtures/content",
       editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
       siteUrl: "https://docs.kaeso.app",
+      version: kaesoVersion(root),
     }),
     react(),
   ],

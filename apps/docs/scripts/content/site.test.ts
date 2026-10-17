@@ -7,14 +7,14 @@ import { buildSite } from "./site.ts";
 let root = "";
 afterEach(() => root && rmSync(root, { recursive: true, force: true }));
 
-function repo(files: Record<string, string | Buffer>) {
+function repo(files: Record<string, string | Buffer>, version = "1.4.0") {
   root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
   for (const [name, text] of Object.entries(files)) {
     const file = join(root, "content", name);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, text);
   }
-  return buildSite(join(root, "content"), root);
+  return buildSite(join(root, "content"), root, { prefix: "", labels: { home: "Introduction", overview: "Overview" }, version });
 }
 const page = (title: string, body = "", extra = "") => `---\ntitle: ${title}\ndescription: About ${title.toLowerCase()}.\n${extra}---\n\n${body}\n`;
 const PNG = Buffer.concat([Buffer.from("89504e470d0a1a0a0000000d49484452", "hex"), Buffer.from([0, 0, 0, 24, 0, 0, 0, 12, 8, 6, 0, 0, 0])]);
@@ -109,6 +109,29 @@ describe("buildSite", () => {
     expect(site.problems.some((p) => p.includes('starts with `# Welcome`, but its title is "Home"'))).toBe(true);
     expect(site.problems.some((p) => /has the same address as .* \(\/keys\)/.test(p))).toBe(true);
     expect(site.pages.map((p) => p.rel).sort()).toEqual(["content/index.md", "content/keys!.md", "content/keys.md"]);
+  });
+
+  it("writes the release's version wherever a page says {{version}}", () => {
+    const site = repo(
+      {
+        "index.md": page(
+          "Kaeso {{version}}",
+          "This documentation describes Kaeso {{version}}, tagged `v{{version}}`.\n\n```bash\ndocker pull ghcr.io/logicplanes/kaeso-gateway:{{version}}\n```",
+        ),
+      },
+      "2.3.0-rc.1",
+    );
+    expect(site.problems).toEqual([]);
+    expect(site.metas[0]?.title).toBe("Kaeso 2.3.0-rc.1");
+    const blocks = JSON.stringify(site.pages[0]?.compiled?.blocks);
+    expect(blocks).toContain('"v":"This documentation describes Kaeso 2.3.0-rc.1, tagged "},{"t":"code","v":"v2.3.0-rc.1"}');
+    expect(blocks).toContain("docker pull ghcr.io/logicplanes/kaeso-gateway:2.3.0-rc.1");
+    expect(blocks).not.toContain("{{version}}");
+  });
+
+  it("keeps {{version}} itself where a page escapes it with a backslash", () => {
+    const site = repo({ "index.md": page("Home", "Write `\\{{version}}` for the version, here {{version}}.") });
+    expect(JSON.stringify(site.pages[0]?.compiled?.blocks)).toContain('{"t":"code","v":"{{version}}"},{"t":"text","v":" for the version, here 1.4.0."}');
   });
 
   it("reads each image's size so the page never shifts as it loads", () => {

@@ -118,7 +118,7 @@ Die Ports des Stacks kommen aus `apps/console/scripts/stack.mjs`. Diese Variable
 Um den Stack mit einem anderswo gebauten Gateway-Image zu betreiben, etwa einem Release, dieses angeben; der Stack nutzt es dann, statt selbst zu bauen:
 
 ```bash
-KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:0.1.0 pnpm stack:up
+KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:{{version}} pnpm stack:up
 ```
 
 ## Einen zweiten Stack betreiben

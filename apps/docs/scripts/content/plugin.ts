@@ -13,6 +13,7 @@ export interface DocsOptions {
   contentDir: string;
   editBase: string;
   siteUrl: string;
+  version: string;
 }
 
 export interface PageHead {
@@ -196,7 +197,7 @@ export function kaesoDocs(options: DocsOptions): Plugin {
   const contentDir = resolve(options.root, options.contentDir);
   let docs: Docs | null = null;
   let isBuild = false;
-  const current = () => (docs ??= buildDocs(contentDir, options.root));
+  const current = () => (docs ??= buildDocs(contentDir, options.root, options.version));
   const summary = (d: Docs) => `content: ${d.problems.length} to fix in ${options.contentDir}/\n  ${d.problems.join("\n  ")}`;
 
   return {
