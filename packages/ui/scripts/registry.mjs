@@ -3,7 +3,7 @@ import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import docgen from "react-docgen-typescript";
-import { unpairedVariantExports } from "./variant-exports.mjs";
+import { variantProblems } from "./variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = join(root, "src");
@@ -53,7 +53,7 @@ for (const e of entries) {
     if (!found) continue;
     const target = (out.variants[found.component] ??= { entry: e });
     if (found.part === "variants") target.variants = Object.fromEntries(Object.entries(v).map(([axis, keys]) => [axis, Object.fromEntries(Object.entries(keys).map(([key, val]) => [key, val.description]))]));
-    else target.defaults = v;
+    else target.defaults = Object.fromEntries(Object.entries(v).map(([axis, value]) => [axis, String(value)]));
   }
 }
 process.stdout.write(JSON.stringify(out));
@@ -61,8 +61,8 @@ process.stdout.write(JSON.stringify(out));
 `;
 const tsx = join(root, "node_modules/.bin/tsx");
 const data = JSON.parse(execFileSync(tsx, ["--eval", dataScript], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }));
-const unpaired = unpairedVariantExports(data.variants);
-if (unpaired.length) fail(unpaired);
+const invalidVariants = variantProblems(data.variants);
+if (invalidVariants.length) fail(invalidVariants);
 
 function fail(problems) {
   writeSync(2, `registry: ${problems.length} problem${problems.length === 1 ? "" : "s"}:\n  ${problems.join("\n  ")}\n`);
