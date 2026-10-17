@@ -6,13 +6,9 @@ order: 4
 
 Eine Kaeso-Installation stellt auf ihrer Domain zwei APIs bereit:
 
-| API | Pfad | Für | Authentifizierung |
+| API | Pfad | Aufgerufen von | Authentifizierung |
 | --- | --- | --- | --- |
-| Modell-API | `/v1` | Apps, die Modelle aufrufen, in den Formaten von OpenAI und Anthropic | Ein API-Schlüssel eines Projekts mit Inferenzzugriff |
-| Platform API | `/platform/v1` | Die Konsole und Skripte, die Organisationen, Projekte, Schlüssel, Modelle, Limits und Protokolle verwalten | Eine Sitzung, ein API-Schlüssel eines Projekts mit Plattformzugriff oder ein Plattform-Schlüssel der Organisation |
+| [Modell-API](model-api.md) | `/v1` | Apps, über die offiziellen SDKs von OpenAI und Anthropic | Ein Projekt-API-Schlüssel mit Inferenzzugriff |
+| [Platform API](platform-api.md) | `/platform/v1` | Der Konsole, Skripten und CI, die Organisationen, Projekte, Schlüssel, Modelle, Limits und Protokolle verwalten | Eine Konsolensitzung, ein Projekt-API-Schlüssel mit Plattformzugriff oder ein Plattform-Schlüssel der Organisation |
 
-| Seite | Inhalt |
-| --- | --- |
-| [Modell-API](model-api.md) | Endpunkte, Basis-URLs, Schlüssel, Modellnamen, Streaming, Antwort-Header |
-| [Fehler](errors.md) | Was eine fehlgeschlagene Modellanfrage zurückgibt, in jedem Format |
-| [Platform API](platform-api.md) | Konventionen, Authentifizierung, Fehler, ein Durchgang mit curl, Bereiche, Rollen und Rechte, der Playground, das OpenAPI-Dokument |
+[Fehler](errors.md) beschreibt, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt. Die Fehler der Platform API und ihr OpenAPI-Dokument stehen auf [ihrer Seite](platform-api.md).

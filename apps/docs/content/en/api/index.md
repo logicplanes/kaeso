@@ -6,13 +6,9 @@ order: 4
 
 A Kaeso install serves two APIs on its domain:
 
-| API | Path | For | Authentication |
+| API | Path | Called by | Authentication |
 | --- | --- | --- | --- |
-| Model API | `/v1` | Apps calling models, in the OpenAI and Anthropic formats | A project API key with inference access |
-| Platform API | `/platform/v1` | The console and scripts managing organizations, projects, keys, models, limits and logs | A session, a project API key with platform access, or an organization platform key |
+| [Model API](model-api.md) | `/v1` | Apps, through the official OpenAI and Anthropic SDKs | A project API key with inference access |
+| [Platform API](platform-api.md) | `/platform/v1` | The console, scripts and CI managing organizations, projects, keys, models, limits and logs | A console session, a project API key with platform access, or an organization platform key |
 
-| Page | What it covers |
-| --- | --- |
-| [Model API](model-api.md) | Endpoints, base URLs, keys, model names, streaming, response headers |
-| [Errors](errors.md) | What a failed model request returns, in each format |
-| [Platform API](platform-api.md) | Conventions, authentication, errors, a walk through with curl, areas, roles and rights, the Playground, the OpenAPI document |
+[Errors](errors.md) lists what a failed model request returns in each format. The Platform API's errors, and its OpenAPI document, are on [its page](platform-api.md).

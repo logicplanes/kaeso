@@ -4,7 +4,7 @@ description: Was eine fehlgeschlagene Modellanfrage zurückgibt, in jedem API-Fo
 order: 2
 ---
 
-Eine fehlgeschlagene Modellanfrage erhält einen HTTP-Status und einen Fehler-Body im Format, das die App aufgerufen hat, sodass das SDK seinen gewohnten Fehler auslöst. Die Meldung sagt, was schiefging und was zu tun ist.
+Eine fehlgeschlagene Modellanfrage erhält einen HTTP-Status und einen Fehler-Body im Format, das die App aufgerufen hat, sodass das SDK seinen gewohnten Fehler auslöst. Die Meldung sagt, was schiefging und was zu tun ist. Jede Antwort trägt `kaeso-request-id`, und das Anfrageprotokoll hat einen Eintrag unter derselben ID, mit der eigenen Meldung des Anbieters, wo es eine gab. Die Platform API hat [eigene Fehler](platform-api.md#fehler).
 
 ## OpenAI-Formate
 
@@ -35,7 +35,7 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` steht in ganzen Sekunden, aufgerundet; hat die Wartezeit einen Sekundenbruchteil, nennt `retry-after-ms` sie in Millisekunden. Die OpenAI-Form hat kein Feld für die ID der Anfrage; sie steht im Header `kaeso-request-id`.
+`Retry-After` steht in ganzen Sekunden, aufgerundet; hat die Wartezeit Sekundenbruchteile, nennt `retry-after-ms` sie in Millisekunden. Die Form hat kein Feld für die ID der Anfrage; sie steht im Header `kaeso-request-id`.
 
 ## Anthropic-Format
 
@@ -50,7 +50,7 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 }
 ```
 
-`request_id` ist die ID der Anfrage, dieselbe wie in `kaeso-request-id`, auch bei einem eigenen Fehler des Anbieters.
+`request_id` ist dieselbe ID wie in `kaeso-request-id`, auch bei einem Fehler, der vom Anbieter kommt.
 
 | Status | `error.type` |
 | --- | --- |
@@ -64,13 +64,40 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 | 429 | `rate_limit_error` |
 | 504 | `timeout_error` |
 | 529 | `overloaded_error` |
-| andere | `api_error` |
+| Jeder andere | `api_error` |
+
+## Warum Anfragen fehlschlagen
+
+| Status | Ursache |
+| --- | --- |
+| 400 | Die Anfrage ist nicht lesbar; das Modell nimmt eine verwendete Einstellung nicht an; ein Feld lässt sich nicht zum Anbieter übertragen; der Kontext ist zu lang; mehrere Anbieter im Projekt bieten die Modell-ID an; für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
+| 401 | Kein Schlüssel; oder der Schlüssel ist unbekannt, deaktiviert, archiviert oder abgelaufen; sein Mitglied oder Dienstkonto ist nicht mehr aktiv; sein Projekt oder seine Organisation ist nicht nutzbar |
+| 403 | Der Schlüssel hat nur Plattformzugriff, ist ein Plattform-Schlüssel der Organisation oder darf keine Modelle aufrufen (`api.request`); oder der Schlüssel oder sein Mitglied darf dieses Modell nicht verwenden |
+| 404 | Das Modell ist nicht im Katalog des Projekts, der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit, oder den Pfad gibt es nicht |
+| 405 | Der Pfad nimmt diese Methode nicht an |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB |
+| 429 | Ein Ratenlimit oder Budget, oder zu viele unbekannte Schlüssel von derselben Adresse. `Retry-After` sagt, wann es wieder geht, außer bei einem aufgebrauchten Budget, dessen Meldung nennt, wann es zurückgesetzt wird |
+| 500 | Ein Anbieter-Schlüssel lässt sich nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar; in den OpenAI-Formaten zusätzlich alle 503-Ursachen unten |
+| 502 | Der Anbieter ist nicht erreichbar, oder die Übertragung ist fehlgeschlagen |
+| 503 | Im Anthropic-Format: Katalog, API-Schlüssel oder Anbieter-Schlüssel lassen sich nicht laden, ein hartes Budget ist nicht prüfbar, weil Valkey ausgefallen ist, oder das Gateway startet neu. In den OpenAI-Formaten: Der Anbieter ist überlastet |
+| 504 | Der Anbieter hat nicht rechtzeitig geantwortet |
+| 529 | Der Anbieter ist überlastet, im Anthropic-Format |
+
+Ein begonnener Stream kann seinen Status nicht mehr ändern: Scheitert der Anbieter oder beendet er den Stream vor dem Ende der Antwort, endet der Stream stattdessen mit einem Fehler-Event im Format der App.
 
 ## Fehler des Anbieters
 
-Sprechen App und Anbieter dasselbe Format, kommt der Fehler eines Anbieters so zurück, wie der Anbieter ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler trägt die Anfrage-ID von Kaeso in `request_id`. Andernfalls behält er seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das eigene Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
+Sprechen App und Anbieter dasselbe Format, kommt ein Fehler des Anbieters so zurück, wie er ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler erhält Kaesos Anfrage-ID in `request_id`. Andernfalls behält der Fehler seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
 
-Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbieter mit 404 für ein Modell aus dem Katalog, fragt Kaeso mit demselben Anbieter-Schlüssel beim Modell-Endpunkt des Anbieters (`GET /v1/models/{model}`) nach, ob er das Modell anbietet. Eine 404 dort kann auch heißen, dass der Anbieter diesen Endpunkt nicht hat, daher liest Kaeso dann die Modellliste des Anbieters (`GET /v1/models`, alle Seiten). Nur wenn die Liste antwortet und das Modell nicht enthält, weil das Modell eingestellt ist oder der Schlüssel keinen Zugriff darauf hat, erhält die App 404 mit `param: model` und einer Meldung, die Anbieter und Modell nennt und sagt, was zu tun ist:
+### Ein Modell, das der Anbieter nicht bereitstellt
+
+Antwortet der Anbieter auf ein Katalogmodell mit 404, prüft Kaeso, ob der Anbieter dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Kaeso fragt dazu `GET /v1/models/{model}` beim Anbieter ab und liest, weil ein 404 dort auch ein fehlender Endpunkt sein kann, zusätzlich die vollständige Liste `GET /v1/models`.
+
+| Die Liste | Was die App erhält | Der Katalog |
+| --- | --- | --- |
+| Antwortet ohne das Modell, weil es eingestellt ist oder der Schlüssel keinen Zugriff hat | 404 mit einer Meldung, die Anbieter und Modell nennt; `param` ist in den OpenAI-Formaten `model` | Das Modell wird als **Nicht verfügbar** markiert ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich inzwischen geändert |
+| Enthält das Modell | Das 404 des Anbieters, wie gesendet: Es betraf etwas anderes, etwa eine Datei-ID | Unverändert |
+| Antwortet nicht, wie bei manchen OpenAI-kompatiblen Diensten | Das 404 des Anbieters, wie gesendet | Unverändert |
 
 ```json
 {
@@ -78,29 +105,9 @@ Ein Fehler des Anbieters ist in jedem Format Kaesos eigener: Antwortet der Anbie
   "error": {
     "type": "not_found_error",
     "message": "Anthropic does not serve the model `claude-sonnet-4-5` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
-  }
+  },
+  "request_id": "req_…"
 }
 ```
 
-Kaeso markiert das Modell dann im Katalog als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich während der Nachfrage geändert. Bietet der Anbieter das Modell an, betraf die 404 etwas anderes, etwa eine Datei-ID, und kommt so zurück, wie der Anbieter sie gesendet hat. Kann Kaeso es nicht feststellen, weil die Modellliste des Anbieters nicht antwortet, wie bei manchen OpenAI-kompatiblen Diensten, kommt die 404 ebenfalls so zurück, wie der Anbieter sie gesendet hat, und die Verfügbarkeit des Modells bleibt, wie sie war. Das Anfrage-Log behält immer die eigene Meldung des Anbieters. Kaeso sendet die Anfrage nie erneut oder an ein anderes Modell.
-
-## Warum Anfragen fehlschlagen
-
-| Status | Ursache |
-| --- | --- |
-| 400 | Die Anfrage ist nicht lesbar, das Modell nimmt eine Einstellung nicht an, die sie nutzt, ein Feld lässt sich nicht zum Anbieter übertragen, der Kontext ist zu lang, eine Modell-ID wird von mehreren Anbietern im Projekt bedient, oder für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
-| 401 | Kein Schlüssel, oder der Schlüssel ist unbekannt, deaktiviert, archiviert oder abgelaufen, sein Mitglied oder Dienstkonto ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar |
-| 403 | Der Schlüssel hat nur Plattformzugriff, ist ein Plattform-Schlüssel einer Organisation oder darf keine Modelle aufrufen (`api.request`), oder der Schlüssel oder sein Mitglied darf dieses Modell nicht nutzen |
-| 404 | Das Modell steht nicht im Katalog des Projekts, der Anbieter bietet es dem Anbieter-Schlüssel des Projekts nicht an, oder der Pfad wird nicht bedient |
-| 405 | Der Pfad nimmt diese Methode nicht an |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB |
-| 429 | Ein Ratenlimit oder Budget, oder zu viele unbekannte Schlüssel von derselben Adresse; `Retry-After` sagt, wann ein neuer Versuch möglich ist, außer bei einem aufgebrauchten Budget, dessen Meldung sagt, wann es neu beginnt |
-| 500 | Ein Anbieter-Schlüssel lässt sich nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar; für Apps im OpenAI-Format auch die Ursachen von 503 weiter unten |
-| 502 | Der Anbieter war nicht erreichbar, oder die Übertragung schlug fehl |
-| 503 | Für Apps im Anthropic-Format: Katalog, API-Schlüssel oder Anbieter-Schlüssel lassen sich nicht laden, ein hartes Budget lässt sich nicht prüfen, weil Valkey ausgefallen ist, oder das Gateway startet neu; für Apps im OpenAI-Format: Der Anbieter ist überlastet |
-| 504 | Der Anbieter hat nicht rechtzeitig geantwortet |
-| 529 | Der Anbieter ist überlastet, für Apps im Anthropic-Format |
-
-Ein bereits gestarteter Stream kann seinen Status nicht mehr ändern: Schlägt der Anbieter fehl oder beendet er den Stream, bevor die Antwort vollständig ist, endet der Stream stattdessen mit einem Fehler-Event im Format der App.
-
-Jede Antwort trägt `kaeso-request-id`. Das Anfrageprotokoll hat dieselbe ID, mit der eigenen Meldung des Anbieters, sofern es eine gab.
+Kaeso sendet die Anfrage nie erneut, weder an dieses noch an ein anderes Modell.
