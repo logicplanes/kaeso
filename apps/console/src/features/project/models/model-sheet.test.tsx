@@ -70,6 +70,7 @@ describe("ModelSheet", () => {
       catalogueModel({ id: "cm_ok", model_id: "claude-haiku-4-5", availability: "available", availability_checked_at: "2026-10-16T08:00:00Z" }),
       catalogueModel({ id: "cm_new", model_id: "claude-opus-4-1" }),
       catalogueModel({ id: "cm_quiet", model_id: "claude-3-opus", availability: "unavailable" }),
+      catalogueModel({ id: "cm_seen", model_id: "claude-3-5-haiku", availability: "available" }),
     ]);
     const { router } = await renderApp(projectPath("models?model=cm_sonnet"));
 
@@ -83,6 +84,7 @@ describe("ModelSheet", () => {
       ["cm_ok", "AvailabilityAvailable, checked 16 Oct 2026"],
       ["cm_new", "AvailabilityNot checked"],
       ["cm_quiet", "AvailabilityUnavailableAdded"],
+      ["cm_seen", "AvailabilityAvailableAdded"],
     ] as const) {
       await router.navigate({ to: projectPath("models"), search: { model: id } });
       await waitFor(() => expect(screen.getByRole("dialog")).toHaveTextContent(text));
