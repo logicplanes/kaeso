@@ -35,7 +35,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 数组形式的 `messages[].content` | `blocks` | `[]` → form `content: "array"`。 |
 | 字符串形式的 `system` | `system: [Text]` | form `system: "string"`。 |
 | 数组形式的 `system`（`RequestTextBlock[]`） | `system` | `[]` → form `system: "array"`。 |
-| `max_tokens` | `sampling.max_output_tokens` | 生成请求必需（`CreateMessageParams`）：缺少该字段的请求在解码时即为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `max_tokens` is required. ``，参数 `max_tokens`），因此网关从不为 Anthropic 应用补上该字段；Token 计数没有 `max_tokens`。`0` 是有效值，即规范中的最小值：它只填充提示缓存，不生成回答。来自其他方言、没有 `sampling.max_output_tokens` 的请求在 `check()` 中为 `InvalidRequest`。 |
+| `max_tokens` | `sampling.max_output_tokens` | 生成请求必需（`CreateMessageParams`）：缺少该字段的请求在解码时即为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `max_tokens` is required. ``，参数 `max_tokens`），因此网关从不为 Anthropic 应用补上该字段；Token 计数没有 `max_tokens`。`0` 是有效值，即规范中的最小值：它只填充提示缓存，不生成回答。来自其他方言、没有 `sampling.max_output_tokens` 的请求在 `check()` 中为 `InvalidRequest`，并注明应用自己的字段（`max_completion_tokens` 或 `max_output_tokens`，[跨格式转换](cross-format.md#请求)）。 |
 | `temperature`、`top_p`、`top_k` | `sampling.temperature`、`.top_p`、`.top_k` | 在规范中已弃用，SDK 1.13.0 中也没有，但仍会映射。`temperature` 和 `top_p` 保留其写法：写成整数（`1`）的键会列在 form `integers` 中，只要值仍是整数，就会再次写成整数，因此 `temperature: 1` 返回时仍是 `1`，而不是 `1.0`；改变后的值按新值写出。来自其他方言的请求使用 Anthropic 自己的写法（`1.0`）（[采样参数](cross-format.md#采样参数)）。 |
 | `stop_sequences` | `sampling.stop` | `[]` → verbatim。 |
 | `stream: true` | `stream = On { include_usage: true }` | Anthropic 总是报告用量。`stream: false` → verbatim。 |

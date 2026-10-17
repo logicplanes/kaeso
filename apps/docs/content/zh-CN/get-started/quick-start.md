@@ -70,7 +70,7 @@ chmod 644 master-keys
 docker compose up -d --wait
 ```
 
-首次启动需要一两分钟：下载镜像、启动数据库、网关准备数据库，以及 Caddy 申请证书。`--wait` 让命令等到每个服务都就绪后才返回；有服务未能就绪时，命令会失败并给出该服务的名称。`docker compose ps` 会将每个服务显示为 healthy。
+首次启动需要一两分钟：下载镜像、启动数据库，以及网关准备数据库。`--wait` 让命令等到每个服务（包括 Caddy）都报告 healthy 后才返回；有服务达不到时，命令会失败并给出该服务的名称。`docker compose ps` 会将每个服务显示为 healthy。Caddy 一开始提供服务就是 healthy，并在后台为新域名申请证书，因此在拿到证书之前，对该域名的 HTTPS 请求仍可能失败；`docker compose logs caddy` 会显示何时拿到证书，或者为什么拿不到。
 
 ## 通过设置链接登录
 

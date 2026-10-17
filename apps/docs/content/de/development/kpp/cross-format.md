@@ -19,7 +19,9 @@ Das veraltete Function Calling von OpenAI Chat übersteht den Round Trip innerha
 
 Nicht abgelehnt wird, was die Encoder stattdessen weglassen: Reasoning-Blöcke, die das Ziel nicht zurückspielen kann ([Reasoning](#reasoning)), und Cache-Hinweise, wo das Ziel selbst cacht ([Cache-Hinweise](#cache-hinweise)).
 
-`check()` lehnt auch ab, was ein Ziel überhaupt nicht ausdrücken kann. Anthropic braucht `max_tokens`, daher ist eine Generierungsanfrage ohne `sampling.max_output_tokens` dort `InvalidRequest` und nennt `max_tokens`, statt einen erfundenen Wert zu bekommen.
+`check()` lehnt auch ab, was ein Ziel überhaupt nicht ausdrücken kann. Anthropic braucht `max_tokens`, daher ist eine Generierungsanfrage ohne `sampling.max_output_tokens` dort `InvalidRequest` und nennt das Feld der App für das Limit, statt einen erfundenen Wert zu bekommen.
+
+Eine Ablehnung nennt das Feld, das die App gesendet hat, nie das des Ziels, in `param` und beim Ausgabelimit auch in der Meldung: `cross::app_field` liest den Ursprung der Anfrage und bei OpenAI Chat, welches von `max_completion_tokens` und `max_tokens` sie enthielt (`max_completion_tokens`, wenn sie beide gesendet hat). Ein Ausgabelimit unter 16 für OpenAI Responses ist `max_completion_tokens` oder `max_tokens` aus einer Chat-App und `max_tokens` aus einer Anthropic-App; ein fehlendes für Anthropic ist `max_completion_tokens` aus Chat und `max_output_tokens` aus Responses. Stoppsequenzen sind `stop_sequences` aus Anthropic und `stop` aus Chat; das Ausgabeformat ist `response_format`, `text.format` oder `output_config.format`; der Reasoning-Aufwand ist `reasoning_effort`, `reasoning.effort` oder `output_config.effort`, und andere Reasoning-Einstellungen sind `reasoning_effort`, `reasoning` oder `thinking`. Eine im Code gebaute Anfrage ohne Ursprung bekommt die Namen des Ziels. Inhalte werden nach ihrer Stelle in KPP benannt (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
 
 ## Antworten
 

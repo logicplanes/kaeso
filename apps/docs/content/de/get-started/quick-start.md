@@ -70,7 +70,7 @@ Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte und muss d
 docker compose up -d --wait
 ```
 
-Der erste Start dauert ein bis zwei Minuten: Die Images werden heruntergeladen, die Datenbanken starten, das Gateway bereitet sie vor, und Caddy beantragt das Zertifikat. Mit `--wait` kehrt der Befehl erst zurück, wenn jeder Dienst bereit ist, und schlägt mit dem Namen des Dienstes fehl, wenn einer es nicht wird; `docker compose ps` zeigt jeden Dienst als healthy.
+Der erste Start dauert ein bis zwei Minuten: Die Images werden heruntergeladen, die Datenbanken starten, und das Gateway bereitet sie vor. Mit `--wait` kehrt der Befehl erst zurück, wenn jeder Dienst healthy meldet, Caddy eingeschlossen, und schlägt mit dem Namen des Dienstes fehl, wenn einer es nicht tut; `docker compose ps` zeigt jeden Dienst als healthy. Caddy ist healthy, sobald es Anfragen bedient, und beantragt das Zertifikat für eine neue Domain im Hintergrund, daher können HTTPS-Anfragen an die Domain noch fehlschlagen, bis es eines hat; `docker compose logs caddy` zeigt, wann es das Zertifikat erhält oder warum nicht.
 
 ## Mit dem Einrichtungslink anmelden
 

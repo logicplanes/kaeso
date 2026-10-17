@@ -14,7 +14,7 @@ use super::node::{Node, entries_of};
 use super::overrides::{Overrides, apply};
 use super::wire;
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
-use crate::cross::check_foreign;
+use crate::cross::{Setting, app_field, check_foreign};
 use crate::wire::{StringOr, to_body, type_tag};
 
 const INPUT: &str = "input";
@@ -593,13 +593,16 @@ fn unsupported(feature: &str, hint: &str) -> KppError {
 
 fn check_output_limit(r: &GenerateRequest) -> Result<(), KppError> {
     match r.sampling.max_output_tokens {
-        Some(m) if m < MIN_MAX_OUTPUT_TOKENS => Err(unsupported(
-            &format!("max_output_tokens {m}"),
-            &format!(
-                "OpenAI Responses needs an output limit of at least {MIN_MAX_OUTPUT_TOKENS} tokens; raise it or route the request to another model."
-            ),
-        )
-        .with_param("max_output_tokens")),
+        Some(m) if m < MIN_MAX_OUTPUT_TOKENS => {
+            let field = app_field(r, Setting::OutputLimit, DIALECT);
+            Err(unsupported(
+                &format!("{field} {m}"),
+                &format!(
+                    "OpenAI Responses needs an output limit of at least {MIN_MAX_OUTPUT_TOKENS} tokens; raise it or route the request to another model."
+                ),
+            )
+            .with_param(field))
+        }
         _ => Ok(()),
     }
 }
@@ -623,7 +626,7 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
         return Err(unsupported("presence_penalty", "The Responses API has no `presence_penalty`. Remove it or use the Chat Completions format.").with_param("presence_penalty"));
     }
     if !s.stop.is_empty() {
-        return Err(unsupported("stop sequences", "The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.").with_param("stop"));
+        return Err(unsupported("stop sequences", "The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.").with_param(app_field(r, Setting::StopSequences, DIALECT)));
     }
     if let Some(cfg) = &r.reasoning {
         match &cfg.mode {
@@ -637,7 +640,7 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
                     &format!("reasoning mode \"{wire}\""),
                     "Remove the reasoning mode or set a reasoning effort.",
                 )
-                .with_param("reasoning"));
+                .with_param(app_field(r, Setting::Reasoning, DIALECT)));
             }
         }
     }

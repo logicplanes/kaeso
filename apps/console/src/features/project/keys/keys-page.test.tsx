@@ -23,7 +23,12 @@ describe("KeysPage", () => {
       keys: [
         apiKey({ last_used_at: "2026-10-15T11:00:00Z" }),
         apiKey({ id: "key_batch", name: "nightly-batch", state: "disabled", principal: { kind: "service_account", id: "sa_deploy" }, access: "both" }),
-        apiKey({ id: "key_soon", name: "expiring-soon", expires_at: "2026-10-17T12:00:00Z", principal: { kind: "user", id: "usr_grace" } }),
+        apiKey({
+          id: "key_soon",
+          name: "expiring-soon",
+          expires_at: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+          principal: { kind: "user", id: "usr_grace" },
+        }),
         apiKey({ id: "key_old", name: "old-key", state: "expired", expires_at: "2026-09-01T12:00:00Z" }),
       ],
     });

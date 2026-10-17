@@ -136,6 +136,7 @@ expression: outcomes
   },
   "tools-and-instructions": {
     "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "text.verbosity"
   }
 }

@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -22,6 +23,7 @@ class Install(NamedTuple):
     token: str
     env: dict[str, str]
     run: Callable[..., subprocess.CompletedProcess]
+    health: dict[str, str]
 
 
 def free_port() -> int:
@@ -84,13 +86,15 @@ def install(tmp_path_factory):
     url = f"http://localhost:{port}"
     try:
         run("up", "-d", "--wait", "--wait-timeout", "300")
+        listed = run("ps", "--all", "--format", "json", capture_output=True).stdout
+        health = {s["Service"]: s["Health"] for s in map(json.loads, listed.splitlines())}
 
         printed = run("exec", "-T", "gateway", "kaeso", "setup-link", capture_output=True).stdout
         token = SETUP_LINK.search(printed).group(1)
         logs = run("logs", "gateway", capture_output=True).stdout
         assert "kaeso setup-link" in logs, "the gateway's log points to the setup link command"
         assert token not in logs, "the setup token reached the gateway's log"
-        yield Install(url, token, env, run)
+        yield Install(url, token, env, run, health)
     finally:
         subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
@@ -139,6 +143,11 @@ def test_a_fresh_install_serves_both_sdks_and_records_usage(install):
         return len(logs.get("data", [])) == 2 and sum(r["requests"] for r in usage.get("data", [])) == 2
 
     poll(recorded, "two log entries and their usage", seconds=30)
+
+
+def test_wait_returns_once_every_service_is_healthy_caddy_included(install):
+    shipped = ("caddy", "gateway", "console", "postgres", "clickhouse", "valkey")
+    assert {name: install.health.get(name) for name in shipped} == dict.fromkeys(shipped, "healthy")
 
 
 def test_everything_outside_the_apis_is_the_console(install):

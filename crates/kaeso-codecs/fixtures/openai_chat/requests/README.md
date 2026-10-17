@@ -20,6 +20,8 @@ Request bodies (`POST /v1/chat/completions`)
 | `legacy-functions.json` | deprecated `functions` / `function_call` object, assistant `function_call`, `function` role message | schema: ChatCompletionFunctions, ChatCompletionFunctionCallOption, ChatCompletionRequestFunctionMessage |
 | `logit-bias.json` | `logit_bias` map (token id strings → int), `logprobs` + `top_logprobs: 5` | schema: CreateChatCompletionRequest.logit_bias |
 | `logprobs-top-logprobs-doc.json` | `logprobs: true`, `top_logprobs: 2`, `reasoning_effort: "none"` | doc: https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create (example "Logprobs"; = `x-oaiMeta.examples` of `createChatCompletion` in openai-openapi@e95c0fe615f45a19e8878af923a729948445a6bd) |
+| `max-tokens-null.json` | deprecated `max_tokens` alone, sent as explicit `null` (no output limit); a refusal for a missing limit names `max_tokens` | schema: CreateChatCompletionRequest.max_tokens (`integer \| null`) |
+| `max-completion-tokens-legacy-null.json` | `max_completion_tokens: 10`, below the OpenAI Responses minimum of 16, beside a `null` deprecated `max_tokens`; a refusal names `max_completion_tokens` | schema: CreateChatCompletionRequest.max_completion_tokens, .max_tokens (both `integer \| null`) |
 | `max-tokens-length.json` | deprecated `max_tokens` alone (contrast: `max_completion_tokens` in reasoning-cached-usage.json) | schema: CreateChatCompletionRequest.max_tokens |
 | `moderation.json` | `moderation: {model}` (moderated completion; same-dialect only) | schema: ModerationParam (usage per https://developers.openai.com/api/docs/guides/moderation) |
 | `n-2.json` | `n: 2`. Codec MUST reject as `Unsupported` | schema: CreateChatCompletionRequest.n |

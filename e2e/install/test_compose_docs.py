@@ -40,7 +40,7 @@ def test_every_compose_up_in_the_docs_waits_for_the_services():
     assert len(found) >= 3 * 8
 
 
-def test_every_service_but_caddy_has_a_health_check_for_wait_to_wait_for():
+def test_every_service_has_a_health_check_for_wait_to_wait_for():
     services = config()["services"]
     own = {name for name, service in services.items() if service.get("healthcheck", {}).get("test")}
     images = {
@@ -48,8 +48,17 @@ def test_every_service_but_caddy_has_a_health_check_for_wait_to_wait_for():
         for name in ("gateway", "console")
         if re.search(r"^HEALTHCHECK .+ CMD ", (ROOT / "deploy" / f"{name}.Dockerfile").read_text(), re.M)
     }
-    assert own | images == set(services) - {"caddy"}
+    assert own | images == set(services)
     assert not own & images
+
+
+def test_caddy_reports_healthy_from_a_site_of_its_own_on_the_loopback_address():
+    caddy = config()["services"]["caddy"]
+    check = caddy["healthcheck"]["test"]
+    assert check[-1] == "http://127.0.0.1:2080/"
+    assert all(p["target"] != 2080 for p in caddy["ports"])
+    caddyfile = config()["configs"]["caddyfile"]["content"]
+    assert "http://127.0.0.1:2080 {\n\tbind 127.0.0.1\n" in caddyfile
 
 
 @pytest.mark.parametrize("language", LANGUAGES)

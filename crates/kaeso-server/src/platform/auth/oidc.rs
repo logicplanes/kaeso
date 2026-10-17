@@ -115,7 +115,19 @@ struct Begun {
     cookie: HeaderValue,
 }
 
-async fn begin(state: &AppState, ctx: &Ctx, org: OrgId, next: Option<String>) -> ApiResult<Begun> {
+#[derive(Default)]
+struct Back {
+    org: Option<OrgId>,
+    next: Option<String>,
+}
+
+async fn begin(
+    state: &AppState,
+    ctx: &Ctx,
+    org: OrgId,
+    named: bool,
+    next: Option<String>,
+) -> ApiResult<Begun> {
     let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
     let provider = provider(state, org, &connection).await?;
     let started = provider.start();
@@ -133,6 +145,7 @@ async fn begin(state: &AppState, ctx: &Ctx, org: OrgId, next: Option<String>) ->
                 "pkce_verifier": started.pkce_verifier,
                 "binding": crate::cache::hex(&secret::hash(&binding)),
                 "next": next,
+                "sign_in_org": named.then(|| org.to_string()),
             }),
             expires_at: ctx.now + FLOW_LIFETIME,
         },
@@ -163,19 +176,20 @@ pub async fn start(
     sso_on(&state)?;
     throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
     let next = next::validate(&state.config.public_url, req.next.as_deref())?;
-    let org = match (req.org, req.email) {
-        (Some(org), None) => org,
+    let (org, named) = match (req.org, req.email) {
+        (Some(org), None) => (org, true),
         (None, Some(email)) => {
             let email = kaeso_core::email::normalize(&email)
                 .map_err(|e| ApiError::invalid("email", format!("{e}.")))?;
-            oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email))
+            let org = oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email))
                 .await?
                 .map(OrgId::from_uuid)
-                .ok_or_else(no_sso)?
+                .ok_or_else(no_sso)?;
+            (org, false)
         }
         _ => return Err(ApiError::bad_request("Send either `org` or `email`.")),
     };
-    let begun = begin(&state, &ctx, org, next).await?;
+    let begun = begin(&state, &ctx, org, named, next).await?;
     Ok((
         [(header::SET_COOKIE, begun.cookie)],
         axum::Json(StartResponse {
@@ -205,7 +219,7 @@ pub async fn start_link(
 ) -> Response {
     let link = match link {
         Ok(Query(link)) => link,
-        Err(e) => return refused(&state, &e, None, false),
+        Err(e) => return refused(&state, &e, &Back::default(), false),
     };
     let begun = async {
         sso_on(&state)?;
@@ -224,7 +238,7 @@ pub async fn start_link(
                 }
             },
         };
-        begin(&state, &ctx, org, next).await
+        begin(&state, &ctx, org, link.org.is_some(), next).await
     };
     match begun.await {
         Ok(begun) => {
@@ -234,7 +248,13 @@ pub async fn start_link(
                 .append(header::SET_COOKIE, begun.cookie);
             response
         }
-        Err(e) => refused(&state, &e, link.next.as_deref(), false),
+        Err(e) => {
+            let back = Back {
+                org: link.org,
+                next: link.next,
+            };
+            refused(&state, &e, &back, false)
+        }
     }
 }
 
@@ -284,24 +304,32 @@ fn signed_in_location(state: &AppState, next: Option<&str>) -> String {
         .map_or_else(|| state.config.public_url.to_string(), |u| u.to_string())
 }
 
-fn failed_location(state: &AppState, message: &str, next: Option<&str>) -> String {
-    let next = next
+fn failed_location(state: &AppState, message: &str, back: &Back) -> String {
+    let next = back
+        .next
+        .as_deref()
         .filter(|n| next::target(&state.config.public_url, n).is_some())
         .map(|n| {
             format!(
-                "?next={}",
+                "next={}",
                 percent_encoding::utf8_percent_encode(n, FRAGMENT)
             )
-        })
-        .unwrap_or_default();
+        });
+    let org = back.org.map(|o| format!("org={o}"));
+    let query = [next, org].into_iter().flatten().collect::<Vec<_>>();
+    let query = if query.is_empty() {
+        String::new()
+    } else {
+        format!("?{}", query.join("&"))
+    };
     format!(
-        "{}sign-in{next}#sso_error={}",
+        "{}sign-in{query}#sso_error={}",
         state.config.public_url,
         percent_encoding::utf8_percent_encode(message, FRAGMENT)
     )
 }
 
-fn refused(state: &AppState, e: &ApiError, next: Option<&str>, clear_binding: bool) -> Response {
+fn refused(state: &AppState, e: &ApiError, back: &Back, clear_binding: bool) -> Response {
     metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "oidc", "reason" => e.kind())
         .increment(1);
     tracing::info!(error = %e, "SSO sign-in failed");
@@ -309,7 +337,7 @@ fn refused(state: &AppState, e: &ApiError, next: Option<&str>, clear_binding: bo
         ApiError::Internal(_) => "Something went wrong; try again.".to_owned(),
         other => other.to_string(),
     };
-    let mut response = redirect(&failed_location(state, &message, next));
+    let mut response = redirect(&failed_location(state, &message, back));
     if clear_binding && let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);
     }
@@ -344,18 +372,56 @@ pub async fn callback(
     headers: HeaderMap,
     cb: Result<Query<Callback>, ApiError>,
 ) -> Response {
-    let flow = match cb {
-        Ok(Query(cb)) => take_flow(&state, &ctx, &headers, cb).await,
-        Err(e) => Err(e),
+    let (back, outcome) = match cb {
+        Ok(Query(cb)) => answer(&state, &ctx, &headers, cb).await,
+        Err(e) => (Back::default(), Err(e)),
     };
+    outcome.unwrap_or_else(|e| refused(&state, &e, &back, true))
+}
+
+async fn answer(
+    state: &AppState,
+    ctx: &Ctx,
+    headers: &HeaderMap,
+    cb: Callback,
+) -> (Back, ApiResult<Response>) {
+    if let Err(e) = sso_on(state) {
+        return (Back::default(), Err(e));
+    }
+    let flow = match cb.state.as_deref() {
+        Some(flow_state) => take_flow(state, ctx, headers, flow_state).await,
+        None => Err(incomplete()),
+    };
+    if let Some(error) = cb.error {
+        tracing::info!(
+            error = %error,
+            description = cb.error_description.as_deref().unwrap_or_default(),
+            "identity provider refused the sign-in"
+        );
+        let back = flow
+            .map_err(|e| tracing::info!(error = %e, "refused SSO answer matched no flow"))
+            .map(|f| f.back)
+            .unwrap_or_default();
+        return (
+            back,
+            Err(ApiError::Authentication(
+                "The identity provider refused the sign-in.".into(),
+            )),
+        );
+    }
     let flow = match flow {
         Ok(flow) => flow,
-        Err(e) => return refused(&state, &e, None, true),
+        Err(e) => return (Back::default(), Err(e)),
     };
-    match complete(&state, &ctx, &flow).await {
-        Ok(response) => response,
-        Err(e) => refused(&state, &e, flow.next.as_deref(), true),
-    }
+    let outcome = match cb.code.as_deref() {
+        Some(code) => complete(state, ctx, &flow, code).await,
+        None => Err(incomplete()),
+    };
+    (flow.back, outcome)
+}
+
+fn incomplete() -> ApiError {
+    ApiError::bad_request("The identity provider's answer is incomplete.")
 }
 
 fn no_access() -> ApiError {
@@ -366,10 +432,9 @@ fn no_access() -> ApiError {
 
 struct Flow {
     org: OrgId,
-    code: String,
     nonce: String,
     verifier: String,
-    next: Option<String>,
+    back: Back,
 }
 
 fn expired() -> ApiError {
@@ -382,25 +447,9 @@ async fn take_flow(
     state: &AppState,
     ctx: &Ctx,
     headers: &HeaderMap,
-    cb: Callback,
+    flow_state: &str,
 ) -> ApiResult<Flow> {
-    sso_on(state)?;
-    if let Some(error) = cb.error {
-        tracing::info!(
-            error = %error,
-            description = cb.error_description.as_deref().unwrap_or_default(),
-            "identity provider refused the sign-in"
-        );
-        return Err(ApiError::Authentication(
-            "The identity provider refused the sign-in.".into(),
-        ));
-    }
-    let (Some(code), Some(flow_state)) = (cb.code, cb.state) else {
-        return Err(ApiError::bad_request(
-            "The identity provider's answer is incomplete.",
-        ));
-    };
-    let state_hash = secret::hash(&flow_state);
+    let state_hash = secret::hash(flow_state);
     let binding = binding_from(state, headers).ok_or_else(expired)?;
     let bound = |data: &serde_json::Value| {
         data.get("binding").and_then(|v| v.as_str())
@@ -425,21 +474,23 @@ async fn take_flow(
     };
     Ok(Flow {
         org,
-        code,
         nonce,
         verifier,
-        next: field("next"),
+        back: Back {
+            org: field("sign_in_org").and_then(|o| o.parse().ok()),
+            next: field("next"),
+        },
     })
 }
 
-async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow) -> ApiResult<Response> {
+async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiResult<Response> {
     let org = flow.org;
     let connection = oidc::get(&state.pg, org.uuid())
         .await?
         .ok_or_else(expired)?;
     let identity = provider(state, org, &connection)
         .await?
-        .finish(&flow.code, &flow.verifier, &flow.nonce)
+        .finish(code, &flow.verifier, &flow.nonce)
         .await
         .map_err(|e| {
             tracing::info!(error = %e, "SSO answer refused");
@@ -566,7 +617,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow) -> ApiResult<Respons
     )
     .await?;
     tx.commit().await?;
-    let mut response = redirect(&signed_in_location(state, flow.next.as_deref()));
+    let mut response = redirect(&signed_in_location(state, flow.back.next.as_deref()));
     if let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);
     }

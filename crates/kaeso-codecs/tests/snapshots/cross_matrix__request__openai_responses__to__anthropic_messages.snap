@@ -64,6 +64,7 @@ expression: outcomes
   },
   "file-input-base64-file-id": {
     "message": "`file id` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Provider file ids (here `file-Xb7RkqzW3d2LmP9TnV4cYe`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[2]",
     "unsupported": "file id"
   },
   "file-input-url": {
@@ -187,10 +188,12 @@ expression: outcomes
   },
   "function-call-stream": {
     "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "reasoning.effort",
     "unsupported": "reasoning effort `minimal`"
   },
   "image-base64-file-id": {
     "message": "`file id` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Provider file ids (here `file-6F2ksmvXxt4VdoqmHRw6kL`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[2]",
     "unsupported": "file id"
   },
   "image-url": {
@@ -220,14 +223,17 @@ expression: outcomes
   },
   "item-reference-breakpoint": {
     "message": "`prompt_cache_options` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "prompt_cache_options"
   },
   "json-object-mode": {
     "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
+    "param": "text.format",
     "unsupported": "json_object output"
   },
   "logprobs-no-obfuscation-stream": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "top_logprobs"
   },
   "max-output-tokens-incomplete": {
@@ -269,6 +275,7 @@ expression: outcomes
   },
   "multi-turn-roles": {
     "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "text.verbosity"
   },
   "reasoning-effort-high": {
@@ -557,6 +564,7 @@ expression: outcomes
   },
   "sampling-and-ids": {
     "message": "`top_logprobs` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "top_logprobs"
   },
   "stateful-background": {
@@ -573,6 +581,7 @@ expression: outcomes
   },
   "structured-output-json-schema": {
     "message": "`output schema description` is not supported by Anthropic Messages. Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
+    "param": "text.format",
     "unsupported": "output schema description"
   },
   "text-basic-stream": {
@@ -620,6 +629,7 @@ expression: outcomes
   },
   "tool-choice-allowed-tools": {
     "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[2]",
     "unsupported": "web_search tool"
   },
   "tool-choice-none": {
@@ -951,18 +961,22 @@ expression: outcomes
   },
   "unknown-item-type": {
     "message": "`future_item content block` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[1].blocks[0]",
     "unsupported": "future_item content block"
   },
   "unknown-top-level-field": {
     "message": "`x_future_field` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "x_future_field"
   },
   "web-search": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "include"
   },
   "web-search-stream": {
     "message": "`include` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
     "unsupported": "include"
   }
 }

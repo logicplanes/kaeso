@@ -419,9 +419,9 @@ fn output_limits_below_the_responses_minimum_are_refused_not_raised() {
         .unwrap_err();
         assert_eq!(
             err.unsupported_feature(),
-            Some(format!("max_output_tokens {low}").as_str())
+            Some(format!("max_tokens {low}").as_str())
         );
-        assert_eq!(err.param.as_deref(), Some("max_output_tokens"));
+        assert_eq!(err.param.as_deref(), Some("max_tokens"));
         assert!(
             err.message.contains("at least 16 tokens"),
             "{}",

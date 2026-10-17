@@ -17,6 +17,8 @@ Caddy gets a certificate for `KAESO_DOMAIN` from a public certificate authority 
 - The domain's DNS record must point at the server before the first start.
 - Ports 80 and 443 must be reachable from the internet.
 
+`docker compose up -d --wait` doesn't wait for the certificate: Caddy reports healthy once it serves, and gets a new domain's certificate in the background, so the domain answers over HTTPS only once Caddy has it.
+
 Caddy keeps its certificates in the `caddy_data` volume. If the certificate can't be issued, `docker compose logs caddy` says why. Fix the DNS record or the firewall, and restart Caddy with `docker compose restart caddy`.
 
 With `KAESO_DOMAIN=localhost`, Caddy uses a certificate from its own local authority instead, which your browser asks you to accept once.

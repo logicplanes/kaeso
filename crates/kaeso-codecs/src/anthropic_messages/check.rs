@@ -4,7 +4,7 @@ use kaeso_kpp::{
 };
 
 use super::common::{D, is_data_url, parse_base64_data_url, request_kind_name};
-use crate::cross::check_foreign;
+use crate::cross::{Setting, app_field, check_foreign};
 
 const IMAGE_MEDIA_TYPES: [&str; 4] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -22,10 +22,11 @@ pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
         }
     };
     if generate && r.sampling.max_output_tokens.is_none() {
-        return Err(KppError::invalid_request(
-            "Anthropic Messages requires `max_tokens`. Set a maximum number of output tokens for the request.",
-        )
-        .with_param("max_tokens"));
+        let field = app_field(r, Setting::OutputLimit, D);
+        return Err(KppError::invalid_request(format!(
+            "Anthropic Messages requires an output limit. Set `{field}` for the request."
+        ))
+        .with_param(field));
     }
     if !r.extras.is_from(D)
         && let Some(i) = r.messages.iter().position(|m| m.role == Role::System)
@@ -75,26 +76,27 @@ pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
 }
 
 pub(crate) fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
+    let param = app_field(r, Setting::OutputFormat, D);
     match &r.output {
         OutputSpec::JsonObject => Err(KppError::unsupported_by(
             "json_object output",
             D,
             "Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
         )
-        .with_param("output")),
+        .with_param(param)),
         OutputSpec::JsonSchema(spec) if spec.description.is_some() => Err(KppError::unsupported_by(
             "output schema description",
             D,
             "Anthropic structured outputs take a schema only. Move the description into the prompt or the schema's own `description`.",
         )
-        .with_param("output")),
+        .with_param(param)),
         OutputSpec::JsonSchema(spec) if spec.strict == Some(false) => {
             Err(KppError::unsupported_by(
                 "non-strict output schema",
                 D,
                 "Anthropic always enforces the output schema. Set `strict: true` or remove it.",
             )
-            .with_param("output"))
+            .with_param(param))
         }
         _ => Ok(()),
     }
@@ -143,9 +145,11 @@ pub(crate) fn check_reasoning(r: &GenerateRequest) -> Result<(), KppError> {
         return Ok(());
     };
     let own = c.extras.is_from(D);
-    let fail = |feature: &str, hint: &str| {
-        Err(KppError::unsupported_by(feature, D, hint).with_param("reasoning"))
+    let refuse = |setting: Setting, feature: &str, hint: &str| {
+        Err(KppError::unsupported_by(feature, D, hint).with_param(app_field(r, setting, D)))
     };
+    let fail = |feature: &str, hint: &str| refuse(Setting::Reasoning, feature, hint);
+    let fail_effort = |feature: &str, hint: &str| refuse(Setting::ReasoningEffort, feature, hint);
     if c.include_encrypted && own {
         return fail(
             "reasoning.include_encrypted",
@@ -164,13 +168,13 @@ pub(crate) fn check_reasoning(r: &GenerateRequest) -> Result<(), KppError> {
                 && matches!(c.mode, None | Some(ReasoningMode::Disabled))
                 && c.budget_tokens.is_none() => {}
         Some(e @ (ReasoningEffort::None | ReasoningEffort::Minimal)) => {
-            return fail(
+            return fail_effort(
                 &format!("reasoning effort `{}`", e.as_wire()),
                 "Anthropic effort levels are low, medium, high, xhigh and max.",
             );
         }
         Some(ReasoningEffort::Other(e)) if !own => {
-            return fail(
+            return fail_effort(
                 &format!("reasoning effort `{e}`"),
                 "Anthropic effort levels are low, medium, high, xhigh and max.",
             );

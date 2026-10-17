@@ -19,7 +19,9 @@ OpenAI Chat's deprecated function calling round-trips within Chat and crosses to
 
 Not refused, because the encoders drop them instead: reasoning blocks the target can't replay ([reasoning](#reasoning)), and cache hints where the target caches by itself ([cache hints](#cache-hints)).
 
-`check()` also refuses what a target can't express at all. Anthropic needs `max_tokens`, so a generation request without `sampling.max_output_tokens` is `InvalidRequest` for it, naming `max_tokens`, rather than getting an invented value.
+`check()` also refuses what a target can't express at all. Anthropic needs `max_tokens`, so a generation request without `sampling.max_output_tokens` is `InvalidRequest` for it, naming the app's own field for the limit, rather than getting an invented value.
+
+A refusal names the field the app sent, never the target's, in `param` and, for the output limit, in the message: `cross::app_field` reads the request's origin and, for OpenAI Chat, which of `max_completion_tokens` and `max_tokens` it carried (`max_completion_tokens` when it sent both). An output limit below 16 for OpenAI Responses is `max_completion_tokens` or `max_tokens` from a Chat app and `max_tokens` from an Anthropic app; a missing one for Anthropic is `max_completion_tokens` from Chat and `max_output_tokens` from Responses. Stop sequences are `stop_sequences` from Anthropic and `stop` from Chat; the output format is `response_format`, `text.format` or `output_config.format`; the reasoning effort is `reasoning_effort`, `reasoning.effort` or `output_config.effort`, and other reasoning settings are `reasoning_effort`, `reasoning` or `thinking`. A request built in code, without an origin, gets the target's names. Content is named by its place in KPP (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
 
 ## Replies
 

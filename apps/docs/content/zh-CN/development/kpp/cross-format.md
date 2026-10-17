@@ -19,7 +19,9 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 以下内容不会被拒绝，因为编码器会把它们丢弃：目标无法回放的推理块（[推理](#推理)），以及目标会自行缓存时的缓存提示（[缓存提示](#缓存提示)）。
 
-`check()` 也会拒绝目标根本无法表达的内容。Anthropic 需要 `max_tokens`，因此对它而言，没有 `sampling.max_output_tokens` 的生成请求属于 `InvalidRequest`，错误中注明 `max_tokens`，而不会得到一个编造的值。
+`check()` 也会拒绝目标根本无法表达的内容。Anthropic 需要 `max_tokens`，因此对它而言，没有 `sampling.max_output_tokens` 的生成请求属于 `InvalidRequest`，错误中注明应用自己表示该上限的字段，而不会得到一个编造的值。
+
+拒绝时注明的是应用发送的字段，而不是目标的字段：写在 `param` 中，输出上限的拒绝还写在消息中。`cross::app_field` 读取请求的来源，对 OpenAI Chat 还读取请求带的是 `max_completion_tokens` 还是 `max_tokens`（两者都发送时为 `max_completion_tokens`）。对 OpenAI Responses 而言低于 16 的输出上限，来自 Chat 应用时为 `max_completion_tokens` 或 `max_tokens`，来自 Anthropic 应用时为 `max_tokens`；对 Anthropic 而言缺少的输出上限，来自 Chat 时为 `max_completion_tokens`，来自 Responses 时为 `max_output_tokens`。停止序列来自 Anthropic 时为 `stop_sequences`，来自 Chat 时为 `stop`；输出格式为 `response_format`、`text.format` 或 `output_config.format`；推理强度为 `reasoning_effort`、`reasoning.effort` 或 `output_config.effort`，其他推理设置为 `reasoning_effort`、`reasoning` 或 `thinking`。在代码中构建、没有来源的请求使用目标的字段名。内容按其在 KPP 中的位置命名（`messages[i].blocks[j]`、`system[i]`、`tools[i]`）。
 
 ## 回复
 

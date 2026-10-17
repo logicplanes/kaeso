@@ -226,6 +226,36 @@ fn same_provider(a: &Origin, b: &Origin) -> bool {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Setting {
+    OutputLimit,
+    StopSequences,
+    OutputFormat,
+    Reasoning,
+    ReasoningEffort,
+}
+
+pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C};
+    let app = r.extras.origin.as_ref().map_or(target, |o| o.dialect);
+    match (setting, app) {
+        (Setting::OutputLimit, A) => "max_tokens",
+        (Setting::OutputLimit, C) => crate::openai_chat::output_limit_field(r),
+        (Setting::OutputLimit, _) => "max_output_tokens",
+        (Setting::StopSequences, A) => "stop_sequences",
+        (Setting::StopSequences, _) => "stop",
+        (Setting::OutputFormat, A) => "output_config.format",
+        (Setting::OutputFormat, C) => "response_format",
+        (Setting::OutputFormat, _) => "text.format",
+        (Setting::Reasoning, A) => "thinking",
+        (Setting::Reasoning, C) => "reasoning_effort",
+        (Setting::Reasoning, _) => "reasoning",
+        (Setting::ReasoningEffort, A) => "output_config.effort",
+        (Setting::ReasoningEffort, C) => "reasoning_effort",
+        (Setting::ReasoningEffort, _) => "reasoning.effort",
+    }
+}
+
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),
@@ -545,6 +575,64 @@ mod tests {
 
     fn check(r: GenerateRequest, target: DialectId) -> Result<(), KppError> {
         check_foreign(&Request::Generate(r), &Origin::new(target))
+    }
+
+    #[test]
+    fn app_fields_follow_the_dialect_the_request_came_from() {
+        let from = |app: Option<DialectId>| {
+            let mut r = GenerateRequest::new("m");
+            r.extras.origin = app.map(Origin::new);
+            r
+        };
+        let names = |r: &GenerateRequest| {
+            [
+                Setting::OutputLimit,
+                Setting::StopSequences,
+                Setting::OutputFormat,
+                Setting::Reasoning,
+                Setting::ReasoningEffort,
+            ]
+            .map(|s| app_field(r, s, R))
+        };
+        assert_eq!(
+            names(&from(Some(A))),
+            [
+                "max_tokens",
+                "stop_sequences",
+                "output_config.format",
+                "thinking",
+                "output_config.effort"
+            ]
+        );
+        assert_eq!(
+            names(&from(Some(C))),
+            [
+                "max_completion_tokens",
+                "stop",
+                "response_format",
+                "reasoning_effort",
+                "reasoning_effort"
+            ]
+        );
+        let expected_responses = [
+            "max_output_tokens",
+            "stop",
+            "text.format",
+            "reasoning",
+            "reasoning.effort",
+        ];
+        assert_eq!(names(&from(Some(R))), expected_responses);
+        assert_eq!(names(&from(None)), expected_responses);
+        let mut legacy = from(Some(C));
+        legacy
+            .extras
+            .form
+            .insert("max_tokens".into(), json!("max_tokens"));
+        assert_eq!(app_field(&legacy, Setting::OutputLimit, A), "max_tokens");
+        assert_eq!(
+            app_field(&from(None), Setting::OutputLimit, A),
+            "max_tokens"
+        );
     }
 
     #[test]

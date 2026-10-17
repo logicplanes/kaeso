@@ -47,7 +47,11 @@ fn check_requires_max_tokens_for_generation_only() {
     )
     .unwrap_err();
     assert_eq!(e.kind, kaeso_kpp::ErrorKind::InvalidRequest);
-    assert_eq!(e.param.as_deref(), Some("max_tokens"));
+    assert_eq!(e.param.as_deref(), Some("max_completion_tokens"));
+    assert_eq!(
+        e.message,
+        "Anthropic Messages requires an output limit. Set `max_completion_tokens` for the request."
+    );
     AnthropicMessages::check(&Request::CountTokens(r), &crate::test_support::egress()).unwrap();
 }
 
