@@ -85,7 +85,7 @@ test("a refused sign-in comes back to the sign-in page and waits for a click", a
   const page = await context.newPage();
   await page.goto("/sign-in?next=/settings/account");
   await signInAtProvider(page, "eve@elsewhere.example", "Eve");
-  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount$/);
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount&org=org_[a-z0-9]+$/);
   await expect(toastText(page, "This organization's SSO only signs in addresses of example.com.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toBeVisible();
   await context.close();
