@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { kaesoVersion } from "./scripts/content/docs.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -136,7 +137,15 @@ function uiEntryImports(): Plugin {
 
 export default defineConfig({
   cacheDir: process.env.KAESO_VITE_CACHE ?? "node_modules/.vite",
-  plugins: [kaesoDocs({ root, contentDir, editBase, siteUrl }), uiEntryImports(), themeInit(), themeColor(), fontPreload(), react(), tailwindcss()],
+  plugins: [
+    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root) }),
+    uiEntryImports(),
+    themeInit(),
+    themeColor(),
+    fontPreload(),
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: [
       { find: "~", replacement: fileURLToPath(new URL("./src", import.meta.url)) },

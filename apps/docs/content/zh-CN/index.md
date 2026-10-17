@@ -9,7 +9,7 @@ Kaeso 是一个自行部署的开源 AI 网关：应用只需对接一个 API，
 
 初次使用？[快速开始](get-started/quick-start.md)用 Docker Compose 运行 Kaeso，几分钟内即可发送第一个请求。
 
-本文档描述的是 Kaeso 0.1.0。
+本文档描述的是 Kaeso {{version}}。
 
 ## 功能概览
 

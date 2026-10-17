@@ -39,11 +39,11 @@ async fn rotate(
 ) -> ApiResult<Response> {
     let session = ctx.session()?.clone();
     let user_id = UserId::from_uuid(user.id);
+    let current = SessionId::from_uuid(session.id);
     if end_all {
-        sessions::revoke_all(state, user_id, None).await?;
-    } else {
-        sessions::revoke(state, user_id, SessionId::from_uuid(session.id)).await?;
+        sessions::revoke_all(state, user_id, Some(current)).await?;
     }
+    sessions::replace(state, user_id, current).await?;
     start_session(
         state,
         ctx,

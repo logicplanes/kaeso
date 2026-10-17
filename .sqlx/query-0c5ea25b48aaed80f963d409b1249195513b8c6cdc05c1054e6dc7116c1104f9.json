@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM sessions WHERE token_hash = $1 AND replaced) AS \"replaced!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "replaced!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0c5ea25b48aaed80f963d409b1249195513b8c6cdc05c1054e6dc7116c1104f9"
+}

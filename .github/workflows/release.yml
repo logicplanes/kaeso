@@ -71,6 +71,10 @@ jobs:
             echo "::error::CHANGELOG.md has nothing under [Unreleased] and no section for $of."
             exit 1
           fi
+          if ! node scripts/version.mjs check "$version"; then
+            echo "::error::The files above already state $version by hand, which the release would not set. Fix them on dev, then run Release again."
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
           echo "Releasing **$version** from \`prod\` at \`${GITHUB_SHA:0:12}\`${latest:+ after $latest}." >> "$GITHUB_STEP_SUMMARY"
@@ -101,21 +105,7 @@ jobs:
         with:
           node-version-file: .node-version
       - name: Set the version
-        run: |
-          set -euo pipefail
-          cargo set-version --workspace "$VERSION"
-          cargo update --workspace
-          cargo update --manifest-path fuzz/Cargo.toml kaeso-kpp kaeso-codecs
-          node -e '
-            const fs = require("node:fs");
-            for (const file of process.argv.slice(1)) {
-              const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
-              manifest.version = process.env.VERSION;
-              fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + "\n");
-            }
-          ' package.json apps/*/package.json packages/*/package.json
-          cargo run -q -p kaeso -- openapi > openapi.json
-          sed -E -i "s#(ghcr\.io/logicplanes/kaeso-(gateway|console)):[0-9A-Za-z.+-]+#\1:$VERSION#g" deploy/compose.yaml
+        run: node scripts/version.mjs set "$VERSION"
       - name: Move the changelog
         run: node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)"
       - name: Keep the changes
@@ -166,6 +156,9 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
       - name: Commit as github-actions[bot]
         run: |
           git config user.name "github-actions[bot]"
@@ -184,7 +177,9 @@ jobs:
               git apply --summary "$patch"
               exit 1
             fi
-            unexpected="$(git apply --numstat "$patch" | cut -f3- | grep -vxE '((crates/[^/]+/)?Cargo\.toml|(fuzz/)?Cargo\.lock|((apps|packages)/[^/]+/)?package\.json|openapi\.json|deploy/compose\.yaml|CHANGELOG\.md)' || true)"
+            allowed="$RUNNER_TEMP/release/allowed"
+            { node scripts/version.mjs files; echo CHANGELOG.md; } > "$allowed"
+            unexpected="$(git apply --numstat "$patch" | cut -f3- | grep -vxFf "$allowed" || true)"
             if [[ -n "$unexpected" ]]; then
               echo "::error::The release changes touch files a release never changes: ${unexpected//$'\n'/, }"
               exit 1

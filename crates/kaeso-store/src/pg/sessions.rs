@@ -121,6 +121,32 @@ pub async fn revoke(
     .await?)
 }
 
+pub async fn replace(
+    db: impl PgExecutor<'_>,
+    user_id: Uuid,
+    id: Uuid,
+    at: OffsetDateTime,
+) -> Result<Option<Vec<u8>>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE sessions SET revoked_at = $3, replaced = true \
+         WHERE id = $2 AND user_id = $1 AND revoked_at IS NULL RETURNING token_hash",
+        user_id,
+        id,
+        at
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
+pub async fn is_replaced(db: impl PgExecutor<'_>, hash: &[u8]) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM sessions WHERE token_hash = $1 AND replaced) AS "replaced!""#,
+        hash
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 pub async fn revoke_all(
     db: impl PgExecutor<'_>,
     user_id: Uuid,

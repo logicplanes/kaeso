@@ -8,9 +8,17 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 版本号
 
-版本号遵循[语义化版本](https://semver.org)。如果某个版本需要运行 Kaeso 的人手动执行某个步骤，例如一个无法自动运行的迁移，它就是一个主版本。预发布版本会加上后缀，例如 `0.2.0-rc.1`。版本的 Git 标签是 `v` 加上版本号，例如 `v0.1.0`。
+版本号遵循[语义化版本](https://semver.org)。如果某个版本需要运行 Kaeso 的人手动执行某个步骤，例如一个无法自动运行的迁移，它就是一个主版本。预发布版本会加上后缀，例如 `0.2.0-rc.1`。版本的 Git 标签是 `v` 加上版本号，例如 `v0.2.0`。
 
 同一个版本的网关和控制台始终配套使用：该版本的 `compose.yaml` 将两个镜像都固定在这个版本，控制台也只适配其对应网关的 Platform API。
+
+## 仓库中的版本号
+
+根目录的 `package.json` 保存仓库的版本号，只有发布版本时才会通过 `node scripts/version.mjs set` 修改它。这个命令把版本号写入每个写明版本号的文件：每个 `package.json`、通过 `cargo set-version` 写入各 crate 的清单、`Cargo.lock` 和 `fuzz/Cargo.lock`、`openapi.json`、`deploy/compose.yaml` 中的两个镜像标签，以及各 crate 的 README 中的依赖行，例如 `kaeso-kpp = "0.2"`。其他地方都从这里获取版本号，而不是自己写出来：文档页面写 `\{{version}}`，由网站构建时替换（[编辑页面](documentation.md#其他语法)）；网关读取 `env!("CARGO_PKG_VERSION")`；展示站点和 npm 包的生成文件读取各自的 `package.json`。
+
+当这些文件不一致，或者当前版本号出现在任何其他文件中时，`node scripts/version.mjs check` 会失败，并指出文件和行号。`pnpm test` 会运行它，CI 的 **Repository tooling** 作业也会对每个拉取请求运行它。历史和示例可以写出版本号：`CHANGELOG.md`、测试数据、演示数据、本页以及少数关于第一个版本的行都列在脚本的 `ALLOWED` 中，并各自注明原因。
+
+带上版本号时，`node scripts/version.mjs check 0.2.0` 会列出已经手写了该版本号的文件，例如测试数据恰好用到它的测试。Release 工作流会首先运行它，在这些文件于 `dev` 上修正或加入 `ALLOWED` 之前拒绝发布。
 
 ## 分支
 
@@ -122,10 +130,10 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 | 作业 | 作用 |
 | --- | --- |
-| Validate | 拒绝在 `prod` 以外的分支上运行、不符合语义化版本的版本号、已存在的标签、不比最新标签更新的版本，以及 `[Unreleased]` 下没有内容、且既没有该版本一节也没有（对于正式版本而言）其预发布版本一节的 `CHANGELOG.md` |
-| Prepare | 用 `cargo set-version` 设置每个 crate 的版本，并更新 `Cargo.lock`、`fuzz/Cargo.lock` 和每个 `package.json` 中的版本；重新生成 `openapi.json`；在 `deploy/compose.yaml` 中固定两个镜像；移动变更日志，并把正式版本的各预发布版本的节合并到它自己的一节中。它只能读取仓库，不持有任何 Git 凭据，并把这些修改作为补丁交给 Tag |
+| Validate | 拒绝在 `prod` 以外的分支上运行、不符合语义化版本的版本号、已存在的标签、不比最新标签更新的版本、`[Unreleased]` 下没有内容且既没有该版本一节也没有（对于正式版本而言）其预发布版本一节的 `CHANGELOG.md`，以及已被某个文件手写出来的版本号 |
+| Prepare | 以该版本号运行 `node scripts/version.mjs set`，它把版本号写入每个写明版本号的文件（[仓库中的版本号](#仓库中的版本号)），如果其他地方仍手写着该版本号则中止；移动变更日志，并把正式版本的各预发布版本的节合并到它自己的一节中。它只能读取仓库，不持有任何 Git 凭据，并把这些修改作为补丁交给 Tag |
 | Checks | 运行完整的 CI 工作流，无论改动了什么，所有作业都会运行 |
-| Tag | 应用补丁，拒绝新建、删除或重命名文件的补丁，也拒绝修改 Prepare 所写文件以外任何文件的补丁。补丁修改了文件时，将“Release X.Y.Z”提交到 `prod`；没有修改任何文件时（例如 `0.1.0`），标签直接打在 `prod` 的提交上。如果 `prod` 在运行开始后发生了移动则中止；创建标签 `vX.Y.Z`，并将 `prod` 和标签一起推送，要么都成功，要么都不生效 |
+| Tag | 应用补丁，拒绝新建、删除或重命名文件的补丁，也拒绝修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 所列文件以外任何文件的补丁。补丁修改了文件时，将“Release X.Y.Z”提交到 `prod`；没有修改任何文件时（例如 `0.1.0`），标签直接打在 `prod` 的提交上。如果 `prod` 在运行开始后发生了移动则中止；创建标签 `vX.Y.Z`，并将 `prod` 和标签一起推送，要么都成功，要么都不生效 |
 | Sync dev | 把版本带回 `dev`：如果 `dev` 没有新提交，就快进；否则在能干净合并时创建合并提交“Merge release X.Y.Z into dev”。如果发生冲突、版本修改了 `dev` 没有的工作流文件，或 `dev` 在此期间发生了移动，它会失败，并在摘要中说明如何手动合并 |
 | Image | 从标签为每个平台构建每个镜像，附带完整的构建来源证明和 SBOM |
 | Image manifest | 将两个平台合并到上述镜像标签下，把镜像的 `org.opencontainers.image` 标签作为注解复制到合并后的索引上，并证明构建的来源 |

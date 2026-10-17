@@ -31,7 +31,7 @@ docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > m
 chmod 644 master-keys
 ```
 
-每个版本还附带 [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example)（列出 `.env` 的每个变量及示例值）和 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)（列出网关的每项设置）；与上面的 `curl` 一样，这些链接获取的是最新稳定版本的文件。要安装特定版本，请改为从该版本的标签下载其文件，例如 `https://github.com/logicplanes/kaeso/releases/download/v0.1.0/compose.yaml`。
+每个版本还附带 [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example)（列出 `.env` 的每个变量及示例值）和 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)（列出网关的每项设置）；与上面的 `curl` 一样，这些链接获取的是最新稳定版本的文件。要安装特定版本，请改为从该版本的标签下载其文件，例如 `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`。
 
 网关在容器内以非特权用户运行，并在容器内读取 `master-keys`，因此该文件本身是可读的；文件夹则对服务器上的其他用户保持封闭。将 `.env` 和 `master-keys` 与数据库备份分开备份；参见[备份和主密钥](backups.md)。
 

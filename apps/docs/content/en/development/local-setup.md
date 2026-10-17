@@ -118,7 +118,7 @@ The stack's ports come from `apps/console/scripts/stack.mjs`. These variables ch
 To run the stack against a gateway image built elsewhere, such as a release, name it; the stack then uses it instead of building:
 
 ```bash
-KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:0.1.0 pnpm stack:up
+KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:{{version}} pnpm stack:up
 ```
 
 ## Run a second stack

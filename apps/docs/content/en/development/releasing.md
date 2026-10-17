@@ -8,9 +8,17 @@ Kaeso is released as a whole: the gateway, the console, KPP's crates and the UI 
 
 ## Versions
 
-Versions follow [semantic versioning](https://semver.org). A release that needs a manual step from people who run Kaeso, such as a migration that can't run by itself, is a major one. A pre-release adds a suffix, such as `0.2.0-rc.1`. The Git tag of a release is `v` and its version, such as `v0.1.0`.
+Versions follow [semantic versioning](https://semver.org). A release that needs a manual step from people who run Kaeso, such as a migration that can't run by itself, is a major one. A pre-release adds a suffix, such as `0.2.0-rc.1`. The Git tag of a release is `v` and its version, such as `v0.2.0`.
 
 The gateway and the console of one release always belong together: the release's `compose.yaml` pins both images at that version, and the console expects exactly the Platform API of its gateway.
+
+## The version in the repository
+
+The root `package.json` holds the repository's version, and only a release changes it, with `node scripts/version.mjs set`. That command writes the version into every file that states it: every `package.json`, the crates' manifests through `cargo set-version`, `Cargo.lock` and `fuzz/Cargo.lock`, `openapi.json`, both image tags in `deploy/compose.yaml`, and the dependency lines in the crates' READMEs, such as `kaeso-kpp = "0.2"`. Everything else takes the version from there instead of writing it: a documentation page writes `\{{version}}`, which the site's build replaces ([editing a page](documentation.md#everything-else)), the gateway reads `env!("CARGO_PKG_VERSION")`, and the showcase and the npm packages' generated files read their `package.json`.
+
+`node scripts/version.mjs check` fails when these files disagree, or when the current version appears in any other file, and names the file and the line. `pnpm test` runs it, and so does CI's **Repository tooling** job for every pull request. History and examples may name versions: `CHANGELOG.md`, test fixtures, demo data, this page and the few lines about the first release are listed in `ALLOWED` in the script, each with its reason.
+
+With a version, `node scripts/version.mjs check 0.2.0` lists the files that already state that version by hand, such as a test whose fixture happens to use it. The Release workflow runs it first and refuses the release until they are fixed on `dev` or added to `ALLOWED`.
 
 ## Branches
 
@@ -122,10 +130,10 @@ gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.1
 
 | Job | What it does |
 | --- | --- |
-| Validate | Refuses a run on any branch but `prod`, a version that isn't semantic, a tag that already exists, a version that isn't newer than the latest tag, and a `CHANGELOG.md` with nothing under `[Unreleased]` and no section for the version or, for a stable version, a pre-release of it |
-| Prepare | Sets the version in every crate with `cargo set-version`, in `Cargo.lock` and `fuzz/Cargo.lock`, and in every `package.json`; writes `openapi.json` again; pins both images in `deploy/compose.yaml`; moves the changelog, folding the sections of a stable version's pre-releases into its own. It can only read the repository, holds no Git credentials, and hands these changes on to Tag as a patch |
+| Validate | Refuses a run on any branch but `prod`, a version that isn't semantic, a tag that already exists, a version that isn't newer than the latest tag, a `CHANGELOG.md` with nothing under `[Unreleased]` and no section for the version or, for a stable version, a pre-release of it, and a version that a file already states by hand |
+| Prepare | Runs `node scripts/version.mjs set` with the version, which writes it into every file that states it ([the version in the repository](#the-version-in-the-repository)) and refuses when the version is still written by hand anywhere else; moves the changelog, folding the sections of a stable version's pre-releases into its own. It can only read the repository, holds no Git credentials, and hands these changes on to Tag as a patch |
 | Checks | Runs the whole CI workflow, every job, whatever changed |
-| Tag | Applies the patch, refusing one that creates, deletes or renames a file or changes a file other than those Prepare writes. When the patch changes a file, it commits "Release X.Y.Z" to `prod`; when it changes none, as for `0.1.0`, the tag goes on `prod`'s commit itself. It refuses when `prod` moved since the run started, tags `vX.Y.Z`, and pushes `prod` and the tag together, both or neither |
+| Tag | Applies the patch, refusing one that creates, deletes or renames a file or changes a file other than `CHANGELOG.md` and those `node scripts/version.mjs files` lists. When the patch changes a file, it commits "Release X.Y.Z" to `prod`; when it changes none, as for `0.1.0`, the tag goes on `prod`'s commit itself. It refuses when `prod` moved since the run started, tags `vX.Y.Z`, and pushes `prod` and the tag together, both or neither |
 | Sync dev | Brings the release into `dev`: a fast-forward when `dev` has nothing new, otherwise the merge commit "Merge release X.Y.Z into dev" when it merges cleanly. When it conflicts, when the release changes a workflow file that `dev` lacks, or when `dev` moves meanwhile, it fails and its summary says how to merge by hand |
 | Image | Builds each image for each platform from the tag, with full build provenance and an SBOM |
 | Image manifest | Joins both platforms under the image tags above, copies the images' `org.opencontainers.image` labels onto the joined index as annotations, and attests the build's provenance |

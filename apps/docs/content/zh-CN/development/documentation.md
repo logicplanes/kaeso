@@ -108,6 +108,8 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 
 TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮显示；其他语言显示为纯文本。原始 HTML 不会被渲染，而是显示为文本。代码块中从不包含注释：在代码块前面的句子中解释命令。
 
+当前版本写作 `\{{version}}`。网站构建时会用该版本的版本号替换它，正文、代码和 frontmatter 中都是如此，因此任何页面都不会写出一个在下一次发布后就过时的版本号。在前面加一个反斜杠则保留这些字符本身，就像本页这样。
+
 ## 写作
 
 - 每条陈述都按照 Kaeso 的代码来描述：动笔之前，对照网关的配置核对设置，对照控制台的英文目录核对标签，对照网关、KPP 和控制台核对行为。绝不描述不存在的功能。

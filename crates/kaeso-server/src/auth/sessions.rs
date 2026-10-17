@@ -133,6 +133,18 @@ pub async fn revoke(state: &AppState, user: UserId, id: SessionId) -> Result<boo
     Ok(hash.is_some())
 }
 
+pub async fn replace(state: &AppState, user: UserId, id: SessionId) -> Result<bool, StoreError> {
+    let hash = sessions::replace(&state.pg, user.uuid(), id.uuid(), state.clock.now()).await?;
+    if let Some(h) = &hash {
+        forget(state, std::slice::from_ref(h)).await;
+    }
+    Ok(hash.is_some())
+}
+
+pub async fn was_replaced(state: &AppState, token: &str) -> Result<bool, StoreError> {
+    sessions::is_replaced(&state.pg, &secret::hash(token)).await
+}
+
 pub async fn revoke_all(
     state: &AppState,
     user: UserId,

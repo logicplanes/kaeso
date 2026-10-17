@@ -118,7 +118,7 @@ pnpm stack:down
 要让开发环境栈使用在别处构建的网关镜像（例如某个正式版本），指定该镜像即可；开发环境栈随后会直接使用它，而不再构建：
 
 ```bash
-KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:0.1.0 pnpm stack:up
+KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:{{version}} pnpm stack:up
 ```
 
 ## 运行第二个开发环境栈

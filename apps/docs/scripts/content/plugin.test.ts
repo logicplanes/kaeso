@@ -175,7 +175,7 @@ describe("addresses and HTML", () => {
   });
 
   it("lists every page in every language in the sitemap", () => {
-    const docs = buildDocs(join(repo(), "content"), root);
+    const docs = buildDocs(join(repo(), "content"), root, "1.4.0");
     const xml = sitemap(docs, "https://docs.kaeso.app");
     expect(xml.match(/<loc>/g)).toHaveLength(9);
     expect(xml).toContain("<loc>https://docs.kaeso.app/zh-CN/guides/keys</loc>");
@@ -185,7 +185,13 @@ describe("addresses and HTML", () => {
 
 describe("the Vite plugin", () => {
   const plugin = () =>
-    kaesoDocs({ root, contentDir: "content", editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/", siteUrl: "https://docs.kaeso.app" });
+    kaesoDocs({
+      root,
+      contentDir: "content",
+      editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
+      siteUrl: "https://docs.kaeso.app",
+      version: "1.4.0",
+    });
 
   it("serves each language's site, search and pages as virtual modules", () => {
     repo();

@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkContent } from "./check.ts";
-import { buildDocs } from "./docs.ts";
+import { buildDocs, kaesoVersion } from "./docs.ts";
 
 let root = "";
 afterEach(() => root && rmSync(root, { recursive: true, force: true }));
@@ -23,7 +23,7 @@ const everyLanguage = (files: Record<string, string>) =>
 
 describe("buildDocs", () => {
   it("builds one site per language with the language's prefix and labels", () => {
-    const docs = buildDocs(join(repo(everyLanguage({ "index.md": page("Start"), "guides/index.md": page("Guides", "order: 1\n") })), "content"), root);
+    const docs = buildDocs(join(repo(everyLanguage({ "index.md": page("Start"), "guides/index.md": page("Guides", "order: 1\n") })), "content"), root, "1.4.0");
     expect(docs.problems).toEqual([]);
     expect(docs.sites.en.metas.map((m) => m.path)).toEqual(["/", "/guides"]);
     expect(docs.sites.de.metas.map((m) => m.path)).toEqual(["/de", "/de/guides"]);
@@ -43,6 +43,7 @@ describe("buildDocs", () => {
         "content",
       ),
       root,
+      "1.4.0",
     );
     expect(docs.problems).toEqual([
       "content/de/keys.md: its order is 3, but content/en/keys.md has 2; a translation keeps the English order",
@@ -55,6 +56,7 @@ describe("buildDocs", () => {
     const docs = buildDocs(
       join(repo({ ...everyLanguage({ "index.md": page("Start") }), "notes.md": page("Notes"), "en/de/index.md": page("Deutsch") }), "content"),
       root,
+      "1.4.0",
     );
     expect(docs.problems).toContain("content/notes.md: put every page in a language folder (en, de, zh-CN)");
     expect(docs.problems.some((p) => p.startsWith("content/en/de/index.md: its address /de is where the Deutsch pages live"))).toBe(true);
@@ -62,19 +64,27 @@ describe("buildDocs", () => {
 
   it("names a missing content folder", () => {
     root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
-    expect(buildDocs(join(root, "content"), root).problems).toEqual(["content does not exist"]);
+    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual(["content does not exist"]);
+  });
+});
+
+describe("kaesoVersion", () => {
+  it("is the version of the repository's package.json, which every release sets", () => {
+    const docsRoot = join(import.meta.dirname, "..", "..");
+    const { version } = JSON.parse(readFileSync(join(docsRoot, "..", "..", "package.json"), "utf8")) as { version: string };
+    expect(kaesoVersion(docsRoot)).toBe(version);
   });
 });
 
 describe("checkContent", () => {
   it("counts the pages and languages when everything is in order", () => {
     repo(everyLanguage({ "index.md": page("Start"), "keys.md": page("Keys") }));
-    expect(checkContent(root, "content")).toEqual({ ok: true, lines: ["content: 2 pages in 3 languages, every link checked"] });
+    expect(checkContent(root, "content", "1.4.0")).toEqual({ ok: true, lines: ["content: 2 pages in 3 languages, every link checked"] });
   });
 
   it("lists every problem with its file", () => {
     repo({ "en/index.md": page("Start") });
-    const result = checkContent(root, "content");
+    const result = checkContent(root, "content", "1.4.0");
     expect(result.ok).toBe(false);
     expect(result.lines).toEqual([
       "content: 4 to fix in content/",
