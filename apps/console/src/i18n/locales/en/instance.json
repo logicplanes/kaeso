@@ -257,7 +257,7 @@
   "instance.updates.applyTitle": "One-click updates",
   "instance.updates.available": "Update available",
   "instance.updates.away": "Kaeso is switching over; this window reconnects by itself.",
-  "instance.updates.backup": "Back up PostgreSQL first: once the new version has migrated the database, going back means restoring that backup.",
+  "instance.updates.backup": "Back up PostgreSQL and ClickHouse first: once the new version has migrated them, going back means restoring those backups.",
   "instance.updates.by": "Started by",
   "instance.updates.byHand": "Update by hand",
   "instance.updates.byHandTitle": "Update by hand, in the install's folder",

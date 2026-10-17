@@ -257,7 +257,7 @@
   "instance.updates.applyTitle": "Updates mit einem Klick",
   "instance.updates.available": "Update verfügbar",
   "instance.updates.away": "Kaeso stellt gerade um; dieses Fenster verbindet sich von selbst wieder.",
-  "instance.updates.backup": "Sichern Sie zuerst PostgreSQL: Hat die neue Version die Datenbank migriert, führt der Weg zurück nur über diese Sicherung.",
+  "instance.updates.backup": "Sichern Sie zuerst PostgreSQL und ClickHouse: Hat die neue Version sie migriert, führt der Weg zurück nur über diese Sicherungen.",
   "instance.updates.by": "Gestartet von",
   "instance.updates.byHand": "Von Hand aktualisieren",
   "instance.updates.byHandTitle": "Von Hand aktualisieren, im Ordner der Installation",

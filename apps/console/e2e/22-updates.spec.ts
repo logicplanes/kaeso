@@ -53,7 +53,7 @@ test("one click: an update is confirmed, followed and recorded", async ({ page }
   await expect(toastText(page, "One-click updates are on")).toBeVisible();
   await page.getByRole("button", { name: `Update to ${versions.patch}` }).click();
   const confirm = page.getByRole("dialog", { name: `Update to Kaeso ${versions.patch}?` });
-  await expect(confirm.getByText(/Back up PostgreSQL first/)).toBeVisible();
+  await expect(confirm.getByText(/Back up PostgreSQL and ClickHouse first/)).toBeVisible();
   await confirm.getByRole("button", { name: "Update now" }).click();
   await expect(page.getByRole("dialog", { name: `Kaeso ${versions.patch} is running` })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).first().click();
