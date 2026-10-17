@@ -203,6 +203,26 @@ describe("useResizeMotion", () => {
     change({ h: 360 });
     expect(runs).toHaveLength(1);
   });
+  it("snaps while a list or menu anchored to a field is open or closing, so the popup never chases a moving field", () => {
+    render(<Box rows={["Name"]} />);
+    observer().fire();
+    const positioner = document.createElement("div");
+    positioner.setAttribute("data-side", "bottom");
+    positioner.setAttribute("data-align", "start");
+    positioner.innerHTML = '<div role="listbox"></div>';
+    document.body.append(positioner);
+    const shown = vi.spyOn(positioner, "getClientRects").mockReturnValue([new DOMRect(0, 0, 200, 300)] as unknown as DOMRectList);
+    change({ h: 420 });
+    expect(runs).toEqual([]);
+    shown.mockReturnValue([] as unknown as DOMRectList);
+    change({ h: 300 });
+    expect(runs).toHaveLength(1);
+    shown.mockReturnValue([new DOMRect(0, 0, 200, 300)] as unknown as DOMRectList);
+    positioner.innerHTML = '<div role="tooltip"></div>';
+    change({ h: 360 });
+    expect(runs).toHaveLength(2);
+    positioner.remove();
+  });
   it("lets a running animation carry on from where it is when a notification keeps its target", () => {
     const settled = vi.fn();
     render(<Box rows={["Name"]} onSettle={settled} />);

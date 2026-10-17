@@ -14,6 +14,10 @@ const sizeOf = (box: HTMLElement): Size => {
 const near = (a: Size, b: Size) => Math.abs(a.h - b.h) < 0.5 && Math.abs(a.w - b.w) < 0.5;
 const viewport = () => `${window.innerWidth}x${window.innerHeight}`;
 const reducedMotion = () => !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const anchoredList = (box: HTMLElement) =>
+  [...document.querySelectorAll("[data-side][data-align]")].some(
+    (p) => !box.contains(p) && p.getClientRects().length > 0 && p.querySelector("[role=listbox], [role=menu]"),
+  );
 const isBody = (el: Element) => el.hasAttribute("data-dialog-body");
 
 export function resizeSources(box: Element): Element[] {
@@ -81,6 +85,7 @@ export function useResizeMotion(box: HTMLElement | null, onSettle?: (() => void)
         resized ||
         !duration ||
         reducedMotion() ||
+        anchoredList(box) ||
         typeof box.animate !== "function" ||
         box.matches("[data-ending-style], [data-closed]")
       ) {
