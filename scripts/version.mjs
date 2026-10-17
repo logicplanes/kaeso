@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -133,7 +133,7 @@ const ruleOf = (file) => RULES.find((rule) => rule.match(file));
 
 export function gitRepo(root) {
   const listed = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], { cwd: root, encoding: "utf8" });
-  const files = [...new Set(listed.split("\0").filter(Boolean))].filter((file) => existsSync(join(root, file))).sort();
+  const files = [...new Set(listed.split("\0").filter(Boolean))].filter((file) => existsSync(join(root, file)) && statSync(join(root, file)).isFile()).sort();
   const cache = new Map();
   return {
     files: () => files,

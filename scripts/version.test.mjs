@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -159,4 +162,17 @@ test("every ALLOWED entry names files of the repository", () => {
 
 test("the repository states its version only where the release sets it", () => {
   assert.deepEqual(messages(check(gitRepo(root))), []);
+});
+
+test("the repository reads files only, not untracked links to folders", () => {
+  const dir = mkdtempSync(join(tmpdir(), "kaeso-version-"));
+  try {
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, "package.json"), '{\n  "version": "1.4.0"\n}\n');
+    mkdirSync(join(dir, "shared"));
+    symlinkSync(join(dir, "shared"), join(dir, "linked"));
+    assert.deepEqual(gitRepo(dir).files(), ["package.json"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
