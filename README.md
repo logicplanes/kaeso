@@ -1,6 +1,12 @@
 <div align="center">
   <br>
-  <a href="https://kaeso.app"><img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-banner.svg" alt="Kaeso" width="640"></a>
+  <a href="https://kaeso.app">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-light.svg">
+      <img src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/kaeso-logo-light.svg" alt="Kaeso" width="360">
+    </picture>
+  </a>
   <br>
   <br>
   <p>The open-source AI gateway you run yourself: one OpenAI- and Anthropic-compatible API in front of your providers, with keys, limits and logs under your control.</p>
@@ -18,8 +24,11 @@
 
 <br>
 
-<img alt="The Kaeso console showing an organization's overview: requests, tokens, cost and errors over the last 30 days, with charts by day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-light.png#gh-light-mode-only">
-<img alt="The Kaeso console showing an organization's overview: requests, tokens, cost and errors over the last 30 days, with charts by day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-dark.png#gh-dark-mode-only">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-light.png">
+  <img alt="The Kaeso console showing an organization's overview: requests, tokens, cost and errors over the last 30 days, with charts by day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-light.png">
+</picture>
 
 ## Quick start
 
