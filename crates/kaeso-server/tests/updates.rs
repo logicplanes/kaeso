@@ -73,7 +73,15 @@ fn etag_of(releases: &[(String, bool, bool)]) -> String {
     format!("W/\"{}\"", versions.join(","))
 }
 
-async fn list(State(gh): State<Arc<Mutex<GitHub>>>, headers: HeaderMap) -> Response {
+async fn list(
+    State(gh): State<Arc<Mutex<GitHub>>>,
+    headers: HeaderMap,
+    OriginalUri(uri): OriginalUri,
+) -> Response {
+    let page: usize = url::form_urlencoded::parse(uri.query().unwrap_or("").as_bytes())
+        .find(|(k, _)| k == "page")
+        .and_then(|(_, v)| v.parse().ok())
+        .unwrap_or(1);
     let mut gh = gh.lock().unwrap();
     let conditional = headers
         .get(header::IF_NONE_MATCH)
@@ -109,7 +117,19 @@ async fn list(State(gh): State<Arc<Mutex<GitHub>>>, headers: HeaderMap) -> Respo
         })
         .chain([json!({ "tag_name": "v9.9.9", "draft": true, "html_url": "x" }), json!({ "tag_name": "nightly", "html_url": "x" })])
         .collect();
-    ([(header::ETAG, etag)], axum::Json(body)).into_response()
+    let pages: Vec<&[Value]> = body.chunks(50).collect();
+    let this = pages.get(page - 1).map(|p| p.to_vec()).unwrap_or_default();
+    let mut resp = ([(header::ETAG, etag)], axum::Json(this)).into_response();
+    if page < pages.len() {
+        let next = format!(
+            "<{}repos/logicplanes/kaeso/releases?per_page=50&page={}>; rel=\"next\"",
+            gh.base,
+            page + 1
+        );
+        resp.headers_mut()
+            .insert(header::LINK, next.parse().unwrap());
+    }
+    resp
 }
 
 async fn download(State(gh): State<Arc<Mutex<GitHub>>>, OriginalUri(uri): OriginalUri) -> Response {
@@ -152,6 +172,7 @@ struct Updater {
     refuse: bool,
     fail_start: Option<u16>,
     garbled: bool,
+    down: bool,
     unauthorized: u32,
 }
 
@@ -221,6 +242,9 @@ async fn updater_job(
     let mut u = u.lock().unwrap();
     if !authorized(&mut u, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
+    }
+    if u.down {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
     }
     let id = uri.path().rsplit('/').next().unwrap_or_default().to_owned();
     let Some(started) = u.started.iter().find(|s| s["id"] == id.as_str()) else {
@@ -408,6 +432,98 @@ async fn a_release_with_steps_by_hand_the_gateway_never_saw_still_counts() {
     assert_eq!(r.body["latest"]["version"], target);
     assert_eq!(r.body["manual"], "manual_steps");
     assert_eq!(r.body["can_apply"], false);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn every_page_down_to_the_running_release_is_read() {
+    let s = TestServices::start().await;
+    let v = semver::Version::parse(RUNNING).unwrap();
+    let mut releases: Vec<(String, bool, bool)> = (1..=55)
+        .rev()
+        .map(|p| {
+            (
+                format!("{}.{}.{}", v.major, v.minor, v.patch + p),
+                false,
+                false,
+            )
+        })
+        .collect();
+    releases.push((RUNNING.to_owned(), false, false));
+    let (gh, url) = github(releases).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["releases"].as_array().unwrap().len(), 55);
+    assert_eq!(gh.lock().unwrap().requests.len(), 2, "two pages");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_release_github_marks_as_a_pre_release_is_not_stable() {
+    let s = TestServices::start().await;
+    let (_, url) = github(vec![(next_patch(), true, false)]).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["state"], "up_to_date", "{:?}", r.body);
+    let pre = app
+        .call(
+            Method::PATCH,
+            "/instance/updates/settings",
+            Some(json!({ "channel": "prerelease" })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(pre.body["latest"]["version"], next_patch());
+    assert_eq!(pre.body["latest"]["prerelease"], true);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_updater_is_lost_an_hour_after_it_last_answered_not_after_the_start() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let (updater, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+            ("KAESO_UPDATES_APPLY", "true"),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    let started = app
+        .post(
+            "/instance/updates/apply",
+            json!({ "version": next_patch() }),
+            Some(&owner.cookie),
+        )
+        .await;
+    let id = started.body["id"].as_str().unwrap().to_owned();
+    let path = format!("/instance/updates/jobs/{id}");
+    app.clock.advance(time::Duration::minutes(50));
+    assert_eq!(app.get(&path, &owner.cookie).await.body["state"], "running");
+    app.clock.advance(time::Duration::minutes(30));
+    updater.lock().unwrap().down = true;
+    assert_eq!(
+        app.get(&path, &owner.cookie).await.body["state"],
+        "running",
+        "80 minutes after the start, but 30 after the last answer"
+    );
+    app.clock.advance(time::Duration::minutes(40));
+    let lost = app.get(&path, &owner.cookie).await;
+    assert_eq!(lost.body["state"], "failed");
+    assert_eq!(lost.body["reason"], "updater_unreachable");
     s.cleanup().await;
 }
 

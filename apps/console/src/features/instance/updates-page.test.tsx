@@ -242,6 +242,7 @@ describe("instance updates page", () => {
     await renderApp(PATH);
     expect(await screen.findByText(reason)).toBeInTheDocument();
     expect(screen.getByText(/releases\/download\/v0\.4\.3\/compose\.yaml/)).toBeInTheDocument();
+    expect(document.body.textContent).toContain("docker compose up -d --wait");
     expect(screen.getByRole("link", { name: /Set up one-click updates/ })).toHaveAttribute(
       "href",
       "https://docs.kaeso.app/self-hosting/upgrades#one-click-updates",

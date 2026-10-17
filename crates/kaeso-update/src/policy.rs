@@ -43,6 +43,9 @@ pub trait Release {
     fn asks_for_steps_after(&self, _running: &Version) -> bool {
         false
     }
+    fn prerelease(&self) -> bool {
+        !self.version().pre.is_empty()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -77,7 +80,7 @@ pub fn plan<'a, R: Release>(
 ) -> Option<Plan<'a, R>> {
     let mut newer: Vec<&R> = releases
         .iter()
-        .filter(|r| r.version() > running && channel.offers(r.version()))
+        .filter(|r| r.version() > running && (channel == Channel::Prerelease || !r.prerelease()))
         .collect();
     newer.sort_by(|a, b| b.version().cmp(a.version()));
     let target = *newer.first()?;
@@ -181,6 +184,37 @@ mod tests {
         );
         assert_eq!(target("0.2.1", Channel::Stable, &releases), None);
         assert_eq!(target("0.4.0", Channel::Prerelease, &releases), None);
+    }
+
+    struct Flagged(R);
+
+    impl Release for Flagged {
+        fn version(&self) -> &Version {
+            &self.0.version
+        }
+        fn needs_manual_steps(&self) -> bool {
+            false
+        }
+        fn prepared(&self) -> bool {
+            true
+        }
+        fn prerelease(&self) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn a_release_published_as_a_pre_release_is_one_whatever_its_version() {
+        let releases = [Flagged(r("0.2.1"))];
+        assert!(plan(&v("0.2.0"), Channel::Stable, &releases).is_none());
+        assert_eq!(
+            plan(&v("0.2.0"), Channel::Prerelease, &releases).map(|p| p
+                .target
+                .0
+                .version
+                .to_string()),
+            Some("0.2.1".to_owned())
+        );
     }
 
     #[test]

@@ -6,7 +6,7 @@ order: 1
 
 ## Server
 
-- Linux with Docker Engine and Docker Compose 2.24 or newer. The images are published for `linux/amd64` and `linux/arm64`.
+- Linux with Docker Engine and Docker Compose 2.24 or newer. The images are published for `linux/amd64` and `linux/arm64`. [One-click updates](upgrades.md#one-click-updates) need Docker Engine 25 or newer, whose API version 1.44 the updater speaks.
 - At least 2 vCPUs and 4 GB of memory, of which ClickHouse uses about 2 GB.
 - At least 20 GB of disk, plus room for request logs.
 

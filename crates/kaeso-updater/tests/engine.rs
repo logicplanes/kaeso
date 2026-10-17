@@ -418,6 +418,42 @@ async fn compose_changed_during_the_update_is_left_alone_and_said() {
     assert!(world.compose().ends_with(b"image: example\n"));
 }
 
+#[tokio::test]
+async fn progress_that_cannot_be_saved_stops_before_the_next_container_is_touched() {
+    let dir = fresh("state-lost");
+    let mut daemon = Daemon::install();
+    on_start(&mut daemon, &dir, |dir| {
+        std::fs::remove_dir_all(dir.join("state")).unwrap();
+    });
+    let world = World::with(dir, daemon, Releases::standard(), Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::StateUnwritable));
+    assert!(
+        world
+            .calls("POST containers/")
+            .iter()
+            .all(|c| !c.contains("gatewayold")),
+        "the gateway is never stopped"
+    );
+    assert_eq!(world.running("kaeso-console-1").image, "sha256:old-console");
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+}
+
+#[tokio::test]
+async fn a_maintenance_flag_that_stays_is_left_for_a_person() {
+    let world = World::new("flag-stuck", Daemon::install(), Verifier::default()).await;
+    std::fs::create_dir_all(world.dir.join("maintenance/active/stuck")).unwrap();
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
+    let detail = job.detail.unwrap();
+    assert!(
+        detail.contains("the maintenance flag could not be removed"),
+        "{detail}"
+    );
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:new-gateway");
+}
+
 #[cfg(unix)]
 #[tokio::test]
 async fn a_compose_file_that_cannot_be_written_at_the_end_is_a_warning() {

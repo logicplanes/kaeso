@@ -90,7 +90,7 @@ secrets:
     file: ./updater-token
 ```
 
-更新器通过其代理挂载 `/var/run/docker.sock`；如果 Docker 的套接字在其他位置（例如 rootless Docker），请在 `.env` 中设置 `DOCKER_SOCKET`。
+更新器需要 Docker Engine 25 或更高版本：它使用 Docker API 1.44，代理也只放行这个版本；引擎较旧时，页面会显示更新器没有响应。它通过其代理挂载 `/var/run/docker.sock`；如果 Docker 的套接字在其他位置（例如 rootless Docker），请在 `.env` 中设置 `DOCKER_SOCKET`。
 
 ### 更新过程
 

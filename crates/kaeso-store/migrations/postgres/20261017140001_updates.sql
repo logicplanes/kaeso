@@ -32,6 +32,7 @@ CREATE TABLE update_jobs (
     detail text,
     started_by uuid REFERENCES users (id) ON DELETE SET NULL,
     started_at timestamptz NOT NULL,
+    last_contact_at timestamptz,
     finished_at timestamptz,
     CHECK ((state = 'running') = (finished_at IS NULL))
 );
