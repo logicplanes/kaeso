@@ -349,6 +349,91 @@ test("an address without a page says so inside the frame", async ({ page }) => {
   await expect(page).toHaveURL("/");
 });
 
+test.describe("tables and inline code", () => {
+  const MODELS = ["/reference/models", "/de/reference/models", "/zh-CN/reference/models"];
+  const WIDTHS = [320, 344, 375, 392, 414, 480, 1440];
+
+  for (const path of MODELS) {
+    for (const width of [375, 1440]) {
+      test(`a table that fits does not scroll or show a scrollbar at ${path}, ${width} px wide`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        const region = page.getByRole("region", { name: /Table|Tabelle|表格/ });
+        await expect(region).toBeVisible();
+        const state = await region.evaluate((el) => {
+          el.scrollTop = 40;
+          el.scrollLeft = 40;
+          const style = getComputedStyle(el);
+          return {
+            width: [el.scrollWidth, el.clientWidth],
+            height: [el.scrollHeight, el.clientHeight],
+            top: el.scrollTop,
+            left: el.scrollLeft,
+            overflowY: style.overflowY,
+            bars: el.parentElement?.querySelectorAll("[data-orientation]").length ?? 0,
+          };
+        });
+        expect(state.width[0]).toBe(state.width[1]);
+        expect(state.height[0]).toBe(state.height[1]);
+        expect([state.top, state.left, state.overflowY, state.bars]).toEqual([0, 0, "hidden", 0]);
+        await expect(region).toHaveAttribute("tabindex", "-1");
+      });
+    }
+  }
+
+  test("a table wider than the column scrolls sideways only", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/guides/keys-and-limits");
+    const region = page.getByRole("region", { name: /^Table: Level/ });
+    await region.scrollIntoViewIfNeeded();
+    const state = await region.evaluate((el) => {
+      el.scrollTop = 40;
+      el.scrollLeft = 40;
+      return { wider: el.scrollWidth > el.clientWidth, left: el.scrollLeft, top: el.scrollTop, overflowY: getComputedStyle(el).overflowY, tall: el.scrollHeight - el.clientHeight };
+    });
+    expect(state).toEqual({ wider: true, left: 40, top: 0, overflowY: "hidden", tall: 0 });
+  });
+
+  for (const path of MODELS) {
+    test(`a code chip stays whole and hugs the punctuation after it, which never starts a line, at ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      for (const width of WIDTHS) {
+        await page.setViewportSize({ width, height: 900 });
+        const found = await page.locator("article code").evaluateAll((chips) => {
+          const punctuation = /^[,.;:!?)\]、。，；：！？）]/;
+          const loose: string[] = [];
+          const detached: string[] = [];
+          const margins: string[] = [];
+          const split: string[] = [];
+          let followed = 0;
+          for (const chip of chips) {
+            const style = getComputedStyle(chip);
+            if ((chip.textContent ?? "").length <= 16 && chip.getClientRects().length > 1) split.push(chip.textContent ?? "");
+            if (style.marginLeft !== "0px" || style.marginRight !== "0px") margins.push(chip.textContent ?? "");
+            const next = chip.nextSibling;
+            if (next?.nodeType !== Node.TEXT_NODE || !punctuation.test(next.nodeValue ?? "")) continue;
+            followed += 1;
+            const range = document.createRange();
+            range.setStart(next, 0);
+            range.setEnd(next, 1);
+            const mark = range.getBoundingClientRect();
+            const rects = [...chip.getClientRects()];
+            const last = rects[rects.length - 1];
+            if (!last) continue;
+            if (Math.abs(mark.left - last.right) > 0.5) detached.push(`${chip.textContent}${next.nodeValue?.[0]}`);
+            if (mark.top + mark.height / 2 < last.top || mark.top + mark.height / 2 > last.bottom) loose.push(`${chip.textContent}${next.nodeValue?.[0]}`);
+          }
+          return { followed, detached, loose, margins, split };
+        });
+        expect(found.followed, `chips followed by punctuation at ${width} px`).toBeGreaterThan(0);
+        expect(found, `at ${width} px`).toEqual({ followed: found.followed, detached: [], loose: [], margins: [], split: [] });
+      }
+    });
+  }
+});
+
 test.describe("accessibility", () => {
   for (const theme of ["light", "dark"] as const) {
     test(`pages in every language pass axe in the ${theme} theme`, async ({ page }) => {

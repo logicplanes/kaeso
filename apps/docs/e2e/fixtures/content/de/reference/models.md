@@ -12,3 +12,12 @@ Ein Modell wird mit seinem nativen Namen (`claude-haiku-4-5`), mit `provider/mod
 ## Aliasse
 
 Ein Alias ist ein eigener Name des Projekts, etwa `fast`, der auf ein Modell seines Katalogs zeigt.
+
+## Kontextfenster
+
+Ein Fenster wird als `200K`, `1M` oder `2M` Tokens geschrieben, und `fast`, `claude-haiku-4-5` sowie `anthropic/claude-haiku-4-5` teilen sich das kleinste.
+
+| Name               | Fenster     |
+| ------------------ | ----------- |
+| `claude-haiku-4-5` | 200K Tokens |
+| `fast`             | 200K Tokens |
