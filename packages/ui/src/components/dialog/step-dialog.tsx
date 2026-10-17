@@ -159,6 +159,7 @@ export function StepDialog({
   return (
     <Dialog
       {...frame}
+      busy={!!submitting}
       size={size}
       title={title}
       description={steps.length > 1 ? t("stepDialog.stepOf", "Step {current} of {total}", progress) : undefined}
@@ -166,9 +167,13 @@ export function StepDialog({
       footer={
         <>
           {index > 0 ? (
-            <Button onClick={() => go(index - 1)}>{t("stepDialog.back", "Back")}</Button>
+            <Button onClick={() => go(index - 1)} disabled={!!submitting}>
+              {t("stepDialog.back", "Back")}
+            </Button>
           ) : (
-            <Button onClick={() => onOpenChange?.(false)}>{t("stepDialog.cancel", "Cancel")}</Button>
+            <Button onClick={() => onOpenChange?.(false)} disabled={!!submitting}>
+              {t("stepDialog.cancel", "Cancel")}
+            </Button>
           )}
           <Button
             variant={last && tone === "danger" ? "danger" : "primary"}

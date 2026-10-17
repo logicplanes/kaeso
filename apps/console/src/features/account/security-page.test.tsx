@@ -207,6 +207,11 @@ describe("turning on two-factor authentication", () => {
     await user.click(await screen.findByRole("button", { name: "Set up" }));
     expect((await (await notifications()).findAllByText("Two-factor authentication is already on.")).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
+    expect(requests("POST", "me/totp")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Set up" }));
+    await waitFor(() => expect(requests("POST", "me/totp")).toHaveLength(2));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
+    expect(requests("POST", "me/totp")).toHaveLength(2);
   });
 
   it("starts a new setup with an empty code after one was cancelled half-way", async () => {

@@ -84,6 +84,7 @@ export interface DialogProps {
   trigger?: ReactElement | undefined;
   title: ReactNode;
   description?: ReactNode | undefined;
+  busy?: boolean | undefined;
   size?: keyof typeof KAESO_DIALOG_VARIANTS.size | undefined;
   children?: ReactNode | undefined;
   footer?: ReactNode | undefined;
@@ -94,14 +95,14 @@ export interface DialogProps {
   inline?: boolean | undefined;
 }
 
-function DialogFrame({ title, description, children, footer, onSubmit, hideClose, headerStart, size = "md", className, inline }: DialogProps) {
+function DialogFrame({ title, description, children, footer, onSubmit, hideClose, headerStart, size = "md", className, inline, busy }: DialogProps) {
   const { ref, under, check } = useScrolledUnder<HTMLDivElement>();
   const [box, boxRef] = useBox(inline);
   useResizeMotion(box, check);
   useKeepFocus(box, inline);
   const t = useUiText();
   const Title = inline ? "h2" : BaseDialog.Title;
-  const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} />;
+  const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} disabled={!!busy} />;
   const close = hideClose ? null : inline ? closeButton : <BaseDialog.Close render={closeButton} />;
   const Description = inline ? "p" : BaseDialog.Description;
   return (
@@ -165,16 +166,19 @@ function focusFirstControl(): HTMLElement | true {
 }
 
 const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref) {
-  const { open, defaultOpen, onOpenChange, trigger, size = "md", inline } = props;
+  const { open, defaultOpen, onOpenChange, trigger, size = "md", inline, busy } = props;
   const focus = useRestoreFocus(open, focusFirstControl);
   const container = usePortalContainer();
-  const settled = useScopedDialog(open);
+  const settled = useScopedDialog(inline ? false : open);
   if (inline) return <DialogFrame {...props} />;
   return (
     <BaseDialog.Root
       {...(open !== undefined ? { open } : {})}
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
-      {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
+      onOpenChange={(o: boolean, details: BaseDialog.Root.ChangeEventDetails) => {
+        if (!o && busy) return details.cancel();
+        onOpenChange?.(o);
+      }}
       onOpenChangeComplete={settled}
     >
       {trigger && <BaseDialog.Trigger render={trigger} />}
@@ -241,9 +245,10 @@ function AlertFrame({
   loading,
   inline,
   close,
-}: AlertDialogProps & { close: () => void }) {
+  busy,
+  setBusy,
+}: AlertDialogProps & { close: () => void; busy: boolean; setBusy: (busy: boolean) => void }) {
   const [typed, setTyped] = useState("");
-  const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const t = useUiText();
   const [box, boxRef] = useBox(inline);
@@ -290,7 +295,7 @@ function AlertFrame({
         />
       )}
       <div className="flex flex-wrap justify-end gap-8">
-        {inline ? <Button>{cancelLabel}</Button> : <BaseAlertDialog.Close render={<Button>{cancelLabel}</Button>} />}
+        {inline ? <Button>{cancelLabel}</Button> : <BaseAlertDialog.Close render={<Button disabled={busy || !!loading}>{cancelLabel}</Button>} />}
         <Button variant={tone === "danger" ? "danger" : "primary"} onClick={confirm} disabled={!ok} loading={busy || loading}>
           {confirmLabel}
         </Button>
@@ -307,19 +312,27 @@ export function AlertDialog(props: AlertDialogProps) {
     if (open === undefined) setInner(o);
     onOpenChange?.(o);
   };
+  const [busy, setBusy] = useState(false);
   const focus = useRestoreFocus(isOpen);
   const container = usePortalContainer();
-  const settled = useScopedDialog(isOpen);
-  if (inline) return <AlertFrame {...props} close={() => undefined} />;
+  const settled = useScopedDialog(inline ? false : isOpen);
+  if (inline) return <AlertFrame {...props} close={() => undefined} busy={busy} setBusy={setBusy} />;
   return (
-    <BaseAlertDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)} onOpenChangeComplete={settled}>
+    <BaseAlertDialog.Root
+      open={isOpen}
+      onOpenChange={(o: boolean, details: BaseAlertDialog.Root.ChangeEventDetails) => {
+        if (!o && (busy || props.loading)) return details.cancel();
+        setOpen(o);
+      }}
+      onOpenChangeComplete={settled}
+    >
       {trigger && <BaseAlertDialog.Trigger render={trigger} />}
       <BaseAlertDialog.Portal container={container}>
         <BaseAlertDialog.Backdrop className={BACKDROP} />
         <BaseAlertDialog.Viewport className={DIALOG_VIEWPORT}>
           <BaseAlertDialog.Popup initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
             <InsetContent inset={false}>
-              <AlertFrame {...props} close={() => setOpen(false)} />
+              <AlertFrame {...props} close={() => setOpen(false)} busy={busy} setBusy={setBusy} />
             </InsetContent>
           </BaseAlertDialog.Popup>
         </BaseAlertDialog.Viewport>

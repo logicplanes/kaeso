@@ -299,6 +299,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
 
   return (
     <LayerDialog
+      busy={batch.isPending || addOne.isPending}
       open={open}
       onOpenChange={(o) => !o && close()}
       size="lg"

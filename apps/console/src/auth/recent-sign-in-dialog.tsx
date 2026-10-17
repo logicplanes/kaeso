@@ -83,6 +83,7 @@ export default function RecentSignInDialog() {
 
   return (
     <Dialog
+      busy={busy}
       open
       onOpenChange={(o) => !o && cancel()}
       size="sm"

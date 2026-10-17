@@ -558,7 +558,7 @@
   "Shows a dash: some, but not all, of a group is checked.": "显示短横线：组内部分（而非全部）选项被选中。",
   "Shows a quiet progress line at the top of the list (async results).": "在列表顶部显示一条低调的进度线（异步结果）。",
   "Shows a remove circle; called with the click.": "显示移除圆形按钮；点击时调用。",
-  "Shows a spinner on the confirm while work runs (also automatic for a promise).": "操作进行时在确认按钮上显示加载指示（传入 Promise 时自动显示）。",
+  "Shows a spinner on the confirm while work runs (also automatic for a promise); until it ends, the dialog stays open.": "操作进行时在确认按钮上显示加载指示（传入 Promise 时自动显示）；操作结束前对话框保持打开。",
   "Shows it as invalid; pair it with a message that says what to fix.": "显示为无效；请搭配说明如何修正的消息。",
   "Shows line numbers.": "显示行号。",
   "Shows skeleton rows while the first page loads.": "首页加载时显示骨架行。",
@@ -967,5 +967,6 @@
   "The component that keeps the flow's state and renders the dialog with the same `open`.": "保存流程状态、并以相同 `open` 渲染对话框的组件。",
   "Whether the dialog inside is open; pass the value its `open` gets.": "其中的对话框是否打开；传入与其 `open` 相同的值。",
   "The key, shown once after the last step": "最后一步之后仅显示一次的密钥",
-  "Content that grows and shrinks": "会变高和变矮的内容"
+  "Content that grows and shrinks": "会变高和变矮的内容",
+  "Keeps the dialog open while work it started is underway: Escape, a press outside and the close circle do nothing, so a request is never abandoned or sent twice.": "在其发起的操作进行期间保持对话框打开：Escape、点击外部和关闭按钮都不起作用，因此请求不会被中途放弃，也不会重复发送。"
 }

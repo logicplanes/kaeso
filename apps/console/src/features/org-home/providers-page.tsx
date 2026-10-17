@@ -316,6 +316,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       : undefined;
   return (
     <Dialog
+      busy={rename.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
@@ -374,6 +375,7 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
   });
   return (
     <Dialog
+      busy={save.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

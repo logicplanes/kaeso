@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -94,6 +94,7 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
   const ready = passwordOk(next) && (!hasPassword || current.length > 0);
   return (
     <Dialog
+      busy={save.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
@@ -132,9 +133,17 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
   );
 }
 
+interface TwoFactorState {
+  open: boolean;
+  codes: string[] | null;
+}
+
+const TWO_FACTOR_CLOSED: TwoFactorState = { open: false, codes: null };
+
 function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft: number }) {
   const queryClient = useQueryClient();
-  const [twoFactor, setTwoFactor] = useState<{ open: boolean; codes: string[] | null }>({ open: false, codes: null });
+  const [twoFactor, setTwoFactor] = useState<TwoFactorState>(TWO_FACTOR_CLOSED);
+  const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const off = useApiMutation({
@@ -199,7 +208,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         <TwoFactorDialog
           open={twoFactor.open}
           initialCodes={twoFactor.codes}
-          onClose={() => setTwoFactor((d) => ({ ...d, open: false }))}
+          onClose={closeTwoFactor}
           onEnabled={() => {
             void queryClient.invalidateQueries({ queryKey: ["me"] });
             void queryClient.invalidateQueries({ queryKey: ["session"] });
@@ -261,8 +270,11 @@ function TwoFactorDialog({
   });
   const [stored, setStored] = useState(false);
   const failed = start.isError;
+  const closedOnFailure = useRef(false);
   useEffect(() => {
-    if (failed) onClose();
+    if (!failed || closedOnFailure.current) return;
+    closedOnFailure.current = true;
+    onClose();
   }, [failed, onClose]);
   if (codes) {
     const text = codes.join("\n");
@@ -303,6 +315,7 @@ function TwoFactorDialog({
   const s = start.data;
   return (
     <Dialog
+      busy={confirm.isPending}
       open={open}
       onOpenChange={(o) => !o && onClose()}
       size="md"

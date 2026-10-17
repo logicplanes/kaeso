@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Dialog, LayerDialog } from "./dialog.js";
+import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
 import { StepDialog } from "./step-dialog.js";
 import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
@@ -251,6 +251,82 @@ describe("Dialog content that changes", () => {
     await frames();
     await userEvent.click(screen.getByRole("button", { name: "Add projects" }));
     expect(screen.getByRole("button", { name: "Add projects" })).toHaveFocus();
+  });
+});
+
+describe("busy dialogs", () => {
+  it("stay open while their work is underway: Escape, a press outside and the close circle do nothing", async () => {
+    const onOpenChange = vi.fn();
+    function Saving() {
+      const [busy, setBusy] = useState(true);
+      return (
+        <Dialog open busy={busy} onOpenChange={onOpenChange} title="Rename key" footer={<Button onClick={() => setBusy(false)}>Saved</Button>}>
+          <p>Saving</p>
+        </Dialog>
+      );
+    }
+    render(<Saving />);
+    await frames();
+    expect(screen.getByRole("button", { name: "Close" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Saved" }));
+    expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+  it("keep an uncontrolled dialog open too", async () => {
+    render(
+      <Dialog defaultOpen busy title="Rename key">
+        <p>Saving</p>
+      </Dialog>,
+    );
+    await frames();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(screen.getByRole("dialog", { name: "Rename key" })).toBeInTheDocument();
+  });
+  it("include a step dialog while it submits, with Back and Cancel waiting", async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <StepDialog
+        open
+        onOpenChange={onOpenChange}
+        submitting
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        steps={[{ id: "name", title: "What is it for?", content: <input aria-label="Name" /> }]}
+      />,
+    );
+    await frames();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+  it("include an alert dialog while the promise it waits for is pending, with Cancel waiting", async () => {
+    const onOpenChange = vi.fn();
+    let finish: () => void = () => undefined;
+    render(
+      <AlertDialog
+        open
+        onOpenChange={onOpenChange}
+        title="Delete key?"
+        description="Apps using it stop working."
+        confirmLabel="Delete key"
+        onConfirm={() => new Promise<void>((resolve) => (finish = resolve))}
+      />,
+    );
+    await frames();
+    await userEvent.click(screen.getByRole("button", { name: "Delete key" }));
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await act(async () => finish());
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
 

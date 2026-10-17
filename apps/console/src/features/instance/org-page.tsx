@@ -302,6 +302,7 @@ function AppointOwnerDialog({
   });
   return (
     <Dialog
+      busy={appoint.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"
@@ -412,6 +413,7 @@ function Rename({ o }: { o: InstanceOrgView }) {
         {t("common.rename", "Rename")}
       </Button>
       <Dialog
+        busy={rename.isPending}
         open={open}
         onOpenChange={setOpen}
         size="sm"

@@ -123,6 +123,7 @@ function AddMemberDialog({ org, project, existing, onClose }: { org: string; pro
 
   return (
     <Dialog
+      busy={add.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="md"

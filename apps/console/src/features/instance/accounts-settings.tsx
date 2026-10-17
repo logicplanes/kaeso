@@ -183,6 +183,7 @@ function DomainsDialog({
         : undefined;
   return (
     <Dialog
+      busy={saving}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

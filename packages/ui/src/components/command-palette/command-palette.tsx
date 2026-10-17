@@ -249,7 +249,7 @@ export function CommandPalette(props: CommandPaletteProps) {
   const focus = useRestoreFocus(isOpen);
   const t = useUiText();
   const container = usePortalContainer();
-  const settled = useScopedDialog(isOpen);
+  const settled = useScopedDialog(inline ? false : isOpen);
   const session = useOpenSession(isOpen);
   if (inline) return <Palette {...props} close={() => undefined} />;
   return (

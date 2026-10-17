@@ -143,6 +143,27 @@ describe("CreateKeyDialog", () => {
     expect(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).toBeInTheDocument();
   });
 
+  it("stays open while the key is being created, so its secret is never lost, and shows it when it arrives", async () => {
+    signedIn();
+    projectData();
+    let respond: (key: unknown) => void = () => undefined;
+    on("POST", KEYS, () => new Promise((resolve) => (respond = resolve)));
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "checkout-web{Enter}");
+    await next(user, dialog, "What can it call?");
+    await next(user, dialog, "Models and limits");
+    await user.click(within(dialog).getByRole("button", { name: "Create key" }));
+    await waitFor(() => expect(requests("POST", KEYS)).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Back" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog", { name: /Create key/ })).toBe(dialog);
+    respond(createdKey());
+    expect(await screen.findByRole("dialog", { name: "Key created" })).toBe(dialog);
+    expect(within(dialog).getByText(SECRET)).toBeInTheDocument();
+    expect(requests("POST", KEYS)).toHaveLength(1);
+  });
+
   it("closes the form with Escape", async () => {
     signedIn();
     projectData();

@@ -218,6 +218,7 @@ export function EditLimitDialog({
   const problem = limitProblem(editing);
   return (
     <Dialog
+      busy={update.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

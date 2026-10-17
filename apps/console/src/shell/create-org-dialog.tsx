@@ -30,6 +30,7 @@ export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
   });
   return (
     <Dialog
+      busy={create.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

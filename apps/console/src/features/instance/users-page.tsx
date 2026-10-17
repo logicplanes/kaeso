@@ -174,6 +174,7 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
   const reason = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? undefined : t("instance.enterEmail", "Enter an email address");
   return (
     <Dialog
+      busy={invite.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

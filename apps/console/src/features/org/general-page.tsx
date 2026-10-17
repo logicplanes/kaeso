@@ -194,6 +194,7 @@ function TransferDialog({
   });
   return (
     <Dialog
+      busy={transfer.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"

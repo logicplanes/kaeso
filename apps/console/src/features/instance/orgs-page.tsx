@@ -220,6 +220,7 @@ function CreateOrgDialog({ onClose }: { onClose: () => void }) {
   const reason = name.trim() ? undefined : t("instance.orgNameNeeded", "Give the organization a name");
   return (
     <Dialog
+      busy={create.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

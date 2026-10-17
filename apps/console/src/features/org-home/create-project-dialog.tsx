@@ -23,6 +23,7 @@ export function CreateProjectDialog({ org, onClose }: { org: string; onClose: ()
   const reason = name.trim() ? undefined : t("orgHome.projectNameNeeded", "Give the project a name");
   return (
     <Dialog
+      busy={create.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"

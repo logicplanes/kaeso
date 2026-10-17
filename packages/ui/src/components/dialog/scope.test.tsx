@@ -321,4 +321,24 @@ describe("CommandPalette", () => {
       animations.restore();
     }
   });
+  it("unmounts after close when the dialog inside renders inline, since an inline dialog has no close animation to wait for", async () => {
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <Button onClick={() => setOpen(false)}>Close preview</Button>
+          <DialogScope open={open}>
+            <Dialog inline open={open} title="Key created">
+              <p>{SECRET}</p>
+            </Dialog>
+          </DialogScope>
+        </>
+      );
+    }
+    render(<Host />);
+    expect(screen.getByText(SECRET)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Close preview" }));
+    await frames();
+    expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+  });
 });

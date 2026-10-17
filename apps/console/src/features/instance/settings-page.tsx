@@ -268,6 +268,7 @@ function TestEmailDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpe
     to.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? t("instance.emailOrEmpty", "Enter an email address, or leave it empty") : undefined;
   return (
     <Dialog
+      busy={send.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"

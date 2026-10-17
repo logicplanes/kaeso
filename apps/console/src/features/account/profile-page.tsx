@@ -135,6 +135,7 @@ function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: bool
   });
   return (
     <Dialog
+      busy={change.isPending}
       open={open}
       onOpenChange={setOpen}
       size="sm"

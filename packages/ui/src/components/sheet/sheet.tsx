@@ -81,7 +81,7 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(props
   );
   const focus = useRestoreFocus(open, () => modal);
   const container = usePortalContainer();
-  const settled = useScopedDialog(open);
+  const settled = useScopedDialog(inline ? false : open);
   if (inline)
     return (
       <div ref={ref} className={cn(box, "h-560")}>

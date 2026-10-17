@@ -176,6 +176,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
 
   return (
     <Dialog
+      busy={save.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
