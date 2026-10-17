@@ -132,7 +132,9 @@ function AddMemberDialog({ org, project, existing, onClose }: { org: string; pro
       onSubmit={submit}
       footer={
         <>
-          <Button onClick={onClose}>{common.cancel()}</Button>
+          <Dialog.Close>
+            <Button>{common.cancel()}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!user} loading={add.isPending} onClick={submit}>
             {t("project.members.add", "Add member")}
           </Button>

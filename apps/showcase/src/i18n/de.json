@@ -968,5 +968,5 @@
   "Whether the dialog inside is open; pass the value its `open` gets.": "Ob der Dialog darin geöffnet ist; übergib den Wert, den sein `open` erhält.",
   "The key, shown once after the last step": "Der Schlüssel, einmal gezeigt nach dem letzten Schritt",
   "Content that grows and shrinks": "Inhalt, der wächst und schrumpft",
-  "Keeps the dialog open while work it started is underway: Escape, a press outside and the close circle do nothing, so a request is never abandoned or sent twice.": "Hält den Dialog offen, solange die darin gestartete Arbeit läuft: Escape, ein Klick daneben und der Schließen-Kreis bewirken nichts, damit keine Anfrage abgebrochen oder doppelt gesendet wird."
+  "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.": "Hält den Dialog offen, solange die darin gestartete Arbeit läuft: Escape, ein Klick daneben, der Schließen-Kreis, Dialog.Close und ⌘Enter bewirken nichts, damit keine Anfrage abgebrochen oder doppelt gesendet wird."
 }

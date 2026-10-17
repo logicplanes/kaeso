@@ -234,7 +234,9 @@ export function EditLimitDialog({
               {t("kaeso.limits.remove", "Remove limit")}
             </Button>
           )}
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!!problem}

@@ -24,7 +24,7 @@ export const docs = {
     description:
       "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. It stays centered while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.",
     props: {
-      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside and the close circle do nothing, so a request is never abandoned or sent twice.",
+      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       children: "The dialog's content and actions.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       description: "One sentence under the title.",
@@ -53,7 +53,7 @@ export const docs = {
     description:
       "A stacked dialog: a second layer slides over the first (add model → review values); back returns. The layers below stay as they were. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. ⌘/Ctrl+Enter calls onSubmit on every layer.",
     props: {
-      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside and the close circle do nothing, so a request is never abandoned or sent twice.",
+      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       hideClose: "Hide the close circle (rare).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",

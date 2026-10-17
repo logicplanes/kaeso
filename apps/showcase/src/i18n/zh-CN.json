@@ -968,5 +968,5 @@
   "Whether the dialog inside is open; pass the value its `open` gets.": "其中的对话框是否打开；传入与其 `open` 相同的值。",
   "The key, shown once after the last step": "最后一步之后仅显示一次的密钥",
   "Content that grows and shrinks": "会变高和变矮的内容",
-  "Keeps the dialog open while work it started is underway: Escape, a press outside and the close circle do nothing, so a request is never abandoned or sent twice.": "在其发起的操作进行期间保持对话框打开：Escape、点击外部和关闭按钮都不起作用，因此请求不会被中途放弃，也不会重复发送。"
+  "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.": "在其发起的操作进行期间保持对话框打开：Escape、点击外部、关闭按钮、Dialog.Close 和 ⌘Enter 都不起作用，因此请求不会被中途放弃，也不会重复发送。"
 }

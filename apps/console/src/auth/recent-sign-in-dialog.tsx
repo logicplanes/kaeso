@@ -59,10 +59,14 @@ export default function RecentSignInDialog() {
   const cancel = () => settleRecentSignIn(false);
   const footer =
     step.kind === "link-sent" ? (
-      <Button onClick={cancel}>{t("common.close", "Close")}</Button>
+      <Dialog.Close>
+        <Button>{t("common.close", "Close")}</Button>
+      </Dialog.Close>
     ) : (
       <>
-        <Button onClick={cancel}>{t("common.cancel", "Cancel")}</Button>
+        <Dialog.Close>
+          <Button>{t("common.cancel", "Cancel")}</Button>
+        </Dialog.Close>
         {step.kind === "password" && hasPassword && (
           <Button variant="primary" loading={busy} disabled={!password} onClick={submitPassword}>
             {t("auth.recent.signIn", "Sign in")}

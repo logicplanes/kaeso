@@ -255,25 +255,49 @@ describe("Dialog content that changes", () => {
 });
 
 describe("busy dialogs", () => {
-  it("stay open while their work is underway: Escape, a press outside and the close circle do nothing", async () => {
+  it("stay open while their work is underway: Escape, a press outside, the close circle, Cancel and ⌘Enter do nothing", async () => {
     const onOpenChange = vi.fn();
+    const onSubmit = vi.fn();
     function Saving() {
       const [busy, setBusy] = useState(true);
       return (
-        <Dialog open busy={busy} onOpenChange={onOpenChange} title="Rename key" footer={<Button onClick={() => setBusy(false)}>Saved</Button>}>
-          <p>Saving</p>
+        <Dialog
+          open
+          busy={busy}
+          onOpenChange={onOpenChange}
+          onSubmit={onSubmit}
+          title="Rename key"
+          footer={
+            <>
+              <Dialog.Close>
+                <Button>Cancel</Button>
+              </Dialog.Close>
+              <Button onClick={() => setBusy(false)}>Saved</Button>
+            </>
+          }
+        >
+          <input aria-label="Name" />
         </Dialog>
       );
     }
     render(<Saving />);
     await frames();
     expect(screen.getByRole("button", { name: "Close" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
+    await userEvent.click(document.querySelector<HTMLElement>(".bg-overlay")!);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    screen.getByRole("textbox", { name: "Name" }).focus();
+    await userEvent.keyboard("{Control>}{Enter}{/Control}{Meta>}{Enter}{/Meta}");
     await frames();
     expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Saved" }));
     expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
-    await userEvent.keyboard("{Escape}");
+    screen.getByRole("textbox", { name: "Name" }).focus();
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
   it("keep an uncontrolled dialog open too", async () => {

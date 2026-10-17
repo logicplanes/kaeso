@@ -102,7 +102,9 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
       onSubmit={() => ready && save.mutate()}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={() => save.mutate()}>
             {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
           </Button>
@@ -324,7 +326,9 @@ function TwoFactorDialog({
       onSubmit={() => code.length === 6 && confirm.mutate(code)}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => confirm.mutate(code)}>
             {t("account.turnOn", "Turn on")}
           </Button>

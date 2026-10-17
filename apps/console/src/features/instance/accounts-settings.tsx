@@ -192,7 +192,9 @@ function DomainsDialog({
       onSubmit={() => !reason && onSave(domains)}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!!reason} {...(reason ? { disabledReason: reason } : {})} loading={saving} onClick={() => onSave(domains)}>
             {adding ? t("instance.allowDomains", "Allow domains") : t("instance.saveDomains", "Save domains")}
           </Button>

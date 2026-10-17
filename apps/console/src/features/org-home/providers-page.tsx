@@ -324,7 +324,9 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       onSubmit={() => !blocked && rename.mutate()}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!!blocked}
@@ -384,7 +386,9 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
       onSubmit={() => save.mutate()}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>
             {t("common.save", "Save")}
           </Button>

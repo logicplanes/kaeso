@@ -89,8 +89,12 @@ describe("profile page", () => {
     await user.type(within(dialog).getByLabelText("New email"), "ada@example.org");
     await user.click(within(dialog).getByRole("button", { name: "Send confirmation link" }));
     await waitFor(() => expect(requests("POST", "me/email")).toHaveLength(1));
-    await user.keyboard("{Escape}");
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    within(dialog).getByLabelText("New email").focus();
+    await user.keyboard("{Meta>}{Enter}{/Meta}{Escape}");
     expect(screen.getByRole("dialog", { name: "Change email" })).toBe(dialog);
+    expect(requests("POST", "me/email")).toHaveLength(1);
     respond({ status: "sent" });
     expect(await notifications().findByText("Confirmation link sent; your old address was notified")).toBeInTheDocument();
     expect(requests("POST", "me/email")).toHaveLength(1);

@@ -207,7 +207,9 @@ function TransferDialog({
       onSubmit={() => user && transfer.mutate(user)}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{common.cancel()}</Button>
+          <Dialog.Close>
+            <Button>{common.cancel()}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!user}

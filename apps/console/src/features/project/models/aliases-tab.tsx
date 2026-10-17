@@ -185,7 +185,9 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
       onSubmit={submit}
       footer={
         <>
-          <Button onClick={onClose}>{common.cancel()}</Button>
+          <Dialog.Close>
+            <Button>{common.cancel()}</Button>
+          </Dialog.Close>
           <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={submit}>
             {alias ? t("models.alias.save", "Save alias") : t("models.createAlias", "Create alias")}
           </Button>

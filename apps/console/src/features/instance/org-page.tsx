@@ -311,7 +311,9 @@ function AppointOwnerDialog({
       onSubmit={() => user && appoint.mutate(user)}
       footer={
         <>
-          <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!user}
@@ -422,7 +424,9 @@ function Rename({ o }: { o: InstanceOrgView }) {
         onSubmit={() => !reason && rename.mutate()}
         footer={
           <>
-            <Button onClick={() => setOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+            <Dialog.Close>
+              <Button>{t("common.cancel", "Cancel")}</Button>
+            </Dialog.Close>
             <Button
               variant="primary"
               disabled={!!reason}

@@ -32,7 +32,9 @@ export function CreateProjectDialog({ org, onClose }: { org: string; onClose: ()
       onSubmit={() => !reason && create.mutate()}
       footer={
         <>
-          <Button onClick={onClose}>{t("common.cancel", "Cancel")}</Button>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
           <Button
             variant="primary"
             disabled={!!reason}

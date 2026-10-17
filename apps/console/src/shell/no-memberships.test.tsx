@@ -36,6 +36,27 @@ describe("the welcome page for people outside every organization", () => {
     expect(requests("POST", "me/orgs").map((r) => r.body)).toEqual([{ name: "Initech" }]);
   });
 
+  it("sends the organization once and keeps the dialog while it is on its way", async () => {
+    noOrgs();
+    let respond: (body: unknown) => void = () => undefined;
+    on("POST", "me/orgs", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp("/");
+    await user.click(await screen.findByRole("button", { name: "Create organization" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create organization" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Initech");
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    await waitFor(() => expect(requests("POST", "me/orgs")).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await user.keyboard("{Meta>}{Enter}{/Meta}{Control>}{Enter}{/Control}{Escape}");
+    expect(screen.getByRole("dialog", { name: "Create organization" })).toBe(dialog);
+    expect(requests("POST", "me/orgs")).toHaveLength(1);
+    respond(apiError(409, "conflict", "An organization with this name exists."));
+    expect(await notifications().findAllByText("An organization with this name exists.")).not.toHaveLength(0);
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeEnabled());
+  });
+
   it("keeps the dialog open when the name is refused", async () => {
     noOrgs();
     on("POST", "me/orgs", apiError(409, "conflict", "An organization with this name exists."));

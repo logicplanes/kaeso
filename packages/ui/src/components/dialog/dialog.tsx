@@ -1,7 +1,10 @@
 import { InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import {
+  cloneElement,
+  createContext,
   forwardRef,
+  use,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -37,6 +40,8 @@ export const KAESO_DIALOG_DEFAULT_VARIANTS = { size: "md" } as const;
 const BACKDROP = "fixed inset-0 z-50 bg-overlay backdrop-motion";
 const DIALOG_VIEWPORT = "fixed inset-0 z-50 flex items-center justify-center p-16";
 const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden rounded-dialog bg-raised text-fg shadow-dialog outline-none dialog-motion";
+
+const DialogBusy = createContext(false);
 
 function useScrolledUnder<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -106,56 +111,58 @@ function DialogFrame({ title, description, children, footer, onSubmit, hideClose
   const close = hideClose ? null : inline ? closeButton : <BaseDialog.Close render={closeButton} />;
   const Description = inline ? "p" : BaseDialog.Description;
   return (
-    <div
-      ref={boxRef}
-      data-dialog-frame=""
-      className={cn(
-        "flex min-h-0 flex-col",
-        inline ? "rounded-dialog bg-raised shadow-dialog" : "flex-1 self-center dialog-limits",
-        KAESO_DIALOG_VARIANTS.size[size].classes,
-        className,
-      )}
-      onKeyDown={(e: KeyboardEvent) => {
-        if (onSubmit && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-          e.preventDefault();
-          onSubmit();
-        }
-      }}
-    >
-      {headerStart !== undefined ? (
-        <>
-          <div className="flex h-32 items-center justify-between px-16 pt-16 box-content">
-            <span className="flex items-center">{headerStart}</span>
-            {close}
+    <DialogBusy value={!!busy}>
+      <div
+        ref={boxRef}
+        data-dialog-frame=""
+        className={cn(
+          "flex min-h-0 flex-col",
+          inline ? "rounded-dialog bg-raised shadow-dialog" : "flex-1 self-center dialog-limits",
+          KAESO_DIALOG_VARIANTS.size[size].classes,
+          className,
+        )}
+        onKeyDown={(e: KeyboardEvent) => {
+          if (onSubmit && !busy && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
+      >
+        {headerStart !== undefined ? (
+          <>
+            <div className="flex h-32 items-center justify-between px-16 pt-16 box-content">
+              <span className="flex items-center">{headerStart}</span>
+              {close}
+            </div>
+            <div className="flex flex-col gap-4 px-24 pt-8 pb-4">
+              <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
+              {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-start gap-12 px-24 pt-20 pb-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 pt-4">
+              <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
+              {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+            </div>
+            {close && <span className="-mr-8 flex">{close}</span>}
           </div>
-          <div className="flex flex-col gap-4 px-24 pt-8 pb-4">
-            <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-            {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+        )}
+        {children && (
+          <div ref={ref} data-dialog-body="" className={cn("min-h-0 flex-1 overflow-y-auto px-24 pt-16 scrollbar-quiet", footer ? "pb-8" : "pb-24")}>
+            {children}
           </div>
-        </>
-      ) : (
-        <div className="flex items-start gap-12 px-24 pt-20 pb-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-4 pt-4">
-            <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-            {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+        )}
+        {footer && (
+          <div
+            data-dialog-footer=""
+            className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-20 transition-control", under && "hairline-t")}
+          >
+            {footer}
           </div>
-          {close && <span className="-mr-8 flex">{close}</span>}
-        </div>
-      )}
-      {children && (
-        <div ref={ref} data-dialog-body="" className={cn("min-h-0 flex-1 overflow-y-auto px-24 pt-16 scrollbar-quiet", footer ? "pb-8" : "pb-24")}>
-          {children}
-        </div>
-      )}
-      {footer && (
-        <div
-          data-dialog-footer=""
-          className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-20 transition-control", under && "hairline-t")}
-        >
-          {footer}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </DialogBusy>
   );
 }
 
@@ -202,8 +209,9 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
 });
 Root.displayName = "Dialog";
 
-function Close({ children }: { children: ReactElement }) {
-  return <BaseDialog.Close render={children} />;
+function Close({ children }: { children: ReactElement<{ disabled?: boolean | undefined }> }) {
+  const busy = use(DialogBusy);
+  return <BaseDialog.Close render={busy ? cloneElement(children, { disabled: true }) : children} />;
 }
 Close.displayName = "Dialog.Close";
 
