@@ -50,6 +50,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The description of `org` in `POST auth/oidc/start` names where the organization comes from; the sign-in link it described didn't exist until now.
 - A change to a member's, service account's or role's rights is refused with `400` when it removes a right that a remaining right needs, also when that right already lacked another of its needs: removing `members.view` from a member who holds `members.invite` but no longer `org.view`, after their custom role was emptied, used to be accepted.
 - Changing a custom role no longer leaves the members, project members or service accounts who hold it with a right they were given without one it needs: such a change is refused with `400` and a message that names the right, its need and how many holders it affects, in the console too, and nobody's rights change.
+- `AppFrame`'s phone navigation and the collapsed sidebar's peek recover from a failed download of their code: the next tap or rest of the pointer loads it again from a fresh address, since browsers remember a failed module, instead of doing nothing until the page was reloaded. While the code is still on its way, Escape, a tap outside or the toggle takes the tap back and a pointer that leaves the button cancels the peek, so the sheet never opens after the person has moved on.
 
 ### Security
 
