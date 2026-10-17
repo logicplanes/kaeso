@@ -104,6 +104,7 @@ describe("signing in again with a password", () => {
     await waitFor(() => expect(requests("POST", "auth/totp")).toHaveLength(1));
     expect(within(box).getByRole("button", { name: "Use a recovery code" })).toBeDisabled();
     await user.click(within(box).getByRole("button", { name: "Verify" }));
+    await user.type(within(box).getByRole("textbox"), "{Backspace}7");
     expect(requests("POST", "auth/totp")).toHaveLength(1);
     respond(signedInReply());
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
