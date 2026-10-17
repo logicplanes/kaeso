@@ -4,16 +4,20 @@ description: 网关如何得知新版本，版本为更新器附带了什么，�
 order: 5
 ---
 
-```text
-GitHub releases API ◀── gateway (update_check job, instance/updates/*) ──▶ PostgreSQL
-                              │  bearer token, internal network "updates"
-                              ▼
-                           updater ──▶ github.com (release.json, compose.yaml), api.github.com (attestations), ghcr.io
-                              │  internal network "docker"
-                              ▼
-                         docker-proxy ──▶ /var/run/docker.sock
-                              │
-updater ──▶ maintenance volume ◀── Caddy (updating page, JSON 503s)
+```mermaid
+flowchart LR
+  accTitle: 安装如何得知新版本并更新
+  accDescr: 网关查询 GitHub 的发布 API，把状态保存在 PostgreSQL 中，并通过内部网络 updates 携带 Bearer 令牌请求更新器。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像，只通过内部网络 docker 上的 docker-proxy 访问 Docker，并写入维护标记，Caddy 据此提供更新页面和 503 JSON 响应。
+  gateway[网关] -- 检查新版本 --> releases[GitHub 发布 API]
+  gateway --> postgres[(PostgreSQL)]
+  gateway -- Bearer 令牌，网络 updates --> updater[更新器]
+  updater -- release.json、compose.yaml --> github[github.com]
+  updater -- 证明 --> api[api.github.com]
+  updater -- 镜像 --> ghcr[ghcr.io]
+  updater -- 网络 docker --> proxy[docker-proxy]
+  proxy --> socket[Docker 套接字]
+  updater -- 维护标记 --> maintenance[(卷 maintenance)]
+  caddy[Caddy] -- 更新页面、503 JSON 响应 --> maintenance
 ```
 
 ## 网关

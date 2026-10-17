@@ -4,16 +4,20 @@ description: Wie das Gateway von Releases erfährt, was ein Release für den Upd
 order: 5
 ---
 
-```text
-GitHub releases API ◀── gateway (update_check job, instance/updates/*) ──▶ PostgreSQL
-                              │  bearer token, internal network "updates"
-                              ▼
-                           updater ──▶ github.com (release.json, compose.yaml), api.github.com (attestations), ghcr.io
-                              │  internal network "docker"
-                              ▼
-                         docker-proxy ──▶ /var/run/docker.sock
-                              │
-updater ──▶ maintenance volume ◀── Caddy (updating page, JSON 503s)
+```mermaid
+flowchart LR
+  accTitle: Wie eine Installation von Releases erfährt und aktualisiert
+  accDescr: Das Gateway fragt die Releases-API von GitHub, hält seinen Stand in PostgreSQL und bittet den Updater über das interne Netz updates mit einem Bearer-Token. Der Updater lädt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io, erreicht Docker nur über docker-proxy im internen Netz docker und schreibt die Wartungsmarkierung, nach der Caddy die Update-Seite und die JSON-Antworten mit 503 ausliefert.
+  gateway[Gateway] -- sucht nach Releases --> releases[Releases-API von GitHub]
+  gateway --> postgres[(PostgreSQL)]
+  gateway -- Bearer-Token, Netz updates --> updater[Updater]
+  updater -- release.json, compose.yaml --> github[github.com]
+  updater -- Attestierungen --> api[api.github.com]
+  updater -- Images --> ghcr[ghcr.io]
+  updater -- Netz docker --> proxy[docker-proxy]
+  proxy --> socket[Docker-Socket]
+  updater -- Wartungsmarkierung --> maintenance[(Volume maintenance)]
+  caddy[Caddy] -- Update-Seite, JSON-Antworten mit 503 --> maintenance
 ```
 
 ## Das Gateway
