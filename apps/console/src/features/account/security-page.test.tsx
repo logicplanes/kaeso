@@ -136,6 +136,27 @@ describe("turning on two-factor authentication", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
   });
 
+  it("confirms one code at a time, even when the code is typed again while the first is checked", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("POST", "me/totp", SETUP);
+    let respond: (body: unknown) => void = () => undefined;
+    on("POST", "me/totp/confirm", () => new Promise((resolve) => (respond = resolve)));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Set up" }));
+    const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    await within(dialog).findByText(SETUP.secret);
+    const field = within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement;
+    await user.type(field, "123456");
+    await waitFor(() => expect(requests("POST", "me/totp/confirm")).toHaveLength(1));
+    await user.type(field, "{Backspace}7");
+    await user.click(within(dialog).getByRole("button", { name: "Turn on" }));
+    expect(requests("POST", "me/totp/confirm")).toHaveLength(1);
+    respond({ recovery_codes: CODES });
+    expect(await screen.findByRole("dialog", { name: "Store your recovery codes" })).toBe(dialog);
+    expect(requests("POST", "me/totp/confirm")).toHaveLength(1);
+  });
+
   it("confirms with the Turn on button", async () => {
     signedIn();
     on("GET", "me", me());

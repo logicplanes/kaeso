@@ -230,7 +230,7 @@ export function EditLimitDialog({
       footer={
         <>
           {onRemove && (
-            <Button variant="danger-secondary" className="mr-auto" onClick={onRemove}>
+            <Button variant="danger-secondary" className="mr-auto" disabled={update.isPending} onClick={onRemove}>
               {t("kaeso.limits.remove", "Remove limit")}
             </Button>
           )}

@@ -270,6 +270,9 @@ function TwoFactorDialog({
     },
     onError: () => setCode(""),
   });
+  const turnOn = (value: string) => {
+    if (!confirm.isPending) confirm.mutate(value);
+  };
   const [stored, setStored] = useState(false);
   const failed = start.isError;
   const closedOnFailure = useRef(false);
@@ -323,13 +326,13 @@ function TwoFactorDialog({
       size="md"
       title={t("account.setupTitle", "Set up two-factor authentication")}
       description={t("account.setupHint", "Add Kaeso to an authenticator app, then enter the six-digit code it shows.")}
-      onSubmit={() => code.length === 6 && confirm.mutate(code)}
+      onSubmit={() => code.length === 6 && turnOn(code)}
       footer={
         <>
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => confirm.mutate(code)}>
+          <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => turnOn(code)}>
             {t("account.turnOn", "Turn on")}
           </Button>
         </>
@@ -358,7 +361,7 @@ function TwoFactorDialog({
           <SkeletonLine lines={6} />
         )}
         <Field label={t("account.appCode", "Code from the app")}>
-          <OTPInput aria-label={t("account.appCode", "Code from the app")} value={code} onValueChange={setCode} onComplete={(v) => confirm.mutate(v)} />
+          <OTPInput aria-label={t("account.appCode", "Code from the app")} value={code} onValueChange={setCode} onComplete={turnOn} />
         </Field>
       </div>
     </Dialog>

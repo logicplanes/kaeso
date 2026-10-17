@@ -275,6 +275,28 @@ describe("appointing an owner", () => {
     expect(await notifications().findByText("Owner added")).toBeInTheDocument();
   });
 
+  it("appoints one owner at a time: Add me and the user field wait while another appointment is on its way", async () => {
+    signedIn();
+    orgData({ view: instanceOrg({ id: OTHER, name: "Contoso", owners: 0 }), members: [GRACE] });
+    on("GET", "instance/users", paged([instanceUser()]));
+    const waiting: (() => void)[] = [];
+    on("POST", "instance/orgs/:org/owner", () => new Promise((resolve) => waiting.push(() => resolve(instanceOrg({ id: OTHER, name: "Contoso", owners: 1 })))));
+    const { user } = await renderApp(path(OTHER));
+    await user.click(await screen.findByRole("button", { name: "Add owner" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add an owner" });
+    await user.click(within(dialog).getByRole("combobox", { name: "User" }));
+    await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Add owner" }));
+    await waitFor(() => expect(requests("POST", "instance/orgs/:org/owner")).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Add me" })).toBeDisabled();
+    expect(within(dialog).getByRole("combobox", { name: "User" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Add me" }));
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(requests("POST", "instance/orgs/:org/owner")).toHaveLength(1);
+    for (const release of waiting) release();
+    expect(await notifications().findByText("Owner added")).toBeInTheDocument();
+  });
+
   it("submits the chosen user from the keyboard and closes on cancel", async () => {
     signedIn();
     orgData();

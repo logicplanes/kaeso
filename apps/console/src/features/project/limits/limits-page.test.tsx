@@ -335,6 +335,27 @@ describe("LimitsPage", () => {
     await waitFor(() => expect(requests("GET", LIMITS).length).toBeGreaterThan(loads));
   });
 
+  it("keeps Remove waiting while a change to the limit is saved, so the two can't race", async () => {
+    signedIn();
+    stubProject();
+    let respond: (body: unknown) => void = () => undefined;
+    on("PATCH", ONE_LIMIT, ({ body }: { body: Record<string, unknown> }) => new Promise((resolve) => (respond = () => resolve(limit(body as never)))));
+    const { user } = await renderApp(projectPath("limits"));
+    await user.click(await screen.findByRole("gridcell", { name: /^Spend budget/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit limit" });
+    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    await user.clear(amount);
+    await user.type(amount, "75");
+    await user.click(within(dialog).getByRole("button", { name: "Save limit" }));
+    await waitFor(() => expect(requests("PATCH", ONE_LIMIT)).toHaveLength(1));
+    expect(within(dialog).getByRole("button", { name: "Remove limit" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Remove limit" }));
+    expect(screen.queryByRole("alertdialog", { name: "Remove this limit?" })).not.toBeInTheDocument();
+    respond(null);
+    expect(await notifications().findByText("Limit saved")).toBeInTheDocument();
+    expect(requests("DELETE", ONE_LIMIT)).toHaveLength(0);
+  });
+
   it("keeps the edit open when a change or removal is refused for another reason", async () => {
     signedIn();
     stubProject();
