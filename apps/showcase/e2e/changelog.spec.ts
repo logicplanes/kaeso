@@ -82,7 +82,7 @@ test("Unreleased shows only when CHANGELOG.md has lines under it, and says they 
 test("the package version in the bar opens its release in the changelog", async ({ page }) => {
   await open(page, "/de");
   await page.getByRole("link", { name: `@logicplanes/kaeso-ui v${version}` }).click();
-  await expect(page).toHaveURL(new RegExp(`/de/changelog#v${version.replace(/\./g, "\\.")}$`));
+  await expect(page).toHaveURL(`/de/changelog#v${version}`);
   await expect(page.getByRole("heading", { level: 2, name: version })).toBeInViewport();
 });
 
