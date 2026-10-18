@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandPalette, useTheme, type CommandGroup, type CommandItem } from "@logicplanes/kaeso-ui";
 import { LANGUAGE_NAMES, LOCALES } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { SearchEntry } from "~/markdown/ast";
 import { matchHeadings, rankPages } from "./search-rank";
-import { setSearchOpen, takeTypedQuery, useSearchOpen } from "./search-store";
+import { setSearchOpen, setSearchQuery, useSearchOpen, useSearchQuery } from "./search-store";
 import { useSwitchLocale } from "./use-switch-locale";
 
 export default function Search({ index }: { index: SearchEntry[] }) {
@@ -15,16 +15,7 @@ export default function Search({ index }: { index: SearchEntry[] }) {
   const t = useText();
   const locale = useSiteLocale();
   const switchLocale = useSwitchLocale();
-  const [first, setFirst] = useState(takeTypedQuery);
-  const [query, setQuery] = useState(first);
-  const [openedWith, setOpenedWith] = useState(open);
-  if (openedWith !== open) {
-    setOpenedWith(open);
-    if (open) {
-      setFirst("");
-      setQuery("");
-    }
-  }
+  const query = useSearchQuery();
 
   const groups = useMemo<CommandGroup[]>(() => {
     const run = (action: () => void) => () => {
@@ -71,8 +62,8 @@ export default function Search({ index }: { index: SearchEntry[] }) {
       onOpenChange={setSearchOpen}
       groups={groups}
       hotkey={false}
-      onQueryChange={setQuery}
-      defaultQuery={first}
+      query={query}
+      onQueryChange={setSearchQuery}
       placeholder={t("search.placeholder")}
       emptyText={t("search.empty")}
     />

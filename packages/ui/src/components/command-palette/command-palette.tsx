@@ -46,6 +46,7 @@ export interface CommandPaletteProps {
   keyHints?: boolean | undefined;
   inline?: boolean | undefined;
   defaultQuery?: string | undefined;
+  query?: string | undefined;
 }
 
 function matches(item: CommandItem, q: string) {
@@ -66,10 +67,16 @@ function Palette({
   close,
   inline,
   defaultQuery = "",
+  query: controlledQuery,
 }: CommandPaletteProps & { close: () => void }) {
   const t = useUiText();
   const placeholder = placeholderProp ?? t("commandPalette.placeholder", "Search or run a command");
-  const [query, setQuery] = useState(defaultQuery);
+  const [ownQuery, setOwnQuery] = useState(defaultQuery);
+  const query = controlledQuery ?? ownQuery;
+  const setQuery = (next: string) => {
+    setOwnQuery(next);
+    onQueryChange?.(next);
+  };
   const [pages, setPages] = useState<{ title: string; groups: CommandGroup[] }[]>([]);
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -141,6 +148,7 @@ function Palette({
         <input
           ref={input}
           autoFocus
+          data-palette-input=""
           role="combobox"
           aria-expanded="true"
           aria-controls={listId}
@@ -152,7 +160,6 @@ function Palette({
           onChange={(e) => {
             setQuery(e.target.value);
             setActive(0);
-            onQueryChange?.(e.target.value);
           }}
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 bg-transparent text-body-lg font-regular text-fg outline-none placeholder:text-fg-tertiary"

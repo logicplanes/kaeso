@@ -3,32 +3,33 @@ import { onPaletteOpen, setPaletteShown } from "./palette-store";
 
 const PaletteUI = lazy(() => import("./palette-ui"));
 
-const typesIntoField = (target: EventTarget | null) => target instanceof HTMLElement && target.closest("input, textarea, [contenteditable]") !== null;
+const typesIntoPalette = (target: EventTarget | null) => target instanceof Element && target.closest("[data-palette-input]") !== null;
 
 export function CommandPaletteHost() {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [typed, setTyped] = useState("");
+  const [query, setQuery] = useState("");
   useEffect(() => setPaletteShown(open), [open]);
   useEffect(() => {
-    if (!open || ready) return;
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || typesIntoField(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || typesIntoPalette(e.target)) return;
       if (e.key.length === 1) {
         e.preventDefault();
-        setTyped((t) => t + e.key);
+        setQuery((q) => q + e.key);
       } else if (e.key === "Backspace") {
         e.preventDefault();
-        setTyped((t) => t.slice(0, -1));
+        setQuery((q) => q.slice(0, -1));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, ready]);
+  }, [open]);
   const show = useCallback((o: boolean) => {
-    if (o) setLoaded(true);
-    else setTyped("");
+    if (o) {
+      setLoaded(true);
+      setQuery("");
+    }
     setOpen(o);
   }, []);
   useEffect(() => onPaletteOpen(show), [show]);
@@ -49,7 +50,7 @@ export function CommandPaletteHost() {
   if (!loaded) return null;
   return (
     <Suspense fallback={null}>
-      <PaletteUI open={open} onOpenChange={show} initialQuery={typed} onReady={() => setReady(true)} />
+      <PaletteUI open={open} onOpenChange={show} query={query} onQueryChange={setQuery} />
     </Suspense>
   );
 }

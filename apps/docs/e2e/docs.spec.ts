@@ -153,6 +153,46 @@ test("what is typed right after ⌘K, before the search has loaded, becomes its 
   await expect(page.getByRole("option", { name: /^Aliases/ })).toBeVisible();
 });
 
+test("nothing typed after ⌘K is lost while the search's code is held back, while its field waits for focus and after", async ({ page }) => {
+  await page.addInitScript(() => {
+    const focus = HTMLElement.prototype.focus;
+    const waiting: (() => void)[] = [];
+    let holding = true;
+    HTMLElement.prototype.focus = function (this: HTMLElement, options?: FocusOptions) {
+      if (holding && this.hasAttribute("data-palette-input")) waiting.push(() => focus.call(this, options));
+      else focus.call(this, options);
+    };
+    Object.assign(window, {
+      releaseFocus: () => {
+        holding = false;
+        for (const run of waiting.splice(0)) run();
+      },
+    });
+  });
+  let releaseCode: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => (releaseCode = resolve));
+  await page.route(/\/assets\/search-[^/]+\.js$/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+k");
+  await page.keyboard.type("al");
+  await expect(page.getByPlaceholder("Search the documentation")).toHaveCount(0);
+  releaseCode();
+  const input = page.getByPlaceholder("Search the documentation");
+  await expect(input).toBeVisible();
+  await expect(input).not.toBeFocused();
+  await page.keyboard.type("ia");
+  await expect(input).toHaveValue("alia");
+  await page.evaluate(() => (window as unknown as { releaseFocus: () => void }).releaseFocus());
+  await expect(input).toBeFocused();
+  await page.keyboard.type("ses");
+  await expect(input).toHaveValue("aliases");
+  await expect(page.getByRole("option", { name: /^Aliases/ })).toBeVisible();
+});
+
 test("the theme switches and stays switched", async ({ page }) => {
   await page.goto("/");
   const theme = page.getByRole("combobox", { name: "Theme" });

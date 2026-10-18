@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { CommandPalette, icons, useTheme, type CommandGroup, type CommandItem } from "@logicplanes/kaeso-ui";
@@ -35,29 +35,22 @@ const RECENT_ICON: RecentIcons = {
 export default function PaletteUI({
   open,
   onOpenChange,
-  initialQuery = "",
-  onReady,
+  query,
+  onQueryChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialQuery?: string;
-  onReady?: () => void;
+  query: string;
+  onQueryChange: (query: string) => void;
 }) {
-  const [query, setQuery] = useState(initialQuery);
-  const [openedWith, setOpenedWith] = useState(open);
-  if (open !== openedWith) {
-    setOpenedWith(open);
-    setQuery(initialQuery);
-  }
-  useEffect(() => onReady?.(), [onReady]);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
   const groups = usePaletteGroups(close, open, query.trim());
   return (
     <CommandPalette
       open={open}
       onOpenChange={onOpenChange}
-      onQueryChange={setQuery}
-      defaultQuery={initialQuery}
+      query={query}
+      onQueryChange={onQueryChange}
       hotkey={false}
       groups={groups}
       placeholder={t("shell.palette.placeholder", "Search pages, actions, keys, models and members")}

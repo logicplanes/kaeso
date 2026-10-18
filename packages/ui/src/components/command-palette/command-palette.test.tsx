@@ -83,6 +83,26 @@ describe("CommandPalette", () => {
     expect(screen.queryByText("No results")).toBeNull();
   });
 
+  it("shows the query it is given and reports what is typed on top of it", async () => {
+    const onQueryChange = vi.fn();
+    const { rerender } = render(<CommandPalette inline groups={groups()} query="req" onQueryChange={onQueryChange} />);
+    const input = screen.getByRole("combobox");
+    expect(input).toHaveValue("req");
+    await userEvent.type(input, "u");
+    expect(onQueryChange).toHaveBeenLastCalledWith("requ");
+    rerender(<CommandPalette inline groups={groups()} query="keys" onQueryChange={onQueryChange} />);
+    expect(input).toHaveValue("keys");
+    expect(screen.getByRole("option", { name: /API keys/ })).toBeInTheDocument();
+  });
+
+  it("tells the host when entering a page clears the query", async () => {
+    const onQueryChange = vi.fn();
+    render(<CommandPalette inline groups={groups()} defaultQuery="swi" onQueryChange={onQueryChange} />);
+    await userEvent.click(screen.getByRole("option", { name: /Switch project/ }));
+    expect(onQueryChange).toHaveBeenLastCalledWith("");
+    expect(screen.getByRole("combobox")).toHaveValue("");
+  });
+
   it("opens and closes with ⌘K and closes after running a command", async () => {
     const onSelect = vi.fn();
     const onOpenChange = vi.fn();

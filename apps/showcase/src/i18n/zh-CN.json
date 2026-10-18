@@ -760,6 +760,7 @@
   "The prompt box: grows with what is written, then scrolls; Send, which becomes Stop while a response streams.": "提示词输入框：随内容增高，之后滚动；回复流式输出时，发送按钮变为停止。",
   "The prompt is being sent: Send shows a spinner.": "提示词正在发送：发送按钮显示加载指示。",
   "The properties shown for each item.": "每个条目显示的属性。",
+  "The query in the field, when you control it; keep it in sync through onQueryChange.": "受控时输入框中的查询；通过 onQueryChange 保持同步。",
   "The quietest tone at 32px, after the delay.": "最安静的色调，32px，延迟之后显示。",
   "The reasoning efforts the model takes, or false (the default) when it doesn't reason: no effort and no summary.": "模型支持的推理强度；模型不进行推理时为 false（默认）：没有强度选项，也没有摘要。",
   "The reasoning summary so far, as Markdown. A \"Thinking\" disclosure shows it, closed by default.": "目前为止的推理摘要，为 Markdown。由“思考中”折叠区显示，默认收起。",
