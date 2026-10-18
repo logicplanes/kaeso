@@ -1,101 +1,111 @@
 ---
 title: Organizations and projects
-description: Create and switch organizations and projects, read their usage, and manage their settings.
+description: Create organizations and projects, connect single sign-on, and manage their settings.
 order: 1
 ---
 
-An **organization** holds members, provider keys and projects. A **project** holds a model catalogue, API keys, service accounts, limits and request logs. People belong to an organization with an organization role, and to some of its projects with a project role ([members and roles](members-and-roles.md)).
+An organization holds members, provider keys and projects. A project holds a model catalogue, API keys, service accounts, limits and request logs. People join an organization with an organization role, and each of its projects with a project role.
 
-## Organizations
+## Create an organization
 
-**Create organization**, in the menu at the foot of the sidebar, makes you the new organization's owner and gives it a default project. The install decides who may create organizations ([instance settings](instance-administration.md#settings)). The same menu lists your organizations and switches between them.
+Open the menu at the foot of the sidebar and choose **Create organization**. You become its owner, and it starts with a default project. The install decides who may create organizations ([instance settings](instance-administration.md#settings)).
 
-### Overview
+The same menu lists your organizations and switches between them.
 
-The organization's **Overview** shows requests, tokens, cost and errors for a period from today to all time, the cost by project, and a usage breakdown by project, model or member. Usage needs the right **View org usage**, cost **View org costs**.
+## Read usage
 
-### Settings
+The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. It also breaks the cost down by project, and the usage by project, model or member. Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
 
-**Organization settings**, in the menu at the foot of the sidebar, has these pages:
+A project's **Overview** shows the same numbers for one project, broken down by time, model, key or member. It also lists the project's limits with what is used, and its recent errors.
+
+## Change organization settings
+
+Open **Organization settings** in the menu at the foot of the sidebar. It has these pages:
 
 | Page | What it holds |
 | --- | --- |
-| General | Picture, name and organization id; **Transfer ownership**; deleting the organization |
+| General | Picture, name and organization id, **Transfer ownership**, and deleting the organization |
 | Members | Members, invitations and roles ([members and roles](members-and-roles.md)) |
-| Security | Single sign-on, required single sign-on and two-factor authentication, the maximum key lifetime |
+| Security | Single sign-on, the sign-in requirements and the maximum key lifetime |
 | Platform keys | Keys for scripts that manage the organization ([platform keys](api-keys.md#platform-keys)) |
 | Logging | Content logging, retention, storage and log deletion ([request logs](request-logs.md#retention)) |
-| Audit log | Every change in the organization ([audit log](#audit-log)) |
+| Audit log | Every change in the organization ([audit log](#read-the-audit-log)) |
 
-Pictures are PNG, JPEG or WebP images, cropped to a square.
+A picture is a PNG, JPEG or WebP image, and the console crops it to a square.
 
-### Single sign-on
+## Single sign-on
 
-Under **Security**, **Connect an identity provider** signs members in through your OpenID Connect provider. Create an app for Kaeso at the provider first, then answer five steps:
+Single sign-on lets members sign in through your OpenID Connect identity provider. First create an app for Kaeso at your provider. Then, under **Security**, choose **Connect an identity provider** and answer five steps:
 
-1. **Where is your identity provider?** The app's issuer URL, such as `https://login.example.com`.
-2. **Which app signs people in?** Its client id and client secret.
-3. **Which email domains sign in with it?** People with an address at these domains are sent to the provider. Internationalised domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
-4. **Can people join without an invitation?** **Invite only**, or the role people new to Kaeso join with. It can't be Owner.
-5. **How does the sign-in page offer it?** The name on its button, such as `Acme ID` for **Continue with Acme ID**; left empty, the button says **Continue with SSO**. **Start without a click** sends people straight to the provider whenever the sign-in page offers it alone, except right after they signed out or the provider refused them.
+1. **Where is your identity provider?** Enter the app's issuer URL, such as `https://login.example.com`.
+2. **Which app signs people in?** Enter its client id and client secret.
+3. **Which email domains sign in with it?** The sign-in page sends people with an address at these domains to your provider. Internationalized domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
+4. **Can people join without an invitation?** Choose **Invite only**, or the role that people new to Kaeso join with. That role can't be Owner.
+5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". **Start without a click** sends people straight to your provider when the sign-in page offers only that one, except right after they sign out or the provider refuses them.
 
-Once connected, the page shows:
+Once you connect, the page shows two addresses:
 
-- the **Redirect URL**, to register at the provider as the sign-in callback;
-- the **Sign-in link**, which opens the sign-in page with this provider's button and no address to type; share it with members, for example on your intranet.
+- The **Redirect URL**: register it at your provider as the sign-in callback.
+- The **Sign-in link**: it opens the sign-in page with your provider's button, so members don't type their address. Share it, for example on your intranet.
 
-**Edit single sign-on** changes the connection; an empty secret keeps the stored one. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
+**Edit single sign-on** changes the connection, and an empty client secret keeps the stored one. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
 
-An existing Kaeso account signs in through single sign-on only in organizations it already belongs to: invite it, and it accepts the invitation by signing in another way. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
+Single sign-on lets an existing Kaeso account into an organization only if the account already belongs to it. Invite the person, and they accept by signing in another way. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
-### Requirements
+## Require single sign-on or two-factor authentication
 
-Also under **Security**:
+Under **Security**, you can tighten how members get into the organization:
 
 | Setting | What it does |
 | --- | --- |
-| Require single sign-on | Members get into the organization only through its identity provider; other sessions keep working for their other organizations. Needs a connected provider |
-| Require two-factor authentication | Members who sign in with a password need two-factor authentication. Sign-in links and single sign-on are not affected |
-| Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and projects can set a shorter limit |
+| Require single sign-on | Members get into the organization only through its identity provider. Their other sessions keep working for their other organizations. It needs a connected provider |
+| Require two-factor authentication | Members who sign in with a password need two-factor authentication. Sign-in links and single sign-on don't |
+| Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 
-If you didn't sign in through the provider, or don't use two-factor authentication yet, turning the requirement on closes the organization for you too until you do; the console says so before it saves.
+Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console warns you before it saves. Disconnecting the identity provider turns off **Require single sign-on** as well.
 
-### Deleting an organization
+## Delete an organization
 
-If the install allows it, someone with the right **Delete organization**, by default an owner, chooses **Delete organization** under **General** and types the organization's name to confirm.
+Under **General**, choose **Delete organization** and type the organization's name to confirm. You need the right **Delete organization**, which owners have, and the install must allow deleting organizations.
 
-- Every API key of the organization stops working at once, and members are told by email.
-- For the grace period, 7 days unless the install sets another, the organization stays read-only, every page shows a banner, and an owner can **Restore organization**.
-- Then its projects, keys, provider keys, settings, usage and logs are deleted for good.
+1. Every API key of the organization stops working at once, and Kaeso emails the members.
+2. For a grace period, 7 days unless the install sets another, the organization is read-only and every page shows a banner. An owner can still choose **Restore organization**.
+3. After the grace period, Kaeso deletes its projects, keys, provider keys, settings, usage and logs for good.
 
-### Audit log
+## Read the audit log
 
-The organization's **Audit log**, in its settings, records every change in the organization; a project's **Audit log**, in the project's sidebar, every change in that project. Each entry shows when it happened, who made it, the action and its target; filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after.
+The organization's **Audit log**, in **Organization settings**, records every change in the organization. A project's **Audit log**, in the project's sidebar, records every change in that project.
 
-| Action | Right |
+Each entry shows when it happened, who made the change, the action and its target. Filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after.
+
+| To | Right |
 | --- | --- |
 | Read the organization's audit log | **View audit log** |
-| **Export** it as JSON Lines, with the current filters | **Export audit log** |
+| Export it as JSON Lines, with the current filters | **Export audit log** |
 | Read a project's audit log | **View project audit log** |
 
-## Projects
+## Create a project
 
-**Projects** lists the organization's projects; archived ones are under **All**. **Create project** asks for a name and makes you the project's admin; it needs the right **Create projects**.
+On **Projects**, choose **Create project** and give it a name. You become the project's admin. Creating a project needs the right **Create projects**. Archived projects are listed under **All**.
 
-The **default project** is the one every member joins and new members start in. **Make default** in another project's menu moves it there; the previous default stays a project, with its members. This needs the right **Edit organization**.
+The default project is the one every member joins, and where new members start. To move the default, choose **Make default** in another project's menu. The old default stays a project with its members. Moving it needs the right **Edit organization**.
 
-### Overview
+## Change project settings
 
-A project's **Overview** shows requests, tokens, cost and errors for a period, a breakdown by time, model, key or member, the project's limits with what is used, and recent errors.
-
-### Settings
+A project's **Settings** page holds these settings:
 
 | Setting | What it does |
 | --- | --- |
 | Picture, project name | Shown in the sidebar and in request logs |
 | Project id | The id the Platform API uses |
-| Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys of this project |
-| Content logging | Whether requests and replies are kept with their log entries; it can't be turned on while the organization has it off |
-| Archive project | Archives the project with its keys and service accounts, permanently; its keys stop working at once |
+| Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys in this project |
+| Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
+| Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
 
-Projects are archived, never deleted, so their usage and logs stay. The default project can't be archived; make another project the default first.
+Kaeso archives projects and never deletes them, so their usage and logs stay. The default project can't be archived: make another project the default first.
+
+## Next steps
+
+- [Members and roles](members-and-roles.md): Invite people and give them roles in the organization and its projects.
+- [Provider keys](provider-keys.md): Connect the OpenAI and Anthropic keys your projects call models with.
+- [Request logs](request-logs.md): Choose what the organization keeps, and for how long.
