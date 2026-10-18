@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GROUPS, TOPICS, context, draft, escaped, history, linked, release } from "./changelog.mjs";
 
-export const MODEL = "claude-opus-5-5";
+export const MODEL = "claude-haiku-5-5";
 export const API_URL = "https://ai.logicplanes.com";
 export const DOCS_URL = "https://docs.kaeso.app";
 const MAX_TOKENS = 32000;
