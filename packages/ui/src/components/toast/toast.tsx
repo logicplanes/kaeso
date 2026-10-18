@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Toast as BaseToast } from "@base-ui/react/toast";
 import { usePortalContainer } from "../../utils/portal-context.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -142,10 +143,7 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
     if (index !== 0 || !el) return;
     const report = () => onFrontWidth(Math.round(el.offsetWidth));
     report();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(report);
-    ro.observe(el);
-    return () => ro.disconnect();
+    return observeResize([el], report);
   }, [index, onFrontWidth, ref]);
   return (
     <BaseToast.Root

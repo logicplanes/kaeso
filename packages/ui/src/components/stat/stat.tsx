@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { Badge } from "../badge/badge.js";
 import { Sparkline } from "../charts/sparkline.js";
 import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
@@ -182,11 +183,9 @@ export const StatGrid = forwardRef<HTMLDivElement, { children: ReactNode; "aria-
     useLayoutEffect(() => {
       const el = grid.current;
       if (!el || typeof ResizeObserver === "undefined") return;
-      const ro = new ResizeObserver(() => measure.current());
-      ro.observe(el);
-      for (const v of el.querySelectorAll("[data-stat-value]")) ro.observe(v);
+      const stop = observeResize([el, ...el.querySelectorAll("[data-stat-value]")], () => measure.current());
       void document.fonts?.ready.then(() => measure.current());
-      return () => ro.disconnect();
+      return stop;
     }, [n]);
     const narrow = statGridLayout(n, false);
     const wide = statGridLayout(n, true);

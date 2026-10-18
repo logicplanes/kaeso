@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useState, type RefObject } from "react";
+import { observeResize } from "../utils/observe-resize.js";
 
 export function useTruncated<T extends HTMLElement>(ref: RefObject<T | null>, enabled = true): boolean {
   const [truncated, setTruncated] = useState(false);
@@ -11,10 +12,8 @@ export function useTruncated<T extends HTMLElement>(ref: RefObject<T | null>, en
     if (!enabled) return;
     measure();
     const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (!el) return;
+    return observeResize([el], measure);
   }, [enabled, measure, ref]);
   return truncated;
 }

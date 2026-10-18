@@ -288,6 +288,22 @@ test("the command palette keeps its top while its results shrink and grow smooth
   expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
 });
 
+test("a step left while its select is still closing comes back with the choice, centered and without a browser error", async ({ page }) => {
+  const dialog = await openExample(page, "steps");
+  await dialog.getByRole("textbox", { name: "Name" }).fill("checkout-web");
+  await press(dialog, "Continue");
+  const expires = dialog.getByRole("combobox", { name: "Expires" });
+  for (const choice of ["Never", "In 30 days", "In 90 days", "Never"]) {
+    await expires.click();
+    await page.getByRole("option", { name: choice }).click();
+    await press(dialog, "Back");
+    await press(dialog, "Continue");
+    await expect(expires).toHaveText(choice);
+  }
+  await still(page);
+  await centredAtNaturalSize(dialog);
+});
+
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
   test("a step dialog takes the new step's height at once and stays centered", async ({ page }) => {
