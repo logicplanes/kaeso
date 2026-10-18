@@ -38,6 +38,7 @@
   - changed-files:
       - any-glob-to-any-file:
           - crates/kaeso-updater/**
+          - apps/update/**
           - deploy/compose.yaml
           - deploy/.env.example
           - deploy/kaeso.example.toml

@@ -29,7 +29,7 @@ When the updater can't install a release, the console shows these commands with 
 
 ## New releases
 
-The gateway looks for new releases on GitHub twice a day, and at least an hour later after a failure. The request carries nothing about your install but the gateway's version.
+The gateway looks for new releases at `update.kaeso.app` twice a day, and at least an hour later after a failure. The request carries nothing about your install but the gateway's version.
 
 Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. The Platform API's `instance/updates/check` looks at once, even when checks are off. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
 
@@ -52,7 +52,7 @@ services:
       KAESO_MODELS_DEV_SYNC: "false"
 ```
 
-The gateway then uses the model data built into the release, the **Updates** page shows the running version, and you update by hand. If you keep a mirror that answers like GitHub's releases API, point `KAESO_UPDATES_RELEASES_URL` at it instead.
+The gateway then uses the model data built into the release, the **Updates** page shows the running version, and you update by hand. If you keep a mirror that answers like `update.kaeso.app` or GitHub's releases API, point `KAESO_UPDATES_RELEASES_URL` at it instead.
 
 ## The updater
 

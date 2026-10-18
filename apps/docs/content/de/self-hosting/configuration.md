@@ -134,7 +134,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_UPDATES_CHECK` | `updates.check` | Bool | `true` | Zweimal am Tag nach neuen Kaeso-Releases suchen. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | Text | `stable` | Die angebotenen Releases: `stable` oder `prerelease`, um auch Vorabversionen zu erhalten. |
 | `KAESO_UPDATES_MODE` | `updates.mode` | Text | `manual` | Wie eine neue Installation Updates über den Updater erhält: `manual`, wobei ein Instanz-Admin jedes startet, oder `automatic`, im Update-Fenster. |
-| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | Text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Woher die Liste der Releases kommt, im Format der Releases-API von GitHub. |
+| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | Text | `https://update.kaeso.app/v1/releases.json` | Woher die Liste der Releases kommt: update.kaeso.app oder ein Spiegel, der wie die Releases-API von GitHub antwortet. |
 | `KAESO_UPDATER_URL` | `updater.url` | Text | `http://updater:8081` | Adresse des Updaters. |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | Text, Secret | — | Das Token, das Gateway und Updater teilen, mindestens 32 Zeichen. Ohne es ruft das Gateway den Updater nie auf. |
 

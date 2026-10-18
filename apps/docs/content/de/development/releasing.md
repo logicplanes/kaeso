@@ -144,6 +144,14 @@ pnpm --filter kaeso-showcase build
 
 Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie enthalten jede Seite in jeder Sprache, `robots.txt`, `sitemap.xml` und eine `404.html` pro Sprache. Der Host muss `/console` mit `console.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache. Verschobene Seiten haben eine Seite unter ihrer alten Adresse, und `_redirects` listet dieselben Umzüge für Hosts, die diese Datei lesen.
 
+Der Update-Dienst unter update.kaeso.app wird aus jedem Release auf GitHub gebaut. Bauen und laden Sie ihn deshalb nach jedem Release hoch, von `dev` aus. Installationen finden neue Releases in seiner `v1/releases.json`:
+
+```bash
+GITHUB_TOKEN=$(gh auth token) pnpm --filter kaeso-update build
+```
+
+Laden Sie `apps/update/dist` unverändert hoch. Es enthält die Releases-Seite, `v1/releases.json`, `v1/latest.json`, die `release.json` jedes Releases unter `download/` und sein Artwork unter `art/`.
+
 ### Content Security Policy
 
 Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seite sowie in `csp.txt` und `_headers`. Senden Sie sie außerdem als Header `Content-Security-Policy`, denn nur der Header kann `frame-ancestors 'none'` hinzufügen. Der Header der Dokumentation ändert sich nie:

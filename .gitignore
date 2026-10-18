@@ -18,6 +18,7 @@ apps/showcase/src/generated/
 apps/showcase/src/pages/\[...lang\]/components/
 apps/console/src/api/generated/
 apps/console/src/routeTree.gen.ts
+apps/update/public/
 target/
 fuzz/corpus/
 fuzz/artifacts/

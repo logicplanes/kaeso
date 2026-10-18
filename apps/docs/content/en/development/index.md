@@ -12,6 +12,7 @@ These pages are for people who change Kaeso itself. Everything lives in one repo
 | `apps/console` | The web console | TypeScript, React |
 | `apps/docs` | This documentation | Markdown, TypeScript |
 | `apps/showcase` | The UI library's showcase at ui.kaeso.app | Astro, React |
+| `apps/update` | The update service at update.kaeso.app: the release feed installs read, mirrored release manifests, release artwork and the releases page | TypeScript, React |
 | `packages/ui`, `packages/tokens` | The component library and the design tokens every interface is built from | TypeScript, React |
 | `e2e/` | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install | Python |
 | `fuzz/` | Fuzz targets for every KPP decoder | Rust |

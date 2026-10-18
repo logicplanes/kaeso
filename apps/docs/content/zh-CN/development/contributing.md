@@ -85,7 +85,7 @@ gh stack submit
 
 网关有自己的附加规则，例如不允许 panic、金额不使用浮点数（[网关规则](architecture/gateway.md#规则)）。KPP 也是如此（[设计原则](kpp/index.md#设计原则)）。
 
-仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs` 和 `apps/showcase` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。
+仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs`、`apps/showcase` 和 `apps/update` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。
 
 ## 添加依赖
 

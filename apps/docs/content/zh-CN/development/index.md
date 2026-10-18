@@ -12,6 +12,7 @@ order: 6
 | `apps/console` | Web 控制台 | TypeScript、React |
 | `apps/docs` | 本文档 | Markdown、TypeScript |
 | `apps/showcase` | UI 库的展示站点 ui.kaeso.app | Astro、React |
+| `apps/update` | 更新服务 update.kaeso.app：实例读取的版本源、镜像的版本清单、版本配图和版本页面 | TypeScript、React |
 | `packages/ui`、`packages/tokens` | 组件库和设计令牌，所有界面都由它们构建 | TypeScript、React |
 | `e2e/` | 用 OpenAI 和 Anthropic 的官方 Python SDK 测试 KPP、网关和全新实例 | Python |
 | `fuzz/` | 每个 KPP 解码器的模糊测试目标 | Rust |

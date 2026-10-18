@@ -1,0 +1,58 @@
+{
+  "name": "kaeso-update",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "description": "Kaeso's update service: the release feed installs read, mirrored release manifests, release artwork and the releases page.",
+  "license": "MIT",
+  "author": "Devin Oldenburg",
+  "homepage": "https://update.kaeso.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicplanes/kaeso.git",
+    "directory": "apps/update"
+  },
+  "bugs": {
+    "url": "https://github.com/logicplanes/kaeso/issues"
+  },
+  "scripts": {
+    "feed": "node scripts/feed.ts",
+    "dev": "node scripts/feed.ts && vite",
+    "build": "node scripts/feed.ts && tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run --coverage",
+    "licenses:check": "node scripts/licenses.ts"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "4.3.5",
+    "@hugeicons/react": "1.1.10",
+    "@logicplanes/kaeso-ui": "workspace:*",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@logicplanes/kaeso-tokens": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "24.13.6",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitest/coverage-v8": "5.0.4",
+    "eslint": "10.12.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "happy-dom": "21.0.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  }
+}

@@ -48,7 +48,7 @@ interval = "24h"
 check = true
 channel = "stable"
 mode = "manual"
-releases_url = "https://api.github.com/repos/logicplanes/kaeso/releases"
+releases_url = "https://update.kaeso.app/v1/releases.json"
 
 [updater]
 url = "http://updater:8081"

@@ -11,6 +11,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | 控制台 | `apps/console/src/i18n/locales/<locale>/<area>.json` | `pnpm i18n`、`pnpm lint` |
 | UI 库 | `packages/ui/src/i18n/locales/` | 库的测试 |
 | 展示站点 | `apps/showcase/src/i18n/` 以及 `apps/showcase/src/lib/locale.tsx` 中的 `DOCS_TEXT` | `pnpm --filter kaeso-showcase gen` |
+| 更新服务 | `apps/update/src/locales/` | 应用的测试 |
 | 邮件 | `crates/kaeso-mail/src/templates.rs` 中每封邮件各一个函数 | 邮件 crate 的测试（[邮件](architecture/emails.md#语言)） |
 | 本文档 | `apps/docs/content/<locale>/` 和 `apps/docs/src/i18n/messages` | `check:content` 和类型检查（[编写文档](documentation.md#翻译)） |
 

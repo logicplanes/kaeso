@@ -85,7 +85,7 @@ Every change follows these rules, and CI checks most of them:
 
 The gateway adds rules of its own, such as no panics and no floats for money ([gateway rules](architecture/gateway.md#rules)). So does KPP ([design principles](kpp/index.md#design-principles)).
 
-The root of the repository and each of `crates`, `packages`, `apps/console`, `apps/docs` and `apps/showcase` have an `AGENTS.md`. Each sums up the rules and checks of its part, for coding agents and for people.
+The root of the repository and each of `crates`, `packages`, `apps/console`, `apps/docs`, `apps/showcase` and `apps/update` have an `AGENTS.md`. Each sums up the rules and checks of its part, for coding agents and for people.
 
 ## Add a dependency
 

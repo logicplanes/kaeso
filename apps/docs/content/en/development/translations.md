@@ -11,6 +11,7 @@ Every word Kaeso shows a person exists in English, German and Simplified Chinese
 | The console | `apps/console/src/i18n/locales/<locale>/<area>.json` | `pnpm i18n`, `pnpm lint` |
 | The UI library | `packages/ui/src/i18n/locales/` | The library's tests |
 | The showcase | `apps/showcase/src/i18n/` and `DOCS_TEXT` in `apps/showcase/src/lib/locale.tsx` | `pnpm --filter kaeso-showcase gen` |
+| The update service | `apps/update/src/locales/` | The app's tests |
 | Emails | One function per email in `crates/kaeso-mail/src/templates.rs` | The mail crate's tests ([emails](architecture/emails.md#languages)) |
 | This documentation | `apps/docs/content/<locale>/` and `apps/docs/src/i18n/messages` | `check:content` and the typecheck ([writing documentation](documentation.md#translating)) |
 
