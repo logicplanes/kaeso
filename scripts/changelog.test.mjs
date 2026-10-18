@@ -126,20 +126,31 @@ test("the notes of a release are its section without the heading", () => {
   assert.throws(() => notes(text, "0.3.0"), /no section for 0\.3\.0/);
 });
 
+const latest = (text) => /^## \[(\d+\.\d+\.\d+)\]/m.exec(text)[1];
+const upcoming = (text) => {
+  const [major, minor] = latest(text).split(".").map(Number);
+  return `${major}.${minor + 1}.0`;
+};
+
+test("the next version of the real changelog follows its newest release", () => {
+  assert.equal(upcoming("## [Unreleased]\n\n## [1.4.2] - 2026-01-01\n\n## [1.4.1] - 2025-12-01\n"), "1.5.0");
+});
+
 test("every changelog a release writes is formatted as Prettier formats it", async () => {
   const real = readFileSync(join(root, "CHANGELOG.md"), "utf8");
+  const next = upcoming(real);
   const steps = [
-    ["0.2.0-rc.1", "### Added\n\n#### Model API\n\n- Batches.\n"],
-    ["0.2.0-rc.2", "### Fixed\n\n- Batches resume.\n\n### Added\n\n#### Console\n\n- A batch page.\n"],
-    ["0.2.0", ""],
+    [`${next}-rc.1`, "### Added\n\n#### Model API\n\n- Batches.\n"],
+    [`${next}-rc.2`, "### Fixed\n\n- Batches resume.\n\n### Added\n\n#### Console\n\n- A batch page.\n"],
+    [next, ""],
   ];
   let text = real;
   for (const [version, lines] of steps) {
     text = release(text.replace("## [Unreleased]\n", `## [Unreleased]\n\n${lines}`), version, "2026-11-15");
     assert.equal(await isPrettier(text), true, version);
   }
-  assert.match(notes(text, "0.2.0"), /#### Model API\n\n- Batches\./);
-  assert.equal(notes(text, "0.1.0"), notes(real, "0.1.0"));
+  assert.match(notes(text, next), /#### Model API\n\n- Batches\./);
+  assert.equal(notes(text, latest(real)), notes(real, latest(real)));
 });
 
 const sample = changelog(
@@ -643,8 +654,8 @@ test("a generated release is formatted as Prettier formats it", async () => {
     pull(6, "Bump serde", ["dependencies"], "dependabot[bot]"),
     pull(7, "Add a batch page", ["area: console"]),
   ];
-  const text = release(real, "0.2.0", "2026-11-15", pulls);
-  assert.match(text, /## \[0\.2\.0\] - 2026-11-15\n\n- \*\*Breaking:\*\* Keep/);
+  const text = release(real, upcoming(real), "2026-11-15", pulls);
+  assert.ok(text.includes(`## [${upcoming(real)}] - 2026-11-15\n\n- **Breaking:** Keep`));
   assert.equal(await isPrettier(text), true);
 });
 
