@@ -6,7 +6,7 @@ Subject: Acme 已计划删除
 
 Acme 将于 2026年11月10日删除
 
-Ada Lovelace 已计划删除该组织；其 API 密钥已停止工作。
+Ada Lovelace 已计划删除该组织；其 API 密钥已失效。
 
 打开组织：
 https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
@@ -14,4 +14,4 @@ https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0
 在此之前，所有者或实例管理员可以恢复它。
 
 -- 
-此邮件由 kaeso.example.com 上的 Kaeso 发送；组织通知总会发送。
+此邮件由 kaeso.example.com 上的 Kaeso 发送；组织通知始终会发送。

@@ -40,10 +40,10 @@ Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das 
 | Anmeldelink | Bei Kaeso anmelden | Jemand einen Anmeldelink anfordert |
 | Passwort zurücksetzen | Kaeso-Passwort zurücksetzen | Jemand sein Passwort zurücksetzen will |
 | Änderung der E-Mail-Adresse | Neue E-Mail-Adresse für Kaeso bestätigen | Jemand seine E-Mail-Adresse ändert; an die neue Adresse gesendet |
-| Registrierung | Kaeso-Konto fertig erstellen | Sich jemand registriert, wo die Instanz es erlaubt |
+| Registrierung | Kaeso-Konto fertigstellen | Sich jemand registriert, wo die Instanz es erlaubt |
 | Passwort geändert | Ihr Kaeso-Passwort wurde geändert | Sich ein Passwort ändert |
-| Zwei-Faktor an | Zwei-Faktor-Authentifizierung ist aktiviert | Jemand die Zwei-Faktor-Authentifizierung aktiviert |
-| Zwei-Faktor aus | Zwei-Faktor-Authentifizierung ist deaktiviert | Jemand die Zwei-Faktor-Authentifizierung deaktiviert |
+| Zwei-Faktor an | Zwei-Faktor-Authentifizierung ist eingeschaltet | Jemand die Zwei-Faktor-Authentifizierung aktiviert |
+| Zwei-Faktor aus | Zwei-Faktor-Authentifizierung ist ausgeschaltet | Jemand die Zwei-Faktor-Authentifizierung deaktiviert |
 | Zwei-Faktor zurückgesetzt | Ihre Zwei-Faktor-Authentifizierung wurde zurückgesetzt | Ein Instanz-Admin oder `kaeso user reset-2fa` auf dem Server sie zurücksetzt |
 | E-Mail-Adresse geändert | Ihre E-Mail-Adresse für Kaeso wurde geändert | Sich eine E-Mail-Adresse ändert |
 | Abgemeldet | Sie wurden von Kaeso abgemeldet | Jede Sitzung einer Person beendet wurde |

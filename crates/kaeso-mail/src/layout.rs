@@ -49,8 +49,8 @@ impl Reason {
             (Locale::De, Reason::Alert) => {
                 "; Warnungen schalten Sie in den Benachrichtigungseinstellungen Ihres Kontos ab."
             }
-            (Locale::ZhCn, Reason::Security) => "；安全通知总会发送。",
-            (Locale::ZhCn, Reason::Org) => "；组织通知总会发送。",
+            (Locale::ZhCn, Reason::Security) => "；安全通知始终会发送。",
+            (Locale::ZhCn, Reason::Org) => "；组织通知始终会发送。",
             (Locale::ZhCn, Reason::Alert) => "；可在账户的通知设置中关闭提醒。",
         }
     }
