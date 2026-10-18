@@ -72,7 +72,7 @@ Streams follow the same path with `dispatch::stream_decoder` and `dispatch::stre
 | `kaeso-kpp` | The KPP types only: requests, responses, stream events, errors, token counts, embeddings and model listings, with `validate()` and `required_capabilities()`. No codec logic, no I/O. |
 | `kaeso-codecs` | One sans-IO codec per API format, called a dialect in the code (`DialectId`), and the building blocks they share. A codec turns bytes into KPP values and KPP values into bytes; streams are fed in chunk by chunk and produce events. |
 
-Both crates are published to crates.io. Their library code may depend only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and `cargo deny` bans `tokio`, `reqwest`, `hyper` and `axum` from them ([dependencies](../dependencies.md#kpp)).
+Both crates are published to crates.io. Their library code may depend only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and `cargo deny` bans `tokio`, `reqwest`, `hyper` and `axum` from them ([add a dependency](../contributing.md#add-a-dependency)).
 
 | Module | Dialect |
 | --- | --- |

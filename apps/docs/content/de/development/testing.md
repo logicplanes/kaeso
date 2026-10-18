@@ -58,7 +58,7 @@ Die [Continuous Integration](#continuous-integration) führt dieselben Prüfunge
 | `pnpm i18n` | Jeder Text der Konsole hat Deutsch und Chinesisch mit denselben Platzhaltern, und nichts ist übrig ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
 | `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets (`scripts/budget.*` in Konsole und Dokumentation, `scripts/budgets.mjs` in der UI-Bibliothek); die Builds beider Websites führen danach die [Website-Prüfung](releasing.md#die-websites) aus |
-| `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Abhängigkeiten](dependencies.md#lizenzrichtlinie)) |
+| `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Lizenzrichtlinie](contributing.md#abhängigkeit-hinzufügen)) |
 | `pnpm release:check` | Nach einem Build: packt beide Bibliotheken wie npm und prüft, dass jede Datei, die sie ausliefern müssen, in einer Version vorhanden ist |
 | `pnpm e2e` | Playwright in Konsole, Dokumentation und Showcase, nacheinander; die Suite des Showcases testet dessen Build, deshalb kommt `pnpm build` zuerst |
 

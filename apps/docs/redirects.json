@@ -1,4 +1,5 @@
 {
+  "development/dependencies": "development/contributing.md#add-a-dependency",
   "development/performance": "development/testing.md#benchmarks",
   "development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"
 }

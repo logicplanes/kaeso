@@ -58,7 +58,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 | `pnpm i18n` | 控制台的每段文字都有占位符相同的德语和中文，且没有多余的条目（[翻译](translations.md#检查)） |
 | `pnpm knip` | 未使用的文件、导出和依赖 |
 | `pnpm build` | 每个生产构建及其打包预算（控制台和文档的 `scripts/budget.*`，UI 库的 `scripts/budgets.mjs`）；两个网站的构建随后运行[网站检查](releasing.md#网站) |
-| `pnpm licenses:check` | 构建之后：每个代码随产品发布的包的许可证（[依赖](dependencies.md#许可证政策)） |
+| `pnpm licenses:check` | 构建之后：每个代码随产品发布的包的许可证（[许可证政策](contributing.md#添加依赖)） |
 | `pnpm release:check` | 构建之后：像 npm 那样打包两个库，并检查它们必须包含的每个文件都在，且版本一致 |
 | `pnpm e2e` | 依次在控制台、文档和展示站点中运行 Playwright；展示站点的套件测试其构建结果，因此要先运行 `pnpm build` |
 

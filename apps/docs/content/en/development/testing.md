@@ -58,7 +58,7 @@ Then, for the parts you changed:
 | `pnpm i18n` | Every text of the console has German and Chinese with the same placeholders, and nothing is left over ([translations](translations.md#checking)) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm build` | Every production build and its bundle budgets (`scripts/budget.*` in the console and the docs, `scripts/budgets.mjs` in the UI library); both sites' builds then run the [site check](releasing.md#the-sites) |
-| `pnpm licenses:check` | After a build: the license of every package whose code ships ([dependencies](dependencies.md#license-policy)) |
+| `pnpm licenses:check` | After a build: the license of every package whose code ships ([license policy](contributing.md#add-a-dependency)) |
 | `pnpm release:check` | After a build: packs both libraries as npm would and checks that every file they must ship is there, at one version |
 | `pnpm e2e` | Playwright in the console, the docs and the showcase, one after another; the showcase's suite tests its build, so `pnpm build` comes first |
 

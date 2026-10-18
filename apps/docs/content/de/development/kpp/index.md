@@ -72,7 +72,7 @@ Streams nehmen denselben Weg mit `dispatch::stream_decoder` und `dispatch::strea
 | `kaeso-kpp` | Nur die KPP-Typen: Anfragen, Antworten, Stream-Events, Fehler, Token-Zählungen, Embeddings und Modelllisten, mit `validate()` und `required_capabilities()`. Keine Codec-Logik, kein I/O. |
 | `kaeso-codecs` | Ein Sans-IO-Codec pro API-Format, im Code Dialekt genannt (`DialectId`), und die Bausteine, die sie teilen. Ein Codec macht aus Bytes KPP-Werte und aus KPP-Werten Bytes; Streams werden Chunk für Chunk eingespeist und erzeugen Events. |
 
-Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und `cargo deny` verbietet ihnen `tokio`, `reqwest`, `hyper` und `axum` ([Abhängigkeiten](../dependencies.md#kpp)).
+Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und `cargo deny` verbietet ihnen `tokio`, `reqwest`, `hyper` und `axum` ([Abhängigkeit hinzufügen](../contributing.md#abhängigkeit-hinzufügen)).
 
 | Modul | Dialekt |
 | --- | --- |
