@@ -147,7 +147,7 @@ Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`
 
 ## Reasoning über Tool-Aufrufe hinweg
 
-Chat Completions hat kein Feld für das Reasoning eines Modells. Eine Chat-Completions-App kann ein Modell aufrufen, das über ein anderes Format bedient wird, etwa Claude oder ein OpenAI-Modell hinter Responses. Kaeso behält dann das Reasoning vor einem Tool-Aufruf und fügt es wieder ein, wenn der nächste Zug der App mit demselben Schlüssel kommt. Es wird standardmäßig eine Stunde lang verschlüsselt aufbewahrt und nie protokolliert ([Kontinuität des Reasonings](../self-hosting/configuration.md#kontinuität-des-reasonings)).
+Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning vor jedem Tool-Aufruf und fügt es in der nächsten Runde der App wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
 
 ## Antwort-Header
 

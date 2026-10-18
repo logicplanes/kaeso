@@ -147,7 +147,7 @@ x-api-key: sk-kso-…
 
 ## 跨工具调用的推理
 
-Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用可能调用通过其他格式提供服务的模型，例如 Claude，或经 Responses 调用的 OpenAI 模型。这时 Kaeso 会保存工具调用之前的推理内容，并在应用用同一密钥发来下一轮时将其加回。推理内容默认保存一小时，经过加密，且从不记录到日志（[推理连续性](../self-hosting/configuration.md#推理连续性)）。
+Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存每次工具调用之前的推理内容，并在应用的下一轮请求中将其加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
 
 ## 响应头
 
