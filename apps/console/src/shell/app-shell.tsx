@@ -9,6 +9,7 @@ import { CommandPaletteHost } from "./palette";
 import { CreateActionProvider } from "./create-action";
 import "./early-keys";
 import { readLast } from "./last";
+import { WhatsNewHost } from "./whats-new-host";
 import { orgPath, placePath } from "./pages";
 import { loadSettingsSidebar, loadedSettingsSidebar } from "./settings-sidebar-load";
 
@@ -50,6 +51,7 @@ export function AppShell() {
         </Sidebar.Provider>
         <CommandPaletteHost />
         <RecentSignInHost />
+        <WhatsNewHost />
       </CreateActionProvider>
     </TooltipProvider>
   );

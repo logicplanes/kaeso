@@ -3,6 +3,7 @@ pub mod keys;
 pub mod profile;
 pub mod security;
 pub mod sessions;
+pub mod whats_new;
 
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -38,4 +39,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Session, routes!(keys::disable)))
         .routes(s.route(Access::Session, routes!(keys::enable)))
         .routes(s.route(Access::Session, routes!(keys::archive)))
+        .routes(s.route(Access::Session, routes!(whats_new::get)))
+        .routes(s.route(Access::Session, routes!(whats_new::seen)))
 }

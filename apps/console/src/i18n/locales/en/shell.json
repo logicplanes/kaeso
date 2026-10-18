@@ -113,5 +113,20 @@
   "shell.welcome.createOrAsk": "Create one to start, or ask an owner or admin to invite you to theirs.",
   "shell.welcome.noOrg": "You're not in an organization yet",
   "shell.welcome.pageTitle": "Welcome",
-  "shell.welcome.title": "Welcome to Kaeso"
+  "shell.welcome.title": "Welcome to Kaeso",
+  "shell.whatsNew.artLabel": "Kaeso {version}",
+  "shell.whatsNew.back": "Back",
+  "shell.whatsNew.continue": "Continue",
+  "shell.whatsNew.eyebrow": "Kaeso",
+  "shell.whatsNew.hide": "Hide improvements",
+  "shell.whatsNew.installed": "Now running on this install",
+  "shell.whatsNew.next": "Next",
+  "shell.whatsNew.noNotes": "The notes of this release aren't on this install yet.",
+  "shell.whatsNew.notesOf": "Improvements in {version}",
+  "shell.whatsNew.onGitHub": "Release notes on GitHub",
+  "shell.whatsNew.page": "{when} · {current} of {count} releases",
+  "shell.whatsNew.preEyebrow": "Kaeso pre-release",
+  "shell.whatsNew.published": "Published {date}",
+  "shell.whatsNew.show": "Show improvements",
+  "shell.whatsNew.title": "What's new in Kaeso"
 }

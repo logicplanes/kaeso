@@ -113,5 +113,20 @@
   "shell.welcome.createOrAsk": "创建一个组织开始使用，或请所有者或管理员邀请您加入。",
   "shell.welcome.noOrg": "您尚未加入任何组织",
   "shell.welcome.pageTitle": "欢迎",
-  "shell.welcome.title": "欢迎使用 Kaeso"
+  "shell.welcome.title": "欢迎使用 Kaeso",
+  "shell.whatsNew.artLabel": "Kaeso {version}",
+  "shell.whatsNew.back": "上一个",
+  "shell.whatsNew.continue": "继续",
+  "shell.whatsNew.eyebrow": "Kaeso",
+  "shell.whatsNew.hide": "隐藏改进",
+  "shell.whatsNew.installed": "现已在此实例上运行",
+  "shell.whatsNew.next": "下一个",
+  "shell.whatsNew.noNotes": "此版本的说明尚未同步到此实例。",
+  "shell.whatsNew.notesOf": "{version} 中的改进",
+  "shell.whatsNew.onGitHub": "GitHub 上的发布说明",
+  "shell.whatsNew.page": "{when} · 第 {current} 个，共 {count} 个版本",
+  "shell.whatsNew.preEyebrow": "Kaeso 预发布版本",
+  "shell.whatsNew.published": "发布于 {date}",
+  "shell.whatsNew.show": "查看改进",
+  "shell.whatsNew.title": "Kaeso 新功能"
 }
