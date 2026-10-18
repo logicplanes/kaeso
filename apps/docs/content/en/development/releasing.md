@@ -34,7 +34,7 @@ Everything else reads the version instead of stating it. A page writes `\{{versi
 
 Pull requests labelled `internal` are left out. Dependabot's updates become one line, "Dependencies updated". A pull request labelled `breaking` is also named at the top of the section.
 
-To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release then uses only those lines. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
+To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
 When the repository has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 

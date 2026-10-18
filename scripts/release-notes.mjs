@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { GROUPS, TOPICS, context, draft, escaped } from "./changelog.mjs";
+import { GROUPS, TOPICS, context, draft, escaped, linked } from "./changelog.mjs";
 
 export const MODEL = "claude-opus-5-5";
 export const API_URL = "https://ai.logicplanes.com";
@@ -175,7 +175,7 @@ export const prompt = (facts) => `<release-data>\n${dataOf(facts)}\n</release-da
 export function factsOf(collected, changelog, version = null) {
   const known = context(changelog, version ?? "next");
   const visible = collected.pulls.filter(({ labels }) => !labels.includes(INTERNAL));
-  const earlier = known.prereleases.flatMap(({ markdown }) => [...markdown.matchAll(/\[#(\d+)\]\(/g)].map(([, number]) => Number(number)));
+  const earlier = known.prereleases.flatMap(({ markdown }) => linked(markdown));
   return {
     project: "Kaeso",
     repository: `https://github.com/${collected.repository}`,

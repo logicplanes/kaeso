@@ -34,7 +34,7 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 
 Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Dependabot werden zu einer Zeile, „Dependencies updated“. Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt genannt.
 
-Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release nutzt dann nur diese Zeilen. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
+Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
 
 Hat das Repository das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 

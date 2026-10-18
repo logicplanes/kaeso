@@ -187,10 +187,13 @@ export function generate(pulls) {
 
 const UNRELEASED = "Unreleased";
 
-const drafted = (changelog, pulls) => {
+export const linked = (markdown) => [...markdown.matchAll(/\[#(\d+)\]\(/g)].map(([, number]) => Number(number));
+
+const drafted = (changelog, pulls, folds) => {
   const pending = changelog.sections.find(({ name }) => name === UNRELEASED);
-  if (pending && fold([pending.body]).length) return changelog.sections;
-  const body = generate(pulls);
+  const covered = new Set(changelog.sections.filter(({ name }) => folds(name)).flatMap(({ body }) => linked(body.join("\n"))));
+  const generated = generate(checked(pulls).filter(({ number }) => !covered.has(number)));
+  const body = pending && fold([pending.body]).length ? fold([pending.body, generated]) : generated;
   if (!pending) return [{ name: UNRELEASED, heading: `## [${UNRELEASED}]`, body }, ...changelog.sections];
   return changelog.sections.map((section) => (section === pending ? { ...section, body } : section));
 };
@@ -198,10 +201,11 @@ const drafted = (changelog, pulls) => {
 export function releasable(text, version, pulls = []) {
   const changelog = parse(text);
   if (changelog.sections.some(({ name }) => name === version)) return true;
+  const folds = folded(version);
   return (
     fold(
-      drafted(changelog, pulls)
-        .filter(({ name }) => folded(version)(name))
+      drafted(changelog, pulls, folds)
+        .filter(({ name }) => folds(name))
         .map(({ body }) => body),
     ).length > 0
   );
@@ -210,7 +214,7 @@ export function releasable(text, version, pulls = []) {
 export function draft(text, version, pulls = []) {
   const folds = folded(version);
   return fold(
-    drafted(parse(text), pulls)
+    drafted(parse(text), pulls, folds)
       .filter(({ name }) => folds(name))
       .map((section) => section.body),
   );
@@ -237,7 +241,7 @@ export function release(text, version, date, pulls = [], written = null) {
   const unreleased = unreleasedLink(changelog.links);
   const base = repositoryOf(changelog.links);
   if (!base) throw new Error("CHANGELOG.md has no [Unreleased] compare link");
-  const drafts = drafted(changelog, pulls);
+  const drafts = drafted(changelog, pulls, folds);
   const body = written ? trim(written) : fold(drafts.filter(({ name }) => folds(name)).map((section) => section.body));
   const sections = [{ heading: `## [${UNRELEASED}]`, body: [] }, { heading: `## [${version}] - ${date}`, body }, ...drafts.filter(({ name }) => !folds(name))];
   const links = changelog.links.flatMap((line) => {
