@@ -187,7 +187,7 @@ export function generate(pulls) {
 
 const UNRELEASED = "Unreleased";
 
-export const linked = (markdown) => [...markdown.matchAll(/\[#(\d+)\]\(/g)].map(([, number]) => Number(number));
+export const linked = (markdown) => [...markdown.matchAll(/\[#(\d+)\]\(https:\/\/[^\s()]+\/pull\/\1\)/g)].map(([, number]) => Number(number));
 
 const drafted = (changelog, pulls, folds) => {
   const pending = changelog.sections.find(({ name }) => name === UNRELEASED);

@@ -582,6 +582,22 @@ test("with lines under [Unreleased], internal pull requests stay out and Dependa
   ]);
 });
 
+test("only a link to the pull request itself covers it, not a link to an issue or another pull request with its number as text", () => {
+  const before = curatedLog(`### Fixed\n\n- Streams end cleanly. ([#3](${repo}/issues/3), [#2](${repo}/pull/20))`);
+  assert.deepEqual(draft(before, "0.2.0", merged), [
+    "### Added",
+    "",
+    "#### Gateway",
+    "",
+    `- Add batches (${ref(2)})`,
+    "",
+    "### Fixed",
+    "",
+    `- Streams end cleanly. ([#3](${repo}/issues/3), [#2](${repo}/pull/20))`,
+    `- Fix quiet streams (${ref(3)})`,
+  ]);
+});
+
 test("a stable release lists a pull request that a pre-release already names only once", () => {
   let text = curatedLog("");
   text = release(text, "0.2.0-rc.1", "2026-11-01", [pull(2, "Add batches", ["area: gateway"])]);
