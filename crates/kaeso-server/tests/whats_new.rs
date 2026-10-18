@@ -80,3 +80,15 @@ async fn a_new_user_sees_nothing_and_an_old_one_sees_every_release_since() {
     assert_eq!(caught_up.body["releases"], json!([]));
     s.cleanup().await;
 }
+
+#[test]
+fn the_documented_artwork_fits_every_seed_and_palette() {
+    let doc = serde_json::to_value(kaeso_server::platform::openapi()).unwrap();
+    let art = &doc["components"]["schemas"]["ReleaseArtView"]["properties"];
+    assert_eq!(art["seed"]["format"], "int64");
+    assert_eq!(art["seed"]["minimum"], 0);
+    assert_eq!(art["seed"]["maximum"], u64::from(u32::MAX));
+    assert_eq!(art["palette"]["maximum"], 11);
+    assert_eq!(art["version"]["minimum"], 1);
+    assert_eq!(art["version"]["maximum"], 1);
+}

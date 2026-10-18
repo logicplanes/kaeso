@@ -40,16 +40,16 @@ pub struct WhatsNewRelease {
 )]
 pub struct ReleaseArtView {
     #[doc = "The version of the drawing."]
-    #[schema(example = 1)]
+    #[schema(example = 1, minimum = 1, maximum = 1)]
     pub version: u8,
     #[doc = "The seed of the drawing."]
-    #[schema(example = 2886621037_u32)]
+    #[schema(value_type = i64, format = Int64, minimum = 0, maximum = 4_294_967_295_i64, example = 2_886_621_037_i64)]
     pub seed: u32,
     #[doc = "The style, such as `bauhaus` or `phyllotaxis`."]
     #[schema(example = "stripes")]
     pub style: String,
     #[doc = "The palette, by its index."]
-    #[schema(example = 6)]
+    #[schema(example = 6, minimum = 0, maximum = 11)]
     pub palette: u8,
 }
 

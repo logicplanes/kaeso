@@ -21426,13 +21426,15 @@
             "format": "int32",
             "description": "The palette, by its index.",
             "example": 6,
+            "maximum": 11,
             "minimum": 0
           },
           "seed": {
             "type": "integer",
-            "format": "int32",
+            "format": "int64",
             "description": "The seed of the drawing.",
             "example": 2886621037,
+            "maximum": 4294967295,
             "minimum": 0
           },
           "style": {
@@ -21445,7 +21447,8 @@
             "format": "int32",
             "description": "The version of the drawing.",
             "example": 1,
-            "minimum": 0
+            "maximum": 1,
+            "minimum": 1
           }
         }
       },
