@@ -72,7 +72,7 @@ sequenceDiagram
 | `kaeso-kpp` | 只包含 KPP 类型：请求、回复、流事件、错误、Token 计数、嵌入和模型列表，以及 `validate()` 和 `required_capabilities()`。没有编解码逻辑，也没有 I/O。 |
 | `kaeso-codecs` | 每种 API 格式一个 sans-IO 编解码器（代码中称为方言，即 `DialectId`），以及它们共用的构件。编解码器把字节转换为 KPP 值，把 KPP 值转换为字节；流按 chunk 逐块送入并产生事件。 |
 
-两个 crate 都发布在 crates.io 上。它们的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，`cargo deny` 禁止它们使用 `tokio`、`reqwest`、`hyper` 和 `axum`（[依赖与许可证](../dependencies.md#kpp)）。
+两个 crate 都发布在 crates.io 上。它们的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，`cargo deny` 禁止它们使用 `tokio`、`reqwest`、`hyper` 和 `axum`（[添加依赖](../contributing.md#添加依赖)）。
 
 | 模块 | 方言 |
 | --- | --- |

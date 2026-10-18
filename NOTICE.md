@@ -1,6 +1,6 @@
 # Notices
 
-Kaeso includes no code adapted from other projects. If code is ever adapted from an MIT- or Apache-licensed project, its attribution goes here. Every dependency and its license is listed on the [dependencies](https://docs.kaeso.app/development/dependencies) page.
+Kaeso includes no code adapted from other projects. If code is ever adapted from an MIT- or Apache-licensed project, its attribution goes here. Every dependency's license is checked by `cargo deny` and `pnpm licenses:check` against the [license policy](https://docs.kaeso.app/development/contributing#add-a-dependency).
 
 ## Data
 
