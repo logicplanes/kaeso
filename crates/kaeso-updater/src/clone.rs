@@ -217,7 +217,7 @@ mod tests {
             "Name": "/kaeso-gateway-1",
             "Config": {
                 "Hostname": "0123456789ab",
-                "Image": "ghcr.io/logicplanes/kaeso-gateway:0.2.0",
+                "Image": "ghcr.io/logicplanes/kaeso-gateway:40.2.0",
                 "Env": ["KAESO_PUBLIC_URL=https://kaeso.example.com", "PATH=/usr/local/bin:/usr/bin", "KAESO_LISTEN=0.0.0.0:8080"],
                 "Cmd": ["serve"],
                 "Entrypoint": ["/usr/local/bin/kaeso"],
@@ -228,7 +228,7 @@ mod tests {
                     "com.docker.compose.project": "kaeso",
                     "com.docker.compose.service": "gateway",
                     "com.docker.compose.image": "sha256:old",
-                    "org.opencontainers.image.version": "0.2.0",
+                    "org.opencontainers.image.version": "40.2.0",
                     "org.opencontainers.image.title": "Kaeso gateway"
                 }
             },
@@ -257,7 +257,7 @@ mod tests {
                 "Healthcheck": { "Test": ["CMD", "/usr/local/bin/kaeso", "healthcheck"] },
                 "User": "nonroot:nonroot",
                 "ExposedPorts": { "8080/tcp": {}, "9100/tcp": {} },
-                "Labels": { "org.opencontainers.image.version": "0.2.0", "org.opencontainers.image.title": "Kaeso gateway" }
+                "Labels": { "org.opencontainers.image.version": "40.2.0", "org.opencontainers.image.title": "Kaeso gateway" }
             }
         })
     }
@@ -409,7 +409,7 @@ mod tests {
             name(&json!({ "Name": "/" })),
             Err(CloneError::Missing("Name"))
         );
-        assert_eq!(version_of(&old_image()), Some("0.2.0"));
+        assert_eq!(version_of(&old_image()), Some("40.2.0"));
         assert_eq!(version_of(&json!({})), None);
     }
 }

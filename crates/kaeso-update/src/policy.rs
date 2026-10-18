@@ -153,10 +153,10 @@ mod tests {
 
     #[test]
     fn tags_are_versions_with_or_without_v_and_never_with_build_metadata() {
-        assert_eq!(parse_tag("v1.4.0"), Some(v("1.4.0")));
-        assert_eq!(parse_tag("1.4.0-rc.1"), Some(v("1.4.0-rc.1")));
+        assert_eq!(parse_tag("v41.4.0"), Some(v("41.4.0")));
+        assert_eq!(parse_tag("41.4.0-rc.1"), Some(v("41.4.0-rc.1")));
         assert_eq!(parse_tag("v1.4"), None);
-        assert_eq!(parse_tag("v1.4.0+build.7"), None);
+        assert_eq!(parse_tag("v41.4.0+build.7"), None);
         assert_eq!(parse_tag("latest"), None);
     }
 
@@ -166,24 +166,24 @@ mod tests {
             assert_eq!(Channel::parse(c.as_str()), Some(c));
         }
         assert_eq!(Channel::parse("beta"), None);
-        assert!(!Channel::Stable.offers(&v("0.3.0-rc.1")));
-        assert!(Channel::Stable.offers(&v("0.3.0")));
-        assert!(Channel::Prerelease.offers(&v("0.3.0-rc.1")));
+        assert!(!Channel::Stable.offers(&v("40.3.0-rc.1")));
+        assert!(Channel::Stable.offers(&v("40.3.0")));
+        assert!(Channel::Prerelease.offers(&v("40.3.0-rc.1")));
     }
 
     #[test]
     fn the_newest_offered_release_after_the_running_one_is_the_target() {
-        let releases = [r("0.1.9"), r("0.2.0"), r("0.2.1"), r("0.3.0-rc.1")];
+        let releases = [r("40.1.9"), r("40.2.0"), r("40.2.1"), r("40.3.0-rc.1")];
         assert_eq!(
-            target("0.2.0", Channel::Stable, &releases),
-            Some(("0.2.1".into(), None))
+            target("40.2.0", Channel::Stable, &releases),
+            Some(("40.2.1".into(), None))
         );
         assert_eq!(
-            target("0.2.0", Channel::Prerelease, &releases),
-            Some(("0.3.0-rc.1".into(), None))
+            target("40.2.0", Channel::Prerelease, &releases),
+            Some(("40.3.0-rc.1".into(), None))
         );
-        assert_eq!(target("0.2.1", Channel::Stable, &releases), None);
-        assert_eq!(target("0.4.0", Channel::Prerelease, &releases), None);
+        assert_eq!(target("40.2.1", Channel::Stable, &releases), None);
+        assert_eq!(target("40.4.0", Channel::Prerelease, &releases), None);
     }
 
     struct Flagged(R);
@@ -205,73 +205,76 @@ mod tests {
 
     #[test]
     fn a_release_published_as_a_pre_release_is_one_whatever_its_version() {
-        let releases = [Flagged(r("0.2.1"))];
-        assert!(plan(&v("0.2.0"), Channel::Stable, &releases).is_none());
+        let releases = [Flagged(r("40.2.1"))];
+        assert!(plan(&v("40.2.0"), Channel::Stable, &releases).is_none());
         assert_eq!(
-            plan(&v("0.2.0"), Channel::Prerelease, &releases).map(|p| p
+            plan(&v("40.2.0"), Channel::Prerelease, &releases).map(|p| p
                 .target
                 .0
                 .version
                 .to_string()),
-            Some("0.2.1".to_owned())
+            Some("40.2.1".to_owned())
         );
     }
 
     #[test]
     fn a_running_pre_release_is_offered_its_stable_release() {
-        let releases = [r("0.3.0-rc.1"), r("0.3.0")];
+        let releases = [r("40.3.0-rc.1"), r("40.3.0")];
         assert_eq!(
-            target("0.3.0-rc.1", Channel::Stable, &releases),
-            Some(("0.3.0".into(), None))
+            target("40.3.0-rc.1", Channel::Stable, &releases),
+            Some(("40.3.0".into(), None))
         );
     }
 
     #[test]
     fn a_new_major_version_is_always_manual() {
-        let releases = [r("1.0.0"), r("0.9.0")];
+        let releases = [r("41.0.0"), r("40.9.0")];
         assert_eq!(
-            target("0.8.0", Channel::Stable, &releases),
-            Some(("1.0.0".into(), Some(Manual::Major)))
+            target("40.8.0", Channel::Stable, &releases),
+            Some(("41.0.0".into(), Some(Manual::Major)))
         );
     }
 
     #[test]
     fn manual_steps_of_any_crossed_release_make_the_update_manual() {
-        let mut middle = r("0.3.0");
+        let mut middle = r("40.3.0");
         middle.manual = true;
-        let releases = [r("0.2.0"), middle, r("0.4.0")];
+        let releases = [r("40.2.0"), middle, r("40.4.0")];
         assert_eq!(
-            target("0.2.0", Channel::Stable, &releases),
-            Some(("0.4.0".into(), Some(Manual::ManualSteps)))
+            target("40.2.0", Channel::Stable, &releases),
+            Some(("40.4.0".into(), Some(Manual::ManualSteps)))
         );
         assert_eq!(
-            target("0.3.0", Channel::Stable, &releases),
-            Some(("0.4.0".into(), None))
+            target("40.3.0", Channel::Stable, &releases),
+            Some(("40.4.0".into(), None))
         );
     }
 
     #[test]
     fn manual_steps_of_a_skipped_pre_release_still_count() {
-        let mut rc = r("0.3.0-rc.1");
+        let mut rc = r("40.3.0-rc.1");
         rc.manual = true;
-        let releases = [rc, r("0.3.0")];
+        let releases = [rc, r("40.3.0")];
         assert_eq!(
-            target("0.2.0", Channel::Stable, &releases),
-            Some(("0.3.0".into(), Some(Manual::ManualSteps)))
+            target("40.2.0", Channel::Stable, &releases),
+            Some(("40.3.0".into(), Some(Manual::ManualSteps)))
         );
     }
 
     #[test]
     fn a_release_that_names_steps_by_hand_since_the_running_version_is_manual() {
-        let mut target = r("0.4.0");
-        target.manual_since = Some(v("0.3.0"));
+        let mut target = r("40.4.0");
+        target.manual_since = Some(v("40.3.0"));
         let releases = [target];
         assert_eq!(
-            target_of("0.2.0", &releases),
-            Some(("0.4.0".into(), Some(Manual::ManualSteps))),
-            "0.3.0 asked for steps by hand though the gateway never saw it"
+            target_of("40.2.0", &releases),
+            Some(("40.4.0".into(), Some(Manual::ManualSteps))),
+            "40.3.0 asked for steps by hand though the gateway never saw it"
         );
-        assert_eq!(target_of("0.3.0", &releases), Some(("0.4.0".into(), None)));
+        assert_eq!(
+            target_of("40.3.0", &releases),
+            Some(("40.4.0".into(), None))
+        );
     }
 
     fn target_of(running: &str, releases: &[R]) -> Option<(String, Option<Manual>)> {
@@ -280,20 +283,20 @@ mod tests {
 
     #[test]
     fn a_release_without_a_manifest_cannot_be_applied_in_one_click() {
-        let mut old = r("0.2.0");
+        let mut old = r("40.2.0");
         old.prepared = false;
         assert_eq!(
-            target("0.1.9", Channel::Stable, &[old]),
-            Some(("0.2.0".into(), Some(Manual::NotPrepared)))
+            target("40.1.9", Channel::Stable, &[old]),
+            Some(("40.2.0".into(), Some(Manual::NotPrepared)))
         );
     }
 
     #[test]
     fn newer_lists_every_offered_release_newest_first() {
-        let releases = [r("0.2.0"), r("0.4.0"), r("0.3.0"), r("0.5.0-rc.1")];
-        let p = plan(&v("0.2.0"), Channel::Stable, &releases).unwrap();
+        let releases = [r("40.2.0"), r("40.4.0"), r("40.3.0"), r("40.5.0-rc.1")];
+        let p = plan(&v("40.2.0"), Channel::Stable, &releases).unwrap();
         let newer: Vec<String> = p.newer.iter().map(|r| r.version.to_string()).collect();
-        assert_eq!(newer, ["0.4.0", "0.3.0"]);
+        assert_eq!(newer, ["40.4.0", "40.3.0"]);
     }
 
     #[test]

@@ -15,7 +15,7 @@ describe("instance system page", () => {
     await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "System", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("Ready")).toBeInTheDocument();
-    expect(screen.getByText("0.4.2")).toBeInTheDocument();
+    expect(screen.getByText("40.4.2")).toBeInTheDocument();
     expect(screen.getAllByText("Up")).toHaveLength(3);
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("None: every request was logged.")).toBeInTheDocument();

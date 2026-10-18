@@ -217,7 +217,7 @@ mod tests {
     fn valid() -> serde_json::Value {
         json!({
             "schema": 1,
-            "version": "0.2.0",
+            "version": "40.2.0",
             "commit": "5388ad0b98aa3d957fea99e200259842bf746680",
             "manual": false,
             "updater_protocol": 1,
@@ -228,7 +228,7 @@ mod tests {
             },
             "compose": { "name": "compose.yaml", "sha256": D },
             "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" },
-            "manual_since": "0.1.4",
+            "manual_since": "40.1.4",
             "notes": "fields this version doesn't know are ignored",
         })
     }
@@ -236,7 +236,7 @@ mod tests {
     fn parse(v: &serde_json::Value) -> Result<Manifest, ManifestError> {
         Manifest::parse(
             &serde_json::to_vec(v).unwrap(),
-            &Version::parse("0.2.0").unwrap(),
+            &Version::parse("40.2.0").unwrap(),
         )
     }
 
@@ -258,10 +258,10 @@ mod tests {
         let cases: Vec<Case> = vec![
             (|v| v["schema"] = json!(2), ManifestError::Schema(2)),
             (
-                |v| v["version"] = json!("0.2.1"),
+                |v| v["version"] = json!("40.2.1"),
                 ManifestError::Version {
-                    expected: "0.2.0".into(),
-                    found: "0.2.1".into(),
+                    expected: "40.2.0".into(),
+                    found: "40.2.1".into(),
                 },
             ),
             (|v| v["commit"] = json!("main"), ManifestError::Commit),
@@ -286,8 +286,8 @@ mod tests {
                 ManifestError::Migration("../x y".into()),
             ),
             (
-                |v| v["manual_since"] = json!("0.3.0"),
-                ManifestError::ManualSince("0.3.0".into()),
+                |v| v["manual_since"] = json!("40.3.0"),
+                ManifestError::ManualSince("40.3.0".into()),
             ),
             (
                 |v| v["manual_since"] = json!("soon"),
@@ -295,7 +295,7 @@ mod tests {
             ),
             (
                 |v| v["manual"] = json!(true),
-                ManifestError::ManualSince("0.1.4".into()),
+                ManifestError::ManualSince("40.1.4".into()),
             ),
             (
                 |v| {
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn malformed_and_oversized_documents_are_refused() {
-        let version = Version::parse("0.2.0").unwrap();
+        let version = Version::parse("40.2.0").unwrap();
         assert!(matches!(
             Manifest::parse(b"not json", &version),
             Err(ManifestError::Malformed(_))
@@ -335,21 +335,21 @@ mod tests {
     #[test]
     fn steps_by_hand_count_from_the_running_version_on() {
         let m = parse(&valid()).unwrap();
-        assert!(m.asks_for_steps_after(&Version::parse("0.1.3").unwrap()));
-        assert!(!m.asks_for_steps_after(&Version::parse("0.1.4").unwrap()));
+        assert!(m.asks_for_steps_after(&Version::parse("40.1.3").unwrap()));
+        assert!(!m.asks_for_steps_after(&Version::parse("40.1.4").unwrap()));
         let mut v = valid();
         v["manual_since"] = json!(null);
         assert!(
             !parse(&v)
                 .unwrap()
-                .asks_for_steps_after(&Version::parse("0.0.1").unwrap())
+                .asks_for_steps_after(&Version::parse("40.0.1").unwrap())
         );
         v["manual"] = json!(true);
-        v["manual_since"] = json!("0.2.0");
+        v["manual_since"] = json!("40.2.0");
         assert!(
             parse(&v)
                 .unwrap()
-                .asks_for_steps_after(&Version::parse("0.1.9").unwrap())
+                .asks_for_steps_after(&Version::parse("40.1.9").unwrap())
         );
     }
 

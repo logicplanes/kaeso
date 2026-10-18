@@ -116,14 +116,14 @@ mod tests {
 
     #[test]
     fn retag_changes_exactly_the_kaeso_image_tags() {
-        let text = b"services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:0.2.0\n  console:\n    image: \"ghcr.io/logicplanes/kaeso-console:0.2.0\"\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:0.2.0\n  other:\n    image: ghcr.io/logicplanes/kaeso-gateway:0.2.0-rc.1\n    labels: [ghcr.io/logicplanes/kaeso-gateway:0.2.01]\n  caddy:\n    image: caddy:0.2.0\n";
-        let out = String::from_utf8(retag(text, &v("0.2.0"), &v("0.2.1"))).unwrap();
-        assert!(out.contains("image: ghcr.io/logicplanes/kaeso-gateway:0.2.1\n"));
-        assert!(out.contains("\"ghcr.io/logicplanes/kaeso-console:0.2.1\""));
-        assert!(out.contains("kaeso-updater:0.2.1\n"));
-        assert!(out.contains("kaeso-gateway:0.2.0-rc.1"));
-        assert!(out.contains("kaeso-gateway:0.2.01]"));
-        assert!(out.contains("caddy:0.2.0"));
+        let text = b"services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0\n  console:\n    image: \"ghcr.io/logicplanes/kaeso-console:40.2.0\"\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:40.2.0\n  other:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0-rc.1\n    labels: [ghcr.io/logicplanes/kaeso-gateway:40.2.01]\n  caddy:\n    image: caddy:40.2.0\n";
+        let out = String::from_utf8(retag(text, &v("40.2.0"), &v("40.2.1"))).unwrap();
+        assert!(out.contains("image: ghcr.io/logicplanes/kaeso-gateway:40.2.1\n"));
+        assert!(out.contains("\"ghcr.io/logicplanes/kaeso-console:40.2.1\""));
+        assert!(out.contains("kaeso-updater:40.2.1\n"));
+        assert!(out.contains("kaeso-gateway:40.2.0-rc.1"));
+        assert!(out.contains("kaeso-gateway:40.2.01]"));
+        assert!(out.contains("caddy:40.2.0"));
     }
 
     #[test]

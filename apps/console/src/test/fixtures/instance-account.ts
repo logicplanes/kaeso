@@ -52,7 +52,7 @@ export function instanceSettings(overrides: Partial<SettingsView> = {}): Setting
 export function system(overrides: Partial<SystemView> = {}): SystemView {
   return {
     status: "ready",
-    version: "0.4.2",
+    version: "40.4.2",
     postgres: "ok",
     clickhouse: "ok",
     valkey: "ok",
@@ -167,20 +167,20 @@ export function key(overrides: Partial<KeyView> = {}): KeyView {
 
 export function release(overrides: Partial<ReleaseView> = {}): ReleaseView {
   return {
-    version: "0.4.3",
+    version: "40.4.3",
     published_at: NOW,
     prerelease: false,
     major: false,
     manual_steps: false,
     notes: "### Fixed\n\n- Streams keep their last chunk when a provider closes early.",
-    url: "https://github.com/logicplanes/kaeso/releases/tag/v0.4.3",
+    url: "https://github.com/logicplanes/kaeso/releases/tag/v40.4.3",
     ...overrides,
   };
 }
 
 export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
   return {
-    current: "0.4.2",
+    current: "40.4.2",
     state: "up_to_date",
     manual: null,
     latest: null,
@@ -188,7 +188,7 @@ export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
     can_apply: false,
     settings: { check: true, channel: "stable", apply: true },
     check: { last_checked_at: NOW, last_success_at: NOW, next_check_at: NOW, error: null },
-    updater: { state: "ready", version: "0.4.2" },
+    updater: { state: "ready", version: "40.4.2" },
     job: null,
     upgrade_guide: "https://docs.kaeso.app/self-hosting/upgrades",
     ...overrides,
@@ -203,8 +203,8 @@ export function available(overrides: Partial<UpdatesView> = {}): UpdatesView {
 export function updateJob(overrides: Partial<UpdateJobView> = {}): UpdateJobView {
   return {
     id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz1",
-    from: "0.4.2",
-    to: "0.4.3",
+    from: "40.4.2",
+    to: "40.4.3",
     state: "running",
     step: "verifying",
     reason: null,

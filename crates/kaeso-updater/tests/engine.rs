@@ -273,28 +273,28 @@ async fn a_previous_version_that_does_not_come_back_is_reported() {
 async fn refusals_before_anything_changes() {
     type Change = Box<dyn Fn(&mut Daemon)>;
     let cases: Vec<(&str, &str, Change, Reason, &str)> = vec![
-        ("major", "1.0.0", Box::new(|_| {}), Reason::Major, "major"),
+        ("major", "41.0.0", Box::new(|_| {}), Reason::Major, "major"),
         (
             "manual",
-            "0.3.0",
+            "40.3.0",
             Box::new(|_| {}),
             Reason::ManualSteps,
-            "(0.3.0)",
+            "(40.3.0)",
         ),
         (
             "crossed",
-            "0.2.2",
+            "40.2.2",
             Box::new(|_| {}),
             Reason::ManualSteps,
-            "(0.2.1)",
+            "(40.2.1)",
         ),
         ("same", FROM, Box::new(|_| {}), Reason::NotNewer, "runs"),
         (
             "missing",
-            "0.9.9",
+            "40.9.9",
             Box::new(|_| {}),
             Reason::ManifestUnavailable,
-            "0.9.9",
+            "40.9.9",
         ),
         (
             "pull",
@@ -306,9 +306,9 @@ async fn refusals_before_anything_changes() {
         (
             "label",
             TO,
-            Box::new(|d| d.pulled_version = Some("0.1.9".into())),
+            Box::new(|d| d.pulled_version = Some("40.1.9".into())),
             Reason::Unverified,
-            "says it is 0.1.9",
+            "says it is 40.1.9",
         ),
         (
             "two",

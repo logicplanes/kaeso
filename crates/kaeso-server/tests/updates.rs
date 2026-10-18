@@ -201,7 +201,7 @@ async fn updater_status(State(u): State<Arc<Mutex<Updater>>>, headers: HeaderMap
     if !authorized(&mut u, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    axum::Json(json!({ "version": "0.9.0", "protocol": 1, "docker": true, "job": null }))
+    axum::Json(json!({ "version": "40.9.0", "protocol": 1, "docker": true, "job": null }))
         .into_response()
 }
 
@@ -728,13 +728,13 @@ async fn an_update_runs_once_is_audited_and_its_result_is_recorded() {
     assert_eq!(status.body["can_apply"], true, "{:?}", status.body);
     assert_eq!(
         status.body["updater"],
-        json!({ "state": "ready", "version": "0.9.0" })
+        json!({ "state": "ready", "version": "40.9.0" })
     );
 
     let wrong = app
         .post(
             "/instance/updates/apply",
-            json!({ "version": "0.0.1" }),
+            json!({ "version": "40.0.1" }),
             Some(&owner.cookie),
         )
         .await;

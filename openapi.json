@@ -15093,7 +15093,7 @@
           "version": {
             "type": "string",
             "description": "The newest offered release's version, as the person confirmed it.",
-            "example": "0.2.1"
+            "example": "40.2.1"
           }
         }
       },
@@ -19244,7 +19244,7 @@
                 "from": {
                   "type": "string",
                   "description": "The version it updates from.",
-                  "example": "0.2.0"
+                  "example": "40.2.0"
                 },
                 "id": {
                   "$ref": "#/components/schemas/UpdateId",
@@ -19286,7 +19286,7 @@
                 "to": {
                   "type": "string",
                   "description": "The version it updates to.",
-                  "example": "0.2.1"
+                  "example": "40.2.1"
                 }
               }
             },
@@ -21347,12 +21347,12 @@
           "url": {
             "type": "string",
             "description": "The release's page.",
-            "example": "https://github.com/logicplanes/kaeso/releases/tag/v0.2.0"
+            "example": "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0"
           },
           "version": {
             "type": "string",
             "description": "The version.",
-            "example": "0.2.0"
+            "example": "40.2.0"
           }
         }
       },
@@ -22963,7 +22963,7 @@
           "from": {
             "type": "string",
             "description": "The version it updates from.",
-            "example": "0.2.0"
+            "example": "40.2.0"
           },
           "id": {
             "$ref": "#/components/schemas/UpdateId",
@@ -23005,7 +23005,7 @@
           "to": {
             "type": "string",
             "description": "The version it updates to.",
-            "example": "0.2.1"
+            "example": "40.2.1"
           }
         }
       },
