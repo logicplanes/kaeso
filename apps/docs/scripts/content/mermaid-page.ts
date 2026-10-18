@@ -128,6 +128,10 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       el.removeAttribute("class");
     }
     for (const el of svg.querySelectorAll("style, filter, script, foreignObject, iframe, image, use[href^='http']")) el.remove();
+    const comments = document.createTreeWalker(svg, NodeFilter.SHOW_COMMENT);
+    const found: Comment[] = [];
+    while (comments.nextNode()) found.push(comments.currentNode as Comment);
+    for (const comment of found) comment.remove();
     for (const el of [svg, ...svg.querySelectorAll("*")]) {
       for (const attr of [...el.attributes]) {
         const external = (attr.name === "href" || attr.name === "xlink:href") && !attr.value.startsWith("#");
@@ -162,7 +166,7 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
         const root = host.querySelector("svg");
         if (!root) throw new Error("mermaid drew nothing");
         flatten(root);
-        svg[theme] = new XMLSerializer().serializeToString(root).replace(/<!--[\s\S]*?-->/g, "");
+        svg[theme] = new XMLSerializer().serializeToString(root);
         host.remove();
       } catch (error) {
         const line = lineOf(error);

@@ -3,6 +3,7 @@ import type { Browser } from "@playwright/test";
 import { neutral } from "@logicplanes/kaeso-tokens";
 import { svgLabels, svgSize } from "./diagram.ts";
 import { interFonts, launchRenderer, renderMermaid } from "./mermaid.ts";
+import { renderInPage } from "./mermaid-page.ts";
 
 let browser: Browser;
 beforeAll(async () => {
@@ -22,7 +23,7 @@ describe("renderMermaid", () => {
     for (const theme of ["light", "dark"] as const) {
       const svg = result.svg[theme];
       expect(svg).toMatch(/^<svg [^>]*role="img"/);
-      expect(svg).not.toMatch(/<style|<script|<foreignObject|\sclass=|\sstyle=|\son\w+=|href="http|<!--|\sfilter=/);
+      expect(svg).not.toMatch(/<style|<script|<foreignObject|\sclass=|\sstyle=|\son\w+=|href="http|<!--|\sfilter=/i);
       expect(svg).toContain(">Route of a request</title>");
       expect(svg).toContain(">An app calls Kaeso, which calls the provider.</desc>");
       expect(svgLabels(svg)).toEqual(expect.arrayContaining(["App", "Kaeso", "Provider", "/v1"]));
@@ -33,6 +34,30 @@ describe("renderMermaid", () => {
       expect(svg).toContain("Inter Variable");
     }
     expect(svgSize(result.svg.light)).toEqual(svgSize(result.svg.dark));
+  }, 60_000);
+
+  it("removes every comment of mermaid's markup from the drawing, nested ones too", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.evaluate(() => {
+        Object.assign(window, {
+          mermaid: {
+            initialize: () => undefined,
+            parse: async () => true,
+            render: async () => ({ svg: '<svg viewBox="0 0 40 20"><!-- a --><g><!--<!-- b --><text>Label</text><!-- c --></g><!----></svg>' }),
+          },
+        });
+      });
+      const [result] = await page.evaluate(renderInPage, { jobs: [{ key: "c1", code: "flowchart LR" }], configs: { light: {}, dark: {} }, radius: 10 });
+      if (!result?.ok) throw new Error(JSON.stringify(result));
+      for (const svg of Object.values(result.svg)) {
+        expect(svg).not.toContain("<!--");
+        expect(svg).not.toContain("-->");
+        expect(svgLabels(svg)).toEqual(["Label"]);
+      }
+    } finally {
+      await page.close();
+    }
   }, 60_000);
 
   it("draws sequence and state diagrams with every label as text", async () => {
