@@ -22,18 +22,11 @@ pnpm seed
 pnpm dev
 ```
 
-Node.js 24, pnpm 11 and Docker with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider and a mock identity provider (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
+Node.js 24, pnpm 11 and a Docker engine with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider, a mock identity provider and a mock release feed (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
 
-## Architecture in one screen
+## Where things are
 
-```
-browser ─▶ console (static, Caddy) ─▶ routes (TanStack Router) ─▶ loaders prefetch through Query
-                                    └▶ src/api/client.ts (openapi-fetch, same origin, cookie) ─▶ /platform/v1 (gateway)
-
-session: GET auth/session (user, memberships with org rights and access) + GET me/memberships (projects)
-rights:  org rights from the session; project rights from GET projects/{project}/my-rights once per project;
-         names, descriptions and needs from GET orgs/{org}/rights; a 403 is the final word
-```
+How the console reads data, checks rights, loads its code and shows errors is in [console architecture](https://docs.kaeso.app/development/architecture/console).
 
 | Folder          | Job                                                                                                                                                                         |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,10 +36,11 @@ rights:  org rights from the session; project rights from GET projects/{project}
 | `src/shell/`    | `AppFrame` in both modes, the sidebar, switchers, the command palette and shortcuts                                                                                         |
 | `src/features/` | One folder per area: sign-in, public pages, account, organization, project, instance                                                                                        |
 | `src/kaeso/`    | Console-only compositions of library parts: the rights and limit editors, the create-key flow, usage panels                                                                 |
+| `src/format/`   | Money, periods, labels and other values as the console writes them                                                                                                          |
 | `src/i18n/`     | The message function, the catalogs in English, German and Simplified Chinese, and the language at start                                                                     |
 | `eslint/`       | The layout-only, no-color and no-literal-text lint rules, with tests                                                                                                        |
 | `scripts/`      | Client and route generation, the stack, the seed, the README's recording, bundle budgets, the licence check and the catalog check                                           |
-| `stack/`        | The mock provider, the mock identity provider and the master key the local stack uses                                                                                       |
+| `stack/`        | The mock provider, the mock identity provider, the mock release feed and updater, and the master key the local stack uses                                                   |
 | `e2e/`          | Playwright suites against a stack of their own                                                                                                                              |
 
 ## Checks
@@ -69,7 +63,7 @@ pnpm --filter kaeso-console e2e
 
 1. **Only the Platform API**, and every call through the client in `src/api/`. Nothing the API cannot do is shown; nothing is faked.
 2. **Rights come from the API, never guessed.** Org rights from `auth/session`; project rights from `GET …/projects/{project}/my-rights`; each right's name, description, category and needs from the catalogue (`GET orgs/{org}/rights`), never from code. A `403` is the final word: hide a whole area the person cannot see, disable a single action with the right's name and who can give it ("You need Export logs; ask Ada Okafor for it.", `useNeedsRight`).
-3. **No secrets client-side.** The session is an HttpOnly cookie the console never reads. Key secrets are shown once and never stored. `localStorage` holds only the last org and project, theme, language, sidebar width, table settings, dismissed banners and the playground's unsent prompt.
+3. **No secrets client-side.** The session is an HttpOnly cookie the console never reads. Key secrets are shown once and never stored. `localStorage` holds only the last org and project, recently opened items, theme, language, the sidebar's width and state, the request log's columns and the playground's unsent prompts; `sessionStorage` holds an invitation's token until it is accepted.
 4. **Every word follows the voice** of [`@logicplanes/kaeso-ui`'s writing rules](../../packages/ui/foundations/writing.md): sentence case, a verb first on buttons, no exclamation points, errors that say what to do next. Show the API's `message` (translated where the console knows it) and attach it to the fields its `param` names.
 5. **Every visible element from `@logicplanes/kaeso-ui`; `className` for layout only** (margin, width, grid, flex, gap, position). No colors, radii, type sizes, padding, heights, shadows or inline styles. `pnpm lint` enforces it (`eslint/kaeso.js`).
 6. **No page-enter animation, no decorative cards, no decorative icons.** Content sits on the panel; motion comes from the library.
