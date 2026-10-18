@@ -39,7 +39,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "eslint/**/*.js"],
       exclude: ["**/*.test.{ts,tsx,js}", "src/test/**", "src/main.tsx", "src/content.d.ts", "scripts/content/mermaid-page.ts"],
       reporter: ["text", "text-summary", "json-summary", "html"],
-      thresholds: { statements: 95.4, branches: 86.1, functions: 97.3, lines: 96.5 },
+      thresholds: { statements: 95.5, branches: 86.4, functions: 97.3, lines: 96.7 },
     },
   },
 });

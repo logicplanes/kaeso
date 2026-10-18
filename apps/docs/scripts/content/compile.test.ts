@@ -245,3 +245,105 @@ describe("fenceInfo and safeExternal", () => {
     for (const bad of ["javascript:alert(1)", "data:text/html,x", "/relative", "#top", "ftp://x"]) expect(safeExternal(bad)).toBeNull();
   });
 });
+
+describe("code groups", () => {
+  const fence = (lang: string, tab: string, code: string) => `\`\`\`${lang} tab="${tab}"\n${code}\n\`\`\``;
+
+  it("groups consecutive fences with a tab into one block, in their order", () => {
+    const out = md(
+      [
+        "Call it:",
+        fence("bash", "curl", "curl https://kaeso.example.com/v1/models"),
+        fence("python", "Python", "print(1)"),
+        fence("ts", "TypeScript", "console.log(1)"),
+      ].join("\n\n"),
+    );
+    expect(out.problems).toEqual([]);
+    expect(out.blocks).toEqual([
+      { t: "paragraph", c: [{ t: "text", v: "Call it:" }] },
+      {
+        t: "codegroup",
+        tabs: [
+          { label: "curl", lang: "bash", code: "curl https://kaeso.example.com/v1/models" },
+          { label: "Python", lang: "python", code: "print(1)" },
+          { label: "TypeScript", lang: "ts", code: "console.log(1)" },
+        ],
+      },
+    ]);
+    expect(out.words).toEqual(expect.arrayContaining(["curl", "print", "console"]));
+  });
+
+  it("starts a new group after anything but a blank line, and leaves fences without a tab alone", () => {
+    const out = md(
+      [fence("bash", "curl", "a"), fence("python", "Python", "b"), "Or:", fence("bash", "curl", "c"), fence("python", "Python", "d"), "```json\n{}\n```"].join(
+        "\n\n",
+      ),
+    );
+    expect(out.problems).toEqual([]);
+    expect(out.blocks.map((b) => b.t)).toEqual(["codegroup", "paragraph", "codegroup", "code"]);
+  });
+
+  it("names a lone tab, a repeated tab and a tab with a title, and still shows the code", () => {
+    const lone = md(`Text.\n\n${fence("bash", "curl", "curl https://kaeso.example.com")}`);
+    expect(lone.problems).toEqual([
+      ':3: the fence with `tab="curl"` stands alone; a code group is two or more fences with `tab=` in a row, and a single block has no `tab=`',
+    ]);
+    expect(lone.blocks[1]).toEqual({ t: "code", lang: "bash", code: "curl https://kaeso.example.com" });
+    const twice = md([fence("python", "Python", "a"), fence("python", "Python", "b")].join("\n\n"));
+    expect(twice.problems).toEqual([':5: the code group has two tabs named "Python"; give each fence its own `tab=`']);
+    const titled = md(['```ts tab="TypeScript" title="client.ts"\nx\n```', fence("python", "Python", "y")].join("\n\n"));
+    expect(titled.problems).toEqual([':1: the fence has both `tab="TypeScript"` and `title=`; a fence in a code group is named by its tab alone']);
+  });
+
+  it("reads a tab like a title, quoted or not", () => {
+    expect(fenceInfo('python tab="Python"')).toEqual({ lang: "python", tab: "Python" });
+    expect(fenceInfo("bash tab=curl")).toEqual({ lang: "bash", tab: "curl" });
+    expect(fenceInfo('ts tab=""')).toEqual({ lang: "ts" });
+  });
+});
+
+describe("link cards", () => {
+  const targets: Record<string, Target> = {
+    "calling-models.md": { kind: "page", href: "/get-started/calling-models" },
+    "../console/api-keys.md#create-a-key": { kind: "page", href: "/console/api-keys#create-a-key" },
+  };
+
+  it("turns a list whose every item starts with a page link into cards, without the separator", () => {
+    const out = md(
+      "- [Calling models](calling-models.md): Call models with the **OpenAI** SDK.\n- [API keys](../console/api-keys.md#create-a-key)：限制密钥。\n- [Calling models](calling-models.md)",
+      targets,
+    );
+    expect(out.problems).toEqual([]);
+    expect(out.blocks).toEqual([
+      {
+        t: "links",
+        items: [
+          {
+            href: "/get-started/calling-models",
+            kind: "page",
+            title: [{ t: "text", v: "Calling models" }],
+            description: [
+              { t: "text", v: "Call models with the " },
+              { t: "strong", c: [{ t: "text", v: "OpenAI" }] },
+              { t: "text", v: " SDK." },
+            ],
+          },
+          { href: "/console/api-keys#create-a-key", kind: "page", title: [{ t: "text", v: "API keys" }], description: [{ t: "text", v: "限制密钥。" }] },
+          { href: "/get-started/calling-models", kind: "page", title: [{ t: "text", v: "Calling models" }], description: [] },
+        ],
+      },
+    ]);
+    expect(out.words).toEqual(expect.arrayContaining(["calling", "openai", "限制密钥"]));
+  });
+
+  it("keeps lists that mix in other items, number their items, link elsewhere or check tasks", () => {
+    for (const body of [
+      "- [Calling models](calling-models.md): Call models.\n- Ask the admin.",
+      "1. [Calling models](calling-models.md): Call models.",
+      "- [Kaeso](https://kaeso.app): The site.",
+      "- [ ] [Calling models](calling-models.md)",
+      "- Read [calling models](calling-models.md).",
+    ])
+      expect(md(body, targets).blocks[0]?.t).toBe("list");
+  });
+});

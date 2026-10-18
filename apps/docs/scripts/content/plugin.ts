@@ -182,6 +182,8 @@ function withAssets(page: SitePage, root: string): string {
           return { ...b, c: blocks(b.c) };
         case "table":
           return { ...b, head: b.head.map(inline), rows: b.rows.map((r) => r.map(inline)) };
+        case "links":
+          return { ...b, items: b.items.map((card) => ({ ...card, title: inline(card.title), description: inline(card.description) })) };
         case "diagram":
           return { ...b, light: ref(b.light), dark: ref(b.dark) };
         default:

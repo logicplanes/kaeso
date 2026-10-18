@@ -19,6 +19,14 @@ export const KAESO_LINK_VARIANTS = {
       classes: "font-medium text-fg no-underline hover:underline hover:decoration-line-strong hover:underline-offset-3",
       description: "A link on its own line (“Team overview ›”)",
     },
+    heading: {
+      classes: "group/heading text-inherit no-underline",
+      description: "A heading's link to itself: the heading's own look, with a # beside it on hover and keyboard focus",
+    },
+    card: {
+      classes: "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 px-16 py-12 text-fg no-underline hover:bg-fill-2",
+      description: "A page to read next: a filled well with the page's name and one sentence about it",
+    },
   },
 } as const;
 export const KAESO_LINK_DEFAULT_VARIANTS = { variant: "inline" } as const;
@@ -47,6 +55,14 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link({ hre
       {...props}
     >
       {children}
+      {variant === "heading" && (
+        <span
+          aria-hidden="true"
+          className="ml-8 inline-block text-fg-tertiary opacity-0 transition-control group-hover/heading:opacity-100 group-focus-visible/heading:opacity-100"
+        >
+          #
+        </span>
+      )}
       {isExternal && (
         <span aria-hidden="true" className="whitespace-nowrap">
           {"\u2060"}

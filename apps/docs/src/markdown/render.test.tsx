@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Block } from "./ast";
 import { TextProvider } from "~/i18n/text";
 import { Markdown, diagramMinWidth } from "./render";
+import { CODE_TAB_STORAGE_KEY, forgetCodeTab } from "./code-tab";
 
 const draw = (blocks: Block[]) => render(<Markdown blocks={blocks} />).container;
 
@@ -245,5 +247,117 @@ describe("Markdown", () => {
     expect(diagramMinWidth(640)).toBe("min-w-480");
     expect(diagramMinWidth(874)).toBe("min-w-720");
     expect(diagramMinWidth(2000)).toBe("min-w-800");
+  });
+});
+
+describe("Heading links", () => {
+  it("links a heading to itself, and leaves a heading that holds a link as it is", () => {
+    draw([
+      { t: "heading", level: 2, id: "streaming", c: [{ t: "text", v: "Streaming" }] },
+      { t: "heading", level: 3, id: "see-limits", c: [{ t: "link", kind: "page", href: "/console/limits", c: [{ t: "text", v: "See limits" }] }] },
+    ]);
+    const own = screen.getByRole("link", { name: "Streaming" });
+    expect(own).toHaveAttribute("href", "#streaming");
+    expect(screen.getByRole("heading", { level: 2, name: "Streaming" })).toContainElement(own);
+    expect(screen.getByRole("link", { name: "See limits" })).toHaveAttribute("href", "/console/limits");
+    expect(screen.getAllByRole("link")).toHaveLength(2);
+  });
+});
+
+describe("Code groups", () => {
+  const request: Block = {
+    t: "codegroup",
+    tabs: [
+      { label: "curl", lang: "bash", code: "curl https://kaeso.example.com/v1/models" },
+      { label: "Python", lang: "python", code: "client.models.list()" },
+      { label: "TypeScript", lang: "ts", code: "await client.models.list();" },
+    ],
+  };
+  const reply: Block = {
+    t: "codegroup",
+    tabs: [
+      { label: "Python", lang: "python", code: "print(response.output_text)" },
+      { label: "TypeScript", lang: "ts", code: "console.log(response.output_text);" },
+    ],
+  };
+
+  const tabs = (name: string) => screen.getAllByRole("tab", { name });
+  const first = (name: string) => tabs(name)[0] as HTMLElement;
+
+  beforeEach(() => {
+    localStorage.clear();
+    forgetCodeTab();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("shows the first tab until the reader chooses, then every group with that tab follows and the choice is kept", async () => {
+    draw([request, reply]);
+    expect(first("curl")).toHaveAttribute("aria-selected", "true");
+    expect(tabs("Python")[1]).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(first("TypeScript"));
+    for (const tab of tabs("TypeScript")) expect(tab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByRole("tabpanel").map((panel) => panel.textContent)).toEqual(["await client.models.list();", "console.log(response.output_text);"]);
+    expect(localStorage.getItem(CODE_TAB_STORAGE_KEY)).toBe("TypeScript");
+  });
+
+  it("opens on the tab chosen on an earlier page, and keeps its own where it lacks that tab", () => {
+    localStorage.setItem(CODE_TAB_STORAGE_KEY, "curl");
+    draw([request, reply]);
+    expect(first("curl")).toHaveAttribute("aria-selected", "true");
+    expect(tabs("Python")[1]).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("still opens and switches when the browser keeps nothing", async () => {
+    const refuse = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    vi.stubGlobal("localStorage", { getItem: refuse, setItem: refuse });
+    draw([request, reply]);
+    expect(first("curl")).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(first("Python"));
+    for (const tab of tabs("Python")) expect(tab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("keeps the group the reader clicked in place when groups above it change height", async () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() =>
+      DOMRect.fromRect({ y: localStorage.getItem(CODE_TAB_STORAGE_KEY) ? 340 : 400, height: 120 }),
+    );
+    const page = document.scrollingElement ?? document.documentElement;
+    const scrollBy = vi.fn();
+    page.scrollBy = scrollBy;
+    draw([request, reply]);
+    await userEvent.click(first("TypeScript"));
+    expect(scrollBy).toHaveBeenCalledWith(0, -60);
+  });
+});
+
+describe("Link cards", () => {
+  it("draws each next page as a link with its name and sentence, and keeps links inside the sentence as text", () => {
+    const c = draw([
+      {
+        t: "links",
+        items: [
+          {
+            href: "/get-started/calling-models",
+            kind: "page",
+            title: [{ t: "text", v: "Calling models" }],
+            description: [
+              { t: "text", v: "Call models with the " },
+              { t: "link", kind: "page", href: "/api/model-api", c: [{ t: "text", v: "official SDKs" }] },
+              { t: "text", v: "." },
+            ],
+          },
+          { href: "/console/api-keys#create-a-key", kind: "page", title: [{ t: "text", v: "API keys" }], description: [] },
+        ],
+      },
+    ]);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Calling models Call models with the official SDKs." })).toHaveAttribute("href", "/get-started/calling-models");
+    expect(screen.getByRole("link", { name: "API keys" })).toHaveAttribute("href", "/console/api-keys#create-a-key");
+    expect(c.querySelectorAll("a a")).toHaveLength(0);
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 });

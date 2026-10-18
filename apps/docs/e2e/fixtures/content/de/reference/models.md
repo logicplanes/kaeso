@@ -9,6 +9,14 @@ Der Katalog eines Projekts listet die Modelle, die seine Schlüssel aufrufen dü
 
 Ein Modell wird mit seinem nativen Namen (`claude-haiku-4-5`), mit `provider/model` (`anthropic/claude-haiku-4-5`) oder mit einem Alias aufgerufen.
 
+```bash tab="curl"
+curl https://kaeso.example.com/v1/models/fast -H "x-api-key: $KAESO_KEY"
+```
+
+```python tab="Python"
+print(client.models.retrieve("fast"))
+```
+
 ## Aliasse
 
 Ein Alias ist ein eigener Name des Projekts, etwa `fast`, der auf ein Modell seines Katalogs zeigt.

@@ -1,5 +1,5 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
-import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, ListItem, TocEntry } from "../../src/markdown/ast.ts";
+import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
 import { DIAGRAM_LANG, diagramText } from "./diagram.ts";
 import { Slugger } from "./slug.ts";
 
@@ -99,12 +99,17 @@ const LANGS: Record<string, CodeLang> = {
 const DRAWING = /[\u2190-\u21ff\u2500-\u257f\u25b2-\u25c5]/u;
 const isDiagram = (info: string | undefined) => (info ?? "").trim().split(/\s+/)[0]?.toLowerCase() === DIAGRAM_LANG;
 
-export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string } {
+function attribute(raw: string, name: string): string | undefined {
+  const match = new RegExp(`\\b${name}=(?:"([^"]*)"|'([^']*)'|(\\S+))`).exec(raw);
+  return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim() || undefined;
+}
+
+export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string; tab?: string } {
   const raw = (info ?? "").trim();
   const name = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
-  const title = /\btitle=(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(raw);
-  const t = title?.[1] ?? title?.[2] ?? title?.[3];
-  return { lang: LANGS[name] ?? "text", ...(t ? { title: t } : {}) };
+  const title = attribute(raw, "title");
+  const tab = attribute(raw, "tab");
+  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}) };
 }
 
 export function safeExternal(href: string): string | null {
@@ -269,9 +274,29 @@ function inline(tokens: Token[] | undefined, ctx: Ctx): Inline[] {
   return out;
 }
 
+const CARD_SEPARATOR = /^\s*(?:[:：]|—|–)\s*/u;
+
+function linkCards(items: ListItem[]): LinkCard[] | null {
+  const cards: LinkCard[] = [];
+  for (const item of items) {
+    const only = item.c.length === 1 ? item.c[0] : undefined;
+    if (item.task || only?.t !== "paragraph") return null;
+    const [link, ...rest] = only.c;
+    if (link?.t !== "link" || (link.kind !== "page" && link.kind !== "anchor")) return null;
+    const [first, ...after] = rest;
+    const lead = first?.t === "text" ? first.v.replace(CARD_SEPARATOR, "") : null;
+    const description: Inline[] = lead === null ? rest : lead ? [{ t: "text", v: lead }, ...after] : after;
+    cards.push({ href: link.href, kind: link.kind, title: link.c, description });
+  }
+  return cards.length > 0 ? cards : null;
+}
+
 function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: number; tight?: boolean }): Block[] {
   const out: Block[] = [];
+  const groups: { block: Extract<Block, { t: "codegroup" }>; line: number }[] = [];
+  let group: (typeof groups)[number] | null = null;
   for (const t of tokens) {
+    if (t.type !== "space" && t.type !== "code") group = null;
     switch (t.type) {
       case "space":
       case "def":
@@ -305,12 +330,14 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
             { ...state, tight: !item.loose },
           ),
         }));
-        out.push({ t: "list", ordered: list.ordered, start: typeof list.start === "number" ? list.start : 1, items });
+        const cards = list.ordered ? null : linkCards(items);
+        out.push(cards ? { t: "links", items: cards } : { t: "list", ordered: list.ordered, start: typeof list.start === "number" ? list.start : 1, items });
         break;
       }
       case "code": {
         const code = t as Tokens.Code;
         if (isDiagram(code.lang)) {
+          group = null;
           const block = diagram(code, ctx);
           if (block) out.push(block);
           break;
@@ -320,7 +347,22 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
           ctx.problems.push(
             `:${line}: the code block draws a diagram with box-drawing characters or arrows; write it as a \`mermaid\` block (development/documentation.md, Diagrams)`,
           );
-        out.push({ t: "code", code: code.text, ...fenceInfo(code.lang) });
+        const { tab, ...info } = fenceInfo(code.lang);
+        if (!tab) {
+          group = null;
+          out.push({ t: "code", code: code.text, ...info });
+          break;
+        }
+        if (info.title) ctx.problems.push(`:${line}: the fence has both \`tab="${tab}"\` and \`title=\`; a fence in a code group is named by its tab alone`);
+        if (group?.block.tabs.some((x) => x.label === tab))
+          ctx.problems.push(`:${line}: the code group has two tabs named "${tab}"; give each fence its own \`tab=\``);
+        const entry = { label: tab, lang: info.lang, code: code.text };
+        if (group) group.block.tabs.push(entry);
+        else {
+          group = { block: { t: "codegroup", tabs: [entry] }, line };
+          groups.push(group);
+          out.push(group.block);
+        }
         break;
       }
       case "blockquote": {
@@ -352,6 +394,14 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
         if (t.raw.trim()) out.push({ t: "paragraph", c: [{ t: "text", v: t.raw.trim() }] });
     }
   }
+  for (const { block, line } of groups) {
+    const [only] = block.tabs;
+    if (block.tabs.length > 1 || !only) continue;
+    ctx.problems.push(
+      `:${line}: the fence with \`tab="${only.label}"\` stands alone; a code group is two or more fences with \`tab=\` in a row, and a single block has no \`tab=\``,
+    );
+    out[out.indexOf(block)] = { t: "code", lang: only.lang, code: only.code };
+  }
   return out;
 }
 
@@ -381,6 +431,8 @@ function words(bs: Block[], into: Set<string>, labels: Map<Block, string[]> = ne
     else if (b.t === "diagram") [b.title, b.description ?? "", ...(labels.get(b) ?? [])].forEach(add);
     else if (b.t === "table") [...b.head, ...b.rows.flat()].forEach(inl);
     else if (b.t === "code" && b.code.length < 2000) add(b.code);
+    else if (b.t === "codegroup") b.tabs.filter((tab) => tab.code.length < 2000).forEach((tab) => add(tab.code));
+    else if (b.t === "links") b.items.forEach((card) => inl([...card.title, ...card.description]));
   }
 }
 
