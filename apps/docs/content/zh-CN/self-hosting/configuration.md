@@ -134,7 +134,7 @@ services:
 | `KAESO_UPDATES_CHECK` | `updates.check` | 布尔 | `true` | 每天两次检查 Kaeso 新版本。 |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | 文本 | `stable` | 提供哪些版本：`stable`，或 `prerelease` 同时提供预发布版本。 |
 | `KAESO_UPDATES_MODE` | `updates.mode` | 文本 | `manual` | 新实例通过更新器获取更新的方式：`manual`，由实例管理员逐次启动；或 `automatic`，在更新窗口内自动安装。 |
-| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | 文本 | `https://api.github.com/repos/logicplanes/kaeso/releases` | 版本列表的来源，格式与 GitHub 的 Releases API 相同。 |
+| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | 文本 | `https://update.kaeso.app/v1/releases.json` | 版本列表的来源：update.kaeso.app，或以 GitHub Releases API 格式响应的镜像。 |
 | `KAESO_UPDATER_URL` | `updater.url` | 文本 | `http://updater:8081` | 更新器的地址。 |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | 文本，机密 | — | 网关和更新器共享的令牌，至少 32 个字符。没有它，网关从不调用更新器。 |
 

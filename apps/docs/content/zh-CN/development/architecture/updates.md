@@ -9,8 +9,8 @@ order: 5
 ```mermaid
 flowchart TD
   accTitle: 实例如何得知新版本并完成更新
-  accDescr: 网关查询 GitHub 的版本 API，把状态保存在 PostgreSQL 中，并通过内部网络 updates 用 bearer 令牌请求更新器。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像，只通过内部网络 docker 上的 docker-proxy 访问 Docker，并写入维护标志，Caddy 读取该标志来提供更新页面和 JSON 503。
-  gateway[网关] -- 检查新版本 --> releases[GitHub 版本 API]
+  accDescr: 网关向 update.kaeso.app 查询新版本，把状态保存在 PostgreSQL 中，并通过内部网络 updates 用 bearer 令牌请求更新器。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像，只通过内部网络 docker 上的 docker-proxy 访问 Docker，并写入维护标志，Caddy 读取该标志来提供更新页面和 JSON 503。
+  gateway[网关] -- 检查新版本 --> releases[update.kaeso.app]
   gateway --> postgres[(PostgreSQL)]
   gateway -- bearer 令牌，网络 updates --> updater[更新器]
   updater -- release.json、compose.yaml --> github[github.com]
@@ -22,16 +22,20 @@ flowchart TD
   caddy[Caddy] -- 更新页面、JSON 503 --> maintenance
 ```
 
+## 版本源
+
+`update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版，说明超过 64 KiB 的部分被截断，整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。
+
 ## 网关
 
 `services/updates.rs` 和 `update_check` 任务负责查找新版本。该任务每五分钟询问一次下一次检查是否到期（`update_settings.next_check_at`）。
 
-- **列表。** 一次检查带着 `If-None-Match` 获取 `releases_url?per_page=50`，并沿着 GitHub 的下一页链接继续，最多十页，因为 GitHub 不按版本顺序列出版本。列表有变化时，在一个事务中替换 `update_releases`。
+- **列表。** 一次检查带着 `If-None-Match` 获取 `releases_url?per_page=50`，并沿着下一页链接继续，最多十页，因为版本源不按版本顺序列出版本。列表有变化时，在一个事务中替换 `update_releases`。
 - **清单。** 对每个比当前运行版本更新的版本，检查会获取并保存它的 `release.json`，或者保存无法获取的原因。每次检查最多获取十二份，同时获取四份，从最新的开始。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，使用镜像时则从 `updates.releases_url` 的源获取，而且客户端从不跟随从 HTTPS 到 HTTP 的重定向。
 - **时间。** 下一次检查在 12 小时后，再加上一小时内的随机时间。失败后至少隔一小时，如果 GitHub 的 `Retry-After` 或 `x-ratelimit-reset` 要求更晚则更晚。在此之前，`update_settings.blocked_until` 也会阻止 `instance/updates/check` 发起请求。
 - **自动更新。** 当 `update_settings.mode` 为 `automatic` 时，同一个任务用 `kaeso_update::schedule` 计算更新窗口：即实例 IANA 时区中的那个整点，通过 `jiff` 及其内置的时区数据计算，因此夏令时会让它移动。在窗口的那一小时内，任务在 `update_settings.auto_window_at` 中占用该窗口，因此一个窗口最多启动一次更新。如果上次成功检查已超过一小时，任务会先检查新版本，然后像 `apply` 一样启动计划的目标版本，设置 `update_jobs.automatic`，且不关联用户。更改模式或窗口会把 `auto_window_at` 设为当前时间，因此更改永远不会立即启动更新。
 
-`kaeso_update::policy::plan` 决定提供哪个版本：所选通道上比当前运行版本更新的最新版本。GitHub 标记为预发布的版本一律算作预发布，无论其版本号如何。遇到新的主版本、任何被跨过的版本清单中有 `manual: true`，或者缺少清单时，该更新需要手动操作。目标版本的 `manual_since` 也会计入，因此即使网关从未见过某个被跨过的版本，更新仍会被标记为需要手动操作。
+`kaeso_update::policy::plan` 决定提供哪个版本：所选通道上比当前运行版本更新的最新版本。版本源标记为预发布的版本一律算作预发布，无论其版本号如何。遇到新的主版本、任何被跨过的版本清单中有 `manual: true`，或者缺少清单时，该更新需要手动操作。目标版本的 `manual_since` 也会计入，因此即使网关从未见过某个被跨过的版本，更新仍会被标记为需要手动操作。
 
 `update_jobs` 保存每次更新，一个唯一索引保证同一时间只有一行处于 `running`。`apply` 在调用更新器之前先提交这一行：
 

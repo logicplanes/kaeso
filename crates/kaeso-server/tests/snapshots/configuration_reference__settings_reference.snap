@@ -37,7 +37,7 @@ expression: settings_reference()
 | `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day; turn it off for installs without internet. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console. |
 | `KAESO_UPDATES_MODE` | `updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual` (an instance admin starts each one in the console) or `automatic` (Kaeso installs them in the update window). Instance admins change it later in the console. |
-| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Where the list of Kaeso releases is fetched from, in the form of GitHub's releases API. |
+| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://update.kaeso.app/v1/releases.json` | Where the list of Kaeso releases is fetched from: update.kaeso.app, or a mirror that answers in the form of GitHub's releases API. |
 | `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | Address of the updater, the optional service that applies updates. |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater. |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |

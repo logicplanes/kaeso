@@ -29,7 +29,7 @@ docker compose up -d --wait
 
 ## 新版本
 
-网关每天两次在 GitHub 上检查新版本，失败后至少等一小时再试。请求中除了网关的版本号，不包含任何关于您实例的信息。
+网关每天两次在 `update.kaeso.app` 上检查新版本，失败后至少等一小时再试。请求中除了网关的版本号，不包含任何关于您实例的信息。
 
 实例管理员在**设置** › **实例** › **更新**中查看结果。该页面显示正在运行的版本、最新版本及其之后所有版本的说明，以及网关上次检查的时间。Platform API 的 `instance/updates/check` 会马上检查，即使检查已关闭。**更新**旁的**新**标记是唯一的提醒；Kaeso 不会为新版本发送邮件或显示横幅。
 
@@ -52,7 +52,7 @@ services:
       KAESO_MODELS_DEV_SYNC: "false"
 ```
 
-之后网关使用版本内置的模型数据，**更新**页面显示正在运行的版本，您需要手动更新。如果您维护一个与 GitHub Releases API 响应方式相同的镜像站点，也可以把 `KAESO_UPDATES_RELEASES_URL` 指向它。
+之后网关使用版本内置的模型数据，**更新**页面显示正在运行的版本，您需要手动更新。如果您维护一个与 `update.kaeso.app` 或 GitHub Releases API 响应方式相同的镜像站点，也可以把 `KAESO_UPDATES_RELEASES_URL` 指向它。
 
 ## 更新器
 

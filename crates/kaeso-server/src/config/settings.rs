@@ -105,7 +105,7 @@ const ROWS: &[Row] = &[
     s("updates.check", "KAESO_UPDATES_CHECK", Bool, Some("true"), false, "Look for new Kaeso releases twice a day; turn it off for installs without internet."),
     s("updates.channel", "KAESO_UPDATES_CHANNEL", Text, Some("stable"), false, "The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console."),
     s("updates.mode", "KAESO_UPDATES_MODE", Text, Some("manual"), false, "How a new install takes updates through the updater: `manual` (an instance admin starts each one in the console) or `automatic` (Kaeso installs them in the update window). Instance admins change it later in the console."),
-    s("updates.releases_url", "KAESO_UPDATES_RELEASES_URL", Text, Some("https://api.github.com/repos/logicplanes/kaeso/releases"), false, "Where the list of Kaeso releases is fetched from, in the form of GitHub's releases API."),
+    s("updates.releases_url", "KAESO_UPDATES_RELEASES_URL", Text, Some("https://update.kaeso.app/v1/releases.json"), false, "Where the list of Kaeso releases is fetched from: update.kaeso.app, or a mirror that answers in the form of GitHub's releases API."),
     s("updater.url", "KAESO_UPDATER_URL", Text, Some("http://updater:8081"), false, "Address of the updater, the optional service that applies updates."),
     s("updater.token", "KAESO_UPDATER_TOKEN", Text, None, true, "The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater."),
     Row::PerProvider,

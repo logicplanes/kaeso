@@ -9,8 +9,8 @@ The gateway finds releases and asks the updater to apply one; the updater verifi
 ```mermaid
 flowchart TD
   accTitle: How an install learns about releases and updates
-  accDescr: The gateway checks GitHub's releases API, keeps its state in PostgreSQL and asks the updater over the internal network updates with a bearer token. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io, reaches Docker only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
-  gateway[Gateway] -- checks for releases --> releases[GitHub releases API]
+  accDescr: The gateway checks update.kaeso.app for releases, keeps its state in PostgreSQL and asks the updater over the internal network updates with a bearer token. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io, reaches Docker only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
+  gateway[Gateway] -- checks for releases --> releases[update.kaeso.app]
   gateway --> postgres[(PostgreSQL)]
   gateway -- bearer token, network updates --> updater[Updater]
   updater -- release.json, compose.yaml --> github[github.com]
@@ -22,16 +22,20 @@ flowchart TD
   caddy[Caddy] -- updating page, JSON 503s --> maintenance
 ```
 
+## The release feed
+
+`update.kaeso.app` is a service run apart from this repository that reads the releases on GitHub. `v1/releases.json` lists the newest releases, always with the newest stable one, in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin.
+
 ## The gateway
 
 `services/updates.rs` and the `update_check` job look for releases. Every five minutes the job asks whether the next check is due (`update_settings.next_check_at`).
 
-- **Listing.** A check fetches `releases_url?per_page=50` with `If-None-Match` and follows GitHub's next-page links, at most ten pages, since GitHub doesn't list releases in version order. A changed list replaces `update_releases` in one transaction.
+- **Listing.** A check fetches `releases_url?per_page=50` with `If-None-Match` and follows next-page links, at most ten pages, since a feed doesn't list releases in version order. A changed list replaces `update_releases` in one transaction.
 - **Manifests.** For every release newer than the running version, the check fetches and stores its `release.json`, or the reason it couldn't. It fetches at most twelve per check, four at a time, newest first. A manifest comes only from `https://github.com/logicplanes/kaeso/releases/download/`, or from the origin of `updates.releases_url` for a mirror, and the client never follows a redirect from HTTPS to HTTP.
 - **Timing.** The next check is 12 hours later plus a random part of an hour. After a failure it is at least an hour later, or later when GitHub's `Retry-After` or `x-ratelimit-reset` says so. Until then, `update_settings.blocked_until` keeps `instance/updates/check` from asking too.
 - **Automatic updates.** With `update_settings.mode` at `automatic`, the same job computes the update window with `kaeso_update::schedule`: the hour in the instance's IANA time zone, through `jiff` and its bundled time zone data, so daylight saving time moves it. Inside the window's hour, the job claims the window in `update_settings.auto_window_at`, so one window starts at most one update, looks for releases when the last success is more than an hour old, and starts the plan's target like `apply`, with `update_jobs.automatic` set and no user. Changing the mode or the window sets `auto_window_at` to now, so a change never starts an update at once.
 
-`kaeso_update::policy::plan` chooses what to offer: the newest release on the channel that is newer than the running version. A release GitHub marks as a pre-release counts as one, whatever its version. The offer is manual for a new major version, for `manual: true` in any crossed release's manifest, or when a manifest is missing. The target's `manual_since` counts too, so a crossed release the gateway never saw still makes it manual.
+`kaeso_update::policy::plan` chooses what to offer: the newest release on the channel that is newer than the running version. A release the feed marks as a pre-release counts as one, whatever its version. The offer is manual for a new major version, for `manual: true` in any crossed release's manifest, or when a manifest is missing. The target's `manual_since` counts too, so a crossed release the gateway never saw still makes it manual.
 
 `update_jobs` holds every update, and a unique index allows one `running` row at a time. `apply` commits the row before it calls the updater:
 

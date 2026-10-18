@@ -9,8 +9,8 @@ Das Gateway findet Releases und bittet den Updater, eines anzuwenden; der Update
 ```mermaid
 flowchart TD
   accTitle: Wie eine Installation von Releases erfährt und sich aktualisiert
-  accDescr: Das Gateway fragt die Releases-API von GitHub ab, hält seinen Zustand in PostgreSQL und ruft den Updater über das interne Netz updates mit einem Bearer-Token auf. Der Updater holt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io, erreicht Docker nur über docker-proxy im internen Netz docker und schreibt das Wartungs-Flag, das Caddy liest, um die Update-Seite und die JSON-503 auszuliefern.
-  gateway[Gateway] -- sucht nach Releases --> releases[Releases-API von GitHub]
+  accDescr: Das Gateway fragt update.kaeso.app nach Releases ab, hält seinen Zustand in PostgreSQL und ruft den Updater über das interne Netz updates mit einem Bearer-Token auf. Der Updater holt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io, erreicht Docker nur über docker-proxy im internen Netz docker und schreibt das Wartungs-Flag, das Caddy liest, um die Update-Seite und die JSON-503 auszuliefern.
+  gateway[Gateway] -- sucht nach Releases --> releases[update.kaeso.app]
   gateway --> postgres[(PostgreSQL)]
   gateway -- Bearer-Token, Netz updates --> updater[Updater]
   updater -- release.json, compose.yaml --> github[github.com]
@@ -22,16 +22,20 @@ flowchart TD
   caddy[Caddy] -- Update-Seite, JSON-503 --> maintenance
 ```
 
+## Der Release-Feed
+
+`update.kaeso.app` ist ein Dienst außerhalb dieses Repositorys, der die Releases auf GitHub liest. `v1/releases.json` listet die neuesten Releases, immer mit dem neuesten stabilen, in der Form der Releases-API von GitHub, Notes nach 64 KiB gekürzt und die ganze Datei unter 3 MiB, da das Gateway höchstens 4 MiB liest. Die `release.json` jedes Releases liegt Byte für Byte gespiegelt unter `download/v<version>/`, da das Gateway ein Manifest nur vom Origin seines eigenen Feeds annimmt.
+
 ## Das Gateway
 
 `services/updates.rs` und der Job `update_check` suchen nach Releases. Alle fünf Minuten fragt der Job, ob die nächste Prüfung fällig ist (`update_settings.next_check_at`).
 
-- **Liste.** Eine Prüfung ruft `releases_url?per_page=50` mit `If-None-Match` ab und folgt den Links von GitHub auf die nächste Seite, höchstens zehn Seiten, da GitHub Releases nicht nach Version sortiert. Eine geänderte Liste ersetzt `update_releases` in einer Transaktion.
+- **Liste.** Eine Prüfung ruft `releases_url?per_page=50` mit `If-None-Match` ab und folgt den Links auf die nächste Seite, höchstens zehn Seiten, da ein Feed Releases nicht nach Version sortiert. Eine geänderte Liste ersetzt `update_releases` in einer Transaktion.
 - **Manifeste.** Für jedes Release, das neuer als die laufende Version ist, holt und speichert die Prüfung seine `release.json` oder den Grund, warum das nicht ging. Sie holt höchstens zwölf pro Prüfung, vier gleichzeitig, die neuesten zuerst. Ein Manifest kommt nur von `https://github.com/logicplanes/kaeso/releases/download/` oder, bei einem Spiegel, vom Origin von `updates.releases_url`, und der Client folgt nie einer Weiterleitung von HTTPS auf HTTP.
 - **Zeitpunkt.** Die nächste Prüfung folgt 12 Stunden später plus einem zufälligen Teil einer Stunde. Nach einem Fehler folgt sie frühestens eine Stunde später, oder später, wenn `Retry-After` oder `x-ratelimit-reset` von GitHub das verlangen. Bis dahin verhindert `update_settings.blocked_until`, dass auch `instance/updates/check` anfragt.
 - **Automatische Updates.** Steht `update_settings.mode` auf `automatic`, berechnet derselbe Job das Update-Fenster mit `kaeso_update::schedule`: die Stunde in der IANA-Zeitzone der Instanz, über `jiff` und dessen mitgelieferte Zeitzonendaten, sodass die Sommerzeit sie verschiebt. Innerhalb der Stunde des Fensters beansprucht der Job das Fenster in `update_settings.auto_window_at`, sodass ein Fenster höchstens ein Update startet. Er sucht nach Releases, wenn der letzte Erfolg mehr als eine Stunde zurückliegt, und startet das Ziel des Plans wie `apply`, mit gesetztem `update_jobs.automatic` und ohne Benutzer. Eine Änderung des Modus oder des Fensters setzt `auto_window_at` auf jetzt, sodass eine Änderung nie sofort ein Update startet.
 
-`kaeso_update::policy::plan` wählt, was angeboten wird: das neueste Release im Kanal, das neuer als die laufende Version ist. Ein Release, das GitHub als Vorabversion markiert, zählt als solche, egal welche Version es hat. Das Angebot verlangt Schritte von Hand bei einer neuen Major-Version, bei `manual: true` im Manifest eines übersprungenen Releases oder wenn ein Manifest fehlt. Auch `manual_since` des Ziels zählt, sodass ein übersprungenes Release, das das Gateway nie gesehen hat, das Update trotzdem manuell macht.
+`kaeso_update::policy::plan` wählt, was angeboten wird: das neueste Release im Kanal, das neuer als die laufende Version ist. Ein Release, das der Feed als Vorabversion markiert, zählt als solche, egal welche Version es hat. Das Angebot verlangt Schritte von Hand bei einer neuen Major-Version, bei `manual: true` im Manifest eines übersprungenen Releases oder wenn ein Manifest fehlt. Auch `manual_since` des Ziels zählt, sodass ein übersprungenes Release, das das Gateway nie gesehen hat, das Update trotzdem manuell macht.
 
 `update_jobs` enthält jedes Update, und ein eindeutiger Index erlaubt nur eine Zeile `running` zugleich. `apply` committet die Zeile, bevor es den Updater aufruft:
 

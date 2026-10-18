@@ -29,7 +29,7 @@ Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Be
 
 ## Neue Releases
 
-Das Gateway sucht zweimal am Tag auf GitHub nach neuen Releases, nach einem Fehler frühestens eine Stunde später. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways.
+Das Gateway sucht zweimal am Tag unter `update.kaeso.app` nach neuen Releases, nach einem Fehler frühestens eine Stunde später. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways.
 
 Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat. `instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
 
@@ -52,7 +52,7 @@ services:
       KAESO_MODELS_DEV_SYNC: "false"
 ```
 
-Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die Seite **Updates** zeigt die laufende Version, und Sie aktualisieren von Hand. Betreiben Sie einen Spiegel, der wie die Releases-API von GitHub antwortet, richten Sie stattdessen `KAESO_UPDATES_RELEASES_URL` darauf.
+Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die Seite **Updates** zeigt die laufende Version, und Sie aktualisieren von Hand. Betreiben Sie einen Spiegel, der wie `update.kaeso.app` oder die Releases-API von GitHub antwortet, richten Sie stattdessen `KAESO_UPDATES_RELEASES_URL` darauf.
 
 ## Der Updater
 

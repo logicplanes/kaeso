@@ -961,6 +961,8 @@ mod tests {
         let mirror =
             url::Url::parse("http://releases:8080/repos/logicplanes/kaeso/releases").unwrap();
         assert_eq!(downloads_of(&mirror), "http://releases:8080/");
+        let feed = url::Url::parse("https://update.kaeso.app/v1/releases.json").unwrap();
+        assert_eq!(downloads_of(&feed), "https://update.kaeso.app/");
     }
 
     #[test]
