@@ -9,10 +9,6 @@ repository.workspace = true
 homepage.workspace = true
 publish.workspace = true
 
-[[bin]]
-name = "kaeso-updater"
-path = "src/main.rs"
-
 [dependencies]
 kaeso-update.workspace = true
 axum.workspace = true

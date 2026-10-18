@@ -23,7 +23,6 @@
     "lint": "eslint .",
     "typecheck": "pnpm generate && tsc -b",
     "test": "pnpm generate && vitest run --coverage",
-    "test:watch": "pnpm generate && vitest",
     "i18n": "node scripts/i18n.mjs",
     "licenses:check": "node scripts/licenses.mjs",
     "e2e": "pnpm generate && playwright test",
