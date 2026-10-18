@@ -14,7 +14,7 @@ order: 2
 | [Node.js](https://nodejs.org) | 24，与 `.node-version` 一致 | 控制台、UI 库、文档和脚本 |
 | pnpm | 11，固定在 `package.json` 中，由 Corepack 提供 | TypeScript 工作区 |
 | 通过 rustup 安装的 [Rust](https://rustup.rs) | 1.99，固定在 `rust-toolchain.toml` 中 | 网关和 KPP |
-| 带 Compose 的 [Docker](https://docs.docker.com/get-docker/) | Compose 2.24 或更高版本 | 开发环境栈 |
+| 带 Compose 的 Docker 引擎 | Compose 2.24 或更高版本 | 开发环境栈 |
 | [Python](https://www.python.org) | 3.13 | 仅用于[端到端测试](testing.md#端到端测试) |
 
 Corepack 随 Node.js 一起提供。只需启用一次，它就会提供仓库固定的 pnpm 版本：
@@ -24,6 +24,15 @@ corepack enable
 ```
 
 第一次在仓库中运行 `cargo` 时，rustup 会安装 Rust 1.99 以及 rustfmt、clippy 和 llvm-tools；`rustup show` 可以提前完成安装。
+
+任何带 Compose 的 Docker 引擎都能运行开发环境栈：Linux 上用 Docker Engine，macOS 上用 [Colima](https://github.com/abiosoft/colima)，它不需要桌面应用。使用 Homebrew 安装：
+
+```bash
+brew install colima docker docker-compose docker-buildx
+colima start --cpu 4 --memory 8
+```
+
+Homebrew 把 Compose 和 Buildx 安装为 `docker` 命令的插件。按照它们的安装说明，在 `~/.docker/config.json` 中加入 `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`，`docker compose` 才能找到它们。8 GB 内存足以容纳开发环境栈的数据库和网关的首次构建。Colima 只与其虚拟机共享你的主目录，因此检出的代码以及试用的安装都要放在主目录中。
 
 ## 1. 获取代码
 
@@ -55,7 +64,7 @@ pnpm stack:up
 | `mail` | Mailpit，接收网关发送的每封邮件 | `http://127.0.0.1:58025`，SMTP 在 `127.0.0.1:51025` |
 | `provider` | 模拟的 OpenAI 和 Anthropic API，因此不需要真实的服务商密钥 | 仅在栈内部 |
 | `idp` | 用于单点登录的模拟 OpenID Connect 服务商 | `http://idp.localhost:18091` |
-| `releases` | 为 **实例设置 → 更新** 提供模拟的 Kaeso 版本和模拟更新器；向 `POST /__scenario` 发送 `releases`（`patch`、`major`、`manual`、`none`、`error`）、`updater`（`ready`、`down`）和 `outcome`（`succeeded`、`rolled_back`）可以改变它们的响应 | `http://127.0.0.1:18092` |
+| `releases` | 为**设置** › **实例** › **更新**提供模拟的 Kaeso 版本和模拟更新器；向 `POST /__scenario` 发送 `releases`（`patch`、`major`、`manual`、`none`、`error`）、`updater`（`ready`、`down`）和 `outcome`（`succeeded`、`rolled_back`）可以改变它们的响应 | `http://127.0.0.1:18092` |
 | `master-key` | 在网关启动前把主密钥写入一个卷 | |
 
 该栈是 Compose 项目 `kaeso-dev`，定义在 `deploy/compose.dev.yaml` 中。Rust 测试只需要数据库和 Mailpit，它们可以不带网关单独启动：

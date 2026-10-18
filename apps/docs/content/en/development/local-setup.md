@@ -14,7 +14,7 @@ This page takes you from a fresh clone to the gateway built from source, the con
 | [Node.js](https://nodejs.org) | 24, as in `.node-version` | The console, the UI library, the docs and the scripts |
 | pnpm | 11, pinned in `package.json` and provided by Corepack | The TypeScript workspace |
 | [Rust](https://rustup.rs) through rustup | 1.99, pinned in `rust-toolchain.toml` | The gateway and KPP |
-| [Docker](https://docs.docker.com/get-docker/) with Compose | Compose 2.24 or newer | The development stack |
+| A Docker engine with Compose | Compose 2.24 or newer | The development stack |
 | [Python](https://www.python.org) | 3.13 | Only the [end-to-end tests](testing.md#end-to-end-tests) |
 
 Corepack ships with Node.js. Turn it on once and it provides the exact pnpm version the repository pins:
@@ -24,6 +24,15 @@ corepack enable
 ```
 
 rustup installs Rust 1.99 with rustfmt, clippy and llvm-tools the first time you run `cargo` in the repository; `rustup show` does it ahead of time.
+
+Any Docker engine with Compose runs the stack: Docker Engine on Linux, or [Colima](https://github.com/abiosoft/colima) on macOS, which needs no desktop app. With Homebrew:
+
+```bash
+brew install colima docker docker-compose docker-buildx
+colima start --cpu 4 --memory 8
+```
+
+Homebrew installs Compose and Buildx as plugins of the `docker` command. Add `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]` to `~/.docker/config.json`, as their install notes say, so that `docker compose` finds them. Eight gigabytes of memory leave room for the stack's databases and the gateway's first build. Colima shares only your home folder with its virtual machine, so keep the checkout, and any install you try, inside it.
 
 ## 1. Get the code
 
@@ -55,7 +64,7 @@ This builds the gateway's image from your checkout (`kaeso-dev-gateway`, from `d
 | `mail` | Mailpit, which catches every email the gateway sends | `http://127.0.0.1:58025`, SMTP on `127.0.0.1:51025` |
 | `provider` | A mock OpenAI and Anthropic API, so no real provider key is needed | Inside the stack only |
 | `idp` | A mock OpenID Connect provider for single sign-on | `http://idp.localhost:18091` |
-| `releases` | Mock Kaeso releases and a mock updater for **Instance settings → Updates**; `POST /__scenario` with `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) and `outcome` (`succeeded`, `rolled_back`) changes what they answer | `http://127.0.0.1:18092` |
+| `releases` | Mock Kaeso releases and a mock updater for **Settings** › **Instance** › **Updates**; `POST /__scenario` with `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) and `outcome` (`succeeded`, `rolled_back`) changes what they answer | `http://127.0.0.1:18092` |
 | `master-key` | Writes the gateway's master key into a volume before it starts | |
 
 The stack is the Compose project `kaeso-dev`, defined in `deploy/compose.dev.yaml`. The Rust tests need only the databases and Mailpit, which start without the gateway:
