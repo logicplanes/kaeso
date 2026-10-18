@@ -4,6 +4,8 @@ description: How every field of the Anthropic Messages format maps to KPP and ba
 order: 4
 ---
 
+Look up any field of the Anthropic Messages format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
+
 - **Codec:** `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`)
 - **Endpoints:** `POST /v1/messages` (JSON and SSE), `POST /v1/messages/count_tokens`, and the [models](#models) endpoints
 - **Fixtures:** `crates/kaeso-codecs/fixtures/anthropic_messages/`

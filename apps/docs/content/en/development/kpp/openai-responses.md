@@ -4,6 +4,8 @@ description: How every field of the OpenAI Responses format maps to KPP and back
 order: 6
 ---
 
+Look up any field of the OpenAI Responses format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
+
 - **Codec:** `kaeso_codecs::openai_responses::OpenAiResponses` (`crates/kaeso-codecs/src/openai_responses/`)
 - **Endpoints:** `POST /v1/responses` (JSON and SSE), `POST /v1/responses/input_tokens`, and the [models](#models) endpoints shared by every OpenAI codec
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_responses/`

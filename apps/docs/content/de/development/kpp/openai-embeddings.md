@@ -4,6 +4,8 @@ description: Wie jedes Feld des Formats OpenAI Embeddings auf KPP abgebildet wir
 order: 7
 ---
 
+Schlagen Sie hier jedes Feld des Formats OpenAI Embeddings nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
+
 - **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)
 - **Endpunkte:** `POST /v1/embeddings` und die [Modell-Endpunkte](#modelle), die alle OpenAI-Codecs teilen
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_embeddings/`

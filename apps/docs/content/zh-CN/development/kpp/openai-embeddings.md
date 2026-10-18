@@ -4,6 +4,8 @@ description: OpenAI Embeddings 格式的每个字段如何映射到 KPP 以及�
 order: 7
 ---
 
+在这里查阅 OpenAI Embeddings 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
+
 - **编解码器：**`kaeso_codecs::openai_embeddings::OpenAiEmbeddings`（`crates/kaeso-codecs/src/openai_embeddings/`）
 - **端点：**`POST /v1/embeddings`，以及所有 OpenAI 编解码器共用的[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/openai_embeddings/`
