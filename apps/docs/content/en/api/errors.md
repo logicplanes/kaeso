@@ -1,14 +1,50 @@
 ---
 title: Errors
-description: What a failed model request returns, in each API format.
+description: What a failed model request returns in each API format, and what each status means.
 order: 2
 ---
 
-A failed model request gets an HTTP status and an error body in the format the app called, so the SDK raises its usual error. The message says what went wrong and what to do. Every answer carries `kaeso-request-id`, and the request log has an entry under the same id, with the provider's own message where there was one. The Platform API has [its own errors](platform-api.md#errors).
+A failed model request returns an HTTP status and an error in the format your app called, so the SDK raises its usual error. Every answer carries the header `kaeso-request-id`, and the [request logs](../console/request-logs.md) keep an entry under that id. Platform API errors are on [their own page](platform-api.md#errors).
+
+This request names a model that isn't in the project's catalogue, so Kaeso answers 404:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1/responses \
+  -H "Authorization: Bearer $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model": "gpt-9", "input": "Write a haiku about gateways."}'
+```
+
+```python tab="Python"
+import os
+import openai
+
+client = openai.OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+
+try:
+    client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
+except openai.APIStatusError as error:
+    print(error.status_code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+
+try {
+  await client.responses.create({ model: "gpt-9", input: "Write a haiku about gateways." });
+} catch (error) {
+  if (!(error instanceof OpenAI.APIError)) throw error;
+  console.log(error.status, error.headers?.get("kaeso-request-id"));
+  console.log(error.message);
+}
+```
 
 ## OpenAI formats
 
-Chat Completions, Responses and Embeddings share one error shape:
+Chat Completions, Responses and Embeddings share one error body:
 
 ```json
 {
@@ -35,22 +71,67 @@ Chat Completions, Responses and Embeddings share one error shape:
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` is in whole seconds, rounded up; when the wait has a fraction of a second, `retry-after-ms` gives it in milliseconds. The shape has no field for the request's id, so read it from the `kaeso-request-id` header.
+The body has no field for the request's id, so read it from the `kaeso-request-id` header. `Retry-After` gives the wait in whole seconds, rounded up. When the wait has a fraction of a second, `retry-after-ms` gives it in milliseconds.
 
 ## Anthropic format
+
+The same request with the Anthropic SDK:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1/messages \
+  -H "x-api-key: $KAESO_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model": "gpt-9", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+```
+
+```python tab="Python"
+import os
+import anthropic
+
+client = anthropic.Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+
+try:
+    client.messages.create(
+        model="gpt-9",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+    )
+except anthropic.APIStatusError as error:
+    print(error.status_code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+
+try {
+  await client.messages.create({
+    model: "gpt-9",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "Write a haiku about gateways." }],
+  });
+} catch (error) {
+  if (!(error instanceof Anthropic.APIError)) throw error;
+  console.log(error.status, error.headers?.get("kaeso-request-id"));
+  console.log(error.message);
+}
+```
+
+The error body carries the request's id in `request_id`, also when the error comes from the provider:
 
 ```json
 {
   "type": "error",
   "error": {
-    "type": "rate_limit_error",
-    "message": "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds."
+    "type": "not_found_error",
+    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models."
   },
   "request_id": "req_…"
 }
 ```
-
-`request_id` is the same id as in `kaeso-request-id`, also on an error that comes from the provider.
 
 | Status | `error.type` |
 | --- | --- |
@@ -66,48 +147,55 @@ Chat Completions, Responses and Embeddings share one error shape:
 | 529 | `overloaded_error` |
 | Any other | `api_error` |
 
-## Why requests fail
+`Retry-After` gives the wait in whole seconds, rounded up.
+
+## Causes
+
+The message names the cause and what to do. These are the causes behind each status:
 
 | Status | Cause |
 | --- | --- |
-| 400 | The request can't be read; the model doesn't take a setting the request uses; a field can't be carried to the provider; the context is too long; several providers in the project serve the model id; no provider key is set up for the model's provider |
-| 401 | No key; or the key is unknown, disabled, archived or expired; its member or service account is no longer active; its project or organization can't be used |
-| 403 | The key has platform access only, is an organization platform key, or may not call models (`api.request`); or the key or its member may not use this model |
-| 404 | The model isn't in the project's catalogue, the provider doesn't serve it to the project's provider key, or the path doesn't exist |
-| 405 | The path doesn't take this method |
-| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default |
-| 429 | A rate limit or budget, or too many unknown keys from the same address. `Retry-After` says when to try again, except for a used-up budget, whose message says when it resets |
-| 500 | A provider key can't be decrypted, or the model's provider isn't available in this install; in the OpenAI formats, also every 503 cause below |
-| 502 | The provider can't be reached, or the transfer failed |
-| 503 | In the Anthropic format: the catalogue, the API keys or the provider keys can't be loaded, a hard budget can't be checked because Valkey is down, or the gateway is restarting. In the OpenAI formats: the provider is overloaded |
-| 504 | The provider didn't answer in time |
-| 529 | The provider is overloaded, in the Anthropic format |
+| 400 | Kaeso can't read the request, or the model doesn't take a setting or field the request uses. |
+| 400 | The context is too long for the model. |
+| 400 | Several providers in the project serve the model id. Send `provider/model` instead. |
+| 400 | The project has no provider key for the model's provider. |
+| 401 | The key is missing, unknown, disabled, archived or expired. |
+| 401 | The key's member or service account is no longer active, or its project or organization can't be used. |
+| 403 | The key has platform access only, or it is a platform key. Neither calls models. |
+| 403 | The key's member or service account lacks the right `api.request`, or may not use this model. |
+| 404 | The model isn't in the project's catalogue, or the provider doesn't serve it to the project's provider key. |
+| 404 | The path doesn't exist. |
+| 405 | The path doesn't take this method. |
+| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. |
+| 429 | A rate limit or budget is reached, and the message names it. For a used-up budget, the message says when it resets. |
+| 429 | Too many requests with unknown keys came from your address. |
+| 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |
+| 502 | Kaeso can't reach the provider, or the transfer failed. |
+| 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
+| 503 | The provider is overloaded, in the OpenAI formats. |
+| 504 | The provider didn't answer in time. |
+| 529 | The provider is overloaded, in the Anthropic format. |
 
-A stream that has started can't change its status: when the provider fails, or ends the stream before the reply is complete, the stream ends with an error event in the app's format instead.
+Once a stream has started, its status can't change. If the provider fails or ends the stream early, the stream ends with an error event in your app's format.
 
 ## Provider errors
 
-When the app and the provider speak the same format, a provider's error comes back as the provider sent it, with its status; an Anthropic error gets Kaeso's request id in `request_id`. Otherwise the error keeps its meaning in the app's format: a provider key the provider refuses comes back as 401 or 403, the provider's rate limit as 429, its billing refusal as 402 or 429, and its other server errors with their 5xx status. The request log keeps the provider's own message.
+When your app and the provider use the same format, Kaeso passes the provider's error on with its status. An Anthropic error also gets Kaeso's id in `request_id`.
 
-### A model the provider doesn't serve
+Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 
-When the provider answers 404 for a model in the catalogue, Kaeso checks whether the provider still serves that model to the project's provider key. It asks the provider's `GET /v1/models/{model}`, and, since a 404 there can also mean the provider has no such endpoint, reads the provider's full listing, `GET /v1/models`.
+| The provider | Your app gets |
+| --- | --- |
+| Refuses the provider key | 401 or 403 |
+| Rate-limits the request | 429 |
+| Refuses for billing reasons | 402 in the Anthropic format, 429 `insufficient_quota` in the OpenAI formats |
+| Is overloaded | 529 in the Anthropic format, 503 in the OpenAI formats |
+| Fails with another server error | Its own 5xx status |
 
-| The listing | What the app gets | The catalogue |
-| --- | --- | --- |
-| Answers without the model, because it is retired or the key has no access to it | 404 with a message that names the provider and the model; `param` is `model` in the OpenAI formats | The model is marked **Unavailable** ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed in the meantime |
-| Lists the model | The provider's 404 as it was sent: it was about something else, such as a file id | Unchanged |
-| Doesn't answer, as with some OpenAI-compatible services | The provider's 404 as it was sent | Unchanged |
+The request log keeps the provider's own message. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
 
-```json
-{
-  "type": "error",
-  "error": {
-    "type": "not_found_error",
-    "message": "Anthropic does not serve the model `claude-sonnet-4-5` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
-  },
-  "request_id": "req_…"
-}
-```
+### Models the provider doesn't serve
 
-Kaeso never sends the request again, to this model or another.
+When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model. The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)).
+
+If the provider still lists the model, or can't say, your app gets the provider's 404 as it was sent. That 404 was about something else, such as a file id.

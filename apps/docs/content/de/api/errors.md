@@ -1,14 +1,50 @@
 ---
 title: Fehler
-description: Was eine fehlgeschlagene Modellanfrage zurückgibt, in jedem API-Format.
+description: Was eine fehlgeschlagene Modellanfrage in jedem API-Format zurückgibt und was jeder Status bedeutet.
 order: 2
 ---
 
-Eine fehlgeschlagene Modellanfrage erhält einen HTTP-Status und einen Fehler-Body im Format, das die App aufgerufen hat, sodass das SDK seinen gewohnten Fehler auslöst. Die Meldung sagt, was schiefging und was zu tun ist. Jede Antwort trägt `kaeso-request-id`, und das Anfrageprotokoll hat einen Eintrag unter derselben ID, mit der eigenen Meldung des Anbieters, wo es eine gab. Die Platform API hat [eigene Fehler](platform-api.md#fehler).
+Eine fehlgeschlagene Modellanfrage gibt einen HTTP-Status und einen Fehler im Format zurück, das Ihre App aufgerufen hat. So löst das SDK seinen gewohnten Fehler aus. Jede Antwort trägt den Header `kaeso-request-id`, und die [Anfrageprotokolle](../console/request-logs.md) führen einen Eintrag unter dieser ID. Die Fehler der Platform API stehen auf [ihrer eigenen Seite](platform-api.md#fehler).
+
+Diese Anfrage nennt ein Modell, das nicht im Katalog des Projekts steht, deshalb antwortet Kaeso mit 404:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1/responses \
+  -H "Authorization: Bearer $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model": "gpt-9", "input": "Write a haiku about gateways."}'
+```
+
+```python tab="Python"
+import os
+import openai
+
+client = openai.OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+
+try:
+    client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
+except openai.APIStatusError as error:
+    print(error.status_code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+
+try {
+  await client.responses.create({ model: "gpt-9", input: "Write a haiku about gateways." });
+} catch (error) {
+  if (!(error instanceof OpenAI.APIError)) throw error;
+  console.log(error.status, error.headers?.get("kaeso-request-id"));
+  console.log(error.message);
+}
+```
 
 ## OpenAI-Formate
 
-Chat Completions, Responses und Embeddings teilen eine Fehlerform:
+Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 
 ```json
 {
@@ -35,22 +71,67 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
-`Retry-After` steht in ganzen Sekunden, aufgerundet; hat die Wartezeit Sekundenbruchteile, nennt `retry-after-ms` sie in Millisekunden. Die Form hat kein Feld für die ID der Anfrage; sie steht im Header `kaeso-request-id`.
+Der Body hat kein Feld für die ID der Anfrage. Lesen Sie sie deshalb aus dem Header `kaeso-request-id`. `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Hat die Wartezeit Sekundenbruchteile, nennt `retry-after-ms` sie in Millisekunden.
 
 ## Anthropic-Format
+
+Dieselbe Anfrage mit dem Anthropic-SDK:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1/messages \
+  -H "x-api-key: $KAESO_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model": "gpt-9", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+```
+
+```python tab="Python"
+import os
+import anthropic
+
+client = anthropic.Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+
+try:
+    client.messages.create(
+        model="gpt-9",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+    )
+except anthropic.APIStatusError as error:
+    print(error.status_code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+
+try {
+  await client.messages.create({
+    model: "gpt-9",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "Write a haiku about gateways." }],
+  });
+} catch (error) {
+  if (!(error instanceof Anthropic.APIError)) throw error;
+  console.log(error.status, error.headers?.get("kaeso-request-id"));
+  console.log(error.message);
+}
+```
+
+Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler vom Anbieter kommt:
 
 ```json
 {
   "type": "error",
   "error": {
-    "type": "rate_limit_error",
-    "message": "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds."
+    "type": "not_found_error",
+    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models."
   },
   "request_id": "req_…"
 }
 ```
-
-`request_id` ist dieselbe ID wie in `kaeso-request-id`, auch bei einem Fehler, der vom Anbieter kommt.
 
 | Status | `error.type` |
 | --- | --- |
@@ -66,48 +147,55 @@ Chat Completions, Responses und Embeddings teilen eine Fehlerform:
 | 529 | `overloaded_error` |
 | Jeder andere | `api_error` |
 
-## Warum Anfragen fehlschlagen
+`Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet.
+
+## Ursachen
+
+Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter jedem Status:
 
 | Status | Ursache |
 | --- | --- |
-| 400 | Die Anfrage ist nicht lesbar; das Modell nimmt eine verwendete Einstellung nicht an; ein Feld lässt sich nicht zum Anbieter übertragen; der Kontext ist zu lang; mehrere Anbieter im Projekt bieten die Modell-ID an; für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
-| 401 | Kein Schlüssel; oder der Schlüssel ist unbekannt, deaktiviert, archiviert oder abgelaufen; sein Mitglied oder Dienstkonto ist nicht mehr aktiv; sein Projekt oder seine Organisation ist nicht nutzbar |
-| 403 | Der Schlüssel hat nur Plattformzugriff, ist ein Plattform-Schlüssel der Organisation oder darf keine Modelle aufrufen (`api.request`); oder der Schlüssel oder sein Mitglied darf dieses Modell nicht verwenden |
-| 404 | Das Modell ist nicht im Katalog des Projekts, der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit, oder den Pfad gibt es nicht |
-| 405 | Der Pfad nimmt diese Methode nicht an |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB |
-| 429 | Ein Ratenlimit oder Budget, oder zu viele unbekannte Schlüssel von derselben Adresse. `Retry-After` sagt, wann es wieder geht, außer bei einem aufgebrauchten Budget, dessen Meldung nennt, wann es zurückgesetzt wird |
-| 500 | Ein Anbieter-Schlüssel lässt sich nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar; in den OpenAI-Formaten zusätzlich alle 503-Ursachen unten |
-| 502 | Der Anbieter ist nicht erreichbar, oder die Übertragung ist fehlgeschlagen |
-| 503 | Im Anthropic-Format: Katalog, API-Schlüssel oder Anbieter-Schlüssel lassen sich nicht laden, ein hartes Budget ist nicht prüfbar, weil Valkey ausgefallen ist, oder das Gateway startet neu. In den OpenAI-Formaten: Der Anbieter ist überlastet |
-| 504 | Der Anbieter hat nicht rechtzeitig geantwortet |
-| 529 | Der Anbieter ist überlastet, im Anthropic-Format |
+| 400 | Kaeso kann die Anfrage nicht lesen, oder das Modell nimmt eine Einstellung oder ein Feld der Anfrage nicht an. |
+| 400 | Der Kontext ist zu lang für das Modell. |
+| 400 | Mehrere Anbieter im Projekt bieten die Modell-ID an. Senden Sie stattdessen `provider/model`. |
+| 400 | Das Projekt hat keinen Anbieter-Schlüssel für den Anbieter des Modells. |
+| 401 | Der Schlüssel fehlt, ist unbekannt, deaktiviert, archiviert oder abgelaufen. |
+| 401 | Das Mitglied oder Dienstkonto des Schlüssels ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar. |
+| 403 | Der Schlüssel hat nur Plattformzugriff, oder es ist ein Plattform-Schlüssel. Beide rufen keine Modelle auf. |
+| 403 | Dem Mitglied oder Dienstkonto des Schlüssels fehlt das Recht `api.request`, oder es darf dieses Modell nicht verwenden. |
+| 404 | Das Modell steht nicht im Katalog des Projekts, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. |
+| 404 | Den Pfad gibt es nicht. |
+| 405 | Der Pfad nimmt diese Methode nicht an. |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB. |
+| 429 | Ein Ratenlimit oder Budget ist erreicht, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
+| 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
+| 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |
+| 502 | Kaeso erreicht den Anbieter nicht, oder die Übertragung ist fehlgeschlagen. |
+| 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
+| 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten. |
+| 504 | Der Anbieter hat nicht rechtzeitig geantwortet. |
+| 529 | Der Anbieter ist überlastet, im Anthropic-Format. |
 
-Ein begonnener Stream kann seinen Status nicht mehr ändern: Scheitert der Anbieter oder beendet er den Stream vor dem Ende der Antwort, endet der Stream stattdessen mit einem Fehler-Event im Format der App.
+Hat ein Stream begonnen, kann sich sein Status nicht mehr ändern. Scheitert der Anbieter oder beendet er den Stream zu früh, endet der Stream mit einem Fehler-Event im Format Ihrer App.
 
 ## Fehler des Anbieters
 
-Sprechen App und Anbieter dasselbe Format, kommt ein Fehler des Anbieters so zurück, wie er ihn gesendet hat, mit seinem Status; ein Anthropic-Fehler erhält Kaesos Anfrage-ID in `request_id`. Andernfalls behält der Fehler seine Bedeutung im Format der App: Ein Anbieter-Schlüssel, den der Anbieter ablehnt, kommt als 401 oder 403 zurück, das Ratenlimit des Anbieters als 429, seine Ablehnung aus Abrechnungsgründen als 402 oder 429 und seine übrigen Serverfehler mit ihrem 5xx-Status. Das Anfrageprotokoll behält die eigene Meldung des Anbieters.
+Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`.
 
-### Ein Modell, das der Anbieter nicht bereitstellt
+Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bedeutung:
 
-Antwortet der Anbieter auf ein Katalogmodell mit 404, prüft Kaeso, ob der Anbieter dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Kaeso fragt dazu `GET /v1/models/{model}` beim Anbieter ab und liest, weil ein 404 dort auch ein fehlender Endpunkt sein kann, zusätzlich die vollständige Liste `GET /v1/models`.
+| Der Anbieter | Ihre App erhält |
+| --- | --- |
+| Lehnt den Anbieter-Schlüssel ab | 401 oder 403 |
+| Lehnt die Anfrage wegen seines Ratenlimits ab | 429 |
+| Lehnt aus Abrechnungsgründen ab | 402 im Anthropic-Format, 429 `insufficient_quota` in den OpenAI-Formaten |
+| Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten |
+| Scheitert mit einem anderen Serverfehler | Seinen eigenen 5xx-Status |
 
-| Die Liste | Was die App erhält | Der Katalog |
-| --- | --- | --- |
-| Antwortet ohne das Modell, weil es eingestellt ist oder der Schlüssel keinen Zugriff hat | 404 mit einer Meldung, die Anbieter und Modell nennt; `param` ist in den OpenAI-Formaten `model` | Das Modell wird als **Nicht verfügbar** markiert ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich inzwischen geändert |
-| Enthält das Modell | Das 404 des Anbieters, wie gesendet: Es betraf etwas anderes, etwa eine Datei-ID | Unverändert |
-| Antwortet nicht, wie bei manchen OpenAI-kompatiblen Diensten | Das 404 des Anbieters, wie gesendet | Unverändert |
+Das Anfrageprotokoll behält die eigene Meldung des Anbieters. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
 
-```json
-{
-  "type": "error",
-  "error": {
-    "type": "not_found_error",
-    "message": "Anthropic does not serve the model `claude-sonnet-4-5` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
-  },
-  "request_id": "req_…"
-}
-```
+### Modelle, die der Anbieter nicht bereitstellt
 
-Kaeso sendet die Anfrage nie erneut, weder an dieses noch an ein anderes Modell.
+Antwortet der Anbieter auf ein Modell aus dem Katalog mit 404, fragt Kaeso den Anbieter, ob er dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Ist das nicht so, erhält Ihre App 404 mit einer Meldung, die Anbieter und Modell nennt. Der Katalog zeigt das Modell dann als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
+
+Führt der Anbieter das Modell noch oder gibt keine Auskunft, erhält Ihre App das 404 des Anbieters so, wie er es gesendet hat. Dieses 404 betraf dann etwas anderes, etwa eine Datei-ID.
