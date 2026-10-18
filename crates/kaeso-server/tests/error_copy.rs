@@ -364,6 +364,8 @@ fn the_scan_finds_copy_and_skips_the_rest() {
 
 const CONSOLE_ERRORS: &str = "apps/console/src/i18n/locales/en/errors.json";
 
+const CONSOLE_RULES: &str = "apps/console/src/api/gateway-errors.ts";
+
 const SHOWN_IN_THE_PLAYGROUND: &[&str] = &["crates/kaeso-core/src/catalogue/capability.rs"];
 
 const SHOWN_BY_CODE: &[&str] = &["crates/kaeso-server/src/platform/projects/model_check.rs"];
@@ -431,12 +433,32 @@ fn translates(console: &str, gateway: &str) -> bool {
     fits(&parts(console), &sample(gateway)) || fits(&parts(gateway), &sample(console))
 }
 
+fn rule_keys(source: &str) -> Vec<&str> {
+    source
+        .split("rule(")
+        .skip(1)
+        .filter_map(|rest| rest.trim_start().strip_prefix('"'))
+        .filter_map(|rest| rest.split('"').next())
+        .collect()
+}
+
 #[test]
 fn the_console_translates_every_message() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let catalog: serde_json::Map<String, serde_json::Value> =
         serde_json::from_str(&std::fs::read_to_string(root.join(CONSOLE_ERRORS)).unwrap()).unwrap();
-    let console: Vec<&str> = catalog.values().filter_map(|v| v.as_str()).collect();
+    let source = std::fs::read_to_string(root.join(CONSOLE_RULES)).unwrap();
+    let rules = rule_keys(&source);
+    let console: Vec<&str> = catalog
+        .iter()
+        .filter(|(key, _)| rules.contains(&key.as_str()))
+        .filter_map(|(_, v)| v.as_str())
+        .collect();
+    assert!(
+        console.len() > 300,
+        "only {} rules found in {CONSOLE_RULES}",
+        console.len()
+    );
     let mut files = Vec::new();
     for p in SCANNED.iter().chain(SHOWN_IN_THE_PLAYGROUND) {
         rust_files(&root.join(p), &mut files);
@@ -471,8 +493,8 @@ fn the_console_translates_every_message() {
     );
     assert!(
         missing.is_empty(),
-        "the console has no translation for these messages; add a rule to \
-         apps/console/src/api/gateway-errors.ts:\n{}",
+        "the console has no rule for these messages; add one with its German and Chinese \
+         to {CONSOLE_RULES}:\n{}",
         missing.join("\n")
     );
 }

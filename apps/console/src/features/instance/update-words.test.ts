@@ -73,9 +73,7 @@ describe("update words", () => {
     expect(checkErrorText("GitHub refused more requests for now")).toBe("GitHub nimmt vorerst keine weiteren Anfragen an");
     expect(checkErrorText("api.github.com answered 502")).toBe("api.github.com hat mit 502 geantwortet");
     apply(await load("zh-CN"));
-    expect(checkErrorText("the release list from api.github.com does not parse: expected value at line 1")).toBe(
-      "无法读取来自 api.github.com 的版本列表：expected value at line 1",
-    );
+    expect(checkErrorText("the release list from api.github.com does not parse: expected value at line 1")).toBe("无法读取来自 api.github.com 的版本列表");
     expect(checkErrorText("the release list from api.github.com is larger than 4 MiB")).toBe("来自 api.github.com 的版本列表超过 4 MiB");
     expect(checkErrorText("no HTTP client")).toBe("网关无法创建 HTTP 客户端");
     expect(checkErrorText("something new")).toBe("something new");

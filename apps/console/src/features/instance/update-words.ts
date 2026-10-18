@@ -104,8 +104,8 @@ const CHECK_ERRORS: readonly [RegExp, (m: RegExpExecArray) => string][] = [
   [/^(.+) refused more requests for now$/, (m) => t("instance.updates.checkRateLimited", "{host} refuses more requests for now", { host: String(m[1]) })],
   [/^(.+) answered (\d+)$/, (m) => t("instance.updates.checkStatus", "{host} answered {status}", { host: String(m[1]), status: String(m[2]) })],
   [
-    /^the release list from (.+?) does not parse: (.+)$/s,
-    (m) => t("instance.updates.checkUnreadable", "The release list from {host} can't be read: {detail}", { host: String(m[1]), detail: String(m[2]) }),
+    /^the release list from (.+?) does not parse: .+$/s,
+    (m) => t("instance.updates.checkUnreadable", "The release list from {host} can't be read", { host: String(m[1]) }),
   ],
   [
     /^the release list from (.+) is larger than 4 MiB$/,

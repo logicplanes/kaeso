@@ -281,7 +281,7 @@
   "instance.updates.checkTitle": "Look for new releases",
   "instance.updates.checkTooLarge": "The release list from {host} is larger than 4 MiB",
   "instance.updates.checkUnreachable": "{host} can't be reached: {cause}",
-  "instance.updates.checkUnreadable": "The release list from {host} can't be read: {detail}",
+  "instance.updates.checkUnreadable": "The release list from {host} can't be read",
   "instance.updates.composeByHand": "Set the Kaeso images in compose.yaml to {version} by hand.",
   "instance.updates.confirmHint": "Kaeso is unavailable for about a minute; apps get an error that asks them to try again.",
   "instance.updates.confirmTitle": "Update to Kaeso {version}?",

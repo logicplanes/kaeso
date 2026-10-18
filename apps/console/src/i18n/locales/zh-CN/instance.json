@@ -395,7 +395,7 @@
   "instance.updates.causeFailed": "请求失败",
   "instance.updates.checkRateLimited": "{host} 暂时不再接受请求",
   "instance.updates.checkStatus": "{host} 返回了 {status}",
-  "instance.updates.checkUnreadable": "无法读取来自 {host} 的版本列表：{detail}",
+  "instance.updates.checkUnreadable": "无法读取来自 {host} 的版本列表",
   "instance.updates.checkTooLarge": "来自 {host} 的版本列表超过 4 MiB",
   "instance.updates.checkNoClient": "网关无法创建 HTTP 客户端"
 }

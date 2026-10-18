@@ -395,7 +395,7 @@
   "instance.updates.causeFailed": "die Anfrage ist fehlgeschlagen",
   "instance.updates.checkRateLimited": "{host} nimmt vorerst keine weiteren Anfragen an",
   "instance.updates.checkStatus": "{host} hat mit {status} geantwortet",
-  "instance.updates.checkUnreadable": "Die Release-Liste von {host} ist nicht lesbar: {detail}",
+  "instance.updates.checkUnreadable": "Die Release-Liste von {host} ist nicht lesbar",
   "instance.updates.checkTooLarge": "Die Release-Liste von {host} ist größer als 4 MiB",
   "instance.updates.checkNoClient": "Das Gateway konnte seinen HTTP-Client nicht einrichten"
 }
