@@ -147,7 +147,7 @@ jobs:
         env:
           LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}
           RELEASE_NOTES_API_URL: https://ai.logicplanes.com
-          RELEASE_NOTES_MODEL: claude-opus-5-5
+          RELEASE_NOTES_MODEL: claude-haiku-5-5
         run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md" --brief-out "$RUNNER_TEMP/notes/brief.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
