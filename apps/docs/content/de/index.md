@@ -21,7 +21,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 ## Wie die Teile zusammenspielen
 
 ```mermaid
-flowchart LR
+flowchart TD
   accTitle: Wie die Teile zusammenpassen
   accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft OpenAI oder Anthropic auf.
   apps[Apps] -- /v1 --> gateway[Gateway]
