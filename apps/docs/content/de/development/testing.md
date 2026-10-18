@@ -96,7 +96,7 @@ Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine
 Installieren Sie die Cargo-Werkzeuge einmalig:
 
 ```bash
-cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
+cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 ```
 
 | Befehl | Prüft |
@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
 | `cargo test --workspace --all-features` | Jeden Test |
 | `cargo coverage-kpp` | Die Tests von `kaeso-kpp` und `kaeso-codecs` unter `cargo llvm-cov`, mit ihrer Coverage-Schwelle |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | Die Beispiele in den READMEs beider Crates, ihrer Dokumentation auf docs.rs, die `cargo llvm-cov` nicht ausführt |
-| `cargo coverage-gateway` | Die Tests aller anderen Crates außer `kpp-conformance` und `xtask`, mit ihrer Coverage-Schwelle |
+| `cargo coverage-gateway` | Die Tests aller anderen Crates außer `kpp-conformance` und `xtask` unter `cargo llvm-cov nextest`, jeder Test in einem eigenen Prozess und alle gleichzeitig, mit ihrer Coverage-Schwelle |
 | `cargo test -p xtask -p kpp-conformance` | Die Aufgaben des Repositorys und den Konformitätsserver, die die Coverage-Befehle auslassen |
 | `cargo deny check` | Lizenzen, Sicherheitshinweise, Verbote und Quellen jeder Abhängigkeit (`deny.toml`) |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | Die strengere Richtlinie von KPP: keine Runtime- oder HTTP-Crates in der Bibliothek |

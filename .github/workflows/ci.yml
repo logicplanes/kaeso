@@ -23,6 +23,7 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   SQLX_OFFLINE: "true"
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
 
 jobs:
   changes:
@@ -277,14 +278,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: docker compose -f deploy/compose.dev.yaml up -d --wait
+      - name: Pull the development stack while the toolchain installs
+        run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-llvm-cov,cargo-nextest
+      - run: docker compose -f deploy/compose.dev.yaml up -d --wait
       - run: cargo coverage-gateway
       - name: Coverage summary
         if: always()
@@ -330,7 +333,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
+      - name: Pull PostgreSQL while the toolchain installs
+        run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet postgres > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
@@ -338,6 +342,7 @@ jobs:
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
         with:
           tool: sqlx-cli
+      - run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
       - run: cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres
       - run: cargo sqlx prepare --workspace --check
 
@@ -425,7 +430,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: docker compose -f deploy/compose.dev.yaml up -d --wait
+      - name: Pull the development stack while the toolchain installs
+        run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
@@ -436,6 +442,7 @@ jobs:
           cache: pip
           cache-dependency-path: e2e/requirements.txt
       - run: pip install -r e2e/requirements.txt
+      - run: docker compose -f deploy/compose.dev.yaml up -d --wait
       - run: pytest -q e2e/sdk
 
   compose:

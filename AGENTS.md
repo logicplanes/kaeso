@@ -34,7 +34,7 @@ Node.js 24 (`.node-version`), pnpm 11 (pinned in `package.json`, `corepack enabl
 ```sh
 pnpm install
 pnpm --filter kaeso-console exec playwright install chromium
-cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
+cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 docker compose -f deploy/compose.dev.yaml up -d --wait
 python3 -m venv e2e/.venv && e2e/.venv/bin/pip install -r e2e/requirements.txt
 ```

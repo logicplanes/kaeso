@@ -96,7 +96,7 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 先安装一次 Cargo 工具：
 
 ```bash
-cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
+cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 ```
 
 | 命令 | 检查内容 |
@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
 | `cargo test --workspace --all-features` | 所有测试 |
 | `cargo coverage-kpp` | 在 `cargo llvm-cov` 下运行 `kaeso-kpp` 和 `kaeso-codecs` 的测试，并检查其覆盖率阈值 |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | 两个 crate 的 README 中的示例，即它们在 docs.rs 上的文档，`cargo llvm-cov` 不会运行这些示例 |
-| `cargo coverage-gateway` | 除 `kpp-conformance` 和 `xtask` 外所有其他 crate 的测试，并检查其覆盖率阈值 |
+| `cargo coverage-gateway` | 在 `cargo llvm-cov nextest` 下运行除 `kpp-conformance` 和 `xtask` 外所有其他 crate 的测试，每个测试在独立进程中且全部同时运行，并检查其覆盖率阈值 |
 | `cargo test -p xtask -p kpp-conformance` | 覆盖率命令不包含的仓库任务和一致性服务器 |
 | `cargo deny check` | 每个依赖的许可证、安全公告、禁用项和来源（`deny.toml`） |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | KPP 更严格的政策：库中不允许运行时或 HTTP crate |
