@@ -28,6 +28,7 @@ body:
         - Request logs
         - Emails
         - Installation and operations
+        - Updates
         - UI library
         - Documentation
     validations:
