@@ -190,7 +190,11 @@ function albers(c: Canvas): ArtNode[] {
   const x0 = lo + Math.round((c.next() * Math.max(0, hi - lo)) / (U / 2)) * (U / 2);
   const unit = side / 20;
   const levels = c.int(3, 4);
-  const order = [0, 1, 2, 3].sort(() => c.next() - 0.5);
+  const order = [0, 1, 2, 3];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(c.next() * (i + 1));
+    [order[i], order[j]] = [order[j] ?? j, order[i] ?? i];
+  }
   return Array.from({ length: levels }, (_, l) =>
     node("rect", { x: x0 + 2 * unit * l, y: margin + 3 * unit * l, width: side - 4 * unit * l, height: side - 4 * unit * l, fill: c.color(order[l] ?? l) }),
   );

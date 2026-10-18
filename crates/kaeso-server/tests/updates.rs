@@ -1443,7 +1443,7 @@ async fn a_releases_artwork_is_kept_as_the_feed_first_gave_it() {
         (next_patch(), first.clone()),
         (
             next_minor_rc(),
-            json!({ "version": 1, "seed": 1, "style": "<script>", "palette": 0 }),
+            json!({ "version": 2, "seed": 1, "style": "future", "palette": 12 }),
         ),
     ];
     let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;

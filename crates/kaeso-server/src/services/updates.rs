@@ -209,11 +209,23 @@ struct ReleaseArt {
     palette: u8,
 }
 
+const ART_STYLES: [&str; 8] = [
+    "bauhaus",
+    "albers",
+    "stripes",
+    "waves",
+    "truchet",
+    "arcs",
+    "phyllotaxis",
+    "spiro",
+];
+const ART_PALETTES: u8 = 12;
+
 fn art_of(value: Option<serde_json::Value>) -> Option<serde_json::Value> {
     let art: ReleaseArt = serde_json::from_value(value?).ok()?;
-    let style_ok =
-        (1..=32).contains(&art.style.len()) && art.style.bytes().all(|b| b.is_ascii_lowercase());
-    style_ok.then(|| serde_json::to_value(art).ok()).flatten()
+    let drawable =
+        art.version == 1 && ART_STYLES.contains(&art.style.as_str()) && art.palette < ART_PALETTES;
+    drawable.then(|| serde_json::to_value(art).ok()).flatten()
 }
 
 #[derive(Debug, Deserialize)]
@@ -949,6 +961,23 @@ pub async fn reconcile_running(state: &AppState) -> Result<Option<JobRow>, Store
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_artwork_the_console_can_draw_is_kept() {
+        let ok = json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 11 });
+        assert_eq!(art_of(Some(ok.clone())), Some(ok));
+        for bad in [
+            json!({ "version": 2, "seed": 7, "style": "spiro", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "future", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 12 }),
+            json!({ "version": 1, "seed": -1, "style": "spiro", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 0, "extra": true }),
+            json!("spiro"),
+        ] {
+            assert_eq!(art_of(Some(bad.clone())), None, "{bad}");
+        }
+        assert_eq!(art_of(None), None);
+    }
     use reqwest::header::{HeaderMap, HeaderValue};
 
     #[test]
