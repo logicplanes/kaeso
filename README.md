@@ -19,8 +19,8 @@
   <br>
 </div>
 
-<img alt="The Kaeso console showing an organization's overview: requests, tokens, cost and errors over the last 30 days, with charts by day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-light.png#gh-light-mode-only">
-<img alt="The Kaeso console showing an organization's overview: requests, tokens, cost and errors over the last 30 days, with charts by day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/screenshot-dark.png#gh-dark-mode-only">
+<img alt="A walk through the Kaeso console: connecting an Anthropic provider key, creating an API key, sending a request to claude-haiku-5-5 from a terminal, and the request arriving at the top of the request logs" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-light.gif#gh-light-mode-only">
+<img alt="A walk through the Kaeso console: connecting an Anthropic provider key, creating an API key, sending a request to claude-haiku-5-5 from a terminal, and the request arriving at the top of the request logs" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-dark.gif#gh-dark-mode-only">
 
 ## License
 

@@ -45,7 +45,7 @@ rights:  org rights from the session; project rights from GET projects/{project}
 | `src/kaeso/`    | Console-only compositions of library parts: the rights and limit editors, the create-key flow, usage panels                                                                 |
 | `src/i18n/`     | The message function, the catalogs in English, German and Simplified Chinese, and the language at start                                                                     |
 | `eslint/`       | The layout-only, no-color and no-literal-text lint rules, with tests                                                                                                        |
-| `scripts/`      | Client and route generation, the stack, the seed, bundle budgets, the licence check and the catalog check                                                                   |
+| `scripts/`      | Client and route generation, the stack, the seed, the README's recording, bundle budgets, the licence check and the catalog check                                           |
 | `stack/`        | The mock provider, the mock identity provider and the master key the local stack uses                                                                                       |
 | `e2e/`          | Playwright suites against a stack of their own                                                                                                                              |
 

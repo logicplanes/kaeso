@@ -35,7 +35,8 @@
     "e2e": "pnpm -r --workspace-concurrency=1 --if-present e2e",
     "stack:up": "pnpm --filter kaeso-console stack:up",
     "stack:down": "pnpm --filter kaeso-console stack:down",
-    "seed": "pnpm --filter kaeso-console seed"
+    "seed": "pnpm --filter kaeso-console seed",
+    "demo": "pnpm --filter kaeso-console demo"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.133.0",

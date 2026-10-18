@@ -85,6 +85,27 @@ Das Bild neben die Seite oder in einen Ordner `images/` daneben legen und mit ei
 
 PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites werden nicht angezeigt, und ein Bild ohne Alternativtext lässt den Build fehlschlagen. Bilder wählen, die auf hellem und dunklem Hintergrund lesbar sind; ein SVG kann seine Farben selbst mit `@media (prefers-color-scheme: dark)` umschalten. Ein Link auf jede andere Datei in `content/` veröffentlicht diese Datei. Ein Bild zeigt nie ein Diagramm: Diagramme sind [Mermaid-Blöcke](#diagramme).
 
+## Die Aufnahme im README
+
+Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Design des Lesers passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine geseedete Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript verbindet auf **Anbieter** einen Anthropic-Schlüssel, erstellt auf **API-Schlüssel** einen Schlüssel, sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt, und wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
+
+Für eine neue Aufnahme mit einem frisch geseedeten Stack und laufender Konsole beginnen und vorher `ffmpeg` installieren, zum Beispiel mit `brew install ffmpeg`:
+
+```bash
+pnpm stack:down
+pnpm stack:up
+pnpm seed
+pnpm dev
+```
+
+Dann in einem zweiten Terminal:
+
+```bash
+pnpm demo
+```
+
+Das Skript nimmt mit 1280 × 800 und dem Geräte-Skalierungsfaktor 2 auf, macht aus den Bildern GIFs mit 20 Bildern pro Sekunde und je einer Palette, schreibt beide nach `.github/assets` und nennt ihre Größe; jedes sollte unter 4 MB bleiben. Es läuft auch auf einem Stack, auf dem es schon aufgenommen hat: Vorher entfernt es den Anthropic-Schlüssel und archiviert seinen eigenen Schlüssel, die früheren Anfragen bleiben aber in den Protokollen. Das README verlinkt die GIFs auf `dev`, eine neue Aufnahme erscheint dort also, sobald ihr Pull Request gemergt ist.
+
 ## Hinweisboxen
 
 Die Alerts von GitHub, mit der Art allein in der ersten Zeile:
