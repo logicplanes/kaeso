@@ -7,7 +7,7 @@ order: 5
 The gateway finds releases and asks the updater to apply one; the updater verifies the release and switches the containers. [Upgrades](../../self-hosting/upgrades.md) covers what operators see. This page covers the protocol between the parts and the checks behind it.
 
 ```mermaid
-flowchart LR
+flowchart TD
   accTitle: How an install learns about releases and updates
   accDescr: The gateway checks GitHub's releases API, keeps its state in PostgreSQL and asks the updater over the internal network updates with a bearer token. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io, reaches Docker only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
   gateway[Gateway] -- checks for releases --> releases[GitHub releases API]

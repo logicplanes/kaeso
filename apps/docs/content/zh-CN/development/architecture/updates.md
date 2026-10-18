@@ -7,7 +7,7 @@ order: 5
 网关发现新版本并请求更新器应用；更新器验证版本并替换容器。[升级](../../self-hosting/upgrades.md)介绍运维人员看到的内容。本页介绍各部分之间的协议及其背后的检查。
 
 ```mermaid
-flowchart LR
+flowchart TD
   accTitle: 实例如何得知新版本并完成更新
   accDescr: 网关查询 GitHub 的版本 API，把状态保存在 PostgreSQL 中，并通过内部网络 updates 用 bearer 令牌请求更新器。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像，只通过内部网络 docker 上的 docker-proxy 访问 Docker，并写入维护标志，Caddy 读取该标志来提供更新页面和 JSON 503。
   gateway[网关] -- 检查新版本 --> releases[GitHub 版本 API]

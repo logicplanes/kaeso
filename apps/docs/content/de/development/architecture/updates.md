@@ -7,7 +7,7 @@ order: 5
 Das Gateway findet Releases und bittet den Updater, eines anzuwenden; der Updater prüft das Release und tauscht die Container aus. [Upgrades](../../self-hosting/upgrades.md) behandelt, was Betreiber sehen. Diese Seite behandelt das Protokoll zwischen den Teilen und die Prüfungen dahinter.
 
 ```mermaid
-flowchart LR
+flowchart TD
   accTitle: Wie eine Installation von Releases erfährt und sich aktualisiert
   accDescr: Das Gateway fragt die Releases-API von GitHub ab, hält seinen Zustand in PostgreSQL und ruft den Updater über das interne Netz updates mit einem Bearer-Token auf. Der Updater holt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io, erreicht Docker nur über docker-proxy im internen Netz docker und schreibt das Wartungs-Flag, das Caddy liest, um die Update-Seite und die JSON-503 auszuliefern.
   gateway[Gateway] -- sucht nach Releases --> releases[Releases-API von GitHub]
