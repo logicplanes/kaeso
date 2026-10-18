@@ -179,7 +179,7 @@ export const glob = (pattern) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\
 
 const allowed = (file, version) => ALLOWED.find((entry) => glob(entry.path).test(file) && (!entry.version || entry.version === version));
 
-const mentions = (version) => new RegExp(`(?<![\\d.])${version.replace(/[.+]/g, "\\$&")}(?!\\d|\\.\\d|-[0-9A-Za-z])`);
+const mentions = (version) => new RegExp(`(?<![\\d.])${RegExp.escape(version)}(?!\\d|\\.\\d|-[0-9A-Za-z])`);
 
 function current(repo) {
   return JSON.parse(repo.read("package.json")).version;
