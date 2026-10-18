@@ -1,23 +1,27 @@
 ---
 title: Rechte
-description: Jedes Recht in einer Organisation und einem Projekt, welche Rollen es haben, und die Regeln für ihre Vergabe.
+description: Jedes Recht in einer Organisation und einem Projekt nachschlagen, welche Rollen es haben und nach welchen Regeln es vergeben wird.
 order: 3
 ---
 
-Ein Recht erlaubt eine Art von Aktion und wird als `resource.action` geschrieben, etwa `keys.all.view`. Jede Operation der Platform API unter `orgs/{org}` prüft genau ein Recht, auf der Organisation oder dem Projekt in ihrem Pfad. Rollen sind benannte Mengen von Rechten; [Mitglieder und Rollen](../console/members-and-roles.md) zeigt, wie die Konsole sie vergibt.
+Ein Recht erlaubt eine Art von Aktion und wird als `resource.action` geschrieben, etwa `keys.all.view`. Jede Operation der Platform API unter `orgs/{org}` prüft genau ein Recht, auf der Organisation oder dem Projekt in ihrem Pfad. [Mitglieder und Rollen](../console/members-and-roles.md) zeigt, wie Sie Rollen und Rechte in der Konsole vergeben.
 
-- Die Instanzverwaltung ist kein Recht, sondern ein Flag an einem Benutzer, und gibt keine Rechte in Organisationen oder Projekten.
-- Das eigene Konto braucht keine Rechte.
-- Jedes Organisationsrecht erfordert zusätzlich `org.view`, jedes Projektrecht `project.view`. Manche Rechte **erfordern** andere, wie unten angegeben: Eine Änderung, die ein Recht ohne das Erforderliche gibt, wird abgelehnt. Bereits gespeicherte Rechte ändert diese Regel nie.
-- **Sensible** Rechte legen sensible Daten offen oder sind schwer rückgängig zu machen; sie mit Bedacht vergeben.
-- Rechte mit **kürzlicher Anmeldung** erfordern eine Anmeldung in den letzten 15 Minuten, wenn sie aus einer Konsolensitzung genutzt werden.
-- Rechte mit dem Hinweis **nur Kaeso Cloud** wirken auf einer selbst gehosteten Installation nicht.
+Ihr eigenes Konto zu verwalten, braucht kein Recht. Auch die Instanzverwaltung ist kein Recht: Sie ist ein Flag an einem Benutzer und gibt keine Rechte in Organisationen oder Projekten.
+
+## Hinweise
+
+Die Tabellen unten kennzeichnen manche Rechte mit diesen Hinweisen:
+
+- **Erfordert.** Das Recht lässt sich nur zusammen mit den Rechten vergeben, die es nennt. Jedes Organisationsrecht erfordert zusätzlich `org.view`, jedes Projektrecht `project.view`. Kaeso lehnt eine Änderung ab, die ein Recht ohne das Erforderliche gibt, ändert aber nie bereits gespeicherte Rechte.
+- **Sensibel.** Das Recht legt sensible Daten offen oder ist schwer rückgängig zu machen. Vergeben Sie es mit Bedacht.
+- **Kürzliche Anmeldung.** Wer das Recht aus einer Konsolensitzung nutzt, muss sich in den letzten 15 Minuten angemeldet haben.
+- **Nur Kaeso Cloud.** Das Recht wirkt auf einer selbst gehosteten Installation nicht.
 
 ## Rollen
 
-Jedes Mitglied einer Organisation hat eine Organisationsrolle, und jedes Projektmitglied und Dienstkonto eine Projektrolle. Jedem von ihnen lassen sich über die Rolle hinaus Rechte hinzufügen oder entziehen. Eine Änderung an einer Rolle ändert alle, die sie haben.
+Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Über die Rolle hinaus können Sie einzelne Rechte hinzufügen oder entziehen. Eine Änderung an einer Rolle gilt für alle, die sie haben.
 
-**Integrierte Rollen** sind in jeder Organisation gleich und lassen sich nicht ändern. In der Platform API sind ihre IDs ihre englischen Namen in Kleinbuchstaben.
+Integrierte Rollen sind in jeder Organisation gleich, und niemand kann sie ändern. In der Platform API sind ihre IDs ihre englischen Namen in Kleinbuchstaben.
 
 | Organisationsrolle | Beschreibung |
 | --- | --- |
@@ -36,7 +40,7 @@ Jedes Mitglied einer Organisation hat eine Organisationsrolle, und jedes Projekt
 
 ### Was jede integrierte Rolle enthält
 
-Eine Organisationsrolle enthält auch **Rechte in jedem Projekt**, zusätzlich zur eigenen Projektrolle des Mitglieds dort.
+Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur eigenen Projektrolle des Mitglieds dort:
 
 | Organisationsrolle | Organisationsrechte | Rechte in jedem Projekt | Beginnt im Standardprojekt als |
 | --- | --- | --- | --- |
@@ -53,24 +57,27 @@ Eine Organisationsrolle enthält auch **Rechte in jedem Projekt**, zusätzlich z
 | Entwickler | Die des Betrachters und `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view` |
 | Betrachter | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
 
-Zwei Organisationsrechte reichen ebenfalls in jedes Projekt: `projects.view.all` gibt `project.view`, und `projects.archive.any` gibt `project.view` und `project.archive`. Die Rechte eines Mitglieds in einem Projekt ergeben sich aus seiner Projektrolle, den Rechten seiner Organisationsrolle in jedem Projekt und dem, was diese beiden Rechte erreichen.
+Zwei Organisationsrechte reichen ebenfalls in jedes Projekt. `projects.view.all` gibt `project.view`, und `projects.archive.any` gibt `project.view` und `project.archive`.
 
-Im Standardprojekt beginnen Inhaber und Admins als Projekt-Admin, Entwickler als Entwickler und jede andere Organisationsrolle, eigene Rollen eingeschlossen, als Betrachter.
+Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seiner Projektrolle, den Rechten seiner Organisationsrolle in jedem Projekt und dem, was diese beiden Rechte erreichen. Im Standardprojekt beginnen Inhaber und Admins als Projekt-Admin und Entwickler als Entwickler. Jede andere Organisationsrolle beginnt als Betrachter, eigene Rollen eingeschlossen.
 
 ### Eigene Rollen
 
-- Jede Organisation kann mit `roles.manage` bis zu 50 eigene Rollen festlegen, für die Organisation oder für Projekte. Organisationsrollen enthalten Organisationsrechte und Rechte in jedem Projekt; Projektrollen enthalten Projektrechte. Alle mit `org.view` sehen sie.
-- Ein Name hat 1 bis 50 Zeichen, ist pro Organisation und Geltungsbereich ohne Rücksicht auf Groß- und Kleinschreibung eindeutig und weder der Name einer integrierten Rolle dieses Geltungsbereichs noch `custom`; eine Beschreibung hat höchstens 200 Zeichen.
-- Eigene Rollen können keine Inhaber machen: Inhaber ist nur die integrierte Rolle.
-- Eine Rolle, die ein Mitglied, ein aktives Dienstkonto oder eine offene Einladung innehat, lässt sich nicht löschen, ebenso wenig die Rolle für Personen, die über Single Sign-on kommen.
+- Mit `roles.manage` kann eine Organisation bis zu 50 eigene Rollen festlegen, für die Organisation oder für Projekte. Organisationsrollen enthalten Organisationsrechte und Rechte in jedem Projekt. Projektrollen enthalten Projektrechte.
+- Alle mit `org.view` sehen die eigenen Rollen.
+- Ein Name hat 1 bis 50 Zeichen und ist pro Organisation und Geltungsbereich eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Er darf weder `custom` noch der Name einer integrierten Rolle dieses Geltungsbereichs sein. Eine Beschreibung hat höchstens 200 Zeichen.
+- Eigene Rollen können keine Inhaber machen. Inhaber ist nur die integrierte Rolle.
+- Eine Rolle, die ein Mitglied, ein aktives Dienstkonto oder eine offene Einladung hat, können Sie nicht löschen. Ebenso wenig die Rolle, die Personen erhalten, die über Single Sign-on kommen.
 
 ## Vergaberegeln
 
-1. **Nur vergeben, was man selbst hat.** Rolle oder Rechte eines Mitglieds ändern, einladen, ein Projektmitglied hinzufügen, ein Dienstkonto erstellen oder ändern, eine eigene Rolle erstellen, ändern oder löschen und die Rolle für Personen wählen, die über Single Sign-on kommen, darf nur Rechte geben, die der Aufrufer hat: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt und Rechte in jedem Projekt nur, wenn der Aufrufer sie in jedem Projekt hat.
-2. **Nur auf Gleichgestellte wirken.** Rolle und Rechte eines Mitglieds ändert, oder das Mitglied entfernt, nur jemand, der jedes Recht hat, das das Mitglied in diesem Geltungsbereich hat.
-3. **Inhaber** werden nur von Inhabern gemacht, geändert, entfernt und eingeladen. Eine Organisation verliert nie ihren letzten Inhaber.
-4. **Erforderliche Rechte** werden für jedes Recht geprüft, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Eine Änderung einer eigenen Rolle wird abgelehnt, wenn danach jemand, der die Rolle hat, ein Recht – ihm hinzugefügt oder von der Rolle gegeben – ohne ein Recht hätte, das es erfordert; die eigenen Rechte der Personen ändern sich dabei nie.
-5. **Schlüssel haben keine eigenen Rechte.** Ein API-Schlüssel handelt als sein Mitglied oder Dienstkonto in seinem Projekt, ein Plattform-Schlüssel einer Organisation mit den Rechten der Rolle Admin in seiner Organisation.
+Jede Änderung an Rollen und Rechten folgt diesen Regeln:
+
+1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt und Rechte in jedem Projekt nur, wenn Sie sie in jedem Projekt haben. Das gilt, wenn Sie Rolle oder Rechte eines Mitglieds ändern, einladen, ein Projektmitglied hinzufügen, ein Dienstkonto oder eine eigene Rolle erstellen oder ändern und die Rolle für Single Sign-on wählen.
+2. **Nur auf Gleichgestellte wirken.** Sie können Rolle und Rechte eines Mitglieds nur ändern oder das Mitglied entfernen, wenn Sie jedes Recht haben, das das Mitglied in diesem Geltungsbereich hat.
+3. **Inhaber verwalten Inhaber.** Nur Inhaber machen, ändern, entfernen und laden Inhaber ein. Eine Organisation verliert nie ihren letzten Inhaber.
+4. **Erforderliche Rechte werden geprüft.** Kaeso prüft, was jedes Recht erfordert, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Kaeso lehnt eine Änderung an einer eigenen Rolle ab, nach der jemand mit dieser Rolle ein Recht ohne ein erforderliches hätte. Die eigenen Rechte dieser Personen ändern sich dabei nie.
+5. **Schlüssel haben keine eigenen Rechte.** Ein API-Schlüssel handelt als sein Mitglied oder Dienstkonto in seinem Projekt. Ein Plattform-Schlüssel einer Organisation handelt mit den Rechten der Rolle Admin in seiner Organisation.
 
 Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Rollen und Vergaben.
 
