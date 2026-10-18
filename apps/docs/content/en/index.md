@@ -21,7 +21,7 @@ This documentation describes Kaeso {{version}}.
 ## How the parts fit
 
 ```mermaid
-flowchart LR
+flowchart TD
   accTitle: How the parts fit
   accDescr: Apps call the gateway on /v1 and the console calls it on /platform/v1; the gateway calls OpenAI or Anthropic.
   apps[Apps] -- /v1 --> gateway[Gateway]
