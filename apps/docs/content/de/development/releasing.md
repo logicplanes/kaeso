@@ -54,17 +54,49 @@ Auf npm erhält ein stabiles Release den Tag `latest` und ein Pre-Release den Ta
 
 ## Das Changelog
 
-`CHANGELOG.md` im Wurzelverzeichnis folgt [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Jede Änderung, die Personen bemerken, ergänzt im selben Pull Request eine Zeile unter `[Unreleased]`, die sagt, was sich geändert hat, aus Sicht derer, die Kaeso nutzen, betreiben oder darauf aufbauen.
+`CHANGELOG.md` im Wurzelverzeichnis folgt [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Pull Requests ändern es nicht: Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden, aus ihren Titeln und Labels. Der Titel eines Pull Requests ist deshalb seine Zeile im Changelog, ein Satz, der sagt, was sich geändert hat, für alle, die Kaeso nutzen, betreiben oder darauf aufbauen, etwa „Keep dialogs centered and resize them smoothly when their content changes“.
 
-Ein Release macht die Zeilen unter `[Unreleased]` zum Abschnitt der Version, `## [X.Y.Z] - YYYY-MM-DD`, lässt `## [Unreleased]` leer darüber stehen und aktualisiert die Links am Ende der Datei: `[Unreleased]` vergleicht mit dem neuen Tag, und ein neuer Link zeigt auf das Release der Version. Dieser Abschnitt wird zu den Notizen des Releases auf GitHub. Ein Release ohne Zeilen unter `[Unreleased]` wird abgelehnt, es sei denn, `CHANGELOG.md` hat bereits einen Abschnitt für diese Version oder, bei einem stabilen Release, für eines ihrer Pre-Releases.
+Jede Zeile ist der Titel ohne abschließenden Punkt und ein Link auf den Pull Request: `- Keep dialogs centered and resize them smoothly when their content changes ([#38](https://github.com/logicplanes/kaeso/pull/38))`. Markdown in einem Titel kann dem Changelog kein HTML, keine Links, Überschriften oder Listen hinzufügen; Code-Spans bleiben Code. Für die Zeilen gelten diese Regeln:
 
-Ein stabiles Release nach Pre-Releases seiner Version, etwa `0.2.0` nach `0.2.0-rc.1` und `0.2.0-rc.2`, fasst deren Abschnitte und alles Neue unter `[Unreleased]` in dem einen Abschnitt `## [0.2.0] - YYYY-MM-DD` zusammen. Die Zeilen unter jeder Überschrift (etwa `### Added`) und unter jedem Thema darin (etwa `#### Model API`) kommen zusammen, die neuesten zuerst, und Abschnitte und Links der Pre-Releases entfallen. Die Notizen des stabilen Releases führen so alles auf, was die Version seit dem letzten stabilen Release ändert. `scripts/changelog.mjs` nimmt diese Änderungen vor.
+- **Abschnitt.** Ein Typ-Label wählt ihn; bei mehreren kommt `security` zuerst, dann die Reihenfolge von Keep a Changelog. Ohne Typ-Label entscheidet das erste Wort des Titels: Add oder Introduce stellt die Zeile unter Added, Deprecate unter Deprecated, Remove oder Drop unter Removed, Fix unter Fixed und jedes andere Wort unter Changed.
+- **Thema.** Genau ein Bereichs-Label stellt die Zeile unter dieses Thema, etwa `#### Console`, nach den Zeilen des Abschnitts ohne Thema. Kein Bereichs-Label oder mehrere lassen sie ohne Thema.
+- **Reihenfolge.** Die Abschnitte folgen Keep a Changelog: Added, Changed, Deprecated, Removed, Fixed, Security. Die Themen folgen der Tabelle unten, die Zeilen den Nummern der Pull Requests.
+- **Breaking Changes.** Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt der Version genannt, als **Breaking:** und sein Titel. Das Label ändert sonst nichts; die Version bleibt die, die der Maintainer wählt ([Versionen](#versionen)).
+- **Abhängigkeiten.** Die Pull Requests von Dependabot und andere mit dem Label `dependencies` werden zu einer Zeile unter Changed, „Dependencies updated“, mit einem Link auf jeden.
+- **Ausgelassen.** Pull Requests mit dem Label `internal`, etwa Änderungen an CI, Tests oder Werkzeugen, auch die Updates von Dependabot für die Actions der Workflows.
 
-Beide Websites zeigen das Changelog unter `/changelog`. Die Dokumentation ([die Changelog-Seite](architecture/docs-site.md#das-changelog)) und der Showcase lesen `CHANGELOG.md` über `history` aus `scripts/changelog.mjs`, sodass ein Release für sie keinen eigenen Schritt braucht. Aus dem Tag eines Releases gebaut, haben sie nichts unter `[Unreleased]` und lassen es weg; aus `dev` gebaut, zeigen sie diese Zeilen zuerst, als noch nicht veröffentlicht markiert.
+Von Hand unter `[Unreleased]` geschriebene Zeilen machen ein kuratiertes Release: Hat `[Unreleased]` welche, verwendet das Release nur sie und lässt die Pull Requests aus. Ein kuratiertes Release passt zu Notizen, die mehr verdienen als Titel, und zu einem Hotfix, dessen Commits keinen Pull Request haben.
+
+Ein Release macht diese Zeilen zum Abschnitt der Version, `## [X.Y.Z] - YYYY-MM-DD`, lässt `## [Unreleased]` leer darüber stehen und aktualisiert die Links am Ende der Datei: `[Unreleased]` vergleicht mit dem neuen Tag, und ein neuer Link zeigt auf das Release der Version. Dieser Abschnitt wird zu den Notizen des Releases auf GitHub. Ein Release ohne Inhalt wird abgelehnt: nichts unter `[Unreleased]` und kein gemergter Pull Request ohne `internal`, es sei denn, `CHANGELOG.md` hat bereits einen Abschnitt für diese Version oder, bei einem stabilen Release, für eines ihrer Pre-Releases.
+
+Ein stabiles Release nach Pre-Releases seiner Version, etwa `0.2.0` nach `0.2.0-rc.1` und `0.2.0-rc.2`, fasst deren Abschnitte und die seit dem letzten davon gemergten Pull Requests in dem einen Abschnitt `## [0.2.0] - YYYY-MM-DD` zusammen. Die Zeilen unter jeder Überschrift (etwa `### Added`) und unter jedem Thema darin (etwa `#### Console`) kommen zusammen, die neuesten zuerst, und Abschnitte und Links der Pre-Releases entfallen. Die Notizen des stabilen Releases führen so alles auf, was die Version seit dem letzten stabilen Release ändert. `scripts/changelog.mjs` nimmt diese Änderungen vor.
+
+Beide Websites zeigen das Changelog unter `/changelog`. Die Dokumentation ([die Changelog-Seite](architecture/docs-site.md#das-changelog)) und der Showcase lesen `CHANGELOG.md` über `history` aus `scripts/changelog.mjs`, sodass ein Release für sie keinen eigenen Schritt braucht. Aus dem Tag eines Releases gebaut, haben sie nichts unter `[Unreleased]` und lassen es weg; aus `dev` gebaut, zeigen sie die von Hand unter `[Unreleased]` geschriebenen Zeilen zuerst, wenn es welche gibt, als noch nicht veröffentlicht markiert.
+
+### Labels
+
+| Label | In den Notizen des Releases |
+| --- | --- |
+| `added`, `changed`, `deprecated`, `removed`, `fixed`, `security` | Der Abschnitt, etwa Added; `changed` ist der Standard |
+| `breaking` | Zusätzlich oben genannt, als Breaking Change |
+| `internal` | Ausgelassen |
+| `area: gateway`, `area: kpp`, `area: console`, `area: ui library`, `area: documentation`, `area: self-hosting` | Das Thema: Gateway, KPP, Console, UI library, Documentation oder Self-hosting |
+
+Der Workflow **Labels** (`.github/workflows/labels.yml`) setzt die Bereichs-Labels und `internal` aus den Dateien, die ein Pull Request ändert, nach `.github/labeler.yml`, jedes Mal, wenn er geöffnet wird oder einen Push erhält, und entfernt die, die nicht mehr passen. Ein Pull Request erhält `area: console`, wenn er eine Datei in `apps/console` ändert, und `internal`, wenn jede Datei, die er ändert, ein Test, eine Fixture, ein Workflow, ein Skript, eine Anleitung für Mitwirkende oder anderes Werkzeug ist. Eines dieser Labels von Hand erst nach dem letzten Push setzen, denn der nächste Push setzt sie wieder aus den Dateien. Der Workflow läuft auf `pull_request_target` allein mit der Labeler-Action, checkt den Code des Pull Requests nie aus und darf nur das Repository lesen und Labels schreiben.
+
+Der Maintainer setzt vor dem Mergen das Typ-Label, wenn das erste Wort des Titels nicht den richtigen Abschnitt wählt, und `breaking`, wenn Personen für ein Upgrade etwas ändern müssen. `node scripts/changelog.mjs labels` listet jedes Label mit seiner Farbe und Beschreibung auf, um sie in einem Repository anzulegen:
+
+```bash
+node scripts/changelog.mjs labels | while IFS=$'\t' read -r name color description; do
+  gh label create "$name" --color "$color" --description "$description" --force
+done
+```
+
+Validate sammelt die Pull Requests: Jeder Commit auf `prod`, den kein `v*`-Tag enthält, ohne Merge-Commits, nennt seinen Pull Request über das `(#123)` am Ende des Betreffs eines gesquashten Commits oder, ohne dieses, über GitHubs Liste der gemergten Pull Requests, zu denen ein Commit gehört. Validate liest sie mit einem Token, das nur das Repository und Pull Requests lesen darf, listet sie mit ihren Labels in seiner Zusammenfassung auf und übergibt sie Prepare als JSON, aus dem `scripts/changelog.mjs` den Abschnitt schreibt. `node scripts/changelog.mjs draft pulls.json` gibt den Abschnitt aus, den eine Datei mit Pull Requests in dieser Form ergibt.
 
 ## Ein Release erstellen
 
-1. **`dev` vorbereiten.** CI auf `dev` ist grün, jede Prüfung unter [Bevor eine Änderung fertig ist](testing.md#bevor-eine-änderung-fertig-ist) besteht, `pnpm release:check` eingeschlossen, und `CHANGELOG.md` beschreibt alles, was das Release ändert.
+1. **`dev` vorbereiten.** CI auf `dev` ist grün, jede Prüfung unter [Bevor eine Änderung fertig ist](testing.md#bevor-eine-änderung-fertig-ist) besteht, `pnpm release:check` eingeschlossen, und jeder seit dem letzten Release gemergte Pull Request hat die Labels, die seine Zeile braucht ([Labels](#labels)), oder die Zeilen unter `[Unreleased]` beschreiben alles, was das Release ändert.
 2. **Die Modelldaten auffrischen**, damit eine frische Installation mit aktuellen Modellen und Preisen beginnt, und das Ergebnis über einen Pull Request nach `dev` mergen:
 
    ```bash
@@ -104,7 +136,7 @@ Beide Websites zeigen das Changelog unter `/changelog`. Die Dokumentation ([die 
 
 ## Pre-Releases
 
-Ein Pre-Release, etwa `0.2.0-rc.1`, wird wie jedes Release von `prod` aus erstellt. Es erhält auf npm den Tag `next`, ist auf GitHub als Pre-Release markiert und bekommt als Image-Tag nur seine Version, sodass `latest` beim neuesten stabilen Release bleibt. Jedes Pre-Release erhält einen eigenen Abschnitt im Changelog, bis das stabile Release sie zu einem zusammenfasst ([das Changelog](#das-changelog)); das stabile Release braucht daher keine eigenen neuen Zeilen.
+Ein Pre-Release, etwa `0.2.0-rc.1`, wird wie jedes Release von `prod` aus erstellt. Es erhält auf npm den Tag `next`, ist auf GitHub als Pre-Release markiert und bekommt als Image-Tag nur seine Version, sodass `latest` beim neuesten stabilen Release bleibt. Jedes Pre-Release erhält einen eigenen Abschnitt im Changelog, aus den Pull Requests, die seit dem Release davor gemergt wurden, bis das stabile Release sie zu einem zusammenfasst ([das Changelog](#das-changelog)), zusammen mit den Pull Requests, die nach dem letzten Pre-Release gemergt wurden.
 
 ## Hotfixes
 
@@ -117,7 +149,7 @@ Ein Hotfix korrigiert das neueste Release ohne das, was sich seitdem auf `dev` a
    git switch -c hotfix/0.2.1 v0.2.0
    ```
 
-2. **Den Fehler beheben**, mit einem Test, der ihn zeigt, eine Zeile unter `[Unreleased]` in `CHANGELOG.md` ergänzen, committen und die Prüfungen ausführen.
+2. **Den Fehler beheben**, mit einem Test, der ihn zeigt, eine Zeile unter `[Unreleased]` in `CHANGELOG.md` ergänzen, committen und die Prüfungen ausführen. Die Commits des Hotfixes haben keinen Pull Request, daher ist diese Zeile sein Changelog ([das Changelog](#das-changelog)).
 3. **Den Branch auf `prod` pushen.** Das ist ein Fast-Forward, weil `prod` auf dem Commit des Releases steht:
 
    ```bash
@@ -154,8 +186,8 @@ Die Jobs, die ins Repository schreiben oder etwas veröffentlichen, laufen in de
 
 | Job | Was er tut |
 | --- | --- |
-| Validate | Lehnt ab: einen Lauf auf einem anderen Branch als `prod`, eine Version, die nicht semantisch ist, einen Tag, den es schon gibt, eine Version, die nicht neuer als der letzte Tag ist, ein `CHANGELOG.md` ohne Zeilen unter `[Unreleased]` und ohne Abschnitt für die Version (oder, bei einer stabilen Version, für eines ihrer Pre-Releases) sowie eine Version, die eine Datei bereits von Hand nennt |
-| Prepare | Führt `node scripts/version.mjs set` mit der Version aus. Der Befehl schreibt sie in jede Datei, die sie nennt ([die Version im Repository](#die-version-im-repository)), und schlägt fehl, wenn die Version noch irgendwo von Hand steht. Verschiebt dann das Changelog und fasst dabei die Abschnitte der Pre-Releases einer stabilen Version in deren eigenen zusammen. Er kann das Repository nur lesen, hat keine Git-Zugangsdaten und übergibt seine Änderungen als Patch an Tag |
+| Validate | Lehnt ab: einen Lauf auf einem anderen Branch als `prod`, eine Version, die nicht semantisch ist, einen Tag, den es schon gibt, eine Version, die nicht neuer als der letzte Tag ist, ein Release ohne Inhalt (nichts unter `[Unreleased]`, kein gemergter Pull Request ohne `internal` und kein Abschnitt für die Version oder, bei einer stabilen Version, für eines ihrer Pre-Releases) sowie eine Version, die eine Datei bereits von Hand nennt. Sammelt die seit dem letzten Release gemergten Pull Requests, listet sie mit ihren Labels in seiner Zusammenfassung auf und übergibt sie an Prepare ([das Changelog](#das-changelog)) |
+| Prepare | Führt `node scripts/version.mjs set` mit der Version aus. Der Befehl schreibt sie in jede Datei, die sie nennt ([die Version im Repository](#die-version-im-repository)), und schlägt fehl, wenn die Version noch irgendwo von Hand steht. Schreibt dann den Abschnitt der Version im Changelog aus den Zeilen unter `[Unreleased]` oder, wenn es keine gibt, aus den gemergten Pull Requests und fasst dabei die Abschnitte der Pre-Releases einer stabilen Version in deren eigenen zusammen. Er kann das Repository nur lesen, hat keine Git-Zugangsdaten und übergibt seine Änderungen als Patch an Tag |
 | Checks | Führt den ganzen CI-Workflow auf dem Commit von `prod` aus, jeden Job, unabhängig davon, was sich geändert hat |
 | Tag | Wendet den Patch an und lehnt einen ab, der eine Datei anlegt, löscht oder umbenennt, den Modus einer Datei ändert oder eine andere Datei ändert als `CHANGELOG.md` und die, die `node scripts/version.mjs files` auflistet. Ändert der Patch Dateien, committet er „Release X.Y.Z“ auf `prod`; ändert er keine, wird der Commit von `prod` selbst getaggt. Lehnt ab, wenn sich `prod` seit Beginn des Laufs bewegt hat. Taggt `vX.Y.Z` und pusht `prod` und den Tag gemeinsam, beide oder keinen |
 | Sync dev | Bringt das Release nach `dev`: nichts zu tun, wenn `dev` es schon hat, ein Fast-Forward, wenn `dev` nichts Neues hat, sonst der Merge-Commit „Merge release X.Y.Z into dev“, wenn er sich sauber mergen lässt. Lehnen die Regeln von `dev` den Push ab, endet er mit einer Warnung, und seine Zusammenfassung zeigt den Befehl, den ein Repository-Admin ausführt. Schlägt fehl, und seine Zusammenfassung erklärt den Merge von Hand, wenn der Merge in Konflikt gerät, wenn das Release eine Datei in `.github/workflows` ändert, die `dev` nicht hat, oder wenn sich `dev` während des Laufs bewegt hat |

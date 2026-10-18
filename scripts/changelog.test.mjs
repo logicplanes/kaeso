@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
-import { history, notes, releasable, release } from "./changelog.mjs";
+import { generate, history, notes, releasable, release } from "./changelog.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = "https://github.com/logicplanes/kaeso";
@@ -333,4 +335,233 @@ test("every fragment the history hands on says the line of the file where it sta
     const { definitions, definitionsLine } = history(text);
     assert.equal(lines[definitionsLine - 1], definitions.split("\n")[0]);
   }
+});
+
+const pull = (number, title, labels = [], author = "devin") => ({ number, title, url: `${repo}/pull/${number}`, labels, author });
+const ref = (number) => `[#${number}](${repo}/pull/${number})`;
+
+test("merged pull requests become entries under the section of their type label, in the order of Keep a Changelog and then by number", () => {
+  const pulls = [
+    pull(12, "Keep streams alive behind proxies", ["security"]),
+    pull(9, "Refuse empty batches", ["fixed"]),
+    pull(4, "Batch requests", ["added"]),
+    pull(7, "Sunset the v0 keys", ["deprecated"]),
+    pull(8, "Retire the legacy export", ["removed"]),
+    pull(3, "Batch results", ["added"]),
+    pull(5, "Show costs in cents", ["changed"]),
+  ];
+  assert.deepEqual(generate(pulls), [
+    "### Added",
+    "",
+    `- Batch results (${ref(3)})`,
+    `- Batch requests (${ref(4)})`,
+    "",
+    "### Changed",
+    "",
+    `- Show costs in cents (${ref(5)})`,
+    "",
+    "### Deprecated",
+    "",
+    `- Sunset the v0 keys (${ref(7)})`,
+    "",
+    "### Removed",
+    "",
+    `- Retire the legacy export (${ref(8)})`,
+    "",
+    "### Fixed",
+    "",
+    `- Refuse empty batches (${ref(9)})`,
+    "",
+    "### Security",
+    "",
+    `- Keep streams alive behind proxies (${ref(12)})`,
+  ]);
+});
+
+test("without a type label, the title's first word chooses the section, and anything else is a change", () => {
+  const section = (title) => generate([pull(1, title)])[0];
+  assert.equal(section("Add batch requests"), "### Added");
+  assert.equal(section("Introduce batches"), "### Added");
+  assert.equal(section("Deprecate the v0 keys"), "### Deprecated");
+  assert.equal(section("Remove the legacy export"), "### Removed");
+  assert.equal(section("Drop Node.js 22"), "### Removed");
+  assert.equal(section("fix quiet streams"), "### Fixed");
+  assert.equal(section("Keep streams from failing"), "### Changed");
+  assert.equal(section("Fixes are listed"), "### Changed");
+  assert.equal(section("Additions to the catalogue"), "### Changed");
+});
+
+test("a type label wins over the title, and of several type labels security comes first, then the order of Keep a Changelog", () => {
+  assert.equal(generate([pull(1, "Fix the export", ["changed"])])[0], "### Changed");
+  assert.equal(generate([pull(1, "Add a check", ["fixed", "security"])])[0], "### Security");
+  assert.equal(generate([pull(1, "Rework limits", ["fixed", "removed", "added"])])[0], "### Added");
+});
+
+test("one area label puts an entry under its topic, after the entries without one; none or several leave it without a topic", () => {
+  const pulls = [
+    pull(6, "Add a docs search", ["area: documentation"]),
+    pull(5, "Add a batch page", ["area: console"]),
+    pull(4, "Add batches", ["area: gateway", "area: console"]),
+    pull(3, "Add a KPP batch type", ["area: kpp"]),
+    pull(2, "Add a theme", ["area: ui library"]),
+    pull(1, "Add a Compose profile", ["area: self-hosting"]),
+    pull(7, "Add request tags", ["area: gateway"]),
+  ];
+  assert.deepEqual(generate(pulls), [
+    "### Added",
+    "",
+    `- Add batches (${ref(4)})`,
+    "",
+    "#### Gateway",
+    "",
+    `- Add request tags (${ref(7)})`,
+    "",
+    "#### KPP",
+    "",
+    `- Add a KPP batch type (${ref(3)})`,
+    "",
+    "#### Console",
+    "",
+    `- Add a batch page (${ref(5)})`,
+    "",
+    "#### UI library",
+    "",
+    `- Add a theme (${ref(2)})`,
+    "",
+    "#### Documentation",
+    "",
+    `- Add a docs search (${ref(6)})`,
+    "",
+    "#### Self-hosting",
+    "",
+    `- Add a Compose profile (${ref(1)})`,
+  ]);
+});
+
+test("internal pull requests are left out, Dependabot's included", () => {
+  assert.deepEqual(generate([pull(1, "Speed up CI", ["internal"]), pull(2, "Bump actions/checkout", ["dependencies", "internal"], "dependabot[bot]")]), []);
+});
+
+test("Dependabot's pull requests fold into one line under Changed, after the other changes", () => {
+  const pulls = [
+    pull(9, "Bump serde from 1.0.1 to 1.0.2", ["dependencies", "rust", "area: gateway"], "dependabot[bot]"),
+    pull(4, "Bump the pnpm-minor-and-patch group with 3 updates", ["javascript", "fixed"], "dependabot[bot]"),
+    pull(6, "Update ClickHouse to 26.9", ["dependencies"]),
+    pull(5, "Show costs in cents"),
+  ];
+  assert.deepEqual(generate(pulls), ["### Changed", "", `- Show costs in cents (${ref(5)})`, `- Dependencies updated (${ref(4)}, ${ref(6)}, ${ref(9)})`]);
+});
+
+test("a breaking pull request is also named in a note at the top of the release", () => {
+  assert.deepEqual(generate([pull(3, "Rename the budget fields", ["breaking", "area: gateway"]), pull(2, "Add batches")]), [
+    `- **Breaking:** Rename the budget fields (${ref(3)})`,
+    "",
+    "### Added",
+    "",
+    `- Add batches (${ref(2)})`,
+    "",
+    "### Changed",
+    "",
+    "#### Gateway",
+    "",
+    `- Rename the budget fields (${ref(3)})`,
+  ]);
+});
+
+test("a title can't write HTML, links, headings or nested lists into the changelog, and keeps its code spans", () => {
+  const [, , line] = generate([pull(1, "Keep <Select> and [the menu](javascript:alert(1)) open with `<Dialog>` in C:\\temp.")]);
+  assert.equal(line, `- Keep \\<Select\\> and \\[the menu\\](javascript:alert(1)) open with \`<Dialog>\` in C:\\\\temp (${ref(1)})`);
+  assert.equal(generate([pull(1, "# Batches")])[2], `- \\# Batches (${ref(1)})`);
+  assert.equal(generate([pull(1, "- Batches")])[2], `- \\- Batches (${ref(1)})`);
+  assert.equal(generate([pull(1, "2. Batches")])[2], `- 2\\. Batches (${ref(1)})`);
+});
+
+test("each pull request counts once, and one without a number, title, https address or labels is refused", () => {
+  assert.deepEqual(generate([pull(2, "Add batches"), pull(2, "Add batches")]), ["### Added", "", `- Add batches (${ref(2)})`]);
+  assert.throws(() => generate({}), /must be a JSON array/);
+  assert.throws(() => generate([{ title: "Add batches", url: `${repo}/pull/1`, labels: [] }]), /pull request 1 has no number/);
+  assert.throws(() => generate([{ ...pull(1, "x"), title: " " }]), /#1 has no title/);
+  assert.throws(() => generate([{ ...pull(1, "x"), url: "javascript:alert(1)" }]), /#1 has no https address/);
+  assert.throws(() => generate([{ ...pull(1, "x"), labels: "fixed" }]), /#1 has no list of labels/);
+});
+
+const merged = [pull(2, "Add batches", ["area: gateway"]), pull(3, "Fix quiet streams"), pull(4, "Speed up CI", ["internal"])];
+
+test("a release with nothing under [Unreleased] writes its section from the pull requests merged since the last release", () => {
+  const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
+  const after = release(before, "0.2.0", "2026-11-15", merged);
+  assert.equal(
+    after,
+    changelog(
+      [
+        "## [Unreleased]",
+        `## [0.2.0] - 2026-11-15\n\n### Added\n\n#### Gateway\n\n- Add batches (${ref(2)})\n\n### Fixed\n\n- Fix quiet streams (${ref(3)})`,
+        first,
+      ],
+      ["Unreleased", "0.2.0", "0.1.0"],
+    ),
+  );
+  assert.equal(notes(after, "0.2.0"), generate(merged).join("\n"));
+});
+
+test("lines written under [Unreleased] make a curated release, which leaves the pull requests out", () => {
+  const before = changelog([withUnreleased("### Fixed\n\n- Streams end cleanly."), first], ["Unreleased", "0.1.0"]);
+  assert.equal(release(before, "0.2.0", "2026-11-15", merged), release(before, "0.2.0", "2026-11-15"));
+  const headings = changelog([withUnreleased("### Added\n\n### Fixed"), first], ["Unreleased", "0.1.0"]);
+  assert.match(release(headings, "0.2.0", "2026-11-15", merged), /## \[0\.2\.0\] - 2026-11-15\n\n### Added\n\n#### Gateway\n\n- Add batches/);
+});
+
+test("a release with only internal pull requests and nothing under [Unreleased] is refused", () => {
+  const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
+  assert.equal(releasable(before, "0.2.0"), false);
+  assert.equal(releasable(before, "0.2.0", [pull(4, "Speed up CI", ["internal"])]), false);
+  assert.equal(releasable(before, "0.2.0", merged), true);
+  assert.equal(releasable(changelog([first], ["Unreleased", "0.1.0"]), "0.2.0", merged), true);
+});
+
+test("a stable release folds the generated sections of its pre-releases with the pull requests merged after them", () => {
+  let text = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
+  text = release(text, "0.2.0-rc.1", "2026-11-01", [pull(2, "Add batches", ["area: gateway"])]);
+  text = release(text, "0.2.0", "2026-11-15", [pull(5, "Add a batch page", ["area: console"]), pull(6, "Fix batch retries")]);
+  assert.equal(
+    notes(text, "0.2.0"),
+    `### Added\n\n#### Console\n\n- Add a batch page (${ref(5)})\n\n#### Gateway\n\n- Add batches (${ref(2)})\n\n### Fixed\n\n- Fix batch retries (${ref(6)})`,
+  );
+  assert.doesNotMatch(text, /rc\.1/);
+});
+
+test("a generated release is formatted as Prettier formats it", async () => {
+  const real = readFileSync(join(root, "CHANGELOG.md"), "utf8").replace(/## \[Unreleased\]\n[\s\S]*?(?=## \[)/, "## [Unreleased]\n\n");
+  const pulls = [
+    ...merged,
+    pull(5, "Keep <Select> open with `<Dialog>` [inside] C:\\temp", ["breaking", "security"]),
+    pull(6, "Bump serde", ["dependencies"], "dependabot[bot]"),
+    pull(7, "Add a batch page", ["area: console"]),
+  ];
+  const text = release(real, "0.2.0", "2026-11-15", pulls);
+  assert.match(text, /## \[0\.2\.0\] - 2026-11-15\n\n- \*\*Breaking:\*\* Keep/);
+  assert.equal(await isPrettier(text), true);
+});
+
+test("the draft command prints the section that the pull requests in a file make", () => {
+  const dir = mkdtempSync(join(tmpdir(), "kaeso-changelog-"));
+  try {
+    writeFileSync(join(dir, "pulls.json"), JSON.stringify(merged));
+    const out = execFileSync(process.execPath, [join(root, "scripts", "changelog.mjs"), "draft", join(dir, "pulls.json")], { encoding: "utf8" });
+    assert.equal(out, `${generate(merged).join("\n")}\n`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("the Release workflow writes the changelog from the merged pull requests, and its Tag job accepts changes to CHANGELOG.md and the version's files only", () => {
+  const workflow = readFileSync(join(root, ".github", "workflows", "release.yml"), "utf8");
+  const allowed = workflow
+    .split("\n")
+    .filter((line) => line.includes('> "$allowed"'))
+    .map((line) => line.trim());
+  assert.deepEqual(allowed, ['{ node scripts/version.mjs files; echo CHANGELOG.md; } > "$allowed"']);
+  assert.match(workflow, /git apply --summary "\$patch"/);
+  assert.match(workflow, /node scripts\/changelog\.mjs check "\$version" "\$pulls"/);
+  assert.match(workflow, /node scripts\/changelog\.mjs release "\$VERSION" "\$\(date -u \+%F\)" "\$RUNNER_TEMP\/pulls\/pulls\.json"/);
 });

@@ -60,7 +60,7 @@ pnpm --filter kaeso-docs e2e
 9. **Code blocks in pages never contain comments**; explain a command in the sentence before it.
 10. **Diagrams are Mermaid, drawn by the build.** Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a ` ```mermaid ` block with `accTitle` and, in a sentence or two, `accDescr`, its labels translated like the page; never ASCII or box-drawing art in a code block, never a screenshot or an image of a diagram. `check:content` fails on a code block that draws with box-drawing characters or arrows. The build draws them in strict mode into static images, so nothing of them runs in a reader's browser; `pnpm --filter kaeso-docs diagrams` draws new and changed diagrams into `diagrams/`, which is committed with the page; [writing documentation](content/en/development/documentation.md#diagrams) has the rules.
 11. **Tests assert on what a person sees**, and the content build's tests on what an author writes. The coverage thresholds are in `vitest.config.ts`.
-12. **Changelog:** a change to the site itself gets a line under `[Unreleased]` in the repository's `CHANGELOG.md`; changes to pages need none.
+12. **Changelog:** the release writes it from the merged pull requests, so a pull request never edits `CHANGELOG.md`; its title is its line, and changes to the site itself get the `area: documentation` label that the Labels workflow sets.
 
 ## Where things are
 

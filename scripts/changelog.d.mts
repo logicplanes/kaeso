@@ -44,7 +44,16 @@ export interface ChangelogHistory {
   releases: ChangelogRelease[];
 }
 
+export interface PullRequest {
+  number: number;
+  title: string;
+  url: string;
+  labels: string[];
+  author?: string;
+}
+
 export function history(text: string): ChangelogHistory;
-export function releasable(text: string, version: string): boolean;
-export function release(text: string, version: string, date: string): string;
+export function generate(pulls: PullRequest[]): string[];
+export function releasable(text: string, version: string, pulls?: PullRequest[]): boolean;
+export function release(text: string, version: string, date: string, pulls?: PullRequest[]): string;
 export function notes(text: string, version: string): string;

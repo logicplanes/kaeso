@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { after, before, test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { changelogLoader, changelogSchema } from "../src/lib/changelog.ts";
+import { release } from "../../../scripts/changelog.mjs";
 import { refuseRawMarkup } from "./refuse-raw-markup.mjs";
 
 const require = createRequire(import.meta.url);
@@ -178,4 +179,23 @@ test("a changelog that passes renders what the whole file would, with the same H
   const direct = await processor.render("- A `<b>` tag and [a link](https://example.com).", { fileURL: GUIDE });
   assert.equal(unreleased.intro, direct.code);
   assert.match(unreleased.sections[0].html, /<a href="https:\/\/example\.com\/r">here<\/a>/);
+});
+
+test("a release written from pull requests renders markup in a title as text, with the link to its pull request", async () => {
+  const repository = "https://github.com/logicplanes/kaeso";
+  const before = `# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-09-01\n\n### Added\n\n- Batches.\n\n${LINKS}\n`;
+  const written = release(before, "1.1.0", "2026-10-01", [
+    {
+      number: 7,
+      title: "Keep <Select> and [the menu](javascript:alert(1)) open around `<Dialog>`",
+      url: `${repository}/pull/7`,
+      labels: ["fixed", "area: console"],
+    },
+  ]);
+  const [latest] = (await loaded(written)).releases;
+  const [topic] = latest.sections[0].topics;
+  assert.equal(topic.name, "Console");
+  assert.match(topic.html, /Keep &#x3C;Select> and \[the menu\]\(javascript:alert\(1\)\) open around <code>&#x3C;Dialog><\/code>/);
+  assert.match(topic.html, /<a href="https:\/\/github\.com\/logicplanes\/kaeso\/pull\/7">#7<\/a>/);
+  assert.doesNotMatch(topic.html, /<select|href="javascript/i);
 });

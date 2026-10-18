@@ -54,17 +54,49 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 变更日志
 
-仓库根目录的 `CHANGELOG.md` 遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)。每个会被人注意到的变更，都要在同一个拉取请求中在 `[Unreleased]` 下添加一行，从使用、运行 Kaeso 或基于它进行开发的人的角度说明改变了什么。
+仓库根目录的 `CHANGELOG.md` 遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)。拉取请求不修改它：Release 工作流根据自上一个版本以来合并的拉取请求的标题和标签，写出每个版本的章节。因此，拉取请求的标题就是它在变更日志中的那一行，用一句话向使用、运行 Kaeso 或基于它进行开发的人说明改变了什么，例如“Keep dialogs centered and resize them smoothly when their content changes”。
 
-发布时，`[Unreleased]` 下的条目会成为该版本的章节 `## [X.Y.Z] - YYYY-MM-DD`，其上方保留一个空的 `## [Unreleased]`，文件末尾的链接也会更新：`[Unreleased]` 改为与新标签比较，并新增一个指向该版本的链接。这个章节就是该版本在 GitHub 上的说明。如果 `[Unreleased]` 下没有任何内容，发布会被拒绝，除非 `CHANGELOG.md` 中已经有该版本的章节，或者（对于稳定版本）有它某个预发布版本的章节。
+每一行是去掉末尾句号的标题，加上指向拉取请求的链接：`- Keep dialogs centered and resize them smoothly when their content changes ([#38](https://github.com/logicplanes/kaeso/pull/38))`。标题中的 Markdown 无法向变更日志添加 HTML、链接、标题或列表；代码片段仍保持为代码。这些条目遵循以下规则：
 
-在同一版本的预发布版本之后发布的稳定版本，例如在 `0.2.0-rc.1` 和 `0.2.0-rc.2` 之后发布的 `0.2.0`，会把这些预发布版本的章节和 `[Unreleased]` 下的新内容合并为一个章节 `## [0.2.0] - YYYY-MM-DD`。每个标题（例如 `### Added`）以及其中每个主题（例如 `#### Model API`）下的条目会合并在一起，最新的在前，预发布版本的章节和链接则被删除。因此，稳定版本的说明会列出自上一个稳定版本以来的全部变更。这些修改由 `scripts/changelog.mjs` 完成。
+- **章节。** 由类型标签决定；有多个类型标签时，`security` 优先，其余按 Keep a Changelog 的顺序。没有类型标签时，由标题的第一个词决定：Add 或 Introduce 归入 Added，Deprecate 归入 Deprecated，Remove 或 Drop 归入 Removed，Fix 归入 Fixed，其他任何词都归入 Changed。
+- **主题。** 恰好有一个领域标签时，该行放在对应主题下，例如 `#### Console`，排在该章节中没有主题的条目之后。没有领域标签或有多个时，该行没有主题。
+- **顺序。** 章节按 Keep a Changelog 的顺序排列：Added、Changed、Deprecated、Removed、Fixed、Security。主题按下表的顺序，条目按拉取请求的编号排列。
+- **破坏性变更。** 带有 `breaking` 标签的拉取请求还会在该版本章节的顶部列出，写作 **Breaking:** 加上它的标题。这个标签不会改变其他任何东西；版本号仍由维护者选择（[版本号](#版本号)）。
+- **依赖项。** Dependabot 的拉取请求以及其他带有 `dependencies` 标签的拉取请求，合并为 Changed 下的一行“Dependencies updated”，并链接到每一个拉取请求。
+- **省略。** 带有 `internal` 标签的拉取请求会被省略，例如对 CI、测试或工具的更新，包括 Dependabot 对工作流中 action 的更新。
 
-两个网站都在 `/changelog` 显示变更日志。文档（[更新日志页面](architecture/docs-site.md#更新日志)）和展示站点都通过 `scripts/changelog.mjs` 中的 `history` 读取 `CHANGELOG.md`，因此发布时无需为它们做额外的步骤。从版本标签构建时，`[Unreleased]` 下没有内容，页面会省略它；从 `dev` 构建时，这些条目排在最前面，并标记为尚未发布。
+在 `[Unreleased]` 下手写的条目会构成一个人工整理的版本：只要 `[Unreleased]` 下有内容，发布就只使用这些条目，不使用拉取请求。人工整理的版本适合需要比标题更详细说明的版本，也适合热修复，因为热修复的提交没有拉取请求。
+
+发布时，这些条目会成为该版本的章节 `## [X.Y.Z] - YYYY-MM-DD`，其上方保留一个空的 `## [Unreleased]`，文件末尾的链接也会更新：`[Unreleased]` 改为与新标签比较，并新增一个指向该版本的链接。这个章节就是该版本在 GitHub 上的说明。没有任何内容可列出的发布会被拒绝：`[Unreleased]` 下没有内容，也没有不带 `internal` 的已合并拉取请求，除非 `CHANGELOG.md` 中已经有该版本的章节，或者（对于稳定版本）有它某个预发布版本的章节。
+
+在同一版本的预发布版本之后发布的稳定版本，例如在 `0.2.0-rc.1` 和 `0.2.0-rc.2` 之后发布的 `0.2.0`，会把这些预发布版本的章节和最后一个预发布版本之后合并的拉取请求合并为一个章节 `## [0.2.0] - YYYY-MM-DD`。每个标题（例如 `### Added`）以及其中每个主题（例如 `#### Console`）下的条目会合并在一起，最新的在前，预发布版本的章节和链接则被删除。因此，稳定版本的说明会列出自上一个稳定版本以来的全部变更。这些修改由 `scripts/changelog.mjs` 完成。
+
+两个网站都在 `/changelog` 显示变更日志。文档（[更新日志页面](architecture/docs-site.md#更新日志)）和展示站点都通过 `scripts/changelog.mjs` 中的 `history` 读取 `CHANGELOG.md`，因此发布时无需为它们做额外的步骤。从版本标签构建时，`[Unreleased]` 下没有内容，页面会省略它；从 `dev` 构建时，如果 `[Unreleased]` 下有手写的条目，这些条目排在最前面，并标记为尚未发布。
+
+### 标签
+
+| 标签 | 在版本说明中 |
+| --- | --- |
+| `added`、`changed`、`deprecated`、`removed`、`fixed`、`security` | 所属章节，例如 Added；`changed` 是默认值 |
+| `breaking` | 另外在顶部作为破坏性变更列出 |
+| `internal` | 省略 |
+| `area: gateway`、`area: kpp`、`area: console`、`area: ui library`、`area: documentation`、`area: self-hosting` | 主题：Gateway、KPP、Console、UI library、Documentation 或 Self-hosting |
+
+**Labels** 工作流（`.github/workflows/labels.yml`）按照 `.github/labeler.yml`，根据拉取请求修改的文件设置领域标签和 `internal`：每次拉取请求被打开或收到推送时都会运行，并移除不再适用的标签。拉取请求修改了 `apps/console` 中的文件时会得到 `area: console`；它修改的每个文件都是测试、fixture、工作流、脚本、贡献者指南或其他工具时，会得到 `internal`。如需手动设置这些标签，请在最后一次推送之后再设置，因为下一次推送会再次根据文件设置它们。该工作流在 `pull_request_target` 上只运行 labeler action，从不检出拉取请求的代码，并且只能读取仓库和写入标签。
+
+如果标题的第一个词选不出正确的章节，维护者会在合并前设置类型标签；如果升级时需要用户做出修改，则设置 `breaking`。`node scripts/changelog.mjs labels` 会列出每个标签及其颜色和说明，用于在仓库中创建它们：
+
+```bash
+node scripts/changelog.mjs labels | while IFS=$'\t' read -r name color description; do
+  gh label create "$name" --color "$color" --description "$description" --force
+done
+```
+
+Validate 负责收集拉取请求：`prod` 上每个不包含在任何 `v*` 标签中的提交（合并提交除外），通过压缩提交标题末尾的 `(#123)` 找到它的拉取请求；没有这一部分时，则通过 GitHub 列出的该提交所属的已合并拉取请求找到。Validate 使用只能读取仓库和拉取请求的令牌读取它们，在摘要中列出它们及其标签，并以 JSON 形式交给 Prepare，`scripts/changelog.mjs` 再据此写出章节。`node scripts/changelog.mjs draft pulls.json` 会输出这种格式的拉取请求文件所生成的章节。
 
 ## 发布一个版本
 
-1. **准备好 `dev`。** `dev` 上的 CI 已通过，[完成变更之前](testing.md#完成变更之前)中的每项检查都通过（包括 `pnpm release:check`），并且 `CHANGELOG.md` 写明了该版本的全部变更。
+1. **准备好 `dev`。** `dev` 上的 CI 已通过，[完成变更之前](testing.md#完成变更之前)中的每项检查都通过（包括 `pnpm release:check`），并且自上一个版本以来合并的每个拉取请求都带有其条目所需的标签（[标签](#标签)），或者 `[Unreleased]` 下的条目写明了该版本的全部变更。
 2. **刷新模型数据**，让全新安装一开始就有最新的模型和价格，并通过拉取请求把结果合入 `dev`：
 
    ```bash
@@ -104,7 +136,7 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 预发布版本
 
-预发布版本（例如 `0.2.0-rc.1`）与其他版本一样从 `prod` 发布。它在 npm 上获得 `next` 标签，在 GitHub 上被标记为预发布，镜像标签只有它的版本号，因此 `latest` 仍指向最新的稳定版本。每个预发布版本在变更日志中都有自己的章节，直到稳定版本把它们合并为一个（[变更日志](#变更日志)），因此稳定版本不需要自己新增条目。
+预发布版本（例如 `0.2.0-rc.1`）与其他版本一样从 `prod` 发布。它在 npm 上获得 `next` 标签，在 GitHub 上被标记为预发布，镜像标签只有它的版本号，因此 `latest` 仍指向最新的稳定版本。每个预发布版本在变更日志中都有自己的章节，内容来自自前一个版本以来合并的拉取请求，直到稳定版本把它们与最后一个预发布版本之后合并的拉取请求一起合并为一个章节（[变更日志](#变更日志)）。
 
 ## 热修复
 
@@ -117,7 +149,7 @@ Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库�
    git switch -c hotfix/0.2.1 v0.2.0
    ```
 
-2. **修复问题**：附上能复现缺陷的测试，在 `CHANGELOG.md` 的 `[Unreleased]` 下添加一行，提交，并运行检查。
+2. **修复问题**：附上能复现缺陷的测试，在 `CHANGELOG.md` 的 `[Unreleased]` 下添加一行，提交，并运行检查。热修复的提交没有拉取请求，因此这一行就是它的变更日志（[变更日志](#变更日志)）。
 3. **把该分支推送到 `prod`。** 因为 `prod` 停留在该版本的提交上，这是一次快进：
 
    ```bash
@@ -154,8 +186,8 @@ flowchart TD
 
 | 作业 | 作用 |
 | --- | --- |
-| Validate | 拒绝以下情况：在 `prod` 以外的分支上运行；版本号不符合语义化版本；标签已存在；版本号不比最新标签更新；`CHANGELOG.md` 的 `[Unreleased]` 下没有内容，且没有该版本（或对于稳定版本，没有它某个预发布版本）的章节；以及已有文件手写了该版本号 |
-| Prepare | 用该版本号运行 `node scripts/version.mjs set`，把版本号写入每个声明它的文件（[仓库中的版本号](#仓库中的版本号)）；如果其他地方仍手写着该版本号，就会失败。然后移动变更日志，把稳定版本的各预发布版本章节合并进它自己的章节。它只能读取仓库，不持有 Git 凭据，并把这些修改作为补丁交给 Tag |
+| Validate | 拒绝以下情况：在 `prod` 以外的分支上运行；版本号不符合语义化版本；标签已存在；版本号不比最新标签更新；没有任何内容可列出的发布（`[Unreleased]` 下没有内容，没有不带 `internal` 的已合并拉取请求，也没有该版本或对于稳定版本，它某个预发布版本的章节）；以及已有文件手写了该版本号。收集自上一个版本以来合并的拉取请求，在摘要中列出它们及其标签，并交给 Prepare（[变更日志](#变更日志)） |
+| Prepare | 用该版本号运行 `node scripts/version.mjs set`，把版本号写入每个声明它的文件（[仓库中的版本号](#仓库中的版本号)）；如果其他地方仍手写着该版本号，就会失败。然后根据 `[Unreleased]` 下的条目，或在没有条目时根据已合并的拉取请求，写出变更日志中该版本的章节，并把稳定版本的各预发布版本章节合并进它自己的章节。它只能读取仓库，不持有 Git 凭据，并把这些修改作为补丁交给 Tag |
 | Checks | 在 `prod` 的提交上运行完整的 CI 工作流，无论改了什么都运行每个作业 |
 | Tag | 应用补丁；如果补丁会创建、删除或重命名文件，修改文件模式，或修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 列出的文件之外的任何文件，就拒绝。补丁修改了文件时，向 `prod` 提交“Release X.Y.Z”；没有修改任何文件时，直接给 `prod` 的提交打标签。如果自运行开始以来 `prod` 发生了变化，就拒绝。打上标签 `vX.Y.Z`，并把 `prod` 和标签一起推送，要么都成功，要么都不推送 |
 | Sync dev | 把该版本合入 `dev`：如果 `dev` 已包含它，则无需操作；如果 `dev` 没有新内容，则快进；否则在能干净合并时创建合并提交“Merge release X.Y.Z into dev”。如果 `dev` 的规则拒绝推送，作业以警告结束，其摘要给出仓库管理员需要运行的命令。如果合并冲突、该版本修改了 `dev` 所没有的 `.github/workflows` 中的文件，或者 `dev` 在运行期间有了新提交，作业就会失败，其摘要会说明如何手动合并 |

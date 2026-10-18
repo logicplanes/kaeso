@@ -94,6 +94,6 @@ CI runs these checks for every area a pull request changes, and all of them on `
 
 - Work on `dev` or on a branch from `dev`, and open pull requests into `dev`. Never push to `prod`: the maintainer pushes `dev` there to make a release.
 - Never create tags or releases and never publish crates, npm packages, images or sites: the maintainer runs the Release workflow and deploys the sites.
-- Every user-visible change gets a line under `[Unreleased]` in `CHANGELOG.md`, in the same pull request.
+- Never edit `CHANGELOG.md` in a pull request: the Release workflow writes it from the merged pull requests. The title is the changelog line, so write it as a sentence that says what changed for people who use, run or build on Kaeso; labels choose its section and topic ([the changelog](https://docs.kaeso.app/development/releasing#the-changelog)).
 - Never write the current version by hand. Only a release changes it, with `node scripts/version.mjs set`; pages write `{{version}}`, code reads `package.json` or `env!("CARGO_PKG_VERSION")`. `node scripts/version.mjs check`, part of `pnpm test`, fails on a version anywhere else and names the file and line.
 - Commit messages say what changed and why.

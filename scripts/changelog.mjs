@@ -93,25 +93,129 @@ const folded = (version) => (name) => name === "Unreleased" || (isStable(version
 const unreleasedLink = (links) => links.find((line) => linkName(line) === "Unreleased");
 const repositoryOf = (links) => /^\[Unreleased\]: (.+)\/compare\//.exec(unreleasedLink(links) ?? "")?.[1] ?? null;
 
-export function releasable(text, version) {
-  const { sections } = parse(text);
-  if (sections.some(({ name }) => name === version)) return true;
-  return fold(sections.filter(({ name }) => folded(version)(name)).map(({ body }) => body)).length > 0;
+const TYPES = { added: "Added", changed: "Changed", deprecated: "Deprecated", removed: "Removed", fixed: "Fixed", security: "Security" };
+const PRECEDENCE = ["security", "added", "changed", "deprecated", "removed", "fixed"];
+const INFERRED = [
+  [["add", "introduce"], "added"],
+  [["deprecate"], "deprecated"],
+  [["remove", "drop"], "removed"],
+  [["fix"], "fixed"],
+];
+const INTERNAL = "internal";
+const BREAKING = "breaking";
+const type = (name, color, note = "") => ({ name, color, description: `Release notes: under ${TYPES[name]}${note}` });
+const area = (topic) => ({ name: `area: ${topic.toLowerCase()}`, color: "c5def5", description: `Release notes: under the ${topic} topic`, topic });
+
+export const LABELS = [
+  { name: BREAKING, color: "b60205", description: "Release notes: also named at the top as a breaking change" },
+  type("added", "0e8a16"),
+  type("changed", "fbca04", ", the default"),
+  type("deprecated", "d4c5f9"),
+  type("removed", "e99695"),
+  type("fixed", "1d76db"),
+  type("security", "d93f0b"),
+  { name: INTERNAL, color: "ededed", description: "Release notes: left out, such as CI, tests and tooling" },
+  ...["Gateway", "KPP", "Console", "UI library", "Documentation", "Self-hosting"].map(area),
+];
+
+const AREAS = LABELS.filter(({ topic }) => topic).map(({ name, topic }) => [name, topic]);
+const DEPENDABOT = "dependabot[bot]";
+const DEPENDENCIES = "dependencies";
+
+const typeOf = ({ title, labels }) => {
+  const labelled = PRECEDENCE.find((type) => labels.includes(type));
+  if (labelled) return labelled;
+  const word = /^\S+/.exec(title)?.[0].toLowerCase() ?? "";
+  return INFERRED.find(([words]) => words.includes(word))?.[1] ?? "changed";
+};
+
+const topicOf = ({ labels }) => {
+  const areas = AREAS.filter(([label]) => labels.includes(label));
+  return areas.length === 1 ? areas[0][1] : null;
+};
+
+const isDependency = ({ author, labels }) => author === DEPENDABOT || labels.includes(DEPENDENCIES);
+
+const escaped = (text) =>
+  text
+    .split(/(`[^`]*`)/)
+    .map((part, i) => (i % 2 ? part : part.replace(/[\\<>[\]]/g, "\\$&")))
+    .join("")
+    .replace(/^(\d+)([.)])/, "$1\\$2")
+    .replace(/^(#|[-+*](?=\s))/, "\\$1");
+
+const link = ({ number, url }) => `[#${number}](${url})`;
+const sentence = (pull) => `${escaped(pull.title.replace(/\.+$/, ""))} (${link(pull)})`;
+const item = (pull) => `- ${sentence(pull)}`;
+
+const checked = (pulls) => {
+  if (!Array.isArray(pulls)) throw new Error("the pull requests must be a JSON array");
+  return pulls.map((pull, i) => {
+    const where = `pull request ${i + 1}`;
+    if (!Number.isInteger(pull?.number) || pull.number < 1) throw new Error(`${where} has no number`);
+    if (typeof pull.title !== "string" || !pull.title.trim()) throw new Error(`#${pull.number} has no title`);
+    if (typeof pull.url !== "string" || !/^https:\/\/\S+$/.test(pull.url)) throw new Error(`#${pull.number} has no https address`);
+    if (!Array.isArray(pull.labels) || pull.labels.some((label) => typeof label !== "string")) throw new Error(`#${pull.number} has no list of labels`);
+    return {
+      number: pull.number,
+      title: pull.title.replace(/\s+/g, " ").trim(),
+      url: pull.url,
+      labels: pull.labels,
+      author: typeof pull.author === "string" ? pull.author : "",
+    };
+  });
+};
+
+export function generate(pulls) {
+  const unique = [...new Map(checked(pulls).map((pull) => [pull.number, pull])).values()].toSorted((a, b) => a.number - b.number);
+  const visible = unique.filter(({ labels }) => !labels.includes(INTERNAL));
+  const own = visible.filter((pull) => !isDependency(pull));
+  const dependencies = visible.filter(isDependency);
+  const entries = own.map((pull) => ({ group: TYPES[typeOf(pull)], topic: topicOf(pull), line: item(pull) }));
+  if (dependencies.length) entries.push({ group: TYPES.changed, topic: null, line: `- Dependencies updated (${dependencies.map(link).join(", ")})` });
+  const intro = own.filter(({ labels }) => labels.includes(BREAKING)).map((pull) => `- **Breaking:** ${sentence(pull)}`);
+  const sections = GROUPS.flatMap((group) => {
+    const inGroup = entries.filter((entry) => entry.group === group);
+    if (!inGroup.length) return [];
+    const lines = (topic) => inGroup.filter((entry) => entry.topic === topic).map((entry) => entry.line);
+    const topics = AREAS.map(([, topic]) => [topic, lines(topic)]).filter(([, topicLines]) => topicLines.length);
+    return [paragraphs([[`### ${group}`], lines(null), ...topics.flatMap(([topic, topicLines]) => [[`#### ${topic}`], topicLines])])];
+  });
+  return paragraphs([intro, ...sections]);
 }
 
-export function release(text, version, date) {
+const UNRELEASED = "Unreleased";
+
+const drafted = (changelog, pulls) => {
+  const pending = changelog.sections.find(({ name }) => name === UNRELEASED);
+  if (pending && fold([pending.body]).length) return changelog.sections;
+  const body = generate(pulls);
+  if (!pending) return [{ name: UNRELEASED, heading: `## [${UNRELEASED}]`, body }, ...changelog.sections];
+  return changelog.sections.map((section) => (section === pending ? { ...section, body } : section));
+};
+
+export function releasable(text, version, pulls = []) {
+  const changelog = parse(text);
+  if (changelog.sections.some(({ name }) => name === version)) return true;
+  return (
+    fold(
+      drafted(changelog, pulls)
+        .filter(({ name }) => folded(version)(name))
+        .map(({ body }) => body),
+    ).length > 0
+  );
+}
+
+export function release(text, version, date, pulls = []) {
   const changelog = parse(text);
   if (changelog.sections.some(({ name }) => name === version)) return text;
   const folds = folded(version);
   const unreleased = unreleasedLink(changelog.links);
   const base = repositoryOf(changelog.links);
   if (!base) throw new Error("CHANGELOG.md has no [Unreleased] compare link");
-  const body = fold(changelog.sections.filter(({ name }) => folds(name)).map((section) => section.body));
-  const sections = [
-    { heading: "## [Unreleased]", body: [] },
-    { heading: `## [${version}] - ${date}`, body },
-    ...changelog.sections.filter(({ name }) => !folds(name)),
-  ];
+  const drafts = drafted(changelog, pulls);
+  const body = fold(drafts.filter(({ name }) => folds(name)).map((section) => section.body));
+  const sections = [{ heading: `## [${UNRELEASED}]`, body: [] }, { heading: `## [${version}] - ${date}`, body }, ...drafts.filter(({ name }) => !folds(name))];
   const links = changelog.links.flatMap((line) => {
     if (line === unreleased) return [`[Unreleased]: ${base}/compare/v${version}...HEAD`, `[${version}]: ${base}/releases/tag/v${version}`];
     return linkName(line) && folds(linkName(line)) ? [] : [line];
@@ -194,22 +298,27 @@ export function history(text) {
 }
 
 const file = join(dirname(fileURLToPath(import.meta.url)), "..", "CHANGELOG.md");
+const pullsFrom = (path) => (path ? JSON.parse(readFileSync(path, "utf8")) : []);
 const commands = {
-  check: (version) => {
-    if (!releasable(readFileSync(file, "utf8"), version)) process.exitCode = 1;
+  check: (version, pulls) => {
+    if (!releasable(readFileSync(file, "utf8"), version, pullsFrom(pulls))) process.exitCode = 1;
   },
-  release: (version, date) => {
+  release: (version, date, pulls) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) throw new Error("release needs a date like 2026-10-16");
-    writeFileSync(file, release(readFileSync(file, "utf8"), version, date));
+    writeFileSync(file, release(readFileSync(file, "utf8"), version, date, pullsFrom(pulls)));
   },
   notes: (version) => process.stdout.write(`${notes(readFileSync(file, "utf8"), version)}\n`),
+  draft: (pulls) => process.stdout.write(`${generate(pullsFrom(pulls)).join("\n")}\n`),
+  labels: () => process.stdout.write(LABELS.map(({ name, color, description }) => `${name}\t${color}\t${description}\n`).join("")),
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [command, version, ...rest] = process.argv.slice(2);
-  if (!commands[command] || !version) {
-    console.error("usage: node scripts/changelog.mjs check|release|notes <version> [date]");
+  const [command, ...rest] = process.argv.slice(2);
+  if (!commands[command] || rest.length < Math.min(1, commands[command].length)) {
+    console.error(
+      "usage: node scripts/changelog.mjs check <version> [pulls.json] | release <version> <date> [pulls.json] | notes <version> | draft <pulls.json> | labels",
+    );
     process.exit(2);
   }
-  commands[command](version, ...rest);
+  commands[command](...rest);
 }

@@ -1,0 +1,86 @@
+"area: gateway":
+  - changed-files:
+      - any-glob-to-any-file:
+          - crates/kaeso/**
+          - crates/kaeso-core/**
+          - crates/kaeso-crypto/**
+          - crates/kaeso-mail/**
+          - crates/kaeso-server/**
+          - crates/kaeso-store/**
+          - crates/kaeso-upstream/**
+          - .sqlx/**
+          - openapi.json
+
+"area: kpp":
+  - changed-files:
+      - any-glob-to-any-file:
+          - crates/kaeso-kpp/**
+          - crates/kaeso-codecs/**
+
+"area: console":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/console/**
+
+"area: ui library":
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/**
+          - apps/showcase/**
+
+"area: documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/docs/**
+
+"area: self-hosting":
+  - changed-files:
+      - any-glob-to-any-file:
+          - deploy/compose.yaml
+          - deploy/kaeso.example.toml
+          - deploy/*.Dockerfile
+          - deploy/*.dockerignore
+          - deploy/console/**
+
+internal:
+  - changed-files:
+      - any-glob-to-all-files:
+          - .github/**
+          - .cargo/**
+          - "**/AGENTS.md"
+          - "**/CLAUDE.md"
+          - "**/*.test.ts"
+          - "**/*.test.tsx"
+          - "**/*.test.mjs"
+          - "**/*.spec.ts"
+          - "**/e2e/**"
+          - "**/tests/**"
+          - "**/fixtures/**"
+          - "**/snapshots/**"
+          - "**/benches/**"
+          - "**/vitest.config.ts"
+          - "**/playwright.config.ts"
+          - "**/eslint.config.js"
+          - "**/tsconfig*.json"
+          - apps/docs/eslint/**
+          - apps/docs/scripts/**
+          - apps/showcase/scripts/**
+          - crates/kaeso-testkit/**
+          - crates/kpp-conformance/**
+          - crates/xtask/**
+          - fuzz/**
+          - scripts/**
+          - deploy/compose.dev.yaml
+          - CHANGELOG.md
+          - CONTRIBUTING.md
+          - .editorconfig
+          - .gitattributes
+          - "**/.gitignore"
+          - .node-version
+          - .prettierignore
+          - .prettierrc.json
+          - clippy.toml
+          - deny.toml
+          - knip.json
+          - rust-toolchain.toml
+          - rustfmt.toml

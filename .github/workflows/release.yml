@@ -25,6 +25,9 @@ jobs:
     name: Validate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
@@ -46,12 +49,45 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+      - name: Collect the pull requests merged since the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          latest="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname | head -n 1)"
+          numbers=()
+          while IFS=$'\t' read -r sha subject; do
+            if [[ "$subject" =~ \(#([0-9]+)\)$ ]]; then
+              numbers+=("${BASH_REMATCH[1]}")
+            else
+              while IFS= read -r number; do
+                numbers+=("$number")
+              done < <(gh api "repos/$REPOSITORY/commits/$sha/pulls" --jq '.[] | select(.merged_at != null) | .number')
+            fi
+          done < <(git log --no-merges --format='%H%x09%s' HEAD --not --tags='v*')
+          mkdir -p "$RUNNER_TEMP/pulls"
+          for number in $(printf '%s\n' "${numbers[@]}" | sort -nu); do
+            gh api "repos/$REPOSITORY/pulls/$number" --jq 'select(.merged_at != null) | {number, title, url: .html_url, labels: [.labels[].name], author: .user.login}'
+          done | jq -s . > "$RUNNER_TEMP/pulls/pulls.json"
+          {
+            echo "### Pull requests since ${latest:-the first commit}"
+            echo
+            jq -r 'if length == 0 then "None." else .[] | "- #\(.number) \(.title) (\(.labels | join(", ") | if . == "" then "no labels" else . end))" end' "$RUNNER_TEMP/pulls/pulls.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-pulls
+          path: ${{ runner.temp }}/pulls/pulls.json
+          if-no-files-found: error
+          retention-days: 1
       - id: version
         name: Check the version and the changelog
         env:
           INPUT: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          pulls="$RUNNER_TEMP/pulls/pulls.json"
           version="${INPUT#v}"
           if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "::error::$version is not a version like 1.4.0 or 1.4.0-rc.1."
@@ -66,9 +102,9 @@ jobs:
             echo "::error::$version is not newer than $latest."
             exit 1
           fi
-          if ! node scripts/changelog.mjs check "$version"; then
+          if ! node scripts/changelog.mjs check "$version" "$pulls"; then
             if [[ "$version" == *-* ]]; then of="$version"; else of="$version or a pre-release of it"; fi
-            echo "::error::CHANGELOG.md has nothing under [Unreleased] and no section for $of."
+            echo "::error::Nothing to release: CHANGELOG.md has nothing under [Unreleased] and no section for $of, and no pull request merged since ${latest:-the first commit} is user-visible: there are none, or each one is labelled internal."
             exit 1
           fi
           if ! node scripts/version.mjs check "$version"; then
@@ -106,8 +142,12 @@ jobs:
           node-version-file: .node-version
       - name: Set the version
         run: node scripts/version.mjs set "$VERSION"
-      - name: Move the changelog
-        run: node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: release-pulls
+          path: ${{ runner.temp }}/pulls
+      - name: Write the changelog
+        run: node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)" "$RUNNER_TEMP/pulls/pulls.json"
       - name: Keep the changes
         run: |
           set -euo pipefail
