@@ -1,21 +1,23 @@
 ---
 title: Request logs
-description: Read every request a project served, export it, and choose what is kept.
+description: Find any request a project served, see what was sent and returned, export logs, and choose what is kept.
 order: 7
 ---
 
-Kaeso logs every model request: the model, the provider, the status, tokens, cost, timing, the key and who sent it. With content logging on, it also keeps what the app sent and what it got back. An entry appears a few seconds after its request ends. Reading the logs needs the right **View request logs**.
+Kaeso logs every model request: the model, the provider, the status, tokens, cost, timing, the key and who sent it. With content logging on, it also keeps what the app sent and what it got back. A request shows up a few seconds after it ends.
 
-## The list
+## Find a request
 
-A project's **Request logs** page lists requests, newest first, from the last hour, 24 hours, 7 days or 30 days, or a range you choose.
+Open a project's **Request logs** page. It lists requests newest first, from the last hour, 24 hours, 7 days or 30 days, or a range you choose.
 
-- **Add filter** narrows the list by key, member, model, provider, status, error kind, streaming and source (the API or the Playground); **Failed only** keeps the errors.
+- **Add filter** narrows the list by key, member, model, provider, status, error kind, streaming and source: the API or the Playground. **Failed only** keeps the errors.
 - **Live** adds new requests as they arrive. Once you have scrolled down, a button says how many are new.
 - The display options choose the columns and the density.
-- **Open a request by id** finds the request whose `kaeso-request-id` your app received.
+- **Open a request by id** finds the request whose `kaeso-request-id` header your app received.
 
-## A request
+Reading the logs needs the right **View request logs**.
+
+## Read a request
 
 Choose a request to open it:
 
@@ -23,14 +25,14 @@ Choose a request to open it:
 | --- | --- |
 | Overview | The outcome, the route, who sent it, the timing, the stream and the usage |
 | Request | What the app sent |
-| Reply | What it got back |
+| Reply | What the app got back |
 | Raw | The log entry as the Platform API returns it |
 
-A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout** or **Client disconnected**, and the provider's message where there was one. A stream that broke off is logged as a failure, with how far it got.
+A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout** or **Client disconnected**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
 
-The **Request** and **Reply** tabs need the right **View prompts and outputs**. They say so when it is missing, when content wasn't logged, or when it has passed its retention. Embedding vectors are never kept. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as stored.
+The **Request** and **Reply** tabs need the right **View prompts and outputs**. They tell you when that right is missing, when content wasn't logged, or when it has passed its retention. Kaeso never keeps embedding vectors. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as it was stored.
 
-## Export
+## Export logs
 
 **Export** downloads the requests that match the current filters:
 
@@ -38,26 +40,38 @@ The **Request** and **Reply** tabs need the right **View prompts and outputs**. 
 | --- | --- |
 | CSV | Metadata, for spreadsheets |
 | JSON Lines | Metadata, one request per line |
-| JSON Lines with content | Also the stored requests and replies |
+| JSON Lines with content | Metadata, and the stored requests and replies |
 
-Exporting needs the right **Export logs**, and with content also **View prompts and outputs**. In CSV, a value that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets a leading `'`, so a spreadsheet shows it as text instead of running it as a formula.
+Exporting needs the right **Export logs**, and with content also **View prompts and outputs**.
+
+In CSV, Kaeso puts a `'` in front of a value that starts with `=`, `+`, `-`, `@`, a tab or a carriage return. A spreadsheet then shows the value as text instead of running it as a formula.
 
 ## Retention
 
-Each organization chooses what is kept, and for how long, under **Organization settings** › **Logging**:
+Each organization chooses what it keeps, and for how long, under **Organization settings** › **Logging**:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| Log request content | On | Whether requests and replies are kept with their log entries |
-| Metadata retention | 90 days | How long entries are kept |
-| Content retention | 30 days | How long requests and replies are kept; never longer than the metadata |
+| Log request content | On | Whether request and reply bodies are kept with their log entries |
+| Metadata retention | 90 days | How long log entries are kept |
+| Content retention | 30 days | How long request and reply bodies are kept. Never longer than the metadata |
 
-The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#settings)). Shortening a retention deletes older entries; lengthening it applies to new ones. Changing these settings needs the right **Manage log settings**.
+Shortening a retention deletes older entries, and lengthening it applies to new ones. The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#settings)). Changing these settings needs the right **Manage log settings**.
 
-A project can turn content logging off for itself under its **Settings**, but not on while the organization has it off.
+A project can turn content logging off for itself in its **Settings**. It can't turn it on while the organization has it off.
 
-## Storage and deletion
+## Delete logs
 
 The **Storage** tab, under **Logging**, shows how many entries the organization keeps and the space they take, per project.
 
-On the **Deletions** tab, **Delete logs** deletes the logs of whole UTC days, from every project or one, for good; usage and costs stay. You confirm by typing `delete`, and the list shows each deletion as **Queued** or **Done**. At most 10 deletions wait at a time. Deleting needs the right **Delete logs** and a recent sign-in.
+1. On the **Deletions** tab, choose **Delete logs**.
+2. Choose whole UTC days, and every project or one.
+3. Type `delete` to confirm.
+
+Kaeso deletes the logs of those days for good, and keeps the usage and costs. The list shows each deletion as **Queued** or **Done**, and at most 10 deletions wait at a time. Deleting needs the right **Delete logs** and a recent sign-in.
+
+## Next steps
+
+- [Organizations and projects](organizations-and-projects.md): Turn content logging off for a single project.
+- [Errors](../api/errors.md): Look up what a failed request returns to the app.
+- [Requirements](../self-hosting/requirements.md): Plan the disk space request logs take.

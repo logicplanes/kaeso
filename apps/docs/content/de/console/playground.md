@@ -1,33 +1,40 @@
 ---
 title: Playground
-description: Einen Prompt an bis zu vier Modelle nebeneinander senden.
+description: Senden Sie einen Prompt an bis zu vier Modelle und vergleichen Sie ihre Antworten nebeneinander.
 order: 8
 ---
 
 Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugleich und zeigt ihre Antworten nebeneinander. Jede Spalte ist ein eigenes Gespräch. Ihn zu nutzen erfordert das Recht **Playground nutzen**, das Admins und Entwickler eines Projekts haben.
 
-Anfragen im Playground sind echte Anfragen. Sie nutzen die Anbieter-Schlüssel des Projekts, den eigenen Modellzugriff sowie die eigenen Limits und die des Projekts; sie werden dem Projekt berechnet und erscheinen in den [Anfrageprotokollen](request-logs.md) mit der Quelle **Playground**. Schlüssel-Limits gelten nicht, weil kein Schlüssel verwendet wird.
-
 ## Modelle vergleichen
 
-1. Ein Modell für die erste Spalte wählen und mit **Spalte hinzufügen** weitere. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, lässt sich nicht wählen.
-2. Einen Prompt an alle Modelle senden.
-3. Jede Antwort zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten.
+1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen.
+2. Senden Sie einen Prompt an alle Modelle.
+3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten.
 
 **Leeren** leert das Gespräch jeder Spalte.
 
-Modelle und Parameter sind Teil der Seitenadresse, sodass ein Link denselben Vergleich öffnet. Ein noch nicht gesendeter Prompt bleibt im Browser; Gespräche werden nicht gespeichert.
+Die Adresse der Seite enthält die Modelle und Parameter, sodass ein Link denselben Vergleich öffnet. Ein Prompt, den Sie noch nicht gesendet haben, bleibt in Ihrem Browser. Gespräche werden nicht gespeichert.
 
-## Parameter
+## Parameter festlegen
 
 **Parameter** legt fest, was jede Spalte mitsendet:
 
 | Parameter | Wirkung |
 | --- | --- |
-| Systemanweisungen | Anweisungen vor dem Gespräch |
+| Systemanweisungen | Anweisungen, die vor dem Gespräch gesendet werden |
 | Temperatur, Top P | Sampling, nur an Modelle gesendet, die Temperatur unterstützen |
 | Max. Ausgabe-Token | Die längste Antwort |
 | Reasoning-Aufwand | Wie viel ein Reasoning-Modell nachdenkt, von **Ohne** bis **Maximal** |
 | Reasoning-Zusammenfassung | Ob das Reasoning eines Modells zusammengefasst wird: **Auto**, **Knapp**, **Detailliert** oder **Aus** |
 
 **Auf Standard zurücksetzen** setzt jeden Parameter außer den Systemanweisungen zurück.
+
+## Was eine Anfrage im Playground kostet
+
+Anfragen im Playground sind echte Anfragen und werden dem Projekt berechnet. Sie nutzen die Anbieter-Schlüssel des Projekts, Ihren Modellzugriff sowie Ihre Limits und die des Projekts. Schlüssel-Limits gelten nicht, weil kein Schlüssel verwendet wird. Die [Anfrageprotokolle](request-logs.md) listen sie mit der Quelle **Playground**.
+
+## Nächste Schritte
+
+- [Modelle und Aliasse](models-and-aliases.md): Fügen Sie die Modelle, die Sie vergleichen möchten, dem Katalog hinzu.
+- [API-Schlüssel](api-keys.md): Erstellen Sie einen Schlüssel, um das gewählte Modell aus einer App aufzurufen.
