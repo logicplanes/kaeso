@@ -40,7 +40,7 @@ const UPDATING = JSON.stringify({ state: "updating", step: "migrating" });
 
 for (const [locale, title, step] of [
   ["en-US", "Kaeso is being updated", "Updating the database"],
-  ["de-DE", "Kaeso wird aktualisiert", "Datenbank aktualisieren"],
+  ["de-DE", "Kaeso wird aktualisiert", "Aktualisierung der Datenbank"],
   ["zh-CN", "Kaeso 正在更新", "更新数据库"],
 ] as const) {
   for (const scheme of ["light", "dark"] as const) {

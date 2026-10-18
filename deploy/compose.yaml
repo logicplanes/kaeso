@@ -241,7 +241,7 @@ configs:
       			header Content-Type "text/html; charset=utf-8"
       			header X-Content-Type-Options "nosniff"
       			header Referrer-Policy "no-referrer"
-      			header Content-Security-Policy "default-src 'none'; style-src 'sha256-zTAZLTV1l4GwHyQWyKxSk9xuEFs1PNMQTIZp8Fe7M3s='; script-src 'sha256-SXrj6a7VltF7KrOftI+jbPOV/3FoTts5SSTHupvd8hE='; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+      			header Content-Security-Policy "default-src 'none'; style-src 'sha256-zTAZLTV1l4GwHyQWyKxSk9xuEFs1PNMQTIZp8Fe7M3s='; script-src 'sha256-quEAqQJHXl4kaAD+haGtPymUvwB46Ry7l7DCue2Cuu8='; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
       			root * /srv/updating
       			rewrite * /index.html
       			file_server {
@@ -329,9 +329,9 @@ configs:
             updatingTitle: "Kaeso wird aktualisiert",
             updatingLead: "Eine neue Version wird installiert; das dauert etwa eine Minute. Diese Seite bringt Sie danach zurück.",
             steps: "Fortschritt",
-            switching: "Auf die neue Version umstellen",
-            migrating: "Datenbank aktualisieren",
-            online: "Kaeso neu starten",
+            switching: "Umstellung auf die neue Version",
+            migrating: "Aktualisierung der Datenbank",
+            online: "Neustart von Kaeso",
             checked: "Geprüft um {time}; nächste Prüfung in 5 Sekunden.",
             back: "Kaeso ist wieder da; Sie werden weitergeleitet."
           },
