@@ -49,7 +49,7 @@ Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikat
 
 ```bash
 export ANTHROPIC_API_KEY=…
-cargo xtask record anthropic_messages tools-single thinking-signature
+cargo xtask record anthropic_messages tools-single thinking-enabled-budget
 cargo xtask record anthropic_messages --count --all
 ```
 

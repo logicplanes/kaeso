@@ -186,7 +186,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 ### 回复与流事件
 
-回复和流事件从一个服务商流向一个应用，其中没有提示字段：应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md)。
+回复和流事件从一个服务商流向一个应用，其中没有提示字段：应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md) 和 [OpenAI Embeddings](openai-embeddings.md)。
 
 在应用的格式能够承载时，推理会到达其他方言的应用，并经过包装，以便之后能够原样返回（[推理数据块](reasoning.md#推理数据块)，`cross::reasoning_reply_policy`）。未知块只会到达其自身方言的应用。其余内容都不会出现在应用中（[回复](cross-format.md#回复)，`cross::reply_policy`），流中则以[保活消息](cross-format.md#保活消息)帧代替。网关会记录完整的 KPP 回复。
 

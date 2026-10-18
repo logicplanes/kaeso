@@ -101,7 +101,7 @@ Kaeso 采用 MIT 许可证，它发布的所有内容都只依赖宽松许可证
 
 `cargo deny check` 还会拒绝有安全公告的 crate、已撤回的 crate、通配符版本，以及来自未知注册表或 Git 仓库的 crate。少数只通过其他 crate 间接进入网关的 crate 对另一种宽松许可证有例外，`deny.toml` 逐一列出了它们。只在测试或构建中运行的工具（例如 axe-core）永远不会进入软件包、镜像或发布的网站。UI 库的字体 Inter 和 Geist Mono 采用 SIL Open Font License，缺少其许可证文件的软件包会被 `pnpm release:check` 拒绝。
 
-KPP 的库代码只依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，其政策禁止 `tokio`、`reqwest`、`hyper` 和 `axum`。其他任何依赖都要先征得维护者同意。
+KPP 的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，其政策禁止 `tokio`、`reqwest`、`hyper` 和 `axum`。其他任何依赖都要先征得维护者同意。
 
 ## 下一步
 

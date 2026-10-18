@@ -222,7 +222,7 @@ order: 6
 | `prompt.id`、`prompt.version`、`prompt.variables`（`Prompt`） | extras `prompt`（整个对象；可复用的 prompt 存储在服务端） |
 | `prompt_cache_options.ttl`、`prompt_cache_options.mode` | extras `prompt_cache_options`（整个对象） |
 | `context_management[].type`、`context_management[].compact_threshold` | extras `context_management`（整个列表） |
-| `Error.misalignment`（`MisalignmentErrorDetailsResource`：`review_target`、`error_type`、`detailed_explanation`、`steer`） | `KppError.raw`（整个响应体），重放给 OpenAI 方言的应用 |
+| `Error.misalignment`（`MisalignmentErrorDetailsResource`：`review_target`、`error_type`、`detailed_explanation`、`steer`） | `KppError.raw`（整个响应体），回放给 Responses 和 Embeddings 应用 |
 | `ResponseError.misalignment`（失败的回复，`response.failed`） | `KppError.raw`（整个回复或事件）；`response.failed` 事件会在 Responses 流中重放 |
 | `ResponseError.code` / `.message` | `KppError.kind`（经由 `ResponseErrorCode`）/ `.message` |
 | `Error.type`、`.code`、`.param`、`.message` | `KppError.kind`（结合状态码）、`.param`、`.message`；响应体存于 `raw` |

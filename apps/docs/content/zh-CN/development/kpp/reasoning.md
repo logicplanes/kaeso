@@ -18,7 +18,7 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 
 | 来源 | 目标 | 结果 |
 | --- | --- | --- |
-| 推理强度 `none` | Anthropic | 不思考，即 Anthropic 的默认行为 |
+| 推理强度 `none` | Anthropic | 不发送 `thinking`，即 Anthropic 的默认行为；默认会思考的模型仍会思考 |
 | 推理强度 `low` 到 `max` | 支持自适应思考的 Anthropic 模型 | 采用该推理强度的自适应思考 |
 | 推理强度 `low` 到 `max` | 不支持自适应思考的 Anthropic 模型 | `enabled` 思考，预算取自下表 |
 | 只有预算 | Anthropic | 采用该预算的 `enabled` 思考 |

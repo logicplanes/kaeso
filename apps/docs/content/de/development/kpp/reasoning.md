@@ -18,7 +18,7 @@ Reasoning-Einstellungen werden zwischen einer Aufwandsstufe und einem Token-Budg
 
 | Von | Nach | Wird zu |
 | --- | --- | --- |
-| Aufwand `none` | Anthropic | Kein Thinking, der Standard bei Anthropic |
+| Aufwand `none` | Anthropic | Kein `thinking`, der Standard bei Anthropic; Modelle, die ohne es denken, tun das weiterhin |
 | Aufwand `low` bis `max` | Anthropic-Modell mit adaptivem Thinking | Adaptives Thinking mit diesem Aufwand |
 | Aufwand `low` bis `max` | Anthropic-Modell ohne adaptives Thinking | `enabled`-Thinking mit einem Budget aus der Tabelle unten |
 | Nur ein Budget | Anthropic | `enabled`-Thinking mit diesem Budget |

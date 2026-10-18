@@ -18,7 +18,7 @@ Reasoning settings convert between an effort and a token budget:
 
 | From | To | Becomes |
 | --- | --- | --- |
-| Effort `none` | Anthropic | No thinking, Anthropic's default |
+| Effort `none` | Anthropic | No `thinking`, Anthropic's default; models that think without it still do |
 | Effort `low` to `max` | Anthropic model with adaptive thinking | Adaptive thinking with that effort |
 | Effort `low` to `max` | Anthropic model without adaptive thinking | `enabled` thinking with a budget from the table below |
 | A budget alone | Anthropic | `enabled` thinking with that budget |

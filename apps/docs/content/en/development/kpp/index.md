@@ -186,7 +186,7 @@ Every KPP field is either semantic or a hint:
 
 ### Replies and stream events
 
-Replies and stream events flow from one provider to one app. They have no hints: a field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md).
+Replies and stream events flow from one provider to one app. They have no hints: a field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) and [OpenAI Embeddings](openai-embeddings.md).
 
 Reasoning reaches an app of another dialect where its format can carry it, wrapped so it can come back ([reasoning blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unknown blocks reach only apps of their own dialect. Everything else is left out of the app's view ([replies](cross-format.md#replies), `cross::reply_policy`), with [keepalive](cross-format.md#keepalives) frames in streams. The gateway logs the full KPP reply.
 

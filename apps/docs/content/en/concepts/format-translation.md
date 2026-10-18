@@ -93,7 +93,7 @@ Kaeso converts reasoning settings like this:
 | Thinking turned off | OpenAI | The effort `none` |
 | An effort from `low` to `max` | Claude with adaptive thinking | Adaptive thinking with that effort |
 | An effort from `low` to `max` | Claude without adaptive thinking | A budget: `low` 2,048, `medium` 8,192, and `high`, `xhigh` and `max` 24,576 tokens |
-| The effort `none` | Claude | No thinking |
+| The effort `none` | Claude | No thinking settings, so the model thinks only if it does by default |
 
 - **Effort and budget.** An effort wins over a budget in the same request. A Claude model has no adaptive thinking when its catalogue entry says so. Claude 4.5 and earlier have none.
 - **Fitting a budget.** Kaeso fits a budget to Anthropic's rules: at least 1,024 tokens, and less than `max_tokens`. When `max_tokens` is 1,024 or less, the budget is 1,024 and Kaeso raises `max_tokens` by 1,024, so the answer keeps its room.
