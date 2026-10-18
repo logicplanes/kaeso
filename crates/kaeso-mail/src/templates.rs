@@ -203,8 +203,8 @@ impl Budget {
         };
         match self.kind {
             LimitKind::RequestRate => format!("Ratenlimits von {n} Anfragen pro Minute"),
-            LimitKind::TokenRate => format!("Ratenlimits von {n} Tokens pro Minute"),
-            LimitKind::TokenBudget => format!("{budget} von {n} Tokens"),
+            LimitKind::TokenRate => format!("Ratenlimits von {n} Token pro Minute"),
+            LimitKind::TokenBudget => format!("{budget} von {n} Token"),
             LimitKind::SpendBudget => format!("{budget} von {n} USD"),
         }
     }
@@ -256,7 +256,7 @@ fn invitation_note(lang: Locale) -> &'static str {
         Locale::De => {
             "Die Einladung gilt 21 Tage; wenn Sie sie nicht erwartet haben, ignorieren Sie diese E-Mail."
         }
-        Locale::ZhCn => "邀请 21 天后过期；如果您没有预料到此邀请，请忽略此邮件。",
+        Locale::ZhCn => "邀请 21 天后过期；如果您对此邀请不知情，请忽略此邮件。",
     }
 }
 
@@ -488,7 +488,7 @@ pub fn signup(lang: Locale, to: &str, url: &str) -> Email {
             "If you did not sign up, you can ignore this email.",
         ),
         Locale::De => (
-            "Kaeso-Konto fertig erstellen",
+            "Kaeso-Konto fertigstellen",
             "Kaeso-Konto erstellen",
             "Der Link funktioniert einmal und läuft in 24 Stunden ab.",
             "Konto erstellen",
@@ -548,8 +548,8 @@ pub fn two_factor_enabled(lang: Locale, to: &str) -> Email {
             "Keep your recovery codes safe; they sign you in if you lose your authenticator.",
         ),
         Locale::De => (
-            "Zwei-Faktor-Authentifizierung ist aktiviert",
-            "Bewahren Sie Ihre Wiederherstellungscodes sicher auf; sie ersetzen einen verlorenen Authenticator.",
+            "Zwei-Faktor-Authentifizierung ist eingeschaltet",
+            "Bewahren Sie Ihre Wiederherstellungscodes sicher auf; damit melden Sie sich ohne Authenticator an.",
         ),
         Locale::ZhCn => (
             "双重验证已开启",
@@ -573,7 +573,7 @@ pub fn two_factor_disabled(lang: Locale, to: &str) -> Email {
             "Signing in to your account no longer asks for a code.",
         ),
         Locale::De => (
-            "Zwei-Faktor-Authentifizierung ist deaktiviert",
+            "Zwei-Faktor-Authentifizierung ist ausgeschaltet",
             "Bei der Anmeldung an Ihrem Konto wird kein Code mehr abgefragt.",
         ),
         Locale::ZhCn => ("双重验证已关闭", "登录您的账户时不再需要验证码。"),
@@ -673,7 +673,7 @@ pub fn sessions_ended<'a>(lang: Locale, to: &str, by: impl Into<Actor<'a>>) -> E
             format!("{by} hat alle Sitzungen Ihres Kontos beendet; melden Sie sich erneut an."),
         ),
         Locale::ZhCn => (
-            "您已退出 Kaeso",
+            "您已从 Kaeso 退出登录",
             "您已退出登录",
             zh(&[&by, "结束了您账户的所有会话；请重新登录以继续。"]),
         ),
@@ -703,7 +703,7 @@ pub fn account_deactivated(lang: Locale, to: &str) -> Email {
         Locale::ZhCn => (
             "您的 Kaeso 账户已停用",
             "账户已停用",
-            "管理员已让您退出登录，您的 API 密钥也已停止工作。",
+            "管理员已让您退出登录，您的 API 密钥也已失效。",
             "如果您认为这是误操作，请联系管理员。",
         ),
     };
@@ -747,7 +747,7 @@ pub fn org_scheduled_for_deletion<'a>(
         Locale::ZhCn => (
             zh(&[org, "已计划删除"]),
             zh(&[org, "将于", &due, "删除"]),
-            zh(&[&by, "已计划删除该组织；其 API 密钥已停止工作。"]),
+            zh(&[&by, "已计划删除该组织；其 API 密钥已失效。"]),
             "打开组织",
             "在此之前，所有者或实例管理员可以恢复它。",
         ),
@@ -1275,7 +1275,7 @@ mod tests {
             ),
             (
                 EmailKind::Signup,
-                ["Kaeso-Konto fertig erstellen", "Kaeso-Konto erstellen"],
+                ["Kaeso-Konto fertigstellen", "Kaeso-Konto erstellen"],
                 ["完成创建您的 Kaeso 账户", "创建 Kaeso 账户"],
             ),
             (
@@ -1289,16 +1289,16 @@ mod tests {
             (
                 EmailKind::TwoFactorEnabled,
                 [
-                    "Zwei-Faktor-Authentifizierung ist aktiviert",
-                    "Zwei-Faktor-Authentifizierung ist aktiviert",
+                    "Zwei-Faktor-Authentifizierung ist eingeschaltet",
+                    "Zwei-Faktor-Authentifizierung ist eingeschaltet",
                 ],
                 ["双重验证已开启", "双重验证已开启"],
             ),
             (
                 EmailKind::TwoFactorDisabled,
                 [
-                    "Zwei-Faktor-Authentifizierung ist deaktiviert",
-                    "Zwei-Faktor-Authentifizierung ist deaktiviert",
+                    "Zwei-Faktor-Authentifizierung ist ausgeschaltet",
+                    "Zwei-Faktor-Authentifizierung ist ausgeschaltet",
                 ],
                 ["双重验证已关闭", "双重验证已关闭"],
             ),
@@ -1321,7 +1321,7 @@ mod tests {
             (
                 EmailKind::SessionsEnded,
                 ["Sie wurden von Kaeso abgemeldet", "Sie wurden abgemeldet"],
-                ["您已退出 Kaeso", "您已退出登录"],
+                ["您已从 Kaeso 退出登录", "您已退出登录"],
             ),
             (
                 EmailKind::AccountDeactivated,
@@ -1499,7 +1499,7 @@ mod tests {
         );
         assert_eq!(
             footer(Locale::ZhCn, password_changed),
-            "此邮件由 kaeso.example.com 上的 Kaeso 发送；安全通知总会发送。"
+            "此邮件由 kaeso.example.com 上的 Kaeso 发送；安全通知始终会发送。"
         );
         assert_eq!(
             footer(Locale::ZhCn, test),
@@ -1507,7 +1507,7 @@ mod tests {
         );
         let html = password_changed(Locale::ZhCn, TO).render(&instance()).html;
         assert!(html.contains(
-            r#"此邮件由 <a href="https://kaeso.example.com/" style="color:#707070;text-decoration:none;">kaeso.example.com</a> 上的 Kaeso 发送；安全通知总会发送。"#
+            r#"此邮件由 <a href="https://kaeso.example.com/" style="color:#707070;text-decoration:none;">kaeso.example.com</a> 上的 Kaeso 发送；安全通知始终会发送。"#
         ));
     }
 
@@ -1586,10 +1586,7 @@ mod tests {
         };
         let tokens = b(LimitKind::TokenBudget, LimitPeriod::Day, "1500000");
         assert_eq!(tokens.english(), "daily token budget of 1500000 tokens");
-        assert_eq!(
-            tokens.german_genitive(),
-            "Tagesbudgets von 1.500.000 Tokens"
-        );
+        assert_eq!(tokens.german_genitive(), "Tagesbudgets von 1.500.000 Token");
         assert_eq!(tokens.chinese(), "每日 Token 预算（1,500,000 个 Token）");
         let rate = b(LimitKind::RequestRate, LimitPeriod::Minute, "600");
         assert_eq!(rate.english(), "request rate of 600 requests per minute");
@@ -1618,6 +1615,45 @@ mod tests {
             alert(Locale::ZhCn),
             "API 密钥 key_01J9 的总支出预算（12.5 USD）已用 90%。"
         );
+    }
+
+    #[test]
+    fn no_sentence_stays_english_and_german_is_formal() {
+        let informal = [
+            "du", "dich", "dir", "dein", "deine", "deinen", "deinem", "deiner",
+        ];
+        let english = all();
+        for lang in [Locale::De, Locale::ZhCn] {
+            for (en, email) in english.iter().zip(all_in(lang)) {
+                let kind = email.kind.as_str();
+                let (c, c_en) = (&email.content, &en.content);
+                assert_ne!(email.subject, en.subject, "{kind}");
+                assert_ne!(c.heading, c_en.heading, "{kind}");
+                let pairs = [
+                    (c.sentence.as_deref(), c_en.sentence.as_deref()),
+                    (c.note.as_deref(), c_en.note.as_deref()),
+                    (
+                        c.action.as_ref().map(|a| a.label),
+                        c_en.action.as_ref().map(|a| a.label),
+                    ),
+                ];
+                for (translated, source) in pairs {
+                    if let (Some(t), Some(e)) = (translated, source) {
+                        assert_ne!(t, e, "{kind}");
+                    }
+                }
+                if lang == Locale::De {
+                    let text = email.render(&instance()).text;
+                    for word in text.split(|ch: char| !ch.is_alphabetic()) {
+                        assert!(
+                            !informal.contains(&word.to_lowercase().as_str()),
+                            "{kind}: {word}"
+                        );
+                        assert_ne!(word, "Tokens", "{kind}");
+                    }
+                }
+            }
+        }
     }
 
     #[test]

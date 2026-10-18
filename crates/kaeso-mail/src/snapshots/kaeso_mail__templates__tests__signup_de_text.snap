@@ -2,7 +2,7 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: Kaeso-Konto fertig erstellen
+Subject: Kaeso-Konto fertigstellen
 
 Kaeso-Konto erstellen
 
