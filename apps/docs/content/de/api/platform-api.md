@@ -1,70 +1,121 @@
 ---
 title: Platform API
-description: Eine Installation über HTTP verwalten, so wie die Konsole es tut.
+description: Authentifizieren, Listen durchblättern, Fehler behandeln und die Routen finden, um eine Installation über HTTP zu verwalten.
 order: 3
 ---
 
-Die Platform API verwaltet Organisationen, Projekte, Mitglieder, Schlüssel, Anbieter-Schlüssel, Modelle, Limits, Nutzung und Protokolle. Sie liegt unter `/platform/v1` auf derselben Domain wie die Modell-API. Die Konsole nutzt nichts anderes, also kann ein Skript alles, was die Konsole kann.
+Die Platform API verwaltet alles, was die Konsole zeigt: Organisationen, Projekte, Mitglieder, Schlüssel, Anbieter-Schlüssel, Modelle, Limits, Nutzung und Protokolle. Sie liegt unter `/platform/v1` auf der Domain Ihrer Installation, und die Konsole nutzt nichts anderes.
 
-Die vollständige Referenz ist das OpenAPI-Dokument [`openapi.json`](https://github.com/logicplanes/kaeso/blob/dev/openapi.json), erzeugt aus dem Code des Gateways. Jede Operation darin nennt das eine Recht, das sie prüft. Das Dokument der laufenden Version ausgeben:
+Listen Sie die Projekte einer Organisation mit einem Plattform-Schlüssel in `KAESO_PLATFORM_KEY` auf, mit der ID Ihrer Organisation anstelle von `org_…`:
+
+```bash tab="curl"
+curl https://kaeso.example.com/platform/v1/orgs/org_…/projects \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+```
+
+```python tab="Python"
+import json
+import os
+import urllib.request
+
+request = urllib.request.Request(
+    "https://kaeso.example.com/platform/v1/orgs/org_…/projects",
+    headers={"Authorization": f"Bearer {os.environ['KAESO_PLATFORM_KEY']}"},
+)
+with urllib.request.urlopen(request) as response:
+    print(json.load(response))
+```
+
+```ts tab="TypeScript"
+const response = await fetch("https://kaeso.example.com/platform/v1/orgs/org_…/projects", {
+  headers: { Authorization: `Bearer ${process.env.KAESO_PLATFORM_KEY}` },
+});
+console.log(await response.json());
+```
+
+Die Antwort ist eine Seite mit Projekten:
+
+```json
+{
+  "data": [
+    {
+      "id": "proj_…",
+      "org_id": "org_…",
+      "name": "Support bot",
+      "is_default": false,
+      "content_logging": true,
+      "created_at": "2026-10-01T09:30:00Z"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+[Mit der Platform API automatisieren](automation.md) richtet Schritt für Schritt ein Projekt, ein Modell und den Schlüssel einer App ein.
+
+## OpenAPI-Dokument
+
+[`openapi.json`](https://github.com/logicplanes/kaeso/blob/dev/openapi.json) beschreibt jede Operation: ihren Pfad, ihre Felder, ihre Antworten und das eine Recht, das sie prüft. Das Gateway erzeugt das Dokument aus seinem eigenen Code. So erhalten Sie das Dokument der Version, die Sie betreiben:
 
 ```bash
 docker compose exec gateway kaeso openapi > openapi.json
 ```
 
-[Mit der Platform API automatisieren](automation.md) richtet mit curl ein Projekt, ein Modell und den Schlüssel einer App ein, mit einem Plattform-Schlüssel, einem Projektschlüssel oder einer Sitzung.
-
 ## Authentifizierung
 
 | Methode | Senden | Handelt mit |
 | --- | --- | --- |
-| Sitzung | Das Sitzungs-Cookie, das die Anmelde-Endpunkte unter `auth/*` setzen | Den Rechten des angemeldeten Benutzers |
+| Plattform-Schlüssel | `Authorization: Bearer sk-kso-org-…` | Den Rechten der Rolle Admin, in seiner Organisation und allen ihren Projekten |
 | API-Schlüssel mit Plattformzugriff | `Authorization: Bearer sk-kso-…` | Den Rechten seines Mitglieds oder Dienstkontos, nur im eigenen Projekt |
-| Plattform-Schlüssel | `Authorization: Bearer sk-kso-org-…` | Den Rechten der Rolle Admin, in seiner Organisation und jedem Projekt darin |
+| Sitzung | Das Sitzungs-Cookie, das die Anmelde-Endpunkte unter `auth/*` setzen | Ihren eigenen Rechten |
 
-Sitzungen dienen der Konsole und Personen mit curl. Das Cookie ist das HttpOnly-Cookie `__Host-kaeso_session`, bei einer `http://`-Installation unter einer Loopback-Adresse wie localhost `kaeso_session`. Projektschlüssel passen zu Skripten und CI für ein Projekt, Plattform-Schlüssel zu Automatisierung für eine ganze Organisation.
+Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automatisieren, und einen Projektschlüssel für Skripte und CI in einem Projekt. Sitzungen dienen der Konsole und Personen mit curl. Das Sitzungs-Cookie heißt `__Host-kaeso_session`, bei einer `http://`-Installation unter einer Loopback-Adresse wie localhost `kaeso_session`.
 
-- **Schlüssel erreichen nur `orgs/{org}/*`.** `me/*`, `instance/*` und die angemeldeten Routen von `auth/*` lehnen sie mit 403 ab, ebenso jede Route auf Organisationsebene einen Projektschlüssel. Die Platform API liest Schlüssel nur aus `Authorization`, nie aus `x-api-key`.
-- **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`; Standard ist `inference`. Er erfordert das Recht `keys.platform_access.grant`. Siehe [API-Schlüssel](../console/api-keys.md).
+- **Schlüssel erreichen nur `orgs/{org}/*`.** `me/*`, `instance/*` und die angemeldeten Routen von `auth/*` beantworten Schlüssel mit 403. Routen auf Organisationsebene beantworten Projektschlüssel mit 403.
+- **Schlüssel stehen in `Authorization`.** Die Platform API liest nie `x-api-key`.
+- **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`. Standard ist `inference`, und Plattformzugriff erfordert das Recht `keys.platform_access.grant` ([API-Schlüssel](../console/api-keys.md)).
 - **Plattform-Schlüssel entstehen nur in einer Sitzung**, durch jemanden, der jedes Recht der Rolle Admin hat. Sie rufen nie Modelle auf.
-- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, lehnt andere Sitzungen mit 403 ab; eine, die Zwei-Faktor-Authentifizierung verlangt, lehnt Passwortsitzungen ohne zweiten Faktor ab.
-- **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten API-Schlüsseln von einer Adresse, auf Modell-API und Platform API zusammen, erhalten `429 rate_limited` mit `Retry-After`, bis das Zeitfenster endet; [Fehlgeschlagene API-Schlüssel](../self-hosting/configuration.md#fehlgeschlagene-api-schlüssel) nennt die Einstellungen.
+- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet andere Sitzungen mit 403. Eine, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Passwortsitzungen ohne zweiten Faktor mit 403.
+- **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene API-Schlüssel](../self-hosting/configuration.md#fehlgeschlagene-api-schlüssel)).
 
 ### Websiteübergreifende Anfragen
 
-Jede Anfrage außer `GET`, `HEAD` und `OPTIONS`, die das Sitzungs-Cookie trägt, und jede solche Anfrage an einen öffentlichen `auth/*`-Endpunkt muss `Origin` mit dem Origin der öffentlichen URL der Installation senden, etwa `Origin: https://kaeso.example.com`. Browser senden ihn selbst; `Referer` zählt nicht an seiner Stelle. Ohne ihn oder mit einem anderen Origin lautet die Antwort `403 permission_denied`, und die Meldung nennt den zu sendenden Header. So können andere Websites weder mit der Sitzung einer Person handeln noch einen Browser in ein eigenes Konto anmelden.
+Eine Anfrage, die das Sitzungs-Cookie trägt und etwas ändert, muss `Origin` mit dem Origin Ihrer Installation senden, etwa `Origin: https://kaeso.example.com`. Dasselbe gilt für jede solche Anfrage an einen öffentlichen `auth/*`-Endpunkt. Browser senden den Header selbst, und `Referer` zählt nicht an seiner Stelle. Fehlt er oder nennt einen anderen Origin, antwortet Kaeso mit `403 permission_denied` und nennt den Header in der Meldung.
 
-- Anfragen mit einem API-Schlüssel oder Plattform-Schlüssel brauchen kein `Origin`.
-- Lesende Anfragen brauchen es nie, auch nicht `GET auth/methods` und `GET auth/oidc/start`.
-- Ein Server, der `POST auth/methods`, `POST auth/password` oder `POST auth/oidc/start` aufruft, sendet den Origin der Installation. Um Personen von einer anderen Website zum Identitätsanbieter zu schicken, stattdessen auf `GET auth/oidc/start` verlinken; siehe [Anmeldung und Single Sign-on](../self-hosting/sign-in.md#links-die-direkt-zum-anbieter-führen).
+So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in ein eigenes Konto anmelden.
+
+- Anfragen mit einem API-Schlüssel oder einem Plattform-Schlüssel brauchen kein `Origin`.
+- `GET`, `HEAD` und `OPTIONS` brauchen es nie, auch nicht `GET auth/methods` und `GET auth/oidc/start`.
+- Ein Server, der `POST auth/methods`, `POST auth/password` oder `POST auth/oidc/start` aufruft, sendet den Origin der Installation. Um Personen von einer anderen Website zu einem Identitätsanbieter zu schicken, verlinken Sie stattdessen auf `GET auth/oidc/start` ([Anmeldung und Single Sign-on](../self-hosting/sign-in.md#links-die-direkt-zum-anbieter-führen)).
 
 ### Kürzliche Anmeldung
 
-In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten; sonst lautet die Antwort `403 recent_sign_in_required`, und die Konsole bittet um eine erneute Anmeldung. Schlüssel werden nie gefragt.
+In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden. Schlüssel brauchen das nie.
 
-- Operationen, deren Recht in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` trägt: `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
-- Im eigenen Konto: E-Mail-Adresse oder Benachrichtigungen ändern, Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes, das Konto löschen.
-- Für Instanz-Admins: Instanzeinstellungen ändern und eine Organisation zur Löschung vormerken, wiederherstellen oder löschen.
+- **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
+- **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
+- **Für Instanz-Admins:** Instanz- oder Update-Einstellungen ändern, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
 
 ## Konventionen
 
 | Thema | Regel |
 | --- | --- |
-| Format | REST mit JSON. Pfade im Plural in Kebab-Case (`service-accounts`), Felder in `snake_case`. Bodys werden mit `content-type: application/json` gesendet; ein Feld, das der Endpunkt nicht kennt, wird mit 400 abgelehnt |
-| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `key_…`, `opk_…`, `svc_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `inv_…`, `ses_…`, `req_…`, `evt_…` |
-| Zeiten | RFC 3339, in UTC |
-| Geld | US-Dollar als Dezimal-Strings, etwa `"0.0001"`. Preise und Beträge werden als Dezimal-Strings oder ganze Zahlen gesendet; ein JSON-Bruch wie `0.5` wird mit 400 abgelehnt |
-| Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget 1.000.000.000 USD |
-| Erstellen | `POST` auf die Sammlung, beantwortet mit 201 und der Ressource |
-| Ändern | `PATCH` nur mit den zu ändernden Feldern |
-| Aktionen | `POST …/archive`, `…/disable`, `…/enable`, `…/replace`, `…/restore`; Archivieren behält den Datensatz |
-| Löschen | `DELETE`, nur wo wirklich etwas gelöscht wird: Anbieter-Schlüssel, Aliasse, Katalogmodelle, Limits, eigene Rollen, Sitzungen, Einladungen, das Konto |
-| Audit | Jede Änderung wird in derselben Transaktion in das Audit-Log ihrer Ebene geschrieben |
-| Anfrage-IDs | Jede Antwort trägt `kaeso-request-id` |
+| Format | REST mit JSON: Pfade im Plural in Kebab-Case (`service-accounts`), Felder in `snake_case`. Senden Sie Bodys mit `content-type: application/json`; auf ein Feld, das der Endpunkt nicht kennt, antwortet Kaeso mit 400. |
+| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`. |
+| Zeiten | RFC 3339, in UTC. |
+| Geld | US-Dollar als Dezimal-Strings, etwa `"0.0001"`. Senden Sie Preise und Beträge als Dezimal-Strings oder ganze Zahlen; ein JSON-Bruch wie `0.5` erhält 400. |
+| Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget 1.000.000.000 USD. |
+| Erstellen | `POST` auf die Sammlung, beantwortet mit 201 und der neuen Ressource. |
+| Ändern | `PATCH` nur mit den zu ändernden Feldern. |
+| Aktionen | `POST …/archive`, `…/disable`, `…/enable`, `…/replace` oder `…/restore`. Archivieren behält den Datensatz. |
+| Löschen | `DELETE`, nur wo wirklich etwas gelöscht wird: Anbieter-Schlüssel, Aliasse, Katalogmodelle, Limits, eigene Rollen, Sitzungen, Einladungen und Ihr Konto. |
+| Audit | Jede Änderung wird in derselben Transaktion in das Audit-Log ihrer Ebene geschrieben. |
+| Anfrage-IDs | Jede Antwort trägt `kaeso-request-id`. |
 
 ### Listen
 
-Eine Liste nimmt `limit` (1 bis 100, Standard 20) und `after`, den `next_cursor` der vorigen Seite; Filter sind weitere Query-Parameter. Listen sind nach ID sortiert, also in Erstellungsreihenfolge; Anfrageprotokolle und Audit-Logs kommen neueste zuerst.
+Eine Liste nimmt `limit`, von 1 bis 100 mit dem Standard 20, und `after`, den `next_cursor` der vorigen Seite. Weitere Query-Parameter filtern die Liste. Listen kommen in Erstellungsreihenfolge, außer Anfrageprotokollen und Audit-Logs, die das Neueste zuerst bringen.
 
 ```json
 { "data": [], "has_more": true, "next_cursor": "…" }
@@ -74,15 +125,17 @@ Auf der letzten Seite ist `next_cursor` `null`.
 
 ### Revisionen
 
-Katalogmodelle und Limits tragen eine `revision`, die mit jeder Änderung steigt, und Lesen, Erstellen oder Ändern antwortet mit `ETag: "<revision>"`. Wer dieses Tag mit `PATCH` oder `DELETE` in `If-Match` zurückschickt, ändert nur die gelesene Revision: Hat sich der Eintrag inzwischen geändert, lautet die Antwort `412 conflict`. Ohne `If-Match` gilt die Änderung für die aktuelle Revision.
+Katalogmodelle und Limits tragen eine `revision`, die mit jeder Änderung steigt. Lesen, Erstellen oder Ändern antwortet mit `ETag: "<revision>"`. Senden Sie dieses Tag mit `PATCH` oder `DELETE` in `If-Match` zurück, um nur die gelesene Revision zu ändern. Hat sich der Eintrag inzwischen geändert, antwortet Kaeso mit `412 conflict`; ohne `If-Match` gilt die Änderung für die aktuelle Revision.
 
 ### Zur Löschung vorgemerkte Organisationen
 
-Eine zur Löschung vorgemerkte Organisation ist schreibgeschützt, bis sie wiederhergestellt oder gelöscht ist. Lesen funktioniert, soweit die Rechte des Aufrufers reichen. Jede Änderung darin, auch sie zu verlassen und eine Einladung in sie anzunehmen, ergibt `409 org_scheduled_for_deletion`, außer `POST orgs/{org}/restore` und `instance/orgs/{org}/*` der Instanz-Admins. Ihre Schlüssel authentifizieren gar nicht.
+Eine zur Löschung vorgemerkte Organisation ist schreibgeschützt, bis sie wiederhergestellt oder gelöscht ist. Lesen funktioniert, soweit die Rechte des Aufrufers reichen, und ihre Schlüssel authentifizieren gar nicht. Jede Änderung darin ergibt `409 org_scheduled_for_deletion`, auch sie zu verlassen und eine Einladung in sie anzunehmen. Nur `POST orgs/{org}/restore` und `instance/orgs/{org}/*` der Instanz-Admins funktionieren noch.
 
-`auth/session` zeigt eine solche Organisation in jeder Mitgliedschaft mit `org_state`, `org_deletion_due_at` und Rechten, reduziert auf Sehen, Exportieren und `org.delete`. Es enthält auch die Richtlinie `org_deletion` der Instanz (`allowed`, `grace_days`).
+`auth/session` kennzeichnet eine solche Organisation in jeder Mitgliedschaft mit `org_state` und `org_deletion_due_at`. Die Rechte darin schrumpfen auf Sehen, Exportieren und `org.delete`. Die Sitzung trägt außerdem die Richtlinie `org_deletion` der Instanz, mit `allowed` und `grace_days`.
 
 ## Fehler
+
+Jeder Fehler hat denselben Body:
 
 ```json
 {
@@ -94,102 +147,110 @@ Eine zur Löschung vorgemerkte Organisation ist schreibgeschützt, bis sie wiede
 }
 ```
 
-Die Meldung ist ein kurzer Satz für Menschen; die Konsole zeigt sie unverändert. `param` nennt das fehlerhafte Body-Feld oder den Query- oder Pfad-Parameter, `right` das fehlende Recht, wenn genau dieses Recht die Anfrage erlauben würde; beide fehlen, wo sie nicht zutreffen.
+Die Meldung ist ein kurzer Satz für Menschen, und die Konsole zeigt ihn unverändert. `param` nennt das Feld, den Query- oder Pfadparameter, der den Fehler verursacht. `right` nennt das fehlende Recht, wenn genau dieses eine Recht die Anfrage erlauben würde. Beide fehlen, wo sie nicht zutreffen.
 
 | Status | `type` | Wann |
 | --- | --- | --- |
-| 400 | `invalid_request` | Ein Body, der kein JSON ist, ein unbekanntes Feld, ein Parameter mit falschem Typ oder falscher Form, ein Wert außerhalb des Bereichs |
-| 401 | `authentication` | Keine Sitzung und kein Schlüssel, oder eine bzw. einer, die unbekannt, abgelaufen oder beendet ist |
-| 403 | `permission_denied` | Ein fehlendes Recht, ein Schlüssel auf einer Route, die er nicht nutzen kann, ein fehlender `Origin`, eine Richtlinie der Organisation |
-| 403 | `recent_sign_in_required` | Siehe [Kürzliche Anmeldung](#kürzliche-anmeldung) |
-| 404 | `not_found` | Ein unbekannter Pfad, oder etwas, das es nicht gibt oder das der Aufrufer nicht sehen kann |
-| 405 | `invalid_request` | Eine Methode, die der Pfad nicht annimmt; `Allow` nennt die möglichen |
-| 409 | `conflict` | Die Änderung widerspricht dem aktuellen Zustand, etwa ein schon vergebener Name |
-| 409 | `org_scheduled_for_deletion` | Eine Änderung in einer Organisation, die auf ihre Löschung wartet |
-| 412 | `conflict` | `If-Match` nennt eine ältere Revision |
-| 413 | `request_too_large` | Der Body ist größer als `KAESO_BODY_LIMITS_PLATFORM_API`, standardmäßig 1 MiB |
-| 429 | `rate_limited` | Zu viele unbekannte Schlüssel, oder ein Limit bei einer Playground-Anfrage; `Retry-After` sagt, wann es wieder geht |
-| 500 | `internal` | Ein Fehler im Gateway; die Meldung nennt die Anfrage-ID, die zu melden ist |
-| 502, 503, 504, 429 | `provider_error` | Nur bei den Modellanfragen des Playgrounds |
-| 503 | `unavailable` | Eine Datenbank oder ein anderer Hintergrunddienst ist nicht erreichbar, etwa „Kaeso cannot reach its database right now; try again shortly.“ |
+| 400 | `invalid_request` | Der Body ist kein JSON oder hat ein unbekanntes Feld. Ein Parameter hat den falschen Typ oder die falsche Form, oder ein Wert liegt außerhalb des Bereichs. |
+| 401 | `authentication` | Keine Sitzung und kein Schlüssel, oder einer, der unbekannt, abgelaufen oder beendet ist. |
+| 403 | `permission_denied` | Ein fehlendes Recht, ein Schlüssel auf einer Route, die er nicht nutzen kann, ein fehlendes `Origin` oder eine Richtlinie der Organisation. |
+| 403 | `recent_sign_in_required` | Die Aktion verlangt eine [kürzliche Anmeldung](#kürzliche-anmeldung). |
+| 404 | `not_found` | Den Pfad gibt es nicht, oder das Gesuchte gibt es nicht oder der Aufrufer kann es nicht sehen. |
+| 405 | `invalid_request` | Der Pfad nimmt diese Methode nicht an. `Allow` nennt die, die er annimmt. |
+| 409 | `conflict` | Die Änderung widerspricht dem aktuellen Zustand, etwa ein schon vergebener Name. |
+| 409 | `org_scheduled_for_deletion` | Eine Änderung in einer zur Löschung vorgemerkten Organisation. |
+| 412 | `conflict` | `If-Match` nennt eine ältere Revision. |
+| 413 | `request_too_large` | Der Body ist größer als `KAESO_BODY_LIMITS_PLATFORM_API`, standardmäßig 1 MiB. |
+| 429 | `rate_limited` | Zu viele Anmeldeversuche oder unbekannte Schlüssel von einer Adresse, oder ein Limit bei einer Playground-Anfrage. `Retry-After` sagt, wann es wieder geht. |
+| 500 | `internal` | Ein Fehler im Gateway. Die Meldung nennt die Anfrage-ID, die Sie melden können. |
+| 503 | `unavailable` | Kaeso erreicht eine Datenbank oder einen anderen Dienst nicht, etwa „Kaeso cannot reach its database right now; try again shortly.“ |
+| 429, 502, 503, 504 | `provider_error` | Der Anbieter ist gescheitert, nur bei [Playground](#playground)-Anfragen. |
 
-## Bereiche
+## Routen
 
-| Pfade | Inhalt |
+Die Routen sind relativ zu `/platform/v1`. [`openapi.json`](#openapi-dokument) nennt jede mit ihren Feldern.
+
+| Pfade | Enthält |
 | --- | --- |
-| `auth/*` | Ersteinrichtung, Anmeldemethoden, Passwort und Zwei-Faktor, Anmeldelinks, Passwort zurücksetzen, Single Sign-on, Sitzungen, Registrierung, wo die Instanz die Adresse zulässt, Einladungen |
-| `me`, `me/*` | Das eigene Profil, Bild und Sprache (`locale`: `auto`, `en`, `de`, `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor und Wiederherstellungscodes, Sitzungen, Mitgliedschaften, eigene Schlüssel, Benachrichtigungen, eine Organisation erstellen, das Konto löschen |
-| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte, Projekte und das Standardprojekt, Anbieter-Schlüssel (mehrere je Anbieter, ein Standard, Zuweisungen an Projekte), Sicherheit (Single Sign-on, verlangtes Single Sign-on und Zwei-Faktor, Laufzeit von Schlüsseln), Plattform-Schlüssel, Protokolleinstellungen, Speicher und Löschungen, Nutzung, das Audit-Log, Übertragung der Inhaberschaft, Löschen und Wiederherstellen |
-| `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder und ihr Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits, Schlüsselrichtlinie, der Katalog (Suche, Vorschau, Stapel) und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log, der [Playground](#playground) |
-| `instance/*` | Für Instanz-Admins: Benutzer, ihre Einladungen, Sitzungen und Admin-Kennzeichen; Organisationen mit Mitgliedern, Projekten, Nutzung und Speicher; Einstellungen mit Test-E-Mail; Status und Abgleich von models.dev; Systemzustand, Speicher und Protokollpuffer; Updates: die neuesten Releases, ihre Einstellungen, das Einspielen über den Updater und sein Fortschritt; das Audit-Log der Instanz |
+| `auth/*` | Einrichtung beim ersten Start, Anmeldemethoden, Anmeldung mit Passwort und zweitem Faktor, Anmeldelinks, Passwort-Reset, Single Sign-on, Sitzungen, Registrierung, wo die Instanz die Adresse zulässt, und Einladungen. `auth/session` liefert den Benutzer, seine Mitgliedschaften mit Rollen und Rechten und ob er Organisationen erstellen darf (`can_create_orgs`). |
+| `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel und Benachrichtigungen, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
+| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Eigentümerwechsel, Löschen und Wiederherstellen. |
+| `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder mit ihrem Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits und die Schlüsselrichtlinie. Außerdem der Katalog und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log und der [Playground](#playground). |
+| `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen, der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
 
-Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, den Admin selbst eingeschlossen; so verschafft sich ein Instanz-Admin Zugang, um eine Organisation zu verwalten, und das Audit-Log der Organisation hält es fest. Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zurück, mit `POST instance/users/{user}/reset-2fa`.
+Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, auch den Admin selbst; so gelangt ein Instanz-Admin in eine Organisation, um sie zu verwalten. Das Audit-Log der Organisation hält das fest.
 
-Abrechnungsrouten gibt es nicht. Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud bestimmt und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
+Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zurück, mit `POST instance/users/{user}/reset-2fa`. Abrechnungsrouten gibt es nicht: Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
 
 ## Rollen und Rechte
 
-Jedes Mitglied einer Organisation hat eine Organisationsrolle, jedes Projektmitglied und Dienstkonto eine Projektrolle, jeweils mit einzeln hinzugefügten oder entfernten Rechten. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`). Eine Organisationsrolle hält auch Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede eingebaute Rolle.
+Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`), und pro Mitglied lassen sich Rechte hinzufügen oder entfernen. Eine Organisationsrolle hält außerdem Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede eingebaute Rolle.
 
-| Route | Recht | Inhalt |
+| Route | Recht | Antwortet mit |
 | --- | --- | --- |
-| `GET orgs/{org}/rights` | `org.view` | Jedes Recht nach Kategorie, mit Name, Beschreibung, Kennzeichen (`sensitive`, `recent_sign_in`, `cloud_only`) und den Rechten, die es braucht |
-| `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Eingebaute und eigene Rollen mit ihren Rechten, Rechten in jedem Projekt und Zahl der Inhaber; `?scope=org` oder `project` |
-| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Eigene Rollen erstellen, ändern und löschen, höchstens 50 je Organisation |
-| `GET orgs/{org}/members/{user}/rights` | `members.view` | Die wirksamen Organisationsrechte eines Mitglieds, Rechte in jedem Projekt und Rechte in jedem seiner Projekte, die der Aufrufer sehen kann, jeweils mit Quellen |
-| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Die wirksamen Rechte eines Mitglieds in diesem Projekt, mit Quellen |
-| `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | Die eigenen Rechte des Aufrufers in diesem Projekt, mit Quellen |
-| `GET orgs/{org}/rights/{right}/grantors`, `GET …/projects/{project}/rights/{right}/grantors` | `members.view`, `project.view` | Wen man nach einem Recht fragen kann: bis zu 10 aktive Mitglieder, die es haben und Rechte ändern dürfen, Inhaber zuerst |
-| `GET orgs/{org}/projects/{project}/audit-log` | `project.audit_log.view` | Die Änderungen im Projekt |
+| `GET orgs/{org}/rights` | `org.view` | Jedem Recht nach Kategorie, mit Name, Beschreibung, Kennzeichen (`sensitive`, `recent_sign_in`, `cloud_only`) und den Rechten, die es braucht. |
+| `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Eingebauten und eigenen Rollen mit ihren Rechten und der Zahl ihrer Inhaber. `?scope=org` oder `?scope=project` filtert sie. |
+| `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Erstellt, ändert oder löscht eine eigene Rolle. Eine Organisation hat höchstens 50. |
+| `GET orgs/{org}/members/{user}/rights` | `members.view` | Den wirksamen Rechten eines Mitglieds in der Organisation, in jedem Projekt und in jedem Projekt, das der Aufrufer sehen kann, mit ihren Quellen. |
+| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Den wirksamen Rechten eines Mitglieds in diesem Projekt, mit ihren Quellen. |
+| `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | Den eigenen Rechten des Aufrufers in diesem Projekt, mit ihren Quellen. |
+| `GET orgs/{org}/rights/{right}/grantors` | `members.view` | Bis zu 10 aktiven Mitgliedern, die das Recht haben und Rechte ändern dürfen, Inhaber zuerst. |
+| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | Dasselbe, für ein Recht in diesem Projekt. |
 
-Eine Vergabe wird als `{"role": "developer", "rights_added": [], "rights_removed": []}` gesendet, wobei `role` der Name einer eingebauten Rolle oder die ID einer eigenen Rolle ist; `preset` ist ihr veralteter Name. Zurück kommt sie mit `role` (`{id, kind, name}`), den wirksamen `rights` und, bei Organisationsvergaben, `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`; die Einrichtung von Single Sign-on nimmt `default_role`.
+Senden Sie eine Vergabe als `{"role": "developer", "rights_added": [], "rights_removed": []}`. `role` ist der Name einer eingebauten Rolle oder die ID einer eigenen Rolle; `preset` ist ihr veralteter Name. Die Antwort enthält `role` als `{id, kind, name}`, die wirksamen `rights` und bei Vergaben in der Organisation `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`, die Einrichtung von Single Sign-on nimmt `default_role`.
 
-Jede Änderung von Rechten, an einer Vergabe oder einer eigenen Rolle, folgt den [Vergaberegeln](../concepts/rights.md#vergaberegeln). Ein Recht zu vergeben, das der Aufrufer nicht hat, oder ein Mitglied zu ändern, das ein Recht hat, das dem Aufrufer fehlt, wird mit 403 abgelehnt, etwa „You can't grant `audit_log.view`: you don't hold it yourself.“ Ein Recht ohne eines zu vergeben, das es braucht, oder eines zu entfernen, das ein anderes braucht, wird mit 400 abgelehnt, und die Meldung nennt beide, etwa „`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.“
+Jede Änderung von Rechten folgt den [Vergaberegeln](../concepts/rights.md#vergaberegeln):
 
-Die Quellen eines wirksamen Rechts sind `owner`, `role` (die Organisationsrolle, bei Organisationsrechten), `project_role`, `added`, `org_role` (die Rechte der Organisationsrolle in jedem Projekt), `org_right` (ein Organisationsrecht, das in Projekte hineinreicht, etwa `projects.view.all`) und `key` (ein API-Schlüssel, der im Projekt handelt).
+- Ein Recht zu vergeben, das Sie selbst nicht haben, oder ein Mitglied zu ändern, das ein Recht hat, das Ihnen fehlt, ergibt 403, etwa „You can't grant `audit_log.view`: you don't hold it yourself.“
+- Ein Recht ohne eines zu vergeben, das es braucht, oder eines zu entfernen, das ein anderes Recht braucht, ergibt 400, und die Meldung nennt beide. Ein Beispiel ist „`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.“
+
+Ein wirksames Recht nennt seine Quellen:
+
+| Quelle | Das Recht kommt aus |
+| --- | --- |
+| `owner` | Der Rolle als Inhaber der Organisation |
+| `role` | Der Organisationsrolle, für Rechte in der Organisation |
+| `project_role` | Der Projektrolle |
+| `added` | Einem Recht, das dem Mitglied hinzugefügt wurde |
+| `org_role` | Den Rechten der Organisationsrolle in jedem Projekt |
+| `org_right` | Einem Recht der Organisation, das in Projekte hineinreicht, etwa `projects.view.all` |
+| `key` | Einem API-Schlüssel, der im Projekt handelt |
 
 ## Playground
 
-Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Modelle des Projekts als das angemeldete Mitglied. Beide Routen brauchen eine Sitzung und das Projektrecht `playground.use`; Schlüssel werden mit 403 abgelehnt, da Apps Modelle über `/v1` aufrufen.
+Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Modelle des Projekts als das angemeldete Mitglied. Beide Routen brauchen eine Sitzung und das Projektrecht `playground.use`. Schlüssel beantworten sie mit 403, denn Apps rufen Modelle auf `/v1` auf.
 
-`GET orgs/{org}/projects/{project}/playground/models` listet die Modelle, die das Mitglied dort aufrufen kann: den Katalog ohne Embedding-Modelle, eingeschränkt durch den Modellzugriff des Mitglieds. Zu jedem gehören der zu sendende Name, seine Aliasse, ob es Reasoning beherrscht und mit welchen Stufen, ob es `temperature` annimmt, seine Limits und Preise und ob das Projekt einen Anbieter-Schlüssel dafür hat.
+| Route | Tut |
+| --- | --- |
+| `GET orgs/{org}/projects/{project}/playground/models` | Listet die Modelle, die das Mitglied aufrufen kann: den Katalog ohne Embeddings-Modelle, eingeschränkt auf den Modellzugriff des Mitglieds. Jedes hat Namen, Aliasse, Reasoning-Stufen, Limits und Preise, ob es `temperature` annimmt und ob das Projekt einen Anbieter-Schlüssel dafür hat. |
+| `POST orgs/{org}/projects/{project}/playground/responses` | Nimmt eine OpenAI-Responses-Anfrage mit `"stream": true` und antwortet mit dem Event-Stream, den `/v1/responses` sendet, samt Keepalive-Kommentaren. |
 
-`POST orgs/{org}/projects/{project}/playground/responses` nimmt eine OpenAI-Responses-Anfrage mit `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und dem verpflichtenden `"stream": true`. Die Antwort ist der Responses-Event-Stream, den `/v1/responses` sendet, mit Keepalive-Kommentaren. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
+Die Anfrage nimmt `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und `stream`, das `true` sein muss. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
 
 ```bash
-curl -N -b "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
-  -d '{"model": "claude-haiku-4-5", "input": "Hello", "stream": true, "reasoning": {"summary": "auto"}}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/playground/responses"
+curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/playground/responses \
+  -b "$JAR" \
+  -H "Origin: https://kaeso.example.com" \
+  -H "content-type: application/json" \
+  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways.", "stream": true}'
 ```
 
 Eine Playground-Anfrage ist eine Modellanfrage wie jede andere, gestellt vom Mitglied ohne Schlüssel:
 
-- **Derselbe Weg.** Das Modell wird im Katalog des Projekts aufgelöst, Aliasse und `provider/model` eingeschlossen, und gegen den Modellzugriff des Mitglieds geprüft. Der Anbieter-Schlüssel des Projekts wird verwendet, und das Schließen des Streams bricht die Anfrage beim Anbieter ab.
-- **Limits.** Die Raten und Budgets des Mitglieds und des Projekts gelten; Schlüssel-Limits nicht, da es keinen Schlüssel gibt.
-- **Nutzung und Protokolle.** Die Anfrage wird dem Projekt berechnet und dem Mitglied zugerechnet; die Nutzung nach `key` zeigt sie als `playground`. Sie wird mit der Quelle `playground` protokolliert, mit Inhalt, wenn das Projekt Inhalte protokolliert; `logs` und `logs/export` filtern mit `source=api` oder `source=playground`.
+- **Derselbe Weg.** Das Modell wird im Katalog des Projekts aufgelöst, Aliasse und `provider/model` eingeschlossen, und muss im Modellzugriff des Mitglieds liegen. Kaeso verwendet den Anbieter-Schlüssel des Projekts, und das Schließen des Streams bricht die Anfrage beim Anbieter ab.
+- **Limits.** Die Raten und Budgets des Mitglieds und des Projekts gelten. Schlüssel-Limits gelten nicht, da es keinen Schlüssel gibt.
+- **Nutzung und Protokolle.** Die Anfrage wird dem Projekt als die des Mitglieds berechnet, und die Nutzung nach `key` zeigt sie als `playground`. Ihr Protokolleintrag hat die Quelle `playground` und enthält ihren Inhalt, wenn das Projekt Inhalte protokolliert. `logs` und `logs/export` filtern mit `source=api` oder `source=playground`.
 
-Fehler vor Beginn des Streams sind Fehler der Platform API:
+Fehler vor dem Beginn des Streams sind Fehler der Platform API:
 
 | Status | `type` | Ursache |
 | --- | --- | --- |
-| 400 | `invalid_request` | `param` ist `model` bei einem Modell außerhalb des Katalogs oder einem, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, und `stream` bei `"stream": false` |
-| 403 | `permission_denied` | Das Modell liegt außerhalb des Modellzugriffs des Mitglieds |
-| 409 | `conflict` | Das Projekt ist archiviert, oder für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet |
-| 409 | `org_scheduled_for_deletion` | Die Organisation wartet auf ihre Löschung |
-| 429 | `rate_limited` | Eine Rate oder ein Budget, in der Meldung genannt |
-| 503 | `unavailable` | Katalog, Anbieter-Schlüssel oder Limits sind nicht lesbar, oder das Gateway startet neu |
-| 502, 429, 503, 504 | `provider_error` | Der Anbieter ist gescheitert oder hat den Anbieter-Schlüssel abgelehnt, hat die Anfrage gebremst, ist überlastet oder hat nicht rechtzeitig geantwortet |
+| 400 | `invalid_request` | `param` ist `model` bei einem Modell außerhalb des Katalogs oder einem, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt. Bei `"stream": false` ist es `stream`. |
+| 403 | `permission_denied` | Das Modell liegt außerhalb des Modellzugriffs des Mitglieds. |
+| 409 | `conflict` | Das Projekt ist archiviert, oder es hat keinen Anbieter-Schlüssel für den Anbieter des Modells. |
+| 409 | `org_scheduled_for_deletion` | Die Organisation ist zur Löschung vorgemerkt. |
+| 429 | `rate_limited` | Eine Rate oder ein Budget ist erreicht, und die Meldung nennt sie. |
+| 503 | `unavailable` | Kaeso kann den Katalog, die Anbieter-Schlüssel oder die Limits nicht lesen, oder Kaeso startet gerade neu. |
+| 429, 502, 503, 504 | `provider_error` | Der Anbieter hat die Rate der Anfrage begrenzt, ist gescheitert oder hat den Anbieter-Schlüssel abgelehnt, ist überlastet oder hat nicht rechtzeitig geantwortet. |
 
-Nach Beginn des Streams kommen Fehler als Responses-`error`-Events, wie auf `/v1`.
-
-## Wie die Konsole sie nutzt
-
-Die Konsole wird vom Origin des Gateways selbst ausgeliefert, also ist ihr Sitzungs-Cookie First-Party und sie braucht kein CORS. Sie hält nur das HttpOnly-Cookie und sendet bei jeder Änderung `Origin`, wie es Browser tun. Darüber hinaus:
-
-- liest sie `auth/session` für den Benutzer, seine Mitgliedschaften mit Organisationsrolle, Rechten und Rechten in jedem Projekt, ob er Instanz-Admin ist und ob er Organisationen erstellen darf (`can_create_orgs`);
-- liest sie `my-rights` eines Projekts, um zu entscheiden, was sie dort zeigt, und nimmt Namen, Gruppen und Abhängigkeiten der Rechte aus `orgs/{org}/rights`;
-- füllt sie die Modellformulare aus `models/search` und `models/preview`;
-- zeigt sie `recent_sign_in_required` als Aufforderung zur erneuten Anmeldung und wiederholt danach die Aktion;
-- lädt sie `logs/export` und `audit-log/export` als gestreamte Dateien herunter;
-- streamt sie Playground-Antworten mit `fetch`, wobei **Stoppen** den Abruf abbricht und damit die Anfrage beim Anbieter;
-- zeichnet sie die Nutzung bis etwa drei Monate nach Tagen, bis etwa ein Jahr nach Wochen und darüber nach Monaten und lässt **Seit Beginn** beim `first_day` von `usage/span` anfangen.
+Hat der Stream begonnen, kommen Fehler als Responses-Events vom Typ `error`, wie auf `/v1`.
