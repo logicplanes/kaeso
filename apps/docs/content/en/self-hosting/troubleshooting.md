@@ -19,7 +19,7 @@ When a setting is missing or invalid, the gateway stops with a message that name
 | A variable of `.env` is missing | Compose itself refuses to start and names it: set `KAESO_DOMAIN`, `POSTGRES_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD`, `CLICKHOUSE_PASSWORD` and `VALKEY_PASSWORD`, and check that `master-keys` exists next to `compose.yaml` |
 | `KAESO_SMTP_HOST` is required | Add your SMTP server, or set `KAESO_MAIL_TRANSPORT=log` to try Kaeso without one; see [email](email.md) |
 | Another setting is invalid | Correct it in `compose.override.yaml`; [configuration](configuration.md) lists the allowed values |
-| A master key id isn't configured | The database holds secrets encrypted with a key missing from `master-keys`; add it back, see [master keys](backups.md#master-keys) |
+| A master key id isn't configured | The database holds secrets encrypted with a key missing from `master-keys`; add it back, see [master keys](backups.md#keep-the-master-keys-safe) |
 | The database was migrated by a newer version of Kaeso | An older image is starting against a newer database; start the newer version, or [downgrade](upgrades.md#downgrade) |
 | PostgreSQL or ClickHouse refuses the password | The password in `.env` changed after the databases were created, and they keep their first one; put the old password back |
 

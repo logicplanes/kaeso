@@ -1,69 +1,69 @@
 ---
 title: Upgrades
-description: Learn about new releases, update by hand or in one click with the updater, and what happens while Kaeso updates.
+description: Update Kaeso by hand or in one click from the console, and know what happens while it updates.
 order: 8
 ---
 
-Releases follow semantic versioning, and every part of Kaeso shares the release's version number. Each release's notes are on the [releases page](https://github.com/logicplanes/kaeso/releases) and, for instance admins, in the console under **Settings** › **Instance** › **Updates**. Each release's `compose.yaml` pins the gateway, console and updater images of that release.
-
-There are two ways to update: [by hand](#update-by-hand), which always works, and [in one click](#one-click-updates) from the console, once you add the optional updater.
-
-## New releases
-
-The gateway looks for new releases twice a day on GitHub's releases API, and waits at least an hour after a failure. The request carries nothing about your install but the gateway's version in its `User-Agent`; [updates](../development/architecture/updates.md#the-gateway) describes the check in detail.
-
-Under **Settings** › **Instance** › **Updates** instance admins see the version that runs, the newest release with the notes of every release since, when the gateway last looked and, when it failed, why. **Check now** looks at once, even when checks are off. A **New** mark beside **Updates** in the settings sidebar is the only reminder; Kaeso never sends emails or banners about releases.
-
-| Setting | Default | What it does |
-| --- | --- | --- |
-| Look for new releases (`updates.check`) | on | Turn it off for installs without internet access. |
-| Releases (`updates.channel`) | stable only | `prerelease` also offers release candidates. A pre-release is never offered on the stable channel, but an install that runs one is offered the stable release that follows it. |
-| One-click updates (`updates.apply`) | off | Whether instance admins may apply updates from the console through the updater. |
-
-The three settings start from `KAESO_UPDATES_CHECK`, `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_APPLY` on a new install; after that, instance admins change them in the console, and each change is in the instance audit log. Turning one-click updates on needs a sign-in within the last 15 minutes.
-
-### Installs without internet access
-
-Turn **Look for new releases** off, or set `KAESO_UPDATES_CHECK=false` in [`compose.override.yaml`](installation.md#change-the-services) before the first start. The page then shows the running version and updates by hand as below. `KAESO_UPDATES_RELEASES_URL` points the gateway at a mirror that answers like GitHub's releases API, if you keep one; the gateway then fetches release manifests only from the mirror's own address.
-
-## Which releases update in one click
-
-A release updates in one click only when all of these hold; otherwise the console shows its notes and a link to this page:
-
-- It is not a new major version. A migration that needs a manual step makes a release a major one.
-- No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so. Every `release.json` names the last release up to it that asks for steps by hand, so the gateway and the updater refuse an update across one even when the gateway never saw that release.
-- The release carries `release.json`, the manifest the updater reads: every release from the first one with the updater on.
+Every release gives all parts of Kaeso one version number and follows semantic versioning. Its `compose.yaml` pins the release's images. Update by hand, which always works, or in one click from the console once you add the updater.
 
 ## Update by hand
 
-1. Read the release notes for anything that needs action.
-2. [Back up](backups.md) PostgreSQL, and ClickHouse too, so that a [downgrade](#downgrade) stays possible.
-3. Download the new release's `compose.yaml` over the old one. Your settings in `.env`, `master-keys` and `compose.override.yaml` stay.
+1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Settings** › **Instance** › **Updates**.
+2. [Back up](backups.md) PostgreSQL and ClickHouse, so you can [go back](#downgrade) if you need to.
+3. In the install's folder, download the new `compose.yaml` over the old one. `.env`, `master-keys` and `compose.override.yaml` stay as they are.
 
 ```bash
 curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
 ```
 
-4. Start the new version:
+4. Pull the new images and start them:
 
 ```bash
 docker compose pull
 docker compose up -d --wait
 ```
 
-`--wait` returns once the new gateway and console report healthy, and fails if one doesn't, so a script or a person running the upgrade sees a failed start at once.
+The command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
-The gateway migrates PostgreSQL and ClickHouse when it starts, under a lock, so several instances can start at once and only one migrates. Migrations only move forward and run in order, so an upgrade may skip versions. Kaeso 0.1.0 creates the whole schema from one initial set of migrations; later releases add theirs after it.
+When an update can't happen in one click, the console shows these commands with the exact version.
 
-The console shows these commands with the exact version whenever one click isn't possible.
+## New releases
+
+The gateway looks for new releases on GitHub twice a day, and at least an hour later after a failure. The request carries nothing about your install but the gateway's version.
+
+Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. **Check now** looks at once, even when checks are off. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| **Look for new releases** | On | Looks for releases twice a day. |
+| **Releases** | **Stable only** | **Pre-release** also offers release candidates. An install that runs a pre-release is offered the stable release that follows it. |
+| **One-click updates** | Off | Lets instance admins apply updates from the console through the updater. |
+
+On a new install, these settings start from `KAESO_UPDATES_CHECK`, `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_APPLY` ([configuration](configuration.md#updates)). After that, instance admins change them on the page, and the instance audit log records each change.
+
+### Installs without internet access
+
+Turn off the gateway's outgoing checks in `compose.override.yaml` before the first start:
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    environment:
+      KAESO_UPDATES_CHECK: "false"
+      KAESO_MODELS_DEV_SYNC: "false"
+```
+
+The gateway then uses the model data built into the release, the **Updates** page shows the running version, and you update by hand. If you keep a mirror that answers like GitHub's releases API, point `KAESO_UPDATES_RELEASES_URL` at it instead.
 
 ## One-click updates
 
-The updater is an optional service of `compose.yaml`, in the Compose profile `updater`, with its Docker socket proxy `docker-proxy`. It is the only part of Kaeso that talks to Docker.
+The updater is an optional service in `compose.yaml`, with its own Docker socket proxy. It is the only part of Kaeso that talks to Docker, so it is off until you turn it on.
 
-### Turn it on
+### Turn on the updater
 
-Give the gateway and the updater a shared token and turn the profile on, in the install's folder:
+The updater needs Docker Engine 25 or newer.
+
+1. In the install's folder, give the gateway and the updater a shared token and turn on the `updater` profile:
 
 ```bash
 echo "KAESO_UPDATER_TOKEN=$(openssl rand -hex 32)" >> .env
@@ -71,11 +71,13 @@ echo "COMPOSE_PROFILES=updater" >> .env
 docker compose up -d --wait
 ```
 
-Then turn on **One-click updates** under **Settings** › **Instance** › **Updates**. The page says when the updater isn't installed, doesn't answer or is too old for a release. Kaeso releases before the updater update by hand once.
+2. Turn on **One-click updates** under **Settings** › **Instance** › **Updates**. This needs a sign-in within the last 15 minutes.
 
-To keep the token out of `.env`, put it in a file and hand it to both services as a [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/) in `compose.override.yaml`; both read `KAESO_UPDATER_TOKEN_FILE`:
+The page says when the updater isn't installed, doesn't answer, or is too old for a release. When Docker's socket isn't at `/var/run/docker.sock`, as with rootless Docker, set `DOCKER_SOCKET` in `.env`.
 
-```yaml
+To keep the token out of `.env`, put it in a file and give it to both services as a [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/). Both read `KAESO_UPDATER_TOKEN_FILE`:
+
+```yaml title="compose.override.yaml"
 services:
   gateway:
     environment:
@@ -90,80 +92,82 @@ secrets:
     file: ./updater-token
 ```
 
-The updater needs Docker Engine 25 or newer: it speaks Docker API 1.44, and the proxy lets only that version through; on an older engine the page says the updater doesn't answer. It mounts `/var/run/docker.sock` through its proxy; set `DOCKER_SOCKET` in `.env` when Docker's socket is elsewhere, as with rootless Docker.
+### Which releases update in one click
 
-### What happens
+A release updates in one click when all of these hold. Otherwise, the console shows its notes and the commands to update by hand.
 
-**Update to …** asks for a confirmation that names the version and reminds you to back up first. The gateway records the update, writes `instance.update_start` to the instance audit log and hands the version, and nothing else, to the updater. The console then follows these steps:
+- It isn't a new major version. A migration that needs a manual step always makes a major version.
+- No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so.
+- It carries `release.json`, the signed manifest the updater reads.
 
-1. **Check the signatures.** Before it downloads any image, the updater verifies `release.json` and the index of every image it names against the [build provenance attestations](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations) of Kaeso's Release workflow on `prod` with Sigstore, using a trust root built into the updater, and checks the release's `compose.yaml` against the SHA-256 that `release.json` names ([every check](../development/architecture/updates.md#the-updater)). When any check fails, nothing is installed and Kaeso keeps running.
-2. **Download.** The updater pulls the gateway, console and updater images by digest and checks that each image's own version label is the release's.
-3. **Switch.** Caddy answers with the [updating page](#while-kaeso-updates). The updater stops the console, starts it again from its own settings with the new image and waits for its health check; then it does the same with the gateway.
-4. **Migrate.** The new gateway migrates the databases when it starts; the updater gives its health check up to 10 minutes and doesn't count a failed check while the gateway runs without a restart, so a long migration is not mistaken for a broken start.
-5. **Back online.** The updater writes the new versions into `compose.yaml`, so a later `docker compose up -d --wait` starts the same images, tags them with the version, removes the old containers and ends the maintenance.
+### Update in one click
 
-The whole update takes about a minute. Only one update runs at a time. The result is recorded as `instance.update_finish` in the instance audit log and in the page's history:
+Choose **Update to …** and confirm. The console follows the update step by step, and it takes about a minute:
+
+1. **Check the signatures.** The updater checks that the release and every image were built by Kaeso's Release workflow. When any check fails, nothing is installed and Kaeso keeps running.
+2. **Download.** It pulls the new gateway, console and updater images.
+3. **Switch.** It replaces the console, then the gateway, with containers from the new images, keeping their settings. Meanwhile, Caddy answers in their place ([while Kaeso updates](#while-kaeso-updates)).
+4. **Migrate.** The new gateway migrates the databases as it starts. The updater gives it up to 10 minutes to become healthy.
+5. **Back online.** The updater writes the new versions into `compose.yaml`, so a later `docker compose up -d --wait` starts the same images.
+
+The updater doesn't replace itself while it runs. The next `docker compose up -d --wait` in the install's folder starts its new version. Only one update runs at a time, and the instance audit log records each one.
+
+[Updates](../development/architecture/updates.md) explains how the updater verifies a release and switches containers.
+
+### Results
+
+The page's history shows how each update ended:
 
 | Result | Meaning |
 | --- | --- |
-| **Updated** | The new version runs. When the updater couldn't write `compose.yaml`, or the file changed during the update, the result names it: set the Kaeso image tags in `compose.yaml` to the new version by hand. |
+| **Updated** | The new version runs. If the result says the updater couldn't write `compose.yaml`, set the Kaeso image tags in it to the new version yourself. |
 | **Not installed** | Nothing changed. |
 | **Rolled back** | The new version didn't start, and the previous one runs again. |
-| **Rollback failed** | The new version didn't start, and the previous one didn't start again either. |
-| **Needs attention** | Someone has to look: the new gateway didn't start but may have migrated the database, so the updater left it and the new console in place (see [rollback](#rollback)), or the update couldn't finish cleaning up, such as removing the maintenance flag or the `…-previous` containers. The detail says which and what to do. |
+| **Rollback failed** | The new version didn't start, and neither did the previous one. |
+| **Needs attention** | Someone has to look. The detail says what happened and what to do. |
 
-### Rollback
+The updater rolls back on its own whenever it safely can. It can't when the new gateway fails after it may have migrated the databases, because the previous gateway can't run against them. Then it ends with **Needs attention**, leaves the new gateway and console in place, and keeps the previous ones stopped as `kaeso-gateway-1-previous` and `kaeso-console-1-previous`. Choose one way forward:
 
-Before it switches, the updater compares the latest PostgreSQL and ClickHouse migrations of the running release with the new release's, both from their `release.json`.
+- Find out why the new gateway doesn't start with `docker compose logs gateway`, fix it, and set the image tags in `compose.yaml` to the new version.
+- Or restore the backup and run the old version, as in [downgrade](#downgrade).
 
-When the new console doesn't become healthy, or the new gateway doesn't and both releases have the same migrations, the updater removes the new containers and starts the previous ones again: the update is **Rolled back**, and Kaeso runs the version from before.
+Then remove both `…-previous` containers with `docker rm`. The updater starts no other update while one exists.
 
-When the new gateway doesn't become healthy and the releases' migrations differ, or the running release has no `release.json`, the new gateway may already have migrated the databases, and the previous gateway [can't run against them](#downgrade). The updater then leaves the new gateway and the new console, which speaks its API, in place, keeps the previous ones stopped as `kaeso-gateway-1-previous` and `kaeso-console-1-previous` and ends with **Needs attention**. Then either find out why the new gateway doesn't start (`docker compose logs gateway`), fix it and set the image tags in `compose.yaml` to the new version, or restore the backup and run the old version, as in [downgrade](#downgrade). Remove both `…-previous` containers once you're done; the updater refuses to start another update while one exists.
+### What the updater may do
 
-When the updater restarts during an update, it waits up to two minutes for Docker, then finishes the update when the new gateway turns healthy, rolls it back as above, or ends with **Needs attention** when Docker doesn't answer.
+The updater can create containers, so whoever controls it controls the server as root. It is built to keep that power narrow:
 
-### The updater itself
+- It answers only the gateway, on an internal network, and only with the shared token. The gateway passes it a version number and nothing else.
+- It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs.
+- It replaces only the gateway and console containers of its own Compose project, with images it verified.
+- It changes only the image versions in `compose.yaml`, and leaves a file that differs from the release's alone.
 
-The updater pulls and verifies its own new image and writes its version into `compose.yaml` with the others, but it doesn't replace itself while it runs. The next `docker compose up -d --wait` in the install's folder switches it to the new version.
-
-### Security model
-
-| Part | What it can do |
-| --- | --- |
-| Gateway | Asks the updater to apply a version, by number, and reads its progress. It never gets Docker access, and it can't name images, options or containers. |
-| Updater | Listens on `0.0.0.0:8081` inside its container and is on three networks: `updates`, which only the gateway shares, `docker`, which only the proxy shares, and `egress`, which only it uses, to reach github.com, api.github.com and ghcr.io. Every request but its health check needs the token: at least 32 characters, compared in constant time, never logged or returned. It only replaces the gateway and console containers of its own Compose project, from their own settings, with images it pinned by digest and verified, and it only changes the image versions in `compose.yaml`, which it refuses to touch when the file differs from the release's in anything else. |
-| `docker-proxy` | [socket-proxy](https://github.com/wollomatic/socket-proxy) on the internal network `docker`. It answers only the updater, and only the Docker API paths the updater calls: listing and inspecting containers, inspecting, pulling and tagging Kaeso images, and creating, starting, stopping, renaming and removing containers. It filters by method and path only, not by the body of a request. |
-
-The proxy narrows what a mistake in the updater can do, but it doesn't make the updater harmless: a container the updater creates could, by its settings, mount any part of the host or run privileged. Whoever holds the updater, or its token and a way onto the `updates` network, holds the host as root. So the updater is opt-in, runs with every capability dropped except the one it needs to write `compose.yaml`, with a read-only file system, and shares its networks only with the gateway and the proxy. Without the `updater` profile nothing in Kaeso has Docker access.
-
-The updater checks attestations whose transparency log entry carries a signed entry timestamp. Should the Release workflow ever produce bundles that only carry an inclusion proof and a timestamp authority's signature, the updater refuses them and names this, and those releases update by hand until an updater that checks them ships.
+Without the `updater` profile, nothing in Kaeso has Docker access.
 
 ## While Kaeso updates
 
-While the updater switches versions, and whenever the gateway or the console doesn't answer, for an update by hand too, Caddy answers in their place:
+While the updater switches versions, or whenever the gateway or the console doesn't answer, Caddy answers in their place:
 
 | Request | Answer |
 | --- | --- |
-| A page | `503` with a page in English, German or Simplified Chinese, after the browser's language, in light or dark after the system. It names the step while the updater works, checks every 5 seconds and returns to the console when Kaeso is back. It loads nothing from elsewhere. |
-| `/platform/v1/*` | `503` with the Platform API's error, type `unavailable` |
-| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header | `529` with Anthropic's `overloaded_error`, as the gateway answers when a provider is overloaded |
-| Other `/v1/*` | `503` with OpenAI's `service_unavailable_error` |
+| A console page | 503 with a page in the browser's language that says what is happening, checks every 5 seconds and returns when Kaeso is back |
+| `/platform/v1/*` | 503 with the Platform API's error, type `unavailable` |
+| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header | 529 with Anthropic's `overloaded_error` |
+| Other `/v1/*` | 503 with OpenAI's `service_unavailable_error` |
 
-Every answer carries `Retry-After: 30`, which the OpenAI and Anthropic SDKs honour when they retry. The message says whether Kaeso is being updated or can't be reached right now.
-
-## Names that stay
-
-These names are the same in every release, so downloading the new `compose.yaml` and running `docker compose pull` keeps your data:
-
-- the download address `https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml`;
-- the images `ghcr.io/logicplanes/kaeso-gateway`, `ghcr.io/logicplanes/kaeso-console` and `ghcr.io/logicplanes/kaeso-updater`, tagged with the release's version;
-- the Compose project `kaeso` and its services `caddy`, `gateway`, `console`, `postgres`, `clickhouse` and `valkey`, and `updater` and `docker-proxy` in the `updater` profile;
-- the volumes `kaeso_postgres`, `kaeso_clickhouse` and `kaeso_valkey`, which hold the data, `kaeso_caddy_data` and `kaeso_caddy_config`, which hold the TLS certificates, and `kaeso_maintenance` and `kaeso_updater`, which hold the maintenance flag and the updater's progress.
-
-Run Compose in your install's folder without `-p` or `COMPOSE_PROJECT_NAME`, so it uses the project name `kaeso`: under another project name, Compose starts with new, empty volumes.
+Every answer carries `Retry-After: 30`, which the OpenAI and Anthropic SDKs honour when they retry.
 
 ## Downgrade
 
 Migrations can't be undone. A gateway refuses to start against a PostgreSQL database that a newer release migrated, and says so. Against a ClickHouse database a newer release migrated, it starts but writes no request logs, and logs `ClickHouse migrations failed; request logs are not written`.
 
-To go back to an older release, restore the PostgreSQL backup taken before the upgrade, and the [ClickHouse backup](backups.md#clickhouse) too if the newer release migrated ClickHouse, then start the older `compose.yaml`.
+To go back to an older release:
+
+1. Restore the PostgreSQL backup taken before the upgrade ([backups](backups.md#restore-postgresql)).
+2. If the newer release migrated ClickHouse, restore ClickHouse too.
+3. Download the older release's `compose.yaml` and start it with `docker compose up -d --wait`.
+
+## Next steps
+
+- [Backups and master keys](backups.md): Back up before every upgrade.
+- [How an install works](how-it-works.md#names-that-stay): See the names every release keeps, so an upgrade finds your data.

@@ -19,7 +19,7 @@ Fehlt eine Einstellung oder ist sie ungültig, hält das Gateway mit einer Meldu
 | Eine Variable der `.env` fehlt | Compose selbst startet nicht und nennt sie: `KAESO_DOMAIN`, `POSTGRES_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD`, `CLICKHOUSE_PASSWORD` und `VALKEY_PASSWORD` setzen und prüfen, ob `master-keys` neben der `compose.yaml` liegt |
 | `KAESO_SMTP_HOST` ist erforderlich | Den SMTP-Server eintragen oder `KAESO_MAIL_TRANSPORT=log` setzen, um Kaeso ohne ihn auszuprobieren; siehe [E-Mail](email.md) |
 | Eine andere Einstellung ist ungültig | Sie in der `compose.override.yaml` korrigieren; [Konfiguration](configuration.md) nennt die erlaubten Werte |
-| Eine Hauptschlüssel-ID ist nicht konfiguriert | Die Datenbank enthält Secrets, die mit einem Schlüssel verschlüsselt sind, der in `master-keys` fehlt; ihn wieder eintragen, siehe [Hauptschlüssel](backups.md#hauptschlüssel) |
+| Eine Hauptschlüssel-ID ist nicht konfiguriert | Die Datenbank enthält Secrets, die mit einem Schlüssel verschlüsselt sind, der in `master-keys` fehlt; ihn wieder eintragen, siehe [Hauptschlüssel](backups.md#hauptschlüssel-sicher-aufbewahren) |
 | Die Datenbank wurde von einer neueren Kaeso-Version migriert | Ein älteres Image startet gegen eine neuere Datenbank; die neuere Version starten oder ein [Downgrade](upgrades.md#downgrade) durchführen |
 | PostgreSQL oder ClickHouse lehnt das Passwort ab | Das Passwort in der `.env` wurde geändert, nachdem die Datenbanken angelegt wurden, und diese behalten ihr erstes; das alte Passwort wieder eintragen |
 
