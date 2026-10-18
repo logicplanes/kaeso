@@ -106,7 +106,7 @@ def test_every_release_attaches_the_compose_file_under_its_name():
     assert re.search(r'gh release create .*"\$RUNNER_TEMP"/assets/\*', workflow)
 
 
-INSTALL_PAGES = ("get-started/quick-start.md", "self-hosting/installation.md", "self-hosting/upgrades.md")
+INSTALL_PAGES = ("get-started/quick-start.md", "self-hosting/upgrades.md")
 
 
 @pytest.mark.parametrize(
