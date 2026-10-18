@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
 import { notes, release } from "./changelog.mjs";
-import { MODEL, SCHEMA, SYSTEM, check, coAuthor, collect, factsOf, isPerson, plain, prompt, write } from "./release-notes.mjs";
+import { MODEL, SCHEMA, SYSTEM, check, coAuthor, collect, correction, factsOf, isPerson, plain, prompt, write } from "./release-notes.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = "https://github.com/logicplanes/kaeso";
@@ -184,6 +184,36 @@ test("a refusal, a cut-off answer, an answer that isn't JSON and an API error fa
   await fallsBack(() => {
     throw new Error("503 Service Unavailable");
   }, /503 Service Unavailable/);
+});
+
+test("notes that break the rules go back to the model once with the problems, and its corrected answer is rendered", async () => {
+  const first = valid();
+  first.sections[0].topics[0].entries[0].text = "x".repeat(801);
+  const replies = [answer(first), answer(valid())];
+  const { lines, notices, calls } = await run(() => replies.shift());
+  assert.deepEqual(notices, []);
+  assert.deepEqual(lines, expected);
+  assert.equal(calls.length, 2);
+  const [question, earlier, problems] = calls[1].params.messages;
+  assert.deepEqual(question, calls[0].params.messages[0]);
+  assert.deepEqual(earlier, { role: "assistant", content: JSON.stringify(first) });
+  assert.equal(problems.role, "user");
+  assert.equal(problems.content, correction(["Fixed topic 1 entry 1 is longer than 800 characters"]));
+  assert.equal(calls[1].options.signal, calls[0].options.signal);
+});
+
+test("notes that still break the rules after the correction fall back, after two requests", async () => {
+  const output = valid();
+  output.sections.pop();
+  const { lines, notices, calls } = await run(answer(output));
+  assert.equal(lines, null);
+  assert.equal(calls.length, 2);
+  assert.match(notices[0][1], /#14 appears 0 times/);
+});
+
+test("the instructions ask for short entries and one entry per curated line and its pull request", () => {
+  assert.match(SYSTEM, /at most 800 characters and usually under 400/);
+  assert.match(SYSTEM, /A curated line and the pull request it describes are one entry, never two\./);
 });
 
 test("without a key nothing is sent and the notes fall back with a notice", async () => {
