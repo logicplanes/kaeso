@@ -1,12 +1,20 @@
-FROM rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 AS build
+FROM rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 AS chef
+RUN cargo install cargo-chef --version 0.1.78 --locked \
+ && rm -rf /usr/local/cargo/registry
 WORKDIR /src
-COPY . .
 ENV SQLX_OFFLINE=true
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/src/target \
-    cargo build --release --locked -p kaeso-updater \
+
+FROM chef AS plan
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS build
+COPY --from=plan /src/recipe.json recipe.json
+RUN cargo chef cook --release --locked -p kaeso-updater --recipe-path recipe.json
+COPY . .
+RUN cargo build --release --locked -p kaeso-updater \
  && cp target/release/kaeso-updater /kaeso-updater \
+ && rm -rf target \
  && mkdir -p /dirs/kaeso /dirs/maintenance /dirs/state
 
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
