@@ -7,6 +7,7 @@
           - crates/kaeso-mail/**
           - crates/kaeso-server/**
           - crates/kaeso-store/**
+          - crates/kaeso-update/**
           - crates/kaeso-upstream/**
           - .sqlx/**
           - openapi.json
@@ -36,6 +37,7 @@
 "area: self-hosting":
   - changed-files:
       - any-glob-to-any-file:
+          - crates/kaeso-updater/**
           - deploy/compose.yaml
           - deploy/kaeso.example.toml
           - deploy/*.Dockerfile
