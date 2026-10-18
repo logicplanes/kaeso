@@ -446,6 +446,7 @@ const messages = (): Rule[] => [
   rule("errors.updates.updaterUnreachable", () => t("errors.updates.updaterUnreachable", "The updater couldn't be reached; nothing was changed.")),
   rule("errors.model.generationOnly", (v) => t("errors.model.generationOnly", "The model `{model}` is a generation model; it cannot create embeddings.", v)),
   rule("errors.model.endpoint", (v) => t("errors.model.endpoint", "The model `{model}` cannot serve this endpoint.", v)),
+  rule("errors.model.noTokenCount", (v) => t("errors.model.noTokenCount", "The model `{model}` cannot count tokens.", v)),
   rule("errors.model.embeddingsOnly", (v) => t("errors.model.embeddingsOnly", "The model `{model}` is an embeddings model; it cannot generate text.", v)),
   rule("errors.model.noText", (v) => t("errors.model.noText", "The model `{model}` does not produce text.", v)),
   rule("errors.model.noImages", (v) => t("errors.model.noImages", "The model `{model}` does not accept images.", v)),

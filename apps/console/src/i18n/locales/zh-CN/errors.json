@@ -373,6 +373,7 @@
   "errors.updates.updaterUnreachable": "无法连接更新器，未做任何更改。",
   "errors.model.generationOnly": "模型 `{model}` 是生成模型，无法创建嵌入。",
   "errors.model.endpoint": "模型 `{model}` 不支持此端点。",
+  "errors.model.noTokenCount": "模型 `{model}` 不支持 Token 计数。",
   "errors.model.embeddingsOnly": "模型 `{model}` 是嵌入模型，无法生成文本。",
   "errors.model.noText": "模型 `{model}` 不输出文本。",
   "errors.model.noImages": "模型 `{model}` 不接受图片。",

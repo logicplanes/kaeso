@@ -71,6 +71,10 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 其他格式的内置工具（例如网页搜索）及其结果
 - 引用，以及来自其他服务商的文件 ID
 
+### Token 计数
+
+`/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
+
 ## Kaeso 省略的内容
 
 当目标没有对应位置时，Kaeso 会省略不改变模型输出内容的提示信息：

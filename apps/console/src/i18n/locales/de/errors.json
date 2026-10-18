@@ -373,6 +373,7 @@
   "errors.updates.updaterUnreachable": "Der Updater war nicht erreichbar; es wurde nichts geändert.",
   "errors.model.generationOnly": "Das Modell `{model}` ist ein Generierungsmodell und kann keine Embeddings erzeugen.",
   "errors.model.endpoint": "Das Modell `{model}` kann diesen Endpunkt nicht bedienen.",
+  "errors.model.noTokenCount": "Das Modell `{model}` kann keine Token zählen.",
   "errors.model.embeddingsOnly": "Das Modell `{model}` ist ein Embedding-Modell und kann keinen Text erzeugen.",
   "errors.model.noText": "Das Modell `{model}` erzeugt keinen Text.",
   "errors.model.noImages": "Das Modell `{model}` nimmt keine Bilder an.",

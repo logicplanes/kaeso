@@ -100,9 +100,16 @@ pub fn prepare(
             })
         }
         Request::CountTokens(g) => {
+            let Some(dialect) = eff.provider.count_tokens else {
+                return Err(refuse(
+                    "token counting",
+                    Some("model"),
+                    format!("The model `{name}` cannot count tokens."),
+                ));
+            };
             check_generation(g, ingress, eff)?;
             Ok(Plan {
-                dialect: eff.provider.count_tokens,
+                dialect,
                 adaptive_thinking,
                 reasoning: eff.fields.reasoning,
             })
