@@ -7,6 +7,7 @@ Every component works with a keyboard, a screen reader, a coarse pointer and the
 - Behavior comes from Base UI: roles, states, focus management and keyboard interaction follow the WAI-ARIA practices.
 - **Targets**: nothing interactive is smaller than 32px; with a coarse pointer, rows and menu items grow to 44px.
 - **Text**: 14px base, 12px minimum. Every text and background pair is measured against WCAG 2.2 (4.5:1 for text, 3:1 for large text and essential graphics).
+- **Zoom stays with the person**: with a coarse pointer, every field's text is at least 16px, so a phone never zooms the page when a field takes focus, and a quick second tap on a control is a tap, not a zoom. Pinch zoom always works; never set `maximum-scale` or `user-scalable=no`.
 - **Color is never alone**: every status carries a word or an icon.
 
 ## Focus

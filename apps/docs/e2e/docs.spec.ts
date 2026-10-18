@@ -257,6 +257,14 @@ test.describe("on a phone", () => {
     await expect(page.getByPlaceholder("Search the documentation")).toBeFocused();
   });
 
+  test("the search field is large enough that focusing it does not zoom the page", async ({ page }) => {
+    await page.goto("/guides");
+    await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).tap();
+    const input = page.getByPlaceholder("Search the documentation");
+    await expect(input).toBeFocused();
+    await expect(input).toHaveCSS("font-size", "16px");
+  });
+
   for (const theme of ["light", "dark"] as const) {
     test(`the header passes axe in the ${theme} theme`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme });
