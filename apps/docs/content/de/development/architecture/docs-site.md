@@ -148,4 +148,4 @@ Jeder statische Host kann die Ausgabe ausliefern: Eine Anfrage nach `/console/ap
 
 `vite.config.ts` macht, was die der Konsole macht: Es schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten um (`uiEntryImports`) und liefert das Theme-Skript als `/theme-init.js` aus. Außerdem fügt es die Meta-Tags `theme-color` hinzu und lädt die Schrift der Oberfläche vorab.
 
-Der Build endet mit zwei Prüfungen: `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre Bundle-Budgets, und `scripts/check-site.mjs` prüft die Ausgabe ([die Websites](../releasing.md#die-websites)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) prüft danach die Lizenz jedes Pakets im Build.
+Der Build endet mit zwei Prüfungen: `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre Bundle-Budgets, und `scripts/check-site.mjs` prüft die Ausgabe ([die Websites](../releasing.md#websites-verteilen)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) prüft danach die Lizenz jedes Pakets im Build.

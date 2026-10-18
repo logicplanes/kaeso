@@ -57,7 +57,7 @@ Die [Continuous Integration](#continuous-integration) führt dieselben Prüfunge
 | `pnpm test` | Vitest mit Coverage-Schwellen in beiden Bibliotheken, der Konsole und der Dokumentation. Danach die Tests von `scripts/`, darunter die [Versionsprüfung](releasing.md#die-version-im-repository) |
 | `pnpm i18n` | Jeder Text der Konsole hat Deutsch und Chinesisch mit denselben Platzhaltern, und nichts ist übrig ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
-| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets. Die Builds beider Websites führen danach die [Website-Prüfung](releasing.md#die-websites) aus |
+| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets. Die Builds beider Websites führen danach `scripts/check-site.mjs` aus, das die Sitemap und den Kopf jeder Seite prüft |
 | `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Lizenzrichtlinie](contributing.md#abhängigkeit-hinzufügen)) |
 | `pnpm release:check` | Nach einem Build: beide Bibliotheken so gepackt, wie npm es tut, mit jeder Datei, die sie ausliefern müssen, in einer Version |
 | `pnpm e2e` | Playwright in Konsole, Dokumentation und Showcase, nacheinander. Die Suite des Showcases testet dessen Build, führen Sie also zuerst `pnpm build` aus |

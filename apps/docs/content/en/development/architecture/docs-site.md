@@ -148,4 +148,4 @@ Any static host serves the output: a request for `/console/api-keys` gets `conso
 
 `vite.config.ts` does what the console's does: it rewrites imports from `@logicplanes/kaeso-ui` to the library's per-component entries (`uiEntryImports`) and serves the theme script as `/theme-init.js`. It also adds the `theme-color` meta tags and preloads the interface font.
 
-The build ends with two checks: `scripts/budget.ts` checks the frame and every page against their bundle budgets, and `scripts/check-site.mjs` checks the output ([the sites](../releasing.md#the-sites)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) then checks the license of every package in the build.
+The build ends with two checks: `scripts/budget.ts` checks the frame and every page against their bundle budgets, and `scripts/check-site.mjs` checks the output ([the sites](../releasing.md#deploy-the-sites)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) then checks the license of every package in the build.
