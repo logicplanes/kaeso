@@ -7,6 +7,7 @@ nav: KPP-Interna
 
 KPP, das Kaeso Provider Protocol, ist das kanonische Format, das jede Modellanfrage durchläuft. Das Gateway dekodiert, was eine App sendet, nach KPP und kodiert KPP für den Anbieter; die Antwort nimmt denselben Weg zurück. [Formatübersetzung](../../concepts/format-translation.md) beschreibt, was Aufrufer davon sehen; diese Seiten richten sich an alle, die KPP ändern.
 
+- [Aufbau der Codecs](codec-design.md): Erfahren Sie, wie Typen, Streams und Wire-Structs jede Übersetzung verlustfrei halten.
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
@@ -83,12 +84,12 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | --- | --- |
 | `codec` | Der Trait `Codec`, `EgressCtx` und `EncodeCtx` |
 | `dispatch` | Die Codec-Funktionen, zur Laufzeit nach `DialectId` gewählt |
-| `wire` | serde-Bausteine für verlustfreie Wire-Structs ([Wire-Structs](#wire-structs)) |
-| `sse` | Parser und Writer für Event-Streams ([Server-sent Events](#server-sent-events)) |
+| `wire` | serde-Bausteine für verlustfreie Wire-Structs ([Wire-Structs](codec-design.md#wire-structs)) |
+| `sse` | Parser und Writer für Event-Streams ([Server-sent Events](codec-design.md#server-sent-events)) |
 | `cross` | Die Regeln für Daten, die den Dialekt wechseln, und die Extras-Allowlist |
 | `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](reasoning.md#reasoning-über-runden-hinweg)) |
 | `keepalive` | Frames, die laufende Streams nicht verstummen lassen ([Keepalives](cross-format.md#keepalives)) |
-| `models` | Hilfsfunktionen für Modelllisten ([Modelllisten](#modelllisten)) |
+| `models` | Hilfsfunktionen für Modelllisten ([Modelllisten](codec-design.md#modelllisten)) |
 | `testing` | Vergleich von JSON und SSE, auch für Crates, die die Codecs nutzen |
 
 ## Entwurfsprinzipien
@@ -97,7 +98,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 - **Nachrichten aus geordneten Content-Blöcken.** Die Reihenfolge der Blöcke bleibt von Anfang bis Ende erhalten.
 - **Roh, wo es auf Bytes ankommt.** Tool-Argumente, JSON-Schemas, unbekannte Blöcke und Zitate sind `RawJson`; opakes Reasoning wird so aufbewahrt, wie es ankam, und mit seinem `Origin` versehen.
 - **Semantisch oder Hinweis.** Jedes Feld ist entweder semantisch (ein Ziel muss es einhalten oder mit `Unsupported` ablehnen) oder ein Hinweis (es darf ignoriert werden). [Feldklassen](#feldklassen) listet sie auf.
-- **Gebundene Extras.** Was KPP nicht modelliert, wird in `Extras` aufbewahrt, mit dem Dialekt versehen, aus dem es kam, und nur in diesen Dialekt zurückgeschrieben. `fields` sind semantisch: Ein anderer Dialekt lehnt sie ab, außer sie stehen auf der [Allowlist](cross-format.md#extras). `form` ist Darstellung (ein String oder ein Array, `null` oder fehlend, wie Chunks gruppiert waren), und andere Dialekte ignorieren es. Unbekannte Schlüssel verschachtelter Objekte verwenden Schlüsselpfade mit Punkten, etwa `function.x`, daher lässt sich ein Schlüssel, der selbst einen `.` enthält, nicht mitführen ([Wire-Structs](#wire-structs)).
+- **Gebundene Extras.** Was KPP nicht modelliert, wird in `Extras` aufbewahrt, mit dem Dialekt versehen, aus dem es kam, und nur in diesen Dialekt zurückgeschrieben. `fields` sind semantisch: Ein anderer Dialekt lehnt sie ab, außer sie stehen auf der [Allowlist](cross-format.md#extras). `form` ist Darstellung (ein String oder ein Array, `null` oder fehlend, wie Chunks gruppiert waren), und andere Dialekte ignorieren es. Unbekannte Schlüssel verschachtelter Objekte verwenden Schlüsselpfade mit Punkten, etwa `function.x`, daher lässt sich ein Schlüssel, der selbst einen `.` enthält, nicht mitführen ([Wire-Structs](codec-design.md#wire-structs)).
 - **Ablehnen vor dem Senden.** `check()` gibt `Unsupported` zurück und nennt die Funktion, die ein Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird.
 - **Nichts fällt stillschweigend weg.** Jedes Feld und jeder Block einer eingehenden Payload landet an genau einer Stelle: in einem typisierten KPP-Feld, einem dialektgebundenen `Extras`-Eintrag, einem `Unknown`-Item oder einem `KppError` der Art `Unsupported`. Ein Match-Arm, der Daten verwirft, ist ein Bug.
 - **Additive öffentliche API.** Öffentliche Enums und erweiterbare Structs sind `#[non_exhaustive]`; Enum-Varianten umschließen `#[non_exhaustive]`-Structs mit Konstruktoren (`TextBlock::new`, `Block::text`, …), sodass Felder hinzukommen können, ohne Code zu brechen, der Werte baut oder matcht. Der `Codec`-Trait ist versiegelt.
@@ -197,115 +198,6 @@ Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen ka
 4. Aktualisieren Sie die Mapping-Seite des Dialekts in allen drei Sprachen, im selben Pull Request.
 
 Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen Sie das Feld, das das Ziel nicht unterstützt, und sagen Sie, was zu tun ist.
-
-## Typen
-
-Die Typen sind davon geprägt, was die Codecs brauchen, um verlustfrei zu bleiben:
-
-- **`Extras`** hat drei Felder: `origin`, `fields` (rohes JSON, Byte für Byte) und `form` (Darstellungsmarkierungen). Round Trips im selben Dialekt müssen Schreibweisen reproduzieren, die KPP wegnormalisiert, etwa `content` als String oder Array, `null` oder fehlend, `1` oder `1.0`, Chunk-Grenzen und die Felder `id` und `retry` eines SSE-Frames; diese Markierungen tragen keine Bedeutung und bringen einen anderen Dialekt daher nie dazu, eine Anfrage abzulehnen, wie es unbekannte `fields` tun. Zwei leere `Extras` sind gleich, unabhängig von ihrem Ursprung.
-- **Weitergegebene Header** (`anthropic-beta`, `anthropic-version`, `openai-beta`) werden in `Extras::fields` unter Schlüsseln gespeichert, die mit `header:` beginnen; wiederholte Header werden mit `", "` verbunden. Header sind wie jedes andere Extra an ihren Dialekt gebunden. Ein Body-Schlüssel, der mit `header:` beginnt, sähe wie ein weitergegebener Header aus, daher lehnen ihn die Codecs ab, die Bodies über `wire::Ext` lesen, also Anthropic Messages, OpenAI Chat Completions und OpenAI Embeddings ([Wire-Structs](#wire-structs)); OpenAI Responses behält solche Schlüssel im Body, und nur echte Header werden weitergegeben.
-- **Rohe Items.** `Box<RawValue>` ist in `RawJson` verpackt, das Byte für Byte vergleicht. Unbekannte Blöcke, Tools, Tool-Auswahlen, Stream-Events und Deltas sind `RawItem { origin, raw }`; Zitate sind `Citation { origin, raw }`, weil Zitatformate über Dialekte hinweg fast nichts gemeinsam haben.
-- **Antworten.** `Reply` ist `Generate`, `CountTokens` oder `Embed`, und `RequestKind` benennt dieselben drei Arten.
-- **Tools.** `ToolDef` ist ein Funktions-Tool oder ein unbekanntes Tool, das vollständig aufbewahrt wird; `ToolChoice` ist `Auto`, `None`, `Required`, ein benanntes Tool oder unbekannt. Die `parameters` eines Funktions-Tools sind optional, wie OpenAI es erlaubt.
-- **Einstellungen für Ausgabe und Reasoning.** `OutputSpec::JsonSchema` hat einen optionalen Namen (Anthropic-Schemas haben keinen) und eine Beschreibung. `ReasoningConfig` enthält Modus, Aufwand, Budget, Zusammenfassung und die Angabe, ob verschlüsseltes Reasoning mitgeliefert werden soll; seine Enums bewahren unbekannte Werte in `Other(String)` auf, weil Anbieter oft neue Aufwandsstufen einführen.
-- **Reasoning-Blöcke** enthalten Ursprung, Zusammenfassungen, Textteile und opake Teile, weil ein OpenAI-Reasoning-Item sowohl eine ID als auch verschlüsselten Inhalt trägt und mehrere Textteile haben kann, und weil ein Block, der nur eine Zusammenfassung enthält, trotzdem seinen Ursprung braucht, um zu entscheiden, wohin er zurückgespielt werden darf.
-- **Nutzung.** `Usage::input_tokens` schließt Cache-Lese- und -Schreibvorgänge aus, die eigene Felder sind ([Nutzung](cross-format.md#nutzung)); `Usage::raw` bewahrt das Nutzungsobjekt des Anbieters mit seinem Ursprung auf, sodass ein Encoder es nur für seinen eigenen Dialekt darüberlegt. Embedding-Vektoren sind `f64`, damit die Werte des Anbieters unverändert wieder ausgegeben werden.
-- **Fehler.** `ErrorKind::Billing` gibt es für Anthropics `billing_error` (402) und OpenAIs `insufficient_quota`, die keine andere Art treffend beschreibt.
-
-## Streams
-
-Ein KPP-Stream ist `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, wobei `Error` an jeder Stelle möglich ist und `Extra` Dialekt-Events trägt, die KPP nicht modelliert.
-
-```mermaid
-stateDiagram-v2
-  accTitle: Die Reihenfolge der Events eines KPP-Streams
-  accDescr: Ein Stream beginnt mit ResponseStart. Dann folgen beliebig viele Blöcke, jeder aus BlockStart, beliebig vielen BlockDelta und BlockStop, dann beliebig viele ResponseDelta, und ResponseStop beendet ihn. Error ist an jeder Stelle möglich.
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: beliebig viele
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: nächster Block
-  BlockStop --> ResponseDelta: beliebig viele
-  ResponseStart --> ResponseDelta: keine Blöcke
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
-```
-
-- **Blockindizes** gehören KPP selbst: 0, 1, 2, … in der Reihenfolge, in der Blöcke beginnen. Blöcke dürfen sich überlappen (OpenAI streamt parallele Tool-Aufrufe so), daher nennt jedes Event seinen Block.
-- **Jedes Lifecycle-Event trägt `Extras`**, sodass eine Wiedergabe im selben Dialekt die ursprünglichen Events exakt reproduziert, einschließlich Feldern einzelner Events wie OpenAIs `obfuscation`.
-- **Fehler werden im Stream gemeldet:** erst die bis dahin dekodierten Events, dann ein abschließendes `StreamEvent::Error`, sodass nichts verloren geht, was zuvor im selben Chunk dekodiert wurde.
-- **Die Reihenfolge ändert sich nie, aber Events können zurückgehalten werden.** OpenAI-kompatible Anbieter senden die `id` und das `model` der Antwort oder die `id` und den `name` eines Tool-Aufrufs teils erst in einem späteren Chunk. Der Decoder für OpenAI Chat Completions hält dann das `ResponseStart` und die Chunks ohne Inhalt zurück, bis ein Chunk diese Werte oder Inhalt trägt. Das `BlockStart` eines Tool-Aufrufs hält er mit jedem Event danach zurück, bis dessen `id` und `name` beide angekommen sind, der Block endet oder der Stream endet oder abbricht ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)).
-
-### Stream-Encoder
-
-Jeder Stream-Encoder kann außerdem einen Keepalive-Frame schreiben; wann, steht unter [Keepalives](cross-format.md#keepalives).
-
-**Anthropic Messages.** Anthropic streamt einen Content-Block nach dem anderen, während sich in KPP-Streams aus anderen Dialekten Blöcke überlappen können: OpenAI streamt parallele Tool-Aufrufe so und schließt jeden Block erst am Ende. Der Encoder ist ein expliziter Zustandsautomat:
-
-- der erste Block, der beginnt, ist aktiv und wird geschrieben, sobald er ankommt;
-- Blöcke, die beginnen, während ein anderer aktiv ist, warten und werden in Startreihenfolge gepuffert;
-- stoppt der aktive Block, wird der nächste wartende geschrieben, mit seinem Start, seinen gepufferten Deltas und seinem Stopp, falls dieser schon kam;
-- ein `ResponseDelta` oder `ResponseStop` schließt zuerst jeden offenen Block, und mehrere `ResponseDelta`s werden zu einem `message_delta` zusammengeführt, weil die SDKs `stop_reason` mit jedem einzelnen überschreiben.
-
-Anthropic-Indizes werden in der Reihenfolge vergeben, in der Blöcke geschrieben werden. Ein Stream, der nicht mit `ResponseStart` beginnt, bekommt ein `message_start` mit leerer ID.
-
-**OpenAI Chat Completions.** Aus Chat dekodierte Events werden mithilfe der Chunk-Form-Markierungen wieder zu ihren ursprünglichen Chunks gruppiert, sodass eine Wiedergabe im selben Dialekt jeden Frame reproduziert; weichen die Envelope-Schlüssel eines Chunks (`id`, `object`, `created`, `model`, `service_tier`, `system_fingerprint`) von dem aus `ResponseStart` neu gebauten Envelope ab, hält er die Unterschiede als `env` und `env_absent` fest. Events aus anderen Dialekten werden zu je einem Chunk:
-
-- der Stream beginnt mit einem Rollen-Chunk, sobald die Antwort startet (`delta: {"role": "assistant", "content": "", "refusal": null}`, OpenAIs eigener erster Chunk), sodass die App vom Stream hört, während das Modell denkt;
-- ein Tool-Aufruf beginnt mit einem Header-Chunk, gefolgt von Argument-Chunks;
-- die Nutzung wird nur gesendet, wenn die App danach gefragt hat (`stream_options.include_usage`), als letzter Chunk mit `choices: []`;
-- `ResponseStop` schreibt `data: [DONE]`; ein `Error` schreibt `data: {"error": …}` und beendet den Stream ohne `[DONE]`.
-
-**OpenAI Responses.** Die Stream-Engine erzeugt für jedes KPP-Event die SSE-Events in der Reihenfolge, in der OpenAI sie sendet, einschließlich aller redundanten (`.done`-Events, Part-Events, Item-Events, das abschließende Response-Objekt mit allen Ausgabe-Items), und vergibt `sequence_number`s. Der Decoder lässt dieselbe Engine als Schatten mitlaufen:
-
-- jedes SSE-Event, das die Engine an dieser Stelle erzeugen würde, wird dem KPP-Event zugeordnet, und Abweichungen werden als Overrides mit Geltungsbereich festgehalten;
-- zugeordnete Events, die das Original nicht hatte, werden in der Form-Markierung `skip` vermerkt;
-- Events, die dort ankommen, wo die Engine keine erzeugen würde, werden als `Extra` weitergereicht.
-
-Ein Stream im selben Dialekt wird exakt reproduziert, und ein Stream aus einem anderen Dialekt wird zu einem vollständigen, gültigen Responses-Stream.
-
-## Wire-Structs
-
-Wire-Structs müssen jedes Feld behalten, auch solche, die das Struct nicht deklariert, und rohe Payloads (`RawValue`) Byte für Byte bewahren. `#[serde(flatten)]` kann nicht beides: Flattening puffert die Eingabe, und `RawValue` lässt sich nicht aus einem Puffer lesen, sodass Tool-Argumente und Schemas ihre Bytes verlören. `wire::Ext<T>` erledigt dieselbe Aufgabe ohne Puffern:
-
-- Jeder Schlüssel des JSON-Objekts, den `T` nicht deklariert, wird roh in `Ext::extra` aufbewahrt und wird zu KPP-`Extras::fields`, außer sein Name beginnt mit `header:` oder enthält einen `.`: Ein solcher Schlüssel würde mit einem weitergegebenen Header oder einem verschachtelten Schlüsselpfad verwechselt, daher wird das Objekt abgelehnt (`` the field `…` has a name Kaeso cannot carry; remove it ``), in einer Anfrage als `InvalidRequest` und in der Antwort eines Anbieters als `ProviderError`.
-- Jeder deklarierte Schlüssel, dessen empfangene Schreibweise `T` nicht reproduzieren kann (`"x": null` für eine `Option`, die bei `None` übersprungen wird, `"flag": false` für einen `bool`, der bei false übersprungen wird, `"list": []` für einen `Vec`, der übersprungen wird, wenn er leer ist), wird roh in `Ext::verbatim` aufbewahrt und wird zu KPP-`Extras::form`.
-
-Beim Serialisieren schreibt ein `Ext<T>` zuerst `T`, dann die verbatim-Schlüssel, die `T` nicht geschrieben hat, dann die zusätzlichen Schlüssel. Ein Round Trip aus Dekodieren und Kodieren ist daher exakt, und ein Codec, der ein typisiertes Feld ändert, etwa beim Übersetzen aus einem anderen Dialekt, setzt sich immer gegen eine veraltete verbatim-Schreibweise durch. `wire::Maybe<T>` unterscheidet fehlend von `null`, wo der Unterschied für den Codec sichtbar sein muss.
-
-Wire-Structs, die in `Ext` verwendet werden, folgen diesen Regeln:
-
-- kein `#[serde(flatten)]`, kein `alias`, kein `deny_unknown_fields`, keine untagged oder intern getaggten Enums;
-- getaggte Unions werden mit `wire::type_tag` nach `"type"` unterschieden;
-- JSON-Objekte mit doppelten Schlüsseln werden abgelehnt;
-- ein Feld wird nur deklariert, wenn der Codec es auf ein typisiertes KPP-Feld abbildet; alles andere bleibt absichtlich undeklariert und reist als Extras mit.
-
-Der Codec für OpenAI Responses liest typisierte Werte mit einfachen serde-Structs und schreibt mit einem geordneten JSON-Baum (`openai_responses::node::Node`), der rohes JSON Byte für Byte einbetten kann; `serde_json::Value` sortiert Objektschlüssel und würde rohe Payloads umformatieren. [Wie genaue Schreibweisen erhalten bleiben](openai-responses.md#wie-genaue-schreibweisen-erhalten-bleiben) beschreibt, wie er sie reproduziert.
-
-## Server-sent Events
-
-`sse::SseParser` folgt dem [WHATWG-Algorithmus für Event-Streams](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation) bei Zeilen, Kommentaren, mehrzeiligen Daten, `id` (ein Wert mit NUL ist keine ID) und `retry` (nur ASCII-Ziffern, die in einen `u64` passen), mit bewussten Abweichungen, damit nichts verloren geht:
-
-- Ein Frame ganz ohne `data:`-Zeile, etwa `retry: 3000` oder `event: ping` allein, ist laut Spezifikation kein Event; der Parser gibt ihn trotzdem zurück, mit `has_data: false` und leerem `data`, und der Writer schreibt ihn ohne `data:`-Zeile zurück.
-- Kommentare und unbekannte Felder werden gemeldet statt ignoriert, und ein Wert für `id` oder `retry`, den die Spezifikation ignoriert, wird als unbekanntes Feld aufbewahrt (`SseEvent::other`).
-- Ein letzter Frame, den keine Leerzeile abschließt, wird trotzdem gemeldet.
-- Ein Stream, der mitten in einer Zeile endet, wird als `SseError::Truncated` gemeldet statt verworfen.
-
-Jeder Stream-Decoder reicht einen Frame ohne Daten als `Extra` weiter, dessen rohes JSON keinen Schlüssel `data` hat, und jeder Encoder schreibt ihn ohne `data:`-Zeile zurück; in OpenAI Chat Completions ist ein Frame `event: error` ohne Daten ein solches `Extra`, kein Fehler.
-
-Die Felder `id`, `retry` und die unbekannten Felder eines Frames, der zu KPP-Events dekodiert wird, werden als `{"id", "retry", "other": [[name, value], …]}` festgehalten und zurückgeschrieben: in der Form-Markierung `sse` in Anthropic Messages, in `sse` innerhalb der Markierung `chunk` in OpenAI Chat Completions und im Form-Override mit Geltungsbereich `~sse` in OpenAI Responses. Ein Frame, der als `Extra` weitergereicht wird, behält sie im `Extra`.
-
-Bytes können in beliebigen Chunks eingespeist werden: Zeilen dürfen an jeder Stelle getrennt sein, auch zwischen `\r` und `\n` eines CRLF-Zeilenendes. Ein Frame, der größer ist als das Limit des Parsers (`sse::DEFAULT_MAX_FRAME_BYTES`, 16 MiB), ist ein Fehler; das begrenzt den Speicher, den jeder Stream belegen kann.
-
-## Modelllisten
-
-Modelllisten (`GET /v1/models`, `GET /v1/models/{id}`) gehören zu KPP, mit `ModelInfo`, `ModelLifecycle`, `ModelList` und `ModelsQuery`, sodass das Gateway die Wire-Formen nie selbst kennen muss.
-
-- **Ingress.** Jeder Dialekt nutzt denselben Pfad, daher verrät der Pfad den Dialekt nicht: `dispatch::models_dialect` wählt ihn anhand der Header (`anthropic-version` bedeutet Anthropic, alles andere OpenAI). `ModelList::page` wendet `before_id`, `after_id`, `limit` und den Lifecycle-Filter für jeden Dialekt gleich an.
-- **Egress.** Um zu erfahren, ob ein Anbieter einem Schlüssel ein Modell anbietet, sendet das Gateway das `GET /v1/models/{id}`, das `dispatch::encode_model_request` baut, mit der ID als einem prozentkodierten Pfadsegment, und liest die Antwort mit `decode_model`; eine 404 wird zu `NotFound`. Weil eine 404 dort auch heißen kann, dass der Anbieter diesen Endpunkt nicht hat, liest das Gateway danach die Liste des Anbieters: `dispatch::encode_models_request` baut `GET /v1/models` aus einer `ModelsQuery` (nur das Paging und die Filter, die der Dialekt sendet; alles andere ist `Unsupported`), und `decode_models` liest jede Seite.
-- **Query-Strings** werden an `&` und `=` getrennt und als `application/x-www-form-urlencoded` percent-dekodiert (`+` ist ein Leerzeichen). Unbekannte Parameter werden zu Extras unter `query.<name>`.
-- **Datumsangaben.** KPP speichert Unix-Sekunden. RFC-3339-Zeitangaben (Anthropic) und reine Datumsangaben (OpenAI `shutdown_date`) werden mit dem proleptischen gregorianischen Kalender umgerechnet, ohne Datumsbibliothek. Sekundenbruchteile und Zeitzonenversätze überstehen die Umrechnung nicht; der genau empfangene Text wird in der Form-Markierung `spelling` aufbewahrt, wann immer erneutes Kodieren ihn nicht reproduzieren würde. Ein Datum nach dem Jahr 9999 lässt sich nicht in RFC 3339 schreiben: Anthropics `created_at` bekommt dann den dokumentierten unbekannten Wert (die Epoche), andere Datumsangaben `null`.
-- **Fehlende oder `null`-Felder.** Ein Encoder füllt ein Feld, für das KPP keinen Wert hat, mit dem dokumentierten Standardwert; hat der empfangene Body dieses Feld anders geschrieben, vermerkt das die Form-Markierung `none`.
 
 ## Tests
 

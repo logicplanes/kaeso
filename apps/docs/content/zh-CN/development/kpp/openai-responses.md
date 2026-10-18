@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: OpenAI Responses 格式的每个字段如何映射到 KPP，又如何映射回来。
-order: 5
+order: 6
 ---
 
 - **编解码器：**`kaeso_codecs::openai_responses::OpenAiResponses`（`crates/kaeso-codecs/src/openai_responses/`）

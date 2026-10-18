@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: How every field of the OpenAI Responses format maps to KPP and back.
-order: 5
+order: 6
 ---
 
 - **Codec:** `kaeso_codecs::openai_responses::OpenAiResponses` (`crates/kaeso-codecs/src/openai_responses/`)

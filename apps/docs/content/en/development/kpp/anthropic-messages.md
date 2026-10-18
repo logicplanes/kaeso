@@ -1,7 +1,7 @@
 ---
 title: Anthropic Messages
 description: How every field of the Anthropic Messages format maps to KPP and back.
-order: 3
+order: 4
 ---
 
 - **Codec:** `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`)
@@ -20,7 +20,7 @@ order: 3
 
 **Numbers.** Typed numeric fields are read as `u32` or `u64`, and `temperature` and `top_p` as JSON numbers that KPP holds as `f64`. A value outside their range is never changed: it fails to decode, as `InvalidRequest` in a request (`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``) and `ProviderError` in a provider reply.
 
-**Keys Kaeso can't carry.** Every object Kaeso reads field by field keeps its unknown keys as fields, except a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path, so the object is refused ([wire structs](index.md#wire-structs)). In a request that is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``); in a reply, a stream or a model listing it is `ProviderError`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
+**Keys Kaeso can't carry.** Every object Kaeso reads field by field keeps its unknown keys as fields, except a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path, so the object is refused ([wire structs](codec-design.md#wire-structs)). In a request that is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``); in a reply, a stream or a model listing it is `ProviderError`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
 
 - **Read field by field:** the body, messages, `metadata`, `output_config`, `thinking`, `tool_choice`, function tools, the known block types of the [content blocks](#content-blocks) table with their `source`, `cache_control` and `citations` objects, replies, token counts, stream events and their deltas, model info and model lists.
 - **Kept whole, not checked:** unknown blocks and tools, `input_schema`, tool input, citations, `usage` and `output_config.format`.
@@ -196,7 +196,7 @@ Schema `MessageStreamEvent`.
 | `ping`, unknown events | `StreamEvent::Extra { event, data }` | Same dialect only. Data that is not JSON is kept as text. The frame's `id`, `retry` and other SSE fields stay in the extra. |
 | a frame without a `data:` line (such as `retry: 3000` or `event: ping` alone), whatever its event name | `StreamEvent::Extra` without a `data` key | Not an event under the SSE specification, so it is never an error or a lifecycle event. Written back without a `data:` line. |
 | SSE comments | `StreamEvent::Extra { comment }` | |
-| an `event:` name that differs from the data's `type`; `id:`, `retry:` and other SSE fields | form `event` / `sse` | `sse` is `{"id", "retry", "other": [[name, value], …]}` and is written back on the same frame. An `id` that contains NUL and a `retry` that is not ASCII digits fitting a `u64` are not an `id` or a `retry` under the specification; they are kept with the other fields ([server-sent events](index.md#server-sent-events)). |
+| an `event:` name that differs from the data's `type`; `id:`, `retry:` and other SSE fields | form `event` / `sse` | `sse` is `{"id", "retry", "other": [[name, value], …]}` and is written back on the same frame. An `id` that contains NUL and a `retry` that is not ASCII digits fitting a `u64` are not an `id` or a `retry` under the specification; they are kept with the other fields ([server-sent events](codec-design.md#server-sent-events)). |
 | order violations: block or message events before `message_start`, a second `message_start`, lifecycle events after `message_stop`, `message_stop` with an open block, a block index started twice, a delta or stop for a block that never started or already stopped, a known delta type on the wrong kind of block (such as `text_delta` on `tool_use`; any delta on an unknown block is fine), a known event whose data has no `type` | a final `StreamEvent::Error` (`ProviderError`); earlier events are kept | `ping`, comments and unknown events may follow `message_stop`. |
 | a stream that ends without `message_stop` or inside a block; a known event whose data is not JSON | a final `StreamEvent::Error` (`ProviderError`) | Gaps in Anthropic indexes are not errors: blocks get KPP indexes in start order (form `index`). |
 
@@ -238,7 +238,7 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 
 ## Models
 
-`GET /v1/models` and `GET /v1/models/{model_id}`. Code: `anthropic_messages/models.rs`; fixtures: `crates/kaeso-codecs/fixtures/anthropic_messages/models/`. Sources: the [list models](https://platform.claude.com/docs/en/api/models/list.md) and [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) pages, the SDK's `types/model_info.py`, `model_list_params.py`, `model_capabilities.py` and `model_line.py`, and the spec's `ModelInfo` and `ListResponse_ModelInfo_`. The spec's shapes have no `lifecycle`, `deprecated_at`, `retires_at` or `line`, and no `lifecycle` query parameter; the documentation and the SDK win, and every field the encoder would otherwise fill with a default is decoded as optional with its absence kept (form `none`), so both shapes round-trip. An app's request is Anthropic when it carries `anthropic-version` (`dispatch::models_dialect`, see [model listings](index.md#model-listings)).
+`GET /v1/models` and `GET /v1/models/{model_id}`. Code: `anthropic_messages/models.rs`; fixtures: `crates/kaeso-codecs/fixtures/anthropic_messages/models/`. Sources: the [list models](https://platform.claude.com/docs/en/api/models/list.md) and [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) pages, the SDK's `types/model_info.py`, `model_list_params.py`, `model_capabilities.py` and `model_line.py`, and the spec's `ModelInfo` and `ListResponse_ModelInfo_`. The spec's shapes have no `lifecycle`, `deprecated_at`, `retires_at` or `line`, and no `lifecycle` query parameter; the documentation and the SDK win, and every field the encoder would otherwise fill with a default is decoded as optional with its absence kept (form `none`), so both shapes round-trip. An app's request is Anthropic when it carries `anthropic-version` (`dispatch::models_dialect`, see [model listings](codec-design.md#model-listings)).
 
 ### Query parameters
 

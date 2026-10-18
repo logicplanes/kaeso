@@ -1,7 +1,7 @@
 ---
 title: Anthropic Messages
 description: Anthropic Messages 格式的每个字段如何映射到 KPP 并映射回来。
-order: 3
+order: 4
 ---
 
 - **编解码器：**`kaeso_codecs::anthropic_messages::AnthropicMessages`（`crates/kaeso-codecs/src/anthropic_messages/`）
@@ -20,7 +20,7 @@ order: 3
 
 **数字。** 类型化的数值字段按 `u32` 或 `u64` 读取，`temperature` 和 `top_p` 按 JSON 数字读取，KPP 以 `f64` 保存它们。超出其范围的值不会被修改，而是解码失败：在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``），在服务商回复中为 `ProviderError`。
 
-**Kaeso 无法承载的键。** Kaeso 逐字段读取的每个对象都会把未知键保存为 fields，但以 `header:` 开头或包含 `.` 的键除外：这样的键会被误认为转发的请求头或嵌套的键路径，因此整个对象会被拒绝（[Wire 结构体](index.md#wire-结构体)）。在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
+**Kaeso 无法承载的键。** Kaeso 逐字段读取的每个对象都会把未知键保存为 fields，但以 `header:` 开头或包含 `.` 的键除外：这样的键会被误认为转发的请求头或嵌套的键路径，因此整个对象会被拒绝（[Wire 结构体](codec-design.md#wire-结构体)）。在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
 
 - **逐字段读取**：请求体、消息、`metadata`、`output_config`、`thinking`、`tool_choice`、函数工具、[内容块](#内容块)表格中的已知块类型及其 `source`、`cache_control` 和 `citations` 对象、回复、Token 计数、流事件及其增量、模型信息和模型列表。
 - **完整保存，不做检查**：未知的块和工具、`input_schema`、工具输入、引用、`usage` 和 `output_config.format`。
@@ -196,7 +196,7 @@ Schema `MessageStreamEvent`。
 | `ping`、未知事件 | `StreamEvent::Extra { event, data }` | 仅限同一方言。不是 JSON 的数据按文本保留。帧的 `id`、`retry` 和其他 SSE 字段保留在该 extra 中。 |
 | 没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`），无论事件名称是什么 | 没有 `data` 键的 `StreamEvent::Extra` | 按 SSE 规范它不是事件，因此永远不会成为错误或生命周期事件。写回时不带 `data:` 行。 |
 | SSE 注释 | `StreamEvent::Extra { comment }` | |
-| 与数据中 `type` 不同的 `event:` 名称；`id:`、`retry:` 及其他 SSE 字段 | form `event` / `sse` | `sse` 为 `{"id", "retry", "other": [[name, value], …]}`，并写回到同一帧上。包含 NUL 的 `id`，以及不是可放入 `u64` 的 ASCII 数字的 `retry`，按规范不算 `id` 或 `retry`；它们与其他字段一起保留（[服务器发送事件](index.md#服务器发送事件)）。 |
+| 与数据中 `type` 不同的 `event:` 名称；`id:`、`retry:` 及其他 SSE 字段 | form `event` / `sse` | `sse` 为 `{"id", "retry", "other": [[name, value], …]}`，并写回到同一帧上。包含 NUL 的 `id`，以及不是可放入 `u64` 的 ASCII 数字的 `retry`，按规范不算 `id` 或 `retry`；它们与其他字段一起保留（[服务器发送事件](codec-design.md#服务器发送事件)）。 |
 | 顺序错误：在 `message_start` 之前出现块或消息事件、第二个 `message_start`、`message_stop` 之后的生命周期事件、块未关闭时的 `message_stop`、同一块索引开始两次、针对从未开始或已经结束的块的增量或停止事件、出现在错误类型块上的已知增量类型（例如 `tool_use` 上的 `text_delta`；未知块上的任何增量都可以）、数据中没有 `type` 的已知事件 | 最终的 `StreamEvent::Error`（`ProviderError`）；之前的事件会保留 | `ping`、注释和未知事件可以出现在 `message_stop` 之后。 |
 | 没有 `message_stop` 或在块中间结束的流；数据不是 JSON 的已知事件 | 最终的 `StreamEvent::Error`（`ProviderError`） | Anthropic 索引中的空缺不算错误：块按开始顺序获得 KPP 索引（form `index`）。 |
 
@@ -238,7 +238,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 ## 模型
 
-`GET /v1/models` 和 `GET /v1/models/{model_id}`。代码：`anthropic_messages/models.rs`；fixture：`crates/kaeso-codecs/fixtures/anthropic_messages/models/`。来源：[list models](https://platform.claude.com/docs/en/api/models/list.md) 和 [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) 页面，SDK 的 `types/model_info.py`、`model_list_params.py`、`model_capabilities.py` 和 `model_line.py`，以及规范中的 `ModelInfo` 和 `ListResponse_ModelInfo_`。规范中的结构没有 `lifecycle`、`deprecated_at`、`retires_at` 和 `line`，也没有 `lifecycle` 查询参数；以文档和 SDK 为准，编码器原本会填入默认值的每个字段都按可选字段解码，并记录其缺失（form `none`），因此两种结构都能往返。应用的请求带有 `anthropic-version` 时被视为 Anthropic 请求（`dispatch::models_dialect`，见[模型列表](index.md#模型列表)）。
+`GET /v1/models` 和 `GET /v1/models/{model_id}`。代码：`anthropic_messages/models.rs`；fixture：`crates/kaeso-codecs/fixtures/anthropic_messages/models/`。来源：[list models](https://platform.claude.com/docs/en/api/models/list.md) 和 [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) 页面，SDK 的 `types/model_info.py`、`model_list_params.py`、`model_capabilities.py` 和 `model_line.py`，以及规范中的 `ModelInfo` 和 `ListResponse_ModelInfo_`。规范中的结构没有 `lifecycle`、`deprecated_at`、`retires_at` 和 `line`，也没有 `lifecycle` 查询参数；以文档和 SDK 为准，编码器原本会填入默认值的每个字段都按可选字段解码，并记录其缺失（form `none`），因此两种结构都能往返。应用的请求带有 `anthropic-version` 时被视为 Anthropic 请求（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）。
 
 ### 查询参数
 

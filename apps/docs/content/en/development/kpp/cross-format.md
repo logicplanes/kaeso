@@ -1,7 +1,7 @@
 ---
 title: Crossing formats
 description: The rules the codecs follow when a request or reply moves from one API format to another, and the reasons for them.
-order: 1
+order: 2
 ---
 
 An app may speak one API format while the provider speaks another. These are the rules the codecs follow then, with the reason for each. A request that stays in its own format is reproduced exactly, and none of these rules apply.
