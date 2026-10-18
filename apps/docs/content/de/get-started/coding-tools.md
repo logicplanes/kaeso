@@ -1,16 +1,18 @@
 ---
 title: Coding-Tools
-description: Kaeso aus Claude Code, Codex und anderen Tools nutzen, die eine API von OpenAI oder Anthropic sprechen.
+description: Claude Code, Codex und andere Coding-Tools auf Ihre Installation ausrichten.
 order: 3
 ---
 
-Coding-Tools rufen dieselben APIs auf wie jede App; eine Basis-URL und ein API-Schlüssel genügen. Ihre Anfragen erscheinen dann in den Anfrageprotokollen und zählen gegen die Limits und Budgets des Schlüssels.
+Coding-Tools rufen dieselben APIs auf wie jede App, daher brauchen sie nur eine Basis-URL und einen API-Schlüssel. Ihre Anfragen erscheinen dann in den Anfrageprotokollen und zählen gegen die Limits und Budgets des Schlüssels.
 
-Jeder Person und jedem Tool einen eigenen Schlüssel geben, damit Nutzung und Limits getrennt bleiben. Im Katalog des Projekts, zu dem der Schlüssel gehört, muss jedes Modell stehen, das das Tool anfragt.
+## Einen Schlüssel pro Tool erstellen
 
-## Claude Code
+Geben Sie jeder Person und jedem Tool einen eigenen [API-Schlüssel](../console/api-keys.md), damit Nutzung und Limits getrennt bleiben. Im Katalog des Projekts, zu dem der Schlüssel gehört, muss jedes Modell stehen, das das Tool anfragt.
 
-Claude Code spricht Anthropic Messages. In `~/.claude/settings.json` auf die eigene Installation ausrichten:
+## Claude Code einrichten
+
+Claude Code spricht Anthropic Messages. Richten Sie es in `~/.claude/settings.json` auf Ihre Installation aus:
 
 ```json
 {
@@ -24,18 +26,18 @@ Claude Code spricht Anthropic Messages. In `~/.claude/settings.json` auf die eig
 }
 ```
 
-- `ANTHROPIC_AUTH_TOKEN` sendet den Schlüssel als Bearer-Token, das Kaeso annimmt, und lässt Claude Code seine eigene Anmeldung überspringen.
-- Die drei Modellvariablen legen fest, welches Modell die Auswahl `opus`, `sonnet` und `haiku` aufruft. Claude Code nutzt das Haiku-Modell auch für Hintergrundaufgaben, daher müssen alle drei Modelle aus dem Katalog des Projekts nennen.
-- Eine Modellvariable kann auch einen Alias des Projekts oder ein OpenAI-Modell nennen; Kaeso übersetzt die Anfragen.
+- `ANTHROPIC_AUTH_TOKEN` sendet den Schlüssel als Bearer-Token, das Kaeso annimmt. Claude Code überspringt dann seine eigene Anmeldung.
+- Die drei Modellvariablen legen fest, was die Auswahl `opus`, `sonnet` und `haiku` aufruft. Claude Code nutzt das Haiku-Modell auch für Hintergrundaufgaben, daher müssen alle drei im Katalog des Projekts stehen.
+- Eine Modellvariable kann auch einen Alias des Projekts oder ein OpenAI-Modell nennen. Kaeso übersetzt die Anfragen.
 
-Den Schlüssel in den Benutzereinstellungen oder im Shell-Profil ablegen, nie in der Einstellungsdatei eines Projekts, die committet wird.
+Mit einem OpenAI-Modell dahinter sendet Claude Code mitunter Vorabversions-Felder von Anthropic, die Kaeso nicht übersetzen kann. Kaeso antwortet dann mit einem Fehler, der sie nennt. Fügen Sie `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"` zu `env` hinzu, um sie wegzulassen.
 
-> [!TIP]
-> Mit einem OpenAI-Modell dahinter sendet Claude Code mitunter Vorabversions-Felder von Anthropic, die Kaeso nicht übersetzen kann; Kaeso lehnt sie mit einem Fehler ab, der sie nennt. `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"` in `env` lässt sie weg.
+> [!WARNING]
+> Legen Sie den Schlüssel in Ihren Benutzereinstellungen oder Ihrem Shell-Profil ab. Die Einstellungsdatei eines Projekts wird committet, und jeder, der das Repository lesen kann, könnte den Schlüssel nutzen.
 
-## Codex
+## Codex einrichten
 
-Codex spricht OpenAI Responses. Kaeso in `~/.codex/config.toml` als Modellanbieter eintragen:
+Codex spricht OpenAI Responses. Tragen Sie Kaeso in `~/.codex/config.toml` als Modellanbieter ein:
 
 ```toml
 model = "gpt-5-mini"
@@ -48,25 +50,27 @@ env_key = "KAESO_API_KEY"
 wire_api = "responses"
 ```
 
-Codex liest den Schlüssel aus der Umgebung:
+`model` kann jedes Modell im Katalog des Projekts nennen, auch ein Claude-Modell oder einen Alias. Codex liest den Schlüssel aus der Umgebung. Setzen Sie ihn also, bevor Sie Codex starten:
 
 ```bash
 export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
-`model` kann jedes Modell im Katalog des Projekts nennen, auch ein Claude-Modell oder einen Alias.
-
 > [!NOTE]
-> Kaeso speichert keine Antworten zwischen Runden. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), wird mit einem Fehler abgelehnt, der das sagt.
+> Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt.
 
-## Andere Tools
+## Andere Tools einrichten
 
-Jedes Tool, in dem sich eine Basis-URL für OpenAI oder Anthropic einstellen lässt, funktioniert genauso:
+Jedes Tool, in dem Sie eine Basis-URL für OpenAI oder Anthropic setzen können, funktioniert genauso:
 
-| Das Tool spricht | Basis-URL | Schlüssel |
+| Das Tool spricht | Basis-URL | Den Schlüssel senden als |
 | --- | --- | --- |
-| OpenAI Chat Completions oder Responses | `https://kaeso.example.com/v1` | Als API-Schlüssel oder Bearer-Token |
-| Anthropic Messages | `https://kaeso.example.com` | Als API-Schlüssel (`x-api-key`) oder Bearer-Token |
+| OpenAI Chat Completions oder Responses | `https://kaeso.example.com/v1` | API-Schlüssel oder Bearer-Token |
+| Anthropic Messages | `https://kaeso.example.com` | API-Schlüssel (`x-api-key`) oder Bearer-Token |
 
-Die [Modell-API](../api/model-api.md) listet jeden Endpunkt auf, die [Formatübersetzung](../concepts/format-translation.md), was zwischen Formaten übertragen wird und was nicht.
+## Nächste Schritte
+
+- [API-Schlüssel](../console/api-keys.md): Beschränken Sie den Schlüssel eines Tools auf die Modelle, die es braucht, oder geben Sie ihm ein Ablaufdatum.
+- [Limits und Budgets](../console/limits-and-budgets.md): Begrenzen Sie, wie viele Tokens oder wie viel Geld ein Tool verbrauchen kann.
+- [Formatübersetzung](../concepts/format-translation.md): Sehen Sie, was erhalten bleibt, wenn ein Tool das Modell eines anderen Anbieters aufruft.
