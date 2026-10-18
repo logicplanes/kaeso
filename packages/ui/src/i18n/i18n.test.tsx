@@ -186,4 +186,38 @@ describe("the library's catalogs", () => {
     }
     for (const key of Object.keys(catalog)) expect(key in en, `${key} isn't a library key`).toBe(true);
   });
+
+  const SAME_AS_ENGLISH = new Set([
+    "kbd.backspace",
+    "kbd.ctrl",
+    "kbd.shift",
+    "parameterPanel.topP",
+    "format.hoursMinutes",
+    "format.minutesSeconds",
+    "format.milliseconds",
+  ]);
+  const visible = (text: string) =>
+    text
+      .replace(/`[^`]*`/g, " ")
+      .replace(/\{[^{}]*\}/g, " ")
+      .replace(/\{[^{}]*\}/g, " ");
+
+  it.each([
+    ["de", de],
+    ["zh-CN", zhCN],
+  ])("leave no English sentence in %s, and use its register and punctuation", (locale, catalog) => {
+    for (const [key, english] of Object.entries(en)) {
+      const translated = catalog[key] ?? "";
+      const text = visible(translated);
+      const words = text.match(/[A-Za-z]+/g) ?? [];
+      const kept = locale === "de" ? words.length <= 1 : words.every((w) => /^[A-Z]{2,}$/.test(w));
+      if (translated === english && !SAME_AS_ENGLISH.has(key)) expect(kept, `${key} is still the English`).toBe(true);
+      expect(text, key).not.toMatch(/"/);
+      if (locale === "de") expect(text, key).not.toMatch(/(^|[^\p{L}])(du|dich|dir|dein\p{L}*)(?!\p{L})/iu);
+      else {
+        if (key !== "parameterPanel.instructionsPlaceholder") expect(text, key).not.toContain("你");
+        expect(text, key).not.toMatch(/[一-鿿][,;:?!()]|[,;:?!(][一-鿿]/);
+      }
+    }
+  });
 });
