@@ -448,7 +448,7 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
 ~~~
 
-TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML and diff are highlighted; other languages show as plain text. Raw HTML is not rendered and shows as text.
+TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML and diff are highlighted; other languages show as plain text. Raw HTML is not rendered and shows as text. Fence Markdown that holds fences of its own with `~~~markdown`, so the comment check keeps the two apart.
 
 Write the current version as `\{{version}}`. The build replaces it with the release's version in text, code and frontmatter, so no page falls behind the next release. A backslash in front keeps the characters as they are, as on this page.
 

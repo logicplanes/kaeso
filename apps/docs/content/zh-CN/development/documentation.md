@@ -450,7 +450,7 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
 ~~~
 
-TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。
+TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。本身含有代码块的 Markdown 示例用 `~~~markdown` 围起来，这样注释检查才能把两者区分开。
 
 当前版本写作 `\{{version}}`。构建会在正文、代码和前置元数据中把它替换为该版本的版本号，因此任何页面都不会落后于下一次发布。在前面加一个反斜杠则保留这些字符本身，就像本页这样。
 

@@ -450,7 +450,7 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
 ~~~
 
-TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML und Diff werden hervorgehoben; andere Sprachen erscheinen als einfacher Text. Rohes HTML wird nicht gerendert und erscheint als Text.
+TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML und Diff werden hervorgehoben; andere Sprachen erscheinen als einfacher Text. Rohes HTML wird nicht gerendert und erscheint als Text. Markdown, das selbst Codeblöcke enthält, umschließen Sie mit `~~~markdown`, damit die Kommentarprüfung beide auseinanderhält.
 
 Schreiben Sie die aktuelle Version als `\{{version}}`. Der Build ersetzt sie in Text, Code und Frontmatter durch die Version des Releases, sodass keine Seite hinter dem nächsten Release zurückbleibt. Ein Backslash davor lässt die Zeichen stehen, wie auf dieser Seite.
 
