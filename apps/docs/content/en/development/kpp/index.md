@@ -8,6 +8,7 @@ nav: KPP internals
 KPP, the Kaeso Provider Protocol, is the canonical format every model request passes through. The gateway decodes what an app sends into KPP and encodes KPP for the provider, and the reply takes the same path back. [Format translation](../../concepts/format-translation.md) describes what callers see of it; these pages are for people who change it.
 
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
+- [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
 - [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
@@ -85,7 +86,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `wire` | serde building blocks for lossless wire structs ([wire structs](#wire-structs)) |
 | `sse` | The event-stream parser and writer ([server-sent events](#server-sent-events)) |
 | `cross` | The rules for data that crosses dialects, and the extras allowlist |
-| `continuity` | Reasoning that travels with the conversation ([reasoning continuity](cross-format.md#reasoning-continuity)) |
+| `continuity` | Reasoning that travels with the conversation ([reasoning continuity](reasoning.md#reasoning-continuity)) |
 | `keepalive` | Frames that keep live streams from going silent ([keepalives](cross-format.md#keepalives)) |
 | `models` | Model-listing helpers ([model listings](#model-listings)) |
 | `testing` | JSON and SSE comparison, also for crates that use the codecs |
@@ -124,9 +125,9 @@ Every KPP field is either semantic or a hint:
 | `tool_choice` | semantic | `Unknown` only expressible by its origin dialect. |
 | `parallel_tool_calls` | semantic | |
 | `output` | semantic | `JsonObject` has no Anthropic equivalent and is `Unsupported`, with no emulation ([structured output](cross-format.md#structured-output)). |
-| `reasoning.mode`, `.effort`, `.budget_tokens` | semantic | Converted between effort and budget by the [effort and budget](cross-format.md#effort-and-budget) table. |
-| `reasoning.summary` | hint | Only controls whether summaries come back. Anthropic: `thinking.display: "summarized"` ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). |
-| `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantic | Converted between effort and budget by the [effort and budget](reasoning.md#effort-and-budget) table. |
+| `reasoning.summary` | hint | Only controls whether summaries come back. Anthropic: `thinking.display: "summarized"` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
+| `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `sampling.max_output_tokens` | semantic | |
 | `sampling.temperature`, `.top_p` | semantic | Their spelling (`1` or `1.0`) is form, kept only within the dialect ([sampling](cross-format.md#sampling)). |
 | `sampling.top_k` | semantic | Anthropic only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
@@ -160,9 +161,9 @@ Every KPP field is either semantic or a hint:
 | `ToolCall.*` | semantic | Ids and names are kept; a target that rejects one, for its characters or its length, gets a deterministic rewrite, reversed on the way back. |
 | `ToolResult.call_id`, `.content` | semantic | |
 | `ToolResult.is_error` | hint for targets without an error flag | Dropped for OpenAI Chat and Responses; the content carries the error text ([tool errors](cross-format.md#tool-errors)). |
-| `Reasoning.summary`, `.text` | hint | Readable reasoning is dropped for another dialect's request ([reasoning](cross-format.md#reasoning)). In replies it is shown together with the original block in a [reasoning blob](cross-format.md#reasoning-blobs). |
-| `Reasoning.opaque` | semantic for its origin | Replayed byte for byte to its origin dialect and provider; never sent elsewhere, where the whole block is dropped ([reasoning](cross-format.md#reasoning)). |
-| `Reasoning.origin` | — | Decides replay ([reasoning](cross-format.md#reasoning)). An Anthropic `thinking` block without a signature goes back to Anthropic only when it was read from Anthropic Messages. |
+| `Reasoning.summary`, `.text` | hint | Readable reasoning is dropped for another dialect's request ([reasoning](reasoning.md)). In replies it is shown together with the original block in a [reasoning blob](reasoning.md#reasoning-blobs). |
+| `Reasoning.opaque` | semantic for its origin | Replayed byte for byte to its origin dialect and provider; never sent elsewhere, where the whole block is dropped ([reasoning](reasoning.md)). |
+| `Reasoning.origin` | — | Decides replay ([reasoning](reasoning.md)). An Anthropic `thinking` block without a signature goes back to Anthropic only when it was read from Anthropic Messages. |
 | `Refusal.text` | semantic | Anthropic has no refusal block: `Unsupported` in requests to it, and a text block in replies to its apps. |
 | `Unknown` | semantic | Origin dialect only. An OpenAI Chat `function` message is kept whole as one such block ([requests](cross-format.md#requests)). |
 | `extras` of every block | as for the request | Allowlisted per block kind ([extras allowlist](cross-format.md#extras)). |
@@ -186,7 +187,7 @@ Every KPP field is either semantic or a hint:
 
 Replies and stream events flow from one provider to one app. They have no hints: a field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md).
 
-Reasoning reaches an app of another dialect where its format can carry it, wrapped so it can come back ([reasoning blobs](cross-format.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unknown blocks reach only apps of their own dialect. Everything else is left out of the app's view ([replies](cross-format.md#replies), `cross::reply_policy`), with [keepalive](cross-format.md#keepalives) frames in streams. The gateway logs the full KPP reply.
+Reasoning reaches an app of another dialect where its format can carry it, wrapped so it can come back ([reasoning blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unknown blocks reach only apps of their own dialect. Everything else is left out of the app's view ([replies](cross-format.md#replies), `cross::reply_policy`), with [keepalive](cross-format.md#keepalives) frames in streams. The gateway logs the full KPP reply.
 
 ## Change a codec
 
