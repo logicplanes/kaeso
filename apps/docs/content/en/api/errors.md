@@ -196,6 +196,6 @@ The request log keeps the provider's own message. Kaeso sends every request once
 
 ### Models the provider doesn't serve
 
-When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model. The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)).
+When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model. The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed during the request.
 
-If the provider still lists the model, or can't say, your app gets the provider's 404 as it was sent. That 404 was about something else, such as a file id.
+If the provider still lists the model, your app gets the provider's 404 as it was sent: it was about something else, such as a file id. If the provider can't say, because it has no model listing or the listing fails, your app also gets the provider's 404 as it was sent. The catalogue doesn't change in either case.
