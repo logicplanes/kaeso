@@ -60,7 +60,7 @@
   "account.nameSaved": "名称已保存",
   "account.newEmail": "新邮箱",
   "account.newPassword": "新密码",
-  "account.noActiveKeys": "没有活跃的密钥",
+  "account.noActiveKeys": "没有有效的密钥",
   "account.noActiveKeysHint": "已归档的密钥在“全部”下；新密钥请在项目的 API 密钥页面创建。",
   "account.noKeys": "还没有密钥",
   "account.noKeysHint": "请在项目的 API 密钥页面创建密钥；所有项目的密钥都会列在这里。",

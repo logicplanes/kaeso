@@ -17,8 +17,8 @@
   "playground.removeColumn": "{model} entfernen",
   "playground.response": "Antwort von {model}",
   "playground.streamEnded": "Der Stream endete, bevor das Modell fertig war. Bitte erneut versuchen.",
-  "playground.suggestion.haiku": "Schreib ein Haiku über Latenz",
-  "playground.suggestion.raceCondition": "Erkläre einem Neuling eine Race Condition",
-  "playground.suggestion.restGrpc": "Vergleiche REST und gRPC in drei Stichpunkten",
+  "playground.suggestion.haiku": "Schreiben Sie ein Haiku über Latenz",
+  "playground.suggestion.raceCondition": "Erklären Sie einer neuen Entwicklerin eine Race Condition",
+  "playground.suggestion.restGrpc": "Vergleichen Sie REST und gRPC in drei Stichpunkten",
   "playground.title": "Playground"
 }

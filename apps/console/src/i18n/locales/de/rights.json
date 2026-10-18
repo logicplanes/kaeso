@@ -141,7 +141,7 @@
   "rights.securityKeyPolicyManage.name": "Schlüssellaufzeit festlegen",
   "rights.securityKeyPolicyProjectManage.description": "Die maximale Schlüssellaufzeit des Projekts festlegen.",
   "rights.securityKeyPolicyProjectManage.name": "Schlüssellaufzeit festlegen",
-  "rights.securitySsoManage.description": "Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen, die darüber kommen.",
+  "rights.securitySsoManage.description": "Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen festlegen, die darüber beitreten.",
   "rights.securitySsoManage.name": "SSO verwalten",
   "rights.securitySsoRequire.description": "Von Mitgliedern die Anmeldung bei dieser Organisation per SSO verlangen.",
   "rights.securitySsoRequire.name": "SSO verlangen",

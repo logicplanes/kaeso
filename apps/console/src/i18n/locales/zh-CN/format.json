@@ -19,7 +19,7 @@
   "format.errorKind.providerError": "服务商错误",
   "format.errorKind.rateLimited": "触发速率限制",
   "format.errorKind.requestTooLarge": "请求过大",
-  "format.errorKind.shutdown": "网关关闭",
+  "format.errorKind.shutdown": "网关已关闭",
   "format.errorKind.streamInterrupted": "流中断",
   "format.errorKind.timeout": "超时",
   "format.errorKind.unsupported": "目标格式不支持",
