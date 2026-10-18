@@ -1,7 +1,8 @@
 ---
 title: OpenAI Chat Completions
 description: Wie jedes Feld des Formats OpenAI Chat Completions auf KPP abgebildet wird und zurück.
-order: 5
+order: 4
+nav: OpenAI Chat
 ---
 
 - **Codec:** `kaeso_codecs::openai_chat::OpenAiChat` (`crates/kaeso-codecs/src/openai_chat/`)
@@ -47,9 +48,9 @@ order: 5
 | `user` (veraltet) | `user` typisiert, wenn `safety_identifier` fehlt (Form `user`); sonst das Extra `user (sent alongside safety_identifier)`, das als `user` zurückgesendet wird | KPP `user` aus anderen Dialekten wird als `safety_identifier` gesendet. |
 | `stream` | `stream` typisiert | `false`: Form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typisiert | `stream_options` fehlt: Form `stream_options: "absent"`; ohne `include_usage`: Form `"no_include_usage"`; andere Schlüssel (`include_obfuscation`) sind Extras `stream_options.<key>`; bei ausgeschaltetem `stream`: das ganze Objekt als Form `stream_options_off`. Anfragen aus anderen Dialekten verlangen immer `include_usage: true`. Das Gateway braucht die Nutzung, setzt deshalb bei jeder Streaming-Anfrage `include_usage: true` und behält die ursprüngliche Anfrage der App in `EncodeCtx`; der Stream-Encoder der App blendet den Nutzungs-Chunk dann für Apps aus, die nicht danach gefragt haben. |
-| `audio`, `functions` und `function_call` (veraltet, oberste Ebene), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | Extras | Keine Entsprechung in KPP; über Dialektgrenzen abgelehnt ([Extras](cross-format.md#extras), [Sampling](cross-format.md#sampling)), außer `prompt_cache_key`, das auf der [Extras-Allowlist](extras-allowlist.md) steht und weggelassen wird. `null`-Werte sind Form. Gegenüber Anthropic etwa schlägt `functions` fehl mit `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
+| `audio`, `functions` und `function_call` (veraltet, oberste Ebene), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | Extras | Keine Entsprechung in KPP; über Dialektgrenzen abgelehnt ([Extras](cross-format.md#extras), [Sampling](cross-format.md#sampling)), außer `prompt_cache_key`, das auf der [Extras-Allowlist](cross-format.md#extras) steht und weggelassen wird. `null`-Werte sind Form. Gegenüber Anthropic etwa schlägt `functions` fehl mit `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
 | unbekannte Schlüssel | Extras | Ein Schlüssel, der mit `header:` beginnt oder `.` enthält, wird abgelehnt ([Schlüssel, die Kaeso nicht tragen kann](#schlüssel-die-kaeso-nicht-tragen-kann)). |
-| Header `openai-beta` | Extras `header:openai-beta` | Wird nur weitergeleitet, wenn die Anfrage an Chat geht; steht auf der [Extras-Allowlist](extras-allowlist.md), andere Dialekte verwerfen ihn also. |
+| Header `openai-beta` | Extras `header:openai-beta` | Wird nur weitergeleitet, wenn die Anfrage an Chat geht; steht auf der [Extras-Allowlist](cross-format.md#extras), andere Dialekte verwerfen ihn also. |
 
 ### Nachrichten (`ChatCompletionRequestMessage`)
 
@@ -76,10 +77,10 @@ Das alte Function Calling hat keine IDs für Tool-Aufrufe, deshalb werden seine 
 | `prompt_cache_breakpoint` (Text-, Bild- und Dateiteile) | `cache: CacheHint { ttl: None }`, gebunden an Chat | Beide markieren das Ende eines wiederverwendbaren Präfixes; die TTL kommt aus `prompt_cache_options`. Nur Hinweise aus Chat werden zurückgesendet; Hinweise aus anderen Dialekten werden verworfen ([Cache-Hinweise](cross-format.md#cache-hinweise)). `mode` außer `explicit`: Form `mode`. |
 | `image_url.url` (`https:`) | `Block::Image { source: Url }` | |
 | `image_url.url` (`data:<type>[;params];base64,<data>`, RFC 2397, Schema und `base64` in beliebiger Schreibung) | `Block::Image { source: Base64 }` | Ein anderer Kopf als `data:<type>;base64`, etwa mit Parametern (`;name=a.png`) oder in Großbuchstaben, bleibt in der Form `data_url` exakt erhalten, auch für `file.file_data`. Data-URLs, die nicht base64-kodiert sind oder keinen Medientyp haben, bleiben `Url`. |
-| `image_url.detail` | Extras `image_url.detail` | Steht auf der [Extras-Allowlist](extras-allowlist.md): wird für andere Dialekte stillschweigend verworfen. |
+| `image_url.detail` | Extras `image_url.detail` | Steht auf der [Extras-Allowlist](cross-format.md#extras): wird für andere Dialekte stillschweigend verworfen. |
 | `file.file_data` (`data:`-URL) | `Block::Document { source: Base64 }` | Reines Base64 gilt als Medientyp `application/pdf`, der einzige Typ im Leitfaden von OpenAI zu Dateieingaben, mit Form `bare_file_data`, und wird wieder ohne Kopf geschrieben. |
 | `file.file_id` | `Block::Document { source: FileId }`, gebunden an den Dateispeicher von OpenAI ([Dateien](cross-format.md#dateien)) | Zusammen mit `file_data`: Extras `file.file_id`. |
-| `file.filename` | Extras `file.filename` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt, kein Titel, den das Modell sieht; daher wird er nie zu `DocumentBlock::title`. Steht auf der [Extras-Allowlist](extras-allowlist.md). |
+| `file.filename` | Extras `file.filename` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt, kein Titel, den das Modell sieht; daher wird er nie zu `DocumentBlock::title`. Steht auf der [Extras-Allowlist](cross-format.md#extras). |
 | `input_audio` | `Unsupported` (`input_audio`) | Audioeingaben sind nicht Teil von KPP. |
 | `refusal` (Assistent) | `Block::Refusal` + Form `part` | |
 | andere Typen sowie `image_url`- und `file`-Teile außerhalb von Benutzernachrichten und `refusal`-Teile außerhalb von Assistentennachrichten | `Block::Unknown` | Nur im selben Dialekt. |

@@ -34,7 +34,7 @@ Every KPP field is either **semantic** or a **hint** (see the [design principles
 | `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
 | `user` | **hint** | An end-user id for abuse monitoring; it never changes the output. |
 | `stream` | semantic | |
-| `extras.fields` | semantic | Only written back to the origin dialect; elsewhere `Unsupported` unless on the [extras allowlist](extras-allowlist.md). |
+| `extras.fields` | semantic | Only written back to the origin dialect; elsewhere `Unsupported` unless on the [extras allowlist](cross-format.md#extras). |
 | `extras.form` | **hint** | Presentation markers; ignored by other dialects. |
 
 ## `Message`
@@ -64,7 +64,7 @@ Every KPP field is either **semantic** or a **hint** (see the [design principles
 | `Reasoning.origin` | — | Decides replay ([reasoning](cross-format.md#reasoning)). An Anthropic `thinking` block without a signature goes back to Anthropic only when it was read from Anthropic Messages. |
 | `Refusal.text` | semantic | Anthropic has no refusal block: `Unsupported` in requests to it, and a text block in replies to its apps. |
 | `Unknown` | semantic | Origin dialect only. An OpenAI Chat `function` message is kept whole as one such block ([requests](cross-format.md#requests)). |
-| `extras` of every block | as for the request | Allowlisted per block kind ([extras allowlist](extras-allowlist.md)). |
+| `extras` of every block | as for the request | Allowlisted per block kind ([extras allowlist](cross-format.md#extras)). |
 
 ## `CacheHint`
 

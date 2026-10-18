@@ -1,7 +1,7 @@
 ---
 title: Upgrades
 description: Von neuen Releases erfahren, von Hand oder mit dem Updater per Klick aktualisieren, und was während des Updates geschieht.
-order: 6
+order: 7
 ---
 
 Releases folgen der semantischen Versionierung, und alle Teile von Kaeso tragen die Versionsnummer des Releases. Die Release Notes jedes Releases stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und für Instanz-Admins in der Konsole unter **Instanz-Einstellungen → Updates**. Die `compose.yaml` jedes Releases legt die Gateway-, Konsolen- und Updater-Images dieses Releases fest.

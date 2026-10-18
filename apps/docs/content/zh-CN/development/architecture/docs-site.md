@@ -139,6 +139,7 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的�
 | `sitemap.xml` | 每种语言的每个页面及其 `hreflang` 替代版本，不含 `lastmod`，因为构建不知道页面最后修改的时间 |
 | `robots.txt` | 允许所有访问，并指明站点地图 |
 | `site.webmanifest`、图标、`og.png`、`CNAME` | 来自 `public/` 的静态文件 |
+| `<旧路径>.html`、`_redirects` | `redirects.json` 中的每个地址在每种语言下各有一个标记为 `noindex` 的页面，把读者转到页面的新位置；同样的迁移也以永久重定向的形式写入 `_redirects`，供读取该文件的托管服务使用 |
 | `csp.txt`、`_headers` | 站点的[内容安全策略](../releasing.md#内容安全策略)，每个页面也在 `<meta>` 中携带它 |
 
 页面的 head 包含它的 `lang`、`<title>` 和描述、规范地址、三种语言及 `x-default` 的 `hreflang` 替代版本、带 `og.png` 的 Open Graph 和 Twitter 标签、它的 `og:locale`（另外两种语言作为替代），以及结构化数据：语言首页为 `WebSite`，其他页面为 `TechArticle`。

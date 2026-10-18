@@ -139,6 +139,7 @@ The unit tests and the e2e suite read `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_C
 | `sitemap.xml` | Every page in every language with its `hreflang` alternates, without `lastmod`, since the build doesn't know when a page last changed |
 | `robots.txt` | Allows everything and names the sitemap |
 | `site.webmanifest`, the icons, `og.png`, `CNAME` | Static files from `public/` |
+| `<old path>.html`, `_redirects` | For every address in `redirects.json`, in every language: a `noindex` page that sends the reader to where the page moved, and the same moves as permanent redirects for hosts that read `_redirects` |
 | `csp.txt`, `_headers` | The site's [Content Security Policy](../releasing.md#content-security-policy), which every page also carries in a `<meta>` |
 
 A page's head holds its `lang`, `<title>` and description, its canonical address, `hreflang` alternates in the three languages and `x-default`, Open Graph and Twitter tags with `og.png`, its `og:locale` with the other two as alternates, and structured data: `WebSite` on a language's home page, `TechArticle` on every other page.

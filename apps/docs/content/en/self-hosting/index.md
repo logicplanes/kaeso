@@ -1,7 +1,7 @@
 ---
 title: Self-hosting
 description: Run, configure and look after a Kaeso install.
-order: 2
+order: 5
 ---
 
 A Kaeso install is six containers behind one domain, started by the `compose.yaml` attached to every release. The [quick start](../get-started/quick-start.md) gets one running; these pages cover the rest.

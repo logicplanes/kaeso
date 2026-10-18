@@ -1,7 +1,7 @@
 ---
 title: Concepts
 description: How Kaeso handles a request, translates between formats, and decides who may do what.
-order: 5
+order: 2
 ---
 
 | Page | What it explains |

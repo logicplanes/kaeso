@@ -1,7 +1,7 @@
 ---
 title: Local setup
 description: Go from a fresh clone to a running install with sample data and passing tests, step by step.
-order: 1
+order: 2
 ---
 
 This page takes you from a fresh clone to the gateway built from source, the console with sample data, and passing tests. Every command runs from the repository root.

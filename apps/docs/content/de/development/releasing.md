@@ -1,7 +1,7 @@
 ---
 title: Releases
 description: Wie Versionen nummeriert werden, was ein Release veröffentlicht und wie der Maintainer eines erstellt.
-order: 9
+order: 10
 ---
 
 Kaeso wird als Ganzes veröffentlicht: Gateway, Konsole, die Crates von KPP und die Pakete der UI-Bibliothek teilen eine Version, und ein Release veröffentlicht sie alle. Der Maintainer erstellt jedes Release von `prod` aus mit dem Release-Workflow und stellt danach Dokumentation und Showcase aus dem Tag des Releases bereit. Mitwirkende erstellen nie Tags oder Releases.
@@ -229,7 +229,7 @@ pnpm --filter kaeso-showcase build
 
 Danach enthält `apps/docs/dist` die Dokumentation und `apps/showcase/dist` den Showcase, jede Seite bereits auf Englisch, Deutsch und vereinfachtem Chinesisch gerendert. Die Links **Quelltext** des Showcases, seine `llms.txt` und die Links seines Changelogs ins Repository zeigen auf den Tag des Releases (`v` und die Version aus der `package.json` im Wurzelverzeichnis). Die Links **Auf GitHub bearbeiten** der Dokumentation zeigen auf `dev`, wo Änderungen an Seiten vorgeschlagen werden.
 
-Jeder Ordner lässt sich so hochladen, wie er ist. Er enthält `robots.txt`, das alles erlaubt und die Sitemap nennt; `sitemap.xml` mit jeder Seite in jeder Sprache samt `hreflang`-Alternativen; eine `404.html` pro Sprache, als `noindex` markiert; `site.webmanifest`, die Icons und `og.png`, das Bild für Linkvorschauen. Der Host muss nur `/guides` mit `guides.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache.
+Jeder Ordner lässt sich so hochladen, wie er ist. Er enthält `robots.txt`, das alles erlaubt und die Sitemap nennt; `sitemap.xml` mit jeder Seite in jeder Sprache samt `hreflang`-Alternativen; eine `404.html` pro Sprache, als `noindex` markiert; `site.webmanifest`, die Icons und `og.png`, das Bild für Linkvorschauen. Der Host muss nur `/guides` mit `guides.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache; verschobene Seiten haben eine Seite an ihrer alten Adresse, und `_redirects` listet dieselben Umzüge für Hosts, die die Datei lesen.
 
 Beide Builds enden mit `scripts/check-site.mjs`, das den Build fehlschlagen lässt, wenn
 

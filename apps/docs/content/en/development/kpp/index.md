@@ -1,7 +1,7 @@
 ---
 title: KPP internals
 description: How the KPP types and codecs are built, for contributors to kaeso-kpp and kaeso-codecs.
-order: 3
+order: 4
 nav: KPP internals
 ---
 
@@ -62,7 +62,6 @@ Streams follow the same path with `dispatch::stream_decoder` and `dispatch::stre
 | --- | --- |
 | [Crossing formats](cross-format.md) | The rules for data that moves from one API format to another, and why |
 | [Field classes](field-classes.md) | Every KPP field as semantic or hint |
-| [Extras allowlist](extras-allowlist.md) | The extras that may be dropped when a request changes format |
 | [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md), [OpenAI Embeddings](openai-embeddings.md) | Every wire field of each format, where it goes in KPP, and its source |
 | [Fixtures and recordings](fixtures.md) | The real payloads the codecs are tested against, and how to record new ones |
 
@@ -101,7 +100,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 - **Messages of ordered content blocks.** Block order is kept end to end.
 - **Raw where bytes matter.** Tool arguments, JSON schemas, unknown blocks and citations are `RawJson`; opaque reasoning is kept as received and tagged with its `Origin`.
 - **Semantic or hint.** Every field is either semantic (a target must honour it or refuse with `Unsupported`) or a hint (a target may ignore it). [Field classes](field-classes.md) lists them.
-- **Bound extras.** Whatever KPP does not model is kept in `Extras`, tagged with the dialect it came from, and written back only to that dialect. `fields` are semantic: another dialect refuses them unless they are on the [allowlist](extras-allowlist.md). `form` is presentation (a string or an array, `null` or absent, how chunks were grouped), and other dialects ignore it. Unknown keys of nested objects use dotted key paths, such as `function.x`, so a key that itself contains `.` can't be carried ([wire structs](#wire-structs)).
+- **Bound extras.** Whatever KPP does not model is kept in `Extras`, tagged with the dialect it came from, and written back only to that dialect. `fields` are semantic: another dialect refuses them unless they are on the [allowlist](cross-format.md#extras). `form` is presentation (a string or an array, `null` or absent, how chunks were grouped), and other dialects ignore it. Unknown keys of nested objects use dotted key paths, such as `function.x`, so a key that itself contains `.` can't be carried ([wire structs](#wire-structs)).
 - **Refuse before sending.** `check()` returns `Unsupported`, naming the feature a target can't express, before anything is sent.
 - **Nothing is dropped silently.** Every field and block of an incoming payload ends up in exactly one place: a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug.
 - **Additive public API.** Public enums and growable structs are `#[non_exhaustive]`, and enum variants wrap `#[non_exhaustive]` structs with constructors (`TextBlock::new`, `Block::text`, …), so fields can be added without breaking code that builds or matches values. The `Codec` trait is sealed.

@@ -1,7 +1,7 @@
 ---
 title: 参与贡献
 description: 报告问题、提出变更，以及每个 Kaeso 变更都要遵守的规则。
-order: 10
+order: 1
 ---
 
 想法和问题请发到 [Discussions](https://github.com/logicplanes/kaeso/discussions)，缺陷和具体的功能请求请提交 [issue](https://github.com/logicplanes/kaeso/issues)。外部贡献者的拉取请求由维护者酌情审阅；对于比小修复更大的改动，请先开一个 issue，以便就方案达成一致。所有参与者都遵守[行为准则](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md)。

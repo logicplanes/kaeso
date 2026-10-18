@@ -1,7 +1,7 @@
 ---
 title: Mitwirken
 description: Issues melden, Änderungen vorschlagen und die Regeln, denen jede Änderung an Kaeso folgt.
-order: 10
+order: 1
 ---
 
 Ideen und Fragen gehören in die [Discussions](https://github.com/logicplanes/kaeso/discussions), Fehler und konkrete Feature-Wünsche in die [Issues](https://github.com/logicplanes/kaeso/issues). Pull Requests von außen prüft der Maintainer nach eigenem Ermessen; für alles, was über eine kleine Korrektur hinausgeht, zuerst ein Issue eröffnen, damit sich der Ansatz abstimmen lässt. Alle Beteiligten folgen dem [Verhaltenskodex](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).

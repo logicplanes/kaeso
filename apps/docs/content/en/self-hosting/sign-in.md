@@ -1,7 +1,7 @@
 ---
 title: Sign-in and single sign-on
 description: Choose how people sign in, run an install on single sign-on alone, and get back in when nothing else works.
-order: 5
+order: 6
 ---
 
 People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider (single sign-on with OpenID Connect). Three [settings](configuration.md#sign-in) turn each method on or off for the whole install: `KAESO_AUTH_PASSWORD`, `KAESO_AUTH_MAGIC_LINK` and `KAESO_AUTH_OIDC`. An organization admin connects the identity provider under **Security**; see [single sign-on](../console/organizations-and-projects.md#single-sign-on).

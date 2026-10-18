@@ -37,6 +37,7 @@ The documentation and the showcase are deployed as static sites from the release
 
 | Page | Covers |
 | --- | --- |
+| [Contributing](contributing.md) | Issues, pull requests and the rules every change follows |
 | [Local setup](local-setup.md) | Prerequisites, the development stack, sample data, and running each part from source |
 | [Architecture](architecture/index.md) | How the gateway, the console, the documentation site and the emails fit together |
 | [KPP internals](kpp/index.md) | The canonical format, the codecs, and every wire format field by field |
@@ -46,4 +47,3 @@ The documentation and the showcase are deployed as static sites from the release
 | [Dependencies and licenses](dependencies.md) | Every direct dependency, why it is there, and the license policy |
 | [Performance](performance.md) | Bundle budgets, codec benchmarks and fuzzing results |
 | [Releasing](releasing.md) | Versions, the changelog, the Release workflow and what it publishes |
-| [Contributing](contributing.md) | Issues, pull requests and the rules every change follows |

@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Common problems with an install and how to solve them.
-order: 9
+order: 10
 ---
 
 Start with the gateway's log; it names the setting, the request or the service involved:

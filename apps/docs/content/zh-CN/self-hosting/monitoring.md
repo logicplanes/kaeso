@@ -1,7 +1,7 @@
 ---
 title: 健康状态和指标
 description: 运行中安装的健康检查、Prometheus 指标和日志。
-order: 8
+order: 9
 ---
 
 ## 健康检查

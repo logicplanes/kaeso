@@ -1,7 +1,7 @@
 ---
 title: 编写文档
 description: 本站的页面如何编写、放置、链接、检查和翻译。
-order: 6
+order: 7
 ---
 
 本站的每个页面都是 `apps/docs/content` 中的一个 Markdown 文件，每种语言一个文件夹（`en`、`de`、`zh-CN`），各文件夹中的文件名相同。文档只保存在这里；代码中的 README 保持简短，并链接到这里。如果使用、运行或集成 Kaeso 的人会注意到某个变更，它的拉取请求就要同时更新这些页面。
@@ -60,7 +60,7 @@ Every request to the model API carries a **key**.
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | 同一页面的德语版本 |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | 同一页面的简体中文版本 |
 
-文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
+文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。其他网站的链接和书签仍使用旧地址，因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
 
 ## 链接
 

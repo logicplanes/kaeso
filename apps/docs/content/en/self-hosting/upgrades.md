@@ -1,7 +1,7 @@
 ---
 title: Upgrades
 description: Learn about new releases, update by hand or in one click with the updater, and what happens while Kaeso updates.
-order: 6
+order: 7
 ---
 
 Releases follow semantic versioning, and every part of Kaeso shares the release's version number. Each release's notes are on the [releases page](https://github.com/logicplanes/kaeso/releases) and, for instance admins, in the console under **Instance settings → Updates**. Each release's `compose.yaml` pins the gateway, console and updater images of that release.

@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: How every field of the OpenAI Embeddings format maps to KPP and back.
-order: 7
+order: 6
 ---
 
 - **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)

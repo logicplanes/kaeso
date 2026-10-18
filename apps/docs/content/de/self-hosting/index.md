@@ -1,7 +1,7 @@
 ---
 title: Selbst hosten
 description: Eine Kaeso-Installation betreiben, konfigurieren und pflegen.
-order: 2
+order: 5
 ---
 
 Eine Kaeso-Installation besteht aus sechs Containern hinter einer Domain; gestartet werden sie von der `compose.yaml`, die jedem Release beiliegt. Der [Schnellstart](../get-started/quick-start.md) bringt eine Installation zum Laufen, diese Seiten behandeln alles Weitere.

@@ -1,7 +1,7 @@
 ---
 title: 自托管
 description: 运行、配置和维护 Kaeso 安装。
-order: 2
+order: 5
 ---
 
 一个 Kaeso 安装由一个域名后面的六个容器组成，由每个版本附带的 `compose.yaml` 启动。[快速开始](../get-started/quick-start.md)让安装跑起来，后续的一切都在这些页面中。

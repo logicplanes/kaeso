@@ -1,7 +1,7 @@
 ---
 title: Konzepte
 description: Wie Kaeso eine Anfrage verarbeitet, zwischen Formaten übersetzt und entscheidet, wer was darf.
-order: 5
+order: 2
 ---
 
 | Seite | Was sie erklärt |

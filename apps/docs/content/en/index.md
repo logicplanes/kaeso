@@ -44,9 +44,10 @@ flowchart LR
 | Install Kaeso and send the first request | [Quick start](get-started/quick-start.md) |
 | Call models from your code | [Calling models](get-started/calling-models.md) |
 | Use Kaeso from Claude Code or Codex | [Coding tools](get-started/coding-tools.md) |
-| Plan and run an install | [Self-hosting](self-hosting/index.md) |
+| Understand how Kaeso handles requests and rights | [Concepts](concepts/index.md) |
 | Find your way around the console | [Using the console](console/index.md) |
 | Look up the APIs | [API](api/index.md) |
+| Plan and run an install | [Self-hosting](self-hosting/index.md) |
 | Work on Kaeso itself | [Development](development/index.md) |
 
 Kaeso is MIT licensed. The gateway, KPP, the console, the UI library and this documentation live in one repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).

@@ -1,7 +1,7 @@
 ---
 title: Fixtures und Aufzeichnungen
 description: Die echten Payloads, gegen die die Codecs getestet werden, und wie neue bei den Anbietern aufgezeichnet werden.
-order: 8
+order: 7
 ---
 
 Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer Antwort, einem Stream oder einem Fehler in `crates/kaeso-codecs/fixtures`. Jede Fixture durchläuft einen Round Trip durch ihren eigenen Codec, die Cross-Dialekt-Matrix schickt jede Generierungs-Fixture durch jeden anderen Dialekt, die [SDK-Konformitätssuite](../testing.md#sdk-konformität) liefert sie an die offiziellen SDKs aus, der Mock-Anbieter des Gateways antwortet mit ihnen, und die Fuzz-Targets gehen von ihnen aus.

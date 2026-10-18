@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: OpenAI Responses 格式的每个字段如何映射到 KPP，又如何映射回来。
-order: 6
+order: 5
 ---
 
 - **编解码器：**`kaeso_codecs::openai_responses::OpenAiResponses`（`crates/kaeso-codecs/src/openai_responses/`）
@@ -101,7 +101,7 @@ order: 6
 | `refusal` | `Block::Refusal` | |
 | `input_image` `image_url`（data URL `data:<type>;base64,…`） | `Block::Image`，`Source::Base64` | 带其他参数的 data URL 仍为 `Source::Url`。 |
 | `input_image` `image_url`（URL）/ `file_id` | `Source::Url` / `Source::FileId`（绑定来源） | 两者都有或都没有：`Block::Unknown`。图片文件 ID 只能用于同一服务商的 OpenAI Responses，因为 OpenAI Chat Completions 不接受图片文件 ID。 |
-| `input_image.detail`、`input_file.detail` | `"auto"`：形式；其他值：extras `detail` | 在图像上，`detail` 是 [Extras 允许列表](extras-allowlist.md)中的分辨率提示，发往其他方言时会被丢弃。在文件上，它控制 PDF 的渲染方式，其他方言会拒绝它。 |
+| `input_image.detail`、`input_file.detail` | `"auto"`：形式；其他值：extras `detail` | 在图像上，`detail` 是 [Extras 允许列表](cross-format.md#extras)中的分辨率提示，发往其他方言时会被丢弃。在文件上，它控制 PDF 的渲染方式，其他方言会拒绝它。 |
 | `input_file` `file_data` / `file_url` / `file_id` | `Block::Document`，`Source::Base64` / `Url` / `FileId` | 必须恰好有一个来源，且 `file_data` 必须是 data URL；否则为 `Block::Unknown`。 |
 | `input_file.filename` | 形式 | KPP 没有文件名字段（`DocumentBlock::title` 是标题），这样 PDF 才能跨方言传递。OpenAI 要求 `file_data` 带有文件名：来自其他方言、以 `file_data` 发送的文档会得到 `filename: "document.<ext>"`，扩展名按媒体类型取 `pdf`、`txt`、`md`、`csv` 或 `json`，其他情况为 `bin`。 |
 | 文本、图片或文件 part 上的 `prompt_cache_breakpoint`（`PromptCacheBreakpointConfig`） | 该块的 `cache: CacheHint`（形式 `breakpoint`） | 只会重新输出到本方言；来自其他方言的提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。 |

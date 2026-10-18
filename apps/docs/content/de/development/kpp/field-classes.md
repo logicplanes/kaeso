@@ -34,7 +34,7 @@ Jedes KPP-Feld ist entweder **semantisch** oder ein **Hinweis** (siehe die [Entw
 | `sampling.frequency_penalty`, `.presence_penalty` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
 | `user` | **Hinweis** | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. |
 | `stream` | semantisch | |
-| `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](extras-allowlist.md). |
+| `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](cross-format.md#extras). |
 | `extras.form` | **Hinweis** | Form-Markierungen für die Darstellung; andere Dialekte ignorieren sie. |
 
 ## `Message`
@@ -64,7 +64,7 @@ Jedes KPP-Feld ist entweder **semantisch** oder ein **Hinweis** (siehe die [Entw
 | `Reasoning.origin` | — | Entscheidet über das Zurückspielen ([Reasoning](cross-format.md#reasoning)). Ein Anthropic-`thinking`-Block ohne Signatur geht nur an Anthropic zurück, wenn er aus Anthropic Messages gelesen wurde. |
 | `Refusal.text` | semantisch | Anthropic hat keinen Verweigerungsblock: in Anfragen dorthin `Unsupported`, in Antworten an Anthropic-Apps ein Textblock. |
 | `Unknown` | semantisch | Nur im Ursprungsdialekt. Eine `function`-Nachricht von OpenAI Chat wird vollständig als ein solcher Block aufbewahrt ([Anfragen](cross-format.md#anfragen)). |
-| `extras` jedes Blocks | wie bei der Anfrage | Auf der Allowlist je Blockart freigegeben ([Extras-Allowlist](extras-allowlist.md)). |
+| `extras` jedes Blocks | wie bei der Anfrage | Auf der Allowlist je Blockart freigegeben ([Extras-Allowlist](cross-format.md#extras)). |
 
 ## `CacheHint`
 

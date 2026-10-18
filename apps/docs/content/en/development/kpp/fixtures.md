@@ -1,7 +1,7 @@
 ---
 title: Fixtures and recordings
 description: The real payloads the codecs are tested against, and how to record new ones from the providers.
-order: 8
+order: 7
 ---
 
 Every codec change starts with a fixture: a real request body, reply, stream or error, in `crates/kaeso-codecs/fixtures`. Every fixture round-trips through its own codec, the cross-dialect matrix runs every generation fixture through every other dialect, the [SDK conformance suite](../testing.md#sdk-conformance) serves them to the official SDKs, the gateway's mock provider answers with them, and the fuzz targets start from them.

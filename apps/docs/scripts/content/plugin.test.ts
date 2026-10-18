@@ -417,6 +417,44 @@ describe("the Vite plugin", () => {
     expect(() => p.writeBundle({ dir: outDir }, withoutSite)).toThrow("the en site module is not in the bundle");
   });
 
+  it("writes a page at a moved address that sends the reader on, and the same moves for hosts that read _redirects", () => {
+    repo();
+    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "guides/keys.md#rate-limits" }));
+    const outDir = join(root, "dist");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "index.html"), TEMPLATE);
+    const chunk = (fileName: string, facadeModuleId: string | null, isEntry = false) =>
+      ({ type: "chunk", fileName, facadeModuleId, imports: [], isEntry }) as unknown as Rollup.OutputChunk;
+    const bundle = Object.fromEntries(
+      [
+        chunk("assets/index.js", "/src/main.tsx", true),
+        chunk("assets/site-en.js", "\0kaeso-docs:site/en"),
+        chunk("assets/site-de.js", "\0kaeso-docs:site/de"),
+        chunk("assets/site-zh.js", "\0kaeso-docs:site/zh-CN"),
+        chunk("assets/ui-de.js", "/repo/packages/ui/dist/chunks/de-abc.js"),
+        chunk("assets/ui-zh.js", "/repo/packages/ui/dist/chunks/zh-CN-abc.js"),
+      ].map((c) => [c.fileName, c]),
+    );
+    const p = hooks(plugin());
+    p.config({}, { command: "build" });
+    p.writeBundle({ dir: outDir }, bundle);
+    const moved = readFileSync(join(outDir, "de/guides/limits.html"), "utf8");
+    expect(moved).toContain('<html lang="de">');
+    expect(moved).toContain('<meta name="robots" content="noindex" />');
+    expect(moved).toContain('<meta http-equiv="refresh" content="0; url=/de/guides/keys#rate-limits" />');
+    expect(moved).toContain('<link rel="canonical" href="https://docs.kaeso.app/de/guides/keys" />');
+    expect(moved).toContain('<a href="/de/guides/keys#rate-limits">Keys · Kaeso-Dokumentation</a>');
+    expect(readFileSync(join(outDir, "_redirects"), "utf8")).toBe(
+      [
+        "/guides/limits /guides/keys#rate-limits 301",
+        "/de/guides/limits /de/guides/keys#rate-limits 301",
+        "/zh-CN/guides/limits /zh-CN/guides/keys#rate-limits 301",
+        "",
+      ].join("\n"),
+    );
+    expect(readFileSync(join(outDir, "sitemap.xml"), "utf8")).not.toContain("guides/limits");
+  });
+
   it("reloads the pages in development when a file in content/ changes", () => {
     repo();
     const listeners: Record<string, (file: string) => void> = {};

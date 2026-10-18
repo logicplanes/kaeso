@@ -1,7 +1,7 @@
 ---
 title: Fehlerbehebung
 description: Häufige Probleme mit einer Installation und ihre Lösung.
-order: 9
+order: 10
 ---
 
 Mit dem Log des Gateways beginnen; es nennt die Einstellung, die Anfrage oder den betroffenen Dienst:

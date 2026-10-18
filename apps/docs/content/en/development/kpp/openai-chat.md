@@ -1,7 +1,8 @@
 ---
 title: OpenAI Chat Completions
 description: How every field of the OpenAI Chat Completions format maps to KPP and back.
-order: 5
+order: 4
+nav: OpenAI Chat
 ---
 
 - **Codec:** `kaeso_codecs::openai_chat::OpenAiChat` (`crates/kaeso-codecs/src/openai_chat/`)
@@ -47,9 +48,9 @@ order: 5
 | `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user`); otherwise the extra `user (sent alongside safety_identifier)`, sent back as `user` | KPP `user` from other dialects is sent as `safety_identifier`. |
 | `stream` | `stream` typed | `false`: form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typed | `stream_options` absent: form `stream_options: "absent"`; without `include_usage`: form `"no_include_usage"`; other keys (`include_obfuscation`) are extras `stream_options.<key>`; with `stream` off: the whole object as form `stream_options_off`. Requests from other dialects always ask for `include_usage: true`. The gateway needs usage, so it sets `include_usage: true` on every streaming request and keeps the app's own request in `EncodeCtx`; the app's stream encoder then hides the usage chunk from apps that did not ask for it. |
-| `audio`, `functions` and `function_call` (deprecated, top level), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | extras | No KPP equivalent; refused across dialects ([extras](cross-format.md#extras), [sampling](cross-format.md#sampling)), except `prompt_cache_key`, which is on the [extras allowlist](extras-allowlist.md) and dropped. `null` values are form. Towards Anthropic, for example, `functions` fails with `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
+| `audio`, `functions` and `function_call` (deprecated, top level), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | extras | No KPP equivalent; refused across dialects ([extras](cross-format.md#extras), [sampling](cross-format.md#sampling)), except `prompt_cache_key`, which is on the [extras allowlist](cross-format.md#extras) and dropped. `null` values are form. Towards Anthropic, for example, `functions` fails with `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
 | unknown keys | extras | A key that starts with `header:` or contains `.` is refused ([keys Kaeso can't carry](#keys-kaeso-cant-carry)). |
-| header `openai-beta` | extras `header:openai-beta` | Forwarded only when the request goes to Chat; on the [extras allowlist](extras-allowlist.md), so other dialects drop it. |
+| header `openai-beta` | extras `header:openai-beta` | Forwarded only when the request goes to Chat; on the [extras allowlist](cross-format.md#extras), so other dialects drop it. |
 
 ### Messages (`ChatCompletionRequestMessage`)
 
@@ -76,10 +77,10 @@ Legacy function calling has no tool call ids, so its turns do not become KPP too
 | `prompt_cache_breakpoint` (text, image and file parts) | `cache: CacheHint { ttl: None }` bound to Chat | Both mark the end of a reusable prefix; the TTL comes from `prompt_cache_options`. Only hints from Chat are sent back; hints from other dialects are dropped ([cache hints](cross-format.md#cache-hints)). `mode` other than `explicit`: form `mode`. |
 | `image_url.url` (`https:`) | `Block::Image { source: Url }` | |
 | `image_url.url` (`data:<type>[;params];base64,<data>`, RFC 2397, scheme and `base64` in any case) | `Block::Image { source: Base64 }` | A header other than `data:<type>;base64`, such as parameters (`;name=a.png`) or upper case, is kept exactly in form `data_url`, also for `file.file_data`. Data URLs that are not base64 or have no media type stay `Url`. |
-| `image_url.detail` | extras `image_url.detail` | On the [extras allowlist](extras-allowlist.md): dropped silently for other dialects. |
+| `image_url.detail` | extras `image_url.detail` | On the [extras allowlist](cross-format.md#extras): dropped silently for other dialects. |
 | `file.file_data` (`data:` URL) | `Block::Document { source: Base64 }` | Bare base64 is taken as media type `application/pdf`, the only type in OpenAI's file inputs guide, with form `bare_file_data`, and is written back bare. |
 | `file.file_id` | `Block::Document { source: FileId }` bound to the OpenAI file store ([files](cross-format.md#files)) | With `file_data` too: extras `file.file_id`. |
-| `file.filename` | extras `file.filename` | The file name OpenAI requires next to inline `file_data`, not a title shown to the model, so it never becomes `DocumentBlock::title`. On the [extras allowlist](extras-allowlist.md). |
+| `file.filename` | extras `file.filename` | The file name OpenAI requires next to inline `file_data`, not a title shown to the model, so it never becomes `DocumentBlock::title`. On the [extras allowlist](cross-format.md#extras). |
 | `input_audio` | `Unsupported` (`input_audio`) | Audio input is not part of KPP. |
 | `refusal` (assistant) | `Block::Refusal` + form `part` | |
 | other types, and `image_url` and `file` parts outside user messages, `refusal` parts outside assistant messages | `Block::Unknown` | Same dialect only. |
