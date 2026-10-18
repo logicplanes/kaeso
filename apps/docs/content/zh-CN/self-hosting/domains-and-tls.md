@@ -1,7 +1,7 @@
 ---
 title: 域名和 TLS
 description: 安装所用的域名、证书，以及在自己的代理之后运行。
-order: 4
+order: 5
 ---
 
 ## 一个域名

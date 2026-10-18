@@ -1,33 +1,46 @@
 ---
-title: 系统要求
-description: 运行 Kaeso 的服务器需要具备的条件。
+title: 要求
+description: Kaeso 实例所需的服务器、网络访问和磁盘空间。
 order: 1
 ---
 
+Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录的请求数量来规划磁盘。
+
 ## 服务器
 
-- 装有 Docker Engine 和 Docker Compose 2.24 或更高版本的 Linux。镜像提供 `linux/amd64` 和 `linux/arm64` 两种架构。[一键更新](upgrades.md#一键更新)需要 Docker Engine 25 或更高版本，更新器使用其 API 版本 1.44。
-- 至少 2 个 vCPU 和 4 GB 内存，其中 ClickHouse 约占 2 GB。
-- 至少 20 GB 磁盘，另加请求日志所需的空间。
+| 资源 | 最低要求 |
+| --- | --- |
+| 系统 | Linux，Docker Engine 和 Docker Compose 2.24 或更高版本，`linux/amd64` 或 `linux/arm64` |
+| CPU | 2 个 vCPU |
+| 内存 | 4 GB，其中 ClickHouse 约占 2 GB |
+| 磁盘 | 20 GB，另加请求日志所需空间 |
+
+[一键更新](upgrades.md#一键更新)还需要 Docker Engine 25 或更高版本。
 
 ## 网络
 
-- 一个 DNS 记录指向该服务器的域名。
-- 端口 80 和 443 对互联网开放，用于申请证书和提供 HTTPS。UDP 端口 443 开放时，Caddy 也通过 HTTP/3 提供服务。
-- 能以 HTTPS 访问所用的服务商（`api.openai.com`、`api.anthropic.com`）和 `models.dev`，网关每天从 `models.dev` 更新一次模型数据。无法访问 `models.dev` 的安装使用版本内置的模型数据；可在 [`compose.override.yaml`](installation.md#本地修改) 中设置 `KAESO_MODELS_DEV_SYNC=false` 关闭更新。
-- 一台 SMTP 服务器，用于发送登录链接、邀请、预算提醒和安全通知。参见[电子邮件](email.md)。
-- 能通过 HTTPS 访问 `api.github.com`（网关每天两次在此检查 Kaeso 新版本），以及为[一键更新](upgrades.md#一键更新)访问 `github.com`、`objects.githubusercontent.com` 和 `ghcr.io`。无法访问时请手动更新，并按[升级](upgrades.md#无法联网的安装)所述关闭检查。
+实例需要一个 DNS 记录指向该服务器的域名，以及以下连接：
+
+| 方向 | 端口或主机 | 用途 |
+| --- | --- | --- |
+| 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
+| 出站 | `api.openai.com`、`api.anthropic.com` | 您使用的服务商 |
+| 出站 | `models.dev` | 模型数据，每天刷新一次 |
+| 出站 | `api.github.com` | 检查 Kaeso 新版本，每天两次 |
+| 出站 | `github.com`、`objects.githubusercontent.com`、`ghcr.io` | 一键更新 |
+| 出站 | 您的 SMTP 服务器 | 登录链接、邀请、提醒和安全通知（[邮件](email.md)） |
+
+没有互联网访问时，Kaeso 使用版本内置的模型数据，并需要手动更新。请按[无法联网的实例](upgrades.md#无法联网的安装)中的说明关闭出站检查。
 
 ## 请求日志所需磁盘
 
-请求日志存放在 ClickHouse 中。以下数据测自 200,000 个合成请求，每个请求约含 2.5 KB 请求和回复文本，并在 ClickHouse 合并数据分片之后测量：
+请求日志保存在 ClickHouse 中。每一百万个请求请预留以下磁盘空间：
 
-| 数据 | 每百万请求占用的磁盘 |
+| 记录内容 | 每一百万个请求 |
 | --- | --- |
-| 元数据：模型、状态、Token、费用、耗时 | 约 63 MB |
-| 内容：请求和回复 | 约 545 MB，即每字节文本约 0.21 字节 |
-| 用量汇总 | 最多 40 MB，通常远少于此 |
+| 仅元数据：模型、状态、Token、费用和耗时 | 约 0.1 GB |
+| 元数据和内容，按每个请求约 2.5 KB 文本计 | 约 0.65 GB |
 
-不记录内容时，每百万请求约需 0.1 GB；记录内容时约需 0.65 GB，内容部分按提示词和回复的实际大小换算。保留期限决定总量上限：每天一百万请求、按默认保留期限（元数据 90 天、内容 30 天）计算，约为 6 GB 元数据和 16 GB 内容。
+内容会随提示词和回复的长度增长。保留期限决定总量上限。每天一百万个请求时，按默认期限约占 6 GB 元数据（90 天）和 16 GB 内容（30 天）。
 
-每个组织在[日志记录](../console/request-logs.md#保留期)中设置自己的保留期限，不超过实例规定的最大值。组织的**日志记录**页面和实例的**系统**页面会显示实际占用。
+每个组织在其**日志记录**页面上选择保留期限，但不能超过实例的上限（[请求日志](../console/request-logs.md)）。实例的**系统**页面显示日志实际占用的空间。

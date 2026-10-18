@@ -1,7 +1,7 @@
 ---
 title: 故障排除
 description: 安装的常见问题及解决方法。
-order: 10
+order: 11
 ---
 
 先查看网关日志，它会指明涉及的设置、请求或服务：
@@ -69,7 +69,7 @@ docker compose exec gateway kaeso user reset-2fa person@example.com
 
 ## 流在一分钟后中断
 
-应用和 Kaeso 之间的代理或负载均衡器关闭了空闲连接。流沉默期间，网关每 15 秒写入一次保活消息；如果路径上的代理更早关闭连接，请在 [`compose.override.yaml`](installation.md#本地修改) 中调低 `KAESO_STREAMS_KEEPALIVE_INTERVAL`。使用自己的代理时，还要为 `/v1/` 关闭响应缓冲。参见[长时间的流](domains-and-tls.md#长时间的流)。
+应用和 Kaeso 之间的代理或负载均衡器关闭了空闲连接。流沉默期间，网关每 15 秒写入一次保活消息；如果路径上的代理更早关闭连接，请在 [`compose.override.yaml`](installation.md#修改服务) 中调低 `KAESO_STREAMS_KEEPALIVE_INTERVAL`。使用自己的代理时，还要为 `/v1/` 关闭响应缓冲。参见[长时间的流](domains-and-tls.md#长时间的流)。
 
 ## 请求日志缺失或延迟
 

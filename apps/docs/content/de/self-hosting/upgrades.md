@@ -1,7 +1,7 @@
 ---
 title: Upgrades
 description: Von neuen Releases erfahren, von Hand oder mit dem Updater per Klick aktualisieren, und was während des Updates geschieht.
-order: 7
+order: 8
 ---
 
 Releases folgen der semantischen Versionierung, und alle Teile von Kaeso tragen die Versionsnummer des Releases. Die Release Notes jedes Releases stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und für Instanz-Admins in der Konsole unter **Einstellungen** › **Instanz** › **Updates**. Die `compose.yaml` jedes Releases legt die Gateway-, Konsolen- und Updater-Images dieses Releases fest.
@@ -24,7 +24,7 @@ Bei einer neuen Installation kommen die drei Einstellungen aus `KAESO_UPDATES_CH
 
 ### Installationen ohne Internetzugang
 
-**Nach neuen Releases suchen** ausschalten oder vor dem ersten Start `KAESO_UPDATES_CHECK=false` in [`compose.override.yaml`](installation.md#lokale-änderungen) setzen. Die Seite zeigt dann die laufende Version, und aktualisiert wird von Hand wie unten. `KAESO_UPDATES_RELEASES_URL` verweist das Gateway auf einen Spiegel, der wie die Releases-API von GitHub antwortet, falls es einen gibt; Release-Manifeste lädt das Gateway dann nur von der Adresse dieses Spiegels.
+**Nach neuen Releases suchen** ausschalten oder vor dem ersten Start `KAESO_UPDATES_CHECK=false` in [`compose.override.yaml`](installation.md#dienste-ändern) setzen. Die Seite zeigt dann die laufende Version, und aktualisiert wird von Hand wie unten. `KAESO_UPDATES_RELEASES_URL` verweist das Gateway auf einen Spiegel, der wie die Releases-API von GitHub antwortet, falls es einen gibt; Release-Manifeste lädt das Gateway dann nur von der Adresse dieses Spiegels.
 
 ## Welche Releases mit einem Klick aktualisieren
 

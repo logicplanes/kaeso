@@ -1,7 +1,7 @@
 ---
 title: 升级
 description: 了解新版本，手动更新或通过更新器一键更新，以及更新期间会发生什么。
-order: 7
+order: 8
 ---
 
 版本遵循语义化版本规范，Kaeso 的所有组成部分都使用该版本的版本号。每个版本的发布说明位于[发布页面](https://github.com/logicplanes/kaeso/releases)，实例管理员也可以在控制台的**设置** › **实例** › **更新**中查看。每个版本的 `compose.yaml` 固定了该版本的网关、控制台和更新器镜像。
@@ -24,7 +24,7 @@ order: 7
 
 ### 无法联网的安装
 
-关闭**检查新版本**，或在首次启动前在 [`compose.override.yaml`](installation.md#本地修改) 中设置 `KAESO_UPDATES_CHECK=false`。此时页面只显示正在运行的版本，并按下文手动更新。如果您有按 GitHub 发布 API 格式响应的镜像，可以用 `KAESO_UPDATES_RELEASES_URL` 让网关指向它；此时网关只从该镜像自身的地址获取版本清单。
+关闭**检查新版本**，或在首次启动前在 [`compose.override.yaml`](installation.md#修改服务) 中设置 `KAESO_UPDATES_CHECK=false`。此时页面只显示正在运行的版本，并按下文手动更新。如果您有按 GitHub 发布 API 格式响应的镜像，可以用 `KAESO_UPDATES_RELEASES_URL` 让网关指向它；此时网关只从该镜像自身的地址获取版本清单。
 
 ## 哪些版本可以一键更新
 

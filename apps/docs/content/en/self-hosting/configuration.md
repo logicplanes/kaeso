@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: Every setting of a Kaeso install, where it goes and how the gateway reads it.
-order: 3
+order: 4
 ---
 
 An install keeps its settings next to `compose.yaml`. The variables in [the first table](#settings-in-env) go in `.env`; every other gateway setting goes in `compose.override.yaml`:

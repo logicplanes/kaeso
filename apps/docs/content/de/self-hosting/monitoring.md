@@ -1,7 +1,7 @@
 ---
 title: Zustand und Metriken
 description: Health-Checks, Prometheus-Metriken und Logs einer laufenden Installation.
-order: 9
+order: 10
 ---
 
 ## Health-Checks

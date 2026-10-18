@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Common problems with an install and how to solve them.
-order: 10
+order: 11
 ---
 
 Start with the gateway's log; it names the setting, the request or the service involved:
@@ -69,7 +69,7 @@ In the OpenAI formats, some of the gateway's own 503 errors arrive as 500.
 
 ## Streams stop after a minute
 
-A proxy or load balancer between the app and Kaeso closes idle connections. The gateway writes a keepalive every 15 seconds while a stream is silent; if a proxy on the way closes connections sooner, lower `KAESO_STREAMS_KEEPALIVE_INTERVAL` in [`compose.override.yaml`](installation.md#local-changes). Behind your own proxy, also turn off response buffering for `/v1/`. See [long streams](domains-and-tls.md#long-streams).
+A proxy or load balancer between the app and Kaeso closes idle connections. The gateway writes a keepalive every 15 seconds while a stream is silent; if a proxy on the way closes connections sooner, lower `KAESO_STREAMS_KEEPALIVE_INTERVAL` in [`compose.override.yaml`](installation.md#change-the-services). Behind your own proxy, also turn off response buffering for `/v1/`. See [long streams](domains-and-tls.md#long-streams).
 
 ## Request logs are missing or late
 
