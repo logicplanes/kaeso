@@ -73,7 +73,7 @@ A member's rights in a project add up from three sources: their project role, th
 
 Every change of roles and rights follows these rules:
 
-1. **Give only what you hold.** You can give only rights you hold yourself: organization rights in the organization, project rights in that project, and rights in every project only if you hold them in every project. This applies to changing a member's role or rights, inviting, adding a project member, creating or changing a service account or a custom role, and choosing the single sign-on role.
+1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. This applies to changing a member's role or rights, inviting, adding a project member, creating or changing a service account or a custom role, and choosing the single sign-on role.
 2. **Act only on peers.** You can change a member's role and rights, or remove the member, only if you hold every right the member holds in that scope.
 3. **Owners manage owners.** Only owners make, change, remove and invite owners. An organization never loses its last owner.
 4. **Needs are checked.** Kaeso checks what every right a change gives needs. A change can't remove a right that a remaining right needs, even when that remaining right already lacks another of its needs. Kaeso refuses a change to a custom role that would leave a holder with a right but without one it needs. The holders' own rights never change with it.
