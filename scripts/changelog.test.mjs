@@ -389,6 +389,8 @@ test("without a type label, the title's first word chooses the section, and anyt
   assert.equal(section("Keep streams from failing"), "### Changed");
   assert.equal(section("Fixes are listed"), "### Changed");
   assert.equal(section("Additions to the catalogue"), "### Changed");
+  assert.equal(section("Fix: quiet streams"), "### Fixed");
+  assert.equal(section("`Add` button keeps focus"), "### Changed");
 });
 
 test("a type label wins over the title, and of several type labels security comes first, then the order of Keep a Changelog", () => {

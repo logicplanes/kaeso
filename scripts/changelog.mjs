@@ -125,7 +125,7 @@ const DEPENDENCIES = "dependencies";
 const typeOf = ({ title, labels }) => {
   const labelled = PRECEDENCE.find((type) => labels.includes(type));
   if (labelled) return labelled;
-  const word = /^\S+/.exec(title)?.[0].toLowerCase() ?? "";
+  const word = /^\p{L}+/u.exec(title)?.[0].toLowerCase() ?? "";
   return INFERRED.find(([words]) => words.includes(word))?.[1] ?? "changed";
 };
 
