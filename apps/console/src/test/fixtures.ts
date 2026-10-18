@@ -1,7 +1,7 @@
 import type { Membership, MyMembership, OrgView, ProjectRightsView, ProjectView, RightsCatalogue, RoleView, WhoAmI } from "~/api/generated/types";
 import rightsCatalogue from "./fixtures/rights.json";
 import roleList from "./fixtures/roles.json";
-import { on, page } from "./network";
+import { noContent, on, page } from "./network";
 
 export const ORG = "org_northwind";
 export const PROJECT = "proj_checkout";
@@ -141,6 +141,8 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
   const projects = options.projects ?? [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })];
   on("GET", "auth/session", session);
   on("GET", "me/memberships", { data: memberships });
+  on("GET", "me/whats-new", { current: "40.4.2", seen: "40.4.2", releases: [] });
+  on("POST", "me/whats-new/seen", noContent);
   on("GET", "orgs/:org/rights", catalogue);
   on("GET", "orgs/:org/roles", page(roles));
   on("GET", "orgs/:org", ({ params }: { params: Record<string, string> }) => org({ id: params.org ?? ORG }));

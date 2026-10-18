@@ -326,3 +326,27 @@ pub async fn set_avatar(
     .await?;
     Ok(())
 }
+
+pub async fn seen_version(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT seen_version FROM users WHERE id = $1", id)
+            .fetch_optional(db)
+            .await?
+            .flatten(),
+    )
+}
+
+pub async fn set_seen_version(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    version: &str,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE users SET seen_version = $2 WHERE id = $1",
+        id,
+        version
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}

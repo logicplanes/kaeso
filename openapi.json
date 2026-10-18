@@ -4969,6 +4969,102 @@
         "x-kaeso-access": "session"
       }
     },
+    "/platform/v1/me/whats-new": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The Kaeso releases since the signed-in user last saw what's new, with their notes.",
+        "description": "**Access:** a signed-in console session; no right is needed.",
+        "operationId": "getMeWhatsNew",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatsNewView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/whats-new/seen": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Records that the signed-in user saw what's new in the running version.",
+        "description": "**Access:** a signed-in console session; no right is needed.",
+        "operationId": "postMeWhatsNewSeen",
+        "responses": {
+          "204": {
+            "description": "Seen."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
     "/platform/v1/orgs/{org}": {
       "get": {
         "tags": [
@@ -23525,6 +23621,73 @@
             "type": "string",
             "description": "The token from `…/auth/magic-link#token=…`.",
             "writeOnly": true
+          }
+        }
+      },
+      "WhatsNewRelease": {
+        "type": "object",
+        "description": "A Kaeso release the signed-in user hasn't seen yet.",
+        "required": [
+          "version",
+          "prerelease",
+          "notes",
+          "url"
+        ],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "The release notes, in Markdown; empty when the gateway doesn't know them."
+          },
+          "prerelease": {
+            "type": "boolean",
+            "description": "Whether it is a pre-release."
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was published; `null` when the gateway doesn't know the release list."
+          },
+          "url": {
+            "type": "string",
+            "description": "The release's page.",
+            "example": "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version.",
+            "example": "40.2.0"
+          }
+        }
+      },
+      "WhatsNewView": {
+        "type": "object",
+        "description": "What changed in Kaeso since the signed-in user last saw it.",
+        "required": [
+          "current",
+          "releases"
+        ],
+        "properties": {
+          "current": {
+            "type": "string",
+            "description": "The version the gateway runs.",
+            "example": "0.2.1"
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WhatsNewRelease"
+            },
+            "description": "Every release after `seen` up to the running version, newest first, at most 10; pre-releases only while a pre-release runs."
+          },
+          "seen": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The last version the user saw; `null` for someone who never signed in to the console before, who has nothing new to see."
           }
         }
       },

@@ -69,6 +69,8 @@ Sign-in methods and email are set in the gateway's [configuration](../self-hosti
 
 The history lists every update, with who started it, or **Automatically**, and how it ended.
 
+After an update, everyone who opens the console sees **What's new in Kaeso** once: the new version with its improvements, and **Next** through every release they missed. **Continue**, Escape or a click outside closes it.
+
 ## Read the audit log
 
 The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when.
