@@ -9,7 +9,7 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: 开发栈
-  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关，其余请求则返回控制台。网关调用模拟服务商、Mailpit、模拟身份提供方，以及模拟的版本发布和更新器。
+  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关，其余请求则返回控制台。网关调用模拟服务商、Mailpit、模拟身份提供商，以及模拟的版本发布和更新器。
   browser[浏览器] --> vite[localhost:3000 上的 Vite]
   vite -- /platform、/v1 --> gateway[127.0.0.1:18080 上的网关]
   vite -- 其他请求 --> console[控制台]
@@ -29,7 +29,7 @@ flowchart TD
 | `postgres`、`clickhouse`、`valkey` | 网关的数据库，Rust 测试也会使用 | `127.0.0.1:55432`、`127.0.0.1:58123`、`127.0.0.1:56379` |
 | `mail` | Mailpit，接收网关发出的每一封邮件 | `http://127.0.0.1:58025`，SMTP 在 `127.0.0.1:51025` |
 | `provider` | 模拟的 OpenAI 和 Anthropic API，因此不需要服务商密钥 | 仅在栈内部 |
-| `idp` | 用于单点登录的模拟 OpenID Connect 提供方 | `http://idp.localhost:18091` |
+| `idp` | 用于单点登录的模拟 OpenID Connect 提供商 | `http://idp.localhost:18091` |
 | `releases` | 模拟的 Kaeso 版本发布和更新器，供 **设置** › **实例** › **更新** 使用 | `http://127.0.0.1:18092` |
 | `master-key` | 在网关启动前把网关的主密钥写入一个卷 | |
 
