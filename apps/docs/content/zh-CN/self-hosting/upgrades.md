@@ -96,7 +96,7 @@ secrets:
 
 **更新到 …** 会要求确认，确认框会写明版本并提醒先备份。网关记录这次更新，在实例审计日志中写入 `instance.update_start`，并只把版本号交给更新器。随后控制台会跟进以下步骤：
 
-1. **校验签名。**在下载任何镜像之前，更新器会获取 `release.json`、`compose.yaml`，并按 `release.json` 中的摘要获取每个镜像的索引，然后使用内置于更新器的信任根，通过 Sigstore 将每一项与 Kaeso 在 `prod` 上的发布工作流的[构建来源证明](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations)进行校验（[每项校验](../development/architecture/updates.md#更新器)）。任何一项校验失败时，都不会安装任何内容，Kaeso 继续运行。
+1. **校验签名。**在下载任何镜像之前，更新器使用内置于更新器的信任根，通过 Sigstore 将 `release.json` 以及其中列出的每个镜像的索引与 Kaeso 在 `prod` 上的发布工作流的[构建来源证明](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations)进行校验，并按 `release.json` 中的 SHA-256 校验该版本的 `compose.yaml`（[每项校验](../development/architecture/updates.md#更新器)）。任何一项校验失败时，都不会安装任何内容，Kaeso 继续运行。
 2. **下载。** 更新器按摘要拉取网关、控制台和更新器镜像，并检查每个镜像自身的版本标签是否为该版本。
 3. **切换。** Caddy 以[更新页面](#kaeso-更新期间)作答。更新器停止控制台，用其原有设置和新镜像重新启动它并等待其健康检查；然后对网关做同样的操作。
 4. **迁移。** 新网关在启动时迁移数据库；更新器最多给它的健康检查 10 分钟时间，只要网关在运行且没有重启，失败的检查就不计入，因此耗时较长的迁移不会被误认为启动失败。
