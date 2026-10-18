@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO update_releases (version, published_at, prerelease, notes, url, manifest, manifest_error, art) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamptz",
+        "Bool",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e96d94d25c86edf6117d4a3484c85a65e1b57c4652bfbff6face52d24dc89933"
+}

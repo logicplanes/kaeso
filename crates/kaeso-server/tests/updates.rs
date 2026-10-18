@@ -10,6 +10,7 @@ use axum::http::{HeaderMap, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use common::{App, Owner};
+use kaeso_store::pg::updates::{self, ReleaseRow};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -66,6 +67,7 @@ struct GitHub {
     download_base: Option<String>,
     downloads: u32,
     manual_since: Option<String>,
+    art: Vec<(String, Value)>,
 }
 
 fn etag_of(releases: &[(String, bool, bool)]) -> String {
@@ -105,6 +107,7 @@ async fn list(
         .releases
         .iter()
         .map(|(version, prerelease, _)| {
+            let art = gh.art.iter().find(|(v, _)| v == version).map(|(_, a)| a.clone());
             json!({
                 "tag_name": format!("v{version}"),
                 "draft": false,
@@ -113,6 +116,7 @@ async fn list(
                 "body": format!("## Added\n\n- Everything in {version}."),
                 "html_url": format!("https://github.com/logicplanes/kaeso/releases/tag/v{version}"),
                 "assets": [{ "name": "release.json", "browser_download_url": format!("{base}download/v{version}/release.json") }],
+                "art": art,
             })
         })
         .chain([json!({ "tag_name": "v9.9.9", "draft": true, "html_url": "x" }), json!({ "tag_name": "nightly", "html_url": "x" })])
@@ -1421,4 +1425,57 @@ fn the_updater_token_comes_from_a_compose_secret_too() {
         secrecy::ExposeSecret::expose_secret(config.updater.token.as_ref().unwrap()),
         token()
     );
+}
+
+fn art_of(rows: &[ReleaseRow], version: &str) -> Option<Value> {
+    rows.iter()
+        .find(|r| r.version == version)
+        .and_then(|r| r.art.clone())
+}
+
+#[tokio::test]
+async fn a_releases_artwork_is_kept_as_the_feed_first_gave_it() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable()).await;
+    let first =
+        json!({ "version": 1, "seed": 2_886_621_037_u32, "style": "stripes", "palette": 6 });
+    gh.lock().unwrap().art = vec![
+        (next_patch(), first.clone()),
+        (
+            next_minor_rc(),
+            json!({ "version": 1, "seed": 1, "style": "<script>", "palette": 0 }),
+        ),
+    ];
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    let rows = updates::releases(&app.state.pg).await.unwrap();
+    assert_eq!(art_of(&rows, &next_patch()), Some(first.clone()));
+    assert_eq!(
+        art_of(&rows, &next_minor_rc()),
+        None,
+        "art it can't read is left out"
+    );
+
+    {
+        let mut g = gh.lock().unwrap();
+        g.art = vec![(
+            next_patch(),
+            json!({ "version": 1, "seed": 7, "style": "waves", "palette": 2 }),
+        )];
+        g.releases.push((next_major(), false, false));
+    }
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    let rows = updates::releases(&app.state.pg).await.unwrap();
+    assert_eq!(rows.len(), 4);
+    assert_eq!(
+        art_of(&rows, &next_patch()),
+        Some(first),
+        "a release's artwork never changes"
+    );
+    assert_eq!(art_of(&rows, &next_major()), None);
+    s.cleanup().await;
 }

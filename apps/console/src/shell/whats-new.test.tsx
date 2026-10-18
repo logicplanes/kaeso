@@ -15,6 +15,23 @@ const release = (version: string, notes = `## Added\n\n- Everything new in ${ver
 });
 
 describe("what's new", () => {
+  it("draws each release's stored artwork, and one from the version when it has none", async () => {
+    signedIn();
+    const stored = { ...release("40.5.0"), art: { version: 1, seed: 42, style: "albers", palette: 3 } };
+    const unknown = { ...release("40.4.0"), art: { version: 9, seed: 42, style: "glow", palette: 3 } };
+    on("GET", "me/whats-new", { current: "40.5.0", seen: "40.3.0", releases: [stored, unknown] });
+    const { user } = await renderApp(PATH);
+    const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
+    const albers = within(dialog).getByRole("img", { name: "Kaeso 40.5.0" });
+    expect(albers.querySelectorAll("circle, path")).toHaveLength(0);
+    expect(albers.querySelectorAll("rect").length).toBeGreaterThanOrEqual(5);
+    const drawn = albers.innerHTML;
+    await user.click(within(dialog).getByRole("button", { name: "Next" }));
+    const fallback = within(dialog).getByRole("img", { name: "Kaeso 40.4.0" });
+    expect(fallback.innerHTML).not.toBe(drawn);
+    expect(fallback.querySelectorAll("rect, circle, path").length).toBeGreaterThan(3);
+  });
+
   it("walks through every release since the last visit and records it as seen", async () => {
     signedIn();
     on("GET", "me/whats-new", { current: "40.5.0", seen: "40.3.0", releases: [release("40.5.0"), release("40.4.0")] });

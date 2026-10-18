@@ -13,7 +13,7 @@ use kaeso_update::protocol::{JobState, Reason, StartRequest};
 use kaeso_update::schedule::{self, Frequency, Mode, Schedule, Weekday};
 use reqwest::StatusCode;
 use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, LINK, RETRY_AFTER};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use time::OffsetDateTime;
 
@@ -196,6 +196,24 @@ struct GitHubRelease {
     html_url: String,
     #[serde(default)]
     assets: Vec<GitHubAsset>,
+    #[serde(default)]
+    art: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ReleaseArt {
+    version: u8,
+    seed: u32,
+    style: String,
+    palette: u8,
+}
+
+fn art_of(value: Option<serde_json::Value>) -> Option<serde_json::Value> {
+    let art: ReleaseArt = serde_json::from_value(value?).ok()?;
+    let style_ok =
+        (1..=32).contains(&art.style.len()) && art.style.bytes().all(|b| b.is_ascii_lowercase());
+    style_ok.then(|| serde_json::to_value(art).ok()).flatten()
 }
 
 #[derive(Debug, Deserialize)]
@@ -478,6 +496,11 @@ async fn rows_of(
                     ),
                 },
             };
+            let art = previous
+                .iter()
+                .find(|k| k.version == version)
+                .and_then(|k| k.row.art.clone())
+                .or_else(|| art_of(r.art));
             ReleaseRow {
                 version: version.to_string(),
                 published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
@@ -486,6 +509,7 @@ async fn rows_of(
                 url: r.html_url,
                 manifest,
                 manifest_error,
+                art,
             }
         })
         .collect()

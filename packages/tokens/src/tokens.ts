@@ -59,6 +59,27 @@ export const viz = [
   { name: "fuchsia", light: "#d946ef", dark: "#e879f9", thin: "#d946ef" },
 ] as const;
 
+export const art = {
+  grounds: {
+    paper: { fill: "#f1ece2", text: "#141414" },
+    ink: { fill: "#1c1c22", text: "#f7f5f0" },
+  },
+  palettes: [
+    { name: "bauhaus", ground: "paper", colors: ["#e4572e", "#f3a712", "#29335c", "#669bbc"] },
+    { name: "harbor", ground: "paper", colors: ["#d1495b", "#edae49", "#00798c", "#30638e"] },
+    { name: "terrace", ground: "paper", colors: ["#264653", "#2a9d8f", "#e9c46a", "#e76f51"] },
+    { name: "orchard", ground: "paper", colors: ["#bc4b51", "#5b8e7d", "#f4a259", "#8cb369"] },
+    { name: "kiln", ground: "paper", colors: ["#0f4c5c", "#e36414", "#fb8b24", "#9a031e"] },
+    { name: "riso", ground: "paper", colors: ["#ff48b0", "#0078bf", "#ffe800", "#00a95c"] },
+    { name: "signal", ground: "ink", colors: ["#ff4f3f", "#ffd23f", "#3bceac", "#f7f5f0"] },
+    { name: "arcade", ground: "ink", colors: ["#f72585", "#7209b7", "#4cc9f0", "#f7f5f0"] },
+    { name: "sunset", ground: "ink", colors: ["#ffbe0b", "#fb5607", "#ff006e", "#3a86ff"] },
+    { name: "sorbet", ground: "ink", colors: ["#e9ff70", "#ffd670", "#ff9770", "#ff70a6"] },
+    { name: "lagoon", ground: "ink", colors: ["#06d6a0", "#ffd166", "#ef476f", "#118ab2"] },
+    { name: "graphite", ground: "ink", colors: ["#f7f5f0", "#a3a3a3", "#525252", "#e5484d"] },
+  ],
+} as const;
+
 export const tokenKindSeries = { input: 1, output: 3, cacheRead: 1, cacheWrite: 2, reasoning: 5 } as const;
 export const tokenKindTint: Partial<Record<keyof typeof tokenKindSeries, true>> = { cacheRead: true };
 export const vizSoft = mode("#a7c7fb", "#3d72b8");

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT version, published_at, prerelease, notes, url, manifest, manifest_error FROM update_releases ORDER BY published_at DESC, version DESC",
+  "query": "SELECT version, published_at, prerelease, notes, url, manifest, manifest_error, art FROM update_releases ORDER BY published_at DESC, version DESC",
   "describe": {
     "columns": [
       {
@@ -79,6 +79,17 @@
             "name": "manifest_error"
           }
         }
+      },
+      {
+        "ordinal": 7,
+        "name": "art",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "update_releases",
+            "name": "art"
+          }
+        }
       }
     ],
     "parameters": {
@@ -91,8 +102,9 @@
       false,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "2a7cd7bf053668c13409503e0748675cdc780deb976afe8f294a86ab8495d356"
+  "hash": "487485b69f4e9e7248465fd4d22d8b10ebbd86aedec875687ca83fe492679f5d"
 }

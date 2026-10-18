@@ -19,6 +19,7 @@ fn release(version: &str) -> ReleaseRow {
         url: format!("https://github.com/logicplanes/kaeso/releases/tag/v{version}"),
         manifest: None,
         manifest_error: None,
+        art: None,
     }
 }
 
@@ -44,7 +45,12 @@ async fn a_new_user_sees_nothing_and_an_old_one_sees_every_release_since() {
     assert_eq!(after.body["releases"], json!([]));
 
     let mut tx = app.state.pg.begin().await.unwrap();
-    updates::replace_releases(&mut tx, &[release("0.0.1"), release("0.0.2")], None)
+    let art = json!({ "version": 1, "seed": 42, "style": "albers", "palette": 3 });
+    let drawn = ReleaseRow {
+        art: Some(art.clone()),
+        ..release("0.0.2")
+    };
+    updates::replace_releases(&mut tx, &[release("0.0.1"), drawn], None)
         .await
         .unwrap();
     tx.commit().await.unwrap();
@@ -61,6 +67,8 @@ async fn a_new_user_sees_nothing_and_an_old_one_sees_every_release_since() {
         .collect();
     assert_eq!(versions, [RUNNING, "0.0.2"]);
     assert_eq!(behind.body["releases"][0]["published_at"], Value::Null);
+    assert_eq!(behind.body["releases"][0]["art"], Value::Null);
+    assert_eq!(behind.body["releases"][1]["art"], art);
     assert_eq!(
         behind.body["releases"][1]["notes"],
         "## Added\n\n- Everything in 0.0.2."

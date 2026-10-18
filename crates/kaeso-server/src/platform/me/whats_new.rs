@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_store::pg::{updates, users};
 use kaeso_update::Version;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
@@ -30,6 +30,27 @@ pub struct WhatsNewRelease {
     #[doc = "The release's page."]
     #[schema(example = "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0")]
     pub url: String,
+    #[doc = "The release's artwork as update.kaeso.app chose it once for good; `null` when the feed has none, and the console then draws one from the version."]
+    pub art: Option<ReleaseArtView>,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[schema(
+    description = "A release's artwork: what the console's `ReleaseArt` draws, the same picture every time."
+)]
+pub struct ReleaseArtView {
+    #[doc = "The version of the drawing."]
+    #[schema(example = 1)]
+    pub version: u8,
+    #[doc = "The seed of the drawing."]
+    #[schema(example = 2886621037_u32)]
+    pub seed: u32,
+    #[doc = "The style, such as `bauhaus` or `phyllotaxis`."]
+    #[schema(example = "stripes")]
+    pub style: String,
+    #[doc = "The palette, by its index."]
+    #[schema(example = 6)]
+    pub palette: u8,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -64,6 +85,11 @@ fn unseen(running: &Version, seen: &Version, known: &[Known]) -> Vec<WhatsNewRel
             prerelease: k.row.prerelease,
             notes: k.row.notes.clone(),
             url: k.row.url.clone(),
+            art: k
+                .row
+                .art
+                .clone()
+                .and_then(|a| serde_json::from_value(a).ok()),
         })
         .collect();
     if running > seen && !out.iter().any(|r| r.version == running.to_string()) {
@@ -75,6 +101,7 @@ fn unseen(running: &Version, seen: &Version, known: &[Known]) -> Vec<WhatsNewRel
                 prerelease: !running.pre.is_empty(),
                 notes: String::new(),
                 url: release_page(running),
+                art: None,
             },
         );
         out.truncate(MAX_RELEASES);
@@ -143,6 +170,7 @@ mod tests {
                     url: format!("https://example.com/{v}"),
                     manifest: None,
                     manifest_error: None,
+                    art: None,
                 })
                 .collect(),
         )

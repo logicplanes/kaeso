@@ -21411,6 +21411,44 @@
         ],
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
       },
+      "ReleaseArtView": {
+        "type": "object",
+        "description": "A release's artwork: what the console's `ReleaseArt` draws, the same picture every time.",
+        "required": [
+          "version",
+          "seed",
+          "style",
+          "palette"
+        ],
+        "properties": {
+          "palette": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The palette, by its index.",
+            "example": 6,
+            "minimum": 0
+          },
+          "seed": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The seed of the drawing.",
+            "example": 2886621037,
+            "minimum": 0
+          },
+          "style": {
+            "type": "string",
+            "description": "The style, such as `bauhaus` or `phyllotaxis`.",
+            "example": "stripes"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The version of the drawing.",
+            "example": 1,
+            "minimum": 0
+          }
+        }
+      },
       "ReleaseView": {
         "type": "object",
         "description": "A Kaeso release newer than the running version.",
@@ -23634,6 +23672,17 @@
           "url"
         ],
         "properties": {
+          "art": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseArtView",
+                "description": "The release's artwork as update.kaeso.app chose it once for good; `null` when the feed has none, and the console then draws one from the version."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "type": "string",
             "description": "The release notes, in Markdown; empty when the gateway doesn't know them."
