@@ -85,7 +85,7 @@ Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 
 Das Gateway hat eigene Regeln, etwa keine Panics und keine Gleitkommazahlen für Geld ([Regeln des Gateways](architecture/gateway.md#regeln)). KPP ebenso ([Entwurfsprinzipien](kpp/index.md#entwurfsprinzipien)).
 
-Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs`, `apps/showcase` und `apps/update` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
+Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
 
 ## Abhängigkeit hinzufügen
 

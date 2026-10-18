@@ -144,14 +144,6 @@ pnpm --filter kaeso-showcase build
 
 Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every page in every language, `robots.txt`, `sitemap.xml` and a `404.html` per language. The host has to answer `/console` with `console.html`, and an unknown address with the `404.html` of its language. Moved pages have a page at their old address, and `_redirects` lists the same moves for hosts that read it.
 
-The update service at update.kaeso.app is built from every release on GitHub, so build and upload it after each release, from `dev`. Installs find new releases in its `v1/releases.json`:
-
-```bash
-GITHUB_TOKEN=$(gh auth token) pnpm --filter kaeso-update build
-```
-
-Upload `apps/update/dist` as it is. It holds the releases page, `v1/releases.json`, `v1/history.json`, `v1/latest.json`, each release's `release.json` under `download/` and its artwork under `art/`.
-
 ### Content Security Policy
 
 Each build writes its site's policy into every page as a `<meta>` tag, and into `csp.txt` and `_headers`. Also send it as the `Content-Security-Policy` header, because only the header can add `frame-ancestors 'none'`. The documentation's header never changes:

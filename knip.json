@@ -46,8 +46,7 @@
       "entry": ["src/routes/**/*.tsx", "stack/*.mjs"],
       "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs", "stack/**/*.mjs", "e2e/**/*.ts", "eslint/**/*.js"]
     },
-    "apps/docs": {},
-    "apps/update": {}
+    "apps/docs": {}
   },
   "rules": {
     "duplicates": "off"

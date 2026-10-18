@@ -11,7 +11,6 @@ Jedes Wort, das Kaeso einer Person zeigt, gibt es auf Englisch, Deutsch und vere
 | Die Konsole | `apps/console/src/i18n/locales/<locale>/<area>.json` | `pnpm i18n`, `pnpm lint` |
 | Die UI-Bibliothek | `packages/ui/src/i18n/locales/` | Den Tests der Bibliothek |
 | Der Showcase | `apps/showcase/src/i18n/` und `DOCS_TEXT` in `apps/showcase/src/lib/locale.tsx` | `pnpm --filter kaeso-showcase gen` |
-| Der Update-Dienst | `apps/update/src/locales/` | Den Tests der App |
 | E-Mails | Eine Funktion pro E-Mail in `crates/kaeso-mail/src/templates.rs` | Den Tests des Mail-Crates ([E-Mails](architecture/emails.md#sprachen)) |
 | Diese Dokumentation | `apps/docs/content/<locale>/` und `apps/docs/src/i18n/messages` | `check:content` und dem Typecheck ([Dokumentation schreiben](documentation.md#übersetzen)) |
 
