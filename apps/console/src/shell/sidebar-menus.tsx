@@ -127,7 +127,7 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
         {t("shell.account", "Account")}
       </Menu.LinkItem>
       {session.user.is_instance_admin && (
-        <Menu.LinkItem icon={icons.instance} href="/settings/instance/users">
+        <Menu.LinkItem icon={icons.instance} href="/settings/instance/general">
           {t("shell.instance", "Instance")}
         </Menu.LinkItem>
       )}

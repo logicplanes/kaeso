@@ -12,7 +12,7 @@ const sent = (path: string) => requests("GET", path).map((r) => Object.fromEntri
 describe("settings addresses that moved", () => {
   it.each([
     ["/settings", "/settings/account/profile", {}],
-    ["/settings/instance", "/settings/instance/users", {}],
+    ["/settings/instance", "/settings/instance/general", {}],
     ["/settings/instance/models", "/settings/instance/model-sources", {}],
     [`/settings/orgs/${ORG}`, `/settings/orgs/${ORG}/general`, {}],
     [`/settings/orgs/${ORG}/invites?invite=true`, `/settings/orgs/${ORG}/members`, { tab: "invites", invite: true }],
@@ -122,7 +122,8 @@ describe("instance settings", () => {
   });
 
   it.each([
-    ["settings", "Settings", "instance/settings", instanceSettings()],
+    ["general", "General", "instance/settings", instanceSettings()],
+    ["logging", "Logging", "instance/settings", instanceSettings()],
     ["model-sources", "Model sources", "instance/models-dev", modelsDev()],
     ["system", "System", "instance/system", system()],
   ])("opens %s with its data", async (path, title, api, reply) => {

@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Code, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
-import { systemQuery } from "~/api/queries/instance";
+import { Code, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Text } from "@logicplanes/kaeso-ui";
+import { formatBytes, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { instanceSettingsQuery, systemQuery } from "~/api/queries/instance";
 import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
 import { InstancePage } from "./instance-page";
+import { Mail } from "./mail-settings";
 import { t } from "~/i18n";
 
 const statuses = (): Record<string, { tone: "success" | "warning" | "danger"; label: string }> => ({
@@ -18,33 +18,17 @@ const SERVICE = { postgres: "PostgreSQL", clickhouse: "ClickHouse", valkey: "Val
 
 export function InstanceSystemPage() {
   const system = useQuery({ ...systemQuery, refetchInterval: 10_000 });
-  const [checking, setChecking] = useState(false);
+  const settings = useQuery(instanceSettingsQuery);
   const s = system.data;
   const status = statuses()[s?.status ?? ""] ?? { tone: "warning" as const, label: s?.status ?? "" };
   const size = (bytes: number | null | undefined) => (bytes == null ? t("common.unknown", "Unknown") : formatBytes(bytes));
   const service = (state: string) => (
     <StatusDot tone={state === "ok" ? "success" : "danger"}>{state === "ok" ? t("instance.up", "Up") : t("instance.down", "Down")}</StatusDot>
   );
-  const checkNow = () => {
-    setChecking(true);
-    void system.refetch().finally(() => setChecking(false));
-  };
   return (
     <InstancePage
       title={t("instance.system", "System")}
-      actions={
-        <Tooltip
-          content={
-            s
-              ? t("instance.lastChecked", "Last checked {when} · every 10 seconds", { when: formatRelative(system.dataUpdatedAt) })
-              : t("instance.checkedEvery", "Checked every 10 seconds")
-          }
-        >
-          <Button size="sm" leadingIcon={icons.refresh} loading={checking} onClick={checkNow}>
-            {t("instance.checkNow", "Check now")}
-          </Button>
-        </Tooltip>
-      }
+      description={t("instance.systemHint", "Live state of the gateway and its services, refreshed every 10 seconds.")}
     >
       {!s && system.isError ? (
         <LoadFailed title={t("instance.systemFailed", "The system status couldn't load")} />
@@ -104,6 +88,7 @@ export function InstanceSystemPage() {
               />
             </SettingsGroup>
           </SettingsSection>
+          {settings.data && <Mail settings={settings.data} />}
         </>
       )}
     </InstancePage>

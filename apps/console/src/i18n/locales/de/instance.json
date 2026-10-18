@@ -35,7 +35,6 @@
   "instance.backToUsers": "Zurück zu den Benutzern",
   "instance.cantDeactivateSelf": "Sie können sich nicht selbst deaktivieren",
   "instance.checkNow": "Jetzt prüfen",
-  "instance.checkedEvery": "Alle 10 Sekunden geprüft",
   "instance.chooseUser": "Benutzer auswählen",
   "instance.clickhouseHint": "Anfrageprotokolle und Nutzung.",
   "instance.contentAboveMax": "Die Standard-Aufbewahrung für Inhalte liegt über ihrem Maximum",
@@ -118,7 +117,6 @@
   "instance.keptWithContent": "Metadaten {metadata} Tage, Inhalte {content} Tage aufbewahrt.",
   "instance.last30Days": "Letzte 30 Tage",
   "instance.last30DaysHint": "Anfragen, Token und Kosten über alle Projekte und die gespeicherten Protokolle",
-  "instance.lastChecked": "Zuletzt geprüft {when} · alle 10 Sekunden",
   "instance.lastSync": "Letzter Sync",
   "instance.logBuffer": "Puffer für Anfrageprotokolle",
   "instance.logEntries": "Einträge im Anfrageprotokoll",
@@ -221,7 +219,6 @@
   "instance.sessionsEnded": "Alle Sitzungen beendet",
   "instance.setInConfig": "In der Konfiguration des Gateways festgelegt.",
   "instance.settingsFailed": "Die Einstellungen der Instanz konnten nicht geladen werden",
-  "instance.settingsHint": "Wie die Installation für alle Benutzer funktioniert.",
   "instance.signIn": "Anmeldung",
   "instance.signInHint": "Was die Organisation von ihren Mitgliedern verlangt.",
   "instance.signInLink": "Anmeldelink",
@@ -263,7 +260,7 @@
   "instance.updates.byHand": "Von Hand aktualisieren",
   "instance.updates.byHandTitle": "Von Hand aktualisieren, im Ordner der Installation",
   "instance.updates.channel": "Releases",
-  "instance.updates.channelHint": "Welche Releases dieser Installation angeboten werden.",
+  "instance.updates.channelHint": "Welche Releases diese Installation erhält.",
   "instance.updates.channelSaved": "Kanal gespeichert",
   "instance.updates.checkFailed": "Releases nicht abrufbar; später erneut versuchen",
   "instance.updates.checkFailedAt": "Fehlgeschlagen {when}",
@@ -397,5 +394,8 @@
   "instance.updates.checkStatus": "{host} hat mit {status} geantwortet",
   "instance.updates.checkUnreadable": "Die Release-Liste von {host} ist nicht lesbar",
   "instance.updates.checkTooLarge": "Die Release-Liste von {host} ist größer als 4 MiB",
-  "instance.updates.checkNoClient": "Das Gateway konnte seinen HTTP-Client nicht einrichten"
+  "instance.updates.checkNoClient": "Das Gateway konnte seinen HTTP-Client nicht einrichten",
+  "instance.generalHint": "Wer beitreten darf und was Organisationen dürfen.",
+  "instance.loggingHint": "Wie lange Anfrageprotokolle bleiben: für neue Organisationen und höchstens.",
+  "instance.systemHint": "Live-Zustand des Gateways und seiner Dienste, alle 10 Sekunden aktualisiert."
 }

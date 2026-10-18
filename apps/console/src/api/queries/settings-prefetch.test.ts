@@ -98,6 +98,7 @@ describe("settings prefetch by link", () => {
       ["orgs", ORG, "rights-catalogue"],
       ["orgs", ORG, "logs", "settings"],
       ["instance", "system"],
+      ["instance", "settings"],
     ]);
   });
 
@@ -121,9 +122,10 @@ describe("settings prefetch by link", () => {
     prefetchSettingsPath(c, "/settings/account/security");
     prefetchSettingsPath(c, "/settings/instance/users?state=active");
     prefetchSettingsPath(c, "/settings/instance/orgs");
-    prefetchSettingsPath(c, "/settings/instance/settings");
+    prefetchSettingsPath(c, "/settings/instance/general");
     prefetchSettingsPath(c, "/settings/instance/model-sources");
     prefetchSettingsPath(c, "/settings/instance/updates");
+    prefetchSettingsPath(c, "/settings/instance/logging");
     prefetchSettingsPath(c, "/settings/instance/catalogue");
     prefetchSettingsPath(c, "/settings/instance");
     prefetchSettingsPath(c, "/settings/orgs");
@@ -135,6 +137,7 @@ describe("settings prefetch by link", () => {
       ["instance", "settings"],
       ["instance", "models-dev"],
       ["instance", "updates"],
+      ["instance", "settings"],
     ]);
   });
 });
