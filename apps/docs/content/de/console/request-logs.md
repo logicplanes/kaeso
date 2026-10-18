@@ -1,63 +1,77 @@
 ---
 title: Anfrageprotokolle
-description: Jede Anfrage eines Projekts nachlesen, exportieren und festlegen, was gespeichert wird.
+description: Finden Sie jede Anfrage eines Projekts, sehen Sie Gesendetes und Erhaltenes, exportieren Sie Protokolle und wählen Sie, was bleibt.
 order: 7
 ---
 
-Kaeso protokolliert jede Modellanfrage: Modell, Anbieter, Status, Token, Kosten, Zeiten, den Schlüssel und wer sie gesendet hat. Bei eingeschalteter Inhaltsprotokollierung speichert es auch, was die App gesendet und zurückbekommen hat. Ein Eintrag erscheint wenige Sekunden nach dem Ende seiner Anfrage. Die Protokolle zu lesen erfordert das Recht **Anfrageprotokolle ansehen**.
+Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, Token, Kosten, Zeiten, den Schlüssel und wer sie gesendet hat. Mit eingeschalteter Inhaltsprotokollierung speichert es auch, was die App gesendet und zurückbekommen hat. Eine Anfrage erscheint wenige Sekunden nach ihrem Ende.
 
-## Die Liste
+## Anfrage finden
 
-Die Seite **Anfrageprotokolle** eines Projekts listet Anfragen, die neuesten zuerst, aus der letzten Stunde, den letzten 24 Stunden, 7 oder 30 Tagen oder einem eigenen Zeitraum.
+Öffnen Sie die Seite **Anfrageprotokolle** eines Projekts. Sie listet Anfragen, die neuesten zuerst, aus der letzten Stunde, den letzten 24 Stunden, 7 Tagen oder 30 Tagen oder einem selbst gewählten Zeitraum.
 
-- **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, Anbieter, Status, Fehlerart, Streaming und Quelle ein (die API oder der Playground); **Nur fehlgeschlagene** zeigt nur Fehler.
-- **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wer nach unten gescrollt hat, sieht eine Schaltfläche mit der Zahl neuer Anfragen.
-- Die Anzeigeoptionen wählen Spalten und Dichte.
-- **Anfrage per ID öffnen** findet die Anfrage zur `kaeso-request-id`, die die App erhalten hat.
+- **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, Anbieter, Status, Fehlerart, Streaming und Quelle ein: die API oder der Playground. **Nur fehlgeschlagene** behält die Fehler.
+- **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wenn Sie nach unten gescrollt haben, nennt eine Schaltfläche die Zahl der neuen.
+- Die Anzeigeoptionen wählen die Spalten und die Dichte.
+- **Anfrage per ID öffnen** findet die Anfrage, deren Header `kaeso-request-id` Ihre App erhalten hat.
 
-## Eine Anfrage
+Die Protokolle zu lesen erfordert das Recht **Anfrageprotokolle ansehen**.
 
-Eine Anfrage wählen, um sie zu öffnen:
+## Anfrage lesen
+
+Wählen Sie eine Anfrage, um sie zu öffnen:
 
 | Tab | Inhalt |
 | --- | --- |
-| Übersicht | Ergebnis, Route, Absender, Zeiten, Stream und Nutzung |
+| Übersicht | Das Ergebnis, die Route, wer sie gesendet hat, die Zeiten, der Stream und die Nutzung |
 | Anfrage | Was die App gesendet hat |
-| Antwort | Was sie zurückbekommen hat |
+| Antwort | Was die App zurückbekommen hat |
 | Rohdaten | Der Protokolleintrag, wie die Platform API ihn liefert |
 
-Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitüberschreitung** oder **Client getrennt**, und die Meldung des Anbieters, falls es eine gab. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, bis zu dem er kam.
+Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitlimit** oder **Client getrennt**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
 
-Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen es, wenn es fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren werden nie gespeichert. Eine Antwort in einem Format, das diese Konsole noch nicht lesen kann, etwa von einem neueren Gateway, wird so gezeigt, wie sie gespeichert ist.
+Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort in einem Format, das diese Konsole noch nicht lesen kann, etwa von einem neueren Gateway, zeigt sie so, wie sie gespeichert wurde.
 
-## Export
+## Protokolle exportieren
 
-**Exportieren** lädt die Anfragen herunter, die den aktuellen Filtern entsprechen:
+**Exportieren** lädt die Anfragen herunter, die zu den aktuellen Filtern passen:
 
-| Format | Inhalt |
+| Format | Enthält |
 | --- | --- |
 | CSV | Metadaten, für Tabellenkalkulationen |
 | JSON Lines | Metadaten, eine Anfrage pro Zeile |
-| JSON Lines mit Inhalt | Zusätzlich die gespeicherten Anfragen und Antworten |
+| JSON Lines mit Inhalt | Metadaten und die gespeicherten Anfragen und Antworten |
 
-Exportieren erfordert das Recht **Protokolle exportieren**, mit Inhalt zusätzlich **Prompts und Ausgaben ansehen**. In CSV erhält ein Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt, ein vorangestelltes `'`, damit eine Tabellenkalkulation ihn als Text zeigt, statt ihn als Formel auszuführen.
+Exportieren erfordert das Recht **Protokolle exportieren**, mit Inhalt zusätzlich **Prompts und Ausgaben ansehen**.
+
+In CSV setzt Kaeso ein `'` vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Eine Tabellenkalkulation zeigt den Wert dann als Text, statt ihn als Formel auszuführen.
 
 ## Aufbewahrung
 
-Jede Organisation legt unter **Organisationseinstellungen** › **Protokollierung** fest, was wie lange gespeichert wird:
+Jede Organisation legt unter **Organisationseinstellungen** › **Protokollierung** fest, was sie aufbewahrt und wie lange:
 
 | Einstellung | Standard | Wirkung |
 | --- | --- | --- |
 | Anfrageinhalte protokollieren | An | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden |
-| Aufbewahrung der Metadaten | 90 Tage | Wie lange Einträge gespeichert werden |
-| Aufbewahrung der Inhalte | 30 Tage | Wie lange Anfragen und Antworten gespeichert werden; nie länger als die Metadaten |
+| Aufbewahrung der Metadaten | 90 Tage | Wie lange Protokolleinträge bleiben |
+| Aufbewahrung der Inhalte | 30 Tage | Wie lange Anfragen und Antworten bleiben. Nie länger als die Metadaten |
 
-Die Installation legt die Standardwerte für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf ([Instanzeinstellungen](instance-administration.md#einstellungen)). Eine kürzere Aufbewahrung löscht ältere Einträge; eine längere gilt für neue. Diese Einstellungen zu ändern erfordert das Recht **Protokollierung verwalten**.
+Eine kürzere Aufbewahrung löscht ältere Einträge, eine längere gilt für neue. Die Installation legt die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf ([Instanzeinstellungen](instance-administration.md#einstellungen)). Diese Einstellungen zu ändern erfordert das Recht **Protokollierung verwalten**.
 
-Ein Projekt kann die Inhaltsprotokollierung für sich unter **Einstellungen** ausschalten, aber nicht einschalten, solange die Organisation sie ausgeschaltet hat.
+Ein Projekt kann die Inhaltsprotokollierung für sich in seinen **Einstellungen** ausschalten. Einschalten kann es sie nicht, solange die Organisation sie ausgeschaltet hat.
 
-## Speicher und Löschen
+## Protokolle löschen
 
-Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation hat und wie viel Platz sie belegen, je Projekt.
+Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation aufbewahrt und wie viel Platz sie je Projekt belegen.
 
-Auf dem Tab **Löschungen** löscht **Protokolle löschen** die Protokolle ganzer UTC-Tage, aus allen Projekten oder einem, endgültig; Nutzung und Kosten bleiben. Bestätigt wird durch Eingabe von `delete`, und die Liste zeigt jede Löschung als **In Warteschlange** oder **Erledigt**. Höchstens 10 Löschungen warten gleichzeitig. Löschen erfordert das Recht **Protokolle löschen** und eine kürzliche Anmeldung.
+1. Wählen Sie auf dem Tab **Löschungen** **Protokolle löschen**.
+2. Wählen Sie ganze UTC-Tage und alle Projekte oder eines.
+3. Geben Sie zur Bestätigung `delete` ein.
+
+Kaeso löscht die Protokolle dieser Tage endgültig und behält Nutzung und Kosten. Die Liste zeigt jede Löschung als **In Warteschlange** oder **Erledigt**, und höchstens 10 Löschungen warten zugleich. Löschen erfordert das Recht **Protokolle löschen** und eine kürzliche Anmeldung.
+
+## Nächste Schritte
+
+- [Organisationen und Projekte](organizations-and-projects.md): Schalten Sie die Inhaltsprotokollierung für ein einzelnes Projekt aus.
+- [Fehler](../api/errors.md): Schlagen Sie nach, was eine fehlgeschlagene Anfrage der App zurückgibt.
+- [Anforderungen](../self-hosting/requirements.md): Planen Sie den Speicherplatz, den Anfrageprotokolle belegen.

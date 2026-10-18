@@ -1,24 +1,22 @@
 ---
 title: Playground
-description: Send a prompt to up to four models side by side.
+description: Send one prompt to up to four models and compare their replies side by side.
 order: 8
 ---
 
 The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.
 
-Playground requests are real requests. They use the project's provider keys, your model access, and your and the project's limits; they are charged to the project and appear in the [request logs](request-logs.md) with the source **Playground**. Key limits don't apply, because no key is used.
-
 ## Compare models
 
-1. Choose a model for the first column, and **Add column** for each further one. A model whose provider has no key for this project can't be chosen.
+1. Choose a model for the first column, and choose **Add column** for each further one. You can't choose a model whose provider has no key for this project.
 2. Send a prompt to every model.
-3. Each reply shows the time to the first token, the total time, the tokens and the cost.
+3. Read the replies. Each shows the time to the first token, the total time, the tokens and the cost.
 
 **Clear** empties every column's conversation.
 
-The models and parameters are part of the page's address, so a link opens the same comparison. A prompt you haven't sent yet stays in your browser; conversations are not saved.
+The page's address holds the models and parameters, so a link opens the same comparison. A prompt you haven't sent yet stays in your browser. Conversations are not saved.
 
-## Parameters
+## Set parameters
 
 **Parameters** sets what every column sends:
 
@@ -31,3 +29,12 @@ The models and parameters are part of the page's address, so a link opens the sa
 | Reasoning summary | Whether a reasoning model's thinking is summarized: **Auto**, **Concise**, **Detailed** or **Off** |
 
 **Reset to defaults** clears every parameter except the system instructions.
+
+## What a Playground request costs
+
+Playground requests are real requests, charged to the project. They use the project's provider keys, your model access, and your limits and the project's. Key limits don't apply, because no key is used. The [request logs](request-logs.md) list them with the source **Playground**.
+
+## Next steps
+
+- [Models and aliases](models-and-aliases.md): Add the models you want to compare to the catalogue.
+- [API keys](api-keys.md): Create a key to call the model you chose from an app.
