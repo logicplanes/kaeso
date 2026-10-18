@@ -76,3 +76,45 @@ describe("a refusal in English", () => {
     expect((await errorFromResponse(refusal(budget))).message).toBe(budget);
   });
 });
+
+describe("a refusal from the Playground's capability checks", () => {
+  it("joins the effort levels the language's way and keeps the codes", async () => {
+    const message = "The model `gpt-5` supports the effort levels `low`, `medium`, `high`; `max` is not one of them.";
+    await speak("de");
+    expect((await errorFromResponse(refusal(message))).message).toBe(
+      "Das Modell `gpt-5` unterstützt die Aufwandsstufen `low`, `medium` und `high`; `max` gehört nicht dazu.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal(message))).message).toBe("模型 `gpt-5` 支持的推理强度为 `low`、`medium` 和 `high`，`max` 不在其中。");
+    const plain = "The model `gpt-5` supports the effort levels low, high; `max` is not one of them.";
+    expect((await errorFromResponse(refusal(plain))).message).toBe(plain);
+  });
+
+  it("translates the named tool choice and keeps a choice written as code", async () => {
+    await speak("de");
+    const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and ask for the tool in the prompt.";
+    expect((await errorFromResponse(refusal(named))).message).toBe(
+      "Das Modell `o3` nimmt eine benannte Funktion in `tool_choice` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+    );
+    const code = "The model `o3` does not accept `tool_choice` `required`; send `auto` and ask for the tool in the prompt.";
+    expect((await errorFromResponse(refusal(code))).message).toBe(
+      "Das Modell `o3` nimmt `tool_choice` `required` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+    );
+    const unknown = "The model `o3` does not accept a brand new choice; send `auto` and ask for the tool in the prompt.";
+    expect((await errorFromResponse(refusal(unknown))).message).toBe(unknown);
+  });
+});
+
+describe("a refusal while Kaeso updates", () => {
+  it("is translated from the gateway and from the proxy in front of it", async () => {
+    await speak("de");
+    expect((await errorFromResponse(refusal("An update is already running; wait for it to finish."))).message).toBe(
+      "Ein Update läuft bereits; warten Sie, bis es abgeschlossen ist.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal("Kaeso is being updated; try again in a minute."))).message).toBe("Kaeso 正在更新，请一分钟后重试。");
+    expect((await errorFromResponse(refusal("10 log deletions are still waiting; try again once they have run."))).message).toBe(
+      "仍有 10 个日志删除任务在等待，请在其完成后重试。",
+    );
+  });
+});

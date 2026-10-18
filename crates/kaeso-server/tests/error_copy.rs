@@ -362,6 +362,176 @@ fn the_scan_finds_copy_and_skips_the_rest() {
     );
 }
 
+const CONSOLE_ERRORS: &str = "apps/console/src/i18n/locales/en/errors.json";
+
+const CONSOLE_RULES: &str = "apps/console/src/api/gateway-errors.ts";
+
+const SHOWN_IN_THE_PLAYGROUND: &[&str] = &["crates/kaeso-core/src/catalogue/capability.rs"];
+
+const SHOWN_BY_CODE: &[&str] = &["crates/kaeso-server/src/platform/projects/model_check.rs"];
+
+#[derive(Debug, PartialEq)]
+enum Part {
+    Text(char),
+    Value,
+}
+
+fn parts(template: &str) -> Vec<Part> {
+    let s: Vec<char> = template.chars().collect();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < s.len() {
+        match (s[i], s.get(i + 1)) {
+            ('{', Some('{')) | ('}', Some('}')) => {
+                out.push(Part::Text(s[i]));
+                i += 2;
+            }
+            ('{', _) => {
+                let mut depth = 0usize;
+                while i < s.len() {
+                    match s[i] {
+                        '{' => depth += 1,
+                        '}' => depth -= 1,
+                        _ => {}
+                    }
+                    i += 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                out.push(Part::Value);
+            }
+            (c, _) => {
+                out.push(Part::Text(c));
+                i += 1;
+            }
+        }
+    }
+    out
+}
+
+fn filled(template: &str) -> String {
+    parts(template)
+        .iter()
+        .map(|p| match p {
+            Part::Text(c) => c.to_string(),
+            Part::Value => "x".to_owned(),
+        })
+        .collect()
+}
+
+fn fits(pattern: &[Part], text: &[char]) -> bool {
+    match pattern.split_first() {
+        None => text.is_empty(),
+        Some((Part::Text(c), rest)) => text.first() == Some(c) && fits(rest, &text[1..]),
+        Some((Part::Value, rest)) => (1..=text.len()).any(|n| fits(rest, &text[n..])),
+    }
+}
+
+fn translates(console: &str, gateway: &str) -> bool {
+    let sample = |t: &str| filled(t).chars().collect::<Vec<char>>();
+    fits(&parts(console), &sample(gateway)) || fits(&parts(gateway), &sample(console))
+}
+
+fn rule_keys(source: &str) -> Vec<&str> {
+    source
+        .split("rule(")
+        .skip(1)
+        .filter_map(|rest| rest.trim_start().strip_prefix('"'))
+        .filter_map(|rest| rest.split('"').next())
+        .collect()
+}
+
+#[test]
+fn the_console_translates_every_message() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let catalog: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&std::fs::read_to_string(root.join(CONSOLE_ERRORS)).unwrap()).unwrap();
+    let source = std::fs::read_to_string(root.join(CONSOLE_RULES)).unwrap();
+    let rules = rule_keys(&source);
+    let console: Vec<&str> = catalog
+        .iter()
+        .filter(|(key, _)| rules.contains(&key.as_str()))
+        .filter_map(|(_, v)| v.as_str())
+        .collect();
+    assert!(
+        console.len() > 300,
+        "only {} rules found in {CONSOLE_RULES}",
+        console.len()
+    );
+    let mut files = Vec::new();
+    for p in SCANNED.iter().chain(SHOWN_IN_THE_PLAYGROUND) {
+        rust_files(&root.join(p), &mut files);
+    }
+    let mut checked = 0;
+    let mut missing = Vec::new();
+    for file in files {
+        let name = file
+            .strip_prefix(&root)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        if NOT_COPY.contains(&name.as_str())
+            || SHOWN_BY_CODE.contains(&name.as_str())
+            || name.ends_with("/tests.rs")
+        {
+            continue;
+        }
+        for Copy { line, text, .. } in copy_in(&std::fs::read_to_string(&file).unwrap()) {
+            if !text.ends_with('.') {
+                continue;
+            }
+            checked += 1;
+            if !console.iter().any(|c| translates(c, &text)) {
+                missing.push(format!("{name}:{line}: {text}"));
+            }
+        }
+    }
+    assert!(
+        checked > 200,
+        "only {checked} messages found; is the scan broken?"
+    );
+    assert!(
+        missing.is_empty(),
+        "the console has no rule for these messages; add one with its German and Chinese \
+         to {CONSOLE_RULES}:\n{}",
+        missing.join("\n")
+    );
+}
+
+#[test]
+fn a_translation_covers_its_values_and_the_values_the_gateway_fills_in() {
+    assert!(translates(
+        "No such project, or you cannot see it.",
+        "No such {what}, or you cannot see it."
+    ));
+    assert!(translates(
+        "Passwords need at least {min} characters.",
+        "Passwords need at least {} characters."
+    ));
+    assert!(translates(
+        "`{name}` must be `true` or `false`.",
+        "`{{{param}}}` must be `true` or `false`."
+    ));
+    assert!(!translates(
+        "No such project, or you cannot see it.",
+        "No such project, or you can see it."
+    ));
+    assert!(!translates(
+        "The picture is empty.",
+        "The picture is {} now."
+    ));
+    assert_eq!(
+        parts("{a}{{b}}"),
+        [
+            Part::Value,
+            Part::Text('{'),
+            Part::Text('b'),
+            Part::Text('}')
+        ]
+    );
+}
+
 #[test]
 fn the_rule_reads_sentences() {
     for ok in [

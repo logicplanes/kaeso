@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { apply, load } from "~/i18n";
 import { updateJob } from "~/test/fixtures/instance-account";
-import { STEPS, jobResult, reasonText, stepLabel } from "./update-words";
+import { STEPS, checkErrorText, jobResult, reasonText, stepLabel } from "./update-words";
+
+afterEach(async () => apply(await load("en")));
 
 const REASONS = [
   "manifest_unavailable",
@@ -60,5 +63,19 @@ describe("update words", () => {
     });
     expect(jobResult(updateJob({ state: "failed" })).label).toBe("Not installed");
     expect(jobResult(updateJob({ state: "rollback_failed" })).tone).toBe("danger");
+  });
+
+  it("says why the last look for releases failed in the person's language", async () => {
+    expect(checkErrorText("api.github.com cannot be reached (timed out)")).toBe("api.github.com can't be reached: it took too long to answer");
+    apply(await load("de"));
+    expect(checkErrorText("api.github.com cannot be reached (no connection)")).toBe("api.github.com ist nicht erreichbar: keine Verbindung");
+    expect(checkErrorText("api.github.com cannot be reached (request failed)")).toBe("api.github.com ist nicht erreichbar: die Anfrage ist fehlgeschlagen");
+    expect(checkErrorText("GitHub refused more requests for now")).toBe("GitHub nimmt vorerst keine weiteren Anfragen an");
+    expect(checkErrorText("api.github.com answered 502")).toBe("api.github.com hat mit 502 geantwortet");
+    apply(await load("zh-CN"));
+    expect(checkErrorText("the release list from api.github.com does not parse: expected value at line 1")).toBe("无法读取来自 api.github.com 的版本列表");
+    expect(checkErrorText("the release list from api.github.com is larger than 4 MiB")).toBe("来自 api.github.com 的版本列表超过 4 MiB");
+    expect(checkErrorText("no HTTP client")).toBe("网关无法创建 HTTP 客户端");
+    expect(checkErrorText("something new")).toBe("something new");
   });
 });

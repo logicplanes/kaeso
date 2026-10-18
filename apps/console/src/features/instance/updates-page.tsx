@@ -32,7 +32,7 @@ import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
 import { InstancePage } from "./instance-page";
 import { UpdateDialog, type Opened } from "./update-dialog";
-import { jobResult, UPDATER_DOCS } from "./update-words";
+import { checkErrorText, jobResult, UPDATER_DOCS } from "./update-words";
 import { t } from "~/i18n";
 
 export function InstanceUpdatesPage() {
@@ -111,7 +111,7 @@ function Versions({ u }: { u: UpdatesView }) {
   );
   const checked = u.check.last_checked_at ? (
     u.check.error ? (
-      <Tooltip content={u.check.error}>
+      <Tooltip content={checkErrorText(u.check.error)}>
         <span className="inline-flex">
           <StatusDot tone="danger">{t("instance.updates.checkFailedAt", "Failed {when}", { when: formatRelative(u.check.last_checked_at) })}</StatusDot>
         </span>

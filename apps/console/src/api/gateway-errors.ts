@@ -3,7 +3,7 @@ import { locale, t } from "~/i18n";
 import english from "~/i18n/locales/en/errors.json";
 
 type Values = Record<string, string>;
-type Convert = "limit" | "who" | "whoList" | "number" | "date";
+type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice";
 
 type ErrorKey = keyof typeof english;
 
@@ -410,7 +410,68 @@ const messages = (): Rule[] => [
   rule("errors.providerRateLimited", () => t("errors.providerRateLimited", "The provider is rate limiting the provider key; try again shortly.")),
   rule("errors.providerOverloaded", () => t("errors.providerOverloaded", "The provider is overloaded right now; try again shortly.")),
   rule("errors.providerFailed", () => t("errors.providerFailed", "The provider failed to answer; try again shortly.")),
+  rule("errors.notFound.update", () => t("errors.notFound.update", "No such update, or you cannot see it.")),
+  rule(
+    "errors.unknownKeysThrottled",
+    (v) => t("errors.unknownKeysThrottled", "Too many requests with unknown API keys from your address; try again in {seconds} seconds.", v),
+    {
+      seconds: "number",
+    },
+  ),
+  rule("errors.apiKeyInvalid", () => t("errors.apiKeyInvalid", "This API key is not valid; check that it is complete and current.")),
+  rule("errors.apiKeyDisabled", () => t("errors.apiKeyDisabled", "This API key is disabled; a project admin can enable it again.")),
+  rule("errors.apiKeyArchived", () => t("errors.apiKeyArchived", "This API key was archived and no longer works.")),
+  rule("errors.apiKeyExpired", () => t("errors.apiKeyExpired", "This API key has expired.")),
+  rule("errors.apiKeyOrgDeleting", () => t("errors.apiKeyOrgDeleting", "This organization is scheduled for deletion; its keys no longer work.")),
+  rule("errors.apiKeyProjectArchived", () => t("errors.apiKeyProjectArchived", "This key's project is archived; its keys no longer work.")),
+  rule("errors.apiKeyOwnerInactive", () => t("errors.apiKeyOwnerInactive", "The account or service account this key belongs to is no longer active.")),
+  rule("errors.idpHttps", () => t("errors.idpHttps", "The identity provider must use https.")),
+  rule("errors.limitsUnavailable", () => t("errors.limitsUnavailable", "Kaeso cannot check this project's limits right now; try again shortly.")),
+  rule("errors.inviteMaxProjects", (v) => t("errors.inviteMaxProjects", "An invitation can name at most {max} projects.", v), { max: "number" }),
+  rule("errors.inviteProjectTwice", () => t("errors.inviteProjectTwice", "Each project can be named only once.")),
+  rule("errors.fieldInvisibleCharacters", (v) => t("errors.fieldInvisibleCharacters", "`{name}` can't contain line breaks or invisible characters.", v)),
+  rule("errors.logDeletionsWaiting", (v) => t("errors.logDeletionsWaiting", "{count} log deletions are still waiting; try again once they have run.", v), {
+    count: "number",
+  }),
+  rule("errors.ifMatchForm", () => t("errors.ifMatchForm", '`If-Match` must be an entity tag from `ETag`, such as "3".')),
+  rule("errors.updates.oneClickOff", () => t("errors.updates.oneClickOff", "One-click updates are off; turn them on in the update settings first.")),
+  rule("errors.updates.noUpdater", () => t("errors.updates.noUpdater", "The updater isn't installed; update this install by hand.")),
+  rule("errors.updates.notNewest", () => t("errors.updates.notNewest", "That isn't the newest offered release; check for updates again.")),
+  rule("errors.updates.manualSteps", () => t("errors.updates.manualSteps", "This release needs steps by hand; follow the upgrade guide.")),
+  rule("errors.updates.updaterOutdated", () => t("errors.updates.updaterOutdated", "The updater is too old for this release; update it by hand first.")),
+  rule("errors.updates.alreadyRunning", () => t("errors.updates.alreadyRunning", "An update is already running; wait for it to finish.")),
+  rule("errors.updates.updaterBusy", () => t("errors.updates.updaterBusy", "The updater is busy with another update; try again later.")),
+  rule("errors.updates.updaterRefused", () => t("errors.updates.updaterRefused", "The updater refused the update; nothing was changed.")),
+  rule("errors.updates.updaterUnreachable", () => t("errors.updates.updaterUnreachable", "The updater couldn't be reached; nothing was changed.")),
+  rule("errors.model.generationOnly", (v) => t("errors.model.generationOnly", "The model `{model}` is a generation model; it cannot create embeddings.", v)),
+  rule("errors.model.endpoint", (v) => t("errors.model.endpoint", "The model `{model}` cannot serve this endpoint.", v)),
+  rule("errors.model.embeddingsOnly", (v) => t("errors.model.embeddingsOnly", "The model `{model}` is an embeddings model; it cannot generate text.", v)),
+  rule("errors.model.noText", (v) => t("errors.model.noText", "The model `{model}` does not produce text.", v)),
+  rule("errors.model.noImages", (v) => t("errors.model.noImages", "The model `{model}` does not accept images.", v)),
+  rule("errors.model.noPdf", (v) => t("errors.model.noPdf", "The model `{model}` does not accept PDF documents.", v)),
+  rule("errors.model.noTools", (v) => t("errors.model.noTools", "The model `{model}` does not support tool calling.", v)),
+  rule(
+    "errors.model.forcedTool",
+    (v) => t("errors.model.forcedTool", "The model `{model}` does not accept {choice}; send `auto` and ask for the tool in the prompt.", v),
+    { choice: "toolChoice" },
+  ),
+  rule("errors.model.noStructured", (v) => t("errors.model.noStructured", "The model `{model}` does not support structured output (a JSON schema).", v)),
+  rule("errors.model.noReasoning", (v) => t("errors.model.noReasoning", "The model `{model}` does not support reasoning.", v)),
+  rule("errors.model.noAdaptive", (v) =>
+    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead.", v),
+  ),
+  rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
+  rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),
+  rule(
+    "errors.model.effortLevels",
+    (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),
+    { levels: "codeList" },
+  ),
+  rule("errors.edgeUnreachable", () => t("errors.edgeUnreachable", "Kaeso can't be reached right now; try again in a minute.")),
+  rule("errors.edgeUpdating", () => t("errors.edgeUpdating", "Kaeso is being updated; try again in a minute.")),
 ];
+
+const toolChoices = (): Rule[] => [rule("errors.toolChoice.named", () => t("errors.toolChoice.named", "a named function in `tool_choice`"))];
 
 const limits = (): Rule[] => [
   rule("errors.limit.requestRate", (v) => t("errors.limit.requestRate", "request rate of {amount} requests per minute", v), { amount: "number" }),
@@ -451,9 +512,17 @@ export function pattern(englishText: string): RegExp {
 
 const compile = (rules: Rule[]): Compiled[] => rules.map((r) => ({ ...r, pattern: pattern(english[r.key]) }));
 
-let tables: { messages: Compiled[]; limits: Compiled[]; owners: Compiled[]; ownerAmounts: Compiled[] } | undefined;
+let tables: { messages: Compiled[]; limits: Compiled[]; owners: Compiled[]; ownerAmounts: Compiled[]; toolChoices: Compiled[] } | undefined;
 const compiled = () =>
-  (tables ??= { messages: compile(messages()), limits: compile(limits()), owners: compile(owners()), ownerAmounts: compile(ownerAmounts()) });
+  (tables ??= {
+    messages: compile(messages()),
+    limits: compile(limits()),
+    owners: compile(owners()),
+    ownerAmounts: compile(ownerAmounts()),
+    toolChoices: compile(toolChoices()),
+  });
+
+const codeSpans = /^`[^`]+`( `[^`]+`)*$/;
 
 const converters: Record<Convert, (value: string) => string | undefined> = {
   limit: (value) => apply(compiled().limits, value),
@@ -462,6 +531,13 @@ const converters: Record<Convert, (value: string) => string | undefined> = {
     const parts = value.split(", ").map((part) => apply(compiled().ownerAmounts, part));
     return parts.every((p) => p !== undefined) ? new Intl.ListFormat(locale(), { type: "conjunction" }).format(parts as string[]) : undefined;
   },
+  codeList: (value) => {
+    const parts = value.split(", ");
+    if (!parts.every((p) => codeSpans.test(p))) return undefined;
+    const joined = new Intl.ListFormat(locale(), { type: "conjunction" }).format(parts);
+    return joined.replace(/([\u4e00-\u9fff])`/g, "$1 `").replace(/`([\u4e00-\u9fff])/g, "` $1");
+  },
+  toolChoice: (value) => apply(compiled().toolChoices, value) ?? (codeSpans.test(value) ? value : undefined),
   number: (value) => (/^\d+(\.\d+)?$/.test(value) ? formatNumber(Number(value), { maximumFractionDigits: 9 }) : value),
   date: (value) => (Number.isNaN(Date.parse(value)) ? value : formatDate(value, { time: true })),
 };
@@ -489,5 +565,5 @@ export function translateMessage(message: string): string {
 
 export function rules(): { key: string; text: (values: Values) => string }[] {
   const all = compiled();
-  return [...all.messages, ...all.limits, ...all.owners, ...all.ownerAmounts];
+  return [...all.messages, ...all.limits, ...all.owners, ...all.ownerAmounts, ...all.toolChoices];
 }

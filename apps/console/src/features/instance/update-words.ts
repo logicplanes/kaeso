@@ -86,3 +86,38 @@ export function jobResult(job: UpdateJobView): { tone: Tone; label: string; deta
       return { tone: "danger", label: t("instance.updates.stateFailed", "Not installed"), detail };
   }
 }
+
+const CHECK_ERRORS: readonly [RegExp, (m: RegExpExecArray) => string][] = [
+  [
+    /^(.+) cannot be reached \((timed out|no connection|request failed)\)$/,
+    (m) =>
+      t("instance.updates.checkUnreachable", "{host} can't be reached: {cause}", {
+        host: String(m[1]),
+        cause:
+          m[2] === "timed out"
+            ? t("instance.updates.causeTimeout", "it took too long to answer")
+            : m[2] === "no connection"
+              ? t("instance.updates.causeNoConnection", "no connection")
+              : t("instance.updates.causeFailed", "the request failed"),
+      }),
+  ],
+  [/^(.+) refused more requests for now$/, (m) => t("instance.updates.checkRateLimited", "{host} refuses more requests for now", { host: String(m[1]) })],
+  [/^(.+) answered (\d+)$/, (m) => t("instance.updates.checkStatus", "{host} answered {status}", { host: String(m[1]), status: String(m[2]) })],
+  [
+    /^the release list from (.+?) does not parse: .+$/s,
+    (m) => t("instance.updates.checkUnreadable", "The release list from {host} can't be read", { host: String(m[1]) }),
+  ],
+  [
+    /^the release list from (.+) is larger than 4 MiB$/,
+    (m) => t("instance.updates.checkTooLarge", "The release list from {host} is larger than 4 MiB", { host: String(m[1]) }),
+  ],
+  [/^no HTTP client$/, () => t("instance.updates.checkNoClient", "The gateway couldn't set up its HTTP client")],
+];
+
+export function checkErrorText(error: string): string {
+  for (const [pattern, text] of CHECK_ERRORS) {
+    const match = pattern.exec(error);
+    if (match) return text(match);
+  }
+  return error;
+}
