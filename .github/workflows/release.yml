@@ -246,16 +246,51 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           }
+          pushed=""
+          push() {
+            local out
+            if out="$(git push origin "$1:refs/heads/dev" 2>&1)"; then
+              return 0
+            fi
+            echo "$out" >&2
+            if grep -qiE 'GH013|repository rule violations|protected branch' <<< "$out"; then
+              pushed=rules
+            fi
+            return 1
+          }
+          hand_over() {
+            echo "::warning::The release of $VERSION is complete. dev only takes changes through pull requests, so a repository admin brings the release into dev."
+            {
+              echo "### Bring the release into dev"
+              echo
+              echo "The release of $VERSION is complete. \`dev\` only takes changes through pull requests and its CI check, which the workflow's token can't bypass, so a repository admin brings the release in:"
+              echo
+              echo '```sh'
+              echo "git fetch origin"
+              echo "$1"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
           if git merge-base --is-ancestor "$release" "$dev"; then
             echo "dev already has the release of $VERSION." >> "$GITHUB_STEP_SUMMARY"
           elif ! git diff --quiet "$(git merge-base "$dev" "$release")" "$release" -- .github/workflows; then
             refuse "The release changes files in .github/workflows that dev doesn't have, and the workflow's token may not push those."
           elif git merge-base --is-ancestor "$dev" "$release"; then
-            git push origin "$release:refs/heads/dev" || refuse "dev moved while this job ran, so it could not be fast-forwarded."
-            echo "Fast-forwarded dev to the release of $VERSION." >> "$GITHUB_STEP_SUMMARY"
+            if push "$release"; then
+              echo "Fast-forwarded dev to the release of $VERSION." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$pushed" == rules ]]; then
+              hand_over "git push origin origin/prod:dev"
+            else
+              refuse "dev moved while this job ran, so it could not be fast-forwarded."
+            fi
           elif git merge --no-ff -m "Merge release $VERSION into dev" "$release"; then
-            git push origin HEAD:refs/heads/dev || refuse "dev moved while this job ran, so the merge could not be pushed."
-            echo "Merged the release of $VERSION into dev as \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
+            if push HEAD; then
+              echo "Merged the release of $VERSION into dev as \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$pushed" == rules ]]; then
+              hand_over "git switch dev && git pull --ff-only && git merge --no-ff -m \"Merge release $VERSION into dev\" origin/prod && git push origin dev"
+            else
+              refuse "dev moved while this job ran, so the merge could not be pushed."
+            fi
           else
             conflicts="$(git diff --name-only --diff-filter=U | paste -sd ' ' -)"
             git merge --abort || true
