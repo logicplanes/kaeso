@@ -111,7 +111,7 @@ test("the changelog accepts HTML written as code, in fences, in indented code, a
   ].join("\n");
   const { unreleased } = await render(markdown);
   assert.match(unreleased.intro, /&#x3C;script>alert\(1\)&#x3C;\/script>/);
-  assert.doesNotMatch(unreleased.intro, /<script>/);
+  assert.doesNotMatch(unreleased.intro, /<script/i);
 });
 
 test("the changelog accepts http, https, mailto, relative and anchor links", async () => {

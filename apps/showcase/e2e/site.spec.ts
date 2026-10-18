@@ -135,7 +135,7 @@ test.describe("search on a phone", () => {
       await expect(input).toBeFocused();
       await input.fill("Select");
       await page.getByRole("option", { name: /^Select(?!\w)/ }).click();
-      await expect(page).toHaveURL(new RegExp(`${at(lang, "/components/select").replace(/\//g, "\\/")}$`));
+      await expect(page).toHaveURL(at(lang, "/components/select"));
     });
   }
 
