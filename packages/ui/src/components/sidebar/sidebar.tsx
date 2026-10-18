@@ -17,6 +17,7 @@ import {
 } from "react";
 import { Collapsible } from "@base-ui/react/collapsible";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { useStoredState } from "../../hooks/use-stored-state.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -513,9 +514,7 @@ function PlaceName({ label }: { label: string }) {
     if (!box || typeof ResizeObserver === "undefined") return;
     const measure = () => setCut(box.scrollWidth > box.clientWidth);
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(box);
-    return () => observer.disconnect();
+    return observeResize([box], measure);
   }, [label]);
   return (
     <Tooltip content={label} side="right" disabled={!cut}>

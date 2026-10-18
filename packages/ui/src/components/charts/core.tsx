@@ -1,6 +1,7 @@
 import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
@@ -93,10 +94,7 @@ export function useSize<T extends HTMLElement>(): [RefObject<T | null>, { width:
     if (!el) return;
     const set = () => setSize({ width: Math.round(el.clientWidth), height: Math.round(el.clientHeight) });
     set();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(set);
-    ro.observe(el);
-    return () => ro.disconnect();
+    return observeResize([el], set);
   }, []);
   return [ref, size];
 }

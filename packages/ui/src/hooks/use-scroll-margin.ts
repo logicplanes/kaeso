@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { observeResize } from "../utils/observe-resize.js";
 
 export function useScrollMargin(ref: RefObject<HTMLElement | null>, getScrollElement: () => HTMLElement | null, count: number) {
   const [margin, setMargin] = useState(0);
@@ -16,11 +17,10 @@ export function useScrollMargin(ref: RefObject<HTMLElement | null>, getScrollEle
     measure();
     const target = page ? window : scroller;
     target.addEventListener("scroll", measure, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(page ? document.body : scroller);
+    const stop = observeResize([page ? document.body : scroller], measure);
     return () => {
       target.removeEventListener("scroll", measure);
-      observer?.disconnect();
+      stop();
     };
   }, [ref, count]);
   return margin;

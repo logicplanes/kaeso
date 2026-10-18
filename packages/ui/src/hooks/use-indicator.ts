@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
+import { observeResize } from "../utils/observe-resize.js";
 
 export function useIndicator(
   container: RefObject<HTMLElement | null>,
@@ -30,15 +31,13 @@ export function useIndicator(
     measure();
     if (typeof ResizeObserver === "undefined") return;
     let live = true;
-    const ro = new ResizeObserver(measure);
-    ro.observe(root);
-    root.querySelectorAll(":scope > *").forEach((c) => ro.observe(c));
+    const stop = observeResize([root, ...root.querySelectorAll(":scope > *")], measure);
     void document.fonts?.ready.then(() => {
       if (live) measure();
     });
     return () => {
       live = false;
-      ro.disconnect();
+      stop();
     };
   }, [container, selector, layout]);
   return { ...box, animate };

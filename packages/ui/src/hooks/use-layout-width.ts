@@ -1,6 +1,8 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
+import { observeResize } from "../utils/observe-resize.js";
 
-function layoutWidth(el: HTMLElement): number {
+function layoutWidth(el: HTMLElement): number | null {
+  if (!el.getClientRects().length) return null;
   const cs = getComputedStyle(el);
   const w = parseFloat(cs.width);
   return cs.boxSizing === "border-box" && Number.isFinite(w) ? w : el.offsetWidth;
@@ -11,18 +13,12 @@ export function useLayoutWidth(ref: RefObject<HTMLElement | null>, enabled = tru
   useLayoutEffect(() => {
     const el = ref.current;
     if (!enabled || !el) return;
-    setWidth(layoutWidth(el));
-    if (typeof ResizeObserver === "undefined") return;
-    let frame = 0;
-    const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setWidth(layoutWidth(el)));
-    });
-    ro.observe(el);
-    return () => {
-      cancelAnimationFrame(frame);
-      ro.disconnect();
+    const measure = () => {
+      const next = layoutWidth(el);
+      if (next !== null) setWidth(next);
     };
+    measure();
+    return observeResize([el], measure);
   }, [ref, enabled]);
   return width;
 }

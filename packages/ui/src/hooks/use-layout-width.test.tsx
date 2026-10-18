@@ -44,6 +44,29 @@ describe("useLayoutWidth", () => {
     await act(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
     expect(anchor).toHaveTextContent("400");
   });
+  it("keeps the last width while the element is hidden, instead of reading a percentage as pixels", async () => {
+    const callbacks: ResizeObserverCallback[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(cb: ResizeObserverCallback) {
+          callbacks.push(cb);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    render(<Probe />);
+    const anchor = screen.getByTestId("anchor");
+    anchor.style.width = "100%";
+    vi.spyOn(anchor, "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+    act(() => {
+      for (const cb of callbacks) cb([], {} as ResizeObserver);
+    });
+    await act(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
+    expect(anchor).toHaveTextContent("312.5");
+  });
 });
 
 describe("Combobox popup width", () => {

@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -214,10 +215,8 @@ function DataTableInner<T>(
   const [hiddenKey, setHiddenKey] = useState("|");
   useLayoutEffect(() => {
     const el = root.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([e]) => setHiddenKey(hiddenForRef.current(Math.round(e?.contentRect.width ?? 0))));
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (!el) return;
+    return observeResize([el], ([e]) => setHiddenKey(hiddenForRef.current(Math.round(e?.contentRect.width ?? 0))));
   }, []);
   useLayoutEffect(() => {
     if (root.current) setHiddenKey(hiddenForRef.current(Math.round(root.current.getBoundingClientRect().width)));

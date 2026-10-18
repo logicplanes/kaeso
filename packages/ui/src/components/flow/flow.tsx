@@ -1,5 +1,6 @@
 import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -71,10 +72,9 @@ export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
       );
     };
     measure();
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    ro?.observe(el);
+    const stop = observeResize([el], measure);
     document.fonts?.ready.then(measure);
-    return () => ro?.disconnect();
+    return stop;
   }, [columns, edges]);
   return (
     <div
