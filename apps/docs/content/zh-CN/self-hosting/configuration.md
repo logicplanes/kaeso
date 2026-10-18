@@ -163,7 +163,7 @@ services:
 | --- | --- | --- | --- | --- |
 | `KAESO_CONTINUITY_REASONING_TTL` | `continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
-Chat Completions 没有存放这段推理的字段，所以网关把它保存在 Valkey 中，直到应用的下一轮请求。它用主密钥加密，只能用发起请求的 API 密钥读取，且从不记录（[格式转换](../concepts/format-translation.md)）。
+[格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 
 ### 请求体与响应体
 

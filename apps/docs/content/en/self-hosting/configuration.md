@@ -163,7 +163,7 @@ A model in a project's catalogue can set its own timeouts ([models and aliases](
 | --- | --- | --- | --- | --- |
 | `KAESO_CONTINUITY_REASONING_TTL` | `continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions app whose model speaks another format. `0s` turns it off; otherwise 1m to 24h. |
 
-Chat Completions has no field for that reasoning, so the gateway holds it in Valkey until the app's next turn. It is encrypted under the master key, readable only with the API key that made the request, and never logged ([format translation](../concepts/format-translation.md)).
+[Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 
 ### Request and response bodies
 

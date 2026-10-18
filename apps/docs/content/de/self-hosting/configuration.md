@@ -163,7 +163,7 @@ Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle 
 | --- | --- | --- | --- | --- |
 | `KAESO_CONTINUITY_REASONING_TTL` | `continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions-App, deren Modell ein anderes Format spricht. `0s` schaltet es ab; sonst 1m bis 24h. |
 
-Chat Completions hat kein Feld für dieses Reasoning, deshalb hält das Gateway es bis zum nächsten Zug der App in Valkey. Es ist mit dem Hauptschlüssel verschlüsselt, nur mit dem API-Schlüssel der Anfrage lesbar und wird nie protokolliert ([Formatübersetzung](../concepts/format-translation.md)).
+[Formatübersetzung](../concepts/format-translation.md#chat-completions) erklärt, wie das Gateway es aufbewahrt.
 
 ### Anfrage- und Antwortkörper
 

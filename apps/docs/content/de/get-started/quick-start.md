@@ -4,7 +4,7 @@ description: Installieren Sie Kaeso mit Docker Compose, verbinden Sie einen Anbi
 order: 1
 ---
 
-Installieren Sie Kaeso auf einem Server, verbinden Sie OpenAI oder Anthropic, und senden Sie Ihre erste Anfrage darüber. Eine Compose-Datei betreibt die ganze Installation: das Gateway, die Konsole, PostgreSQL, ClickHouse, Valkey und Caddy, das das TLS-Zertifikat für Ihre Domain besorgt.
+Installieren Sie Kaeso auf einem Server, verbinden Sie OpenAI oder Anthropic, und senden Sie Ihre erste Anfrage darüber.
 
 ## Bevor Sie beginnen
 

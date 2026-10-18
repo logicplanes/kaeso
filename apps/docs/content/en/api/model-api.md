@@ -147,7 +147,7 @@ Ask for a stream as the format does, with `"stream": true`. The reply is a serve
 
 ## Reasoning across tool calls
 
-Chat Completions has no field for a model's reasoning. A Chat Completions app may call a model served through another format, such as Claude or an OpenAI model behind Responses. Kaeso then keeps the reasoning that came before a tool call, and adds it back when the app's next turn arrives with the same key. It is held for an hour by default, encrypted, and never logged ([reasoning continuity](../self-hosting/configuration.md#reasoning-continuity)).
+Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the reasoning before each tool call and adds it back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
 
 ## Response headers
 
