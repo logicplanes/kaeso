@@ -1,14 +1,12 @@
 ---
 title: API
-description: Die beiden APIs einer Kaeso-Installation und wie sie aufgerufen werden.
+description: Modelle aus Ihren Apps aufrufen und Ihre Installation über HTTP verwalten.
 order: 4
 ---
 
-Eine Kaeso-Installation stellt auf ihrer Domain zwei APIs bereit:
+Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle über die Modell-API unter `/v1` mit einem API-Schlüssel auf, und Skripte verwalten die Installation über die Platform API unter `/platform/v1`.
 
-| API | Pfad | Aufgerufen von | Authentifizierung |
-| --- | --- | --- | --- |
-| [Modell-API](model-api.md) | `/v1` | Apps, über die offiziellen SDKs von OpenAI und Anthropic | Ein Projekt-API-Schlüssel mit Inferenzzugriff |
-| [Platform API](platform-api.md) | `/platform/v1` | Der Konsole, Skripten und CI, die Organisationen, Projekte, Schlüssel, Modelle, Limits und Protokolle verwalten | Eine Konsolensitzung, ein Projekt-API-Schlüssel mit Plattformzugriff oder ein Plattform-Schlüssel der Organisation |
-
-[Fehler](errors.md) beschreibt, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt. Die Fehler der Platform API und ihr OpenAPI-Dokument stehen auf [ihrer Seite](platform-api.md).
+- [Modell-API](model-api.md): Modelle mit den SDKs von OpenAI und Anthropic aufrufen und Endpunkte, Header und Modellnamen nachschlagen.
+- [Fehler](errors.md): Nachlesen, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt und warum sie fehlschlug.
+- [Platform API](platform-api.md): Authentifizierung, Konventionen, Fehler und Routen zum Verwalten einer Installation nachschlagen.
+- [Mit der Platform API automatisieren](automation.md): Ein Projekt, ein Modell und den Schlüssel einer App per Skript einrichten.
