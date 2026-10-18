@@ -39,6 +39,7 @@
       - any-glob-to-any-file:
           - crates/kaeso-updater/**
           - deploy/compose.yaml
+          - deploy/.env.example
           - deploy/kaeso.example.toml
           - deploy/*.Dockerfile
           - deploy/*.dockerignore
