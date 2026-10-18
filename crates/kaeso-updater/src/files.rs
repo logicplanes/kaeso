@@ -162,8 +162,8 @@ mod tests {
         let saved = Saved {
             job: Job {
                 id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz1".into(),
-                from: "0.2.0".into(),
-                to: "0.2.1".into(),
+                from: "40.2.0".into(),
+                to: "40.2.1".into(),
                 state: JobState::Running,
                 step: Step::Switching,
                 reason: None,
@@ -190,7 +190,7 @@ mod tests {
         assert_eq!(state.kept_compose(), None);
         state.keep_compose(b"services: {}\n").unwrap();
         assert_eq!(state.kept_compose().unwrap(), b"services: {}\n");
-        let older = r#"{"job":{"id":"upd_01k7a3f8m2xq4v9c5r6t8w0yz1","from":"0.2.0","to":"0.2.1","state":"running","step":"switching","reason":null,"detail":null,"started_at":"1970-01-01T00:00:00Z","finished_at":null},"switched":[{"service":"gateway","name":"kaeso-gateway-1","old_id":"old","new_id":null}]}"#;
+        let older = r#"{"job":{"id":"upd_01k7a3f8m2xq4v9c5r6t8w0yz1","from":"40.2.0","to":"40.2.1","state":"running","step":"switching","reason":null,"detail":null,"started_at":"1970-01-01T00:00:00Z","finished_at":null},"switched":[{"service":"gateway","name":"kaeso-gateway-1","old_id":"old","new_id":null}]}"#;
         std::fs::write(d.join(STATE_FILE), older).unwrap();
         let loaded = state.load().unwrap();
         assert!(

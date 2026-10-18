@@ -30,8 +30,8 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use url::Url;
 
-pub const FROM: &str = "0.2.0";
-pub const TO: &str = "0.2.1";
+pub const FROM: &str = "40.2.0";
+pub const TO: &str = "40.2.1";
 pub const COMMIT: &str = "5388ad0b98aa3d957fea99e200259842bf746680";
 pub const UPDATER_HOST: &str = "updater0host";
 pub const JOB: &str = "upd_01k7a3f8m2xq4v9c5r6t8w0yz1";
@@ -428,18 +428,18 @@ impl Releases {
         let mut releases = Releases::default();
         releases.add(TO, &Shape::default());
         releases.add(FROM, &Shape::default());
-        releases.add("1.0.0", &Shape::default());
+        releases.add("41.0.0", &Shape::default());
         releases.add(
-            "0.3.0",
+            "40.3.0",
             &Shape {
                 manual: true,
                 ..Shape::default()
             },
         );
         releases.add(
-            "0.2.2",
+            "40.2.2",
             &Shape {
-                manual_since: Some("0.2.1"),
+                manual_since: Some("40.2.1"),
                 ..Shape::default()
             },
         );

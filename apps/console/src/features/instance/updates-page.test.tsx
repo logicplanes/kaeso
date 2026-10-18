@@ -22,8 +22,8 @@ describe("instance updates page", () => {
         ? page([
             updateJob({
               id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz3",
-              from: "0.4.0",
-              to: "0.4.1",
+              from: "40.4.0",
+              to: "40.4.1",
               state: "succeeded",
               step: "online",
               finished_at: "2026-09-01T12:01:00Z",
@@ -33,9 +33,9 @@ describe("instance updates page", () => {
     );
     const { user } = await renderApp(PATH);
     const table = await screen.findByRole("table", { name: "History" });
-    expect(await within(table).findByText("0.4.2 to 0.4.3")).toBeInTheDocument();
+    expect(await within(table).findByText("40.4.2 to 40.4.3")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Load more" }));
-    expect(await within(table).findByText("0.4.0 to 0.4.1")).toBeInTheDocument();
+    expect(await within(table).findByText("40.4.0 to 40.4.1")).toBeInTheDocument();
   });
 
   it("says the install is up to date and when it last looked", async () => {
@@ -45,7 +45,7 @@ describe("instance updates page", () => {
     await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "Updates", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("Up to date")).toBeInTheDocument();
-    expect(screen.getByText("0.4.2")).toBeInTheDocument();
+    expect(screen.getByText("40.4.2")).toBeInTheDocument();
     expect(screen.getByText("Kaeso looks for new releases twice a day.")).toBeInTheDocument();
     expect(await screen.findByText("No updates yet")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
@@ -63,24 +63,24 @@ describe("instance updates page", () => {
     });
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("Update available")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kaeso 0.4.3" })).toBeInTheDocument();
-    const notes = screen.getByRole("region", { name: "Release notes of 0.4.3" });
+    expect(screen.getByRole("heading", { name: "Kaeso 40.4.3" })).toBeInTheDocument();
+    const notes = screen.getByRole("region", { name: "Release notes of 40.4.3" });
     expect(within(notes).getByText("Streams keep their last chunk when a provider closes early.")).toBeInTheDocument();
-    expect(within(notes).getByRole("link", { name: /On GitHub/ })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso/releases/tag/v0.4.3");
+    expect(within(notes).getByRole("link", { name: /On GitHub/ })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso/releases/tag/v40.4.3");
 
-    await user.click(screen.getByRole("button", { name: "Update to 0.4.3" }));
-    const confirm = await screen.findByRole("dialog", { name: "Update to Kaeso 0.4.3?" });
+    await user.click(screen.getByRole("button", { name: "Update to 40.4.3" }));
+    const confirm = await screen.findByRole("dialog", { name: "Update to Kaeso 40.4.3?" });
     expect(within(confirm).getByText(/Back up PostgreSQL and ClickHouse first/)).toBeInTheDocument();
     expect(within(confirm).getByText(/signed by Kaeso's release workflow/)).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Update now" }));
-    await waitFor(() => expect(requests("POST", "instance/updates/apply").at(-1)?.body).toEqual({ version: "0.4.3" }));
+    await waitFor(() => expect(requests("POST", "instance/updates/apply").at(-1)?.body).toEqual({ version: "40.4.3" }));
 
-    const progress = await screen.findByRole("dialog", { name: "Updating to Kaeso 0.4.3" });
+    const progress = await screen.findByRole("dialog", { name: "Updating to Kaeso 40.4.3" });
     const steps = within(progress).getByRole("group", { name: "Steps" });
     await waitFor(() => expect(within(steps).getAllByText("Done")).toHaveLength(3));
     expect(within(steps).getByText("In progress")).toBeInTheDocument();
     expect(within(steps).getByText("Waiting")).toBeInTheDocument();
-    expect(await screen.findByRole("dialog", { name: "Kaeso 0.4.3 is running" }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Kaeso 40.4.3 is running" }, { timeout: 5_000 })).toBeInTheDocument();
     await waitFor(() => expect(requests("GET", "instance/updates/jobs").length).toBeGreaterThan(1));
     const reload = vi.spyOn(window.location, "reload").mockImplementation(() => undefined);
     await user.click(screen.getByRole("button", { name: "Reload the console" }));
@@ -95,19 +95,19 @@ describe("instance updates page", () => {
     on("POST", "instance/updates/apply", () => updateJob());
     on("GET", "instance/updates/jobs/:update", () => updateJob({ step: "verifying" }));
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Update to 0.4.3" }));
+    await user.click(await screen.findByRole("button", { name: "Update to 40.4.3" }));
     await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(requests("POST", "instance/updates/apply")).toHaveLength(0);
-    await user.click(screen.getByRole("button", { name: "Update to 0.4.3" }));
-    await screen.findByRole("dialog", { name: "Update to Kaeso 0.4.3?" });
+    await user.click(screen.getByRole("button", { name: "Update to 40.4.3" }));
+    await screen.findByRole("dialog", { name: "Update to Kaeso 40.4.3?" });
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Update to 0.4.3" }));
-    await screen.findByRole("dialog", { name: "Update to Kaeso 0.4.3?" });
+    await user.click(screen.getByRole("button", { name: "Update to 40.4.3" }));
+    await screen.findByRole("dialog", { name: "Update to Kaeso 40.4.3?" });
     await user.keyboard("{Control>}{Enter}{/Control}");
     await waitFor(() => expect(requests("POST", "instance/updates/apply")).toHaveLength(1));
-    expect(await screen.findByRole("dialog", { name: "Updating to Kaeso 0.4.3" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Updating to Kaeso 40.4.3" })).toBeInTheDocument();
   });
 
   it("offers to load the history again when it fails", async () => {
@@ -138,11 +138,11 @@ describe("instance updates page", () => {
       }),
     );
     const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Updating to Kaeso 0.4.3")).toBeInTheDocument();
+    expect(await screen.findByText("Updating to Kaeso 40.4.3")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show progress" }));
     const dialog = await screen.findByRole("dialog");
     expect(await within(dialog).findByText("The new version didn't start.")).toBeInTheDocument();
-    expect(within(dialog).getByText("Kaeso 0.4.2 runs again, unchanged.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Kaeso 40.4.2 runs again, unchanged.")).toBeInTheDocument();
     expect(within(dialog).getByText("the new gateway reported itself unhealthy")).toBeInTheDocument();
     expect(within(dialog).getByText("Stopped")).toBeInTheDocument();
     await user.click(within(dialog).getAllByRole("button", { name: "Close" }).at(-1) as HTMLElement);
@@ -187,9 +187,9 @@ describe("instance updates page", () => {
     const dialog = await screen.findByRole("dialog");
     expect(await within(dialog).findByText("Needs attention")).toBeInTheDocument();
     expect(
-      within(dialog).getByText("The new gateway may have migrated the database, so Kaeso 0.4.2 wasn't started again; follow the upgrade guide."),
+      within(dialog).getByText("The new gateway may have migrated the database, so Kaeso 40.4.2 wasn't started again; follow the upgrade guide."),
     ).toBeInTheDocument();
-    expect(within(dialog).queryByText("Kaeso 0.4.2 runs again, unchanged.")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Kaeso 40.4.2 runs again, unchanged.")).not.toBeInTheDocument();
   });
 
   it("names no migration when something else needs attention", async () => {
@@ -225,16 +225,16 @@ describe("instance updates page", () => {
         state: "succeeded",
         step: "online",
         reason: "compose_unwritable",
-        detail: "0.4.3 runs, but compose.yaml cannot be written: read-only file system",
+        detail: "40.4.3 runs, but compose.yaml cannot be written: read-only file system",
         finished_at: "2026-10-15T12:02:00Z",
       }),
     );
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Show progress" }));
     const dialog = await screen.findByRole("dialog");
-    expect(await within(dialog).findByText("Kaeso 0.4.3 is running")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Kaeso 40.4.3 is running")).toBeInTheDocument();
     expect(within(dialog).getByText("One step is left")).toBeInTheDocument();
-    expect(within(dialog).getByText("Set the Kaeso images in compose.yaml to 0.4.3 by hand.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Set the Kaeso images in compose.yaml to 40.4.3 by hand.")).toBeInTheDocument();
   });
 
   it("sends a major release to the upgrade guide", async () => {
@@ -245,14 +245,14 @@ describe("instance updates page", () => {
       available({
         manual: "major",
         can_apply: false,
-        latest: release({ version: "1.0.0", major: true }),
-        releases: [release({ version: "1.0.0", major: true })],
+        latest: release({ version: "41.0.0", major: true }),
+        releases: [release({ version: "41.0.0", major: true })],
       }),
     );
     history();
     await renderApp(PATH);
     expect(await screen.findByText("Update by hand")).toBeInTheDocument();
-    expect(screen.getByText("Kaeso 1.0.0 is a new major version: update by hand with the upgrade guide.")).toBeInTheDocument();
+    expect(screen.getByText("Kaeso 41.0.0 is a new major version: update by hand with the upgrade guide.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Open the upgrade guide/ })).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades");
     expect(screen.getByText("Major version")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
@@ -279,7 +279,7 @@ describe("instance updates page", () => {
   it.each([
     [{ updater: { state: "not_installed", version: null } }, "The updater isn't installed, so this install updates by hand."],
     [{ updater: { state: "unreachable", version: null } }, "The updater doesn't answer; check that its container runs."],
-    [{ updater: { state: "outdated", version: "0.4.0" } }, "The updater is too old for this release; update by hand once."],
+    [{ updater: { state: "outdated", version: "40.4.0" } }, "The updater is too old for this release; update by hand once."],
     [{ settings: { check: true, channel: "stable", apply: false } }, "Turn on one-click updates below to update from here."],
   ] as const)("shows the commands to update by hand when one click can't (%#)", async (change, reason) => {
     signedIn();
@@ -287,7 +287,7 @@ describe("instance updates page", () => {
     history();
     await renderApp(PATH);
     expect(await screen.findByText(reason)).toBeInTheDocument();
-    expect(screen.getByText(/releases\/download\/v0\.4\.3\/compose\.yaml/)).toBeInTheDocument();
+    expect(screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/)).toBeInTheDocument();
     expect(document.body.textContent).toContain("docker compose up -d --wait");
     expect(screen.getByRole("link", { name: /Set up one-click updates/ })).toHaveAttribute(
       "href",
@@ -318,7 +318,7 @@ describe("instance updates page", () => {
     expect(screen.getByText("Not checked yet")).toBeInTheDocument();
     await hoverReason(user, failed, "api.github.com cannot be reached (no connection)");
     await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(await screen.findByText("Kaeso 0.4.3 is available")).toBeInTheDocument();
+    expect(await screen.findByText("Kaeso 40.4.3 is available")).toBeInTheDocument();
     expect(requests("POST", "instance/updates/check")).toHaveLength(1);
   });
 
@@ -377,11 +377,11 @@ describe("instance updates page", () => {
     history([
       updateJob({ id: "upd_3", state: "rollback_failed", reason: "unhealthy", finished_at: "2026-10-15T12:05:00Z" }),
       updateJob({ id: "upd_2", state: "failed", reason: "unverified", started_by: null, finished_at: "2026-10-15T12:04:00Z" }),
-      updateJob({ id: "upd_1", state: "succeeded", step: "online", from: "0.4.1", to: "0.4.2", finished_at: "2026-10-15T12:03:00Z" }),
+      updateJob({ id: "upd_1", state: "succeeded", step: "online", from: "40.4.1", to: "40.4.2", finished_at: "2026-10-15T12:03:00Z" }),
     ]);
     const { user } = await renderApp(PATH);
     const table = await screen.findByRole("table", { name: "History" });
-    expect(await within(table).findByText("0.4.1 to 0.4.2")).toBeInTheDocument();
+    expect(await within(table).findByText("40.4.1 to 40.4.2")).toBeInTheDocument();
     expect(within(table).getByText("Updated")).toBeInTheDocument();
     expect(within(table).getByText("Rollback failed")).toBeInTheDocument();
     expect(within(table).getByText("Deleted user")).toBeInTheDocument();

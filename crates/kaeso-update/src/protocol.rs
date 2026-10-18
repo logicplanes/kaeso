@@ -152,8 +152,8 @@ mod tests {
     fn jobs_travel_as_json_with_rfc3339_times() {
         let job = Job {
             id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz1".into(),
-            from: "0.2.0".into(),
-            to: "0.2.1".into(),
+            from: "40.2.0".into(),
+            to: "40.2.1".into(),
             state: JobState::Running,
             step: Step::Verifying,
             reason: None,

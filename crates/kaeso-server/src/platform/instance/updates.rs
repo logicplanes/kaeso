@@ -53,7 +53,7 @@ impl From<UpdateChannel> for Channel {
 #[schema(description = "A Kaeso release newer than the running version.")]
 pub struct ReleaseView {
     #[doc = "The version."]
-    #[schema(example = "0.2.0")]
+    #[schema(example = "40.2.0")]
     pub version: String,
     #[doc = "When it was published."]
     #[serde(with = "time::serde::rfc3339")]
@@ -67,7 +67,7 @@ pub struct ReleaseView {
     #[doc = "The release notes, in Markdown."]
     pub notes: String,
     #[doc = "The release's page."]
-    #[schema(example = "https://github.com/logicplanes/kaeso/releases/tag/v0.2.0")]
+    #[schema(example = "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0")]
     pub url: String,
 }
 
@@ -124,10 +124,10 @@ pub struct UpdateJobView {
     #[doc = "The update's id."]
     pub id: UpdateId,
     #[doc = "The version it updates from."]
-    #[schema(example = "0.2.0")]
+    #[schema(example = "40.2.0")]
     pub from: String,
     #[doc = "The version it updates to."]
-    #[schema(example = "0.2.1")]
+    #[schema(example = "40.2.1")]
     pub to: String,
     #[doc = "`running`, `succeeded` (with a `reason` when compose.yaml still needs the new version by hand), `failed` (nothing changed), `rolled_back` (the previous version runs again), `rollback_failed` (the previous version did not start again) or `needs_attention` (the new gateway may have migrated the database and did not start; someone has to look)."]
     #[schema(example = "running")]
@@ -359,7 +359,7 @@ pub async fn settings(
 #[schema(description = "The release to update to.")]
 pub struct ApplyUpdate {
     #[doc = "The newest offered release's version, as the person confirmed it."]
-    #[schema(example = "0.2.1")]
+    #[schema(example = "40.2.1")]
     pub version: String,
 }
 
