@@ -270,7 +270,6 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
     let mut url = state.config.updates.releases_url.clone();
     url.query_pairs_mut().append_pair("per_page", PER_PAGE);
     let origin = url.origin();
-    let current = running();
     let (first_etag, mut next, mut all) = match fetch_page(state, url, etag).await? {
         Page::NotModified => return Ok(Fetched::NotModified),
         Page::Releases {
@@ -281,10 +280,7 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
     };
     let mut pages = 1;
     while let Some(url) = next.take() {
-        let reached = all
-            .iter()
-            .any(|r| policy::parse_tag(&r.tag_name).is_some_and(|v| v <= current));
-        if reached || pages >= MAX_PAGES || url.origin() != origin {
+        if pages >= MAX_PAGES || url.origin() != origin {
             break;
         }
         match fetch_page(state, url, None).await? {

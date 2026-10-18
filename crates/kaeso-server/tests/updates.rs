@@ -436,20 +436,17 @@ async fn a_release_with_steps_by_hand_the_gateway_never_saw_still_counts() {
 }
 
 #[tokio::test]
-async fn every_page_down_to_the_running_release_is_read() {
+async fn every_page_is_read_whatever_order_github_lists_releases_in() {
     let s = TestServices::start().await;
     let v = semver::Version::parse(RUNNING).unwrap();
-    let mut releases: Vec<(String, bool, bool)> = (1..=55)
-        .rev()
-        .map(|p| {
-            (
-                format!("{}.{}.{}", v.major, v.minor, v.patch + p),
-                false,
-                false,
-            )
-        })
-        .collect();
-    releases.push((RUNNING.to_owned(), false, false));
+    let mut releases: Vec<(String, bool, bool)> = vec![(RUNNING.to_owned(), false, false)];
+    releases.extend((1..=55).rev().map(|p| {
+        (
+            format!("{}.{}.{}", v.major, v.minor, v.patch + p),
+            false,
+            false,
+        )
+    }));
     let (gh, url) = github(releases).await;
     let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
     let owner = app.setup().await;

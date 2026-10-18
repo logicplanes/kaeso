@@ -22,7 +22,7 @@ flowchart LR
 
 ## 网关
 
-`services/updates.rs` 和 `update_check` 任务负责检查新版本：该任务每五分钟询问下一次检查是否到期（`update_settings.next_check_at`），一次检查会带着 `If-None-Match` 获取 `releases_url?per_page=50`，然后沿着 GitHub 的下一页链接继续获取，最多十页，直到列表到达正在运行的版本。列表有变化时，会在一个事务中替换 `update_releases`；对每个比正在运行的版本更新的版本，获取并保存其 `release.json`，或保存无法获取的原因。每次检查最多获取十二个清单，每次并行四个，从最新的开始；其余的等待下一次检查，届时不带 `If-None-Match` 请求。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，或者在 `updates.releases_url` 指向镜像时从其源地址获取，客户端从不跟随从 HTTPS 到 HTTP 的重定向。下一次检查在 12 小时后再加上一小时内的随机时间；失败后至少一小时后，如果 GitHub 的 `Retry-After` 或 `x-ratelimit-reset` 要求，则更晚；在此之前，`update_settings.blocked_until` 也会让 **立即检查** 不发出请求。重复的失败只在 debug 级别记录。
+`services/updates.rs` 和 `update_check` 任务负责检查新版本：该任务每五分钟询问下一次检查是否到期（`update_settings.next_check_at`），一次检查会带着 `If-None-Match` 获取 `releases_url?per_page=50`，然后沿着 GitHub 的下一页链接一直获取到最后一页，最多十页，因为 GitHub 不按版本顺序列出版本。列表有变化时，会在一个事务中替换 `update_releases`；对每个比正在运行的版本更新的版本，获取并保存其 `release.json`，或保存无法获取的原因。每次检查最多获取十二个清单，每次并行四个，从最新的开始；其余的等待下一次检查，届时不带 `If-None-Match` 请求。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，或者在 `updates.releases_url` 指向镜像时从其源地址获取，客户端从不跟随从 HTTPS 到 HTTP 的重定向。下一次检查在 12 小时后再加上一小时内的随机时间；失败后至少一小时后，如果 GitHub 的 `Retry-After` 或 `x-ratelimit-reset` 要求，则更晚；在此之前，`update_settings.blocked_until` 也会让 **立即检查** 不发出请求。重复的失败只在 debug 级别记录。
 
 `kaeso_update::policy::plan` 决定提供哪个版本：渠道中比正在运行的版本更新的最新版本（GitHub 标记为预发布的版本，无论版本号如何，都视为预发布版本），以及它是否需要手动更新：新的主版本、途经版本（包括预发布版本）的清单中有 `manual: true`，或者根本没有清单；目标版本的 `manual_since` 也会计入，因此即使网关从未见过途经的版本，也会将其视为需要手动更新。`instance/updates` 下的 Platform API 只供实例管理员使用；每次更改都会记录审计（`instance.update_check`、`instance.update_settings`、`instance.update_start`、`instance.update_finish`），`apply` 要求在最近 15 分钟内登录过。
 
