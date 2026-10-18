@@ -24,7 +24,7 @@ Schlagen Sie hier jedes Feld des Formats OpenAI Chat Completions nach: wohin es 
 
 ## Anfrage: `CreateChatCompletionRequest`
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `model` | `GenerateRequest.model` typisiert | |
 | `messages` | `system` + `messages` typisiert | Siehe [Nachrichten](#nachrichten-chatcompletionrequestmessage). |
@@ -56,24 +56,24 @@ Schlagen Sie hier jedes Feld des Formats OpenAI Chat Completions nach: wohin es 
 
 ### Nachrichten (`ChatCompletionRequestMessage`)
 
-| Wire | KPP | Hinweise |
+| Wire | KPP | Anmerkungen |
 |---|---|---|
 | führende `system`- und `developer`-Nachrichten | Blöcke in `GenerateRequest.system` | Der erste Block jeder Nachricht trägt die Form `message: {role, content}`, die Nachrichtengrenzen, die Rolle und die Schreibweise als String oder Array bewahrt; `name` und unbekannte Schlüssel der Nachricht sind Extras `message.<key>` an diesem Block. Eine führende Nachricht, deren erster Teil unbekannt ist, bleibt eine Nachricht mit `Role::System` und beendet die führende Folge. Aus anderen Dialekten: eine `system`-Nachricht. |
 | spätere `system`- und `developer`-Nachrichten | `Message { role: System }` ([Systemnachrichten](cross-format.md#systemnachrichten)) | `developer`: Form `role: "developer"`. |
 | `user` | `Message { role: User }` | `name` und unbekannte Schlüssel: Extras der Nachricht. |
-| `assistant` | `Message { role: Assistant }`: Inhaltsteile, dann `refusal`, dann `tool_calls` | `content` fehlt: Form `content: "absent"`; `null`: verbatim; `name`, `audio`, `function_call`: Extras. `annotations` steht nicht im Anfrageschema, aber die SDKs senden es mit jeder Antwort zurück: `[]` ist verbatim (Form), damit die Unterhaltung zu einem anderen Anbieter wechseln kann; ein nicht leerer Wert wird zu `TextBlock.citations` des ersten Textblocks, gebunden an Chat (ohne Text: Extras `annotations`), was andere Dialekte ablehnen (`citations`) und Chat als `annotations` zurücksendet. Aus anderen Dialekten gehen Textblöcke in `content`, die erste Verweigerung in `refusal` und Tool-Aufrufe in `tool_calls`, weil Chat sie nicht verschränken kann; Reasoning wird verworfen ([Reasoning](reasoning.md)); ein Zug, in dem nichts bleibt, was Chat zeigen kann, etwa nur Reasoning, wird als `content: ""` gesendet, damit die Unterhaltung ihre Züge behält und die Regel von Chat erfüllt ist, dass eine Assistentennachricht ohne `tool_calls` Inhalt braucht. |
-| Assistent-`refusal` | `Block::Refusal` | |
-| Assistent-`function_call` (veraltet) | Extras `function_call` der Nachricht | `null` bleibt verbatim erhalten. Wird so zurückgeschrieben, wie es kam; andere Dialekte lehnen es ab (`messages[i].function_call`). |
+| `assistant` | `Message { role: Assistant }`: Inhaltsteile, dann `refusal`, dann `tool_calls` | `content` fehlt: Form `content: "absent"`; `null`: verbatim; `name`, `audio`, `function_call`: Extras. `annotations` steht nicht im Anfrageschema, aber die SDKs senden es mit jeder Antwort zurück: `[]` ist verbatim (Form), damit die Unterhaltung zu einem anderen Anbieter wechseln kann; ein nicht leerer Wert wird zu `TextBlock.citations` des ersten Textblocks, gebunden an Chat (ohne Text: Extras `annotations`), was andere Dialekte ablehnen (`citations`) und Chat als `annotations` zurücksendet. Aus anderen Dialekten gehen Textblöcke in `content`, die erste Verweigerung in `refusal` und Tool-Aufrufe in `tool_calls`, weil Chat sie nicht abwechselnd anordnen kann; Reasoning wird verworfen ([Reasoning](reasoning.md)); eine Runde, in der nichts bleibt, was Chat zeigen kann, etwa nur Reasoning, wird als `content: ""` gesendet, damit die Unterhaltung ihre Runden behält und die Regel von Chat erfüllt ist, dass eine Assistentennachricht ohne `tool_calls` Inhalt braucht. |
+| `refusal` des Assistenten | `Block::Refusal` | |
+| `function_call` des Assistenten (veraltet) | Extras `function_call` der Nachricht | `null` bleibt verbatim erhalten. Wird so zurückgeschrieben, wie es kam; andere Dialekte lehnen es ab (`messages[i].function_call`). |
 | `tool`-Nachrichten | `Block::ToolResult` in einer Nachricht mit `Role::User`; aufeinanderfolgende Tool-Nachrichten teilen sich eine KPP-Nachricht | `tool_call_id` wird zu `call_id`; Inhaltsteile werden zu verschachtelten Textblöcken; unbekannte Schlüssel sind Extras des Tool-Ergebnisses. `is_error` aus anderen Dialekten wird verworfen, weil Chat Fehler im Inhalt meldet ([Tool-Fehler](cross-format.md#tool-fehler)). Aus anderen Dialekten werden die Tool-Ergebnisse einer Benutzernachricht zu `tool`-Nachrichten, gefolgt von einer `user`-Nachricht mit den übrigen Blöcken. |
 | `function`-Nachrichten (veraltet) | `Message { role: User }` mit einem `Block::Unknown`, der die ganze Nachricht enthält, dazu die Form `role: "function"` der Nachricht | Wird so zurückgeschrieben, wie sie kam; andere Dialekte lehnen sie ab (`` `function` message ``). |
 | `content` als String oder Array | Form `content: "array"` (Nachricht oder Tool-Ergebnis) | Ein String ist der Standard für einen einzelnen reinen Textblock. Leere Arrays sind ungültig (`minItems: 1`). |
 | eine Nachricht ohne `role` oder mit einer anderen Rolle | `InvalidRequest` (`param` `messages[i]`) | |
 
-Das alte Function Calling hat keine IDs für Tool-Aufrufe, deshalb werden seine Züge keine KPP-Tool-Aufrufe und -Ergebnisse; innerhalb dieses Dialekts bestehen sie stattdessen den Round Trip, mit den Parametern `functions` und `function_call` auf oberster Ebene als Extras. Die Fixture ist `fixtures/openai_chat/requests/legacy-functions.json`. Andere Dialekte lehnen all das mit `Unsupported` ab: die Parameter auf oberster Ebene als `functions` und `function_call`, das `function_call` eines Assistenten als `messages[i].function_call` und eine `function`-Nachricht als `` `function` message ``, mit dem Hinweis `Remove the message, or send the request to a model served through its original format.`
+Das alte Function Calling hat keine IDs für Tool-Aufrufe, deshalb werden seine Runden keine KPP-Tool-Aufrufe und -Ergebnisse; innerhalb dieses Dialekts bestehen sie stattdessen den Round Trip, mit den Parametern `functions` und `function_call` auf oberster Ebene als Extras. Die Fixture ist `fixtures/openai_chat/requests/legacy-functions.json`. Andere Dialekte lehnen all das mit `Unsupported` ab: die Parameter auf oberster Ebene als `functions` und `function_call`, das `function_call` eines Assistenten als `messages[i].function_call` und eine `function`-Nachricht als `` `function` message ``, mit dem Hinweis `Remove the message, or send the request to a model served through its original format.`
 
 ### Inhaltsteile
 
-| Wire | KPP | Hinweise |
+| Wire | KPP | Anmerkungen |
 |---|---|---|
 | `text` | `Block::Text` | Unbekannte Schlüssel: Extras des Blocks. |
 | `prompt_cache_breakpoint` (Text-, Bild- und Dateiteile) | `cache: CacheHint { ttl: None }`, gebunden an Chat | Beide markieren das Ende eines wiederverwendbaren Präfixes; die TTL kommt aus `prompt_cache_options`. Nur Hinweise aus Chat werden zurückgesendet; Hinweise aus anderen Dialekten werden verworfen ([Cache-Hinweise](cross-format.md#cache-hinweise)). `mode` außer `explicit`: Form `mode`. |
@@ -96,25 +96,25 @@ Ein Body, den der Codec nicht lesen kann, ist `InvalidRequest` und nennt das Fel
 Ein unbekannter Schlüssel, dessen Name mit `header:` beginnt oder `.` enthält, kann nicht getragen werden, weil KPP Header und Schlüsselpfade so schreibt. Er wird überall abgelehnt, wo der Codec ein Objekt Schlüssel für Schlüssel liest:
 
 - im Body, in `stream_options`, in einem `response_format` vom Typ `text`, `json_object` oder `json_schema` und dessen `json_schema`;
-- in Function-Tools und ihrem `function` sowie in einer benannten `tool_choice` und ihrem `function`;
+- in Funktions-Tools und ihrem `function` sowie in einer benannten `tool_choice` und ihrem `function`;
 - in `system`-, `developer`-, `user`-, `assistant`- und `tool`-Nachrichten;
 - in `text`-, `refusal`-, `image_url`- und `file`-Teilen mit ihren Objekten `image_url`, `file` und `prompt_cache_breakpoint`;
-- in Function-Tool-Aufrufen und ihrem `function`.
+- in Funktions-Tool-Aufrufen und ihrem `function`.
 
 Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. `` oder, bei einer Nachricht, `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. `` Ein Name über 64 Bytes wird gekürzt und endet auf `…`. In ganz aufbewahrte Objekte, etwa unbekannte Teile, Tools und Tool-Auswahlen, Custom-Tool-Aufrufe, `function`-Nachrichten und andere `response_format`-Typen, wird nicht hineingesehen. In Antworten und Stream-Chunks ergibt dieselbe Regel einen `ProviderError` (in einem Stream ein `Error`-Event).
 
 ### Tool-Aufrufe (`ChatCompletionMessageToolCall`)
 
-| Wire | KPP | Hinweise |
+| Wire | KPP | Anmerkungen |
 |---|---|---|
 | `id`, `function.name` | `ToolCallBlock.id`, `.name` | Von Kaeso umgeschriebene Namen werden beim Dekodieren einer Antwort zurückübersetzt. |
-| `function.arguments` | `ToolCallBlock.arguments` roh | Der JSON-Text im String, Byte für Byte. Text, der kein gültiges JSON ist oder Leerraum drumherum hat, behält sein Literal in der Form `arguments`; KPP enthält dann `{}` für leeren Text und sonst den Text als JSON-String. Nach der Konvention von KPP bedeutet ein JSON-String in `ToolCallBlock.arguments`, dass der Anbieter Text gesendet hat, der kein JSON ist; für Aufrufe aus anderen Dialekten wird deshalb der Inhalt des Strings als `arguments` gesendet, Objekte, Arrays und andere JSON-Werte als ihr JSON-Text. |
+| `function.arguments` | `ToolCallBlock.arguments` roh | Der JSON-Text im String, Byte für Byte. Text, der kein gültiges JSON ist oder umgebenden Leerraum hat, behält sein Literal in der Form `arguments`; KPP enthält dann `{}` für leeren Text und sonst den Text als JSON-String. Nach der Konvention von KPP bedeutet ein JSON-String in `ToolCallBlock.arguments`, dass der Anbieter Text gesendet hat, der kein JSON ist; für Aufrufe aus anderen Dialekten wird deshalb der Inhalt des Strings als `arguments` gesendet, Objekte, Arrays und andere JSON-Werte als ihr JSON-Text. |
 | unbekannte Schlüssel | Extras (verschachtelt `function.<key>`) | |
 | `type: custom` | `Block::Unknown` | Wird in `tool_calls` zurückgesendet. |
 
 ## Antwort: `CreateChatCompletionResponse`
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `id`, `model` | `Response.id`, `.model` | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `object` | keins | Immer `chat.completion`; ein anderer Wert oder keiner: Form `object`. |
@@ -127,7 +127,7 @@ Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid O
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` oder `Block::Unknown` | Wie in Anfragen. |
 | `message.audio` (`id`, `data`, `expires_at`, `transcript`), `message.function_call`, unbekannte Schlüssel | Extras `choice.message.<key>` | Das Audio-Objekt bleibt mit `transcript` und `expires_at` vollständig erhalten. |
-| Reasoning, unbekannte Blöcke anderer Dialekte | keins | Werden in einer Chat-Antwort weggelassen ([Antworten](cross-format.md#antworten)). Das Gateway bewahrt wiederverwendbares Reasoning für die nächste Runde auf, zugeordnet den Tool-Aufrufen, vor denen es stand ([vom Gateway aufbewahrtes Reasoning](reasoning.md#vom-gateway-aufbewahrtes-reasoning), `kaeso_codecs::continuity`). |
+| Reasoning, unbekannte Blöcke anderer Dialekte | keins | Werden in einer Chat-Antwort weggelassen ([Antworten](cross-format.md#antworten)). Das Gateway bewahrt zurückspielbares Reasoning für die nächste Runde auf, zugeordnet den Tool-Aufrufen, vor denen es stand ([vom Gateway aufbewahrtes Reasoning](reasoning.md#vom-gateway-aufbewahrtes-reasoning), `kaeso_codecs::continuity`). |
 
 Eine Antwort aus einem anderen Dialekt schreibt leere Werte so wie OpenAI: `content: null`, `refusal: null`, `annotations: []` und `logprobs: null`.
 
@@ -152,10 +152,10 @@ Aus anderen Dialekten: `prompt_tokens = input + cache_read + cache_write`, `prom
 
 Einfache `data:`-Frames mit je einem JSON-Chunk, am Ende `data: [DONE]`.
 
-| Wire | KPP-Event | Hinweise |
+| Wire | KPP-Event | Anmerkungen |
 |---|---|---|
 | erster Chunk | `ResponseStart { id, model }` | `created`, `service_tier`, `system_fingerprint`: Extras; `object` außer `chat.completion.chunk` oder keins: Form `object`. Hat der erste Chunk keinen Inhalt und ein leeres oder fehlendes `id` oder `model`, werden der Start und die Chunks ohne Inhalt danach zurückgehalten, bis beide Werte bekannt sind oder ein Chunk Inhalt trägt (ein Block- oder Antwort-Delta); dann geht der Start mit den bis dahin bekannten Werten hinaus, jeder aus dem ersten Chunk, der ihn nicht leer hatte. |
-| `id`, `object`, `created`, `model`, `service_tier`, `system_fingerprint` in jedem Chunk | keins | Der Umschlag wiederholt sich. Wo der Umschlag eines Chunks von dem abweicht, den der Encoder aus `ResponseStart` neu aufbaut, bewahrt die Form `chunk.env` die Werte des Chunks und `chunk.env_absent` die Schlüssel, die ihm fehlen, sodass jeder Chunk, auch der erste, so zurückgeschrieben wird, wie er kam. Übereinstimmende Chunks folgen `ResponseStart`; ein Gateway, das dort `id` oder `model` umschreibt, schreibt sie also um. |
+| `id`, `object`, `created`, `model`, `service_tier`, `system_fingerprint` in jedem Chunk | keins | Der Envelope wiederholt sich. Wo der Envelope eines Chunks von dem abweicht, den der Encoder aus `ResponseStart` neu aufbaut, bewahrt die Form `chunk.env` die Werte des Chunks und `chunk.env_absent` die Schlüssel, die ihm fehlen, sodass jeder Chunk, auch der erste, so zurückgeschrieben wird, wie er kam. Übereinstimmende Chunks folgen `ResponseStart`; ein Gateway, das dort `id` oder `model` umschreibt, schreibt sie also um. |
 | `choices[0].delta.role` | Form `chunk.role` | Aus anderen Dialekten beginnt der Stream, sobald die Antwort startet, mit einem Rollen-Chunk, `delta: {"role": "assistant", "content": "", "refusal": null}`, dem ersten Chunk, den OpenAI selbst bei einer Textantwort sendet; so hört die App vom Stream, während das Modell nachdenkt ([Keepalives](cross-format.md#keepalives)). |
 | `choices[0].delta.content` | einmal `BlockStart(Text)`, dann `BlockDelta(Text)` | Jedes Stück, auch `""`. |
 | `choices[0].delta.refusal` | einmal `BlockStart(Refusal)`, dann `BlockDelta(Refusal)` | |
@@ -177,11 +177,11 @@ Einfache `data:`-Frames mit je einem JSON-Chunk, am Ende `data: [DONE]`.
 
 Gruppierung in Chunks: Das erste Event jedes Chunks trägt die Form-Markierung `chunk` (`n` ist die Zahl der Events aus diesem Chunk, dazu die Gestalt-Markierungen oben), die anderen tragen `in_chunk`, damit der Encoder sie wieder als einen Frame schreibt. Ein offener Chunk wird geschrieben, sobald ein Event ankommt, das nicht dazugehört (ein Event eines anderen Dialekts, `[DONE]`, ein Fehler), sodass ein verworfenes Event nie einen Chunk hinter `[DONE]` schiebt; nach `[DONE]` oder einem Fehler wird kein Chunk mehr geschrieben. Tool-Argumente für einen Block, den Chat nicht zeigen kann, werden weggelassen.
 
-Das SSE-Framing folgt der Spezifikation ([Server-sent Events](codec-design.md#server-sent-events)): Ein `id`, das NUL enthält, oder ein `retry`, das nicht aus ASCII-Ziffern besteht, die in ein `u64` passen, gilt als unbekanntes Feld. SSE-`id`, `retry` und unbekannte SSE-Felder eines Chunks, die OpenAI nicht sendet, bleiben in der Form `chunk.sse` als `{"id", "retry", "other": [[name, value], …]}` erhalten; der Chunk wird wie jeder andere dekodiert, und die Felder werden an Chat-Apps zurückgeschrieben. Ein Frame ohne `data:`-Zeile, etwa `retry: 3000` oder `event: ping` allein, ist nach der Spezifikation kein Event: Er wird zu einem `Extra`, dessen rohes JSON keinen Schlüssel `data` hat, und wird ohne Datenzeile zurückgeschrieben. Benannte Events und Frames nach `[DONE]` bleiben vollständig erhalten und werden nur an Chat-Apps wiedergegeben.
+Das SSE-Framing folgt der Spezifikation ([Server-sent Events](codec-design.md#server-sent-events)): Ein `id`, das NUL enthält, oder ein `retry`, das nicht aus ASCII-Ziffern besteht, die in ein `u64` passen, gilt als unbekanntes Feld. SSE-`id`, `retry` und unbekannte SSE-Felder eines Chunks, die OpenAI nicht sendet, bleiben in der Form `chunk.sse` als `{"id", "retry", "other": [[name, value], …]}` erhalten; der Chunk wird wie jeder andere dekodiert, und die Felder werden an Chat-Apps zurückgeschrieben. Ein Frame ohne `data:`-Zeile, etwa `retry: 3000` oder `event: ping` allein, ist nach der Spezifikation kein Event: Er wird zu einem `Extra`, dessen rohes JSON keinen Schlüssel `data` hat, und wird ohne Datenzeile zurückgeschrieben. Benannte Events und Frames nach `[DONE]` bleiben vollständig erhalten und werden nur an Chat-Apps zurückgespielt.
 
-OpenAI sendet `id`, `type` und `function.name` eines Tool-Aufrufs in dessen erstem Chunk, das Schema erlaubt sie aber auch in einem späteren, und manche OpenAI-kompatiblen Anbieter senden `id` und `name` dort, nach einem ersten Chunk mit `choices: []` und leerem `id` und `model`. Anthropic und Responses kündigen beides beim Start eines Blocks an, deshalb hält der Decoder den Start und den Aufruf wie oben zurück, bis er sie kennt; die Reihenfolge der Events ändert sich nie. Streams, die in diesem Format bleiben, geben jeden Chunk exakt wieder. Die Fixture ist `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
+OpenAI sendet `id`, `type` und `function.name` eines Tool-Aufrufs in dessen erstem Chunk, das Schema erlaubt sie aber auch in einem späteren, und manche OpenAI-kompatiblen Anbieter senden `id` und `name` dort, nach einem ersten Chunk mit `choices: []` und leerem `id` und `model`. Anthropic und Responses kündigen beides beim Start eines Blocks an, deshalb hält der Decoder den Start und den Aufruf wie oben zurück, bis er sie kennt; die Reihenfolge der Events ändert sich nie. Streams, die in diesem Format bleiben, werden Chunk für Chunk exakt zurückgespielt. Die Fixture ist `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
 
-Events aus anderen Dialekten werden zu je einem Chunk, nach dem eröffnenden Rollen-Chunk, mit `logprobs: null` und `finish_reason`. Tool-Indizes werden in der Reihenfolge vergeben, in der Tool-Aufrufe beginnen, und Reasoning, Zitate, opake Daten, unbekannte Blöcke und Extras anderer Dialekte werden weggelassen ([Antworten](cross-format.md#antworten)). Während sie ankommen, schreibt der Encoder dosierte SSE-Kommentare (`: keepalive`), die die SSE-Spezifikation und die Parser der SDKs ignorieren: einen für jedes Extra-Event eines anderen Dialekts, etwa Anthropic `ping`, und einen je 1.024 Bytes verborgenen Texts ([Keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gibt dem Gateway denselben Frame für Stille beim Anbieter. Nutzung wird nur geschrieben, wenn die App danach gefragt hat (`EncodeCtx::stream` mit `include_usage`): Jeder Chunk hat dann `usage: null`, und ein letzter Chunk mit `choices: []` trägt die Nutzung. Aus anderen Dialekten ist das die zuletzt gemeldete Nutzung, mit den Eingabezahlen aus `ResponseStart`, wenn die spätere Meldung keine hat.
+Events aus anderen Dialekten werden zu je einem Chunk, nach dem eröffnenden Rollen-Chunk, mit `logprobs: null` und `finish_reason`. Tool-Indizes werden in der Reihenfolge vergeben, in der Tool-Aufrufe beginnen, und Reasoning, Zitate, opake Daten, unbekannte Blöcke und Extras anderer Dialekte werden weggelassen ([Antworten](cross-format.md#antworten)). Während sie ankommen, schreibt der Encoder getaktete SSE-Kommentare (`: keepalive`), die die SSE-Spezifikation und die Parser der SDKs ignorieren: einen für jedes Extra-Event eines anderen Dialekts, etwa Anthropic `ping`, und einen je 1.024 Bytes verborgenen Texts ([Keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gibt dem Gateway denselben Frame für Stille beim Anbieter. Nutzung wird nur geschrieben, wenn die App danach gefragt hat (`EncodeCtx::stream` mit `include_usage`): Jeder Chunk hat dann `usage: null`, und ein letzter Chunk mit `choices: []` trägt die Nutzung. Aus anderen Dialekten ist das die zuletzt gemeldete Nutzung, mit den Eingabezahlen aus `ResponseStart`, wenn die spätere Meldung keine hat.
 
 ## Fehler (`ErrorResponse`)
 

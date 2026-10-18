@@ -57,7 +57,7 @@ Antworten fließen von einem Anbieter zu einer App, und eine fertige, bereits be
 1. **Abgebildet**, wo der Dialekt der App sie darstellen kann: Reasoning eines anderen Dialekts wird zu einem Reasoning-Item von OpenAI Responses oder einem Anthropic-`thinking`-Block, mit dem Originalblock verpackt in einem [Reasoning-Blob](reasoning.md#reasoning-blobs), den die App unverändert zurücksendet.
 2. **Weggelassen**, wo er das nicht kann, und in Streams durch [Keepalive](#keepalives)-Frames ersetzt, damit die Verbindung nie verstummt: Reasoning für Apps von OpenAI Chat (das Gateway [bewahrt es](reasoning.md#vom-gateway-aufbewahrtes-reasoning) zwischen den Runden auf), unbekannte Blöcke und Stream-Extras aus einem anderen Dialekt, fremde Zitate und Extras.
 
-Das Gateway protokolliert die KPP-Antwort vollständig, daher geht in Kaesos Aufzeichnungen nichts verloren. Unbekannte Blöcke, Zitate und Extras erreichen einen anderen Dialekt nur, wenn der Anbieter etwas sendet, worum die Anfrage nicht gebeten hat, weil die Anfrageseite fremde Server-Tools, Zitate und ähnliche Funktionen ablehnt.
+Das Gateway protokolliert die KPP-Antwort vollständig, daher geht in Kaesos Aufzeichnungen nichts verloren. Unbekannte Blöcke, Zitate und Extras erreichen einen anderen Dialekt nur, wenn der Anbieter etwas sendet, worum die Anfrage nicht gebeten hat, weil die Anfrageseite fremde Server-Tools, Zitate und ähnliche Features ablehnt.
 
 Stoppgründe, die das Format der App nicht kennt, werden auf den nächstliegenden abgebildet, den es kennt; die Mapping-Seite jedes Dialekts listet sie auf.
 
@@ -104,7 +104,7 @@ Diese Felder wechseln das Format nur mit den Werten unten (`cross::is_droppable_
 Eine Systemnachricht nach dem Beginn einer Unterhaltung bleibt als `Role::System`-Nachricht erhalten.
 
 - **An Anthropic, aus Anthropic Messages:** unverändert gesendet; die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
-- **An Anthropic, aus anderen Dialekten:** `Unsupported`. Anthropic erlaubt sie nur für einige Modelle und nur nach einem Benutzerzug, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
+- **An Anthropic, aus anderen Dialekten:** `Unsupported`. Anthropic erlaubt sie nur für einige Modelle und nur nach einer Benutzerrunde, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
 - **An OpenAI:** spätere `system`- oder `developer`-Nachrichten.
 
 ## Keepalives
@@ -118,7 +118,7 @@ Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format d
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 
-- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr. Ein Extra-Event eines anderen Dialekts wie `ping` bringt immer einen Frame ein, weil der Anbieter es bereits taktet. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, bringt einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes ein, also 1.024. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App bringen nie Frames ein, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
+- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr. Ein Extra-Event eines anderen Dialekts wie `ping` löst immer einen Frame aus, weil der Anbieter es bereits taktet. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, löst einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes aus, also 1.024. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App lösen nie Frames aus, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
 - **Vom Gateway gesteuert.** `StreamEncoder::keepalive` liefert den Frame auf Abruf, für Stille beim Anbieter, die der Encoder nicht sehen kann. Das Gateway schreibt ihn, wenn es `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang nichts an die App geschrieben hat, standardmäßig 15 Sekunden.
 
 Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die Antwort beginnt, statt mit dem ersten Text, sodass die App vom Stream hört, während das Modell denkt.
@@ -151,7 +151,7 @@ KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren a
 
 ## IDs von Antworten
 
-Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die App auch spricht. Eine Claude-Antwort erreicht eine OpenAI-Chat-Completions- oder Responses-App mit ihrer Anthropic-ID (`msg_…`). Eine OpenAI-Antwort erreicht eine Anthropic-Messages-App mit der ID von OpenAI (`chatcmpl-…` oder `resp_…`). Streams tragen dieselbe ID. Die Codecs erfinden nie eine ID im Muster der App, weil die ID des Anbieters die Antwort beim Anbieter benennt; Apps behandeln IDs von Antworten als undurchsichtige Zeichenketten. Ausnahmen sind Ausgabe-Items von Responses, die andere Formate nicht haben ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)), und ein Responses-Stream ohne Start-Event, der die ID `resp_kaeso_<created_at>` erhält ([OpenAI Responses](openai-responses.md)).
+Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die App auch spricht. Eine Claude-Antwort erreicht eine OpenAI-Chat-Completions- oder Responses-App mit ihrer Anthropic-ID (`msg_…`). Eine OpenAI-Antwort erreicht eine Anthropic-Messages-App mit der ID von OpenAI (`chatcmpl-…` oder `resp_…`). Streams tragen dieselbe ID. Die Codecs erfinden nie eine ID im Muster der App, weil die ID des Anbieters die Antwort beim Anbieter benennt; Apps behandeln IDs von Antworten als opake Zeichenketten. Ausnahmen sind Ausgabe-Items von Responses, die andere Formate nicht haben ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)), und ein Responses-Stream ohne Start-Event, der die ID `resp_kaeso_<created_at>` erhält ([OpenAI Responses](openai-responses.md)).
 
 ## Speicherung und IDs bei Responses
 
@@ -178,4 +178,4 @@ Der Anthropic-Codec legt eine API-Version fest, `2023-06-01`, exportiert als `ka
 - **Ingress.** Ein weitergegebenes `anthropic-version`, das der festgelegten Version entspricht, wird nicht in den Extras der Anfrage gespeichert: Der Codec sendet es ohnehin, und es aufzubewahren würde jede Anfrage eines Anthropic-SDKs an ihren Dialekt binden. Jeder andere Wert wird als Extra `header:anthropic-version` aufbewahrt und beim Egress wie oben verglichen.
 - **Warum die neuere Version gewinnt.** Anthropic ergänzt eine Version nur, mit neuen optionalen Eingaben und neuen Ausgabewerten, und eine App, die eine neuere Version anfordert, verlässt sich auf deren Verhalten. Die Decoder tolerieren unbekannte Felder, Blöcke und Events, daher führt eine neuere Version zu Extras und unbekannten Items, statt zu scheitern.
 
-Um die festgelegte Version zu ändern, die Konstante ändern, die Fixtures mit `cargo xtask record` neu aufzeichnen ([Aufzeichnen](fixtures.md#live-antworten-aufzeichnen)) und diesen Abschnitt aktualisieren.
+Um die festgelegte Version zu ändern, ändern Sie die Konstante, zeichnen die Fixtures mit `cargo xtask record` neu auf ([Aufzeichnen](fixtures.md#live-antworten-aufzeichnen)) und aktualisieren diesen Abschnitt.

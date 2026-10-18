@@ -23,7 +23,7 @@ Die Konsole ist eine statische React-App in `apps/console`, ausgeliefert unter d
 ## Regeln
 
 - **Nur die Platform API**, und jeder Aufruf über den Client in `src/api`. Was die API nicht kann, wird nicht gezeigt, und nichts wird vorgetäuscht.
-- **Rechte kommen von der API, nie geraten.** Organisationsrechte kommen aus `auth/session`, Projektrechte aus `GET …/projects/{project}/my-rights` und Name, Beschreibung, Kategorie und Voraussetzungen jedes Rechts aus `GET orgs/{org}/rights`. Ein `403` ist endgültig: Ein Bereich, den jemand nicht sehen darf, ist ausgeblendet, und eine einzelne Aktion ist deaktiviert, mit dem Namen des Rechts und wer es vergeben kann (`useNeedsRight`).
+- **Rechte kommen von der API, nie geraten.** Organisationsrechte kommen aus `auth/session`, Projektrechte aus `GET …/projects/{project}/my-rights` und Name, Beschreibung, Kategorie und Voraussetzungen jedes Rechts aus `GET orgs/{org}/rights`. Ein `403` ist endgültig: Ein Bereich, den jemand nicht sehen darf, ist ausgeblendet, und eine einzelne Aktion ist deaktiviert, mit dem Namen des Rechts und dem Hinweis, wer es vergeben kann (`useNeedsRight`).
 - **Keine Geheimnisse im Browser.** Die Konsole liest das Sitzungscookie nie, und sie zeigt Geheimnisse von Schlüsseln einmal und speichert sie nie. `localStorage` enthält nur die letzte Organisation und das letzte Projekt, zuletzt geöffnete Einträge, das Theme, die Sprache, Breite und Zustand der Seitenleiste, die Spalten der Anfrageprotokolle und die noch nicht gesendeten Prompts des Playgrounds. `sessionStorage` enthält das Token einer Einladung, bis sie angenommen ist.
 - **Dialoge öffnen frisch.** Was ein Dialog hält, etwa Felder, den Schritt, ein Ergebnis oder ein einmal gezeigtes Geheimnis, lebt in einer Komponente, die bei jedem Öffnen neu eingehängt wird: in einem `DialogScope` oder nur gerendert, solange der Dialog offen ist. Ein Sheet für eine Zeile zeigt nie die Daten einer anderen.
 - **Tokens in Links stehen im Fragment.** Die Konsole liest `location.hash` einmal, ruft die API auf und ersetzt die Adresse durch eine ohne Fragment.
@@ -33,7 +33,7 @@ Die Konsole ist eine statische React-App in `apps/console`, ausgeliefert unter d
 
 ## Daten
 
-Jedes Lesen ist eine TanStack-Query-Abfrage mit der Anfrage als Schlüssel, und jede Änderung ist eine Mutation, die invalidiert, was sie berührt, und das Audit-Log.
+Jedes Lesen ist eine TanStack-Query-Abfrage mit der Anfrage als Schlüssel, und jede Änderung ist eine Mutation, die alles invalidiert, was sie berührt, dazu das Audit-Log.
 
 - **Der Client** in `src/api/client.ts` ist `openapi-fetch` mit den Typen, die `pnpm --filter kaeso-console generate` aus `openapi.json` nach `src/api/generated` schreibt. Die Skripte `dev`, `build`, `typecheck`, `test` und `e2e` der Konsole führen den Generator zuerst aus, und seine Ausgabe wird nie committet. Der Client sendet das Sitzungscookie und macht aus jedem Fehlschlag einen `ApiError` mit `type`, `message` und `param` der API sowie der `kaeso-request-id` (`src/api/errors.ts`).
 - **Listen** blättern mit Cursorn (`src/api/paging.ts`), und **Exporte** sind gestreamte Downloads (`src/api/download.ts`).
@@ -48,7 +48,7 @@ Die Konsole hat keine eigenen Styles. `@logicplanes/kaeso-ui` liefert jedes sich
 
 Der Router teilt die Routen auf (`autoCodeSplitting`), sodass der Code einer Seite mit der Seite lädt. Der Build schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten um und jedes `icons.name` auf den Import genau dieses Icons (`uiEntryImports` in `vite.config.ts`). Eine Seite bringt dann nur die Komponenten und Icons mit, die sie zeichnet.
 
-Was das erste Zeichnen nicht braucht, lädt bei Gebrauch: der Toaster, die Befehlspalette, der Dialog für eine erneute Anmeldung, die Liste der Tastenkürzel, „Organisation erstellen“, die Menüs der Seitenleiste, Tooltips und der Kalender der Datumsauswahl. Die Menüs der Seitenleiste und der Kalender laden außerdem, sobald die Seite untätig ist, damit sie sich beim ersten Druck sofort öffnen. Die Aufschlüsselung der Übersicht und die Anmeldeschritte nach der E-Mail-Adresse laden zusammen mit den Daten, auf die sie warten.
+Was das erste Zeichnen nicht braucht, lädt bei Gebrauch: der Toaster, die Befehlspalette, der Dialog für eine erneute Anmeldung, die Liste der Tastenkürzel, „Organisation erstellen“, die Menüs der Seitenleiste, Tooltips und der Kalender der Datumsauswahl. Die Menüs der Seitenleiste und der Kalender laden außerdem, sobald die Seite untätig ist, damit sie sich beim ersten Klick sofort öffnen. Die Aufschlüsselung der Übersicht und die Anmeldeschritte nach der E-Mail-Adresse laden zusammen mit den Daten, auf die sie warten.
 
 `pnpm build` schlägt fehl, wenn das erste Zeichnen einer Route ihre Obergrenze in `scripts/budget.mjs` überschreitet oder Seitencode aus `src/features` in den Einstiegspunkt gerät. So kommen Sie wieder darunter:
 
@@ -58,9 +58,9 @@ Was das erste Zeichnen nicht braucht, lädt bei Gebrauch: der Toaster, die Befeh
 
 ## Fehler
 
-Jeder Fehler ist ein Toast; nichts zeigt einen Fehler in der Seite.
+Jeder Fehler ist ein Toast; Fehler erscheinen nie im Seiteninhalt.
 
 - Änderungen laufen über `useApiMutation` (`src/auth/mutation.ts`), öffentliche Formulare über `useSubmit` und fehlgeschlagene Ladevorgänge über den Handler des Query-Caches (`src/query.ts`), der „Erneut versuchen“ anbietet.
-- Fehler des Gateways tragen die Request-ID.
-- Änderungen an Katalogmodellen und Limits senden `If-Match` mit der Revision, auf der sie gemacht wurden. Ein `412` lädt neu, was sich geändert hat, sagt das und schließt den Dialog der Änderung.
+- Fehler des Gateways tragen die Anfrage-ID.
+- Änderungen an Katalogmodellen und Limits senden `If-Match` mit der Revision, auf der sie gemacht wurden. Ein `412` lädt neu, was sich geändert hat, sagt das und schließt den Bearbeitungsdialog.
 - Ein fehlendes Objekt (404) ist ein eigener Zustand der Seite oder des Sheets, und eine beendete Sitzung führt zur Anmeldung.

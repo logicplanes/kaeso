@@ -22,7 +22,7 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 
 | Branch | Was er ist | Wer ihn ändert |
 | --- | --- | --- |
-| `dev` | Der Standard-Branch, auf dem alle Arbeit landet | Nur Pull Requests ([Merge erreichen](contributing.md#merge-erreichen)) |
+| `dev` | Der Standard-Branch, auf dem alle Arbeit landet | Nur Pull Requests ([Pull Request mergen lassen](contributing.md#pull-request-mergen-lassen)) |
 | `prod` | Das neueste Release oder der Commit, der gleich eines wird | Der Maintainer, immer als Fast-Forward |
 | `hotfix/X.Y.Z` | Eine Korrektur für das neueste Release, von dessen Tag abgezweigt | Der Maintainer, der ihn nach `prod` pusht |
 
@@ -105,7 +105,7 @@ Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.M
 
 ## Vorabversion erstellen
 
-Starten Sie den Release-Workflow auf `prod` mit einer Version wie `0.2.0-rc.1`. Eine Vorabversion bekommt auf npm den Tag `next` und als Image-Tag nur seine Version, und GitHub markiert es nie als neuestes Release. Die Websites danach zu verteilen ist optional.
+Starten Sie den Release-Workflow auf `prod` mit einer Version wie `0.2.0-rc.1`. Eine Vorabversion bekommt auf npm den Tag `next` und als Image-Tag nur ihre Version, und GitHub markiert sie nie als neuestes Release. Die Websites danach zu verteilen ist optional.
 
 ## Hotfix erstellen
 
@@ -150,4 +150,4 @@ Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seit
 default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
-Die Richtlinie des Showcases nennt einen Hash für jedes seiner Inline-Skripte und -Stile, die sich mit ihnen ändern. Nehmen Sie seinen Header aus der `csp.txt` des Builds, den Sie verteilen.
+Die Richtlinie des Showcases nennt einen Hash für jedes seiner Inline-Skripte und -Stile; die Hashes ändern sich mit ihnen. Nehmen Sie seinen Header aus der `csp.txt` des Builds, den Sie verteilen.

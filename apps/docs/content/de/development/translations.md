@@ -18,17 +18,17 @@ Das Gateway schreibt seine eigenen Antworten, etwa Fehlermeldungen und die Namen
 
 ## Hausstil
 
-Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Die Bedeutung übersetzen, nicht die Wörter, und so kurz bleiben wie das Englische.
+Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Übersetzen Sie die Bedeutung, nicht die Wörter, und bleiben Sie so kurz wie das Englische.
 
 | | Englisch | Deutsch | Vereinfachtes Chinesisch |
 | --- | --- | --- | --- |
 | Anrede | Keine oder „you“ | „Sie“ mit „Ihr“, „Ihre“, „Ihnen“, nie „du“; Überschriften, Buttons, Menüeinträge und kurze Hinweise bleiben im Infinitiv („Schlüssel erstellen“, „gleich erneut versuchen“) | „您“, wo eine Person angesprochen wird, nie „你“; sonst neutrale Formulierungen |
 | Buttons | Zuerst ein Verb: „Create key“ | Infinitiv, Verb am Ende: „Schlüssel erstellen“ | Zuerst ein Verb: „创建密钥“ |
-| Titel | Sentence case | Deutsche Groß- und Kleinschreibung, sonst wie ein Satz | Keine Satzzeichen am Ende |
+| Titel | Satzschreibung | Deutsche Groß- und Kleinschreibung, sonst wie ein Satz | Keine Satzzeichen am Ende |
 | Auslassungspunkte | „Loading…“, ein Zeichen | „Wird geladen…“ | „加载中…“ |
 | Zahlen und Datumsangaben | Aus `@logicplanes/kaeso-ui/format`, nie von Hand formatiert | Ebenso | Ebenso |
 | Anführungszeichen | "…" | „…“ | “…” |
-| Interpunktion | | | Volle Breite (，。：；？（）), ohne Leerzeichen drumherum; ein Leerzeichen zwischen chinesischen und lateinischen Wörtern, Ziffern oder Code (`3 个密钥`, `API 密钥`) |
+| Interpunktion | | | Volle Breite (，。：；？（）), ohne Leerzeichen davor oder danach; ein Leerzeichen zwischen chinesischen und lateinischen Wörtern, Ziffern oder Code (`3 个密钥`, `API 密钥`) |
 
 Deutsch ist etwa ein Drittel länger als Englisch. Layouts müssen das aushalten: Beschriftungen werden nicht abgeschnitten, Beschreibungen passen weiterhin in eine Zeile, Buttons behalten ihre Breite und Tabellen laufen nicht über. Chinesisch ist kürzer, braucht aber die volle Zeilenhöhe; nie kleiner setzen. Deutsch behält etablierte Begriffe wie Token, Playground und Budget, statt deutsche Wörter dafür zu erfinden.
 
@@ -115,7 +115,7 @@ Nie übersetzt werden: Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, mod
 
 - Eine Person wählt unter **Einstellungen** › **Konto** › **Darstellung** › **Sprache**: Automatisch, English, Deutsch oder 简体中文. Die Wahl wird an ihrem Konto gespeichert (`PATCH me` mit `locale`, gelesen aus `auth/session`), sodass sie ihr in jeden Browser folgt.
 - **Automatisch**, der Standard, nimmt die erste Sprache des Browsers, die die Konsole hat (`navigator.languages`: `de-AT` ist Deutsch, jedes Chinesisch ist vereinfachtes Chinesisch), fällt auf Englisch zurück und folgt dem Browser, wenn sich dessen Sprache ändert.
-- Der Browser hält eine Kopie der Wahl des Kontos (`kaeso:locale`), sodass schon das erste Rendern, die Anmeldung eingeschlossen, in ihr erscheint. Englisch lädt nichts weiter; Deutsch und Chinesisch laden ihre Kataloge (den der Konsole und den der Bibliothek, je ein Chunk) vor dem ersten Rendern.
+- Der Browser hält eine Kopie der Wahl des Kontos (`kaeso:locale`), sodass schon das erste Zeichnen, die Anmeldung eingeschlossen, in dieser Sprache erscheint. Englisch lädt nichts weiter; Deutsch und Chinesisch laden ihre Kataloge (den der Konsole und den der Bibliothek, je ein Chunk) vor dem ersten Zeichnen.
 - Meldet die Sitzung eine Wahl, die in einem anderen Browser getroffen wurde, wechselt `src/i18n/sync.tsx` zu ihr. Der Wechsel zeichnet die Konsole in der neuen Sprache neu; die Seite, ihre Daten und ihre Position bleiben.
 
 ### Texte schreiben
@@ -130,16 +130,16 @@ t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
 tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
 ```
 
-- **`t(key, english, values?)`** gibt einen String zurück. Beim Rendern aufrufen oder dann, wenn der Text gebraucht wird (ein Toast, ein Titel), nie auf Modulebene: Eine beim Import berechnete Konstante bleibt in der Sprache, in der die Seite gestartet ist. Tabellen von Beschriftungen werden zu Funktionen (`() => t(…)`) oder innerhalb der Komponente gebaut.
+- **`t(key, english, values?)`** gibt einen String zurück. Rufen Sie sie beim Rendern auf oder dann, wenn der Text gebraucht wird (ein Toast, ein Titel), nie auf Modulebene: Eine beim Import berechnete Konstante bleibt in der Sprache, in der die Seite gestartet ist. Tabellen von Beschriftungen werden zu Funktionen (`() => t(…)`) oder innerhalb der Komponente gebaut.
 - **Schlüssel und englischer Text sind String-Literale**, nebeneinander. Der Schlüssel ist `<area>.<words>` in camelCase, etwa `org.members.invite` oder `logs.inspector.overview`. Sein erster Teil benennt die Katalogdatei (`src/i18n/locales/<locale>/<area>.json`): `common`, `shell`, `auth`, `errors`, `rights`, `format`, `kaeso`, `signIn`, `public`, `account`, `org`, `orgHome`, `instance`, `project`, `keys`, `limits`, `logs`, `models`, `playground`. Ein Schlüssel benennt, was der Text bedeutet, nicht wo er steht; ein Schlüssel hat immer genau einen englischen Text, und eine geänderte Bedeutung bekommt einen neuen Schlüssel.
-- **Gemeinsame Wörter** stehen in `common` (`src/i18n/common.ts` listet sie auf): Cancel, Save, Delete, Continue, Name, Email, Never und andere. Seine Funktion aufrufen, etwa `common.cancel()`, oder `t("common.cancel", "Cancel")` mit genau diesem englischen Text verwenden. Ein Wort, das an seiner Stelle etwas anderes bedeutet, bekommt einen eigenen Schlüssel.
-- **Nur ganze Sätze.** Nie Fragmente zusammensetzen (`"Joined " + date`, `` `${n} keys` ``), weil die Wortstellung sich unterscheidet. Werte gehören in Platzhalter (`{name}`); Zahlen, die eine Form bestimmen, laufen über `plural` (`one`, `other`, `=0`; Deutsch hat dieselben Formen, Chinesisch nur `other`); Varianten laufen über `select`. Zahlen, Geldbeträge und Datumsangaben vor der Übergabe mit `@logicplanes/kaeso-ui/format` formatieren; die Formatierer folgen der Sprache.
+- **Gemeinsame Wörter** stehen in `common` (`src/i18n/common.ts` listet sie auf): Cancel, Save, Delete, Continue, Name, Email, Never und andere. Rufen Sie seine Funktion auf, etwa `common.cancel()`, oder verwenden Sie `t("common.cancel", "Cancel")` mit genau diesem englischen Text. Ein Wort, das an seiner Stelle etwas anderes bedeutet, bekommt einen eigenen Schlüssel.
+- **Nur ganze Sätze.** Nie Fragmente zusammensetzen (`"Joined " + date`, `` `${n} keys` ``), weil sich die Wortstellung zwischen Sprachen unterscheidet. Werte gehören in Platzhalter (`{name}`); Zahlen, die eine Form bestimmen, laufen über `plural` (`one`, `other`, `=0`; Deutsch hat dieselben Formen, Chinesisch nur `other`); Varianten laufen über `select`. Formatieren Sie Zahlen, Geldbeträge und Datumsangaben vor der Übergabe mit `@logicplanes/kaeso-ui/format`; die Formatierer folgen der Sprache.
 - **Teile, die Elemente sind**, etwa ein Link oder ein fett gesetzter Name, sind Platzhalter von `tRich`, das Knoten zurückgibt.
 - `aria-label`s, `title`s, Platzhaltertexte und der Seitentitel (`usePageTitle`) sind Text wie jeder andere.
 
 ### Was das Gateway schreibt
 
-Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client übersetzt, was er kennt, sobald Antworten eintreffen (`src/api/`, Schlüssel `errors.*` und `rights.*`), und ordnet Rechte und Rollen über ihre ID und Meldungen über ihren englischen Text samt Werten zu; alles, was er nicht kennt, wird so gezeigt, wie das Gateway es geschrieben hat. Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
+Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client (`src/api/`) übersetzt, was er kennt, sobald Antworten eintreffen, mit den Schlüsseln `errors.*` und `rights.*`: Rechte und Rollen über ihre ID, Meldungen über ihren englischen Text und ihre Werte. Was er nicht kennt, erscheint so, wie das Gateway es geschrieben hat. Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
 
 ## Die UI-Bibliothek
 
@@ -160,7 +160,7 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 }
 ```
 
-- `useUiText` und `useLocale` aus `../../i18n/context` importieren, nie aus dem Index: Das Kontextmodul enthält keine Formatierer, sodass das Bundle einer Komponente klein bleibt.
+- Importieren Sie `useUiText` und `useLocale` aus `../../i18n/context`, nie aus dem Index: Das Kontextmodul enthält keine Formatierer, sodass das Bundle einer Komponente klein bleibt.
 - Der englische Text ist ein einfaches String-Literal im selben Aufruf; der Katalogtest liest jedes `t("key", "English")` im Quellcode.
 - Alles, was eine Person sieht oder hört, läuft über `t`: sichtbarer Text, `aria-label`, Titel, Platzhaltertexte, Text nur für Screenreader, Toasts und leere Zustände. Daten, die die App übergibt (Namen, Rollen, Rechte), und Produktnamen bleiben, wie sie sind.
 - Eine Text-Prop mit Standardwert, etwa `emptyText`, hat in ihrer Signatur keinen; die Komponente nutzt `emptyText ?? t("combobox.noResults", "No results")`, sodass der Standard der Sprache folgt und der eigene Text einer App Vorrang hat.
@@ -187,21 +187,21 @@ root.render(
 
 - Ohne `LocaleProvider` ist alles Englisch.
 - `resolveUiLocale` bildet ein BCP-47-Tag auf eine mitgelieferte Sprache ab: `de-AT` ist `de`, `zh-Hans` ist `zh-CN`, alles andere `en`. `loadUiMessages` gibt für Englisch `{}` zurück und lädt nichts.
-- Für einen Sprachwechsel den neuen Katalog laden und den Provider dann mit neuer Sprache und neuem Katalog zugleich rendern; bis der Katalog da ist, das alte Paar behalten.
+- Laden Sie für einen Sprachwechsel den neuen Katalog und rendern Sie den Provider dann mit neuer Sprache und neuem Katalog zugleich; behalten Sie das alte Paar, bis der Katalog da ist.
 - Der Provider setzt auch die Sprache der Formatierer (`formatNumber`, `formatDate`, `formatRelative`, `formatUSD` und andere), die einfache Funktionen sind; `setFormatLocale(locale, messages)` tut dasselbe ohne React. Die eigenen Texte einer App nutzen ihre eigenen Kataloge, und `formatMessage(template, values, locale)` formatiert ICU-Nachrichten auf dieselbe Weise.
 
 ## Der Showcase
 
 - Jede Seite des Showcases wird in jeder Sprache gebaut: Englisch unter `/components/button`, Deutsch unter `/de/components/button`, Chinesisch unter `/zh-CN/components/button`. Das Chrome, das Raster der Startseite, die Anleitungen und jede Beschreibung von Komponenten und Props stehen ab dem ersten Zeichnen in der Sprache der Seite.
-- Die Sprachauswahl in der Seitenleiste öffnet dieselbe Seite in einer anderen Sprache und wird gespeichert. Eine englische Adresse folgt der gespeicherten Wahl, dann den Sprachen des Browsers; eine deutsche oder chinesische Adresse wird immer wie verlangt gezeigt. `?lang=de`, `?lang=zh-CN` und `?lang=en` funktionieren weiterhin: Sie werden gespeichert und leiten auf die Adresse dieser Sprache weiter.
+- Die Sprachauswahl in der Seitenleiste öffnet dieselbe Seite in einer anderen Sprache und wird gespeichert. Eine englische Adresse folgt der gespeicherten Wahl, dann den Sprachen des Browsers; eine deutsche oder chinesische Adresse zeigt immer diese Sprache. `?lang=de`, `?lang=zh-CN` und `?lang=en` werden gespeichert und leiten auf die Adresse dieser Sprache weiter.
 - Die Texte des Chromes liegen in `DOCS_TEXT` (`apps/showcase/src/lib/locale.tsx`). Alle anderen Texte liegen in `apps/showcase/src/i18n/de.json` und `zh-CN.json`, mit dem englischen Text samt zusammengefasstem Leerraum als Schlüssel.
 - `pnpm --filter kaeso-showcase gen` schlägt fehl und listet jeden Text ohne deutschen oder chinesischen Eintrag auf, sodass eine neue Beschreibung nicht nur auf Englisch ausgeliefert werden kann.
-- Die Demos in den Komponentenvorschauen sind Code und bleiben Englisch; Namen (`Button`, `formatNumber`) und Code werden nie übersetzt.
+- Die Demos in den Komponentenvorschauen sind Code und bleiben Englisch, ebenso Namen wie `Button` und `formatNumber`.
 
 ## Prüfen
 
 - `pnpm i18n --write` schreibt die `src/i18n/locales/en/<area>.json` der Konsole aus dem Quellcode, die Liste für Übersetzende; `pnpm i18n` prüft, dass jeder Schlüssel Deutsch und Chinesisch mit denselben Platzhaltern hat und dass nichts übrig ist. Außerdem lehnt es eine Übersetzung ab, die noch englisch ist (Namen, Code, Abkürzungen und einige Begriffe wie „Top k“ bleiben erlaubt), „du“ im Deutschen, „你“ im Chinesischen, gerade Anführungszeichen und halbbreite Satzzeichen neben chinesischen Zeichen. `pnpm test` führt die Prüfung ebenfalls aus.
-- Der Katalogtest der UI-Bibliothek, `gen` des Showcase und der Nachrichtentest der Dokumentationswebsite lehnen dasselbe ab: Englisch in einer Übersetzung und eine informelle Anrede. Die Tests des Mail-Crates schlagen fehl, wenn eine deutsche oder chinesische E-Mail einen englischen Satz behält oder „du“ oder „Tokens“ verwendet.
+- Der Katalogtest der UI-Bibliothek, `gen` des Showcases und der Nachrichtentest der Dokumentationswebsite lehnen dasselbe ab: Englisch in einer Übersetzung und eine informelle Anrede. Die Tests des Mail-Crates schlagen fehl, wenn eine deutsche oder chinesische E-Mail einen englischen Satz behält oder „du“ oder „Tokens“ verwendet.
 - `pnpm lint` lehnt Text ab, der direkt in die Konsole geschrieben ist: JSX-Text, Text-Props (`label`, `title`, `description`, `placeholder`, `aria-label` und andere), Textfelder von Objekten und als Literale geschriebene Toasts (die Regel `kaeso/no-literal-text`).
 - `apps/console/src/copy.test.ts` prüft deutsche und chinesische Beschreibungen gegen dieselben Längengrenzen wie die englischen, mit 15 % Spielraum.
-- Jede geänderte Seite auf Deutsch und Chinesisch ansehen, in Telefon- und Desktopbreite und in beiden Themes: die Sprache unter **Darstellung** wählen oder `kaeso:locale` im Speicher des Browsers setzen. Im Showcase `/de/components/<slug>/states` und `/zh-CN/components/<slug>/states` einer geänderten Komponente ansehen.
+- Sehen Sie sich jede geänderte Seite auf Deutsch und Chinesisch an, in Telefon- und Desktopbreite und in beiden Themes. Wählen Sie die Sprache unter **Darstellung** oder setzen Sie `kaeso:locale` im Speicher des Browsers. Öffnen Sie im Showcase `/de/components/<slug>/states` und `/zh-CN/components/<slug>/states` einer geänderten Komponente.

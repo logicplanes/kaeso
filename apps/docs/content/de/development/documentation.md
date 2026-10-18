@@ -12,7 +12,7 @@ Die Regeln auf dieser Seite sind verbindlich. Ein Pull Request, der eine Seite h
 
 **Auf GitHub:** Wählen Sie am Fuß jeder Seite **Auf GitHub bearbeiten**, oder öffnen Sie die Datei in `apps/docs/content`, und schlagen Sie die Änderung gegen `dev` vor. GitHub stellt die Seite weitgehend so dar wie die Website, und Links zwischen Seiten funktionieren auch dort.
 
-**Auf dem eigenen Rechner:**
+**Auf Ihrem Rechner:**
 
 ```bash
 pnpm build:packages
@@ -87,7 +87,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ~~~
 
 - Ein Weg von Anfang bis Ende, ohne Abzweigungen. Optionen und Alternativen stehen auf den Anleitungen, auf die die Schritte verlinken.
-- Jeder Schritt ist eine `##`-Überschrift, die mit einem Verb beginnt, ein Satz dazu, was der Schritt tut, ein Befehl oder eine Codegruppe und ein Satz dazu, was die Leser sehen, wenn es geklappt hat.
+- Jeder Schritt ist eine `##`-Überschrift, die die Aufgabe im Infinitiv nennt, ein Satz dazu, was der Schritt tut, ein Befehl oder eine Codegruppe und ein Satz dazu, was die Leser sehen, wenn es geklappt hat.
 - Höchstens zehn Schritte. Der letzte Schritt beweist, dass es funktioniert, etwa eine erste Anfrage und ihre Antwort.
 
 ### Anleitung
@@ -114,7 +114,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 ~~~
 
 - Der erste Bildschirm zeigt die erledigte Aufgabe: ein, zwei Sätze, dann ein funktionierendes Beispiel.
-- Abschnitte sind die Varianten, die Leser brauchen, jeder eine `##`-Überschrift, die mit einem Verb beginnt.
+- Abschnitte sind die Varianten, die Leser brauchen, jeder eine `##`-Überschrift, die die Aufgabe im Infinitiv nennt.
 - Jede Option, die die Anleitung nicht braucht, verlinkt auf ihre Referenz, statt hier erklärt zu werden.
 
 ### Konzept
@@ -174,7 +174,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 
 - Eine API-Referenz beginnt mit einer minimalen, lauffähigen Anfrage als [Codegruppe](#codebeispiele), dann folgen die Fakten.
 - Fakten stehen in Tabellen: eine Zeile pro Endpunkt, Einstellung, Feld, Header oder Fehler, jede Zelle höchstens zwei kurze Sätze.
-- Überschriften benennen die Sache (`## Endpunkte`, `### Modelle auflisten`), nie eine Aufgabe.
+- Überschriften benennen die Sache (`## Endpunkte`, `### Modellliste`), nie eine Aufgabe.
 
 ### Fehlerbehebung
 
@@ -211,7 +211,7 @@ Schreiben Sie so, wie eine hilfsbereite Kollegin etwas am Whiteboard erklärt: d
 - **Kein Marketing, kein Herumdrucksen.** Kein „leistungsstark“, „nahtlos“, „blitzschnell“ oder „erstklassig“. „Kann“ und „könnte“ nur bei echter Unsicherheit; Grenzen stehen als Tatsachen da.
 - **Keine Ausrufezeichen**, keine Witze, kein „wir“.
 - **Dieselben Wörter für dieselben Dinge.** Verwenden Sie die Begriffe des [Glossars](translations.md#glossar) und die Beschriftungen der Konsole, jedes Mal.
-- **Überschriften** in deutscher Rechtschreibung, sonst wie ein Satz. Eine Überschrift, die eine Aufgabe nennt, steht im Infinitiv mit dem Verb am Ende („Schlüssel erstellen“); eine, die eine Sache nennt, ist ein Substantiv („Modellnamen“).
+- **Titel und Überschriften** in deutscher Groß- und Kleinschreibung, sonst wie ein Satz. Eine Überschrift, die eine Aufgabe nennt, steht im Infinitiv mit dem Verb am Ende („Schlüssel erstellen“); eine, die eine Sache nennt, ist ein Substantiv („Modellnamen“).
 - **Beschreiben Sie Kaeso so, wie der Code es tut.** Prüfen Sie Einstellungen an der Konfiguration des Gateways, Beschriftungen am englischen Katalog der Konsole und Verhalten an Gateway, KPP und Konsole. Dokumentieren Sie nie ein Feature, das es nicht gibt, und nie einen Plan: Pläne gehören in Issues.
 
 Aus unseren eigenen Seiten:
@@ -305,7 +305,7 @@ Die Alerts von GitHub, mit der Art allein in der ersten Zeile:
 | `NOTE` | Etwas, das Leser übersehen könnten und das ändert, wie sie den Abschnitt lesen |
 | `TIP` | Eine Abkürzung oder ein besserer Weg, den Leser auch auslassen können |
 | `IMPORTANT` | Etwas, das Leser tun müssen, damit die Aufgabe gelingt, etwa eine Kopie des Hauptschlüssels aufbewahren |
-| `WARNING` | Eine Handlung, die Daten verliert, ein Geheimnis preisgibt oder sich nicht rückgängig machen lässt, mit dem, was stattdessen zu tun ist |
+| `WARNING` | Eine Handlung, durch die Daten verloren gehen, ein Geheimnis preisgibt oder sich nicht rückgängig machen lässt, mit dem, was stattdessen zu tun ist |
 
 - Höchstens eine Hinweisbox pro `##`-Abschnitt und drei pro Seite. Die meisten Abschnitte brauchen keine.
 - Ein bis drei Sätze, höchstens 50 Wörter. Eine längere wird zu einem eigenen Abschnitt.
@@ -433,7 +433,7 @@ sequenceDiagram
 ~~~
 
 - Wählen Sie den passenden Typ: `flowchart` für Teile und wie sie verbunden sind, `sequenceDiagram` für Anfragen und Antworten zwischen Beteiligten, `stateDiagram-v2` für einen Lebenszyklus. `flowchart TD`, von oben nach unten, bleibt auf dem Telefon lesbar; ein Diagramm, das breiter als die Spalte ist, scrollt in seinem eigenen Rahmen.
-- `accTitle:` benennt das Diagramm in wenigen Wörtern und ist Pflicht. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet es zusammen mit den Beschriftungen des Diagramms.
+- `accTitle:` benennt das Diagramm in wenigen Wörtern und ist Pflicht. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet beides, ebenso wie die Beschriftungen des Diagramms.
 - Halten Sie Beschriftungen kurz, in der Sprache der Seite; Namen aus dem Code bleiben, wie sie sind. `<br>` bricht eine Beschriftung in eine zweite Zeile um.
 - Zeichnen Sie ein Diagramm nur, wo es hilft; eine kurze Liste oder eine Tabelle ist oft klarer.
 - Keine `%%`-Kommentare und kein `%%{init}`: Die Website setzt Farben, Schrift und Radius aus Kaesos Tokens.
@@ -458,7 +458,7 @@ Schreiben Sie die aktuelle Version als `\{{version}}`. Der Build ersetzt sie in 
 
 Eine Änderung an einer englischen Seite wird im selben Pull Request auch in `content/de` und `content/zh-CN` vorgenommen. Jede Regel auf dieser Seite gilt für alle drei Sprachen.
 
-- **Gleiche Struktur:** derselbe Dateiname, dieselbe `order`, dieselben Überschriften in derselben Reihenfolge, dieselben Hinweisboxen und dieselben Codeblöcke, Byte für Byte. Titel, Beschreibung, Text, Tabellen und Hinweisboxen werden übersetzt.
+- **Gleiche Struktur:** derselbe Dateiname, dieselbe `order`, dieselben Überschriften in derselben Reihenfolge, dieselben Hinweisboxen und dieselben Codeblöcke, Byte für Byte. Übersetzen Sie Titel, Beschreibung, Text, Tabellen und Hinweisboxen.
 - **Links** behalten ihre Datei; ein Anker wird zum Anker der übersetzten Überschrift.
 - **Unverändert bleiben** Code, Befehle, Einstellungen (`KAESO_*`), Pfade, Feldnamen, Rechte (`keys.all.view`), Produktnamen, Modell-IDs und die Tabs von Codegruppen.
 - **Beschriftungen der Konsole** in deren eigener Übersetzung, aus `apps/console/src/i18n/locales/de` und `apps/console/src/i18n/locales/zh-CN`.
@@ -478,9 +478,9 @@ Die eigenen Texte der Website, etwa **Auf GitHub bearbeiten** oder die Suche, st
 
 ## Die Aufnahme im README
 
-Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Design der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine geseedete Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript verbindet auf **Anbieter** einen Anthropic-Schlüssel, erstellt auf **API-Schlüssel** einen Schlüssel, sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt, und wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
+Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Theme der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine mit Beispieldaten gefüllte Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript verbindet auf **Anbieter** einen Anthropic-Schlüssel, erstellt auf **API-Schlüssel** einen Schlüssel, sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt, und wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
 
-Für eine neue Aufnahme beginnen Sie mit einem frisch geseedeten Stack und laufender Konsole und installieren vorher `ffmpeg`, zum Beispiel mit `brew install ffmpeg`:
+Für eine neue Aufnahme beginnen Sie mit einem frischen Stack voller Beispieldaten und laufender Konsole und installieren vorher `ffmpeg`, zum Beispiel mit `brew install ffmpeg`:
 
 ```bash
 pnpm stack:down

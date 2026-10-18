@@ -43,7 +43,7 @@ Ein ausdrücklicher Aufwand in derselben Anfrage hat Vorrang vor dem Budget.
 | `medium` | 8.192 |
 | `high`, `xhigh`, `max` | 24.576 |
 
-Diese Tabelle gilt nur, wenn das Zielmodell kein adaptives Thinking hat (Claude 4.5 und älter), was das Gateway mit `EgressCtx::adaptive_thinking = Some(false)` aus dem Feld `adaptive_thinking` des Katalogs angibt; Claude 4.7 und neuer lehnen `enabled`-Thinking ab und bekommen stattdessen adaptives Thinking mit dem Aufwand.
+Diese Tabelle gilt nur, wenn das Zielmodell kein adaptives Thinking hat (Claude 4.5 und älter). Das Gateway gibt das mit `EgressCtx::adaptive_thinking = Some(false)` aus dem Feld `adaptive_thinking` des Katalogs an; Claude 4.7 und neuer lehnen `enabled`-Thinking ab und bekommen stattdessen adaptives Thinking mit dem Aufwand.
 
 Das Budget wird dann an die Regeln von Anthropic angepasst: mindestens 1.024 und kleiner als `max_tokens`, also `max_tokens − 1`, wenn das kleiner ist. Ist `max_tokens` 1.024 oder kleiner, gibt es kein gültiges Budget, daher wird `max_tokens` um 1.024 erhöht und das Budget ist 1.024: Die App behält ihr eigenes `max_tokens` für die Antwort. `reasoning_map::budget_within` übernimmt Anpassen und Erhöhen, `reasoning_map::fit_budget` nur das Anpassen.
 
@@ -76,7 +76,7 @@ Die eigenen Einstellungen einer Anthropic-App werden so gesendet, wie sie ankame
 
 ## Tool-Runden ohne Thinking
 
-Anthropic lehnt eine Anfrage mit `enabled`-Thinking ab, deren letzter Assistentenzug Tool-Aufrufe ohne vorangehenden, zurückspielbaren Thinking-Block gemacht hat, einen signierten oder einen redigierten („a final assistant message must start with a thinking block“). Eine solche Anfrage geht für diese Runde ohne `thinking` an Anthropic. Adaptives Thinking bleibt erhalten, weil adaptive Modelle den führenden Thinking-Block nicht brauchen.
+Anthropic lehnt eine Anfrage mit `enabled`-Thinking ab, deren letzte Assistentenrunde Tool-Aufrufe ohne vorangehenden, zurückspielbaren Thinking-Block gemacht hat, einen signierten oder einen redigierten („a final assistant message must start with a thinking block“). Eine solche Anfrage geht für diese Runde ohne `thinking` an Anthropic. Adaptives Thinking bleibt erhalten, weil adaptive Modelle den führenden Thinking-Block nicht brauchen.
 
 Da Reasoning mit der Unterhaltung mitreist, ist das selten. Es kommt trotzdem in drei Fällen vor:
 
@@ -108,10 +108,10 @@ Anfragen aus anderen Dialekten fordern bei OpenAI Responses `include: ["reasonin
 
 ### Vom Gateway aufbewahrtes Reasoning
 
-Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antwort lässt das Reasoning weg, und das Gateway bewahrt es auf, mit den Tool-Aufrufen als Schlüssel, denen es vorausging. Tool-Call-IDs sind eindeutig, werden vom Anbieter vergeben und von jedem Chat-Client zurückgesendet, daher eignen sie sich als Schlüssel für das Reasoning, ohne das Format der App zu ändern.
+Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antwort lässt das Reasoning weg, und das Gateway bewahrt es auf, mit den Tool-Aufrufen als Schlüssel, denen es vorausging. Tool-Aufruf-IDs sind eindeutig, werden vom Anbieter vergeben und von jedem Chat-Client zurückgesendet, daher eignen sie sich als Schlüssel für das Reasoning, ohne das Format der App zu ändern.
 
 1. Nach einer Antwort liefern `continuity::reasoning_for_tool_calls` (bei einer vollständigen Antwort) oder ein `continuity::ReasoningCollector` (bei einem Stream) ein `CarriedReasoning` pro Tool-Aufruf, dem zurückspielbares Reasoning vorausging: signiertes oder redigiertes Thinking von Anthropic, verschlüsseltes Reasoning von OpenAI. Reasoning nach dem letzten Tool-Aufruf wird nicht aufbewahrt.
 2. Das Gateway speichert die Einträge in Valkey, verschlüsselt mit dem Hauptschlüssel und nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, für `KAESO_CONTINUITY_REASONING_TTL` (standardmäßig eine Stunde).
-3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Call-IDs auf. `continuity::restore_reasoning` setzt das Gefundene dann wieder in die Assistentenzüge ein. Reasoning für den ersten Tool-Aufruf eines Zugs kommt an den Anfang des Zugs, Reasoning für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Züge, die bereits Reasoning enthalten, bleiben unverändert.
+3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Aufruf-IDs auf. `continuity::restore_reasoning` setzt das Gefundene dann wieder in die Assistentenrunden ein. Reasoning für den ersten Tool-Aufruf einer Runde kommt an den Anfang der Runde, Reasoning für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Runden, die bereits Reasoning enthalten, bleiben unverändert.
 
 Die Encoder spielen wiederhergestellte Blöcke nur an ihren eigenen Anbieter zurück.

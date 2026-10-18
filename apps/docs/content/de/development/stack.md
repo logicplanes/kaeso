@@ -29,7 +29,7 @@ Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway w
 | `postgres`, `clickhouse`, `valkey` | Die Datenbanken des Gateways, auch von den Rust-Tests genutzt | `127.0.0.1:55432`, `127.0.0.1:58123`, `127.0.0.1:56379` |
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
 | `provider` | Eine Mock-API für OpenAI und Anthropic, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
-| `idp` | Ein Mock-Anbieter für OpenID Connect, für Single Sign-on | `http://idp.localhost:18091` |
+| `idp` | Ein Mock-Identitätsanbieter (OpenID Connect) für Single Sign-on | `http://idp.localhost:18091` |
 | `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Einstellungen** › **Instanz** › **Updates** | `http://127.0.0.1:18092` |
 | `master-key` | Schreibt den Hauptschlüssel des Gateways in ein Volume, bevor das Gateway startet | |
 
@@ -126,7 +126,7 @@ Starten Sie das Gateway mit Cargo, wenn Sie es in Sekunden neu starten, einen De
    cargo run -p kaeso -- serve
    ```
 
-4. Starten Sie die Konsole dagegen in einem dritten Terminal und öffnen Sie dann den Einrichtungslink:
+4. Starten Sie in einem dritten Terminal die Konsole für dieses Gateway und öffnen Sie dann den Einrichtungslink:
 
    ```bash
    KAESO_GATEWAY_URL=http://127.0.0.1:8080 pnpm --filter kaeso-console dev

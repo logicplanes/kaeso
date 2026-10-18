@@ -11,16 +11,16 @@ Jede E-Mail, die Kaeso sendet, stammt aus `crates/kaeso-mail`: ein Layout, ein a
 | Teil | In der Anmelde-E-Mail | Stil |
 | --- | --- | --- |
 | Wortmarke | Kaeso | Allein, oben links, 28 px nach innen und 28 px nach unten |
-| Überschrift | Sign in to Kaeso | `title-lg` |
-| Ein Satz | The link works once and expires in 15 minutes. | `body-lg`, sekundär |
-| Ein Button | Sign in | Die Pille `xl`, Tinte auf Weiß |
-| Eine leise Zeile | If you did not ask to sign in, you can ignore this email. | `small`, tertiär |
-| Fußzeile | Sent by Kaeso at kaeso.example.com. | `caption` |
+| Überschrift | Bei Kaeso anmelden | `title-lg` |
+| Ein Satz | Der Link funktioniert einmal und läuft in 15 Minuten ab. | `body-lg`, sekundär |
+| Ein Button | Anmelden | Die Pille `xl`, Tinte auf Weiß |
+| Eine leise Zeile | Wenn Sie keine Anmeldung angefordert haben, können Sie diese E-Mail ignorieren. | `small`, tertiär |
+| Fußzeile | Gesendet von Kaeso unter kaeso.example.com. | `caption` |
 
 - **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 562 px breit, auf der Fläche: weiß im hellen Modus, schwarz im dunklen.
 - **Längen.** Ein Betreff von höchstens 60 Zeichen ohne Punkt, eine Überschrift von höchstens 48 und Sätze von höchstens 100. Deutsch und Chinesisch bekommen 15 % mehr: 69, 55 und 115. Ein Test setzt die Grenzen durch.
 - **Keine nackten Links.** Das HTML zeigt nie eine URL; der Button trägt sie. Der Textteil enthält den vollständigen Link auf einer eigenen Zeile und sagt dieselben Worte in derselben Reihenfolge.
-- **Fußzeile.** „Sent by Kaeso at“ und der Host der Installation, aus `KAESO_PUBLIC_URL`. Hinweise sagen außerdem, warum sie ankamen: Sicherheits- und Organisationshinweise werden immer gesendet, und Warnungen sagen, wie man sie abschaltet.
+- **Fußzeile.** „Gesendet von Kaeso unter“ und der Host der Installation, aus `KAESO_PUBLIC_URL`. Hinweise sagen außerdem, warum sie ankamen: Sicherheits- und Organisationshinweise werden immer gesendet, und Warnungen sagen, wie man sie abschaltet.
 
 Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 
@@ -62,7 +62,7 @@ KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
 
 ## Dunkelmodus
 
-Kaeso legt den Dunkelmodus selbst fest, statt ihn der Invertierung jeder Mail-App zu überlassen. Mail-Apps fallen in drei Arten, und jede bekommt eine eigene Ebene:
+Kaeso legt den Dunkelmodus selbst fest, statt ihn der Invertierung jeder Mail-App zu überlassen. Mail-Apps lassen sich in drei Arten einteilen, und jede bekommt eine eigene Ebene:
 
 1. **Apps, die `prefers-color-scheme` folgen**, etwa Apple Mail und Thunderbird. Das Dokument erklärt beide Farbschemata, sodass sie es nicht invertieren, und `@media (prefers-color-scheme: dark)` schaltet jede Rolle mit `!important` auf ihr dunkles Token.
 2. **Outlook.com und das neue Outlook**, die E-Mails selbst abdunkeln und das Umgefärbte mit `data-ogsc` und `data-ogsb` markieren. Dieselben Regeln unter diesen Attributen ersetzen ihre Schätzung durch die dunklen Werte von Kaeso.

@@ -28,7 +28,7 @@ flowchart TD
 
 - **Liste.** Eine Prüfung ruft `releases_url?per_page=50` mit `If-None-Match` ab und folgt den Links von GitHub auf die nächste Seite, höchstens zehn Seiten, da GitHub Releases nicht nach Version sortiert. Eine geänderte Liste ersetzt `update_releases` in einer Transaktion.
 - **Manifeste.** Für jedes Release, das neuer als die laufende Version ist, holt und speichert die Prüfung seine `release.json` oder den Grund, warum das nicht ging. Sie holt höchstens zwölf pro Prüfung, vier gleichzeitig, die neuesten zuerst. Ein Manifest kommt nur von `https://github.com/logicplanes/kaeso/releases/download/` oder, bei einem Spiegel, vom Origin von `updates.releases_url`, und der Client folgt nie einer Weiterleitung von HTTPS auf HTTP.
-- **Zeitpunkt.** Die nächste Prüfung folgt 12 Stunden später plus einem zufälligen Teil einer Stunde. Nach einem Fehler folgt sie frühestens eine Stunde später, oder später, wenn `Retry-After` oder `x-ratelimit-reset` von GitHub das verlangen. Bis dahin hält `update_settings.blocked_until` auch **Jetzt prüfen** davon ab, zu fragen.
+- **Zeitpunkt.** Die nächste Prüfung folgt 12 Stunden später plus einem zufälligen Teil einer Stunde. Nach einem Fehler folgt sie frühestens eine Stunde später, oder später, wenn `Retry-After` oder `x-ratelimit-reset` von GitHub das verlangen. Bis dahin verhindert `update_settings.blocked_until`, dass auch **Jetzt prüfen** anfragt.
 
 `kaeso_update::policy::plan` wählt, was angeboten wird: das neueste Release im Kanal, das neuer als die laufende Version ist. Ein Release, das GitHub als Vorabversion markiert, zählt als solche, egal welche Version es hat. Das Angebot verlangt Schritte von Hand bei einer neuen Major-Version, bei `manual: true` im Manifest eines übersprungenen Releases oder wenn ein Manifest fehlt. Auch `manual_since` des Ziels zählt, sodass ein übersprungenes Release, das das Gateway nie gesehen hat, das Update trotzdem manuell macht.
 
@@ -72,10 +72,10 @@ Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` u
 
 ## Der Updater
 
-`crates/kaeso-updater` ist ein kleiner Server auf Port 8081. `GET /healthz` braucht kein Token; `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) und `GET /v1/updates/{id}` brauchen `Authorization: Bearer` mit dem gemeinsamen Token. Er führt ein Update zur Zeit aus und hält es in `/state/job.json`, das nach jeder Änderung atomar geschrieben wird. Ein Update durchläuft diese Schritte (`engine.rs`):
+`crates/kaeso-updater` ist ein kleiner Server auf Port 8081. `GET /healthz` braucht kein Token; `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) und `GET /v1/updates/{id}` brauchen `Authorization: Bearer` mit dem gemeinsamen Token. Er führt jeweils nur ein Update aus und hält es in `/state/job.json`, das nach jeder Änderung atomar geschrieben wird. Ein Update durchläuft diese Schritte (`engine.rs`):
 
 1. **Prüfen.** Er lädt `release.json` herunter und prüft sie vor allem anderen, dann prüft er die laufende Installation dagegen ([die Prüfungen](#was-der-updater-prüft)). Außerdem prüft er, dass die lokale `compose.yaml` mit den neuen Image-Versionen Byte für Byte der des Releases gleicht, und legt eine Kopie in `/state` ab.
-2. **Herunterladen.** Er zieht die drei Images per Digest, und das Versions-Label jedes Images muss dem Release entsprechen. Die `release.json` des laufenden Releases prüft er genauso und vergleicht die Migrationen. Unterscheiden sie sich oder fehlt dieses Manifest, gilt das Update als Migration der Datenbank.
+2. **Herunterladen.** Er zieht die drei Images per Digest, und das Versions-Label jedes Images muss dem Release entsprechen. Die `release.json` des laufenden Releases prüft er genauso und vergleicht die Migrationen. Unterscheiden sie sich oder lässt sich dieses Manifest nicht beschaffen, gilt das Update als Migration der Datenbank.
 3. **Austauschen.** Er schreibt das Wartungs-Flag. Dann stoppt er für die Konsole und danach für das Gateway den Container, benennt ihn in `…-previous` um und legt den neuen mit den Einstellungen des alten an (`clone.rs`). Alles, was das alte Image mitbrachte, fällt weg, sodass Umgebung, Befehl und Healthcheck des neuen Images gelten.
 4. **Migrieren.** Er wartet auf jeden Healthcheck: 2 Minuten für die Konsole und 10 für die Migrationen des Gateways. Ein Absturz, ein Neustart oder ein gestoppter Container schlägt sofort fehl.
 5. **Online.** Er schreibt die neuen Versionen in `compose.yaml`, wenn die Datei noch die geprüfte ist, taggt die Images, entfernt die vorigen Container und löscht das Flag.
@@ -84,11 +84,11 @@ Ein Fehler vor dem Austausch ändert nichts (`failed`). Ein Fehler danach starte
 
 Beim Start wartet der Updater bis zu zwei Minuten auf Docker. Dann schließt er ein Update ab, das `online` war, schließt eines ab, dessen neues Gateway gesund wird, und rollt jedes andere zurück.
 
-Der Updater erreicht Docker nur unter `http://docker-proxy:2375/v1.44/`, dessen Allow-List in `compose.yaml` jeden Pfad nennt, den er nutzt. Der Proxy filtert nur nach Methode und Pfad, und den Body von `containers/create` wählt der Updater. Deshalb entspricht der Updater Root-Rechten auf dem Host und ist optional.
+Der Updater erreicht Docker nur unter `http://docker-proxy:2375/v1.44/`, dessen Allow-List in `compose.yaml` jeden Pfad nennt, den er nutzt. Der Proxy filtert nur nach Methode und Pfad, und den Body von `containers/create` wählt der Updater. Deshalb kommt der Updater Root-Rechten auf dem Host gleich und muss ausdrücklich aktiviert werden.
 
 ### Was der Updater prüft
 
-`verify.rs` lehnt das Update ab, solange nicht alles hiervon gilt:
+`verify.rs` lehnt das Update ab, wenn nicht alle diese Bedingungen gelten:
 
 - Der Updater spricht das `updater_protocol` des Releases.
 - Er findet die Container von Gateway und Konsole seines eigenen Compose-Projekts anhand der Labels seines eigenen Containers, und kein Container `…-previous` ist von einem früheren Update übrig.
@@ -100,7 +100,7 @@ Der Updater erreicht Docker nur unter `http://docker-proxy:2375/v1.44/`, dessen 
 - Jede Fulcio-Zertifizierungsstelle, jedes CT-Log und jeder Rekor-Schlüssel zählt nur innerhalb seines `validFor` im Trust Root, zum Integrationszeitpunkt des Eintrags.
 - Die In-toto-Aussage ist SLSA-Provenienz v1 für Namen und Digest des Gegenstands, aus dem Workflow und dem Commit, den `release.json` nennt. Bei einem Image ist der Gegenstand sein Index, per Digest von `ghcr.io` geholt.
 
-## Die Edge
+## Der Edge-Proxy
 
 Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert, bekommt jede Anfrage sofort die Wartungsantwort; sonst bekommt sie ein `502`, `503` oder `504` des Gateways oder der Konsole. `/kaeso-maintenance.json` liefert das Flag aus, etwa `{"state":"updating","step":"migrating"}`, sodass die Seite den Schritt nennen kann. Die Seite steht inline in `compose.yaml`, mit einer Content Security Policy, die ihren eigenen Stil und ihr eigenes Skript per Hash erlaubt. `crates/kaeso-server/tests/edge.rs` prüft, dass die JSON-Antworten dem entsprechen, was `ApiError` und `kaeso_codecs::dispatch::encode_error` erzeugen, und dass die Hashes stimmen.
 
@@ -113,5 +113,5 @@ Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert
 | `crates/kaeso-updater/tests/verify.rs` | Die echten Attestierungen von Kaeso 0.1.0 bestehen; ein anderes Image, ein anderer Commit, Workflow, eine andere Signatur oder ein anderer Logeintrag nicht |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | Der Updater gegen eine nachgebildete Docker-API: ein vollständiges Update, jede Ablehnung, Rollbacks, Neustarts bei jedem Schritt, die Zustandsdatei und die API |
 | `scripts/release-manifest.test.mjs` | Das Manifest, `manual_since`, die neuesten Migrationen und der Commit |
-| `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und die Antworten von Caddy in jedem Format, solange Kaeso weg ist |
+| `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und die Antworten von Caddy in jedem Format, solange Kaeso nicht erreichbar ist |
 | `apps/console` | Die Seite Updates in jedem Zustand und die Update-Seite in drei Sprachen |
