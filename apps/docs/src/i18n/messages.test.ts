@@ -16,6 +16,11 @@ describe("the site's own text", () => {
     expect(same).toEqual([]);
   });
 
+  it("addresses the reader formally: „Sie“ without „bitte“ in German, 您 in Chinese", () => {
+    for (const value of Object.values(MESSAGES.de)) expect(value).not.toMatch(/(^|[^\p{L}])(du|dich|dir|dein\p{L}*|bitte)(?!\p{L})/iu);
+    for (const value of Object.values(MESSAGES["zh-CN"])) expect(value).not.toContain("你");
+  });
+
   it("writes Chinese with full-width punctuation", () => {
     for (const value of Object.values(MESSAGES["zh-CN"])) expect(value).not.toMatch(/[一-鿿][,.;:!?]/);
   });
