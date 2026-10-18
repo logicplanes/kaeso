@@ -24,4 +24,4 @@
 
 ## License
 
-[MIT](LICENSE). The Kaeso name and logo are not covered by the license. Third-party notices are in [NOTICE.md](NOTICE.md).
+[MIT](LICENSE). The Kaeso name and logo are not covered by the license. Third-party notices are listed in [NOTICE.md](NOTICE.md).
