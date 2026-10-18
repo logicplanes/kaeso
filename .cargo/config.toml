@@ -8,7 +8,7 @@ coverage-kpp = [
   "kaeso-codecs",
   "--all-features",
   "--ignore-filename-regex",
-  "(/tests/|/tests_[a-z_]+\\.rs|/models_tests\\.rs|/test_support\\.rs|/benches/)",
+  "(/tests/|/tests_[a-z_]+\\.rs|/models_tests\\.rs|/test_support\\.rs)",
   "--fail-under-lines",
   "95",
 ]

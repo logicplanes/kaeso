@@ -39,7 +39,7 @@ Führen Sie dann diese für die Teile aus, die Sie geändert haben:
 
 | Geändert | Außerdem ausführen |
 | --- | --- |
-| KPP | Die [SDK-Konformität](#sdk-konformität), `cargo test --doc -p kaeso-kpp -p kaeso-codecs`, die [Prüfungen der Fuzz-Targets](#fuzzing) und `cargo bench -p kaeso-codecs --bench codecs --no-run` |
+| KPP | Die [SDK-Konformität](#sdk-konformität), `cargo test --doc -p kaeso-kpp -p kaeso-codecs` und die [Prüfungen der Fuzz-Targets](#fuzzing) |
 | Das Gateway | Die [SDK-Suite](#sdk-suite) |
 | `deploy/`, ein Dockerfile, die Paketierung | Den [Installationstest](#installationstest) und `docker build -f deploy/console.Dockerfile .` |
 | `.github/workflows` | `actionlint` |
@@ -244,16 +244,6 @@ cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates
 
 Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
 
-## Benchmarks
-
-`crates/kaeso-codecs/benches/codecs.rs` misst in jedem Dialekt einen vollständigen Durchlauf aus Dekodieren und Kodieren, für eine Unterhaltung mit 100 Nachrichten und einen Stream mit 2.000 Events. Bevor Sie einen zeitkritischen Pfad eines Codecs ändern, führen Sie die Benchmarks auf `dev` und danach auf Ihrem Branch aus:
-
-```bash
-cargo bench -p kaeso-codecs --bench codecs
-```
-
-criterion zeigt die Veränderung gegenüber dem vorigen Lauf. CI prüft nur, dass die Benchmarks bauen.
-
 ## Continuous Integration
 
 Der CI-Workflow, `.github/workflows/ci.yml`, läuft für jeden Pull Request, bei jedem Push auf `dev` und `prod` und innerhalb des Release-Workflows. Bei einem Pull Request entscheidet sein erster Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen. Überall sonst läuft jeder Job.
@@ -273,7 +263,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Query data | Die PostgreSQL-Migrationen, dann `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` ist aktuell |
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
-| Fuzz targets, Benchmarks build | Die Fuzz-Targets und die Benchmarks bauen |
+| Fuzz targets | Die Fuzz-Targets bauen |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` und `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` für beide Compose-Dateien |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |

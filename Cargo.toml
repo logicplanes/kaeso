@@ -92,7 +92,6 @@ anyhow = "1"
 regex = { version = "1.12", default-features = false, features = ["std", "unicode-perl"] }
 insta = { version = "1.49", features = ["json"] }
 proptest = "1.12"
-criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

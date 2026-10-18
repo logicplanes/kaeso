@@ -39,7 +39,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 
 | 改动 | 还要运行 |
 | --- | --- |
-| KPP | [SDK 一致性](#sdk-一致性)套件、`cargo test --doc -p kaeso-kpp -p kaeso-codecs`、[模糊测试目标的检查](#模糊测试)以及 `cargo bench -p kaeso-codecs --bench codecs --no-run` |
+| KPP | [SDK 一致性](#sdk-一致性)套件、`cargo test --doc -p kaeso-kpp -p kaeso-codecs` 以及[模糊测试目标的检查](#模糊测试) |
 | 网关 | [SDK 测试套件](#sdk-测试套件) |
 | `deploy/`、Dockerfile、打包 | [安装测试](#安装测试)和 `docker build -f deploy/console.Dockerfile .` |
 | `.github/workflows` | `actionlint` |
@@ -244,16 +244,6 @@ cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates
 
 崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
 
-## 基准测试
-
-`crates/kaeso-codecs/benches/codecs.rs` 在每种方言中测量一次完整的解码和编码，分别针对 100 条消息的对话和 2,000 个事件的流。修改编解码器的关键路径之前，先在 `dev` 上运行基准测试，再在自己的分支上运行一次：
-
-```bash
-cargo bench -p kaeso-codecs --bench codecs
-```
-
-criterion 会显示与上一次运行相比的变化。CI 只检查基准测试能否构建。
-
 ## 持续集成
 
 CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 `dev` 和 `prod` 时运行，也在 Release 工作流中运行。在拉取请求上，它的第一个作业判断哪些领域有改动，未改动领域的作业会被跳过。在其他所有情况下，每个作业都会运行。
@@ -273,7 +263,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Query data | 先执行 PostgreSQL 迁移，再运行 `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` 是最新的 |
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
-| Fuzz targets、Benchmarks build | 模糊测试目标和基准测试能够构建 |
+| Fuzz targets | 模糊测试目标能够构建 |
 | SDK conformance、SDK end-to-end | `pytest -q e2e/conformance` 和 `pytest -q e2e/sdk` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |

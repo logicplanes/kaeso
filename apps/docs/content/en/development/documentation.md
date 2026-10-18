@@ -38,7 +38,7 @@ A page exists because a real reader opens it to get something done. Before you a
 3. **Is it said elsewhere?** One topic has one page. Where two pages overlap, one of them explains and the other links to it.
 4. **Would a paragraph on another page do?** A page under about 150 words, or one that only lists links, becomes a section of the page its reader comes from.
 
-A page that fails any of them is removed or merged, not tightened. Numbers and lists that only CI acts on, such as bundle budgets, coverage thresholds or benchmark results, stay in the code or configuration that enforces them; the docs name the command that checks them. To remove a page, delete it in all three languages, add its address to `apps/docs/redirects.json` with the most relevant page ([where a page goes](#where-a-page-goes)), and fix the links the build names.
+A page that fails any of them is removed or merged, not tightened. Numbers and lists that only CI acts on, such as bundle budgets or coverage thresholds, stay in the code or configuration that enforces them; the docs name the command that checks them. To remove a page, delete it in all three languages, add its address to `apps/docs/redirects.json` with the most relevant page ([where a page goes](#where-a-page-goes)), and fix the links the build names.
 
 ## Page types
 
