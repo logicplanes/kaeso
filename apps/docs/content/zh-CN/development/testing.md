@@ -297,7 +297,7 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推
 | SDK conformance | `pytest -q e2e/conformance` |
 | SDK end-to-end | 在开发环境栈上运行 `pytest -q e2e/sdk` |
 | Compose config | 对 `deploy/compose.yaml` 和 `deploy/compose.dev.yaml` 运行 `docker compose config` |
-| Images (gateway)、Images (mock provider)、Images (console) | 并行构建这三个镜像，并标注 `Cargo.toml` 和 `apps/console/package.json` 中的版本；控制台的作业还会检查其镜像能响应 `/healthz`、以内容安全策略提供控制台，并对 `/assets/` 下不存在的文件返回 404 |
+| Images (gateway)、Images (mock provider)、Images (updater)、Images (console) | 并行构建这四个镜像，并标注 `Cargo.toml` 和 `apps/console/package.json` 中的版本；控制台的作业还会检查其镜像能响应 `/healthz`、以内容安全策略提供控制台，并对 `/assets/` 下不存在的文件返回 404 |
 | Install test | 用这些镜像（包括真实的控制台）运行 `pytest -q e2e/install` |
 | TypeScript lint | `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
@@ -317,7 +317,7 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推
 每个作业在它所依赖的作业完成后立即开始，任何作业都不会重复构建其他作业已经构建好的内容：
 
 - **TypeScript libraries** 只构建一次 `packages/`，并以制品的形式传给 TypeScript 测试和端到端作业，它们不再自行构建。只要其中任何一个作业运行，它就会运行，因此 Rust 和部署的变更也会触发它，因为 End-to-end console 会测试这些变更。**TypeScript build** 以同样的方式传出它构建的展示站点。
-- 三个镜像作业并行运行。Images (gateway) 和 TypeScript libraries 完成后，End-to-end console 立即开始；安装测试等待全部三个镜像。
+- 四个镜像作业并行运行。Images (gateway) 和 TypeScript libraries 完成后，End-to-end console 立即开始；安装测试等待全部四个镜像。
 - 控制台的单元测试是所有 TypeScript 测试中耗时最长的，因此分成三个分片运行。每个分片在关闭阈值的情况下运行，因为三分之一的测试只覆盖部分代码；**TypeScript test (console coverage)** 合并各分片记录的覆盖率，并像 `pnpm test` 一样，把 `apps/console/vitest.config.ts` 中的阈值应用到整体上。
 - 展示站点的测试彼此独立。`chromium` 项目用 Playwright 的 `--shard` 分成八个分片运行；`webkit` 项目只包含导航侧滑面板的测试，在单独的作业中运行，因此只有这个作业需要安装 WebKit 及其所需的系统软件包。
 - 控制台的用例相互依赖，因此无法用 `--shard` 拆分。每部分启动自己的栈，先运行 `01-public`，再运行那些数据只来自同一部分中前面用例的用例：第 1 部分是项目的页面（`02-models` 至 `08-palette`、`11-instance`、`13-keyboard`、`16-period`），第 2 部分是组织（`02-models`、`04-members`、`10-org`、`12-lifecycle`、`19-roles`），第 3 部分是其余所有用例。新用例只要没有被工作流中的 `PART_1` 或 `PART_2` 列出，就会在第 3 部分运行；那里列出的名称如果没有对应的用例，作业就会失败。

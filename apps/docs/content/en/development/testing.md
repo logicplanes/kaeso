@@ -297,7 +297,7 @@ On a pull request, the first job decides which areas changed, and the jobs of un
 | SDK conformance | `pytest -q e2e/conformance` |
 | SDK end-to-end | `pytest -q e2e/sdk`, with the development stack |
 | Compose config | `docker compose config` for `deploy/compose.yaml` and `deploy/compose.dev.yaml` |
-| Images (gateway), Images (mock provider), Images (console) | Build the three images side by side, labelled with the versions in `Cargo.toml` and `apps/console/package.json`; the console's job also checks that its image answers `/healthz`, serves the console with a content security policy, and answers 404 for a missing file under `/assets/` |
+| Images (gateway), Images (mock provider), Images (updater), Images (console) | Build the four images side by side, labelled with the versions in `Cargo.toml` and `apps/console/package.json`; the console's job also checks that its image answers `/healthz`, serves the console with a content security policy, and answers 404 for a missing file under `/assets/` |
 | Install test | `pytest -q e2e/install` with those images, the real console included |
 | TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
@@ -317,7 +317,7 @@ On a pull request, the first job decides which areas changed, and the jobs of un
 Each job starts as soon as the jobs it uses have finished, and none builds what another job has already built:
 
 - **TypeScript libraries** builds `packages/` once and hands the build on as an artifact to the TypeScript tests and the end-to-end jobs, which no longer build it themselves. It runs whenever one of them runs, so for Rust and deployment changes too, which End-to-end console tests. **TypeScript build** hands on the showcase it builds the same way.
-- The three image jobs run side by side. End-to-end console starts once Images (gateway) and TypeScript libraries have finished; the install test waits for all three images.
+- The four image jobs run side by side. End-to-end console starts once Images (gateway) and TypeScript libraries have finished; the install test waits for all four images.
 - The console's unit tests take longest of all TypeScript tests, so they run in three shards. Each shard runs with its thresholds off, since a third of the tests covers only part of the code; **TypeScript test (console coverage)** merges what the shards recorded and applies the thresholds of `apps/console/vitest.config.ts` to the whole, as `pnpm test` does.
 - The showcase's tests are independent of each other. The `chromium` project runs in eight shards with Playwright's `--shard`; the `webkit` project, which has only the navigation sheet's tests, runs in a job of its own, so only that job installs WebKit and the system packages it needs.
 - The console's specs build on each other, so `--shard` can't split them. Each part starts its own stack and runs `01-public` first, then the specs whose data comes only from the specs before them in the same part: part 1 the project's pages (`02-models` to `08-palette`, `11-instance`, `13-keyboard`, `16-period`), part 2 the organization (`02-models`, `04-members`, `10-org`, `12-lifecycle`, `19-roles`), part 3 every other spec. A new spec runs in part 3 unless `PART_1` or `PART_2` in the workflow names it, and a name there without a spec fails the job.
