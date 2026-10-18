@@ -166,7 +166,7 @@ describe("the releases page", () => {
     try {
       render(<Root locale="en" ui={{}} />);
       expect(await screen.findByText("No releases yet")).toBeInTheDocument();
-      expect(fetchMock).toHaveBeenCalledWith("/v1/releases.json", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+      expect(fetchMock).toHaveBeenCalledWith("/v1/history.json", expect.objectContaining({ signal: expect.any(AbortSignal) }));
     } finally {
       vi.unstubAllGlobals();
     }

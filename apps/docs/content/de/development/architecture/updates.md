@@ -24,7 +24,7 @@ flowchart TD
 
 ## Der Release-Feed
 
-`update.kaeso.app` ist `apps/update`, eine statische Website, gebaut aus den Releases auf GitHub. `v1/releases.json` listet jedes Release in der Form der Releases-API von GitHub, die neuesten zuerst. Die `release.json` jedes Releases liegt Byte für Byte gespiegelt unter `download/v<version>/`, da das Gateway ein Manifest nur vom Origin seines eigenen Feeds annimmt. `art/<version>.svg` ist das Artwork des Releases, gezeichnet von `releaseArtSvg` aus demselben Seed wie der Dialog **Neu in Kaeso** der Konsole. Die Seite selbst zeigt jedes Release mit seinen Release-Notizen.
+`update.kaeso.app` ist `apps/update`, eine statische Website, gebaut aus den Releases auf GitHub. `v1/releases.json` listet die neuesten Releases in der Form der Releases-API von GitHub, Notes nach 64 KiB gekürzt und die ganze Datei unter 3 MiB, da das Gateway höchstens 4 MiB liest. `v1/history.json` behält jedes Release mit seinen vollständigen Notes für die Seite. Die `release.json` jedes Releases liegt Byte für Byte gespiegelt unter `download/v<version>/`, da das Gateway ein Manifest nur vom Origin seines eigenen Feeds annimmt. `art/<version>.svg` ist das Artwork des Releases, gezeichnet von `releaseArtSvg` aus demselben Seed wie der Dialog **Neu in Kaeso** der Konsole. Die Seite selbst zeigt jedes Release mit seinen Release-Notizen.
 
 ## Das Gateway
 

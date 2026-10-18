@@ -1,6 +1,6 @@
 import type { Locale } from "./i18n";
 
-export const FEED_PATH = "/v1/releases.json";
+export const FEED_PATH = "/v1/history.json";
 const DOCS = "https://docs.kaeso.app";
 
 export interface Release {

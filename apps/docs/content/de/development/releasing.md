@@ -150,7 +150,7 @@ Der Update-Dienst unter update.kaeso.app wird aus jedem Release auf GitHub gebau
 GITHUB_TOKEN=$(gh auth token) pnpm --filter kaeso-update build
 ```
 
-Laden Sie `apps/update/dist` unverändert hoch. Es enthält die Releases-Seite, `v1/releases.json`, `v1/latest.json`, die `release.json` jedes Releases unter `download/` und sein Artwork unter `art/`.
+Laden Sie `apps/update/dist` unverändert hoch. Es enthält die Releases-Seite, `v1/releases.json`, `v1/history.json`, `v1/latest.json`, die `release.json` jedes Releases unter `download/` und sein Artwork unter `art/`.
 
 ### Content Security Policy
 

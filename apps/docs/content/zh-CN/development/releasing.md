@@ -150,7 +150,7 @@ update.kaeso.app 上的更新服务根据 GitHub 上的每个版本构建，因�
 GITHUB_TOKEN=$(gh auth token) pnpm --filter kaeso-update build
 ```
 
-把 `apps/update/dist` 原样上传。它包含版本页面、`v1/releases.json`、`v1/latest.json`、每个版本位于 `download/` 下的 `release.json`，以及位于 `art/` 下的配图。
+把 `apps/update/dist` 原样上传。它包含版本页面、`v1/releases.json`、`v1/history.json`、`v1/latest.json`、每个版本位于 `download/` 下的 `release.json`，以及位于 `art/` 下的配图。
 
 ### 内容安全策略
 

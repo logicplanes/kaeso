@@ -7,10 +7,12 @@ import {
   FEED_ORIGIN,
   MAX_PAGES,
   RELEASES_URL,
+  capNotes,
   compareVersions,
   githubManifest,
   githubReleases,
   latestOf,
+  MAX_NOTES_BYTES,
   main,
   nextLink,
   parseTag,
@@ -276,6 +278,31 @@ describe("the feed", () => {
     ]);
     expect(feed[3]?.body).toBeNull();
     expect(feed[2]?.assets).toEqual([]);
+  });
+
+  it("keeps the feed under the size installs accept and the whole history for the page", async () => {
+    const out = tempDir();
+    const notes = "Ü".repeat(40_000);
+    const raw = Array.from({ length: 30 }, (_, i) => release(`v1.${29 - i}.0`, { body: notes }));
+    await writeFeed({ out, origin: "https://feed.example.com", source: memorySource(raw, {}), maxFeedBytes: 1 << 20 });
+    const feedText = read(out, "v1/releases.json");
+    const feed = JSON.parse(feedText) as GitHubRelease[];
+    const history = JSON.parse(read(out, "v1/history.json")) as GitHubRelease[];
+    expect(new TextEncoder().encode(feedText).length).toBeLessThanOrEqual(1 << 20);
+    expect(feed.length).toBeGreaterThan(0);
+    expect(feed.length).toBeLessThan(30);
+    expect(feed[0]?.tag_name).toBe("v1.29.0");
+    expect(new TextEncoder().encode(feed[0]?.body ?? "").length).toBeLessThanOrEqual(MAX_NOTES_BYTES);
+    expect(history).toHaveLength(30);
+    expect(history[29]?.body).toBe(notes);
+  });
+
+  it("cuts long notes on a character boundary and leaves short ones alone", () => {
+    expect(capNotes(null)).toBeNull();
+    expect(capNotes("short")).toBe("short");
+    expect(capNotes("äää", 4)).toBe("ää");
+    expect(capNotes("a😀b", 4)).toBe("a");
+    expect(capNotes("a😀b", 5)).toBe("a😀");
   });
 
   it("uses update.kaeso.app as the origin installs trust", async () => {

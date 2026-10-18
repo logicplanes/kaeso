@@ -150,7 +150,7 @@ The update service at update.kaeso.app is built from every release on GitHub, so
 GITHUB_TOKEN=$(gh auth token) pnpm --filter kaeso-update build
 ```
 
-Upload `apps/update/dist` as it is. It holds the releases page, `v1/releases.json`, `v1/latest.json`, each release's `release.json` under `download/` and its artwork under `art/`.
+Upload `apps/update/dist` as it is. It holds the releases page, `v1/releases.json`, `v1/history.json`, `v1/latest.json`, each release's `release.json` under `download/` and its artwork under `art/`.
 
 ### Content Security Policy
 

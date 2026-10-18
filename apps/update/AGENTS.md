@@ -15,7 +15,8 @@ Rules for the update service, `apps/update`. The root [`AGENTS.md`](../../AGENTS
 
 | Path                               | Holds                                                                                                                   |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `v1/releases.json`                 | Every published release with a semver tag, newest first, in the shape of GitHub's releases API that the gateway reads   |
+| `v1/releases.json`                 | The newest releases with a semver tag, in the shape of GitHub's releases API that the gateway reads, under 3 MiB        |
+| `v1/history.json`                  | Every release with its full notes, newest first, for the releases page                                                  |
 | `v1/latest.json`                   | `stable`, the newest stable version, and `prerelease`, the newest version of all; `null` when there is none             |
 | `download/v<version>/release.json` | The release's manifest, unchanged; the feed's `release.json` asset points here, because installs trust only this origin |
 | `art/<version>.svg`, `-dark.svg`   | The release's artwork from `releaseArtSvg`, the same picture the console's What's new dialog draws from the version     |

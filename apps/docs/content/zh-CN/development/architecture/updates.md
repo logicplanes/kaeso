@@ -24,7 +24,7 @@ flowchart TD
 
 ## 版本源
 
-`update.kaeso.app` 即 `apps/update`，是根据 GitHub 上的版本构建的静态网站。`v1/releases.json` 以 GitHub 版本 API 的格式列出每个版本，最新的在前。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。`art/<version>.svg` 是该版本的配图，由 `releaseArtSvg` 用与控制台 **Kaeso 新功能**对话框相同的种子绘制。网站页面本身显示每个版本及其说明。
+`update.kaeso.app` 即 `apps/update`，是根据 GitHub 上的版本构建的静态网站。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，说明超过 64 KiB 的部分被截断，整个文件小于 3 MiB，因为网关最多读取 4 MiB。`v1/history.json` 为页面保留每个版本及其完整说明。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。`art/<version>.svg` 是该版本的配图，由 `releaseArtSvg` 用与控制台 **Kaeso 新功能**对话框相同的种子绘制。网站页面本身显示每个版本及其说明。
 
 ## 网关
 

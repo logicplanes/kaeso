@@ -7,6 +7,8 @@ export const FEED_ORIGIN = "https://update.kaeso.app";
 export const RELEASES_URL = "https://api.github.com/repos/logicplanes/kaeso/releases?per_page=100";
 export const MANIFEST = "release.json";
 export const MAX_PAGES = 50;
+export const MAX_FEED_BYTES = 3 << 20;
+export const MAX_NOTES_BYTES = 64 << 10;
 
 export interface GitHubAsset {
   name: string;
@@ -129,7 +131,18 @@ export function selectReleases(raw: readonly unknown[]): Release[] {
 
 export const manifestPath = (version: string): string => `download/v${version}/${MANIFEST}`;
 
-export function feedEntry(release: Release, origin: string): GitHubRelease {
+const encoder = new TextEncoder();
+const byteLength = (text: string): number => encoder.encode(text).length;
+
+export function capNotes(body: string | null, limit = MAX_NOTES_BYTES): string | null {
+  if (body === null || byteLength(body) <= limit) return body;
+  let end = Math.min(body.length, limit);
+  while (end > 0 && byteLength(body.slice(0, end)) > limit) end -= 1;
+  if (end > 0 && /[\uD800-\uDBFF]/.test(body.charAt(end - 1))) end -= 1;
+  return body.slice(0, end);
+}
+
+export function historyEntry(release: Release, origin: string): GitHubRelease {
   const { source } = release;
   return {
     tag_name: source.tag_name,
@@ -143,6 +156,24 @@ export function feedEntry(release: Release, origin: string): GitHubRelease {
       browser_download_url: a.name === MANIFEST ? `${origin}/${manifestPath(release.version)}` : a.browser_download_url,
     })),
   };
+}
+
+export function feedEntry(release: Release, origin: string): GitHubRelease {
+  const entry = historyEntry(release, origin);
+  return { ...entry, body: capNotes(entry.body) };
+}
+
+export function feedEntries(releases: readonly Release[], origin: string, limit = MAX_FEED_BYTES): GitHubRelease[] {
+  const out: GitHubRelease[] = [];
+  let size = byteLength("[\n]\n");
+  for (const release of releases) {
+    const entry = feedEntry(release, origin);
+    const added = byteLength(JSON.stringify(entry, null, 2)) + 4;
+    if (size + added > limit) break;
+    out.push(entry);
+    size += added;
+  }
+  return out;
 }
 
 export function latestOf(releases: readonly Release[]): Latest {
@@ -234,7 +265,13 @@ function write(out: string, path: string, data: string | Uint8Array): void {
   writeFileSync(file, data);
 }
 
-export async function writeFeed(options: { out: string; origin: string; source: Source; staticDir?: string | undefined }): Promise<FeedSummary> {
+export async function writeFeed(options: {
+  out: string;
+  origin: string;
+  source: Source;
+  staticDir?: string | undefined;
+  maxFeedBytes?: number | undefined;
+}): Promise<FeedSummary> {
   const origin = options.origin.replace(/\/+$/, "");
   const releases = selectReleases(await options.source.releases());
   const manifests: [string, Uint8Array][] = [];
@@ -246,7 +283,8 @@ export async function writeFeed(options: { out: string; origin: string; source: 
   rmSync(options.out, { recursive: true, force: true });
   mkdirSync(options.out, { recursive: true });
   if (options.staticDir) cpSync(options.staticDir, options.out, { recursive: true });
-  write(options.out, "v1/releases.json", json(releases.map((r) => feedEntry(r, origin))));
+  write(options.out, "v1/releases.json", json(feedEntries(releases, origin, options.maxFeedBytes)));
+  write(options.out, "v1/history.json", json(releases.map((r) => historyEntry(r, origin))));
   write(options.out, "v1/latest.json", json(latest));
   for (const [version, bytes] of manifests) write(options.out, manifestPath(version), bytes);
   for (const { version } of releases) {
