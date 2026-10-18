@@ -4,7 +4,7 @@ members = ["crates/*"]
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.99"
 license = "MIT"
@@ -13,8 +13,8 @@ homepage = "https://kaeso.app"
 publish = false
 
 [workspace.dependencies]
-kaeso-kpp = { path = "crates/kaeso-kpp", version = "0.2.0" }
-kaeso-codecs = { path = "crates/kaeso-codecs", version = "0.2.0" }
+kaeso-kpp = { path = "crates/kaeso-kpp", version = "0.2.1" }
+kaeso-codecs = { path = "crates/kaeso-codecs", version = "0.2.1" }
 kaeso-core = { path = "crates/kaeso-core" }
 kaeso-crypto = { path = "crates/kaeso-crypto" }
 kaeso-mail = { path = "crates/kaeso-mail" }
