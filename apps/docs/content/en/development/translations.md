@@ -22,7 +22,7 @@ Every language has the same voice: short, plain, no filler. Translate the meanin
 
 | | English | German | Simplified Chinese |
 | --- | --- | --- | --- |
-| Address | None, or "you" | "Sie" only where it can't be avoided; prefer infinitives, nouns and impersonal phrasing; never "du" | None; neutral phrasing, "您" only where a person is addressed |
+| Address | None, or "you" | "Sie" with "Ihr", "Ihre", "Ihnen", never "du"; headings, buttons, menu items and short hints stay in the infinitive ("Schlüssel erstellen", "gleich erneut versuchen") | "您" where a person is addressed, never "你"; otherwise neutral phrasing |
 | Buttons | A verb first: "Create key" | Infinitive, verb last: „Schlüssel erstellen“ | A verb first: "创建密钥" |
 | Titles | Sentence case | German capitalization, otherwise sentence style | No trailing punctuation |
 | Ellipsis | "Loading…", one character | „Wird geladen…“ | "加载中…" |
@@ -75,6 +75,18 @@ Never translated: product and provider names (Kaeso, OpenAI, Anthropic, models.d
 | session | Sitzung | 会话 |
 | settings | Einstellungen | 设置 |
 | instance | Instanz | 实例 |
+| install (a Kaeso installation) | Installation | 实例 |
+| active (key, account) | aktiv | 有效 |
+| release | Release | 版本 |
+| pre-release | Vorabversion | 预发布版本 |
+| update | Update | 更新 |
+| updater | Updater | 更新器 |
+| catalogue | Katalog | 目录 |
+| availability | Verfügbarkeit | 可用性 |
+| identity provider | Identitätsanbieter | 身份提供商 |
+| issuer URL | Issuer-URL | 颁发者 URL |
+| holder of a role | Träger einer Rolle | 持有者 |
+| inference | Inferenz | 模型调用 |
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
@@ -127,7 +139,7 @@ tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("si
 
 ### What the gateway writes
 
-The gateway's error messages, the names, descriptions and categories in the rights catalogue, and the built-in roles' names and descriptions arrive in English. The API client (`src/api/`) translates the ones it knows as answers arrive, with the keys `errors.*` and `rights.*`: rights and roles by their id, messages by their English and their values. Anything it doesn't know is shown as the gateway wrote it. Switching languages loads the data again.
+The gateway's error messages, the names, descriptions and categories in the rights catalogue, and the built-in roles' names and descriptions arrive in English. The API client (`src/api/`) translates the ones it knows as answers arrive, with the keys `errors.*` and `rights.*`: rights and roles by their id, messages by their English and their values. Anything it doesn't know is shown as the gateway wrote it. Switching languages loads the data again. `crates/kaeso-server/tests/error_copy.rs` fails when the gateway writes a message without a rule in `src/api/gateway-errors.ts`, so a new message comes with its German and Chinese in the same pull request.
 
 ## The UI library
 
@@ -188,7 +200,8 @@ root.render(
 
 ## Checking
 
-- `pnpm i18n --write` writes the console's `src/i18n/locales/en/<area>.json` from the source; that is the translators' list. `pnpm i18n` checks that every key has German and Chinese with the same placeholders and that nothing is left over; `pnpm test` runs the same check.
+- `pnpm i18n --write` writes the console's `src/i18n/locales/en/<area>.json` from the source; that is the translators' list. `pnpm i18n` checks that every key has German and Chinese with the same placeholders and that nothing is left over, and refuses a translation that is still the English (names, codes, acronyms and a short list of terms such as "Top k" stay), "du" in German, "你" in Chinese, straight double quotes, and half-width punctuation next to Chinese characters; `pnpm test` runs the same check.
+- The UI library's catalog test, the showcase's `gen` and the documentation site's message test refuse the same: English left in a translation and an informal address. The mail crate's tests fail when a German or Chinese email keeps an English sentence or uses "du" or "Tokens".
 - `pnpm lint` refuses text written straight into the console (the rule `kaeso/no-literal-text`): JSX text, text props (`label`, `title`, `description`, `placeholder`, `aria-label` and others), text fields of objects, and toasts written as literals.
 - `apps/console/src/copy.test.ts` checks German and Chinese descriptions against the same length limits as English, with 15% slack.
 - Look at every page you changed in German and Chinese, at phone and desktop widths, in both themes. Choose the language under **Appearance**, or set `kaeso:locale` in the browser's storage. In the showcase, open a changed component's `/de/components/<slug>/states` and `/zh-CN/components/<slug>/states`.

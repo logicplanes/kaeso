@@ -22,7 +22,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 
 | | 英语 | 德语 | 简体中文 |
 | --- | --- | --- | --- |
-| 称呼 | 不称呼，或用“you” | 只在无法避免时用“Sie”：优先使用不定式、名词和无人称表达；从不用“du” | 不称呼；使用中性表达，只有在直接面向某个人时才用“您” |
+| 称呼 | 不称呼，或用“you” | 用“Sie”及“Ihr”“Ihre”“Ihnen”，从不用“du”；标题、按钮、菜单项和简短提示保持不定式（“Schlüssel erstellen”“gleich erneut versuchen”） | 直接面向某个人时用“您”，从不用“你”；其他情况使用中性表达 |
 | 按钮 | 动词在前：“Create key” | 不定式，动词在后：„Schlüssel erstellen“ | 动词在前：“创建密钥” |
 | 标题 | 句首大写 | 遵循德语的大小写规则，其余按句子格式 | 末尾不加标点 |
 | 省略号 | “Loading…”，一个字符 | „Wird geladen…“ | “加载中…” |
@@ -75,6 +75,18 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | session | Sitzung | 会话 |
 | settings | Einstellungen | 设置 |
 | instance | Instanz | 实例 |
+| install (a Kaeso installation) | Installation | 实例 |
+| active (key, account) | aktiv | 有效 |
+| release | Release | 版本 |
+| pre-release | Vorabversion | 预发布版本 |
+| update | Update | 更新 |
+| updater | Updater | 更新器 |
+| catalogue | Katalog | 目录 |
+| availability | Verfügbarkeit | 可用性 |
+| identity provider | Identitätsanbieter | 身份提供商 |
+| issuer URL | Issuer-URL | 颁发者 URL |
+| holder of a role | Träger einer Rolle | 持有者 |
+| inference | Inferenz | 模型调用 |
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
@@ -127,7 +139,7 @@ tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("si
 
 ### 网关写入的内容
 
-网关的错误消息、权限目录中的名称、描述和类别，以及内置角色的名称和描述，都以英语送达。API 客户端会在应答到达时翻译它认识的内容（`src/api/`，键为 `errors.*` 和 `rights.*`），按 ID 匹配权限和角色，按英语原文及其值匹配消息；它不认识的内容按网关的原文显示。切换语言会重新加载数据。
+网关的错误消息、权限目录中的名称、描述和类别，以及内置角色的名称和描述，都以英语送达。API 客户端会在应答到达时翻译它认识的内容（`src/api/`，键为 `errors.*` 和 `rights.*`），按 ID 匹配权限和角色，按英语原文及其值匹配消息；它不认识的内容按网关的原文显示。切换语言会重新加载数据。当网关写出的消息在 `src/api/gateway-errors.ts` 中没有对应规则时，`crates/kaeso-server/tests/error_copy.rs` 会失败，因此新消息要在同一个拉取请求中附上德语和中文。
 
 ## UI 库
 
@@ -188,7 +200,8 @@ root.render(
 
 ## 检查
 
-- `pnpm i18n --write` 根据源码写出控制台的 `src/i18n/locales/en/<area>.json`，这就是翻译人员的清单；`pnpm i18n` 检查每个键都有德语和中文且占位符相同，并且没有多余的条目。`pnpm test` 也会运行这项检查。
+- `pnpm i18n --write` 根据源码写出控制台的 `src/i18n/locales/en/<area>.json`，这就是翻译人员的清单；`pnpm i18n` 检查每个键都有德语和中文且占位符相同，并且没有多余的条目；它还会拒绝仍是英语的译文（名称、代码、缩写以及“Top k”等少数术语除外）、德语中的“du”、中文中的“你”、直双引号，以及紧挨中文字符的半角标点。`pnpm test` 也会运行这项检查。
+- UI 库的目录测试、展示站点的 `gen` 和文档站点的文案测试也会拒绝同样的问题：译文中残留的英语和非正式称呼。德语或中文邮件保留英语句子，或使用“du”或“Tokens”时，邮件 crate 的测试会失败。
 - `pnpm lint` 拒绝直接写在控制台中的文本：JSX 文本、文本属性（`label`、`title`、`description`、`placeholder`、`aria-label` 等）、对象的文本字段，以及以字面量写出的提示消息（规则 `kaeso/no-literal-text`）。
 - `apps/console/src/copy.test.ts` 按与英语相同的长度限制检查德语和中文的描述，并留有 15% 的余量。
 - 用德语和中文、在手机和桌面宽度、两种主题下查看修改过的每个页面：在**外观**下选择语言，或者在浏览器存储中设置 `kaeso:locale`。在展示站点中，查看修改过的组件的 `/de/components/<slug>/states` 和 `/zh-CN/components/<slug>/states`。
