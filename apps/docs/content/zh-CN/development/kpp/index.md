@@ -7,7 +7,7 @@ nav: KPP 内部实现
 
 KPP，即 Kaeso Provider Protocol，是每个模型请求都要经过的规范格式。网关把应用发来的内容解码为 KPP，再把 KPP 编码后发给服务商，回复沿同一路径返回。调用方能看到的部分在[格式转换](../../concepts/format-translation.md)中介绍；这些页面面向修改 KPP 的人。
 
-- [编解码器设计](codec-design.md)：了解类型、流和 wire 结构体如何让每次转换保持无损。
+- [编解码器设计](codec-design.md)：了解类型、流和线路结构体如何让每次转换保持无损。
 - [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
 - [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
@@ -84,7 +84,7 @@ sequenceDiagram
 | --- | --- |
 | `codec` | `Codec` trait、`EgressCtx` 和 `EncodeCtx` |
 | `dispatch` | 在运行时按 `DialectId` 选择的编解码器函数 |
-| `wire` | 用于无损 wire 结构体的 serde 构件（[Wire 结构体](codec-design.md#wire-结构体)） |
+| `wire` | 用于无损线路结构体的 serde 构件（[线路结构体](codec-design.md#线路结构体)） |
 | `sse` | 事件流的解析器和写入器（[服务器发送事件](codec-design.md#服务器发送事件)） |
 | `cross` | 跨方言数据的规则，以及 extras 允许列表 |
 | `continuity` | 随对话传递的推理（[推理的延续](reasoning.md#推理的延续)） |
@@ -98,14 +98,14 @@ sequenceDiagram
 - **消息由有序的内容块组成。** 块的顺序自始至终保持不变。
 - **字节要紧的地方保留原始数据。** 工具参数、JSON schema、未知块和引用都是 `RawJson`；不透明的推理按收到时的样子保存，并标记其 `Origin`。
 - **语义或提示。** 每个字段要么是语义字段（目标必须遵守，否则以 `Unsupported` 拒绝），要么是提示字段（可以忽略）。[字段类别](#字段类别)列出了所有字段。
-- **绑定来源的 Extras。** KPP 没有建模的内容都保存在 `Extras` 中，标记其来源方言，并且只写回该方言。`fields` 是语义字段：其他方言会拒绝它们，除非它们在[允许列表](cross-format.md#extras)中。`form` 只关乎呈现（字符串还是数组、`null` 还是缺失、chunk 如何分组），其他方言会忽略它。嵌套对象的未知键使用带点的键路径，例如 `function.x`，因此本身含有 `.` 的键无法携带（[Wire 结构体](codec-design.md#wire-结构体)）。
+- **绑定来源的 Extras。** KPP 没有建模的内容都保存在 `Extras` 中，标记其来源方言，并且只写回该方言。`fields` 是语义字段：其他方言会拒绝它们，除非它们在[允许列表](cross-format.md#extras)中。`form` 只关乎呈现（字符串还是数组、`null` 还是缺失、chunk 如何分组），其他方言会忽略它。嵌套对象的未知键使用带点的键路径，例如 `function.x`，因此本身含有 `.` 的键无法携带（[线路结构体](codec-design.md#线路结构体)）。
 - **发送之前拒绝。** `check()` 在发送任何内容之前返回 `Unsupported`，注明目标无法表达的功能。
 - **从不静默丢弃。** 传入载荷的每个字段和块都恰好落到一个地方：类型化的 KPP 字段、绑定方言的 `Extras` 条目、`Unknown` 项，或种类为 `Unsupported` 的 `KppError`。丢弃数据的 match 分支就是 bug。
 - **只做增量的公共 API。** 公共枚举和可扩展的结构体都是 `#[non_exhaustive]`；枚举变体包装带有构造函数（`TextBlock::new`、`Block::text` 等）的 `#[non_exhaustive]` 结构体，因此可以添加字段，而不会破坏构建或匹配这些值的代码。`Codec` trait 是密封的。
 
 KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，但一个值每个请求只构建一次，错误又属于冷路径；把它们装箱会让每个签名都更笨拙，因此工作区允许 `clippy::large_enum_variant` 和 `clippy::result_large_err`。
 
-每个 KPP 类型都为日志和快照实现了 `serde`。这种 JSON 形式在补丁版本之间保持稳定，但它不是 wire 格式。其中的名称采用 snake case，并且与 `DialectId`（`openai_chat`）一样把 OpenAI 写作 `openai`：`OpaqueKind::OpenAiEncryptedReasoning` 对应 `openai_encrypted_reasoning`。
+每个 KPP 类型都为日志和快照实现了 `serde`。这种 JSON 形式在补丁版本之间保持稳定，但它不是线路格式。其中的名称采用 snake case，并且与 `DialectId`（`openai_chat`）一样把 OpenAI 写作 `openai`：`OpaqueKind::OpenAiEncryptedReasoning` 对应 `openai_encrypted_reasoning`。
 
 ## 字段类别
 
@@ -194,7 +194,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 1. 把真实载荷加入 `crates/kaeso-codecs/fixtures/<dialect>/`，并在该目录的 `README.md` 中添加一行来源记录（[Fixture 与录制](fixtures.md)）。
 2. 在该方言的映射页面中注明每个映射的来源。来源包括 [OpenAI OpenAPI 规范](https://github.com/openai/openai-openapi)、[Anthropic Messages](anthropic-messages.md) 页面中注明的 Anthropic OpenAPI 规范、官方 SDK 的类型（[openai-python](https://github.com/openai/openai-python)、[anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)），以及服务商文档。来源含糊时，选择 `Unsupported` 并提交一个 issue。
-3. 先写失败的测试，再写代码。每个 wire 字段都映射到类型化的 KPP 字段、绑定来源的 `Extras` 条目、`Unknown` 项或 `Unsupported` 错误。
+3. 先写失败的测试，再写代码。每个线路字段都映射到类型化的 KPP 字段、绑定来源的 `Extras` 条目、`Unknown` 项或 `Unsupported` 错误。
 4. 在同一个拉取请求中，用三种语言更新该方言的映射页面。
 
 错误消息写给调用 Kaeso 的人看：说明目标不支持哪个字段，以及应该怎么做。
@@ -219,8 +219,8 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 `kaeso_codecs::testing` 按结构比较 JSON：键的顺序无关紧要，数字按 `serde_json` 读到的结果精确比较，因此 `1` 和 `1.0` 不同，而 `1e0` 和 `1.0` 是同一个数。
 
-KPP 把 `temperature`、`top_p` 和各项惩罚保存为 `f64`，因此由编解码器自己保留写法：OpenAI Chat Completions 和 Anthropic Messages 把写成整数的键列在请求的形式标记 `integers` 中，只要值仍是整数，就再写成整数；OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变时生效。修改过的值按新值写出，另一种方言则得到目标自己的写法（`1.0`）。
+KPP 把 `temperature`、`top_p` 和各项惩罚保存为 `f64`，因此由编解码器自己保留写法。OpenAI Chat Completions 和 Anthropic Messages 把写成整数的键列在请求的形式标记 `integers` 中，只要值仍是整数，就再写成整数。OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变时生效。修改过的值按新值写出，另一种方言则得到目标自己的写法（`1.0`）。
 
-`testing::sse_diff` 逐项比较流：先比较事件名，再按 JSON 比较数据（不是 JSON 时按文本比较；没有 `data:` 行的帧，其 `ComparableItem::Event.data` 为 `None`），然后按顺序比较 `id`、`retry` 和未知字段；注释按原文精确比较。
+`testing::sse_diff` 逐项比较流。它先比较事件名，再按 JSON 比较数据（不是 JSON 时按文本比较），然后按顺序比较 `id`、`retry` 和未知字段。没有 `data:` 行的帧，其 `ComparableItem::Event.data` 为 `None`；注释按原文精确比较。
 
 当变更改变了跨方言输出时，要审查快照的差异：运行 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`，然后在提交之前阅读有变化的 `.snap` 文件。

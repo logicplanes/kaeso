@@ -1,22 +1,22 @@
 ---
 title: 编解码器设计
-description: KPP 编解码器所基于的类型、流、wire 结构体和模型列表。
+description: KPP 编解码器所基于的类型、流、线路结构体和模型列表。
 order: 1
 ---
 
-编解码器之所以能保持无损，取决于 KPP 的类型、流和 wire 结构体的构建方式。本页逐一说明；请求的路径及其背后的设计原则见 [KPP 内部实现](index.md)。
+编解码器之所以能保持无损，取决于 KPP 的类型、流和线路结构体的构建方式。本页逐一说明；请求的路径及其背后的设计原则见 [KPP 内部实现](index.md)。
 
 ## 类型
 
 这些类型的形态取决于编解码器保持无损所需要的东西：
 
-- **`Extras`** 有三个字段：`origin`、`fields`（逐字节保存的原始 JSON）和 `form`（呈现标记）。同一方言内的往返必须重现被 KPP 规范化抹掉的写法，例如 `content` 是字符串还是数组、`null` 还是缺失、`1` 还是 `1.0`，以及 chunk 边界和 SSE 帧的 `id` 与 `retry` 字段；这些标记不携带含义，因此不会像未知的 `fields` 那样让其他方言拒绝请求。两个空的 `Extras` 无论来源如何都相等。
-- **转发的请求头**（`anthropic-beta`、`anthropic-version`、`openai-beta`）保存在 `Extras::fields` 中，键以 `header:` 开头；重复的请求头用 `", "` 连接。请求头也像其他 extra 一样绑定到其方言。以 `header:` 开头的请求体键看起来会像转发的请求头，因此通过 `wire::Ext` 读取请求体的编解码器，即 Anthropic Messages、OpenAI Chat Completions 和 OpenAI Embeddings，会拒绝它（[Wire 结构体](#wire-结构体)）；OpenAI Responses 把这样的键保留在请求体中，只有真正的请求头才会被转发。
+- **`Extras`** 有三个字段：`origin`、`fields`（逐字节保存的原始 JSON）和 `form`（呈现标记）。同一方言内的往返必须重现被 KPP 规范化抹掉的写法，例如 `content` 是字符串还是数组、`null` 还是缺失、`1` 还是 `1.0`，以及 chunk 边界和 SSE 帧的 `id` 与 `retry` 字段。这些标记不携带含义，因此不会像未知的 `fields` 那样让其他方言拒绝请求。两个空的 `Extras` 无论来源如何都相等。
+- **转发的请求头**（`anthropic-beta`、`anthropic-version`、`openai-beta`）保存在 `Extras::fields` 中，键以 `header:` 开头；重复的请求头用 `", "` 连接。请求头也像其他 extra 一样绑定到其方言。以 `header:` 开头的请求体键看起来会像转发的请求头，因此通过 `wire::Ext` 读取请求体的编解码器，即 Anthropic Messages、OpenAI Chat Completions 和 OpenAI Embeddings，会拒绝它（[线路结构体](#线路结构体)）；OpenAI Responses 把这样的键保留在请求体中，只有真正的请求头才会被转发。
 - **原始项。** `Box<RawValue>` 包装在 `RawJson` 中，按字节比较。未知的块、工具、工具选择、流事件和 delta 都是 `RawItem { origin, raw }`；引用是 `Citation { origin, raw }`，因为各方言的引用格式几乎没有共同之处。
 - **回复。** `Reply` 是 `Generate`、`CountTokens` 或 `Embed`，`RequestKind` 也对应这三种。
 - **工具。** `ToolDef` 是函数工具，或完整保留的未知工具；`ToolChoice` 是 `Auto`、`None`、`Required`、指定名称的工具，或未知值。函数工具的 `parameters` 是可选的，与 OpenAI 的规定一致。
 - **输出与推理设置。** `OutputSpec::JsonSchema` 有可选的名称（Anthropic 的 schema 没有名称）和描述。`ReasoningConfig` 保存模式、推理强度、预算、摘要以及是否包含加密推理；它的枚举把不认识的值保存在 `Other(String)` 中，因为服务商经常新增推理强度级别。
-- **推理块**保存来源、摘要、文本部分和不透明部分，因为一个 OpenAI 推理 item 同时带有 ID 和加密内容，还可能有多个文本部分，而只有摘要的块也需要靠来源来决定可以回放到哪里。
+- **推理块**保存来源、摘要、文本部分和不透明部分。一个 OpenAI 推理 item 同时带有 ID 和加密内容，还可能有多个文本部分。只有摘要的块也需要靠来源来决定可以回放到哪里。
 - **用量。** `Usage::input_tokens` 不含缓存读取和写入，它们是单独的字段（[用量](cross-format.md#用量)）；`Usage::raw` 保存服务商的用量对象及其来源，因此编码器只在自己的方言中叠加它。嵌入向量是 `f64`，因此服务商的值输出时保持不变。
 - **错误。** `ErrorKind::Billing` 用于 Anthropic 的 `billing_error`（402）和 OpenAI 的 `insufficient_quota`，其他种类都无法如实描述它们。
 
@@ -39,7 +39,7 @@ stateDiagram-v2
   ResponseStop --> [*]
 ```
 
-- **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2……。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
+- **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2 等。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
 - **每个生命周期事件都携带 `Extras`**，因此同一方言内的回放能精确重现原始事件，包括各事件自己的字段，例如 OpenAI 的 `obfuscation`。
 - **失败在带内报告**：先给出到目前为止解码出的事件，最后是一个 `StreamEvent::Error`，因此同一 chunk 中先前解码的内容不会丢失。
 - **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓，直到它的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。
@@ -72,16 +72,16 @@ Anthropic 的索引按块写出的顺序分配。不以 `ResponseStart` 开头�
 
 同一方言的流会被精确重现，而来自其他方言的流会成为完整、有效的 Responses 流。
 
-## Wire 结构体
+## 线路结构体
 
-Wire 结构体必须保留每个字段，包括结构体没有声明的字段，还必须逐字节保留原始载荷（`RawValue`）。`#[serde(flatten)]` 无法同时做到这两点：flatten 会缓冲输入，而 `RawValue` 无法从缓冲区读取，于是工具参数和 schema 会丢失原始字节。`wire::Ext<T>` 能完成同样的工作，而且不做缓冲：
+线路结构体必须保留每个字段，包括结构体没有声明的字段，还必须逐字节保留原始载荷（`RawValue`）。`#[serde(flatten)]` 无法同时做到这两点：flatten 会缓冲输入，而 `RawValue` 无法从缓冲区读取，于是工具参数和 schema 会丢失原始字节。`wire::Ext<T>` 能完成同样的工作，而且不做缓冲：
 
-- JSON 对象中 `T` 没有声明的每个键都原样保存在 `Ext::extra` 中，并成为 KPP 的 `Extras::fields`，除非键名以 `header:` 开头或含有 `.`：这样的键会被误认为转发的请求头或嵌套键路径，因此整个对象会被拒绝（`` the field `…` has a name Kaeso cannot carry; remove it ``），在请求中是 `InvalidRequest`，在服务商的回复中是 `ProviderError`；
-- `T` 已声明、但 `T` 无法重现其收到的写法的每个键（`Option` 在 `None` 时跳过，却收到了 `"x": null`；`bool` 在为 false 时跳过，却收到了 `"flag": false`；`Vec` 在为空时跳过，却收到了 `"list": []`）都原样保存在 `Ext::verbatim` 中，并成为 KPP 的 `Extras::form`。
+- JSON 对象中 `T` 没有声明的每个键都原样保存在 `Ext::extra` 中，并成为 KPP 的 `Extras::fields`。键名以 `header:` 开头或含有 `.` 的键会被误认为转发的请求头或嵌套键路径，因此整个对象会被拒绝（`` the field `…` has a name Kaeso cannot carry; remove it ``）：在请求中是 `InvalidRequest`，在服务商的回复中是 `ProviderError`。
+- `T` 已声明、但无法重现其收到时写法的每个键，都原样保存在 `Ext::verbatim` 中，并成为 KPP 的 `Extras::form`。例如在 `None` 时跳过的 `Option` 收到了 `"x": null`，在为 false 时跳过的 `bool` 收到了 `"flag": false`，在为空时跳过的 `Vec` 收到了 `"list": []`。
 
 序列化 `Ext<T>` 时，先写 `T`，再写 `T` 没有写出的 verbatim 键，最后写 extra 键。因此解码再编码的往返是精确的；而编解码器修改某个类型化字段时（例如从另一种方言转换时），修改后的值总是优先于过时的 verbatim 写法。在编解码器必须看出区别的地方，`wire::Maybe<T>` 会区分缺失和 `null`。
 
-在 `Ext` 内部使用的 wire 结构体遵循以下规则：
+在 `Ext` 内部使用的线路结构体遵循以下规则：
 
 - 不使用 `#[serde(flatten)]`、`alias`、`deny_unknown_fields`，也不使用 untagged 或 internally tagged 枚举；
 - 带标签的联合用 `wire::type_tag` 按 `"type"` 分派；
@@ -99,16 +99,18 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 - 没有空行结束的最后一帧仍会被报告；
 - 在一行中间结束的流会报告为 `SseError::Truncated`，而不是被丢弃。
 
-每个流解码器都把没有数据的帧作为 `Extra` 传递，其原始 JSON 中没有 `data` 键；每个编码器写回时也不带 `data:` 行。在 OpenAI Chat Completions 中，没有数据的 `event: error` 帧就是这样的 `Extra`，而不是错误。被解码为 KPP 事件的帧，其 `id`、`retry` 和未知字段记录为 `{"id", "retry", "other": [[name, value], …]}` 并被写回：在 Anthropic Messages 中是形式标记 `sse`，在 OpenAI Chat Completions 中是 `chunk` 标记里的 `sse`，在 OpenAI Responses 中是带作用范围的形式覆盖项 `~sse`。作为 `Extra` 传递的帧把这些字段保留在 `Extra` 中。
+每个流解码器都把没有数据的帧作为 `Extra` 传递，其原始 JSON 中没有 `data` 键；每个编码器写回时也不带 `data:` 行。在 OpenAI Chat Completions 中，没有数据的 `event: error` 帧就是这样的 `Extra`，而不是错误。
+
+被解码为 KPP 事件的帧，其 `id`、`retry` 和未知字段记录为 `{"id", "retry", "other": [[name, value], …]}` 并被写回：在 Anthropic Messages 中是形式标记 `sse`，在 OpenAI Chat Completions 中是 `chunk` 标记里的 `sse`，在 OpenAI Responses 中是带作用范围的形式覆盖项 `~sse`。作为 `Extra` 传递的帧把这些字段保留在 `Extra` 中。
 
 字节可以按任意 chunk 送入：行可以在任何位置被拆开，包括 CRLF 换行符的 `\r` 和 `\n` 之间。超过解析器上限（`sse::DEFAULT_MAX_FRAME_BYTES`，16 MiB）的帧是错误，这限制了每个流能占用的内存。
 
 ## 模型列表
 
-模型列表（`GET /v1/models`、`GET /v1/models/{id}`）是 KPP 的一部分，包括 `ModelInfo`、`ModelLifecycle`、`ModelList` 和 `ModelsQuery`，因此网关自己永远不需要了解这些 wire 结构。
+模型列表（`GET /v1/models`、`GET /v1/models/{id}`）是 KPP 的一部分，包括 `ModelInfo`、`ModelLifecycle`、`ModelList` 和 `ModelsQuery`，因此网关自己永远不需要了解这些线路结构。
 
 - **入站。** 每种方言都使用相同的路径，因此路径无法说明方言：`dispatch::models_dialect` 根据请求头来选择（有 `anthropic-version` 表示 Anthropic，否则为 OpenAI）。`ModelList::page` 对每种方言都以相同的方式应用 `before_id`、`after_id`、`limit` 和生命周期过滤。
-- **出站。** 为了确认服务商是否向某个密钥提供某个模型，网关发送由 `dispatch::encode_model_request` 构建的 `GET /v1/models/{id}`，其中 ID 是一个经过百分号编码的路径段，并用 `decode_model` 读取响应；404 解码为 `NotFound`。由于那里的 404 也可能表示服务商没有这个端点，网关接着读取服务商的列表：`dispatch::encode_models_request` 根据 `ModelsQuery` 构建 `GET /v1/models`（只包含该方言会发送的分页和过滤参数；其他参数为 `Unsupported`），`decode_models` 读取每一页。
+- **出站。** 为了确认服务商是否向某个密钥提供某个模型，网关发送由 `dispatch::encode_model_request` 构建的 `GET /v1/models/{id}`，其中 ID 是一个经过百分号编码的路径段。它用 `decode_model` 读取响应，404 解码为 `NotFound`。那里的 404 也可能表示服务商没有这个端点，因此网关接着读取服务商的列表。`dispatch::encode_models_request` 根据 `ModelsQuery` 构建 `GET /v1/models`，只包含该方言会发送的分页和过滤参数，其他参数为 `Unsupported`。`decode_models` 读取每一页。
 - **查询字符串**按 `&` 和 `=` 拆分，并按 `application/x-www-form-urlencoded` 进行百分号解码（`+` 表示空格）。未知参数成为 `query.<name>` 下的 extras。
 - **日期。** KPP 保存 Unix 秒。RFC 3339 日期时间（Anthropic）和完整日期（OpenAI 的 `shutdown_date`）按前推格里高利历转换，不依赖日期库。亚秒位和时区偏移在转换中无法保留；只要再次编码无法重现收到的原文，就把原文保存在形式标记 `spelling` 中。9999 年之后的日期无法用 RFC 3339 表示：此时 Anthropic 的 `created_at` 取文档规定的未知值（纪元起点），其他日期取 `null`。
 - **缺失或为 `null` 的字段。** 对 KPP 中没有值的字段，编码器填入文档规定的默认值；如果收到的请求体对该字段的写法不同，形式标记 `none` 会注明这一点。

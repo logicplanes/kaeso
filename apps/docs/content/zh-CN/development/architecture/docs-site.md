@@ -40,7 +40,7 @@ flowchart TD
 
 任何人都可以在 GitHub 上用浏览器提议修改页面，因此构建把页面当作不可信的文本：
 
-- marked 只做词法分析，并关闭 HTML 分词器，所以 `<script>`、`<img onerror>` 和其他任何标签都保持为字面文本。
+- marked 只做词法分析，并关闭 HTML 词法分析器，所以 `<script>`、`<img onerror>` 和其他任何标签都保持为字面文本。
 - 链接引用已关闭，链接只保留 http、https 和 mailto。协议在去除空白和控制字符之后检查，所以 `java\nscript:` 也会被发现。
 - 图片只能来自 `content/`。
 - 浏览器收到的是普通对象，从不是 HTML，也没有任何代码设置 `innerHTML`。
@@ -63,7 +63,7 @@ flowchart TD
 - `vite.config.ts` 把来自 `@logicplanes/kaeso-ui` 的导入改写为库中各组件的入口（`uiEntryImports`），与控制台相同。
 - 站点只获取自己的代码块，由路由器的加载器保存，所以不需要 TanStack Query。
 
-首次访问英文地址时，站点会按浏览器的语言偏好、不经导航地切换到 `/de` 或 `/zh-CN`。在菜单或搜索中选择的语言会保存为 `kaeso-docs:locale`。读者在代码组中选择的标签页会保存为 `kaeso-docs:code-tab`，此后每个页面上带有同名标签页的代码组都会默认打开它。
+首次访问英文地址时，站点会按浏览器的语言偏好切换到 `/de` 或 `/zh-CN`，无需重新加载页面。在菜单或搜索中选择的语言会保存为 `kaeso-docs:locale`。读者在代码组中选择的标签页会保存为 `kaeso-docs:code-tab`，此后每个页面上带有同名标签页的代码组都会默认打开它。
 
 ## 构建产物
 

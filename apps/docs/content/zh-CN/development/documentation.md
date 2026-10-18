@@ -19,11 +19,11 @@ pnpm build:packages
 pnpm --filter kaeso-docs dev
 ```
 
-站点运行在 http://localhost:4480 ，保存后自动重新加载；终端会指出需要修复的问题。`KAESO_DOCS_PORT` 可以指定其他端口。
+站点运行在 http://localhost:4480 上，保存后自动重新加载；终端会指出需要修复的问题。`KAESO_DOCS_PORT` 可以指定其他端口。
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm --filter kaeso-docs check:content` | 不构建站点，检查每个页面的前置元数据、链接、锚点、图片和地址，以及每种语言是否拥有相同的页面和相同的 `order` |
+| `pnpm --filter kaeso-docs check:content` | 不构建站点，检查每个页面的 frontmatter、链接、锚点、图片和地址，以及每种语言是否拥有相同的页面和相同的 `order` |
 | `pnpm --filter kaeso-docs build` | 把站点构建到 `apps/docs/dist`，然后检查 `apps/docs/scripts/budget.ts` 中的打包预算 |
 | `pnpm --filter kaeso-docs preview` | 像静态托管那样提供构建结果 |
 
@@ -54,7 +54,7 @@ pnpm --filter kaeso-docs dev
 
 指南说明如何完成任务，每个选项都链接到参考页面。参考页面列出每个选项，不讲故事。同一张表格绝不同时出现在两类页面上。
 
-文件夹的 `index.md` 是概览页：用一两句话说明本部分涵盖什么，然后是本部分页面的[链接列表](#后续步骤)，每项配一句话。
+文件夹的 `index.md` 是概览页：用一两句话说明本部分涵盖什么，然后是本部分页面的[链接列表](#下一步)，每项配一句话。
 
 ### 快速开始
 
@@ -218,7 +218,7 @@ The key is wrong, expired or disabled.
 
 | 不要写 | 而要写 |
 | --- | --- |
-| 一个 Compose 文件即可运行整个安装：网关、控制台、PostgreSQL、ClickHouse、Valkey，以及 Caddy。本页从一台空服务器开始，一直到发出第一个请求。 | 在服务器上安装 Kaeso，连接服务商，并通过它发送第一个请求。 |
+| 一个 Compose 文件即可运行整个实例：网关、控制台、PostgreSQL、ClickHouse、Valkey，以及 Caddy。本页从一台空服务器开始，一直到发出第一个请求。 | 在服务器上安装 Kaeso，连接服务商，并通过它发送第一个请求。 |
 | 只要 Caddy 开始提供服务就算健康，它会在后台为新域名申请证书，所以在拿到证书之前 HTTPS 请求仍可能失败；`docker compose logs caddy` 会显示它何时拿到证书，或为什么拿不到。 | Caddy 获取证书期间，HTTPS 请求可能会失败一分钟左右。运行 `docker compose logs caddy` 查看证书何时就绪。 |
 | 它的**模型**和**限额**可以随时在那里修改。 | 在那里随时修改它的**模型**和**限额**。 |
 | `/v1/embeddings` 只调用嵌入模型，而嵌入模型只有 OpenAI 提供，嵌入模型也不服务于其他端点；混用两者的请求会以 400 被拒绝。 | `/v1/embeddings` 只服务嵌入模型，嵌入模型也不服务于其他端点。混用两者的请求，Kaeso 返回 400。 |
@@ -231,7 +231,7 @@ The key is wrong, expired or disabled.
 | 格式 | 用于 | 示例 |
 | --- | --- | --- |
 | **粗体** | 控制台标签，与控制台显示的完全一致，用 › 连接 | **设置** › **实例** |
-| **粗体**加句号 | 列表项开头的名称，当列表逐一说明几个有名称的事物时 | **保活。** 15 秒后…… |
+| **粗体**加句号 | 列表项开头的名称，当列表逐一说明几个有名称的事物时 | **保活。** 15 秒后… |
 | `代码` | 读者输入的或代码中命名的一切：命令、路径、文件名、设置、字段、请求头、模型 ID、值、带路径的 HTTP 方法 | `KAESO_DOMAIN`、`POST /v1/messages`、`claude-haiku-4-5` |
 | 引号 | 控制台显示的消息，原样引用 | “邀请已撤销” |
 | 链接 | 另一个页面或标题，用读者在那里能找到的内容命名 | [速率限制](../console/limits-and-budgets.md) |
@@ -250,8 +250,8 @@ The key is wrong, expired or disabled.
 - **保持最小。** 只包含示例需要的字段。指南中的代码块少于 25 行；更长的代码链接到 GitHub 上的文件。
 - **密钥来自环境变量。** 代码读取 `KAESO_API_KEY`：Python 中是 `os.environ["KAESO_API_KEY"]`，TypeScript 中是 `process.env.KAESO_API_KEY`，curl 中是 `$KAESO_API_KEY`。绝不把密钥写进 SDK 代码。
 - **使用官方 SDK。** Python 使用 `openai` 和 `anthropic` 的同步客户端；TypeScript 使用 `openai` 和 `@anthropic-ai/sdk`，以 ES 模块和顶层 `await` 编写。OpenAI SDK 的基础 URL 是 `https://kaeso.example.com/v1`，Anthropic SDK 的是 `https://kaeso.example.com`。读者的应用用 `pip install openai anthropic` 和 `npm install openai @anthropic-ai/sdk` 安装它们；在本仓库中工作的命令使用 pnpm。
-- **展示回复**，当读者需要知道它的结构时：在请求之后放一个 `json` 代码块，前面用一句话引出。把较长的回复删减到关键字段。
-- **没有注释，没有提示符。** 代码块中从不包含注释；请在代码块前面的句子中解释命令。Shell 代码块只写命令，不加 `$` 提示符，以便复制后直接运行。
+- **展示回复。** 读者需要了解回复的结构时，在请求之后放一个 `json` 代码块，前面用一句话引出。把较长的回复删减到关键字段。
+- **没有注释，没有提示符。** 代码块中从不包含注释；在代码块前面的句子中解释命令。Shell 代码块只写命令，不加 `$` 提示符，以便复制后直接运行。
 - **一个代码块，一个用途。** 读者要运行的命令和要阅读的输出放在不同的代码块中。
 
 ### 代码组
@@ -333,15 +333,15 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 - **用链接代替重复。** 另一个页面已经讲解的主题，用一句话加一个链接代替解释。
 - 锚点就是 GitHub 生成的标题锚点：小写，去掉标点，空格变为连字符。同一页面中的标题写作 `[budgets](#budgets)`。
 - 链接到不存在的页面或标题会导致构建失败，并给出文件和链接。
-- 不支持引用式链接（`[text][ref]`），它们会显示为文本；请直接写内联链接。
-- 其他网站只接受 `http`、`https` 和 `mailto` 地址。仓库中不是页面的文件，请链接到 GitHub（`https://github.com/logicplanes/kaeso/blob/dev/<path>`），或作为代码写出：`crates/kaeso-mail`。
+- 不支持引用式链接（`[text][ref]`），它们会显示为文本；直接写内联链接。
+- 其他网站只接受 `http`、`https` 和 `mailto` 地址。仓库中不是页面的文件，链接到 GitHub（`https://github.com/logicplanes/kaeso/blob/dev/<path>`），或作为代码写出：`crates/kaeso-mail`。
 
-## 后续步骤
+## 下一步
 
-快速开始、指南和概览页以 `## 后续步骤` 结尾：一个列表，每项都是一个页面链接，后跟冒号和一句话。本站把它显示为一组链接卡片。
+快速开始、指南和概览页以 `## 下一步` 结尾：一个列表，每项都是一个页面链接，后跟冒号和一句话。本站把它显示为一组链接卡片。
 
 ```markdown
-## 后续步骤
+## 下一步
 
 - [调用模型](calling-models.md)：用 OpenAI 和 Anthropic 的 SDK 从应用中调用模型。
 - [API 密钥](../console/api-keys.md)：把密钥限制在应用需要的模型和速率之内。
@@ -350,7 +350,7 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 - 两到四项，最可能的下一项任务排在最前。
 - 链接文字是页面标题；后面的句子说明读者在那里能做什么。
 - 这种形式只用于链接列表。以链接开头、接着写成句子的列表项也会变成卡片，因此这类句子要以文字开头。
-- 参考页面和故障排除页面没有后续步骤。
+- 参考页面和故障排除页面没有“下一步”。
 
 ## 篇幅
 
@@ -395,8 +395,8 @@ Every request to the model API carries an API key.
 
 | 文件 | 地址 | 在侧边栏中 |
 | --- | --- | --- |
-| `content/en/index.md` | `/` | “Introduction”，排在最前 |
-| `content/en/console/index.md` | `/console` | 用它的 `title` 命名分组，用它的 `order` 确定分组位置，并显示为“Overview” |
+| `content/en/index.md` | `/` | “简介”，排在最前 |
+| `content/en/console/index.md` | `/console` | 用它的 `title` 命名分组，用它的 `order` 确定分组位置，并显示为“概览” |
 | `content/en/console/api-keys.md` | `/console/api-keys` | 在该分组中 |
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | 同一页面的德语版本 |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | 同一页面的简体中文版本 |
@@ -411,11 +411,11 @@ Every request to the model API carries an API key.
 ![包含一个密钥的 API 密钥页面](images/api-keys.png)
 ```
 
-支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。请选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。只有当读者仅凭界面标签找不到方向时，才添加截图。图片从不用来展示图示：图示请写成 [Mermaid 代码块](#图示)。
+支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。只有当读者仅凭界面标签找不到方向时，才添加截图。图片从不用来展示图示：图示要写成 [Mermaid 代码块](#图示)。
 
 ## 图示
 
-系统、架构、请求或数据流、时序、状态和生命周期的每一张图示都写成 Mermaid 代码块。构建时会以 Kaeso 自己的样式把它绘制成浅色和深色两张图片，并跟随网站的主题切换；读者不会收到任何 Mermaid 代码。图示从不在代码块中用制表符或箭头画出，也从不以截图或图片展示：代码块中用 `─`、`│`、`└`、`▶` 或 `→` 等字符画图会导致构建失败。
+系统、架构、请求或数据流、时序、状态和生命周期的每一张图示都写成 Mermaid 代码块。构建时会以 Kaeso 自己的样式把它绘制成浅色和深色两张图片，并跟随网站的主题切换；读者不会收到任何 Mermaid 代码。图示从不在代码块中用框线字符或箭头画出，也从不以截图或图片展示：代码块中用 `─`、`│`、`└`、`▶` 或 `→` 等字符画图会导致构建失败。
 
 ~~~markdown
 ```mermaid
@@ -452,7 +452,7 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 
 TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。本身含有代码块的 Markdown 示例用 `~~~markdown` 围起来，这样注释检查才能把两者区分开。
 
-当前版本写作 `\{{version}}`。构建会在正文、代码和前置元数据中把它替换为该版本的版本号，因此任何页面都不会落后于下一次发布。在前面加一个反斜杠则保留这些字符本身，就像本页这样。
+当前版本写作 `\{{version}}`。构建会在正文、代码和 frontmatter 中把它替换为该版本的版本号，因此任何页面都不会落后于下一次发布。在前面加一个反斜杠则保留这些字符本身，就像本页这样。
 
 ## 翻译
 
@@ -468,11 +468,11 @@ TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Py
 
 | | 德语 | 简体中文 |
 | --- | --- | --- |
-| 读者 | 英文用 “you” 的地方用 „Sie“，绝不用 „du“。不要为了回避称呼而把句子改成被动语态 | 中性表达；必须称呼读者时用“您” |
+| 读者 | 英文用“you”的地方用„Sie“，绝不用 „du“。不要为了回避称呼而把句子改成被动语态 | 中性表达；必须称呼读者时用“您” |
 | 正文中的指令 | 命令式：„Legen Sie einen Schlüssel an.“ | 动词在前：“创建一个密钥。” |
 | 任务标题 | 不定式，动词在后：„Schlüssel erstellen“ | 动词在前：“创建密钥” |
 | 描述 | 一句话 | 一句话，以“。”结尾 |
-| 后续步骤 | `[Titel](seite.md): Ein Satz.` | `[标题](page.md)：一句话。` |
+| 下一步 | `[Titel](seite.md): Ein Satz.` | `[标题](page.md)：一句话。` |
 
 站点自身的文字，例如**在 GitHub 上编辑**或搜索，位于 `apps/docs/src/i18n/messages/en.ts`、`de.ts` 和 `zh-CN.ts` 中，并带有类型，缺少翻译会导致类型检查失败。
 
@@ -509,7 +509,7 @@ pnpm demo
 - [ ] 句子直接面向读者，使用主动语态和现在时，没有过长的句子。
 - [ ] 粗体只标记控制台标签和被说明的名称；读者要输入的一切都用代码格式。
 - [ ] 每节最多一个提示块，每页最多三个，每个都很简短。
-- [ ] 快速开始、指南和概览页以后续步骤结尾：两到四个链接，每个配一句话。
+- [ ] 快速开始、指南和概览页以“下一步”结尾：两到四个链接，每个配一句话。
 - [ ] 每一句陈述都与 `dev` 上的代码一致，版本号写作 `\{{version}}`。
 - [ ] 德语和中文页面表达相同的内容，行文自然，标题、提示块和代码都相同。
 - [ ] `pnpm --filter kaeso-docs check:content` 通过，并且您已在站点上以浅色和深色、桌面宽度和 375 px 宽度阅读过该页面。

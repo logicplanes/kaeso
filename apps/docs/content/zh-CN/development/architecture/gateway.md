@@ -63,7 +63,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 每次修改网关都要遵循这些规则，其中大多数由 lint 和测试强制执行。
 
-1. **wire 格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI 或 Anthropic 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
+1. **线路格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI 或 Anthropic 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
 2. **不做透传。** 每个模型请求都会解码为 KPP 再重新编码，即使应用和服务商使用同一种格式。
 3. **不重试，不回退。** 对服务商的调用失败就是失败，并以应用的格式返回。
 4. **绝不悄悄丢弃数据。** KPP 拒绝的内容（`Unsupported`）会在任何内容到达服务商之前，以应用自己的格式作为错误返回。`KppError` 从不被捕获后忽略。
@@ -82,7 +82,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 `config/load.rs` 合并默认值、`KAESO_CONFIG` 指定的 TOML 文件和 `KAESO_*` 变量，包括用于机密的 `_FILE` 变量。它用 `toml` crate 读取文件，每个错误都会指明对应的设置。figment 之类的配置 crate 会成为键和默认值的第二个事实来源。
 
-测试检查每个变量都与其键对应并能反向映射、变量名不会冲突、必填设置和机密没有默认值，以及 `deploy/kaeso.example.toml` 把除机密外的每项设置都设为默认值。测试还会把表格渲染成一个经过审阅的快照。修改设置会改变这个快照，并据此更新[配置](../../self-hosting/configuration.md)。
+测试检查每个变量都与其键对应并能反向映射，且变量名不会冲突。它们还检查必填设置和机密没有默认值，以及 `deploy/kaeso.example.toml` 把除机密外的每项设置都设为默认值。测试还会把表格渲染成一个经过审阅的快照。修改设置会改变这个快照，并据此更新[配置](../../self-hosting/configuration.md)。
 
 ## 服务商 ID
 
@@ -122,7 +122,7 @@ cargo xtask models-dev
 控制台会把 Platform API 的 `message` 原样显示在提示消息中，所以每条消息都是一个简短的句子：
 
 - 按代码中的写法最多 90 个字符（包括占位符），填入值后最多 120 个字符，并以句号结尾。
-- 只有一句：两个意思用分号连接（`Your session has ended; sign in again.`），或者去掉第二个。不用 “e.g.” 之类的缩写，也不换行。
+- 只有一句：两个意思用分号连接（`Your session has ended; sign in again.`），或者去掉第二个。不用“e.g.”之类的缩写，也不换行。
 - 说明哪里出了问题，合适时说明该怎么做。字段名写成代码格式，并把字段放进 `param`。
 - 不出现内部名称（例如 ClickHouse、Valkey、配置键或模块路径），也不在末尾附加技术细节。这些内容用 `tracing` 写入日志。
 - 内部原因（例如 `ApiError::internal` 和日志行）以小写字母开头。给人看的消息以大写字母或代码格式开头。

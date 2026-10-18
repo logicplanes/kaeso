@@ -18,13 +18,13 @@ nav: OpenAI Chat
 - **类型化**：一个类型化的 KPP 字段。
 - **extras**：所述条目的 `Extras::fields`，绑定到 `openai_chat`。它们只在本方言内使用；其他方言会以 `Unsupported` 拒绝（[Extras](cross-format.md#extras)）。嵌套的键使用键路径（`image_url.detail`）。
 - **形式标记**：编解码器私有的 `Extras::form` 标记。它只关乎呈现，其他方言会忽略它。`verbatim` 标记保留已声明键的 `null` 和 `[]` 写法，以及值为 `null` 的未声明键。
-- **Unsupported**：解码或 `check()` 以 `ErrorKind::Unsupported { feature }` 失败；括号中给出 feature。
+- **Unsupported**：解码或 `check()` 以 `ErrorKind::Unsupported { feature }` 失败；括号中给出功能名。
 
 **数字。** 类型化的数值字段经过 `u32`、`u64`、`i64`（`seed`）或 `f64`。超出其范围的值会导致解码失败，在请求中为 `InvalidRequest`，在回复中为 `ProviderError`，而不会被改动。未知字段逐字节保留，但名称无法由 Kaeso 承载的键除外（[见下文](#kaeso-无法承载的键)）。
 
 ## 请求：`CreateChatCompletionRequest`
 
-| Wire 字段 | KPP | 说明 |
+| 线路字段 | KPP | 说明 |
 |---|---|---|
 | `model` | `GenerateRequest.model`（类型化） | |
 | `messages` | `system` + `messages`（类型化） | 见[消息](#消息chatcompletionrequestmessage)。 |
@@ -56,7 +56,7 @@ nav: OpenAI Chat
 
 ### 消息（`ChatCompletionRequestMessage`）
 
-| Wire | KPP | 说明 |
+| 线路 | KPP | 说明 |
 |---|---|---|
 | 开头的 `system` 和 `developer` 消息 | `GenerateRequest.system` 中的块 | 每条消息的第一个块带有形式标记 `message: {role, content}`，用来保留消息边界、角色以及字符串或数组写法；消息的 `name` 和未知键是该块上的 extras `message.<key>`。第一个部分为未知类型的开头消息仍是一条 `Role::System` 消息，并结束开头的这一段。来自其他方言时：一条 `system` 消息。 |
 | 后续的 `system` 和 `developer` 消息 | `Message { role: System }`（[系统消息](cross-format.md#系统消息)） | `developer`：形式标记 `role: "developer"`。 |
@@ -73,12 +73,12 @@ nav: OpenAI Chat
 
 ### 内容部分
 
-| Wire | KPP | 说明 |
+| 线路 | KPP | 说明 |
 |---|---|---|
 | `text` | `Block::Text` | 未知键：块的 extras。 |
 | `prompt_cache_breakpoint`（文本、图像和文件部分） | `cache: CacheHint { ttl: None }`，绑定到 Chat | 两者都标记可复用前缀的结尾；TTL 来自 `prompt_cache_options`。只有来自 Chat 的提示会被发回；来自其他方言的提示会被丢弃（[缓存提示](cross-format.md#缓存提示)）。`mode` 不是 `explicit` 时：形式标记 `mode`。 |
 | `image_url.url`（`https:`） | `Block::Image { source: Url }` | |
-| `image_url.url`（`data:<type>[;params];base64,<data>`，RFC 2397，scheme 和 `base64` 大小写均可） | `Block::Image { source: Base64 }` | 不是 `data:<type>;base64` 的头部，例如带参数（`;name=a.png`）或大写，会在形式标记 `data_url` 中原样保留，`file.file_data` 也一样。不是 base64 或没有媒体类型的 data URL 仍为 `Url`。 |
+| `image_url.url`（`data:<type>[;params];base64,<data>`，RFC 2397，协议名和 `base64` 大小写均可） | `Block::Image { source: Base64 }` | 不是 `data:<type>;base64` 的头部，例如带参数（`;name=a.png`）或大写，会在形式标记 `data_url` 中原样保留，`file.file_data` 也一样。不是 base64 或没有媒体类型的 data URL 仍为 `Url`。 |
 | `image_url.detail` | extras `image_url.detail` | 在 [Extras 允许列表](cross-format.md#extras)中：对其他方言静默丢弃。 |
 | `file.file_data`（`data:` URL） | `Block::Document { source: Base64 }` | 裸 base64 被视为媒体类型 `application/pdf`（OpenAI 文件输入指南中唯一的类型），带形式标记 `bare_file_data`，写回时仍为裸值。 |
 | `file.file_id` | `Block::Document { source: FileId }`，绑定到 OpenAI 的文件存储（[文件](cross-format.md#文件)） | 同时有 `file_data` 时：extras `file.file_id`。 |
@@ -96,16 +96,16 @@ nav: OpenAI Chat
 名称以 `header:` 开头或包含 `.` 的未知键无法承载，因为 KPP 用这种写法表示请求头和键路径。凡是编解码器逐键读取对象的地方都会拒绝它：
 
 - 请求体、`stream_options`、类型为 `text`、`json_object` 或 `json_schema` 的 `response_format` 及其 `json_schema`；
-- function 工具及其 `function`，以及具名的 `tool_choice` 及其 `function`；
+- 函数工具及其 `function`，以及具名的 `tool_choice` 及其 `function`；
 - `system`、`developer`、`user`、`assistant` 和 `tool` 消息；
 - `text`、`refusal`、`image_url` 和 `file` 部分及其 `image_url`、`file` 和 `prompt_cache_breakpoint` 对象；
-- function 工具调用及其 `function`。
+- 函数工具调用及其 `function`。
 
-此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``。超过 64 字节的名称会被截断并以 `…` 结尾。整体保留的对象，例如未知部分、工具和工具选择、custom 工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
+此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``。超过 64 字节的名称会被截断并以 `…` 结尾。整体保留的对象，例如未知部分、工具和工具选择、自定义（custom）工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
 
 ### 工具调用（`ChatCompletionMessageToolCall`）
 
-| Wire | KPP | 说明 |
+| 线路 | KPP | 说明 |
 |---|---|---|
 | `id`、`function.name` | `ToolCallBlock.id`、`.name` | Kaeso 改写过的名称在解码回复时映射回原名。 |
 | `function.arguments` | 原始的 `ToolCallBlock.arguments` | 字符串中的 JSON 文本，逐字节保留。不是有效 JSON 或带有首尾空白的文本，其字面值保留在形式标记 `arguments` 中；此时 KPP 对空白文本存 `{}`，否则把文本存为 JSON 字符串。按照 KPP 的约定，`ToolCallBlock.arguments` 中的 JSON 字符串表示服务商发送的是非 JSON 文本，因此对来自其他方言的调用，以字符串的内容作为 `arguments` 发送；对象、数组和其他 JSON 值则以其 JSON 文本发送。 |
@@ -114,12 +114,12 @@ nav: OpenAI Chat
 
 ## 回复：`CreateChatCompletionResponse`
 
-| Wire 字段 | KPP | 说明 |
+| 线路字段 | KPP | 说明 |
 |---|---|---|
 | `id`、`model` | `Response.id`、`.model` | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `object` | 无 | 始终为 `chat.completion`；其他值或没有该字段：形式标记 `object`。 |
 | `created`、`service_tier`、`system_fingerprint`、`metadata`、`moderation` | extras | extras 中没有 `created` 的回复（例如来自其他方言的回复）取 `EncodeCtx::created_at`，没有时为 `0`。 |
-| `choices` | `choices[0]` | 多于一个 choice：`Unsupported`（`n`）；没有 choice：`ProviderError`；`index` 不为 0：extras `choice.index`。 |
+| `choices` | `choices[0]` | 多于一个选项（choice）：`Unsupported`（`n`）；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。 |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`：verbatim。 |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
@@ -135,7 +135,7 @@ nav: OpenAI Chat
 
 KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 
-| Wire | KPP |
+| 线路 | KPP |
 |---|---|
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
@@ -152,19 +152,19 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 
 裸的 `data:` 帧，每帧一个 JSON chunk，以 `data: [DONE]` 结束。
 
-| Wire | KPP 事件 | 说明 |
+| 线路 | KPP 事件 | 说明 |
 |---|---|---|
-| 第一个 chunk | `ResponseStart { id, model }` | `created`、`service_tier`、`system_fingerprint`：extras；`object` 不是 `chat.completion.chunk` 或没有该字段时：形式标记 `object`。第一个 chunk 没有内容且 `id` 或 `model` 为空或缺失时，开始事件以及其后没有内容的 chunk 会被暂扣，直到两个值都已知或某个 chunk 带有内容（块增量或回复增量）；随后开始事件带着届时已知的值发出，每个值取自第一个给出非空值的 chunk。 |
+| 第一个 chunk | `ResponseStart { id, model }` | `created`、`service_tier`、`system_fingerprint`：extras；`object` 不是 `chat.completion.chunk` 或没有该字段时：形式标记 `object`。第一个 chunk 没有内容且 `id` 或 `model` 为空或缺失时，开始事件以及其后没有内容的 chunk 会被暂缓输出，直到两个值都已知或某个 chunk 带有内容（块增量或回复增量）；随后开始事件带着届时已知的值发出，每个值取自第一个给出非空值的 chunk。 |
 | 每个 chunk 中的 `id`、`object`、`created`、`model`、`service_tier`、`system_fingerprint` | 无 | 外层字段会重复出现。某个 chunk 的外层字段与编码器根据 `ResponseStart` 重建的不同时，形式标记 `chunk.env` 保留该 chunk 的值，`chunk.env_absent` 保留它缺少的键，因此每个 chunk（包括第一个）都按收到时的样子写回。一致的 chunk 跟随 `ResponseStart`，因此在那里改写 `id` 或 `model` 的网关会一并改写它们。 |
 | `choices[0].delta.role` | 形式标记 `chunk.role` | 来自其他方言时，回复一开始流就以一个角色 chunk 开头：`delta: {"role": "assistant", "content": "", "refusal": null}`，即 OpenAI 自己在文本回复中发送的第一个 chunk，这样模型思考时应用也能收到流的消息（[保活消息](cross-format.md#保活消息)）。 |
 | `choices[0].delta.content` | 一次 `BlockStart(Text)`，然后是 `BlockDelta(Text)` | 每一片都保留，包括 `""`。 |
 | `choices[0].delta.refusal` | 一次 `BlockStart(Refusal)`，然后是 `BlockDelta(Refusal)` | |
-| `choices[0].delta.tool_calls[]`，新的 `index` | `BlockStart(ToolCall { id, name })` + 针对 `arguments` 的 `BlockDelta(ToolArguments)` | KPP 块索引按块开始的顺序排列；Chat 的 `index` 映射到 KPP 索引。改写过的名称会映射回原名。结构差异（缺少 `id`、`type`、`function`、`name` 或 `arguments`，或出现意外的 `index`）：形式标记 `tc`。未知键：extras `tool_call.<key>` 和 `tool_call.function.<key>`。`type` 不是 `function`：`BlockStart(Unknown)`，其后续条目为 `BlockDelta(Unknown)`。条目没有非空的 `id` 或 `name`（一些兼容 OpenAI 的服务商在后面的 chunk 中才发送）：`BlockStart` 及其后的每个事件都会被暂扣，直到两者都已到达、该块结束，或流结束或中断；之后头部带有后到的 `id` 和 `name`，名称映射回原名。第一个条目中为 `""` 的 `id` 或 `name` 由形式标记 `tc` 保留。 |
+| `choices[0].delta.tool_calls[]`，新的 `index` | `BlockStart(ToolCall { id, name })` + 针对 `arguments` 的 `BlockDelta(ToolArguments)` | KPP 块索引按块开始的顺序排列；Chat 的 `index` 映射到 KPP 索引。改写过的名称会映射回原名。结构差异（缺少 `id`、`type`、`function`、`name` 或 `arguments`，或出现意外的 `index`）：形式标记 `tc`。未知键：extras `tool_call.<key>` 和 `tool_call.function.<key>`。`type` 不是 `function`：`BlockStart(Unknown)`，其后续条目为 `BlockDelta(Unknown)`。条目没有非空的 `id` 或 `name`（一些兼容 OpenAI 的服务商在后面的 chunk 中才发送）：`BlockStart` 及其后的每个事件都会被暂缓输出，直到两者都已到达、该块结束，或流结束或中断；之后头部带有后到的 `id` 和 `name`，名称映射回原名。第一个条目中为 `""` 的 `id` 或 `name` 由形式标记 `tc` 保留。 |
 | `choices[0].delta.tool_calls[]`，已知的 `index` | `BlockDelta(ToolArguments)` | 重复或后到的 `id`、`type` 或 `name`：形式标记 `tc`。 |
 | `choices[0].finish_reason` | 对每个打开的块发出 `BlockStop`，然后是 `ResponseDelta { stop }` | 映射与回复中相同。 |
 | `usage`（`choices: []` 的 chunk） | `ResponseDelta { usage }` | 用量按[用量](#用量completionusage)处理，保留原始对象。`choices` 为空或缺失：形式标记 `chunk.ch`。 |
 | `usage: null`、`logprobs: null`、`finish_reason: null`、`content: null`、`refusal: null` | 形式标记 `chunk.kv`、`cv`、`dv` | |
-| `choices[0].logprobs`、choice 中的未知键 | 该 chunk 第一个事件上的 extras `choice.<key>` | |
+| `choices[0].logprobs`、选项中的未知键 | 该 chunk 第一个事件上的 extras `choice.<key>` | |
 | `delta.audio`、`delta.function_call`、delta 中的未知键 | extras `delta.<key>` | 第一个之后完全没有类型化内容的 chunk 是一个 `Extra`（`{"event": null, "data": <chunk>}`）。 |
 | `obfuscation` | 形式标记 `chunk.obf` | 事件来自其他方言时不发送给应用。 |
 | `moderation`、chunk 中的未知键 | 该 chunk 第一个事件上的 extras | |
@@ -173,13 +173,13 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | 一些兼容 OpenAI 的服务商发送的、带数据的 `event: error` 帧 | `Error` | 像不带状态码的错误体一样解码；编码为 `data:` 帧。没有数据时，这样的帧是一个 `Extra`。 |
 | 不是 JSON 的 `data:` 帧、Kaeso 无法读取的 chunk | `Error`（`ProviderError`） | 解码器停止。 |
 | SSE 注释、没有数据或数据为空的帧、其他具名事件、`[DONE]` 之后的帧 | `Extra`（`{"comment"}` 或 `{"event", "data", "text", "id", "retry", "other"}`，原帧没有数据时不含 `data`，数据不是 JSON 时带有 `text: true`） | 仅限同一方言；按收到时的样子写回。 |
-| 多个 choice、`index` 不为 0 的 choice | 带 `Unsupported`（`n`）的 `Error` | |
+| 多个选项、`index` 不为 0 的选项 | 带 `Unsupported`（`n`）的 `Error` | |
 
 chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`（`n` 是来自该 chunk 的事件数，另加上面的结构标记），其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]`、错误），打开的 chunk 就会被写出，因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后；`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。
 
-SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。chunk 的 SSE `id`、`retry` 和未知字段（OpenAI 不会发送）以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中；该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件：它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只重放给 Chat 应用。
+SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。chunk 的 SSE `id`、`retry` 和未知字段（OpenAI 不会发送）以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中；该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件：它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只回放给 Chat 应用。
 
-OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `function.name`，但 schema 允许它们出现在后面的 chunk 中，一些兼容 OpenAI 的服务商也确实在那里发送 `id` 和 `name`，而且之前的第一个 chunk 是 `choices: []`，`id` 和 `model` 为空。Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂扣开始事件和该调用，直到知道这些值；事件的顺序从不改变。保持在本格式内的流会原样重放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
+OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `function.name`，但 schema 允许它们出现在后面的 chunk 中，一些兼容 OpenAI 的服务商也确实在那里发送 `id` 和 `name`，而且之前的第一个 chunk 是 `choices: []`，`id` 和 `model` 为空。Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂缓输出开始事件和该调用，直到知道这些值；事件的顺序从不改变。保持在本格式内的流会原样回放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
 
 来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配，推理、引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。在这些内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们：其他方言的每个额外事件（例如 Anthropic `ping`）对应一条，每 1,024 字节隐藏文本对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）：此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
@@ -190,7 +190,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | 信号 | `ErrorKind` | 对来自其他地方的 KPP 错误的编码 |
 |---|---|---|
 | `code: context_length_exceeded` | `ContextTooLong` | 400 `invalid_request_error`，code `context_length_exceeded` |
-| `type` 或 `code` 为 `insufficient_quota`、计费相关的 code | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
+| `type` 或 `code` 为 `insufficient_quota`、计费相关的错误码 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
 | `code` `server_is_overloaded` 或 `service_unavailable_error` | `Overloaded` | 见 503 |
 | `code` `content_policy_violation`、`content_filter`、`bio_policy`、`cyber_policy`、`misalignment_policy_violation` 或 `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`，code `content_policy_violation` |
 | 400、409、422 | `InvalidRequest`（编码时还有 `Unsupported`） | 400 `invalid_request_error` |
@@ -204,9 +204,9 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |
 | `error.misalignment`（`Error` schema 中的 `MisalignmentErrorDetailsResource`）、`error` 中的未知键 | 保留在 `KppError.raw` 中（整个错误体） | 只有错误来自 Chat 时才会再次发送。 |
 
-表中列出的 code（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的 code（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的 code 以及 `server_error`）只在没有状态码的流错误中起决定作用。
+表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。
 
-Responses 和 Embeddings 编解码器使用同一张 code 表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
+Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
 `retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息；否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
 
@@ -220,7 +220,7 @@ Responses 和 Embeddings 编解码器使用同一张 code 表（`openai_response
 
 ### `Model` ⇄ `kaeso_kpp::ModelInfo`
 
-| Wire 字段 | KPP | KPP 没有值时的编码 |
+| 线路字段 | KPP | KPP 没有值时的编码 |
 |---|---|---|
 | `id` | `id` | （必填） |
 | `object`（`"model"`） | 形式标记 `object`，仅在不同时记录 | `"model"` |
@@ -235,7 +235,7 @@ Responses 和 Embeddings 编解码器使用同一张 code 表（`openai_response
 
 ### `ListModelsResponse` ⇄ `ModelList`
 
-| Wire 字段 | KPP |
+| 线路字段 | KPP |
 |---|---|
 | `object`（`"list"`） | 形式标记 `object`，仅在不同时记录 |
 | `data` | `models` |

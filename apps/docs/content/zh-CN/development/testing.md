@@ -85,11 +85,11 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 
 ### 文档站点
 
-单元测试和端到端套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，所以编辑文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对 fixture 的生产构建运行 Playwright（包括 axe），覆盖每种语言和手机宽度。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建检查。图表渲染器的测试在 Chromium 中绘制，因此 `pnpm test` 需要 Playwright 安装的 Chromium。
+单元测试和端到端套件使用 `apps/docs/e2e/fixtures/content` 中的 fixture 页面，从不使用真实页面，所以编辑文档永远不会让测试失败。`pnpm --filter kaeso-docs e2e` 针对 fixture 的生产构建运行 Playwright（包括 axe），覆盖每种语言和手机宽度。真实页面由 `pnpm --filter kaeso-docs check:content` 和构建检查。图示渲染器的测试在 Chromium 中绘制，因此 `pnpm test` 需要 Playwright 安装的 Chromium。
 
 ### UI 库与展示站点
 
-组件测试在 happy-dom 中使用 Testing Library 运行。展示站点没有单元测试。它的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它检查两种主题下的 axe 无障碍、键盘和焦点环、令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。
+组件测试在 happy-dom 中使用 Testing Library 运行。展示站点没有单元测试。它的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它在两种主题下用 axe 检查无障碍，并检查键盘操作和焦点环。它还检查令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。
 
 ## Rust
 

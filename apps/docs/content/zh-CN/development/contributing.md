@@ -17,7 +17,7 @@ order: 2
 | 模板 | 用于 |
 | --- | --- |
 | Bug report | Kaeso 做了不该做的事，或没有做该做的事。模板会询问版本、所属领域、发生了什么、最小复现以及 Kaeso 的运行方式。对于界面上看到的问题，还会询问语言、主题、宽度和浏览器 |
-| Feature request | 新功能、对现有功能的修改，或文档应当说明的内容。涉及 wire 字段时，附上服务商的文档或 OpenAPI 模式链接 |
+| Feature request | 新功能、对现有功能的修改，或文档应当说明的内容。涉及线路字段时，附上服务商的文档或 OpenAPI 模式链接 |
 
 粘贴任何内容之前，先删除其中的 API 密钥、服务商密钥、会话 Cookie 和个人数据。
 
@@ -44,7 +44,7 @@ cargo run -q -p kaeso -- openapi > openapi.json
 
 ## 撰写标题
 
-标题会成为这个拉取请求在变更日志中的那一行，所以要写成一句话，说明对使用、运行 Kaeso 或基于它构建的人有什么变化。例如：“Keep dialogs centered and resize them smoothly when their content changes”。不要修改 `CHANGELOG.md`：发布工作流会根据已合并的拉取请求生成它。
+标题会成为这个拉取请求在变更日志中的那一行，所以要写成一句话，说明对使用、运行 Kaeso 或基于它构建的人有什么变化。例如：“Keep dialogs centered and resize them smoothly when their content changes”。不要修改 `CHANGELOG.md`：Release 工作流会根据已合并的拉取请求生成它。
 
 **Labels** 工作流会根据改动的文件设置领域标签（例如 `area: console`）和 `internal`。当标题的第一个词选不中正确的分节时，维护者会设置类型标签，例如 `fixed`（[标签](releasing.md#标签)）。
 
@@ -62,7 +62,7 @@ cargo run -q -p kaeso -- openapi > openapi.json
 gh extension install github/gh-stack
 ```
 
-在 `dev` 上开始一个堆栈，为每项变更在下一个分支之上添加一个分支，然后提交拉取请求：
+在 `dev` 上开始一个堆栈，为每项变更在下方分支之上添加一个分支，然后提交拉取请求：
 
 ```bash
 gh stack init
@@ -80,7 +80,7 @@ gh stack submit
 - **测试断言的是人或应用看到的内容。** 测试是确定性的：注入时钟，不使用 sleep。覆盖率阈值只升不降。
 - **界面只使用 `@logicplanes/kaeso-ui`**，`className` 只用于布局，每个词都有三种语言（[翻译](translations.md)）。
 - **JavaScript 只用 pnpm**，一次性工具用 `pnpm dlx`。Cargo 构建 Rust 代码，锁文件只通过各自的工具修改。
-- **仓库中不放密钥或个人数据。** 使用 `kaeso.example.com`、`sk-kso-…` 和 `owner@example.com` 这样的占位符。
+- **仓库中不放机密信息或个人数据。** 使用 `kaeso.example.com`、`sk-kso-…` 和 `owner@example.com` 这样的占位符。
 - **仓库中不放计划。** 路线图、待办事项和未决问题都放到 issue 中。
 
 网关有自己的附加规则，例如不允许 panic、金额不使用浮点数（[网关规则](architecture/gateway.md#规则)）。KPP 也是如此（[设计原则](kpp/index.md#设计原则)）。
@@ -105,7 +105,7 @@ KPP 的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`i
 
 ## 下一步
 
-- [本地环境搭建](local-setup.md)：让检出带着示例数据运行起来。
+- [本地环境搭建](local-setup.md)：让本地检出带着示例数据运行起来。
 - [测试](testing.md)：找到覆盖本次变更的测试套件。
 - [编写文档](documentation.md)：更新变更涉及的页面。
 - [翻译](translations.md)：为新文本补充德语和中文。

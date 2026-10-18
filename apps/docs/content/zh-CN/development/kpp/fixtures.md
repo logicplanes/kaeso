@@ -4,7 +4,7 @@ description: 编解码器测试所用的真实载荷，以及如何从服务商�
 order: 8
 ---
 
-每项编解码器变更都从一个测试样本（fixture）开始：一个真实的请求体、回复、流或错误，位于 `crates/kaeso-codecs/fixtures`。每个 fixture 都会经过自己的编解码器做往返测试；跨方言矩阵把每个生成类 fixture 送入其他每个方言；[SDK 一致性](../testing.md#sdk-一致性)测试套件把它们提供给官方 SDK；网关的模拟服务商用它们作答；模糊测试目标也以它们为起点。
+每项编解码器变更都从一个测试样本（fixture）开始：一个真实的请求体、回复、流或错误，位于 `crates/kaeso-codecs/fixtures`。每个 fixture 都会经过自己的编解码器做往返测试，跨方言矩阵把每个生成类 fixture 送入其他每个方言。[SDK 一致性](../testing.md#sdk-一致性)测试套件把它们提供给官方 SDK，网关的模拟服务商用它们作答，模糊测试目标也以它们为起点。
 
 ## 目录结构
 
@@ -71,6 +71,6 @@ cargo xtask record openai_responses --count --all
 - 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
 - `ANTHROPIC_BASE_URL` 和 `OPENAI_BASE_URL` 用于更改 API 地址。
 - API 密钥从环境中读取，从不写入文件；请求头也从不保存。
-- 写入之前，它会从所有携带云签名凭据的 URL 中删除查询字符串（AWS Signature Version 4、Google Cloud 签名 URL、Azure 共享访问签名），例如网页搜索可能返回的预签名链接；其余内容逐字节保持不变。
+- 写入之前，它会从所有携带云签名凭据的 URL 中删除查询字符串（AWS Signature Version 4、Google Cloud 签名 URL、Azure 共享访问签名）。网页搜索可能返回这类预签名链接。其余内容逐字节保持不变。
 
 代码位于 `crates/xtask/src/record.rs`。提交之前要审查每个录制的文件：其中包含模型输出的任何内容，并且不得含有个人数据。往返测试会自动发现录制的 fixture。

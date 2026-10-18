@@ -16,7 +16,7 @@ order: 1
 
 ## 启用 Corepack
 
-Corepack 随 Node.js 一起提供，会提供仓库固定的 pnpm 版本：
+Corepack 随 Node.js 一起安装，提供仓库固定的确切 pnpm 版本：
 
 ```bash
 corepack enable
