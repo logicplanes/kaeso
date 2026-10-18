@@ -21,7 +21,7 @@ order: 2
 | Platform key | `sk-kso-org-…`: a key that manages a whole organization on the Platform API and never calls models |
 | Provider key | The organization's OpenAI or Anthropic key, which Kaeso uses to call the provider; apps never see it ([provider keys](../console/provider-keys.md)) |
 | Master key | The install's own key that encrypts the secrets it stores, such as provider keys ([backups and master keys](../self-hosting/backups.md)) |
-| Catalogue | The models a project may call, with their prices, limits and capabilities from models.dev ([models and aliases](../console/models-and-aliases.md)) |
+| Catalogue | The models a project may call, with their prices, limits and capabilities: from models.dev by default, or set in the project for a custom model or an override ([models and aliases](../console/models-and-aliases.md)) |
 | Alias | A project's own name for a model in its catalogue, such as `fast` |
 | Limit | A request or token rate, or a token or spend budget, for a project, a member or a key; a hard budget refuses requests, a soft one only alerts ([limits and budgets](../console/limits-and-budgets.md)) |
 | Request log | The record of one model request: status, tokens, cost, timing and, where kept, its content ([request logs](../console/request-logs.md)) |

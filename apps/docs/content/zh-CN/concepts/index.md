@@ -21,7 +21,7 @@ order: 2
 | 平台密钥 | `sk-kso-org-…`：通过 Platform API 管理整个组织的密钥，从不调用模型 |
 | 服务商密钥 | 组织的 OpenAI 或 Anthropic 密钥，Kaeso 用它调用服务商；应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
 | 主密钥 | 安装自己的密钥，用于加密它存储的机密信息，例如服务商密钥（[备份和主密钥](../self-hosting/backups.md)） |
-| 目录 | 项目可以调用的模型，以及来自 models.dev 的价格、限制和能力（[模型和别名](../console/models-and-aliases.md)） |
+| 目录 | 项目可以调用的模型及其价格、限制和能力：默认来自 models.dev，也可以在项目中为自定义模型或覆盖值设定（[模型和别名](../console/models-and-aliases.md)） |
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast` |
 | 限额 | 针对项目、成员或密钥的请求速率或 Token 速率，或 Token 预算或费用预算；硬预算会拒绝请求，软预算只发出提醒（[限额和预算](../console/limits-and-budgets.md)） |
 | 请求日志 | 一个模型请求的记录：状态、Token、费用、耗时，以及在保留时的内容（[请求日志](../console/request-logs.md)） |

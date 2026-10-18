@@ -21,7 +21,7 @@ Der [Ablauf einer Anfrage](request-flow.md) verfolgt eine Modellanfrage durch da
 | Plattform-Schlüssel | `sk-kso-org-…`: ein Schlüssel, der eine ganze Organisation über die Platform API verwaltet und nie Modelle aufruft |
 | Anbieter-Schlüssel | Der OpenAI- oder Anthropic-Schlüssel der Organisation, mit dem Kaeso den Anbieter aufruft; Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Geheimnisse verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
-| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten aus models.dev ([Modelle und Aliasse](../console/models-and-aliases.md)) |
+| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten: standardmäßig aus models.dev, oder im Projekt festgelegt für ein eigenes Modell oder eine Überschreibung ([Modelle und Aliasse](../console/models-and-aliases.md)) |
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast` |
 | Limit | Eine Anfrage- oder Token-Rate oder ein Token- oder Kostenbudget, für ein Projekt, ein Mitglied oder einen Schlüssel; ein hartes Budget lehnt Anfragen ab, ein weiches warnt nur ([Limits und Budgets](../console/limits-and-budgets.md)) |
 | Anfrageprotokoll | Der Eintrag zu einer Modellanfrage: Status, Tokens, Kosten, Zeiten und, wo aufbewahrt, ihr Inhalt ([Anfrageprotokolle](../console/request-logs.md)) |
