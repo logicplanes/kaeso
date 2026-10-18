@@ -28,9 +28,7 @@ describe("what's new", () => {
     await user.click(within(dialog).getByRole("button", { name: "Next" }));
     expect(within(dialog).getByRole("img", { name: "Kaeso 40.4.0" })).toBeInTheDocument();
     expect(within(dialog).queryByText("Everything new in 40.4.0.")).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Back" }));
-    expect(within(dialog).getByRole("img", { name: "Kaeso 40.5.0" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Next" }));
+    expect(within(dialog).queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     expect(requests("POST", "me/whats-new/seen")).toHaveLength(0);
     on("GET", "me/whats-new", { current: "40.5.0", seen: "40.5.0", releases: [] });
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));

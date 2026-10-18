@@ -57,7 +57,6 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
               </Button>
             )}
           </div>
-          {index > 0 && <Button onClick={() => go(index - 1)}>{t("shell.whatsNew.back", "Back")}</Button>}
           {last ? (
             <Button variant="primary" onClick={onOpenChange}>
               {t("shell.whatsNew.continue", "Continue")}
