@@ -53,6 +53,23 @@ describe("CodeBlock", () => {
     expect(within(screen.getByRole("tabpanel", { name: "curl" })).getByText("curl")).not.toHaveTextContent("https");
   });
 
+  it("opens on the tab it is told, reports a choice, and keeps its own when it lacks the label", async () => {
+    const tabs = [
+      { label: "curl", code: "curl https://kaeso.example.com", lang: "bash" as const },
+      { label: "Python", code: "print('hi')", lang: "python" as const },
+    ];
+    const chosen: string[] = [];
+    const { rerender } = render(<CodeBlock tabs={tabs} tab="Python" onTabChange={(label) => chosen.push(label)} />);
+    expect(screen.getByRole("tab", { name: "Python" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Python" })).toHaveTextContent("print('hi')");
+    await userEvent.click(screen.getByRole("tab", { name: "curl" }));
+    expect(chosen).toEqual(["curl"]);
+    rerender(<CodeBlock tabs={tabs} tab="curl" onTabChange={(label) => chosen.push(label)} />);
+    expect(screen.getByRole("tabpanel", { name: "curl" })).toHaveTextContent("curl https://kaeso.example.com");
+    rerender(<CodeBlock tabs={tabs} tab="TypeScript" />);
+    expect(screen.getByRole("tab", { name: "curl" })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("moves between tabs with the arrow keys and names the code by its tab", async () => {
     render(
       <CodeBlock

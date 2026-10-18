@@ -23,6 +23,8 @@ export interface CodeBlockProps {
   code?: string | undefined;
   lang?: CodeLang | undefined;
   tabs?: CodeTab[] | undefined;
+  tab?: string | undefined;
+  onTabChange?: ((label: string) => void) | undefined;
   title?: ReactNode | undefined;
   lineNumbers?: boolean | undefined;
   highlightLines?: number[] | undefined;
@@ -34,10 +36,31 @@ export interface CodeBlockProps {
 }
 
 export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function CodeBlock(
-  { code = "", lang = "ts", tabs, title, lineNumbers, highlightLines = [], collapseAfter = 24, surface = "well", copy = true, wrap = false, className },
+  {
+    code = "",
+    lang = "ts",
+    tabs,
+    tab: chosen,
+    onTabChange,
+    title,
+    lineNumbers,
+    highlightLines = [],
+    collapseAfter = 24,
+    surface = "well",
+    copy = true,
+    wrap = false,
+    className,
+  },
   ref,
 ) {
-  const [tab, setTab] = useState(0);
+  const [own, setOwn] = useState(0);
+  const match = chosen === undefined ? -1 : (tabs?.findIndex((item) => item.label === chosen) ?? -1);
+  const tab = match >= 0 ? match : own;
+  const choose = (i: number) => {
+    setOwn(i);
+    const label = tabs?.[i]?.label;
+    if (label !== undefined) onTabChange?.(label);
+  };
   const t = useUiText();
   const current = tabs?.[tab] ?? { label: "", code, lang };
   const text = current.code.replace(/\n$/, "");
@@ -81,7 +104,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
 
   return (
     <div ref={ref} className={cn("group/code relative min-w-0", KAESO_CODE_BLOCK_VARIANTS.surface[surface].classes, className)}>
-      <BaseTabs.Root value={tab} onValueChange={(v: unknown) => setTab(Number(v))}>
+      <BaseTabs.Root value={tab} onValueChange={(v: unknown) => choose(Number(v))}>
         {(title || tabs) && (
           <div className="flex h-44 items-center gap-4 px-8 hairline-b">
             {title && <span className="px-8 mono text-small text-fg-secondary">{title}</span>}

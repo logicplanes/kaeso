@@ -32,6 +32,24 @@ curl https://kaeso.example.com/v1/messages \
 
 The official SDKs work unchanged; only the base URL and the key differ.
 
+```bash tab="curl"
+curl https://kaeso.example.com/v1/models -H "x-api-key: $KAESO_KEY"
+```
+
+```python tab="Python"
+from openai import OpenAI
+
+client = OpenAI(base_url="https://kaeso.example.com/v1", api_key="sk-kso-…")
+print(client.models.list())
+```
+
+```ts tab="TypeScript"
+import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_KEY });
+console.log(await client.models.list());
+```
+
 ```python
 from anthropic import Anthropic
 
@@ -124,6 +142,7 @@ A language without highlighting shows as plain text:
 public_url = "https://kaeso.example.com"
 ```
 
----
+## Next steps
 
-Next, connect a provider: [Provider keys](provider-keys.md).
+- [Provider keys](provider-keys.md): Connect a provider so the key can call its models.
+- [Models](../reference/models.md#aliases): The names a key may call, aliases included.

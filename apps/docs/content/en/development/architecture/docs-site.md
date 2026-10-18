@@ -42,7 +42,7 @@ Frontmatter has exactly four fields: `title` and `description` (one short senten
 | --- | --- |
 | `frontmatter.ts` | The four fields, with a message for each mistake; one sentence per description, in Latin and Chinese punctuation |
 | `slug.ts` | GitHub's heading anchors (`## Rate limits` is `#rate-limits`, repeats get `-1`, `-2`) and addresses from file names |
-| `compile.ts` | One page: marked's lexer with raw HTML turned off, then the page format of `src/markdown/ast.ts`; links checked; callouts; search words |
+| `compile.ts` | One page: marked's lexer with raw HTML turned off, then the page format of `src/markdown/ast.ts`; links checked; callouts; code groups from consecutive fences with a `tab`; link cards from lists of page links; search words |
 | `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes, search |
 | `docs.ts` | Every language: a site each, with its prefix and labels, and the check that they hold the same pages in the same order |
 | `changelog.ts` | The changelog page, made from `CHANGELOG.md` in every language ([the changelog](#the-changelog)) |
@@ -108,11 +108,11 @@ The unit tests and the e2e suite read `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_C
 
 **The frame** is the console's: `AppFrame` with its Skip to content link and `Sidebar`, the wordmark alone at the top left (28px in and 28px down), the panel inset on the chrome, and below 1024px the phone bar and navigation sheet; the phone bar holds the search button beside the navigation toggle.
 
-**A page** is laid out like the console's settings pages: a `title-lg` title and a `body-lg` description in a 640px column. Text is `body-lg`, headings are `title` (`##`) and `title-sm` (`###`), code is a `CodeBlock`, callouts are `Banner`s, and tables are `Table`s inside a horizontal `ScrollArea`. From 1280px, "On this page" (`TableOfContents`) stands to the right; its column is kept on pages without it, so the text never moves between pages.
+**A page** is laid out like the console's settings pages: a `title-lg` title and a `body-lg` description in a 640px column. Text is `body-lg`, headings are `title` (`##`) and `title-sm` (`###`), code is a `CodeBlock`, a code group is one `CodeBlock` with a tab per fence, each heading is a `Link` to itself whose `#` shows on hover and keyboard focus, a list of page links is a grid of `Link` cards, callouts are `Banner`s, and tables are `Table`s inside a horizontal `ScrollArea`. From 1280px, "On this page" (`TableOfContents`) stands to the right; its column is kept on pages without it, so the text never moves between pages.
 
 **Loading.** Hovering or focusing a link loads the page's chunk (`defaultPreload: "intent"`), so pages open at once. The search (`CommandPalette`) and its index load a moment after the first paint. The search button in the sidebar or the phone bar, ⌘K or Ctrl+K opens it, and anything typed before it has loaded becomes its query. It finds pages by title, description and words, headings by their own words, and offers the theme and the other languages.
 
-**Language and theme.** The first visit to an English address follows the browser's languages and moves to `/de` or `/zh-CN` without a navigation. Choosing a language in the menu or the search opens the same page in that language and is remembered as `kaeso-docs:locale`. The theme is the library's: system, light or dark, applied before the first paint by the theme script.
+**Language and theme.** The first visit to an English address follows the browser's languages and moves to `/de` or `/zh-CN` without a navigation. Choosing a language in the menu or the search opens the same page in that language and is remembered as `kaeso-docs:locale`. The tab a reader chooses in a code group is remembered as `kaeso-docs:code-tab`: every group that has a tab of that name opens on it, on every page, and the group the reader clicked keeps its place on the screen while the groups above it change height. The theme is the library's: system, light or dark, applied before the first paint by the theme script.
 
 **Errors** are toasts. A page whose chunk can't load keeps the frame, shows an empty state with "Try again" and explains in a toast; a search that can't load closes with a toast.
 

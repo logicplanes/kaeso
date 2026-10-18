@@ -32,6 +32,24 @@ curl https://kaeso.example.com/v1/messages \
 
 官方 SDK 无需修改即可使用，只需更换基础 URL 和密钥。
 
+```bash tab="curl"
+curl https://kaeso.example.com/v1/models -H "x-api-key: $KAESO_KEY"
+```
+
+```python tab="Python"
+from openai import OpenAI
+
+client = OpenAI(base_url="https://kaeso.example.com/v1", api_key="sk-kso-…")
+print(client.models.list())
+```
+
+```ts tab="TypeScript"
+import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_KEY });
+console.log(await client.models.list());
+```
+
 ```python
 from anthropic import Anthropic
 
@@ -124,6 +142,7 @@ sequenceDiagram
 public_url = "https://kaeso.example.com"
 ```
 
----
+## 后续步骤
 
-下一步，连接服务商：[服务商密钥](provider-keys.md)。
+- [服务商密钥](provider-keys.md)：连接服务商，让密钥可以调用它的模型。
+- [模型](../reference/models.md#别名)：密钥可以调用的名称，包括别名。

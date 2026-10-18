@@ -9,6 +9,14 @@ description: 密钥可以调用的模型名称及其别名。
 
 调用模型时可以使用原生名称（`claude-haiku-4-5`）、`provider/model`（`anthropic/claude-haiku-4-5`）或别名。
 
+```bash tab="curl"
+curl https://kaeso.example.com/v1/models/fast -H "x-api-key: $KAESO_KEY"
+```
+
+```python tab="Python"
+print(client.models.retrieve("fast"))
+```
+
 ## 别名
 
 别名是项目自己的名称，例如 `fast`，指向目录中的某个模型。

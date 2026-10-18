@@ -10,6 +10,19 @@ export type Inline =
   | { t: "link"; kind: "page" | "anchor" | "external" | "file"; href: string; title?: string; c: Inline[] }
   | { t: "img"; src: string; alt: string; title?: string; width?: number; height?: number };
 
+export interface CodeTab {
+  label: string;
+  lang: CodeLang;
+  code: string;
+}
+
+export interface LinkCard {
+  href: string;
+  kind: "page" | "anchor";
+  title: Inline[];
+  description: Inline[];
+}
+
 export interface ListItem {
   task?: boolean;
   checked?: boolean;
@@ -21,6 +34,8 @@ export type Block =
   | { t: "paragraph"; c: Inline[]; tight?: boolean }
   | { t: "list"; ordered: boolean; start: number; items: ListItem[] }
   | { t: "code"; lang: CodeLang; code: string; title?: string }
+  | { t: "codegroup"; tabs: CodeTab[] }
+  | { t: "links"; items: LinkCard[] }
   | { t: "diagram"; light: string; dark: string; width: number; height: number; title: string; description?: string }
   | { t: "quote"; c: Block[] }
   | { t: "callout"; kind: CalloutKind; c: Block[] }

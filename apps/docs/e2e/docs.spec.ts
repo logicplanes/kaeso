@@ -93,7 +93,7 @@ test("the sidebar opens pages in place, with their title and contents", async ({
   await expect(page).toHaveTitle("Keys and limits · Kaeso documentation");
   await expect(nav.getByRole("link", { name: "Keys and limits" })).toHaveAttribute("aria-current", "page");
   const toc = page.getByRole("navigation", { name: "On this page" });
-  await expect(toc.getByRole("link")).toHaveText(["Create a key", "From an SDK", "Limits", "Rate limits", "Budgets", "Checklist", "Notes"]);
+  await expect(toc.getByRole("link")).toHaveText(["Create a key", "From an SDK", "Limits", "Rate limits", "Budgets", "Checklist", "Notes", "Next steps"]);
   await expect(page.getByRole("heading", { name: "Keys and limits" })).toHaveCount(1);
 });
 

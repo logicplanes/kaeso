@@ -1,9 +1,11 @@
-import { Fragment, useId, type ReactNode } from "react";
+import { Fragment, useId, useRef, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
-import type { Block, CalloutKind, Inline, ListItem } from "./ast";
+import type { Block, CalloutKind, CodeTab, Inline, LinkCard, ListItem } from "./ast";
+import { chooseCodeTab, useCodeTab } from "./code-tab";
 
 type Size = "body-lg" | "body";
 interface Ctx {
@@ -12,6 +14,7 @@ interface Ctx {
   t: Translate;
   locale: Locale;
   cell?: boolean;
+  linkless?: boolean;
 }
 
 const CALLOUT: Record<CalloutKind, { key: MessageKey; tone: "neutral" | "info" | "success" | "warning" }> = {
@@ -80,6 +83,7 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
       case "br":
         return <br key={i} />;
       case "link": {
+        if (ctx.linkless) return <Fragment key={i}>{inline(x.c, ctx)}</Fragment>;
         const leaves = x.kind === "external" || x.kind === "file";
         const bare = x.kind === "external" && plainText(x.c).replace(/\/$/, "") === x.href.replace(/^mailto:/, "").replace(/\/$/, "");
         return (
@@ -127,6 +131,52 @@ export function diagramMinWidth(width: number): string | undefined {
   const least = width * DIAGRAM_SHRINK;
   if (least < DIAGRAM_MIN_WIDTHS[0][0]) return undefined;
   return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least && min <= width)?.[1] ?? "min-w-800";
+}
+
+const hasLink = (xs: Inline[]): boolean => xs.some((x) => x.t === "link" || ("c" in x && hasLink(x.c)));
+
+function scrollParent(el: HTMLElement): Element | null {
+  for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+    const { overflowY } = getComputedStyle(parent);
+    if ((overflowY === "auto" || overflowY === "scroll") && parent.scrollHeight > parent.clientHeight) return parent;
+  }
+  return document.scrollingElement ?? document.documentElement;
+}
+
+function CodeGroup({ tabs }: { tabs: CodeTab[] }) {
+  const chosen = useCodeTab();
+  const ref = useRef<HTMLDivElement>(null);
+  const choose = (label: string) => {
+    const el = ref.current;
+    const before = el?.getBoundingClientRect().top ?? 0;
+    flushSync(() => chooseCodeTab(label));
+    if (!el) return;
+    const moved = el.getBoundingClientRect().top - before;
+    if (moved !== 0) scrollParent(el)?.scrollBy(0, moved);
+  };
+  return <CodeBlock ref={ref} tabs={tabs} tab={chosen} onTabChange={choose} collapseAfter={0} />;
+}
+
+function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
+  const text: Ctx = { ...ctx, size: "body", linkless: true };
+  return (
+    <ul className="grid gap-12 sm:grid-cols-2">
+      {items.map((card, i) => (
+        <li key={i} className="flex min-w-0">
+          <Link href={card.href} variant="card" className="w-full min-w-0">
+            <Text as="span" variant="body" weight="medium" tone="inherit" className="wrap-break-word">
+              {inline(card.title, text)}
+            </Text>
+            {card.description.length > 0 && (
+              <Text as="span" variant="small" tone="secondary" className="text-pretty wrap-break-word">
+                {inline(card.description, text)}
+              </Text>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) {
@@ -189,7 +239,13 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
           weight="semibold"
           className={`${space} scroll-mt-24 text-balance wrap-break-word first:mt-0`}
         >
-          {inline(b.c, ctx)}
+          {hasLink(b.c) ? (
+            inline(b.c, ctx)
+          ) : (
+            <Link href={`#${b.id}`} variant="heading">
+              {inline(b.c, ctx)}
+            </Link>
+          )}
         </Text>
       );
     }
@@ -209,6 +265,10 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
         </Tag>
       );
     }
+    case "links":
+      return <LinkCards key={i} items={b.items} ctx={ctx} />;
+    case "codegroup":
+      return <CodeGroup key={i} tabs={b.tabs} />;
     case "code":
       return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} {...(b.title ? { title: b.title } : {})} />;
     case "quote":

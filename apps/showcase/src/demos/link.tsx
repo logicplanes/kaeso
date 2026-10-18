@@ -14,6 +14,8 @@ export const examples = [
   { id: "inline", title: "Inline", fn: "Inline" },
   { id: "external", title: "External", fn: "External" },
   { id: "variants", title: "Variants", fn: "Variants" },
+  { id: "heading", title: "Heading", fn: "HeadingLink" },
+  { id: "cards", title: "Next pages", fn: "Cards" },
 ];
 export function Inline() {
   return (
@@ -38,11 +40,38 @@ export function Variants() {
     </div>
   );
 }
+export function HeadingLink() {
+  return (
+    <h2 id="create-a-key" className="text-title font-semibold text-fg">
+      <Link href="#create-a-key" variant="heading">
+        Create a key
+      </Link>
+    </h2>
+  );
+}
+export function Cards() {
+  return (
+    <ul className="grid max-w-640 gap-12 sm:grid-cols-2">
+      <li className="flex">
+        <Link href="#" variant="card" className="w-full">
+          <span className="text-body font-medium">Calling models</span>
+          <span className="text-small text-fg-secondary">Call models from your app with the OpenAI and Anthropic SDKs.</span>
+        </Link>
+      </li>
+      <li className="flex">
+        <Link href="#" variant="card" className="w-full">
+          <span className="text-body font-medium">API keys</span>
+          <span className="text-small text-fg-secondary">Limit a key to the models and rates an app needs.</span>
+        </Link>
+      </li>
+    </ul>
+  );
+}
 export function States() {
   return (
     <Matrix
       title="Variants × states"
-      rows={[{ label: "inline" }, { label: "quiet" }, { label: "standalone" }]}
+      rows={[{ label: "inline" }, { label: "quiet" }, { label: "standalone" }, { label: "heading" }, { label: "card" }]}
       columns={[
         { label: "Rest", props: {} },
         { label: "Hover", props: { "data-force": "hover" } },
