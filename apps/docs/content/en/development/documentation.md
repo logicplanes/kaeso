@@ -85,6 +85,27 @@ Put the image next to the page or in an `images/` folder beside it, and give it 
 
 PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, and an image without alt text fails the build. Choose images that read on light and dark backgrounds; an SVG can switch its own colours with `@media (prefers-color-scheme: dark)`. Linking any other file in `content/` publishes that file. An image never shows a diagram: draw it as a [Mermaid block](#diagrams).
 
+## The README's recording
+
+The README opens with a short recording of the console in a light and a dark version, `.github/assets/demo-light.gif` and `.github/assets/demo-dark.gif`; GitHub shows the one that matches the reader's theme. `apps/console/scripts/demo.mjs` records both with Playwright against the development stack and its seeded organization, so they show only the mock provider, its placeholder keys and the seed's made-up people. It connects an Anthropic key on **Providers**, creates a key on **API keys**, sends a request with that key from a terminal panel it draws over the page, and waits on **Request logs**, with **Live** on, until the request arrives.
+
+To record them again, start from a freshly seeded stack with the console running, and install `ffmpeg` first, for example with `brew install ffmpeg`:
+
+```bash
+pnpm stack:down
+pnpm stack:up
+pnpm seed
+pnpm dev
+```
+
+Then, in a second terminal:
+
+```bash
+pnpm demo
+```
+
+The script records at 1280 × 800 with a device scale factor of 2, turns the frames into GIFs at 20 frames a second with one palette each, writes both into `.github/assets` and prints their sizes; keep each under 4 MB. It also runs on a stack it has recorded on before, removing the Anthropic key and archiving its own key first, but the earlier requests stay in the logs. The README links the GIFs on `dev`, so a new recording shows there once its pull request is merged.
+
 ## Callouts
 
 GitHub's alerts, with the kind alone on the first line:

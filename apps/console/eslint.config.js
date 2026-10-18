@@ -33,6 +33,10 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ["scripts/demo-page.mjs"],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     files: ["e2e/**/*.spec.ts"],
     rules: {
       "no-restricted-imports": [

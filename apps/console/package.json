@@ -29,7 +29,8 @@
     "e2e": "pnpm generate && playwright test",
     "stack:up": "node scripts/stack.mjs up",
     "stack:down": "node scripts/stack.mjs down",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "demo": "node scripts/demo.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "4.3.5",

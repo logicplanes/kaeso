@@ -85,6 +85,27 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 
 支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。请选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。图片从不用来展示图示：图示请写成 [Mermaid 代码块](#图示)。
 
+## README 中的录屏
+
+README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在 **服务商** 页面连接一个 Anthropic 密钥，在 **API 密钥** 页面创建一个密钥，从它叠加在页面上的终端面板用这个密钥发送一个请求，然后在开启 **实时** 的 **请求日志** 页面等待这个请求出现。
+
+重新录制时，先准备一个刚填充过种子数据的栈并运行控制台，并事先安装 `ffmpeg`，例如用 `brew install ffmpeg`：
+
+```bash
+pnpm stack:down
+pnpm stack:up
+pnpm seed
+pnpm dev
+```
+
+然后在第二个终端里运行：
+
+```bash
+pnpm demo
+```
+
+脚本以 1280 × 800、设备缩放比例 2 录制，把画面转成每秒 20 帧、各用一个调色板的 GIF，写入 `.github/assets` 并输出它们的大小；每个都应小于 4 MB。在已经录制过的栈上也能再次运行：它会先删除 Anthropic 密钥并归档自己的密钥，但之前的请求仍留在日志里。README 链接的是 `dev` 上的 GIF，因此新的录屏在其拉取请求合并后才会显示。
+
 ## 提示块
 
 使用 GitHub 的提示语法，第一行只写类型：

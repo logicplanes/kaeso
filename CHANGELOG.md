@@ -24,6 +24,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ### Changed
 
+- The README shows a short recording of the console, in a light and a dark version, instead of a screenshot: connecting a provider key, creating an API key, sending a request and watching it arrive in the request logs. `pnpm demo` records it again on the seeded development stack.
 - The showcase's changelog shows the same releases, marks and links as the documentation's, with its section names in the page's language, and shows changes that aren't released yet only when there are any, marked as such.
 - The documentation site's sidebar shows the same language and theme selects, side by side at its foot, as the UI library's showcase.
 - Every `ThemeProvider` on a page follows the same theme choice, so a `ThemeMenu` or `ThemeSelect` in one island changes the others too.
