@@ -20,13 +20,13 @@ order: 7
 
 ## 请求：`CreateEmbeddingRequest`
 
-| Wire 字段 | KPP | 说明 |
+| 线路字段 | KPP | 说明 |
 |---|---|---|
 | `model` | `EmbedRequest.model`（类型化） | 必填。 |
 | `input` 字符串 | `input = [EmbedInput::Text]`（类型化） | 单个文本的规范写法。 |
 | `input` 字符串数组 | 每个字符串一个 `EmbedInput::Text`（类型化） | 只有一个元素的数组：形式标记 `input: "array"`。 |
-| `input` token ID 数组 | `input = [EmbedInput::Tokens]`（类型化） | 单个 token 数组的规范写法。 |
-| `input` token ID 数组的数组 | 每个数组一个 `EmbedInput::Tokens`（类型化） | 只有一个元素的数组：形式标记 `input: "nested"`。 |
+| `input` Token ID 数组 | `input = [EmbedInput::Tokens]`（类型化） | 单个 Token 数组的规范写法。 |
+| `input` Token ID 数组的数组 | 每个数组一个 `EmbedInput::Tokens`（类型化） | 只有一个元素的数组：形式标记 `input: "nested"`。 |
 | `input` 空数组 | `input = []` | 对 API 无效（`minItems: 1`）；网关在解码后运行的 `EmbedRequest::validate()` 会以 `InvalidRequest` 拒绝它。 |
 | `input` 其他任何结构（不是 `u32` 的数字、混合数组） | `InvalidRequest` | |
 | `encoding_format` 为 `float`、`base64` 或缺失 | `encoding` 为 `Float`、`Base64` 或 `Float`（类型化） | 显式的 `float`：形式标记 `encoding_format: "float"`。其他值：`InvalidRequest`，因为 KPP 中没有存放它们的位置。 |
@@ -36,22 +36,22 @@ order: 7
 | 未知键 | extras | 以 `header:` 开头或含有 `.` 的键无法携带：`InvalidRequest`（`` the field `…` has a name Kaeso cannot carry; remove it ``）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只转发给 Embeddings。 |
 
-规范允许 1 到 2,048 个输入，每个输入最多 8,192 个 token。编解码器不强制执行这些限制，超出时由服务商返回它自己的 400。
+规范允许 1 到 2,048 个输入，每个输入最多 8,192 个 Token。编解码器不强制执行这些限制，超出时由服务商返回它自己的 400。
 
-`decode_request` 会拒绝生成请求和 token 计数请求（`generation request`）。`check()` 同样拒绝它们，还会拒绝混合文本输入与 token 输入的请求（`mixed text and token inputs`），以及 `cross::check_foreign` 拒绝的一切内容，例如其他方言的 extras（[请求](cross-format.md#请求)）。
+`decode_request` 会拒绝生成请求和 Token 计数请求（`generation request`）。`check()` 同样拒绝它们，还会拒绝混合文本输入与 Token 输入的请求（`mixed text and token inputs`），以及 `cross::check_foreign` 拒绝的一切内容，例如其他方言的 extras（[请求](cross-format.md#请求)）。
 
 ## 回复：`CreateEmbeddingResponse`
 
-| Wire 字段 | KPP | 说明 |
+| 线路字段 | KPP | 说明 |
 |---|---|---|
 | `object`（`list`） | 无 | 其他值：形式标记 `object`。 |
 | `model` | `EmbedResponse.model`（类型化） | |
 | `data[].index` | `Embedding.index`（类型化） | |
-| `data[].embedding` 数字数组 | `EmbeddingVector::Float`（`f64`，原样写回）（类型化） | |
-| `data[].embedding` 字符串 | `EmbeddingVector::Base64`（按收到的原样）（类型化） | 服务商以另一种编码回复时，回复会转换为应用的 `encoding_format`（取自 `EncodeCtx::request`）：浮点数变为小端 `f32` 的 base64，base64 则变为以最短 `f32` 形式写出的浮点数。字节数不是 `f32` 整数倍的 base64 无法转换：`ProviderError`。`EncodeCtx` 中没有应用的请求时，向量保持收到时的样子。 |
-| `data[].object`（`embedding`） | 无 | 其他值：embedding 上的形式标记 `object`。未知键：该 embedding 的 extras。 |
+| `data[].embedding` 数字数组 | `EmbeddingVector::Float`（类型化；`f64`，原样写回） | |
+| `data[].embedding` 字符串 | `EmbeddingVector::Base64`（类型化；按收到的原样） | 服务商以另一种编码回复时，回复会转换为应用的 `encoding_format`（取自 `EncodeCtx::request`）：浮点数变为小端 `f32` 的 base64，base64 则变为以最短 `f32` 形式写出的浮点数。字节数不是 `f32` 整数倍的 base64 无法转换：`ProviderError`。`EncodeCtx` 中没有应用的请求时，向量保持收到时的样子。 |
+| `data[].object`（`embedding`） | 无 | 其他值：该嵌入向量上的形式标记 `object`。未知键：该嵌入向量的 extras。 |
 | `usage.prompt_tokens` | `usage.input_tokens`（类型化） | 用量对象保留在 `usage.raw` 中。 |
-| `usage.total_tokens` | 推导得出 | 写为 `prompt_tokens`，因为嵌入没有输出 token；本方言的原始用量对象优先。 |
+| `usage.total_tokens` | 推导得出 | 写为 `prompt_tokens`，因为嵌入没有输出 Token；本方言的原始用量对象优先。 |
 | `usage` 为 `null` | 形式标记（`verbatim`） | |
 | 没有 `usage` | 形式标记 `no_usage` | 服务商没有发送用量对象时，不会凭空生成一个。 |
 | 未知键 | extras | 以 `header:` 开头或含有 `.` 的键无法携带：`ProviderError`。 |

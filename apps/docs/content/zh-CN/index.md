@@ -38,7 +38,7 @@ console.log(response.output_text);
 ## Kaeso 提供什么
 
 - **一个 API 对接两家服务商。** Kaeso 提供 OpenAI 的 Chat Completions、Responses 和 Embeddings，以及 Anthropic 的 Messages。每种聊天格式都能调用目录中的任意聊天模型，因此 OpenAI SDK 也能调用 Claude。
-- **服务商密钥留在您手中。** 应用拿到的是 Kaeso API 密钥（`sk-kso-…`），您可以为它设置限额和到期时间，也可以停用它。您的服务商密钥用只有本安装持有的主密钥加密。
+- **服务商密钥留在您手中。** 应用拿到的是 Kaeso API 密钥（`sk-kso-…`），您可以为它设置限额和到期时间，也可以停用它。您的服务商密钥用只有本实例持有的主密钥加密。
 - **组织和项目。** 成员、角色、权限和服务账号，以及每个项目各自的模型目录和别名。
 - **限额和预算。** 请求速率和 Token 速率，以及 Token 预算和支出预算，可针对项目、成员或单个密钥设置。
 - **请求日志。** 每个请求的状态、Token、费用和耗时；您选择保留时，还包括请求内容。
@@ -67,11 +67,11 @@ flowchart TD
 
 - [快速开始](get-started/quick-start.md)：在服务器上安装 Kaeso，并发送第一个请求。
 - [调用模型](get-started/calling-models.md)：用 OpenAI 和 Anthropic 的 SDK 在代码中调用模型。
-- [编程工具](get-started/coding-tools.md)：将 Claude Code 或 Codex 指向您的安装。
+- [编程工具](get-started/coding-tools.md)：将 Claude Code 或 Codex 指向您的实例。
 - [概念](concepts/index.md)：了解 Kaeso 如何处理请求、格式和权限。
 - [使用控制台](console/index.md)：熟悉控制台。
 - [API](api/index.md)：查阅模型 API 和 Platform API。
-- [自托管](self-hosting/index.md)：规划、运行和升级一个安装。
+- [自托管](self-hosting/index.md)：规划、运行和升级一个实例。
 - [开发](development/index.md)：构建、测试和修改 Kaeso 本身。
 
 Kaeso 采用 MIT 许可证。网关、KPP、控制台、UI 组件库和本文档都在同一个仓库中：[logicplanes/kaeso](https://github.com/logicplanes/kaeso)。

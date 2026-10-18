@@ -71,18 +71,18 @@ flowchart TD
 
 ## 多个网关
 
-网关自身不保存状态。要运行多个实例，把它们放在同一个代理后面，并连接同一套 PostgreSQL、ClickHouse 和 Valkey：
+网关自身不保存状态。要运行多个网关实例，把它们放在同一个代理后面，并连接同一套 PostgreSQL、ClickHouse 和 Valkey：
 
-- 缓存条目变化时，Valkey 会通知每个实例。
-- 后台任务在 PostgreSQL 锁的保护下，每次只在一个实例上运行。
-- 迁移在锁的保护下运行，一个实例迁移时，其他实例等待。
-- 每个实例各自缓冲并写入自己的请求日志行和用量。
+- 缓存条目变化时，Valkey 会通知每个网关实例。
+- 后台任务在 PostgreSQL 锁的保护下，每次只在一个网关实例上运行。
+- 迁移在锁的保护下运行，一个网关实例迁移时，其他网关实例等待。
+- 每个网关实例各自缓冲并写入自己的请求日志行和用量。
 
 ## 保持不变的名称
 
 每个版本都保留以下名称，因此新的 `compose.yaml` 能找到您的数据：
 
-- Compose 项目 `kaeso` 及其服务 `caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`，以及 `updater` 配置文件中的 `updater` 和 `docker-proxy`。
+- Compose 项目 `kaeso` 及其服务 `caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`，以及 `updater` profile（配置集）中的 `updater` 和 `docker-proxy`。
 - 存放数据的卷 `kaeso_postgres`、`kaeso_clickhouse` 和 `kaeso_valkey`，存放证书的 `kaeso_caddy_data` 和 `kaeso_caddy_config`，以及供更新器使用的 `kaeso_maintenance` 和 `kaeso_updater`。
 - 镜像 `ghcr.io/logicplanes/kaeso-gateway`、`ghcr.io/logicplanes/kaeso-console` 和 `ghcr.io/logicplanes/kaeso-updater`，以版本号作为标签。
 

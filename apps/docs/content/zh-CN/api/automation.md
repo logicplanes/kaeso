@@ -56,7 +56,7 @@ curl -s "$ORG_URL/projects/$PROJECT/models" \
   -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}'
 ```
 
-Kaeso 从 models.dev 获取模型的价格、限额和能力，并在响应中显示。
+Kaeso 从 models.dev 获取模型的价格、限制和能力，并在响应中显示。
 
 ## 创建应用的密钥
 
@@ -128,7 +128,7 @@ curl -s -c "$JAR" https://kaeso.example.com/platform/v1/auth/password \
 
 之后，上面的请求改用 `-b "$JAR" -H "Origin: https://kaeso.example.com"` 代替 `Authorization` 请求头即可。会话以您自己的权限行事，并可用 `POST orgs/{org}/projects/{project}/keys` 为您自己的用户创建密钥。
 
-开启双重验证时，`auth/password` 返回 202 和一个 `challenge`。以 `{"challenge": "…", "code": "123456"}` 的形式发送到 `POST auth/totp`，也可以用 `recovery_code` 代替 `code`。只有在部署开启密码登录时（默认开启），才能用密码登录。在新部署中，第一个用户通过 `kaeso setup-link` 输出的设置链接注册（[安装](../self-hosting/installation.md)）。
+开启双重验证时，`auth/password` 返回 202 和一个 `challenge`。以 `{"challenge": "…", "code": "123456"}` 的形式发送到 `POST auth/totp`，也可以用 `recovery_code` 代替 `code`。只有在实例开启密码登录时（默认开启），才能用密码登录。在新实例中，第一个用户通过 `kaeso setup-link` 输出的设置链接注册（[安装](../self-hosting/installation.md)）。
 
 ## 后续步骤
 

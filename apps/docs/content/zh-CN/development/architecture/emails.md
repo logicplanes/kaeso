@@ -11,16 +11,16 @@ Kaeso 发送的每封邮件都来自 `crates/kaeso-mail`：一套布局、一份
 | 部分 | 登录邮件中的内容 | 样式 |
 | --- | --- | --- |
 | 文字标志 | Kaeso | 单独位于左上角，距左 28px、距上 28px |
-| 标题 | Sign in to Kaeso | `title-lg` |
-| 一句话 | The link works once and expires in 15 minutes. | `body-lg`，次要色 |
-| 一个按钮 | Sign in | `xl` 胶囊，白底墨色 |
-| 一行弱提示 | If you did not ask to sign in, you can ignore this email. | `small`，第三级颜色 |
-| 页脚 | Sent by Kaeso at kaeso.example.com. | `caption` |
+| 标题 | 登录 Kaeso | `title-lg` |
+| 一句话 | 此链接仅可使用一次，15 分钟后过期。 | `body-lg`，次要色 |
+| 一个按钮 | 登录 | `xl` 胶囊，白底墨色 |
+| 一行弱提示 | 如果您没有请求登录，可以忽略此邮件。 | `small`，第三级颜色 |
+| 页脚 | 此邮件由 kaeso.example.com 上的 Kaeso 发送。 | `caption` |
 
 - **没有卡片。** 单个左对齐的栏，最宽 562px，直接放在画布上：浅色模式为白色，深色模式为黑色。
 - **长度限制。** 主题最多 60 个字符且不带句号，标题最多 48 个字符，句子最多 100 个字符。德语和中文多 15%：69、55 和 115。由测试强制执行。
 - **不显示原始链接。** HTML 中从不显示 URL，由按钮承载它。纯文本部分在单独一行给出完整链接，用词和顺序与 HTML 相同。
-- **页脚。** “Sent by Kaeso at” 加上实例的主机名，来自 `KAESO_PUBLIC_URL`。通知还会说明收到它的原因：安全和组织通知总会发送，提醒则说明如何关闭。
+- **页脚。** “此邮件由 … 上的 Kaeso 发送”，省略号处为实例的主机名，来自 `KAESO_PUBLIC_URL`。通知还会说明收到它的原因：安全和组织通知总会发送，提醒则说明如何关闭。
 
 每封邮件的文本和 HTML 都是 `crates/kaeso-mail/src/snapshots/` 中的快照。
 
@@ -44,7 +44,7 @@ Kaeso 发送的每封邮件都来自 `crates/kaeso-mail`：一套布局、一份
 
 `kaeso-server` 中的 `services::mail_lang` 选择语言。用户在账户设置中的选择优先（`users.locale`；`null` 表示自动）。否则取触发这封邮件的请求的 `Accept-Language` 中第一种 Kaeso 支持的语言。数据库无法应答时由回退规则决定，所以这次查询永远不会阻止邮件发送。[电子邮件](../../self-hosting/email.md#语言)列出了每种收件人的规则。
 
-每封邮件的函数对语言做一次 `match`，写完整的句子，并按名称填入值，从不拼接片段。德语用 “Sie” 称呼对方。中文使用“您”和全角标点，并在中文与拉丁字母或数字之间加空格，由 `locale::zh` 在衔接处添加。日期和数字遵循各自的语言：
+每封邮件的函数对语言做一次 `match`，写完整的句子，并按名称填入值，从不拼接片段。德语用“Sie”称呼对方。中文使用“您”和全角标点，并在中文与拉丁字母或数字之间加空格，由 `locale::zh` 在衔接处添加。日期和数字遵循各自的语言：
 
 | | 英语 | 德语 | 中文 |
 | --- | --- | --- | --- |
@@ -78,4 +78,4 @@ Kaeso 自己设定深色模式，而不是交给各个邮件应用自动反色�
 cargo test -p kaeso-mail --test smtp
 ```
 
-该测试检查每封邮件到达时都带有两个部分和两张内嵌图片，并检查 Mailpit 的 HTML 检查报告的邮件应用支持度足够。之后它会删除自己的邮件。`KAESO_TEST_SMTP_URL` 和 `KAESO_TEST_MAIL_API` 可以让它指向别处。
+该测试检查每封邮件到达时都带有两个部分和两张内嵌图片，以及 Mailpit 的 HTML 检查显示各邮件应用的支持度足够。之后它会删除自己的邮件。`KAESO_TEST_SMTP_URL` 和 `KAESO_TEST_MAIL_API` 可以让它指向别处。

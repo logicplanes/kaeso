@@ -43,11 +43,11 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 | `medium` | 8,192 |
 | `high`、`xhigh`、`max` | 24,576 |
 
-此表只适用于目标模型不支持自适应思考的情况（Claude 4.5 及更早版本），网关根据模型目录的 `adaptive_thinking` 字段，用 `EgressCtx::adaptive_thinking = Some(false)` 表明这一点；Claude 4.7 及更新版本拒绝 `enabled` 思考，改为得到采用该推理强度的自适应思考。
+此表只适用于目标模型不支持自适应思考的情况（Claude 4.5 及更早版本）。网关根据模型目录的 `adaptive_thinking` 字段，用 `EgressCtx::adaptive_thinking = Some(false)` 表明这一点；Claude 4.7 及更新版本拒绝 `enabled` 思考，改为得到采用该推理强度的自适应思考。
 
 随后预算会按 Anthropic 的规则调整：至少为 1,024，且小于 `max_tokens`，因此当 `max_tokens − 1` 更小时，预算取 `max_tokens − 1`。当 `max_tokens` 不超过 1,024 时，不存在有效的预算，于是 `max_tokens` 增加 1,024，预算取 1,024：应用自己的 `max_tokens` 仍全部留给回答。`reasoning_map::budget_within` 负责调整和增加，`reasoning_map::fit_budget` 只负责调整。
 
-依据的来源是 OpenAPI 规范中 OpenAI 的 `ReasoningEffort` 枚举（`none`、`minimal`、`low`、`medium`、`high`、`xhigh`、`max`；并非每个模型都支持每个值），以及 Anthropic 的[扩展思考](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)页面：`budget_tokens` 至少为 1,024 且小于 `max_tokens`，而 Claude Sonnet 4.5、Opus 4.5、Haiku 4.5 以及更早的 Claude 4 模型不支持自适应思考。
+第一个来源是 OpenAPI 规范中 OpenAI 的 `ReasoningEffort` 枚举：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` 和 `max`，但并非每个模型都支持每个值。第二个来源是 Anthropic 的[扩展思考](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)页面。该页面说明 `budget_tokens` 至少为 1,024 且小于 `max_tokens`，并且 Claude Sonnet 4.5、Opus 4.5、Haiku 4.5 以及更早的 Claude 4 模型不支持自适应思考。
 
 ## 可读推理与摘要
 
@@ -76,7 +76,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 ## 没有思考的工具轮次
 
-如果请求使用 `enabled` 思考，而其最后一个助手轮次进行了工具调用，前面却没有可回放的思考块（签名思考块或 redacted 思考块），Anthropic 会拒绝该请求（“a final assistant message must start with a thinking block”）。这样的请求在该轮次中不带 `thinking` 发往 Anthropic。自适应思考保持不变，因为自适应模型不需要开头的思考块。
+如果请求使用 `enabled` 思考，而其最后一个助手轮次进行了工具调用，前面却没有可回放的思考块（签名思考块或 `redacted_thinking` 块），Anthropic 会拒绝该请求（“a final assistant message must start with a thinking block”）。这样的请求在该轮次中不带 `thinking` 发往 Anthropic。自适应思考保持不变，因为自适应模型不需要开头的思考块。
 
 由于推理会随对话传递，这种情况很少见。但在以下三种情况下仍会发生：
 
@@ -90,7 +90,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 ### 推理数据块
 
-对于 OpenAI Responses 和 Anthropic Messages 应用，KPP 会把另一方言的整个推理块（可读文本、摘要、签名、加密内容、redacted 数据、item ID）包装成一个推理数据块：`continuity::REASONING_BLOB_PREFIX`（`kpp:reasoning:v1:`），后接该块去掉形式标记后的 KPP JSON，以无填充的 base64url 编码。
+对于 OpenAI Responses 和 Anthropic Messages 应用，KPP 会把另一方言的整个推理块包装成一个推理数据块，包括可读文本、摘要、签名、加密内容、`redacted_thinking` 数据和 item ID。推理数据块是 `continuity::REASONING_BLOB_PREFIX`（`kpp:reasoning:v1:`），后接该块去掉形式标记后的 KPP JSON，以无填充的 base64url 编码。
 
 | 应用 | 得到 | 推理数据块所在位置 |
 | --- | --- | --- |
@@ -99,10 +99,10 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 两个请求解码器都能在任何位置识别推理数据块（`continuity::unwrap_reasoning`），并恢复原始块及其来源，因此编码器会像对待其他推理一样，把它回放给它自己的方言和服务商。
 
-- **总是发送。** 无论应用是否请求了 `include: ["reasoning.encrypted_content"]`，也无论其 `store` 设置如何，推理数据块都会发送：Kaeso 不存储任何内容，而 SDK 的 agent 循环（openai-agents 的 `to_input_list()`、Codex、Claude Code、Anthropic tool runner）会把输出 item 和内容块原样发回。
+- **总是发送。** 无论应用是否请求了 `include: ["reasoning.encrypted_content"]`，也无论其 `store` 设置如何，推理数据块都会发送。Kaeso 不存储任何内容，而 SDK 的 agent 循环会把输出 item 和内容块原样发回。这些循环包括 openai-agents 的 `to_input_list()`、Codex、Claude Code 和 Anthropic tool runner。
 - **以推理数据块为准。** 推理数据块中再次包含了可读文本，因为它必须精确恢复原始块（Anthropic 会根据签名校验思考文本），而应用可能会编辑或丢弃可读的副本。应用把两者都发回时，以推理数据块为准。
 - **绝不会与服务商数据混淆。** 前缀包含 `:`，它既不在 Anthropic 签名所用的 base64 字母表中，也不在 OpenAI 加密内容所用的 base64url 字母表中。带有该前缀但无法解码的值会作为服务商自己的不透明数据保留，随后由服务商拒绝，因此不会有任何内容被静默丢弃。
-- **Kaeso 不对它加密或签名**。其中只有应用已经看到的内容，以及只有签发它的服务商才能校验的数据。
+- **Kaeso 不对它加密或签名。**其中只有应用已经看到的内容，以及只有签发它的服务商才能校验的数据。
 
 来自其他方言的请求，如果设置了 `none` 以外的推理强度或思考预算，或者为网关已知会推理的模型开启了思考（[可读推理与摘要](#可读推理与摘要)），会向 OpenAI Responses 请求 `include: ["reasoning.encrypted_content"]`。否则 Kaeso 无法判断模型是否推理，而 OpenAI 会对不推理的模型拒绝加密推理。由于这些请求带有 `store: false`（[Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发给 OpenAI，因为 OpenAI 无法解析它的 item ID。
 
@@ -110,7 +110,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复中省略推理，由网关保存它，并以推理之后的工具调用作为键。工具调用 ID 是唯一的，由服务商签发，每个 Chat 客户端都会将其发回，因此可以在不改变应用格式的情况下作为推理的键。
 
-1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 redacted 思考，或 OpenAI 的加密推理。最后一个工具调用之后的推理不会保存。
+1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 `redacted_thinking`，或 OpenAI 的加密推理。最后一个工具调用之后的推理不会保存。
 2. 网关把这些条目存入 Valkey，用主密钥加密，只有发出该请求的 API 密钥才能读取，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时）。
 3. 在应用的下一个请求中，解码之后、`check` 和编码之前，`continuity::tool_calls_missing_reasoning` 列出需要查找的工具调用 ID，`continuity::restore_reasoning` 把找到的内容放回助手轮次：轮次中第一个工具调用的推理放在轮次开头，后续调用的推理紧跟在前一个调用之后。已经含有推理的轮次保持不变。
 

@@ -96,7 +96,7 @@ docker compose exec gateway kaeso setup-link
 | 404 | 模型不在项目的目录中 | 在**模型**中添加它，或调用目录中已有的模型 |
 | 429 | 速率限制或预算，或同一地址的未知密钥过多 | 等待 `Retry-After`，或提高消息中指明的限额 |
 | 502、504 | 无法连接服务商、服务商未及时响应，或返回的响应大于 `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | 查看服务商的状态；请求日志会显示其错误 |
-| 503 | Valkey 不可用而无法检查硬预算，或网关正在重启 | 检查 [`/readyz`](monitoring.md#健康检查) 和 `docker compose logs valkey` |
+| 503 | Valkey 不可用而无法检查硬性预算，或网关正在重启 | 检查 [`/readyz`](monitoring.md#健康检查) 和 `docker compose logs valkey` |
 
 在 OpenAI 格式中，网关自身的部分 503 错误会以 500 返回。
 
@@ -127,7 +127,7 @@ docker compose exec gateway kaeso setup-link
 
 数据库一恢复，请求就会重新正常工作，无需重启。当请求需要 Valkey 或 ClickHouse 却无法连接时，Platform API 也会返回同样的 503。
 
-## 有人丢失了第二重验证因素
+## 有人丢失了双重验证
 
 实例管理员可以在**设置** › **实例** › **用户**中，在该用户的侧滑面板里选择**重置双重验证**。如果没有能登录的实例管理员，就在服务器上重置：
 
@@ -135,7 +135,7 @@ docker compose exec gateway kaeso setup-link
 docker compose exec gateway kaeso user reset-2fa person@example.com
 ```
 
-无论哪种方式，该用户的验证器和恢复码都会被移除，会话随之结束，并会收到一封邮件。在要求双重验证的地方，用户下次登录时需要重新设置。
+无论哪种方式，该用户的身份验证器应用和恢复码都会被移除，会话随之结束，并会收到一封邮件。在要求双重验证的地方，用户下次登录时需要重新设置。
 
 ## 无人能通过单点登录登录
 

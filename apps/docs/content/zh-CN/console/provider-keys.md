@@ -4,7 +4,7 @@ description: 连接组织的 OpenAI 和 Anthropic 密钥，并选择各项目使
 order: 3
 ---
 
-服务商密钥是组织用于 OpenAI 和 Anthropic 的密钥，这是 Kaeso 调用的两个服务商。Kaeso 使用部署的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
+服务商密钥是组织用于 OpenAI 和 Anthropic 的密钥，这是 Kaeso 调用的两个服务商。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
 
 ## 添加密钥
 

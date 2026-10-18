@@ -158,6 +158,6 @@ console.log(response.output_text);
 ## 后续步骤
 
 - [调用模型](calling-models.md)：同时使用 Anthropic SDK，流式接收回复，并在日志中找到请求。
-- [编程工具](coding-tools.md)：将 Claude Code 或 Codex 指向您的安装。
+- [编程工具](coding-tools.md)：将 Claude Code 或 Codex 指向您的实例。
 - [使用控制台](../console/index.md)：邀请成员，设置限额和预算。
 - [自托管](../self-hosting/index.md)：规划登录、备份、升级和监控。

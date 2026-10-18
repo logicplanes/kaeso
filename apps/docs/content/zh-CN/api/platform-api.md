@@ -1,10 +1,10 @@
 ---
 title: Platform API
-description: 通过 HTTP 管理部署时如何进行身份验证、翻页、处理错误以及查找路由。
+description: 通过 HTTP 管理实例时如何进行身份验证、翻页、处理错误以及查找路由。
 order: 3
 ---
 
-Platform API 管理控制台显示的一切：组织、项目、成员、密钥、服务商密钥、模型、限额、用量和日志。它位于部署域名下的 `/platform/v1`，控制台只使用这个 API。
+Platform API 管理控制台显示的一切：组织、项目、成员、密钥、服务商密钥、模型、限额、用量和日志。它位于您实例域名下的 `/platform/v1`，控制台只使用这个 API。
 
 把平台密钥放在 `KAESO_PLATFORM_KEY` 中，用您组织的 ID 替换 `org_…`，即可列出组织的项目：
 
@@ -70,7 +70,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 具有平台访问权限的 API 密钥 | `Authorization: Bearer sk-kso-…` | 其成员或服务账号的权限，仅限于其所属项目 |
 | 会话 | `auth/*` 下的登录端点设置的会话 Cookie | 您自己的权限 |
 
-自动化整个组织时使用平台密钥，单个项目的脚本和 CI 使用项目密钥。会话供控制台和使用 curl 的人员使用。会话 Cookie 是 `__Host-kaeso_session`；在位于 localhost 等回环地址的 `http://` 部署上为 `kaeso_session`。
+自动化整个组织时使用平台密钥，单个项目的脚本和 CI 使用项目密钥。会话供控制台和使用 curl 的人员使用。会话 Cookie 是 `__Host-kaeso_session`；在位于 localhost 等回环地址的 `http://` 实例上为 `kaeso_session`。
 
 - **密钥只能访问 `orgs/{org}/*`。** `me/*`、`instance/*` 以及 `auth/*` 中需要登录的路由会对密钥返回 403。组织级路由会对项目密钥返回 403。
 - **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
@@ -81,13 +81,13 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 跨站请求
 
-携带会话 Cookie 且会更改内容的请求，必须发送值为部署源的 `Origin`，例如 `Origin: https://kaeso.example.com`。发往公开 `auth/*` 端点的此类请求也是如此。浏览器会自动发送该请求头，`Referer` 不能代替它。缺少该请求头或源不同时，Kaeso 返回 `403 permission_denied`，并在消息中指明该请求头。
+携带会话 Cookie 且会更改内容的请求，必须发送值为实例源的 `Origin`，例如 `Origin: https://kaeso.example.com`。发往公开 `auth/*` 端点的此类请求也是如此。浏览器会自动发送该请求头，`Referer` 不能代替它。缺少该请求头或源不同时，Kaeso 返回 `403 permission_denied`，并在消息中指明该请求头。
 
 这样，其他网站既无法借用您的会话执行操作，也无法让您的浏览器登录到他们的账户。
 
 - 使用 API 密钥或平台密钥的请求不需要 `Origin`。
 - `GET`、`HEAD` 和 `OPTIONS` 从不需要它，`GET auth/methods` 和 `GET auth/oidc/start` 也不例外。
-- 调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送部署的源。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`（[登录和单点登录](../self-hosting/sign-in.md#直接前往提供商的链接)）。
+- 调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送实例的源。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`（[登录和单点登录](../self-hosting/sign-in.md#直接前往身份提供商的链接)）。
 
 ### 近期登录
 
@@ -131,7 +131,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 已计划删除的组织在恢复或删除之前为只读。读取按调用方的权限正常进行，其密钥则完全无法通过身份验证。组织中的每项更改都返回 `409 org_scheduled_for_deletion`，包括退出组织和接受加入该组织的邀请。只有 `POST orgs/{org}/restore` 和实例管理员的 `instance/orgs/{org}/*` 仍可使用。
 
-`auth/session` 会在每个成员资格中用 `org_state` 和 `org_deletion_due_at` 标出这类组织。成员在其中的权限缩减为查看、导出和 `org.delete`。会话还包含实例的 `org_deletion` 策略，带有 `allowed` 和 `grace_days`。
+`auth/session` 会在每个成员身份中用 `org_state` 和 `org_deletion_due_at` 标出这类组织。成员在其中的权限缩减为查看、导出和 `org.delete`。会话还包含实例的 `org_deletion` 策略，带有 `allowed` 和 `grace_days`。
 
 ## 错误
 
@@ -163,8 +163,8 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 413 | `request_too_large` | 正文大于 `KAESO_BODY_LIMITS_PLATFORM_API`，默认为 1 MiB。 |
 | 429 | `rate_limited` | 来自同一地址的登录尝试或未知密钥过多，或试验场请求触及限额。`Retry-After` 说明何时重试。 |
 | 500 | `internal` | 网关内部故障。消息会给出可报告的请求 ID。 |
-| 503 | `unavailable` | Kaeso 无法连接数据库或其他后端服务，例如 “Kaeso cannot reach its database right now; try again shortly.” |
-| 429, 502, 503, 504 | `provider_error` | 服务商失败，仅用于[试验场](#试验场)请求。 |
+| 503 | `unavailable` | Kaeso 无法连接数据库或其他后端服务，例如“Kaeso cannot reach its database right now; try again shortly.” |
+| 429、502、503、504 | `provider_error` | 服务商出错，仅用于[试验场](#试验场)请求。 |
 
 ## 路由
 
@@ -172,13 +172,13 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 | 路径 | 内容 |
 | --- | --- |
-| `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员资格，以及能否创建组织（`can_create_orgs`）。 |
-| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员资格、密钥和通知，以及创建组织和删除账户。 |
+| `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份，以及能否创建组织（`can_create_orgs`）。 |
+| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥和通知，以及创建组织和删除账户。 |
 | `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
-| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容记录、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
+| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容日志、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
 | `instance/*` | 供实例管理员使用：用户、组织、实例设置、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
 
-实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何活跃用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
+实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何有效用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
 
 只有实例管理员能用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
 
@@ -189,20 +189,20 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 路由 | 权限 | 返回 |
 | --- | --- | --- |
 | `GET orgs/{org}/rights` | `org.view` | 按类别列出的每项权限，包括名称、说明、标记（`sensitive`、`recent_sign_in`、`cloud_only`）及其所需的权限。 |
-| `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色，包括其权限和持有人数。可用 `?scope=org` 或 `?scope=project` 筛选。 |
+| `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色，包括其权限和持有者人数。可用 `?scope=org` 或 `?scope=project` 筛选。 |
 | `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改或删除自定义角色。每个组织最多 50 个。 |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | 成员在组织中、在每个项目中，以及在调用方可见的每个项目中的有效权限及其来源。 |
 | `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 成员在此项目中的有效权限及其来源。 |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | 调用方自己在此项目中的权限及其来源。 |
-| `GET orgs/{org}/rights/{right}/grantors` | `members.view` | 最多 10 位拥有该权限且可以更改权限的活跃成员，所有者优先。 |
+| `GET orgs/{org}/rights/{right}/grantors` | `members.view` | 最多 10 位拥有该权限且可以更改权限的有效成员，所有者优先。 |
 | `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | 同上，针对此项目中的权限。 |
 
 授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 发送。`role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的名称。响应包含 `{id, kind, name}` 形式的 `role`、有效的 `rights`，组织授权还包含 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`，单点登录设置接受 `default_role`。
 
 每次更改权限都遵循[授权规则](../concepts/rights.md#授权规则)：
 
-- 授予自己没有的权限，或更改拥有您所缺权限的成员，会得到 403，例如 “You can't grant `audit_log.view`: you don't hold it yourself.”
-- 授予某项权限却缺少它所需的权限，或移除另一项权限所需的权限，会得到 400，消息会同时指出两者。例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
+- 授予自己没有的权限，或更改拥有您所缺权限的成员，会得到 403，例如“You can't grant `audit_log.view`: you don't hold it yourself.”
+- 授予某项权限却缺少它所需的权限，或移除另一项权限所需的权限，会得到 400，消息会同时指出两者。例如“`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
 
 有效权限会列出其来源：
 
@@ -251,6 +251,6 @@ curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/pla
 | 409 | `org_scheduled_for_deletion` | 组织已计划删除。 |
 | 429 | `rate_limited` | 达到了速率或预算，消息会指明是哪一个。 |
 | 503 | `unavailable` | Kaeso 无法读取目录、服务商密钥或限额，或正在重启。 |
-| 429, 502, 503, 504 | `provider_error` | 服务商对请求限速、失败或拒绝了服务商密钥、过载，或未及时响应。 |
+| 429、502、503、504 | `provider_error` | 服务商对请求限速、失败或拒绝了服务商密钥、过载，或未及时响应。 |
 
 流开始后，错误以 Responses 的 `error` 事件到达，与 `/v1` 上相同。

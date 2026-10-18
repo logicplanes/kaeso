@@ -4,7 +4,7 @@ description: 应用调用的端点、身份验证方式以及模型的指定方�
 order: 1
 ---
 
-应用用 OpenAI 和 Anthropic 的官方 SDK 调用模型 API：把 SDK 指向您的安装，并传入一个 Kaeso API 密钥。Kaeso 会把每个请求转换为模型所属服务商的格式，再把回复转换回来，流式回复也不例外。
+应用用 OpenAI 和 Anthropic 的官方 SDK 调用模型 API：把 SDK 指向您的实例，并传入一个 Kaeso API 密钥。Kaeso 会把每个请求转换为模型所属服务商的格式，再把回复转换回来，流式回复也不例外。
 
 使用 OpenAI SDK 时，下面这个 Chat Completions 请求由 Claude 回答：
 
@@ -139,10 +139,10 @@ x-api-key: sk-kso-…
 
 ## 流式传输
 
-按格式的约定请求流式回复，即 `"stream": true`。回复是采用应用所用格式的 server-sent events 流。
+按格式的约定请求流式回复，即 `"stream": true`。回复是采用应用所用格式的 SSE（服务器发送事件）流。
 
 - **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释，Anthropic 格式为 `ping` 事件。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。
-- **失败。** 流一旦开始就无法再更改状态码。服务商失败，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
+- **失败。** 流一旦开始就无法再更改状态码。服务商出错，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
 - **断开。** 应用断开连接时，Kaeso 会立即停止向服务商发出的请求，并按已用量计费。
 
 ## 跨工具调用的推理

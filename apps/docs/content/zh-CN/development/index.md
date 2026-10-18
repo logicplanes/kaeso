@@ -28,4 +28,4 @@ Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区，两者都在仓
 - [编写文档](documentation.md)：编写和翻译本站的页面。
 - [架构](architecture/index.md)：了解网关、控制台、文档和更新器的构建方式。
 - [KPP 内部实现](kpp/index.md)：修改在各 API 格式之间转换的编解码器。
-- [发布](releasing.md)：确定版本、发布并部署一个版本。
+- [发布](releasing.md)：确定版本号，发布并部署新版本。

@@ -8,7 +8,7 @@ Kaeso 以一个 Docker Compose 项目的形式运行在您的服务器上。[快
 
 ## 搭建
 
-- [要求](requirements.md)：确定服务器规格、开放网络，并为请求日志规划磁盘。
+- [系统要求](requirements.md)：确定服务器规格、开放网络，并为请求日志规划磁盘。
 - [实例的工作原理](how-it-works.md)：了解运行哪些服务、各自保存什么，以及它们如何相互隔离。
 - [安装](installation.md)：安装指定版本、在自己的电脑上试用，并运行 Kaeso 的命令。
 - [配置](configuration.md)：查找每项设置及其所在位置。

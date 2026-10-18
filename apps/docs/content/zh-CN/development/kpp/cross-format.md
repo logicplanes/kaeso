@@ -8,7 +8,7 @@ order: 2
 
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
-| Extras 字段 | `Unsupported`，除非在[允许列表](#extras)中 | 省略 |
+| extras 字段 | `Unsupported`，除非在[允许列表](#extras)中 | 省略 |
 | 未知块、工具和工具选择 | `Unsupported` | 省略未知块 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
@@ -65,7 +65,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 从方言 A 捕获的 Extras 只写回方言 A。其他方言的 `check()` 会以 `Unsupported` 拒绝它们并注明字段，除非该字段在下面的允许列表中，此时它会被丢弃：列表只收录已知不会改变模型输出的字段，例如 beta 请求头和分辨率提示。
 
-只有已知对模型输出没有任何影响的字段才能加入列表。每个条目都需要一行理由，以及一个展示真实客户端发送该字段的测试样本（fixture）。
+只有已知对模型输出没有任何影响的字段才能加入列表。每个条目都需要一行理由，以及一个展示真实客户端发送该字段的 fixture。
 
 条目带有作用范围（`cross::EXTRAS_ALLOWLIST`）：一个键只在它所在的位置被允许。作用范围包括 `request`、`message`、`tool`、`output`、`reasoning`，以及块类型 `text`、`image`、`document`、`tool_call`、`tool_result` 和 `refusal`。请求头是 `request` 范围内的键 `header:<name>`。
 
@@ -76,7 +76,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | 来源方言 | 范围 | 键 | 理由 | Fixture / 客户端 |
 | --- | --- | --- | --- | --- |
 | `anthropic_messages` | request | `header:anthropic-beta` | Beta 请求头只用于开启服务商的功能。请求实际用到的功能会以请求体字段或块的形式出现，并单独检查。 | Claude Code 在每个请求中都发送 `claude-code-20250219,interleaved-thinking-…` 及其他 beta；`anthropic_messages/requests/claude-code-mid-conversation-system.headers.json`、`anthropic_messages/requests/thinking-interleaved-tools.headers.json` |
-| `anthropic_messages` | request | `header:anthropic-version` | Anthropic wire 格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](#anthropic-版本)）。 | Anthropic SDK |
+| `anthropic_messages` | request | `header:anthropic-version` | Anthropic 线路格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](#anthropic-版本)）。 | Anthropic SDK |
 | `openai_chat`、`openai_responses`、`openai_embeddings` | request | `header:openai-beta` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
 | `anthropic_messages` | request | `cache_control` | 顶层的自动提示缓存。缓存提示属于提示字段（[缓存提示](#缓存提示)）。 | `anthropic_messages/requests/system-string-multi-turn.json`、`explicit-nulls.json` |
 | `anthropic_messages` | reasoning | `display`（`thinking.display`） | 只控制是否返回思考文本（`summarized` 或 `omitted`）。发往 OpenAI Responses 时改为 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 | `anthropic_messages/requests/thinking-display-omitted.json`、`thinking-adaptive-effort.json` |
@@ -118,7 +118,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 保活帧以两种方式到达线路：
 
-- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制：另一方言的额外事件（例如 `ping`，其节奏已由服务商控制）总能换来一帧；隐藏文本（应用看不到的思考、缓冲中的工具参数）每 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节，即 1,024 字节，换来一帧；编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
+- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制。另一方言的额外事件（例如 `ping`）总能换来一帧，因为服务商已经控制了它的节奏。隐藏文本（例如应用看不到的思考或缓冲中的工具参数）每 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节（即 1,024 字节）换来一帧。编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
 - **由网关驱动。** `StreamEncoder::keepalive` 按需返回保活帧，用于编码器无法察觉的上游静默。网关在 `KAESO_STREAMS_KEEPALIVE_INTERVAL`（默认 15 秒）内没有向应用写出任何内容时，就会写出它。
 
 OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而不是等到第一段文本，这样在模型思考期间应用也能收到流的消息。
@@ -151,7 +151,7 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 ## 回复 ID
 
-无论应用使用哪种格式，回复都保留服务商的 ID 不变：Claude 的回复以其 Anthropic ID（`msg_…`）到达 OpenAI Chat Completions 或 Responses 应用，OpenAI 的回复以 OpenAI 的 ID（`chatcmpl-…` 或 `resp_…`）到达 Anthropic Messages 应用。流中携带同一个 ID。编解码器从不按应用自身格式的样式编造 ID，因为服务商的 ID 才是在服务商处标识该回复的 ID；应用应把回复 ID 当作不透明的字符串。例外有两种：其他格式没有的 Responses 输出项（[Responses 的存储与 ID](#responses-的存储与-id)），以及没有开始事件的 Responses 流，它会得到 ID `resp_kaeso_<created_at>`（[OpenAI Responses](openai-responses.md)）。
+无论应用使用哪种格式，回复都保留服务商的 ID 不变：Claude 的回复以其 Anthropic ID（`msg_…`）到达 OpenAI Chat Completions 或 Responses 应用，OpenAI 的回复以 OpenAI 的 ID（`chatcmpl-…` 或 `resp_…`）到达 Anthropic Messages 应用。流中携带同一个 ID。编解码器从不按应用自身格式的样式编造 ID，因为服务商的 ID 才是在服务商处标识该回复的 ID；应用把回复 ID 视为不透明的字符串。例外有两种：其他格式没有的 Responses 输出项（[Responses 的存储与 ID](#responses-的存储与-id)），以及没有开始事件的 Responses 流，它会得到 ID `resp_kaeso_<created_at>`（[OpenAI Responses](openai-responses.md)）。
 
 ## Responses 的存储与 ID
 

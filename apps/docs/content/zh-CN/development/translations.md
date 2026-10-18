@@ -69,7 +69,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | playground | Playground | 试验场 |
 | service account | Dienstkonto | 服务账号 |
 | invite, invitation | einladen, Einladung | 邀请 |
-| sign in, sign out | anmelden, abmelden | 登录, 退出登录 |
+| sign in, sign out | anmelden, abmelden | 登录、退出登录 |
 | account | Konto | 账户 |
 | user | Benutzer | 用户 |
 | session | Sitzung | 会话 |
@@ -113,7 +113,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 
 ### 使用哪种语言
 
-- 用户在**设置** › **账户** › **外观** › **语言**中选择：自动、English、Deutsch 或 简体中文。所做的选择保存在其账户中（通过带 `locale` 的 `PATCH me` 写入，从 `auth/session` 读取），因此在每个浏览器中都会生效。
+- 用户在**设置** › **账户** › **外观** › **语言**中选择：自动、English、Deutsch 或简体中文。所做的选择保存在其账户中（通过带 `locale` 的 `PATCH me` 写入，从 `auth/session` 读取），因此在每个浏览器中都会生效。
 - **自动**是默认选项，它取浏览器语言中控制台支持的第一个（`navigator.languages`：`de-AT` 是德语，任何中文都是简体中文），否则回退到英语，并在浏览器语言改变时随之改变。
 - 浏览器会保存一份账户选择的副本（`kaeso:locale`），因此首次绘制（包括登录页）就已经使用该语言。英语不需要额外加载任何内容；德语和中文会在首次绘制之前加载各自的文案目录（控制台的和库的，各一个 chunk）。
 - 如果会话报告了在另一个浏览器中做出的选择，`src/i18n/sync.tsx` 会切换到该语言。切换时控制台会以新语言重新绘制；页面、其数据和所在位置都保持不变。
@@ -165,7 +165,7 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 - 用户看到或听到的一切都经过 `t`：可见文本、`aria-label`、标题、占位文本、只提供给屏幕阅读器的文本、提示消息和空状态。应用传入的数据（名称、角色、权限）和产品名称保持原样。
 - 有默认值的文本属性，例如 `emptyText`，在其签名中不设默认值；组件使用 `emptyText ?? t("combobox.noResults", "No results")`，因此默认值会跟随语言，而应用自己的文本优先。
 - 计数是一条带复数形式的消息（`t("list.selected", "{count} selected", { count })`），从不由两次调用拼接而成。作为值传入的数字会按语言书写（1,234 或 1.234）。
-- 星期和月份名称以及日期来自针对 `useLocale()` 的 `Intl`，或来自 `@logicplanes/kaeso-ui/format`，从不来自源码中的英语名称。
+- 星期和月份名称以及日期来自按 `useLocale()` 的语言调用的 `Intl`，或来自 `@logicplanes/kaeso-ui/format`，从不来自源码中的英语名称。
 - 在文本变化时保持宽度的位置（`Button` 的 `reserveLabels`、`SwapText`）会收到每个备选文本的译文，从而按当前语言中最宽的那个预留宽度。
 - 不在模块顶层做任何工作：标签列表，例如日期选择器的预设，是 `t` 的函数，在渲染时调用。React 之外写出文本的辅助函数（`keyLabel`、`liveLine`）把组件的 `t` 作为最后一个参数。
 - 名称列表用该语言的分隔符连接（`t("rightsMatrix.listSeparator", ", ")`，在中文中为“、”）。
@@ -193,7 +193,7 @@ root.render(
 ## 展示站点
 
 - 展示站点的每个页面都以每种语言构建：英文位于 `/components/button`，德文位于 `/de/components/button`，中文位于 `/zh-CN/components/button`。外框、首页网格、指南以及每个组件和属性的描述从首次绘制起就使用页面的语言。
-- 侧边栏中的语言控件会以另一种语言打开同一页面，所做的选择会被记住。英文地址先跟随记住的选择，再跟随浏览器的语言偏好；德文或中文地址始终按请求显示。`?lang=de`、`?lang=zh-CN` 和 `?lang=en` 仍然有效：它们会被记住，并重定向到该语言的地址。
+- 侧边栏中的语言控件会以另一种语言打开同一页面，所做的选择会被记住。英文地址先跟随记住的选择，再跟随浏览器的语言偏好；德文或中文地址始终显示该语言。`?lang=de`、`?lang=zh-CN` 和 `?lang=en` 会被记住，并重定向到该语言的地址。
 - 外框的文案位于 `DOCS_TEXT`（`apps/showcase/src/lib/locale.tsx`）。其他所有文本位于 `apps/showcase/src/i18n/de.json` 和 `zh-CN.json`，以合并空白后的英语原文为键。
 - `pnpm --filter kaeso-showcase gen` 会失败并列出每个缺少德语或中文条目的文本，因此新的描述无法只以英语发布。
 - 组件预览中的演示是代码，保持英语；名称（`Button`、`formatNumber`）和代码从不翻译。
