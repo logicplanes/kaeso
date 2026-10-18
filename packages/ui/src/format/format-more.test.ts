@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { formatBytes, formatDate, formatDuration, formatLocale, formatRelative, formatTokens, formatUSD, setFormatLocale } from "./index.js";
+import {
+  formatBytes,
+  formatDate,
+  formatDuration,
+  formatLocale,
+  formatRelative,
+  formatTimeZone,
+  formatTokens,
+  formatUSD,
+  setFormatLocale,
+  setFormatTimeZone,
+} from "./index.js";
 
 afterEach(() => setFormatLocale("en"));
 
@@ -172,5 +183,27 @@ describe("formatUSD below the smallest place shown", () => {
     expect(formatUSD("0.0000001", { decimals: 6 })).toBe("<\u00a00,000001\u00a0$");
     setFormatLocale("zh-CN");
     expect(formatUSD("0.0000001", { decimals: 6 })).toBe("<\u00a0$0.000001");
+  });
+});
+
+describe("the format time zone", () => {
+  const at = new Date("2026-12-31T23:30:00Z");
+  afterEach(() => setFormatTimeZone(undefined));
+
+  it("shows every moment in the chosen zone", () => {
+    setFormatTimeZone("Asia/Tokyo");
+    expect(formatTimeZone()).toBe("Asia/Tokyo");
+    expect(formatDate(at, { time: true })).toBe("1 Jan 2027, 08:30");
+    expect(formatRelative(at, new Date("2027-01-20T00:00:00Z"))).toBe("1 Jan");
+    setFormatTimeZone("America/New_York");
+    expect(formatDate(at, { time: true })).toBe("31 Dec 2026, 18:30");
+    expect(formatRelative(at, new Date("2027-01-20T00:00:00Z"))).toBe("31 Dec 2026");
+  });
+
+  it("keeps UTC when asked and ignores an unknown zone", () => {
+    setFormatTimeZone("Asia/Tokyo");
+    expect(formatDate(at, { time: true, utc: true })).toBe("31 Dec 2026, 23:30 UTC");
+    setFormatTimeZone("Mars/Olympus");
+    expect(formatTimeZone()).toBeUndefined();
   });
 });

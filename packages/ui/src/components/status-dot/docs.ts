@@ -5,6 +5,7 @@ export const docs = {
     description: "The same component under its plain name.",
     props: {
       children: "The word that carries the meaning.",
+      icon: "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.",
       size: "The text size.",
       tone: "The status it marks.",
     },
@@ -13,6 +14,7 @@ export const docs = {
     description: 'A status word: "Active", "Expiring", "Down".',
     props: {
       children: "The word that carries the meaning.",
+      icon: "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.",
       size: "The dot's size.",
       tone: "The status the dot marks; keep it next to words that say the same.",
     },

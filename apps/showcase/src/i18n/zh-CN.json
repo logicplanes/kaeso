@@ -982,5 +982,13 @@
   "The image's address for the light theme and for print.": "浅色主题和打印时图片的地址。",
   "The image's own height in pixels, so the page keeps its place before it loads.": "图片自身的高度（像素），让页面在图片加载前保留其位置。",
   "The image's own width in pixels; the image shrinks to its container, never grows past this.": "图片自身的宽度（像素）；图片会缩小以适应容器，但绝不会超过此宽度。",
-  "What the image shows, read by screen readers and shown when it can't load.": "图片展示的内容，由屏幕阅读器朗读，图片无法加载时显示。"
+  "What the image shows, read by screen readers and shown when it can't load.": "图片展示的内容，由屏幕阅读器朗读，图片无法加载时显示。",
+  "Abstract artwork drawn from a seed such as a version: the same picture for the same seed, a new one for every release.": "由种子（例如版本号）生成的抽象图像：相同的种子得到相同的图像，每个版本各不相同。",
+  "What's new": "新功能",
+  "Small text above the title, e.g. “What's new in Kaeso”.": "标题上方的小字，例如“Kaeso 新功能”。",
+  "What the picture shows, read by screen readers: \"Kaeso 0.3.0\".": "图像所示内容，供屏幕阅读器朗读：“Kaeso 0.3.0”。",
+  "What the artwork is drawn from, e.g. `0.3.0`; the same seed always draws the same picture.": "生成图像所用的种子，例如 `0.3.0`；相同的种子始终生成相同的图像。",
+  "The artwork's aspect ratio.": "图像的宽高比。",
+  "Large text on the artwork, e.g. the version number.": "图像上的大字，例如版本号。",
+  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "文字前同色的标记，例如“已是最新”使用 `icons.success`。"
 }

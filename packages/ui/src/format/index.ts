@@ -2,6 +2,7 @@ import { formatMessage, type MessageValues } from "../i18n/message.js";
 
 let current = "en";
 let words: Readonly<Record<string, string>> = {};
+let zone: string | undefined;
 
 export function setFormatLocale(locale: string, messages: Readonly<Record<string, string>> = {}): void {
   current = locale;
@@ -13,6 +14,25 @@ const t = (key: string, english: string, values?: MessageValues) => formatMessag
 export function formatLocale(): string {
   return current;
 }
+
+export function setFormatTimeZone(timeZone: string | undefined): void {
+  if (!timeZone) {
+    zone = undefined;
+    return;
+  }
+  try {
+    new Intl.DateTimeFormat("en", { timeZone });
+    zone = timeZone;
+  } catch {
+    zone = undefined;
+  }
+}
+
+export function formatTimeZone(): string | undefined {
+  return zone;
+}
+
+const inZone = (): { timeZone?: string } => (zone ? { timeZone: zone } : {});
 
 const numberLocale = () => (current === "en" ? "en-US" : current);
 const dateLocale = () => (current === "en" ? "en-GB" : current);
@@ -146,7 +166,7 @@ export function formatDate(value: DateInput, options: { time?: boolean; utc?: bo
     month: "short",
     year: "numeric",
     ...(options.time ? { hour: "2-digit", minute: "2-digit", ...(options.seconds ? { second: "2-digit" } : {}), hourCycle: "h23" } : {}),
-    ...(options.utc ? { timeZone: "UTC" } : {}),
+    ...(options.utc ? { timeZone: "UTC" } : inZone()),
   });
   return `${f.format(d)}${options.utc ? " UTC" : ""}`;
 }
@@ -199,9 +219,11 @@ export function formatRelative(value: DateInput, now: DateInput = Date.now()): s
       ? t("format.inDays", "{count, plural, one {in # day} other {in # days}}", { count })
       : t("format.daysAgo", "{count, plural, one {# day ago} other {# days ago}}", { count });
   }
+  const year = new Intl.DateTimeFormat("en", { year: "numeric", ...inZone() });
   return new Intl.DateTimeFormat(dateLocale(), {
     day: "numeric",
     month: "short",
-    ...(d.getFullYear() !== toDate(now).getFullYear() ? { year: "numeric" } : {}),
+    ...inZone(),
+    ...(year.format(d) !== year.format(toDate(now)) ? { year: "numeric" } : {}),
   }).format(d);
 }
