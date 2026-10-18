@@ -7,7 +7,12 @@ nav: KPP internals
 
 KPP, the Kaeso Provider Protocol, is the canonical format every model request passes through. The gateway decodes what an app sends into KPP and encodes KPP for the provider, and the reply takes the same path back. [Format translation](../../concepts/format-translation.md) describes what callers see of it; these pages are for people who change it.
 
-Start with [the path of a request](#the-path-of-a-request) and the [design principles](#design-principles); the rest of this page and the pages below are reference.
+- [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
+- [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
+- [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
+- [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
+- [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
+- [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
 
 ## The path of a request
 
@@ -56,15 +61,6 @@ Streams follow the same path with `dispatch::stream_decoder` and `dispatch::stre
 
 `Codec` itself is a sealed trait of associated functions chosen at compile time: requests, replies, errors, stream decoders and encoders, and model listings, for both sides of the gateway. On the ingress side an app speaks the format to Kaeso; on the egress side Kaeso speaks it to a provider.
 
-## Pages
-
-| Page | What it covers |
-| --- | --- |
-| [Crossing formats](cross-format.md) | The rules for data that moves from one API format to another, and why |
-| [Field classes](field-classes.md) | Every KPP field as semantic or hint |
-| [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md), [OpenAI Embeddings](openai-embeddings.md) | Every wire field of each format, where it goes in KPP, and its source |
-| [Fixtures and recordings](fixtures.md) | The real payloads the codecs are tested against, and how to record new ones |
-
 ## Crates and modules
 
 | Crate | Holds |
@@ -99,7 +95,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 - **Stateless.** A `GenerateRequest` always carries the whole conversation.
 - **Messages of ordered content blocks.** Block order is kept end to end.
 - **Raw where bytes matter.** Tool arguments, JSON schemas, unknown blocks and citations are `RawJson`; opaque reasoning is kept as received and tagged with its `Origin`.
-- **Semantic or hint.** Every field is either semantic (a target must honour it or refuse with `Unsupported`) or a hint (a target may ignore it). [Field classes](field-classes.md) lists them.
+- **Semantic or hint.** Every field is either semantic (a target must honour it or refuse with `Unsupported`) or a hint (a target may ignore it). [Field classes](#field-classes) lists them.
 - **Bound extras.** Whatever KPP does not model is kept in `Extras`, tagged with the dialect it came from, and written back only to that dialect. `fields` are semantic: another dialect refuses them unless they are on the [allowlist](cross-format.md#extras). `form` is presentation (a string or an array, `null` or absent, how chunks were grouped), and other dialects ignore it. Unknown keys of nested objects use dotted key paths, such as `function.x`, so a key that itself contains `.` can't be carried ([wire structs](#wire-structs)).
 - **Refuse before sending.** `check()` returns `Unsupported`, naming the feature a target can't express, before anything is sent.
 - **Nothing is dropped silently.** Every field and block of an incoming payload ends up in exactly one place: a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug.
@@ -109,14 +105,97 @@ KPP values and errors are returned by value. `KppError` and some enum variants a
 
 Every KPP type implements `serde` for logs and snapshots. This JSON form is stable across patch releases, but it is not a wire format. Its names are in snake case and write OpenAI as `openai`, as `DialectId` does (`openai_chat`): `OpaqueKind::OpenAiEncryptedReasoning` is `openai_encrypted_reasoning`.
 
-## Changing a codec
+## Field classes
 
-1. **Fixture first.** Add the real payload to `crates/kaeso-codecs/fixtures/<dialect>/` with a provenance row in that folder's `README.md` ([fixtures](fixtures.md)).
-2. **Name the source.** Every mapping names its source on the dialect's mapping page: the provider's documentation or the OpenAPI schema at the pinned spec commit. The sources are the [OpenAI OpenAPI spec](https://github.com/openai/openai-openapi), the Anthropic OpenAPI spec named on the [Anthropic Messages](anthropic-messages.md) page, the official SDK types ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)), and the provider documentation. Where the sources are ambiguous, choose `Unsupported` and open an issue.
-3. **Failing test, then code.** Every wire field maps to a typed KPP field, an origin-bound `Extras` entry, an `Unknown` item or an `Unsupported` error.
-4. **Update the mapping page** of the dialect, in all three languages, in the same pull request.
+Every KPP field is either semantic or a hint:
 
-Error messages are written for the person who called Kaeso: they say which field the target doesn't support and what to do.
+- **Semantic.** The target must honour it. If the target dialect or model can't express it, the codec's `check()` returns `Unsupported` naming the field, and nothing is sent.
+- **Hint.** The target may ignore it. The codec drops it only where the target has no equivalent; a target that can express a hint always receives it.
+
+### `GenerateRequest`
+
+| Field | Class | Notes |
+| --- | --- | --- |
+| `model` | semantic | Resolved by the gateway before encoding. |
+| `system` | semantic | |
+| `messages` | semantic | |
+| `tools` (`Function`) | semantic | Its `cache` is a hint, as for blocks ([cache hints](cross-format.md#cache-hints)). |
+| `tools` (`Unknown`) | semantic | Only expressible by its origin dialect. |
+| `tool_choice` | semantic | `Unknown` only expressible by its origin dialect. |
+| `parallel_tool_calls` | semantic | |
+| `output` | semantic | `JsonObject` has no Anthropic equivalent and is `Unsupported`, with no emulation ([structured output](cross-format.md#structured-output)). |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantic | Converted between effort and budget by the [effort and budget](cross-format.md#effort-and-budget) table. |
+| `reasoning.summary` | hint | Only controls whether summaries come back. Anthropic: `thinking.display: "summarized"` ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). |
+| `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). |
+| `sampling.max_output_tokens` | semantic | |
+| `sampling.temperature`, `.top_p` | semantic | Their spelling (`1` or `1.0`) is form, kept only within the dialect ([sampling](cross-format.md#sampling)). |
+| `sampling.top_k` | semantic | Anthropic only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
+| `sampling.stop` | semantic | OpenAI Chat Completions takes at most four; OpenAI Responses has none and returns `Unsupported` ([sampling](cross-format.md#sampling)). |
+| `sampling.seed` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
+| `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
+| `user` | hint | An end-user id for abuse monitoring; it never changes the output. |
+| `stream` | semantic | |
+| `extras.fields` | semantic | Only written back to the origin dialect; elsewhere `Unsupported` unless on the [extras allowlist](cross-format.md#extras). |
+| `extras.form` | hint | Presentation markers; ignored by other dialects. |
+
+### `Message`
+
+| Field | Class | Notes |
+| --- | --- | --- |
+| `role` | semantic | A `System` message after the start of the conversation is `Unsupported` for Anthropic unless the request came from Anthropic Messages ([system messages](cross-format.md#system-messages)). |
+| `blocks` | semantic | Block order is preserved. |
+| `extras` | as for the request | |
+
+### `Block`
+
+| Variant / field | Class | Notes |
+| --- | --- | --- |
+| `Text.text` | semantic | |
+| `Text.citations` | semantic | Raw and origin-bound; another dialect gets `Unsupported`. |
+| `Text.cache`, `Image.cache`, `Document.cache`, `ToolCall.cache`, `ToolResult.cache` | hint | Dropped for OpenAI, which caches by itself ([cache hints](cross-format.md#cache-hints)). |
+| `Image.source` | semantic | A `FileId` works only with the provider that issued it ([files](cross-format.md#files)). OpenAI Chat Completions takes images only as a URL or base64. |
+| `Document.source` | semantic | Text sources only for Anthropic. OpenAI Chat Completions also refuses URL sources. |
+| `Document.title`, `.context` | semantic | Anthropic only; `Unsupported` for OpenAI. |
+| `Document.citations` | semantic | Anthropic only; `Unsupported` for OpenAI, which cannot cite documents. |
+| `ToolCall.*` | semantic | Ids and names are kept; a target that rejects one, for its characters or its length, gets a deterministic rewrite, reversed on the way back. |
+| `ToolResult.call_id`, `.content` | semantic | |
+| `ToolResult.is_error` | hint for targets without an error flag | Dropped for OpenAI Chat and Responses; the content carries the error text ([tool errors](cross-format.md#tool-errors)). |
+| `Reasoning.summary`, `.text` | hint | Readable reasoning is dropped for another dialect's request ([reasoning](cross-format.md#reasoning)). In replies it is shown together with the original block in a [reasoning blob](cross-format.md#reasoning-blobs). |
+| `Reasoning.opaque` | semantic for its origin | Replayed byte for byte to its origin dialect and provider; never sent elsewhere, where the whole block is dropped ([reasoning](cross-format.md#reasoning)). |
+| `Reasoning.origin` | — | Decides replay ([reasoning](cross-format.md#reasoning)). An Anthropic `thinking` block without a signature goes back to Anthropic only when it was read from Anthropic Messages. |
+| `Refusal.text` | semantic | Anthropic has no refusal block: `Unsupported` in requests to it, and a text block in replies to its apps. |
+| `Unknown` | semantic | Origin dialect only. An OpenAI Chat `function` message is kept whole as one such block ([requests](cross-format.md#requests)). |
+| `extras` of every block | as for the request | Allowlisted per block kind ([extras allowlist](cross-format.md#extras)). |
+
+### `CacheHint`
+
+| Field | Class | Notes |
+| --- | --- | --- |
+| `ttl` | hint | |
+| `extras` | hint | Dropped with the hint. |
+
+### `EmbedRequest`
+
+| Field | Class | Notes |
+| --- | --- | --- |
+| `model`, `input`, `dimensions`, `encoding` | semantic | |
+| `user` | hint | |
+| `extras` | as for `GenerateRequest` | |
+
+### Replies and stream events
+
+Replies and stream events flow from one provider to one app. They have no hints: a field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md).
+
+Reasoning reaches an app of another dialect where its format can carry it, wrapped so it can come back ([reasoning blobs](cross-format.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unknown blocks reach only apps of their own dialect. Everything else is left out of the app's view ([replies](cross-format.md#replies), `cross::reply_policy`), with [keepalive](cross-format.md#keepalives) frames in streams. The gateway logs the full KPP reply.
+
+## Change a codec
+
+1. Add the real payload to `crates/kaeso-codecs/fixtures/<dialect>/`, with a provenance row in that folder's `README.md` ([fixtures](fixtures.md)).
+2. Name the source of every mapping on the dialect's mapping page. The sources are the [OpenAI OpenAPI spec](https://github.com/openai/openai-openapi), the Anthropic OpenAPI spec named on the [Anthropic Messages](anthropic-messages.md) page, the official SDK types ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)) and the providers' documentation. Where they are ambiguous, choose `Unsupported` and open an issue.
+3. Write a failing test, then the code. Every wire field maps to a typed KPP field, an origin-bound `Extras` entry, an `Unknown` item or an `Unsupported` error.
+4. Update the dialect's mapping page in all three languages, in the same pull request.
+
+Write error messages for the person who called Kaeso: name the field the target doesn't support, and say what to do.
 
 ## Types
 
