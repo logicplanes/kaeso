@@ -1,7 +1,7 @@
 ---
 title: Translations
 description: How the console, the UI library, the emails and the documentation speak English, German and Simplified Chinese.
-order: 5
+order: 6
 ---
 
 Every word Kaeso shows a person exists in English, German and Simplified Chinese (`en`, `de`, `zh-CN`). English is the source: a change to an English text comes with its German and Chinese in the same pull request, and the checks fail when one is missing.

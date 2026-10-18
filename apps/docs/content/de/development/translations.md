@@ -1,7 +1,7 @@
 ---
 title: Übersetzungen
 description: Wie Konsole, UI-Bibliothek, E-Mails und Dokumentation Englisch, Deutsch und vereinfachtes Chinesisch sprechen.
-order: 5
+order: 6
 ---
 
 Jedes Wort, das Kaeso einer Person zeigt, gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch (`en`, `de`, `zh-CN`). Englisch ist die Quelle: Eine Änderung an einem englischen Text kommt mit ihrer deutschen und chinesischen Fassung im selben Pull Request, und Prüfungen schlagen fehl, wenn eine fehlt.

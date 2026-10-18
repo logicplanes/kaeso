@@ -1,7 +1,7 @@
 ---
 title: Lokale Einrichtung
 description: Schritt für Schritt von einem frischen Klon zu einer laufenden Installation mit Beispieldaten und bestandenen Tests.
-order: 1
+order: 2
 ---
 
 Diese Seite führt von einem frischen Klon zum aus dem Quellcode gebauten Gateway, zur Konsole mit Beispieldaten und zu bestandenen Tests. Jeder Befehl läuft vom Wurzelverzeichnis des Repositorys aus.

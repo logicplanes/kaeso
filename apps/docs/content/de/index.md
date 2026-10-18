@@ -44,9 +44,10 @@ Der [Ablauf einer Anfrage](concepts/request-flow.md) verfolgt eine Anfrage durch
 | Kaeso installieren und die erste Anfrage senden | [Schnellstart](get-started/quick-start.md) |
 | Modelle aus dem eigenen Code aufrufen | [Modelle aufrufen](get-started/calling-models.md) |
 | Kaeso aus Claude Code oder Codex nutzen | [Coding-Tools](get-started/coding-tools.md) |
-| Eine Installation planen und betreiben | [Selbst hosten](self-hosting/index.md) |
+| Verstehen, wie Kaeso Anfragen und Rechte behandelt | [Konzepte](concepts/index.md) |
 | Sich in der Konsole zurechtfinden | [Die Konsole nutzen](console/index.md) |
 | Die APIs nachschlagen | [API](api/index.md) |
+| Eine Installation planen und betreiben | [Selbst hosten](self-hosting/index.md) |
 | An Kaeso selbst arbeiten | [Entwicklung](development/index.md) |
 
 Kaeso steht unter der MIT-Lizenz. Gateway, KPP, Konsole, UI-Bibliothek und diese Dokumentation liegen in einem Repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).

@@ -1,7 +1,7 @@
 ---
 title: KPP 内部实现
 description: KPP 的类型和编解码器是如何构建的，面向 kaeso-kpp 和 kaeso-codecs 的贡献者。
-order: 3
+order: 4
 nav: KPP 内部实现
 ---
 
@@ -62,7 +62,6 @@ sequenceDiagram
 | --- | --- |
 | [跨格式转换](cross-format.md) | 数据从一种 API 格式转到另一种格式时遵循的规则及其理由 |
 | [字段类别](field-classes.md) | 每个 KPP 字段属于语义字段还是提示字段 |
-| [Extras 允许列表](extras-allowlist.md) | 请求转换格式时可以丢弃的 Extras |
 | [Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md)、[OpenAI Embeddings](openai-embeddings.md) | 每种格式的每个 wire 字段、它在 KPP 中的位置及其来源 |
 | [Fixture 与录制](fixtures.md) | 编解码器测试所用的真实载荷，以及如何录制新的载荷 |
 
@@ -101,7 +100,7 @@ sequenceDiagram
 - **消息由有序的内容块组成。** 块的顺序自始至终保持不变。
 - **字节要紧的地方保留原始数据。** 工具参数、JSON schema、未知块和引用都是 `RawJson`；不透明的推理按收到时的样子保存，并标记其 `Origin`。
 - **语义或提示。** 每个字段要么是语义字段（目标必须遵守，否则以 `Unsupported` 拒绝），要么是提示字段（可以忽略）。[字段类别](field-classes.md)列出了所有字段。
-- **绑定来源的 Extras。** KPP 没有建模的内容都保存在 `Extras` 中，标记其来源方言，并且只写回该方言。`fields` 是语义字段：其他方言会拒绝它们，除非它们在[允许列表](extras-allowlist.md)中。`form` 只关乎呈现（字符串还是数组、`null` 还是缺失、chunk 如何分组），其他方言会忽略它。嵌套对象的未知键使用带点的键路径，例如 `function.x`，因此本身含有 `.` 的键无法携带（[Wire 结构体](#wire-结构体)）。
+- **绑定来源的 Extras。** KPP 没有建模的内容都保存在 `Extras` 中，标记其来源方言，并且只写回该方言。`fields` 是语义字段：其他方言会拒绝它们，除非它们在[允许列表](cross-format.md#extras)中。`form` 只关乎呈现（字符串还是数组、`null` 还是缺失、chunk 如何分组），其他方言会忽略它。嵌套对象的未知键使用带点的键路径，例如 `function.x`，因此本身含有 `.` 的键无法携带（[Wire 结构体](#wire-结构体)）。
 - **发送之前拒绝。** `check()` 在发送任何内容之前返回 `Unsupported`，注明目标无法表达的功能。
 - **从不静默丢弃。** 传入载荷的每个字段和块都恰好落到一个地方：类型化的 KPP 字段、绑定方言的 `Extras` 条目、`Unknown` 项，或种类为 `Unsupported` 的 `KppError`。丢弃数据的 match 分支就是 bug。
 - **只做增量的公共 API。** 公共枚举和可扩展的结构体都是 `#[non_exhaustive]`；枚举变体包装带有构造函数（`TextBlock::new`、`Block::text` 等）的 `#[non_exhaustive]` 结构体，因此可以添加字段，而不会破坏构建或匹配这些值的代码。`Codec` trait 是密封的。

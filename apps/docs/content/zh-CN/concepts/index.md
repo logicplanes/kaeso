@@ -1,7 +1,7 @@
 ---
 title: 概念
 description: Kaeso 如何处理请求、如何在格式之间转换，以及如何决定谁可以做什么。
-order: 5
+order: 2
 ---
 
 | 页面 | 说明 |

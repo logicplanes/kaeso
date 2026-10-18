@@ -1,7 +1,7 @@
 ---
 title: Anthropic Messages
 description: How every field of the Anthropic Messages format maps to KPP and back.
-order: 4
+order: 3
 ---
 
 - **Codec:** `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`)
@@ -13,7 +13,7 @@ order: 4
 ## How to read the tables
 
 - **KPP**: the typed field the wire value maps to.
-- **fields**: kept raw in `Extras::fields`. These are semantic: written back only to Anthropic, refused with `Unsupported` by other dialects ([extras](cross-format.md#extras)) unless the [allowlist](extras-allowlist.md) lets them drop, and left out of replies to other dialects ([replies](cross-format.md#replies)). Nested objects use dotted key paths (`metadata.x`).
+- **fields**: kept raw in `Extras::fields`. These are semantic: written back only to Anthropic, refused with `Unsupported` by other dialects ([extras](cross-format.md#extras)) unless the [allowlist](cross-format.md#extras) lets them drop, and left out of replies to other dialects ([replies](cross-format.md#replies)). Nested objects use dotted key paths (`metadata.x`).
 - **form**: a codec-private presentation marker in `Extras::form`, ignored by other dialects. `verbatim` means the generic `wire::Ext` mechanism (`null`, `false` and `[]` spellings).
 - **raw**: kept whole in a `RawItem`, `Citation` or `RawUsage`.
 - **Own** data has extras or an origin of `anthropic_messages`; **foreign** data comes from another dialect.
@@ -47,7 +47,7 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `metadata.user_id` | `user` | `null` → verbatim (`verbatim:metadata`); other keys → fields `metadata.*`; a present `metadata` object → form `objects: ["metadata"]`. |
 | `thinking.type` `enabled` / `disabled` / `adaptive` | `reasoning.mode` `Enabled` / `Disabled` / `Adaptive` | `between_tools` (SDK only) and future types → `ReasoningMode::Other`. |
 | `thinking.budget_tokens` | `reasoning.budget_tokens` | |
-| `thinking.display` and other `thinking` keys | `reasoning.extras.fields` | No KPP field. `display` is on the [allowlist](extras-allowlist.md), so it is dropped for other dialects; OpenAI Responses gets `reasoning.summary: "auto"` unless it is `omitted` ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). Other keys → `Unsupported` there. |
+| `thinking.display` and other `thinking` keys | `reasoning.extras.fields` | No KPP field. `display` is on the [allowlist](cross-format.md#extras), so it is dropped for other dialects; OpenAI Responses gets `reasoning.summary: "auto"` unless it is `omitted` ([readable reasoning and summaries](cross-format.md#readable-reasoning-and-summaries)). Other keys → `Unsupported` there. |
 | `output_config.effort` | `reasoning.effort` | `low`, `medium`, `high`, `xhigh`, `max`; unknown values → `ReasoningEffort::Other`. |
 | `output_config.format` `{type: json_schema, schema}` | `output = JsonSchema { schema }` | `name`, `description` and `strict` are `None`. Unknown keys of `format` → the spec's `extras`. Other format types, and a `json_schema` format Kaeso cannot read field by field (without `schema`, or with a key it cannot carry), → fields `output_config.format`. |
 | other `output_config` keys (such as `task_budget`, beta) | fields `output_config.*` | A present `output_config` → form `objects: ["output_config"]`; `null` members → `verbatim:output_config`. `task_budget` puts a countdown in front of the model, so it is semantic: other dialects → `Unsupported`, with a hint to set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` in Claude Code. |
@@ -58,7 +58,7 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `tools[].name`, `.description`, `.input_schema`, `.strict`, `.cache_control` | `name`, `description`, `parameters` (raw), `strict`, `cache` | |
 | `tools[].eager_input_streaming`, `.allowed_callers`, `.defer_loading`, `.input_examples` | tool `extras.fields` | Other dialects → `Unsupported`; the message tells Claude Code users to set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, which stops these beta tool fields. |
 | `tools[]` of any other type (server tools such as `web_search_20250305` or `advisor_20260301`) | `ToolDef::Unknown` (raw) | Same dialect only. For other dialects the `Unsupported` message names the type after `Input tag` (`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`), the API's own wording, so Claude Code retries without the advisor tool ([gateway protocol](https://code.claude.com/docs/en/llm-gateway-protocol), "Automatic retry and error forwarding"). |
-| `cache_control` (top level, automatic caching) | fields `cache_control` | Only a hint; KPP has no request-level cache hint. On the [allowlist](extras-allowlist.md), so it is dropped for other dialects. |
+| `cache_control` (top level, automatic caching) | fields `cache_control` | Only a hint; KPP has no request-level cache hint. On the [allowlist](cross-format.md#extras), so it is dropped for other dialects. |
 | `container`, `inference_geo`, `service_tier`, SDK `diagnostics`, `user_profile_id`, `workspace_id`, unknown keys | `extras.fields` | |
 | header `anthropic-beta` | `extras` header `header:anthropic-beta` | Forwarded on egress to Anthropic only. |
 | header `anthropic-version` | `extras` header when it is not `2023-06-01` | The pinned version is always sent unless a newer one was forwarded ([the Anthropic version](cross-format.md#the-anthropic-version)). |

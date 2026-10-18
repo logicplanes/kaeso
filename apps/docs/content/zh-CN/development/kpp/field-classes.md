@@ -34,7 +34,7 @@ order: 2
 | `sampling.frequency_penalty`、`.presence_penalty` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `user` | **提示** | 用于滥用监控的最终用户 ID，从不改变输出。 |
 | `stream` | 语义 | |
-| `extras.fields` | 语义 | 只写回来源方言；发往其他方言时返回 `Unsupported`，除非该字段在 [Extras 允许列表](extras-allowlist.md)中。 |
+| `extras.fields` | 语义 | 只写回来源方言；发往其他方言时返回 `Unsupported`，除非该字段在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `extras.form` | **提示** | 用于呈现的形式标记，其他方言会忽略。 |
 
 ## `Message`
@@ -64,7 +64,7 @@ order: 2
 | `Reasoning.origin` | — | 决定是否回放（[推理](cross-format.md#推理)）。没有签名的 Anthropic `thinking` 块只有在从 Anthropic Messages 读到时才会发回 Anthropic。 |
 | `Refusal.text` | 语义 | Anthropic 没有拒绝块：发往它的请求返回 `Unsupported`，给 Anthropic 应用的回复中则变为文本块。 |
 | `Unknown` | 语义 | 仅限来源方言。OpenAI Chat 的 `function` 消息作为一个这样的块完整保存（[请求](cross-format.md#请求)）。 |
-| 每个块的 `extras` | 与请求相同 | 允许列表按块类型生效（[Extras 允许列表](extras-allowlist.md)）。 |
+| 每个块的 `extras` | 与请求相同 | 允许列表按块类型生效（[Extras 允许列表](cross-format.md#extras)）。 |
 
 ## `CacheHint`
 

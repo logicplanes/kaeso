@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: How every field of the OpenAI Responses format maps to KPP and back.
-order: 6
+order: 5
 ---
 
 - **Codec:** `kaeso_codecs::openai_responses::OpenAiResponses` (`crates/kaeso-codecs/src/openai_responses/`)
@@ -101,7 +101,7 @@ The `id` and `status` of message and function call items (`msg_…`, `fc_…`) a
 | `refusal` | `Block::Refusal` | |
 | `input_image` `image_url` (data URL `data:<type>;base64,…`) | `Block::Image`, `Source::Base64` | Data URLs with other parameters stay `Source::Url`. |
 | `input_image` `image_url` (URL) / `file_id` | `Source::Url` / `Source::FileId` (origin-bound) | Both or neither set: `Block::Unknown`. An image file id works only with OpenAI Responses of the same provider, since OpenAI Chat Completions takes no image file ids. |
-| `input_image.detail`, `input_file.detail` | `"auto"`: form; other values: extras `detail` | On images, `detail` is a resolution hint on the [extras allowlist](extras-allowlist.md), so it is dropped for other dialects. On files it controls how PDFs are rendered and other dialects refuse it. |
+| `input_image.detail`, `input_file.detail` | `"auto"`: form; other values: extras `detail` | On images, `detail` is a resolution hint on the [extras allowlist](cross-format.md#extras), so it is dropped for other dialects. On files it controls how PDFs are rendered and other dialects refuse it. |
 | `input_file` `file_data` / `file_url` / `file_id` | `Block::Document`, `Source::Base64` / `Url` / `FileId` | Exactly one source, and `file_data` must be a data URL; otherwise `Block::Unknown`. |
 | `input_file.filename` | form | KPP has no field for a file name (`DocumentBlock::title` is a title), so PDFs can cross dialects. OpenAI requires a file name with `file_data`: documents from other dialects sent as `file_data` get `filename: "document.<ext>"`, with the extension `pdf`, `txt`, `md`, `csv` or `json` by media type and `bin` otherwise. |
 | `prompt_cache_breakpoint` (`PromptCacheBreakpointConfig`) on a text, image or file part | `cache: CacheHint` of the block (form `breakpoint`) | Re-emitted only to this dialect; hints from other dialects are dropped ([cache hints](cross-format.md#cache-hints)). |

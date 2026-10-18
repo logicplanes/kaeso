@@ -1,7 +1,7 @@
 ---
 title: Writing documentation
 description: How the pages of this site are written, placed, linked, checked and translated.
-order: 6
+order: 7
 ---
 
 Every page of this site is a Markdown file in `apps/docs/content`, with one folder per language (`en`, `de`, `zh-CN`) holding the same file names. This is the only place documentation is kept; READMEs in the code stay short and link here. When people who use, run or integrate Kaeso will notice a change, its pull request updates these pages.
@@ -60,7 +60,7 @@ Any other field is an error. The title is the page's only `#` heading, so headin
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | The same page in German |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | The same page in Simplified Chinese |
 
-A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't. A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
+A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't. Links from elsewhere and bookmarks keep the old address, so add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation. A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
 
 ## Links
 

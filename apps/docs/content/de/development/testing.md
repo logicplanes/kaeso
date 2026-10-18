@@ -1,7 +1,7 @@
 ---
 title: Tests
 description: Jede Testsuite im Repository, wie man sie ausführt und was bestehen muss, bevor eine Änderung fertig ist.
-order: 4
+order: 5
 ---
 
 Jede Änderung kommt mit Tests, die prüfen, was eine Person oder eine App sieht. Coverage-Schwellen werden nie gesenkt; steigt die Coverage, steigt die Schwelle mit. Befehle laufen vom Wurzelverzeichnis des Repositorys aus, für Suites mit Datenbanken bei laufendem [Entwicklungs-Stack](local-setup.md#3-entwicklungs-stack-starten).

@@ -2,7 +2,7 @@
 title: Backups und Hauptschlüssel
 description: Was gesichert wird, wie es sich wiederherstellen lässt und wie der Hauptschlüssel rotiert wird.
 nav: Backups und Schlüssel
-order: 7
+order: 8
 ---
 
 Drei Dinge sichern und die Hauptschlüssel getrennt von den Datenbank-Backups aufbewahren.

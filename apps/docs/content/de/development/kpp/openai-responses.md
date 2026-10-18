@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: Wie jedes Feld des OpenAI-Responses-Formats auf KPP abgebildet wird und wieder zurück.
-order: 6
+order: 5
 ---
 
 - **Codec:** `kaeso_codecs::openai_responses::OpenAiResponses` (`crates/kaeso-codecs/src/openai_responses/`)
@@ -101,7 +101,7 @@ Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen i
 | `refusal` | `Block::Refusal` | |
 | `input_image` `image_url` (Data-URL `data:<type>;base64,…`) | `Block::Image`, `Source::Base64` | Data-URLs mit weiteren Parametern bleiben `Source::Url`. |
 | `input_image` `image_url` (URL) / `file_id` | `Source::Url` / `Source::FileId` (an die Herkunft gebunden) | Beide oder keins gesetzt: `Block::Unknown`. Eine Bild-Datei-ID funktioniert nur mit OpenAI Responses desselben Anbieters, weil OpenAI Chat Completions keine Bild-Datei-IDs annimmt. |
-| `input_image.detail`, `input_file.detail` | `"auto"`: Form; andere Werte: Extras `detail` | Bei Bildern ist `detail` ein Auflösungshinweis auf der [Extras-Allowlist](extras-allowlist.md) und wird für andere Dialekte verworfen. Bei Dateien steuert es, wie PDFs gerendert werden, und andere Dialekte lehnen es ab. |
+| `input_image.detail`, `input_file.detail` | `"auto"`: Form; andere Werte: Extras `detail` | Bei Bildern ist `detail` ein Auflösungshinweis auf der [Extras-Allowlist](cross-format.md#extras) und wird für andere Dialekte verworfen. Bei Dateien steuert es, wie PDFs gerendert werden, und andere Dialekte lehnen es ab. |
 | `input_file` `file_data` / `file_url` / `file_id` | `Block::Document`, `Source::Base64` / `Url` / `FileId` | Genau eine Quelle, und `file_data` muss eine Data-URL sein; sonst `Block::Unknown`. |
 | `input_file.filename` | Form | KPP hat kein Feld für einen Dateinamen (`DocumentBlock::title` ist ein Titel), so können PDFs den Dialekt wechseln. OpenAI verlangt bei `file_data` einen Dateinamen: Dokumente aus anderen Dialekten, die als `file_data` gesendet werden, bekommen `filename: "document.<ext>"`, mit der Endung `pdf`, `txt`, `md`, `csv` oder `json` je nach Medientyp und sonst `bin`. |
 | `prompt_cache_breakpoint` (`PromptCacheBreakpointConfig`) an einem Text-, Bild- oder Dateiteil | `cache: CacheHint` des Blocks (Form `breakpoint`) | Wird nur an diesen Dialekt wieder ausgegeben; Hinweise aus anderen Dialekten werden verworfen ([Cache-Hinweise](cross-format.md#cache-hinweise)). |

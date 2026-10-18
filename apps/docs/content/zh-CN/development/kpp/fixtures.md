@@ -1,7 +1,7 @@
 ---
 title: Fixture 与录制
 description: 编解码器测试所用的真实载荷，以及如何从服务商录制新的载荷。
-order: 8
+order: 7
 ---
 
 每项编解码器变更都从一个测试样本（fixture）开始：一个真实的请求体、回复、流或错误，位于 `crates/kaeso-codecs/fixtures`。每个 fixture 都会经过自己的编解码器做往返测试；跨方言矩阵把每个生成类 fixture 送入其他每个方言；[SDK 一致性](../testing.md#sdk-一致性)测试套件把它们提供给官方 SDK；网关的模拟服务商用它们作答；模糊测试目标也以它们为起点。

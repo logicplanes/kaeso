@@ -44,9 +44,10 @@ flowchart LR
 | 安装 Kaeso 并发送第一个请求 | [快速开始](get-started/quick-start.md) |
 | 在代码中调用模型 | [调用模型](get-started/calling-models.md) |
 | 在 Claude Code 或 Codex 中使用 Kaeso | [编程工具](get-started/coding-tools.md) |
-| 规划和运维一个安装 | [自托管](self-hosting/index.md) |
+| 了解 Kaeso 如何处理请求和权限 | [概念](concepts/index.md) |
 | 熟悉控制台 | [使用控制台](console/index.md) |
 | 查阅 API | [API](api/index.md) |
+| 规划和运维一个安装 | [自托管](self-hosting/index.md) |
 | 参与 Kaeso 本身的开发 | [开发](development/index.md) |
 
 Kaeso 采用 MIT 许可证。网关、KPP、控制台、UI 组件库和本文档都在同一个仓库中：[logicplanes/kaeso](https://github.com/logicplanes/kaeso)。

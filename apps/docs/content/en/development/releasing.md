@@ -1,7 +1,7 @@
 ---
 title: Releasing
 description: How versions are numbered, what a release publishes, and how the maintainer makes one.
-order: 9
+order: 10
 ---
 
 Kaeso is released as a whole: the gateway, the console, KPP's crates and the UI library's packages share one version, and one release publishes all of them. The maintainer makes every release from `prod` with the Release workflow, then deploys the documentation and the showcase from the release's tag. Contributors never create tags or releases.
@@ -229,7 +229,7 @@ pnpm --filter kaeso-showcase build
 
 `apps/docs/dist` then holds the documentation and `apps/showcase/dist` the showcase, every page already rendered in English, German and Simplified Chinese. The showcase's **View source** links, its `llms.txt` and its changelog's links into the repository point at the release's tag (`v` and the version in the root `package.json`). The documentation's **Edit on GitHub** links point at `dev`, where changes to pages are proposed.
 
-Each folder is ready to upload as it is. It contains `robots.txt`, which allows everything and names the sitemap; `sitemap.xml`, with every page in every language and its `hreflang` alternates; a `404.html` per language, marked `noindex`; `site.webmanifest`, the icons, and `og.png`, the image link previews show. The host only has to answer `/guides` with `guides.html`, and an unknown address with the `404.html` of its language.
+Each folder is ready to upload as it is. It contains `robots.txt`, which allows everything and names the sitemap; `sitemap.xml`, with every page in every language and its `hreflang` alternates; a `404.html` per language, marked `noindex`; `site.webmanifest`, the icons, and `og.png`, the image link previews show. The host only has to answer `/guides` with `guides.html`, and an unknown address with the `404.html` of its language; pages that moved have a page at their old address, and `_redirects` lists the same moves for hosts that read it.
 
 Both builds end with `scripts/check-site.mjs`, which fails the build when:
 

@@ -1,7 +1,7 @@
 ---
 title: Contributing
 description: Report issues, propose changes, and the rules every change to Kaeso follows.
-order: 10
+order: 1
 ---
 
 Ideas and questions go to [Discussions](https://github.com/logicplanes/kaeso/discussions), bugs and concrete feature requests to [issues](https://github.com/logicplanes/kaeso/issues). The maintainer reviews pull requests from outside contributors at their discretion; for anything larger than a small fix, open an issue first so the approach can be agreed. Everyone taking part follows the [Code of Conduct](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).

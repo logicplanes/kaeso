@@ -1,7 +1,7 @@
 ---
 title: Performance
 description: The bundle budgets of the console, the docs and the UI library, the codec benchmarks, and the fuzzing results.
-order: 8
+order: 9
 ---
 
 Performance is measured, not guessed. The console's and the docs' builds fail when a page grows past its budget, the UI library's build fails when a component does, and KPP's codecs have benchmarks and fuzz targets. A change that needs a larger budget raises it in the same pull request, says why, and updates this page.

@@ -68,6 +68,7 @@ pnpm --filter kaeso-docs e2e
 | `content/<language>/` | The pages. Folders are sidebar groups; a folder's `index.md` names and places it                                                               |
 | `scripts/content/`    | Frontmatter, slugs, compiling a page, one site per language, the changelog page, the translation checks, the Vite plugin, `pnpm check:content` |
 | `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams`    |
+| `redirects.json`      | Old addresses of moved or merged pages and the page each now lives on; the build sends readers on from every old address                       |
 | `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                      |
 | `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                            |
 | `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                    |

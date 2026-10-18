@@ -1,7 +1,8 @@
 ---
 title: OpenAI Chat Completions
 description: OpenAI Chat Completions 格式的每个字段如何映射到 KPP 以及如何映射回来。
-order: 5
+order: 4
+nav: OpenAI Chat
 ---
 
 - **编解码器：**`kaeso_codecs::openai_chat::OpenAiChat`（`crates/kaeso-codecs/src/openai_chat/`）
@@ -47,9 +48,9 @@ order: 5
 | `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。 |
 | `stream` | `stream`（类型化） | `false`：形式标记 `stream_false`。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
-| `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](extras-allowlist.md)中，会被丢弃。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
+| `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中，会被丢弃。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
 | 未知键 | extras | 以 `header:` 开头或包含 `.` 的键会被拒绝（[Kaeso 无法承载的键](#kaeso-无法承载的键)）。 |
-| 请求头 `openai-beta` | extras `header:openai-beta` | 只在请求发往 Chat 时转发；在 [Extras 允许列表](extras-allowlist.md)中，因此其他方言会丢弃它。 |
+| 请求头 `openai-beta` | extras `header:openai-beta` | 只在请求发往 Chat 时转发；在 [Extras 允许列表](cross-format.md#extras)中，因此其他方言会丢弃它。 |
 
 ### 消息（`ChatCompletionRequestMessage`）
 
@@ -76,10 +77,10 @@ order: 5
 | `prompt_cache_breakpoint`（文本、图像和文件部分） | `cache: CacheHint { ttl: None }`，绑定到 Chat | 两者都标记可复用前缀的结尾；TTL 来自 `prompt_cache_options`。只有来自 Chat 的提示会被发回；来自其他方言的提示会被丢弃（[缓存提示](cross-format.md#缓存提示)）。`mode` 不是 `explicit` 时：形式标记 `mode`。 |
 | `image_url.url`（`https:`） | `Block::Image { source: Url }` | |
 | `image_url.url`（`data:<type>[;params];base64,<data>`，RFC 2397，scheme 和 `base64` 大小写均可） | `Block::Image { source: Base64 }` | 不是 `data:<type>;base64` 的头部，例如带参数（`;name=a.png`）或大写，会在形式标记 `data_url` 中原样保留，`file.file_data` 也一样。不是 base64 或没有媒体类型的 data URL 仍为 `Url`。 |
-| `image_url.detail` | extras `image_url.detail` | 在 [Extras 允许列表](extras-allowlist.md)中：对其他方言静默丢弃。 |
+| `image_url.detail` | extras `image_url.detail` | 在 [Extras 允许列表](cross-format.md#extras)中：对其他方言静默丢弃。 |
 | `file.file_data`（`data:` URL） | `Block::Document { source: Base64 }` | 裸 base64 被视为媒体类型 `application/pdf`（OpenAI 文件输入指南中唯一的类型），带形式标记 `bare_file_data`，写回时仍为裸值。 |
 | `file.file_id` | `Block::Document { source: FileId }`，绑定到 OpenAI 的文件存储（[文件](cross-format.md#文件)） | 同时有 `file_data` 时：extras `file.file_id`。 |
-| `file.filename` | extras `file.filename` | 这是 OpenAI 要求随内联 `file_data` 一起提供的文件名，而不是展示给模型的标题，因此从不成为 `DocumentBlock::title`。在 [Extras 允许列表](extras-allowlist.md)中。 |
+| `file.filename` | extras `file.filename` | 这是 OpenAI 要求随内联 `file_data` 一起提供的文件名，而不是展示给模型的标题，因此从不成为 `DocumentBlock::title`。在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `input_audio` | `Unsupported`（`input_audio`） | 音频输入不属于 KPP。 |
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |

@@ -1,7 +1,7 @@
 ---
 title: Health and metrics
 description: Health checks, Prometheus metrics and logs of a running install.
-order: 8
+order: 9
 ---
 
 ## Health checks

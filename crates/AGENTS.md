@@ -53,7 +53,7 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 
 ## KPP rules
 
-1. **Never silently drop information.** Every field and block of an incoming payload ends up in exactly one of: a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug. Drop a hint across dialects only where [field classes](https://docs.kaeso.app/development/kpp/field-classes) and the [extras allowlist](https://docs.kaeso.app/development/kpp/extras-allowlist) say so.
+1. **Never silently drop information.** Every field and block of an incoming payload ends up in exactly one of: a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug. Drop a hint across dialects only where [field classes](https://docs.kaeso.app/development/kpp/field-classes) and the [extras allowlist](https://docs.kaeso.app/development/kpp/cross-format#extras) say so.
 2. **Never guess a wire format.** Every mapping names its source on the dialect's mapping page: the provider documentation or the OpenAPI schema at the pinned spec commit, or the official SDK types. When the sources are ambiguous, choose `Unsupported` and open an issue.
 3. **Fixtures before code.** Every codec change starts with a real payload in `crates/kaeso-codecs/fixtures/<dialect>/`, a provenance row in that folder's `README.md`, and a failing test. Fixtures never contain real keys or personal data.
 4. **Round trip is the core test.** For every fixture, decode → KPP → encode reproduces the original as an equal JSON value (streams: an equal event sequence). If exact equality is impossible, the test says why next to the fixture.

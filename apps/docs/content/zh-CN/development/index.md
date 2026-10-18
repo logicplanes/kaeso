@@ -37,6 +37,7 @@ Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区（`pnpm-workspace
 
 | 页面 | 内容 |
 | --- | --- |
+| [参与贡献](contributing.md) | Issue、拉取请求，以及每个变更都要遵守的规则 |
 | [本地环境搭建](local-setup.md) | 前置条件、开发环境栈、示例数据，以及从源代码运行各个部分 |
 | [架构](architecture/index.md) | 网关、控制台、文档站点和邮件如何协同工作 |
 | [KPP 内部实现](kpp/index.md) | 规范格式、编解码器，以及逐字段说明的每种 wire 格式 |
@@ -46,4 +47,3 @@ Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区（`pnpm-workspace
 | [依赖与许可证](dependencies.md) | 每个直接依赖、引入它的原因，以及许可证政策 |
 | [性能](performance.md) | 打包预算、编解码器基准测试和模糊测试结果 |
 | [发布](releasing.md) | 版本号、变更日志、Release 工作流及其发布的内容 |
-| [参与贡献](contributing.md) | Issue、拉取请求，以及每个变更都要遵守的规则 |

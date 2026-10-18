@@ -1,7 +1,7 @@
 ---
 title: 升级
 description: 了解新版本，手动更新或通过更新器一键更新，以及更新期间会发生什么。
-order: 6
+order: 7
 ---
 
 版本遵循语义化版本规范，Kaeso 的所有组成部分都使用该版本的版本号。每个版本的发布说明位于[发布页面](https://github.com/logicplanes/kaeso/releases)，实例管理员也可以在控制台的 **实例设置 → 更新** 中查看。每个版本的 `compose.yaml` 固定了该版本的网关、控制台和更新器镜像。

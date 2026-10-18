@@ -1,7 +1,7 @@
 ---
 title: Abhängigkeiten und Lizenzen
 description: Jede direkte Abhängigkeit, warum es sie gibt, ihre Lizenz und die Prüfungen, die die Richtlinie durchsetzen.
-order: 7
+order: 8
 ---
 
 Kaeso steht unter der MIT-Lizenz, und alles, was es ausliefert, hängt nur von permissiv lizenziertem Code ab. Eine neue Abhängigkeit bekommt im selben Pull Request eine Zeile auf dieser Seite, die sagt, warum sie nötig ist und unter welcher Lizenz sie steht.

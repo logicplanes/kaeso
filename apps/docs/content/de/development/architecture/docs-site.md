@@ -139,6 +139,7 @@ Die Unit-Tests und die E2E-Suite lesen `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_
 | `sitemap.xml` | Jede Seite in jeder Sprache mit ihren `hreflang`-Alternativen, ohne `lastmod`, da der Build nicht weiß, wann sich eine Seite zuletzt geändert hat |
 | `robots.txt` | Erlaubt alles und nennt die Sitemap |
 | `site.webmanifest`, die Icons, `og.png`, `CNAME` | Statische Dateien aus `public/` |
+| `<alter Pfad>.html`, `_redirects` | Für jede Adresse in `redirects.json`, in jeder Sprache: eine `noindex`-Seite, die den Leser dorthin schickt, wohin die Seite gezogen ist, und dieselben Umzüge als dauerhafte Weiterleitungen für Hosts, die `_redirects` lesen |
 | `csp.txt`, `_headers` | Die [Content Security Policy](../releasing.md#content-security-policy) der Website, die jede Seite auch in einem `<meta>` trägt |
 
 Der Head einer Seite enthält ihr `lang`, `<title>` und ihre Beschreibung, ihre kanonische Adresse, `hreflang`-Alternativen in den drei Sprachen und `x-default`, Open-Graph- und Twitter-Tags mit `og.png`, ihr `og:locale` mit den anderen beiden als Alternativen sowie strukturierte Daten: `WebSite` auf der Startseite einer Sprache, `TechArticle` auf jeder anderen Seite.

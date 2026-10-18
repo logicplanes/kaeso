@@ -37,6 +37,7 @@ Dokumentation und Showcase werden als statische Websites aus dem Tag des Release
 
 | Seite | Inhalt |
 | --- | --- |
+| [Mitwirken](contributing.md) | Issues, Pull Requests und die Regeln, denen jede Änderung folgt |
 | [Lokale Einrichtung](local-setup.md) | Voraussetzungen, der Entwicklungs-Stack, Beispieldaten und jeder Teil aus dem Quellcode |
 | [Architektur](architecture/index.md) | Wie Gateway, Konsole, Dokumentations-Website und E-Mails zusammenspielen |
 | [KPP-Interna](kpp/index.md) | Das kanonische Format, die Codecs und jedes Wire-Format Feld für Feld |
@@ -46,4 +47,3 @@ Dokumentation und Showcase werden als statische Websites aus dem Tag des Release
 | [Abhängigkeiten und Lizenzen](dependencies.md) | Jede direkte Abhängigkeit, warum es sie gibt, und die Lizenzrichtlinie |
 | [Performance](performance.md) | Bundle-Budgets, Codec-Benchmarks und Fuzzing-Ergebnisse |
 | [Releases](releasing.md) | Versionen, das Changelog, der Release-Workflow und was er veröffentlicht |
-| [Mitwirken](contributing.md) | Issues, Pull Requests und die Regeln, denen jede Änderung folgt |

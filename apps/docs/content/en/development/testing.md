@@ -1,7 +1,7 @@
 ---
 title: Testing
 description: Every test suite in the repository, how to run it, and what must pass before a change is done.
-order: 4
+order: 5
 ---
 
 Every change comes with tests that assert on what a person or an app sees. Coverage thresholds are never lowered; when coverage rises, the threshold rises with it. Commands run from the repository root, with the [development stack](local-setup.md#3-start-the-development-stack) running for suites that need databases.

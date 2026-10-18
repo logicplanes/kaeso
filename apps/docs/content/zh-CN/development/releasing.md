@@ -1,7 +1,7 @@
 ---
 title: 发布
 description: 版本如何编号、一个版本发布哪些内容，以及维护者如何发布版本。
-order: 9
+order: 10
 ---
 
 Kaeso 作为一个整体发布：网关、控制台、KPP 的 crate 和 UI 库的包共用同一个版本号，一次发布会发布所有这些内容。每个版本都由维护者从 `prod` 通过 Release 工作流发布，然后从该版本的标签部署文档和展示站点。贡献者从不创建标签或版本。
@@ -229,7 +229,7 @@ pnpm --filter kaeso-showcase build
 
 之后，`apps/docs/dist` 中是文档，`apps/showcase/dist` 中是展示站点，每个页面都已用英语、德语和简体中文渲染好。展示站点的**查看源码**链接、它的 `llms.txt` 以及它的变更日志中指向仓库的链接，都指向该版本的标签（`v` 加上根目录 `package.json` 中的版本号）。文档的**在 GitHub 上编辑**链接指向 `dev`，页面修改在那里提出。
 
-每个文件夹都可以原样上传。其中包括：允许一切并注明站点地图的 `robots.txt`；包含每种语言的每个页面及其 `hreflang` 替代链接的 `sitemap.xml`；每种语言一个、标记为 `noindex` 的 `404.html`；`site.webmanifest`、图标，以及用作链接预览图的 `og.png`。托管服务只需用 `guides.html` 响应 `/guides`，并用对应语言的 `404.html` 响应未知地址。
+每个文件夹都可以原样上传。其中包括：允许一切并注明站点地图的 `robots.txt`；包含每种语言的每个页面及其 `hreflang` 替代链接的 `sitemap.xml`；每种语言一个、标记为 `noindex` 的 `404.html`；`site.webmanifest`、图标，以及用作链接预览图的 `og.png`。托管服务只需用 `guides.html` 响应 `/guides`，并用对应语言的 `404.html` 响应未知地址；移动过的页面在旧地址上有一个转向页面，`_redirects` 也为读取该文件的托管服务列出了同样的迁移。
 
 两次构建最后都运行 `scripts/check-site.mjs`，在以下情况下让构建失败：
 

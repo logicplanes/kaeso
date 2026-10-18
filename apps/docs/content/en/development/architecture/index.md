@@ -1,7 +1,7 @@
 ---
 title: Architecture
 description: How the gateway, KPP, the console, the UI library and the documentation fit together in one repository.
-order: 2
+order: 3
 ---
 
 ```mermaid

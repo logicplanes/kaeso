@@ -1,7 +1,7 @@
 ---
 title: Performance
 description: Die Bundle-Budgets von Konsole, Dokumentation und UI-Bibliothek, die Benchmarks der Codecs und die Ergebnisse des Fuzzings.
-order: 8
+order: 9
 ---
 
 Performance wird gemessen, nicht geschätzt. Die Builds von Konsole und Dokumentation schlagen fehl, wenn eine Seite über ihr Budget wächst, der Build der UI-Bibliothek, wenn eine Komponente es tut, und die Codecs von KPP haben Benchmarks und Fuzz-Targets. Eine Änderung, die ein größeres Budget braucht, hebt es im selben Pull Request an, begründet das und aktualisiert diese Seite.

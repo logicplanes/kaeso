@@ -1,7 +1,7 @@
 ---
 title: Anmeldung und Single Sign-on
 description: Festlegen, wie sich Personen anmelden, eine Installation nur mit Single Sign-on betreiben und wieder hineinkommen, wenn nichts anderes geht.
-order: 5
+order: 6
 ---
 
 Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink per E-Mail oder über den Identitätsanbieter ihrer Organisation (Single Sign-on mit OpenID Connect). Drei [Einstellungen](configuration.md#anmeldung) schalten jede Methode für die ganze Installation ein oder aus: `KAESO_AUTH_PASSWORD`, `KAESO_AUTH_MAGIC_LINK` und `KAESO_AUTH_OIDC`. Ein Admin der Organisation verbindet den Identitätsanbieter unter **Sicherheit**; siehe [Single Sign-on](../console/organizations-and-projects.md#single-sign-on).

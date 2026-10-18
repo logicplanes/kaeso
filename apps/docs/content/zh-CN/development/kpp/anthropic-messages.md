@@ -1,7 +1,7 @@
 ---
 title: Anthropic Messages
 description: Anthropic Messages 格式的每个字段如何映射到 KPP 并映射回来。
-order: 4
+order: 3
 ---
 
 - **编解码器：**`kaeso_codecs::anthropic_messages::AnthropicMessages`（`crates/kaeso-codecs/src/anthropic_messages/`）
@@ -13,7 +13,7 @@ order: 4
 ## 表格的读法
 
 - **KPP**：wire 值映射到的类型化字段。
-- **fields**：原样保存在 `Extras::fields` 中。这些字段是语义字段：只会写回 Anthropic；发往其他方言时会以 `Unsupported` 拒绝（[Extras](cross-format.md#extras)），除非[允许列表](extras-allowlist.md)允许将其丢弃；在发给其他方言的回复中会被省略（[回复](cross-format.md#回复)）。嵌套对象使用带点的键路径（`metadata.x`）。
+- **fields**：原样保存在 `Extras::fields` 中。这些字段是语义字段：只会写回 Anthropic；发往其他方言时会以 `Unsupported` 拒绝（[Extras](cross-format.md#extras)），除非[允许列表](cross-format.md#extras)允许将其丢弃；在发给其他方言的回复中会被省略（[回复](cross-format.md#回复)）。嵌套对象使用带点的键路径（`metadata.x`）。
 - **form**：`Extras::form` 中编解码器私有的形式标记，其他方言会忽略它。`verbatim` 指 `wire::Ext` 的通用机制（`null`、`false` 和 `[]` 的写法）。
 - **raw**：完整保存在 `RawItem`、`Citation` 或 `RawUsage` 中。
 - **自有**数据的 extras 或来源为 `anthropic_messages`；**外来**数据来自其他方言。
@@ -47,7 +47,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `metadata.user_id` | `user` | `null` → verbatim（`verbatim:metadata`）；其他键 → fields `metadata.*`；存在 `metadata` 对象 → form `objects: ["metadata"]`。 |
 | `thinking.type` `enabled` / `disabled` / `adaptive` | `reasoning.mode` `Enabled` / `Disabled` / `Adaptive` | `between_tools`（仅 SDK 中有）和将来的类型 → `ReasoningMode::Other`。 |
 | `thinking.budget_tokens` | `reasoning.budget_tokens` | |
-| `thinking.display` 及其他 `thinking` 键 | `reasoning.extras.fields` | 没有对应的 KPP 字段。`display` 在[允许列表](extras-allowlist.md)中，因此发往其他方言时会被丢弃；OpenAI Responses 会收到 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](cross-format.md#可读推理与摘要)）。其他键在那里 → `Unsupported`。 |
+| `thinking.display` 及其他 `thinking` 键 | `reasoning.extras.fields` | 没有对应的 KPP 字段。`display` 在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃；OpenAI Responses 会收到 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](cross-format.md#可读推理与摘要)）。其他键在那里 → `Unsupported`。 |
 | `output_config.effort` | `reasoning.effort` | `low`、`medium`、`high`、`xhigh`、`max`；未知值 → `ReasoningEffort::Other`。 |
 | `output_config.format` `{type: json_schema, schema}` | `output = JsonSchema { schema }` | `name`、`description` 和 `strict` 为 `None`。`format` 的未知键 → 规范的 `extras`。其他格式类型，以及 Kaeso 无法逐字段读取的 `json_schema` 格式（没有 `schema`，或带有它无法承载的键）→ fields `output_config.format`。 |
 | 其他 `output_config` 键（例如 `task_budget`，beta） | fields `output_config.*` | 存在 `output_config` → form `objects: ["output_config"]`；值为 `null` 的成员 → `verbatim:output_config`。`task_budget` 会在模型面前放一个倒计时，因此属于语义字段：其他方言 → `Unsupported`，并提示在 Claude Code 中设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`。 |
@@ -58,7 +58,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tools[].name`、`.description`、`.input_schema`、`.strict`、`.cache_control` | `name`、`description`、`parameters`（raw）、`strict`、`cache` | |
 | `tools[].eager_input_streaming`、`.allowed_callers`、`.defer_loading`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
 | 任何其他类型的 `tools[]`（服务器工具，例如 `web_search_20250305` 或 `advisor_20260301`） | `ToolDef::Unknown`（raw） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
-| `cache_control`（顶层，自动缓存） | fields `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](extras-allowlist.md)中，因此发往其他方言时会被丢弃。 |
+| `cache_control`（顶层，自动缓存） | fields `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
 | 请求头 `anthropic-beta` | `extras` 请求头 `header:anthropic-beta` | 出站时只转发给 Anthropic。 |
 | 请求头 `anthropic-version` | 不为 `2023-06-01` 时存为 `extras` 请求头 | 总是发送固定的版本，除非转发了更新的版本（[Anthropic 版本](cross-format.md#anthropic-版本)）。 |

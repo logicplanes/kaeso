@@ -1,7 +1,7 @@
 ---
 title: Backups and master keys
 description: What to back up, how to restore it, and how to rotate the master key.
-order: 7
+order: 8
 ---
 
 Back up three things, and keep the master keys apart from the database backups.
