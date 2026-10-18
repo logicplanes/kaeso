@@ -614,6 +614,7 @@ test("the first sentence ends at any full stop before more text, never inside co
   assert.equal(firstSentence('Shows it again. "Check now" asks.'), "Shows it again.");
   assert.equal(firstSentence("Refuses tools, e.g. a named function. Then more."), "Refuses tools, e.g. a named function.");
   assert.equal(firstSentence("Adds U.S. regions for data residency. Then more."), "Adds U.S. regions for data residency.");
+  assert.equal(firstSentence("Use plan A. Then restart."), "Use plan A.");
 });
 
 test("a short version with more than one sentence or a title outside two to five words goes back to the model", async () => {
@@ -623,6 +624,8 @@ test("a short version with more than one sentence or a title outside two to five
     [(short) => (short.highlights[0].title = "Batches"), /highlight 1's title isn't two to five words/],
     [(short) => (short.highlights[0].title = "A page for every batch you run"), /highlight 1's title isn't two to five words/],
     [(short) => (short.highlights[0].title = "**Bold** batch page"), /highlight 1's title has emphasis/],
+    [(short) => (short.highlights[0].title = "Batch page,"), /highlight 1's title ends with punctuation/],
+    [(short) => (short.highlights[0].title = "Batch page;"), /highlight 1's title ends with punctuation/],
     [(short) => (short.highlights[0].text = "Use *this* page now."), /highlight 1 has emphasis/],
     [(short) => (short.tagline = "Streams stay _open_."), /the tagline has emphasis/],
   ]) {
