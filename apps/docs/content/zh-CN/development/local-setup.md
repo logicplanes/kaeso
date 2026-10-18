@@ -32,7 +32,7 @@ brew install colima docker docker-compose docker-buildx
 colima start --cpu 4 --memory 8
 ```
 
-Homebrew 把 Compose 和 Buildx 安装为 `docker` 命令的插件。按照它们的安装说明，在 `~/.docker/config.json` 中加入 `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`，`docker compose` 才能找到它们。8 GB 内存足以容纳开发环境栈的数据库和网关的首次构建。Colima 只与其虚拟机共享你的主目录，因此检出的代码以及试用的安装都要放在主目录中。
+Homebrew 把 Compose 和 Buildx 安装为 `docker` 命令的插件。按照它们的安装说明，在 `~/.docker/config.json` 的 `cliPluginsExtraDirs` 中列出 Homebrew 的插件目录，`docker compose` 才能找到它们：即 `brew --prefix` 下的 `lib/docker/cli-plugins`，在 Apple 芯片上例如 `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`。8 GB 内存足以容纳开发环境栈的数据库和网关的首次构建。Colima 只与其虚拟机共享你的主目录，因此检出的代码以及试用的安装都要放在主目录中。
 
 ## 1. 获取代码
 

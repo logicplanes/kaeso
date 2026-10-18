@@ -32,7 +32,7 @@ brew install colima docker docker-compose docker-buildx
 colima start --cpu 4 --memory 8
 ```
 
-Homebrew installiert Compose und Buildx als Plugins des Befehls `docker`. Damit `docker compose` sie findet, `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]` in `~/.docker/config.json` eintragen, wie ihre Installationshinweise sagen. Acht Gigabyte Speicher lassen Platz für die Datenbanken des Stacks und den ersten Build des Gateways. Colima teilt nur den eigenen Home-Ordner mit seiner virtuellen Maschine, daher gehören der Checkout und jede ausprobierte Installation dort hinein.
+Homebrew installiert Compose und Buildx als Plugins des Befehls `docker`. Damit `docker compose` sie findet, den Plugin-Ordner von Homebrew unter `cliPluginsExtraDirs` in `~/.docker/config.json` eintragen, wie ihre Installationshinweise sagen: `lib/docker/cli-plugins` unter `brew --prefix`, auf Apple Silicon etwa `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`. Acht Gigabyte Speicher lassen Platz für die Datenbanken des Stacks und den ersten Build des Gateways. Colima teilt nur den eigenen Home-Ordner mit seiner virtuellen Maschine, daher gehören der Checkout und jede ausprobierte Installation dort hinein.
 
 ## 1. Code holen
 
