@@ -494,7 +494,7 @@ jobs:
           tags: kaeso-gateway:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/gateway.tar
           cache-from: type=gha,scope=ci-gateway
-          cache-to: type=gha,mode=max,scope=ci-gateway
+          cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-gateway' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: image-gateway
@@ -528,7 +528,7 @@ jobs:
           cache-from: |
             type=gha,scope=ci-gateway
             type=gha,scope=ci-mock
-          cache-to: type=gha,mode=max,scope=ci-mock
+          cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-mock' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: image-mock
@@ -565,7 +565,7 @@ jobs:
           tags: kaeso-updater:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/updater.tar
           cache-from: type=gha,scope=ci-updater
-          cache-to: type=gha,mode=max,scope=ci-updater
+          cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-updater' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: image-updater
@@ -600,7 +600,7 @@ jobs:
           tags: kaeso-console:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/console.tar
           cache-from: type=gha,scope=ci-console
-          cache-to: type=gha,mode=max,scope=ci-console
+          cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-console' || '' }}
       - name: The console image serves the console
         run: |
           docker load --input "$RUNNER_TEMP/images/console.tar"
