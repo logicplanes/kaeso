@@ -12,6 +12,8 @@ The full reference is the OpenAPI document [`openapi.json`](https://github.com/l
 docker compose exec gateway kaeso openapi > openapi.json
 ```
 
+[Automate with the Platform API](automation.md) sets up a project, a model and an app's key with curl, using a platform key, a project key or a session.
+
 ## Authentication
 
 | Method | Send | Acts with |
@@ -111,98 +113,6 @@ The message is one short sentence for people; the console shows it as it is. `pa
 | 502, 503, 504, 429 | `provider_error` | Only for the Playground's model requests |
 | 503 | `unavailable` | A database or other backing service can't be reached, such as "Kaeso cannot reach its database right now; try again shortly." |
 
-## A walk through with curl
-
-These requests set up a project for an app and call a model through it, using a platform key. Create the key in the console under the organization's settings, **Platform keys**; the organization's id is in the console's address, `/orgs/org_…`. The commands need `jq`.
-
-```bash
-KAESO=https://kaeso.example.com
-ORG=org_…
-AUTH="Authorization: Bearer sk-kso-org-…"
-```
-
-Create a project:
-
-```bash
-PROJECT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "Support bot"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects" | jq -r .id)
-```
-
-Add the organization's Anthropic key. The first key of a provider becomes its default, which every project without an assigned key uses. The secret is never shown again; only its last four characters stay visible.
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "name": "Production", "secret": "sk-ant-…"}' \
-  "$KAESO/platform/v1/orgs/$ORG/credentials"
-```
-
-Add a model to the project's catalogue. Its prices, limits and capabilities come from models.dev.
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/models"
-```
-
-Create a service account for the app with the Developer role, and a key for it that expires in 90 days. The answer's `secret` is the API key, shown once.
-
-```bash
-ACCOUNT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "role": "developer"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts" | jq -r .id)
-
-KEY=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "expires_in_days": 90}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts/$ACCOUNT/keys" | jq -r .secret)
-```
-
-Call the model API with the new key, as the app will:
-
-```bash
-curl -s "$KAESO/v1/messages" -H "x-api-key: $KEY" -H 'anthropic-version: 2023-06-01' \
-  -H 'content-type: application/json' \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 100, "messages": [{"role": "user", "content": "Hello"}]}'
-```
-
-Read usage, grouped by `day` (the default), `week`, `month`, `model`, `key` or `member`; costs are included with the right `costs.view`. `from` and `to` are days in UTC; by day, they are at most 400 days apart. `usage/span` answers with the first and last day with usage, to read a long period by week or month.
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?group_by=model"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage/span"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?from=2026-08-15&group_by=week"
-```
-
-Read the request log, newest first, then one entry. The entry includes the request's content when the project logs content and the caller has `logs.content.view`.
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs?limit=10"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs/req_…"
-```
-
-### With a project key
-
-An API key with platform access works the same way inside its own project, with its member's or service account's rights: `models.manage` to add models, `usage.view` and `logs.metadata.view` to read. Creating projects and adding provider keys are organization rights, which a project key never has. A key that belongs to a member creates further keys for that member with `POST …/projects/{project}/keys`.
-
-### With a session
-
-Signing in with a password works while password sign-in is on, the default. Keep the cookie in a file and send `Origin` with every change:
-
-```bash
-KAESO=https://kaeso.example.com
-JAR=$(mktemp)
-
-curl -s -c "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}' \
-  "$KAESO/platform/v1/auth/password"
-
-ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[0].org_id')
-```
-
-With two-factor authentication on, `auth/password` answers 202 with a `challenge`; finish with `POST /platform/v1/auth/totp` and `{"challenge": "…", "code": "123456"}`, or `recovery_code` in place of `code`. The first user of a new install signs up through the setup link that `kaeso setup-link` prints; see [installation](../self-hosting/installation.md).
-
-After that, the requests above work with `-b "$JAR" -H "Origin: $KAESO"` in place of `-H "$AUTH"`. A session also creates keys for its own user with `POST …/projects/{project}/keys`.
-
 ## Areas
 
 | Paths | What |
@@ -244,7 +154,7 @@ The console's [Playground](../console/playground.md) sends requests to the proje
 
 `GET orgs/{org}/projects/{project}/playground/models` lists the models the member can call there: the catalogue without embeddings models, narrowed by the member's model access. Each comes with the name to send, its aliases, whether it reasons and with which efforts, whether it takes `temperature`, its limits and prices, and whether the project has a provider key for it.
 
-`POST orgs/{org}/projects/{project}/playground/responses` takes an OpenAI Responses request with `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, and `"stream": true`, which is required. The answer is the Responses event stream that `/v1/responses` sends, with keepalive comments. With the session [from above](#with-a-session):
+`POST orgs/{org}/projects/{project}/playground/responses` takes an OpenAI Responses request with `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, and `"stream": true`, which is required. The answer is the Responses event stream that `/v1/responses` sends, with keepalive comments. With a [session](automation.md#use-a-session-instead):
 
 ```bash
 curl -N -b "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
