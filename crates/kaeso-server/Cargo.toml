@@ -17,6 +17,7 @@ kaeso-mail.workspace = true
 kaeso-store.workspace = true
 kaeso-upstream.workspace = true
 kaeso-update.workspace = true
+jiff.workspace = true
 kaeso-kpp.workspace = true
 kaeso-codecs.workspace = true
 axum.workspace = true

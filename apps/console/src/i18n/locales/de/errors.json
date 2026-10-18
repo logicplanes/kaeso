@@ -388,5 +388,6 @@
   "errors.model.effortLevels": "Das Modell `{model}` unterstützt die Aufwandsstufen {levels}; `{effort}` gehört nicht dazu.",
   "errors.edgeUnreachable": "Kaeso ist gerade nicht erreichbar; in einer Minute erneut versuchen.",
   "errors.edgeUpdating": "Kaeso wird gerade aktualisiert; in einer Minute erneut versuchen.",
-  "errors.toolChoice.named": "eine benannte Funktion in `tool_choice`"
+  "errors.toolChoice.named": "eine benannte Funktion in `tool_choice`",
+  "errors.unknownTimeZone": "`{param}` ist keine bekannte Zeitzone; wählen Sie eine wie `Europe/Berlin`."
 }

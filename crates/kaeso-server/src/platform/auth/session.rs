@@ -76,6 +76,9 @@ pub struct WhoAmI {
     #[doc = "The language the console is shown in, as in `me`:\n\
         the console reads it at start, before anything else is shown."]
     pub locale: crate::platform::me::profile::UserLocale,
+    #[doc = "The install's IANA time zone: the console shows every time in it."]
+    #[schema(example = "Europe/Berlin")]
+    pub timezone: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -156,6 +159,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
         locale: crate::platform::me::profile::UserLocale::from_stored(
             users::get_locale(&state.pg, user.id).await?.as_deref(),
         ),
+        timezone: instance.timezone,
     }))
 }
 

@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import type { SettingsView } from "~/api/generated/types";
-import { signedIn } from "~/test/fixtures";
+import { signedIn, whoAmI } from "~/test/fixtures";
 import { instanceSettings, system } from "~/test/fixtures/instance-account";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { formatTimeZone } from "@logicplanes/kaeso-ui/format";
 
 const PATH = "/settings/instance/general";
 const LOGGING = "/settings/instance/logging";
@@ -36,7 +37,7 @@ async function setNumber(user: UserEvent, name: string, value: string) {
 }
 
 describe("instance general page", () => {
-  it("shows who can join, how people sign in and deleting organizations", async () => {
+  it("shows who can join, how people sign in, the time zone and deleting organizations", async () => {
     signedIn();
     settingsApi();
     await renderApp(PATH);
@@ -48,6 +49,8 @@ describe("instance general page", () => {
     expect(screen.getByRole("textbox", { name: "Grace period" })).toHaveValue("7");
     expect(screen.getAllByText("On")).toHaveLength(2);
     expect(screen.getByText("Off")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Time zone" })).toHaveValue("UTC");
+    expect(screen.getByText(/\(GMT\+0\)$/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Default metadata retention" })).not.toBeInTheDocument();
     expect(screen.queryByText("smtp")).not.toBeInTheDocument();
   });
@@ -363,5 +366,32 @@ describe("accounts", () => {
     await screen.findByRole("combobox", { name: "Account creation" });
     await choose(user, "Account creation", "Anyone");
     expect((await notifications().findAllByText("Sign-up needs a mail transport.")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("the time zone", () => {
+  it("is chosen from every zone and shown everywhere at once", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(PATH);
+    const zone = await screen.findByRole("combobox", { name: "Time zone" });
+    await user.click(zone);
+    await user.keyboard("{Control>}a{/Control}Tokyo");
+    await waitFor(() => expect(document.querySelectorAll('[role="option"]')).toHaveLength(1));
+    on("GET", "auth/session", whoAmI({ timezone: "Asia/Tokyo" }));
+    await user.keyboard("{Enter}");
+    expect(await notifications().findByText("Times now show in Asia/Tokyo")).toBeInTheDocument();
+    expect(patches()).toEqual([{ timezone: "Asia/Tokyo" }]);
+    await waitFor(() => expect(formatTimeZone()).toBe("Asia/Tokyo"));
+    await waitFor(() => expect(screen.getByText(/\(GMT\+9\)$/)).toBeInTheDocument());
+  });
+
+  it("offers the browser's own zone when it differs", async () => {
+    signedIn();
+    settingsApi({ timezone: "Pacific/Auckland" });
+    const { user } = await renderApp(PATH);
+    const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    await user.click(await screen.findByRole("button", { name: "Use this zone" }));
+    await waitFor(() => expect(patches()).toEqual([{ timezone: browser }]));
   });
 });

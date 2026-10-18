@@ -54,6 +54,7 @@ export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
     can_create_orgs: true,
     org_deletion: { allowed: true, grace_days: 7 },
     locale: "auto",
+    timezone: "UTC",
     ...overrides,
   } as WhoAmI;
 }

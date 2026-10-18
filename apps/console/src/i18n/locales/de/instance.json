@@ -395,7 +395,17 @@
   "instance.updates.checkUnreadable": "Die Release-Liste von {host} ist nicht lesbar",
   "instance.updates.checkTooLarge": "Die Release-Liste von {host} ist größer als 4 MiB",
   "instance.updates.checkNoClient": "Das Gateway konnte seinen HTTP-Client nicht einrichten",
-  "instance.generalHint": "Wer beitreten darf und was Organisationen dürfen.",
+  "instance.generalHint": "Wer beitreten darf, die Zeitzone und was Organisationen dürfen.",
   "instance.loggingHint": "Wie lange Anfrageprotokolle bleiben: für neue Organisationen und höchstens.",
-  "instance.systemHint": "Live-Zustand des Gateways und seiner Dienste, alle 10 Sekunden aktualisiert."
+  "instance.systemHint": "Live-Zustand des Gateways und seiner Dienste, alle 10 Sekunden aktualisiert.",
+  "instance.browserZone": "Zeitzone Ihres Browsers",
+  "instance.browserZoneHint": "{zone}, {offset}",
+  "instance.noTimeZone": "Keine Zeitzone passt",
+  "instance.timeNow": "Uhrzeit dort",
+  "instance.timeNowValue": "{clock} ({offset})",
+  "instance.timeZone": "Zeitzone",
+  "instance.timeZoneHint": "Jede Zeit in der Konsole erscheint darin, für alle in dieser Installation.",
+  "instance.timeZoneRowHint": "Für alle in dieser Installation, egal in welcher Zone.",
+  "instance.timeZoneSaved": "Zeiten erscheinen jetzt in {zone}",
+  "instance.useBrowserZone": "Diese Zone verwenden"
 }

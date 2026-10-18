@@ -34,16 +34,20 @@ import { afterToday, DAY_PRESETS, pickedDay, pickerDate } from "~/format/picked-
 import { locale, t, type Locale } from "~/i18n";
 import { showExportProgress, startExport } from "~/shell/export-job";
 import { patchSearch, type SearchPatch } from "~/search";
+import { inZone, yearOf } from "~/format/zone";
 
 const shortTimes = new Map<string, Intl.DateTimeFormat>();
 function shortTime(v: string): string {
   const tag = locale() === "en" ? "en-GB" : locale();
-  let f = shortTimes.get(tag);
-  if (!f) shortTimes.set(tag, (f = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })));
+  const zone = inZone();
+  const key = `${tag}|${String(zone.timeZone)}`;
+  let f = shortTimes.get(key);
+  if (!f)
+    shortTimes.set(key, (f = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...zone })));
   return f.format(new Date(v));
 }
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
-const eventTime = (v: string) => (new Date(v).getFullYear() === new Date().getFullYear() ? shortTime(v) : formatDate(v, { time: true }));
+const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
 
 export function AuditLog({
   scope,

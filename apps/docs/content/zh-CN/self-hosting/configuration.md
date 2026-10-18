@@ -195,6 +195,7 @@ services:
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期，最多 36500 天。 |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | 布尔 | `true` | 是否可以删除组织。 |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | 整数 | `7` | 已删除的组织在被永久移除前保持可恢复和只读的天数，1 到 90。 |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | 文本 | `UTC` | 新安装的 IANA 时区，例如 `Europe/Berlin`：控制台以该时区显示所有时间。设置页面会将其设为第一位用户的时区；实例管理员之后可在实例设置中更改。 |
 
 在控制台中，实例管理员还可以只允许特定邮箱域名的用户创建账户和组织。
 

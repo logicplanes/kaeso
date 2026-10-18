@@ -442,6 +442,7 @@ const messages = (): Rule[] => [
   rule("errors.updates.alreadyRunning", () => t("errors.updates.alreadyRunning", "An update is already running; wait for it to finish.")),
   rule("errors.updates.updaterBusy", () => t("errors.updates.updaterBusy", "The updater is busy with another update; try again later.")),
   rule("errors.updates.updaterRefused", () => t("errors.updates.updaterRefused", "The updater refused the update; nothing was changed.")),
+  rule("errors.unknownTimeZone", (v) => t("errors.unknownTimeZone", "`{param}` isn't a known time zone; choose one such as `Europe/Berlin`.", v)),
   rule("errors.updates.updaterUnreachable", () => t("errors.updates.updaterUnreachable", "The updater couldn't be reached; nothing was changed.")),
   rule("errors.model.generationOnly", (v) => t("errors.model.generationOnly", "The model `{model}` is a generation model; it cannot create embeddings.", v)),
   rule("errors.model.endpoint", (v) => t("errors.model.endpoint", "The model `{model}` cannot serve this endpoint.", v)),

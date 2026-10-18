@@ -41,11 +41,12 @@ Unter **Allgemein**:
 | Kontoerstellung | **Nur auf Einladung**, **Erlaubte E-Mail-Domains** oder **Alle**. Eingeladene können ihr Konto immer anlegen |
 | Organisationserstellung | **Nur Instanz-Admins**, **Benutzer erlaubter Domains** oder **Alle angemeldeten Benutzer** |
 | Erlaubte Domains | Die Domains für die beiden Einstellungen darüber. `*.example.com` umfasst Subdomains |
+| Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf.
 
-Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung.
+Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
 
 Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt die Anmeldemethoden und **System** die E-Mail, beide nur zur Ansicht. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 

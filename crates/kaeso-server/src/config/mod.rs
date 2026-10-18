@@ -235,7 +235,7 @@ pub struct LogsConfig {
 
 pub use kaeso_core::accounts::{AccountCreation, OrgCreation};
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InstanceConfig {
     pub org_creation: OrgCreation,
@@ -246,6 +246,7 @@ pub struct InstanceConfig {
     pub max_content_retention_days: u32,
     pub org_deletion: bool,
     pub org_deletion_grace_days: u32,
+    pub timezone: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -472,6 +473,12 @@ impl Config {
             return invalid(
                 "instance.org_deletion_grace_days",
                 "must be between 1 and 90 days".into(),
+            );
+        }
+        if crate::time_zone::parse(&i.timezone).is_none() {
+            return invalid(
+                "instance.timezone",
+                "must be an IANA time zone such as `Europe/Berlin` or `UTC`".into(),
             );
         }
         if i.account_creation == AccountCreation::AllowedDomains {

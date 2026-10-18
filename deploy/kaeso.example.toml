@@ -90,6 +90,7 @@ max_metadata_retention_days = 3650
 max_content_retention_days = 3650
 org_deletion = true
 org_deletion_grace_days = 7
+timezone = "UTC"
 
 [log]
 level = "info,sqlx=warn"

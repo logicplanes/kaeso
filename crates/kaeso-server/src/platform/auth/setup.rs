@@ -39,6 +39,10 @@ pub struct SetupRequest {
     #[doc = "The first organization's name."]
     #[schema(example = "Acme")]
     pub org_name: String,
+    #[doc = "The install's IANA time zone, usually the first user's; the console\n\
+        shows every time in it. Default: `instance.timezone` from the configuration."]
+    #[schema(example = "Europe/Berlin")]
+    pub timezone: Option<String>,
 }
 
 pub(crate) async fn hash_password(param: &str, password: SecretString) -> ApiResult<String> {
@@ -73,6 +77,11 @@ pub async fn setup(
     let email = validate_email("email", &req.email)?;
     let name = validate_name("name", &req.name)?;
     let org_name = validate_name("org_name", &req.org_name)?;
+    let timezone = req
+        .timezone
+        .as_deref()
+        .map(|z| crate::platform::validate::validate_time_zone("timezone", z))
+        .transpose()?;
     let password_hash = match (state.config.auth.password, req.password) {
         (true, Some(password)) => Some(hash_password("password", password).await?),
         (true, None) => {
@@ -119,6 +128,9 @@ pub async fn setup(
     .await?;
     let (org, project) = orgs::create(&mut tx, &org_name, user).await?;
     instance::complete_setup(&mut *tx, ctx.now).await?;
+    if let Some(zone) = &timezone {
+        instance::set_time_zone(&mut *tx, zone).await?;
+    }
     ctx.audit(None, "instance.setup")
         .by(user)
         .target("user", user)
@@ -136,6 +148,9 @@ pub async fn setup(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    if timezone.is_some() {
+        state.caches.time_zone.invalidate_all();
+    }
 
     let row = users::get(&state.pg, user.uuid())
         .await?

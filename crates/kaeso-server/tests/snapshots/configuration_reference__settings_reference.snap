@@ -62,5 +62,6 @@ expression: settings_reference()
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, in days; at most 36500. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | bool | `true` | Whether organizations can be deleted on a new install. Instance admins change it later in the instance settings. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
 | `KAESO_LOG_LEVEL` | `log.level` | text | `info,sqlx=warn` | Log level or filter, e.g. `info` or `info,kaeso_server=debug`. |
 | `KAESO_LOG_FORMAT` | `log.format` | text | `json` | `json` for structured logs, `text` for development. |

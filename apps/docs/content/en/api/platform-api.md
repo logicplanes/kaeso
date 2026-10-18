@@ -103,7 +103,7 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 | --- | --- |
 | Format | REST with JSON: paths in plural kebab case (`service-accounts`), fields in `snake_case`. Send bodies with `content-type: application/json`; Kaeso answers 400 to a field the endpoint doesn't know. |
 | Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`. |
-| Times | RFC 3339, in UTC. |
+| Times | RFC 3339, in UTC. Every response names the install's time zone in `Kaeso-Time-Zone`, such as `Europe/Berlin`, the zone the console shows times in. |
 | Money | US dollars as decimal strings, such as `"0.0001"`. Send prices and amounts as decimal strings or whole numbers; a JSON fraction such as `0.5` gets 400. |
 | Limit amounts | At most 10^12 requests or tokens, or 1,000,000,000 USD for a spend budget. |
 | Create | `POST` on the collection, answered with 201 and the new resource. |

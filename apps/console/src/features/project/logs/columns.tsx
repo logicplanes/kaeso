@@ -7,6 +7,7 @@ import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { readStoredJson, writeStored } from "~/storage";
+import { inZone } from "~/format/zone";
 import { dateLocale } from "./timing";
 
 export const COLUMNS = [
@@ -65,6 +66,7 @@ export function logColumns({ spansDays, keyName, partyName }: { spansDays: boole
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23",
+      ...inZone(),
     });
   return {
     time: col.custom(

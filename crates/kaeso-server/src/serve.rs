@@ -143,6 +143,7 @@ fn instance_defaults(config: &Config) -> instance::InstanceSettings {
         max_content_retention_days: days(i.max_content_retention_days),
         org_deletion: i.org_deletion,
         org_deletion_grace_days: days(i.org_deletion_grace_days),
+        timezone: i.timezone.trim().to_owned(),
         setup_completed_at: None,
     }
 }

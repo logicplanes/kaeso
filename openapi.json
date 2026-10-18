@@ -22075,6 +22075,14 @@
             ],
             "format": "int32",
             "description": "Days a new deletion waits, 1 to 90. Dates already set don't move."
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The install's IANA time zone, such as `Europe/Berlin` or `UTC`.",
+            "example": "Europe/Berlin"
           }
         }
       },
@@ -22091,6 +22099,7 @@
           "max_content_retention_days",
           "org_deletion",
           "org_deletion_grace_days",
+          "timezone",
           "sign_in",
           "mail"
         ],
@@ -22153,6 +22162,11 @@
           "sign_in": {
             "$ref": "#/components/schemas/SignInMethods",
             "description": "Sign-in methods (read-only)."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The install's IANA time zone: the console shows every time in it, and\nautomatic updates follow it. The Platform API's times stay in UTC.",
+            "example": "Europe/Berlin"
           }
         }
       },
@@ -22189,6 +22203,14 @@
             "format": "password",
             "description": "The first user's password, 12 to 128 characters. Required while password\nsign-in is on (`password` in `auth/methods`); refused while it is off,\nwhere the first user signs in with a sign-in link or SSO.",
             "writeOnly": true
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The install's IANA time zone, usually the first user's; the console\nshows every time in it. Default: `instance.timezone` from the configuration.",
+            "example": "Europe/Berlin"
           },
           "token": {
             "type": "string",
@@ -23397,7 +23419,8 @@
           "memberships",
           "can_create_orgs",
           "org_deletion",
-          "locale"
+          "locale",
+          "timezone"
         ],
         "properties": {
           "can_create_orgs": {
@@ -23422,6 +23445,11 @@
           "session": {
             "$ref": "#/components/schemas/SessionView",
             "description": "This session."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The install's IANA time zone: the console shows every time in it.",
+            "example": "Europe/Berlin"
           },
           "totp_enabled": {
             "type": "boolean",
