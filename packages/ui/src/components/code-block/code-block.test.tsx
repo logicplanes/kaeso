@@ -85,6 +85,15 @@ describe("CodeBlock", () => {
     expect(screen.queryByText("const line29 = 29;")).toBeNull();
   });
 
+  it("keeps the code clear of the copy button on touch screens, where the button always shows", () => {
+    const { rerender } = render(<CodeBlock code="echo KAESO_MAIL_TRANSPORT=log >> .env" lang="bash" />);
+    expect(screen.getByRole("button", { name: "Copy code" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Code" })).toHaveClass("coarse:mr-40");
+    rerender(<CodeBlock code="echo KAESO_MAIL_TRANSPORT=log >> .env" lang="bash" copy={false} />);
+    expect(screen.queryByRole("button", { name: "Copy code" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Code" })).not.toHaveClass("coarse:mr-40");
+  });
+
   it("keeps empty lines and shows everything when collapsing is off", () => {
     render(<CodeBlock code={"a\n\nb"} lang="text" collapseAfter={0} />);
     expect(screen.getByText("a")).toBeInTheDocument();
