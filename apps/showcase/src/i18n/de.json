@@ -982,5 +982,13 @@
   "The image's address for the light theme and for print.": "Die Adresse des Bildes für das helle Theme und für den Druck.",
   "The image's own height in pixels, so the page keeps its place before it loads.": "Die eigene Höhe des Bildes in Pixeln, damit die Seite ihren Platz hält, bevor es lädt.",
   "The image's own width in pixels; the image shrinks to its container, never grows past this.": "Die eigene Breite des Bildes in Pixeln; das Bild schrumpft auf seinen Container, wird aber nie breiter.",
-  "What the image shows, read by screen readers and shown when it can't load.": "Was das Bild zeigt; Screenreader lesen es vor, und es erscheint, wenn das Bild nicht lädt."
+  "What the image shows, read by screen readers and shown when it can't load.": "Was das Bild zeigt; Screenreader lesen es vor, und es erscheint, wenn das Bild nicht lädt.",
+  "Abstract artwork drawn from a seed such as a version: the same picture for the same seed, a new one for every release.": "Abstraktes Bild aus einem Startwert wie einer Version: dasselbe Bild für denselben Startwert, ein neues für jedes Release.",
+  "What's new": "Neuigkeiten",
+  "Small text above the title, e.g. “What's new in Kaeso”.": "Kleiner Text über dem Titel, z. B. „Neu in Kaeso“.",
+  "What the picture shows, read by screen readers: \"Kaeso 0.3.0\".": "Was das Bild zeigt, für Screenreader: „Kaeso 0.3.0“.",
+  "What the artwork is drawn from, e.g. `0.3.0`; the same seed always draws the same picture.": "Woraus das Bild entsteht, z. B. `0.3.0`; derselbe Startwert ergibt immer dasselbe Bild.",
+  "The artwork's aspect ratio.": "Das Seitenverhältnis des Bildes.",
+  "Large text on the artwork, e.g. the version number.": "Großer Text auf dem Bild, z. B. die Versionsnummer.",
+  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "Ein Zeichen vor dem Wort in derselben Farbe, z. B. `icons.success` für „Aktuell“."
 }

@@ -66,6 +66,7 @@ export * from "./components/avatar/index.js";
 export * from "./components/stat/index.js";
 export * from "./components/key-value/index.js";
 export * from "./components/qr-code/index.js";
+export * from "./components/release-art/index.js";
 export * from "./components/collapsible/index.js";
 export * from "./components/timeline/index.js";
 export * from "./components/flow/index.js";

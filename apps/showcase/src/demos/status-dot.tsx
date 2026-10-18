@@ -1,4 +1,4 @@
-import { StatusDot } from "@logicplanes/kaeso-ui";
+import { StatusDot, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -23,17 +23,29 @@ export function Tones() {
 }
 export function States() {
   return (
-    <StateSection title="Plain and colored labels">
-      <div className="flex gap-48">
-        <Tones />
-        <div className="flex flex-col gap-8">
-          {(["success", "warning", "danger", "info", "neutral"] as const).map((t) => (
-            <StatusDot key={t} tone={t} size="sm">
-              {t}
-            </StatusDot>
-          ))}
+    <>
+      <StateSection title="Plain and colored labels">
+        <div className="flex gap-48">
+          <Tones />
+          <div className="flex flex-col gap-8">
+            {(["success", "warning", "danger", "info", "neutral"] as const).map((t) => (
+              <StatusDot key={t} tone={t} size="sm">
+                {t}
+              </StatusDot>
+            ))}
+          </div>
         </div>
-      </div>
-    </StateSection>
+      </StateSection>
+      <StateSection title="With a mark">
+        <div className="flex gap-24">
+          <StatusDot tone="success" icon={icons.success}>
+            Up to date
+          </StatusDot>
+          <StatusDot tone="danger" icon={icons.error}>
+            Down
+          </StatusDot>
+        </div>
+      </StateSection>
+    </>
   );
 }

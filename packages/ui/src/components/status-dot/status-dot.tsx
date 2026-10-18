@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { devWarn } from "../../utils/dev.js";
+import { Icon, type IconData } from "../icon/icon.js";
 
 export const KAESO_STATUS_DOT_VARIANTS = {
   tone: {
@@ -17,22 +18,24 @@ export interface StatusDotProps {
   tone?: keyof typeof KAESO_STATUS_DOT_VARIANTS.tone | undefined;
   children?: ReactNode | undefined;
   size?: "sm" | "md" | undefined;
+  icon?: IconData | undefined;
   className?: string | undefined;
 }
 
-export const StatusDot = forwardRef<HTMLSpanElement, StatusDotProps>(function StatusDot({ tone = "neutral", children, size = "md", className }, ref) {
+export const StatusDot = forwardRef<HTMLSpanElement, StatusDotProps>(function StatusDot({ tone = "neutral", children, size = "md", icon, className }, ref) {
   if (children === undefined || children === null || children === "")
     devWarn("StatusDot: a status is a word in its color; pass the word as children (it renders nothing without one).");
   return (
     <span
       ref={ref}
       className={cn(
-        "inline-flex items-center font-medium",
+        "inline-flex items-center gap-6 font-medium",
         size === "md" ? "text-body" : "text-small",
         KAESO_STATUS_DOT_VARIANTS.tone[tone].classes,
         className,
       )}
     >
+      {icon && <Icon icon={icon} size="sm" />}
       {children}
     </span>
   );
