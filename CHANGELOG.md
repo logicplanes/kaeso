@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-18
+
+- **Breaking:** Refuse what Claude models and the APIs reject, and put the request id into Anthropic errors ([#34](https://github.com/logicplanes/kaeso/pull/34))
+
 ### Added
 
 - Updates for self-hosted installs: the gateway looks for new Kaeso releases on GitHub twice a day, asking with the last `ETag` and waiting at least an hour after a failure, and instance admins see the running version, the newest release with its notes and a **New** mark under **Instance settings → Updates**. `KAESO_UPDATES_CHECK=false` turns the check off for installs without internet access; pre-releases are offered on request.
@@ -26,6 +30,27 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - `StepDialog` takes `result`: what the last step made, such as a key shown once, takes the steps' place in the same dialog at its own size.
 - Diagrams in the documentation: a `mermaid` code block is drawn at build time into a light and a dark SVG in Kaeso's own colours, type and radius, shown as images that follow the site's theme setting and print in light, named for screen readers by its `accTitle` and `accDescr`, searchable by its labels, and scrolling in its own region on a phone. No Mermaid code reaches the browser, the strict Content Security Policy is unchanged, a diagram that doesn't parse fails the build with its file and line, and so does a code block that draws one with box-drawing characters or arrows. Every diagram in the documentation is now drawn this way, in English, German and Simplified Chinese.
 - `ThemeImage` in `@logicplanes/kaeso-ui`, an image with a light and a dark version that follows the theme setting and prints the light one, and a `flow="text"` variant of `Code` for long code that breaks with the sentence around it.
+- Make both sites crawlable, previewable and searchable on phones ([#28](https://github.com/logicplanes/kaeso/pull/28))
+- Build the changelog pages of both sites from one parser of CHANGELOG.md ([#29](https://github.com/logicplanes/kaeso/pull/29))
+- Show code examples as language tabs that remember the reader's choice, and next steps as link cards ([#91](https://github.com/logicplanes/kaeso/pull/91))
+
+#### Gateway
+
+- Let listed web apps call the model API from a browser ([#33](https://github.com/logicplanes/kaeso/pull/33))
+
+#### UI library
+
+- Use the same theme and language selects on the docs and showcase sites ([#25](https://github.com/logicplanes/kaeso/pull/25))
+
+#### Documentation
+
+- Point ideas and questions to Discussions ([#31](https://github.com/logicplanes/kaeso/pull/31))
+- Draw the documentation's diagrams with Mermaid at build time ([#54](https://github.com/logicplanes/kaeso/pull/54))
+- Add a guide to automating an install with the Platform API ([#99](https://github.com/logicplanes/kaeso/pull/99))
+
+#### Self-hosting
+
+- Check for Kaeso releases and update an install in one click through an opt-in updater ([#40](https://github.com/logicplanes/kaeso/pull/40))
 
 ### Changed
 
@@ -40,6 +65,68 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The Platform API's cross-site refusal says which `Origin` header to send, and the Platform API page documents when `Origin` is needed.
 - The documentation's and the showcase's changelog pages refuse raw HTML and links other than http, https and mailto in `CHANGELOG.md`: each site checks every part it renders, such as a section or a topic, with the Markdown parser that renders it, and its build fails and names the line of the file, so a changelog entry can never run code on either site; HTML written in a code span or a code block is fine.
 - Long inline code in the documentation breaks with its sentence instead of moving to a line of its own, and a nested folder's page is named by its title in the sidebar instead of a second "Overview".
+- Say clearly when a provider does not serve a catalogue model, and track it in the catalogue ([#37](https://github.com/logicplanes/kaeso/pull/37))
+
+#### Console
+
+- Make the console's and the docs' first-paint bundles smaller ([#35](https://github.com/logicplanes/kaeso/pull/35))
+
+#### Documentation
+
+- Rewrite the API pages for clarity and check them against the gateway ([#48](https://github.com/logicplanes/kaeso/pull/48))
+- Rewrite the introduction, get started and concepts pages ([#49](https://github.com/logicplanes/kaeso/pull/49))
+- Rewrite the self-hosting pages and correct what drifted from the code ([#50](https://github.com/logicplanes/kaeso/pull/50))
+- Rewrite the console pages and check them against the console ([#51](https://github.com/logicplanes/kaeso/pull/51))
+- Rewrite the development guides for clarity and accuracy ([#52](https://github.com/logicplanes/kaeso/pull/52))
+- Rewrite the architecture and KPP internals pages ([#53](https://github.com/logicplanes/kaeso/pull/53))
+- Order the documentation by the reader's journey and redirect moved pages ([#73](https://github.com/logicplanes/kaeso/pull/73))
+- Define Kaeso's terms once and link the Platform API to the grant rules ([#74](https://github.com/logicplanes/kaeso/pull/74))
+- Point Installation at the quick start and keep update internals in the architecture pages ([#75](https://github.com/logicplanes/kaeso/pull/75))
+- Set up the development stack with any Docker engine, Colima on macOS included ([#76](https://github.com/logicplanes/kaeso/pull/76))
+- Write documentation to one binding style guide ([#83](https://github.com/logicplanes/kaeso/pull/83))
+- Show how to read a failed model request, with one cause per row on the errors page ([#85](https://github.com/logicplanes/kaeso/pull/85))
+- Lead the calling models guide with a request you can run in curl, Python or TypeScript ([#90](https://github.com/logicplanes/kaeso/pull/90))
+- Walk through setting up Claude Code, Codex and other tools step by step ([#93](https://github.com/logicplanes/kaeso/pull/93))
+- List the get started pages as next steps on its overview ([#94](https://github.com/logicplanes/kaeso/pull/94))
+- Explain the request flow step by step, with a diagram that fits a phone ([#95](https://github.com/logicplanes/kaeso/pull/95))
+- Make format translation quicker to scan, with what Kaeso refuses listed per target ([#96](https://github.com/logicplanes/kaeso/pull/96))
+- Tighten the concepts glossary and end it with the concept pages as next steps ([#97](https://github.com/logicplanes/kaeso/pull/97))
+- Explain the notes on the rights page once, and state each grant rule plainly ([#98](https://github.com/logicplanes/kaeso/pull/98))
+- Lead the Platform API reference with a runnable request and correct which actions need a recent sign-in ([#100](https://github.com/logicplanes/kaeso/pull/100))
+- Show the API section's pages as a short list on its overview ([#101](https://github.com/logicplanes/kaeso/pull/101))
+- Rewrite the organization and member pages as task guides ([#103](https://github.com/logicplanes/kaeso/pull/103))
+- Rewrite the provider key and model pages as task guides ([#104](https://github.com/logicplanes/kaeso/pull/104))
+- Rewrite the API key and limit pages as task guides ([#105](https://github.com/logicplanes/kaeso/pull/105))
+- Rewrite the request log and Playground pages as task guides ([#106](https://github.com/logicplanes/kaeso/pull/106))
+- Rewrite the account and instance administration pages as task guides ([#107](https://github.com/logicplanes/kaeso/pull/107))
+- Turn the console overview into a short map of its pages ([#108](https://github.com/logicplanes/kaeso/pull/108))
+- Make local setup, contributing and the development overview quick to follow ([#112](https://github.com/logicplanes/kaeso/pull/112))
+- Tighten the testing page to the commands and what each suite covers ([#114](https://github.com/logicplanes/kaeso/pull/114))
+- Cut the releasing page to what it takes to make a release ([#115](https://github.com/logicplanes/kaeso/pull/115))
+- Show runnable curl, Python and TypeScript requests first on the introduction, quick start and model API pages ([#117](https://github.com/logicplanes/kaeso/pull/117))
+- Make the architecture overview a short guide and tighten the gateway and console pages ([#119](https://github.com/logicplanes/kaeso/pull/119))
+- Cut the docs site, emails and updates pages to what a contributor needs ([#120](https://github.com/logicplanes/kaeso/pull/120))
+- Make the configuration page the one reference for every setting ([#121](https://github.com/logicplanes/kaeso/pull/121))
+- Explain how an install fits together, and list the self-hosting pages as cards ([#122](https://github.com/logicplanes/kaeso/pull/122))
+- Rewrite the domain, email and sign-in pages as task guides ([#123](https://github.com/logicplanes/kaeso/pull/123))
+- Lead the upgrade page with the update by hand, and keep updater internals out of it ([#124](https://github.com/logicplanes/kaeso/pull/124))
+- Give every troubleshooting problem its own fix, and tighten the health and metrics page ([#125](https://github.com/logicplanes/kaeso/pull/125))
+- Give reasoning across formats a page of its own ([#128](https://github.com/logicplanes/kaeso/pull/128))
+- Move the codecs' types, streams and wire structs to a Codec design page ([#129](https://github.com/logicplanes/kaeso/pull/129))
+- Open every KPP mapping page with what it is for ([#130](https://github.com/logicplanes/kaeso/pull/130))
+- Break up the longest sentences on the KPP pages ([#131](https://github.com/logicplanes/kaeso/pull/131))
+- Call the identity provider 身份提供商 on the Chinese development pages, as the glossary does ([#132](https://github.com/logicplanes/kaeso/pull/132))
+- Shorten the quick start's introduction and link two repeated explanations to format translation ([#133](https://github.com/logicplanes/kaeso/pull/133))
+- Use the same German terms and the console's labels on every documentation page ([#137](https://github.com/logicplanes/kaeso/pull/137))
+- Use the same Chinese terms and the console's labels on every documentation page ([#138](https://github.com/logicplanes/kaeso/pull/138))
+
+### Removed
+
+#### Documentation
+
+- Remove the performance page from the development docs ([#111](https://github.com/logicplanes/kaeso/pull/111))
+- Remove the dependencies page and keep the licence policy under Contributing ([#113](https://github.com/logicplanes/kaeso/pull/113))
+- Fold the KPP field classes into KPP internals ([#127](https://github.com/logicplanes/kaeso/pull/127))
 
 ### Fixed
 
@@ -74,11 +161,53 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - A dialog stays open while the work it started is underway: Escape, a press outside, the close circle, ⌘/Ctrl+Enter and its Cancel or Back wait, so closing Create key while the key is being created no longer loses its one-time secret, and an ownership transfer, an email change or any other console action can no longer be sent twice; the console's confirmations stay open until their request ends. `Dialog` and `LayerDialog` take `busy`; `StepDialog` and `AlertDialog` are busy while they submit or wait for their promise. The console forgets recovery codes once their dialog has closed, a failed two-factor setup closes its dialog once, and an inline dialog inside a `DialogScope` lets the scope unmount after it closes.
 - `ScrollArea`, and with it the tables in the documentation, scrolls only in its own direction and only when its content overflows, so a table that fits no longer bounces or holds back the page's scroll; inline `Code` in the documentation flows with the text around it and has 4px of padding inside the chip, so a comma or closing bracket after one stays beside it instead of wrapping onto a line of its own; `Code` takes `flow="cell"` for long code in a table cell.
 - Everything typed after ⌘K or Ctrl+K reaches the search of the documentation site and the console's command palette, also while its code is still loading and in the moment before its field has focus; `CommandPalette` takes `query` to show a query its host keeps.
+- Keep dialogs centered and resize them smoothly when their content changes ([#38](https://github.com/logicplanes/kaeso/pull/38))
+- Keep fitting tables from scrolling and inline code beside its punctuation ([#58](https://github.com/logicplanes/kaeso/pull/58))
+- Keep every key typed after ⌘K until the search field has focus ([#61](https://github.com/logicplanes/kaeso/pull/61))
+- Show every Platform API message in German and Chinese in the console ([#84](https://github.com/logicplanes/kaeso/pull/84))
+- Polish the UI library's built-in text and the showcase in German and Chinese ([#87](https://github.com/logicplanes/kaeso/pull/87))
+- Polish the wording of the German and Chinese emails ([#89](https://github.com/logicplanes/kaeso/pull/89))
+- Show the updating page's German steps as progress rather than instructions ([#92](https://github.com/logicplanes/kaeso/pull/92))
+
+#### Gateway
+
+- Refuse what Claude models and the APIs reject, and put the request id into Anthropic errors ([#34](https://github.com/logicplanes/kaeso/pull/34))
+- Check every missing need when a rights change removes one ([#41](https://github.com/logicplanes/kaeso/pull/41))
+- Refuse custom role changes that strand a holder's rights ([#42](https://github.com/logicplanes/kaeso/pull/42))
+- Keep the way back through refused SSO, name the app's own field in cross-format refusals, health-check Caddy ([#44](https://github.com/logicplanes/kaeso/pull/44))
+- Keep the provider's 404 in the log, bind availability to the key, confirm not found with the listing ([#46](https://github.com/logicplanes/kaeso/pull/46))
+
+#### Console
+
+- Show profile pictures in the console's audit logs and key lists ([#30](https://github.com/logicplanes/kaeso/pull/30))
+- Make the console's German and Chinese wording consistent and catch untranslated text in CI ([#86](https://github.com/logicplanes/kaeso/pull/86))
+
+#### UI library
+
+- Keep collapsing panels from scrolling while they animate ([#22](https://github.com/logicplanes/kaeso/pull/22))
+- Read default variants correctly in the component registry ([#27](https://github.com/logicplanes/kaeso/pull/27))
+- Recover lazily loaded UI parts from failed and slow loads ([#45](https://github.com/logicplanes/kaeso/pull/45))
+- Keep code clear of the copy button on touch screens ([#78](https://github.com/logicplanes/kaeso/pull/78))
+- Stop ResizeObserver loop errors when a step dialog moves on while a select is closing ([#82](https://github.com/logicplanes/kaeso/pull/82))
+
+#### Documentation
+
+- Keep words whole in docs tables and separate the pager's label and title ([#24](https://github.com/logicplanes/kaeso/pull/24))
+- Draw the introduction's diagram top to bottom so it fits a phone ([#80](https://github.com/logicplanes/kaeso/pull/80))
+- Address readers of the documentation site with Sie and align its labels with the console ([#88](https://github.com/logicplanes/kaeso/pull/88))
+- Record the formal German address and the newer terms in the translation glossary ([#110](https://github.com/logicplanes/kaeso/pull/110))
+- Correct statements in the docs that no longer match the gateway and the codecs ([#136](https://github.com/logicplanes/kaeso/pull/136))
+
+#### Self-hosting
+
+- Fix deployment findings: public images, compose --wait, image permissions, strict CSP for both sites ([#36](https://github.com/logicplanes/kaeso/pull/36))
 
 ### Security
 
 - The gateway no longer logs the setup link, which anyone who could read its logs could have used to take an install over before its first user existed; the log says that the install isn't set up yet and to run `kaeso setup-link`, which prints the link in the terminal.
 - The console no longer shows an API key's secret again after its dialog was closed: until the page was reloaded, the next Create key opened on the last key's secret. The secret now leaves the page and the console's memory once the dialog has closed.
+- Open every dialog fresh and forget a key's secret when its dialog closes ([#32](https://github.com/logicplanes/kaeso/pull/32))
+- Sign in with SSO alone, keep deep links through SSO, and stop logging the setup link ([#39](https://github.com/logicplanes/kaeso/pull/39))
 
 ## [0.1.0] - 2026-10-16
 
@@ -191,5 +320,6 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.0
 [0.1.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.1.0

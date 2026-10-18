@@ -13,8 +13,8 @@ What a dialect cannot do is refused with an `Unsupported` error.
 
 ```toml
 [dependencies]
-kaeso-kpp = "0.1"
-kaeso-codecs = "0.1"
+kaeso-kpp = "0.2"
+kaeso-codecs = "0.2"
 ```
 
 An app sent an Anthropic Messages request, and the model is served through OpenAI Chat Completions:
