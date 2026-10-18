@@ -47,11 +47,11 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `metadata.user_id` | `user` | `null` → verbatim（`verbatim:metadata`）；其他键 → fields `metadata.*`；存在 `metadata` 对象 → form `objects: ["metadata"]`。 |
 | `thinking.type` `enabled` / `disabled` / `adaptive` | `reasoning.mode` `Enabled` / `Disabled` / `Adaptive` | `between_tools`（仅 SDK 中有）和将来的类型 → `ReasoningMode::Other`。 |
 | `thinking.budget_tokens` | `reasoning.budget_tokens` | |
-| `thinking.display` 及其他 `thinking` 键 | `reasoning.extras.fields` | 没有对应的 KPP 字段。`display` 在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃；OpenAI Responses 会收到 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](cross-format.md#可读推理与摘要)）。其他键在那里 → `Unsupported`。 |
+| `thinking.display` 及其他 `thinking` 键 | `reasoning.extras.fields` | 没有对应的 KPP 字段。`display` 在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃；OpenAI Responses 会收到 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。其他键在那里 → `Unsupported`。 |
 | `output_config.effort` | `reasoning.effort` | `low`、`medium`、`high`、`xhigh`、`max`；未知值 → `ReasoningEffort::Other`。 |
 | `output_config.format` `{type: json_schema, schema}` | `output = JsonSchema { schema }` | `name`、`description` 和 `strict` 为 `None`。`format` 的未知键 → 规范的 `extras`。其他格式类型，以及 Kaeso 无法逐字段读取的 `json_schema` 格式（没有 `schema`，或带有它无法承载的键）→ fields `output_config.format`。 |
 | 其他 `output_config` 键（例如 `task_budget`，beta） | fields `output_config.*` | 存在 `output_config` → form `objects: ["output_config"]`；值为 `null` 的成员 → `verbatim:output_config`。`task_budget` 会在模型面前放一个倒计时，因此属于语义字段：其他方言 → `Unsupported`，并提示在 Claude Code 中设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`。 |
-| `context_management`（beta，`BetaContextManagementConfigParam`） | fields `context_management` | 其他方言：当它只包含 `edits` 且每项编辑都是 `clear_thinking_*` 时丢弃，因为它只管理 Anthropic 的思考块，而思考块从不跨方言（[推理](cross-format.md#推理)）；Claude Code 在每个请求中都会发送带 `keep: "all"` 的 `clear_thinking_20251015`。其他编辑（`clear_tool_uses_*`、`compact_*`）会改变模型看到的内容 → `Unsupported`，并附带 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` 的提示。 |
+| `context_management`（beta，`BetaContextManagementConfigParam`） | fields `context_management` | 其他方言：当它只包含 `edits` 且每项编辑都是 `clear_thinking_*` 时丢弃，因为它只管理 Anthropic 的思考块，而思考块从不跨方言（[推理](reasoning.md)）；Claude Code 在每个请求中都会发送带 `keep: "all"` 的 `clear_thinking_20251015`。其他编辑（`clear_tool_uses_*`、`compact_*`）会改变模型看到的内容 → `Unsupported`，并附带 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` 的提示。 |
 | `tool_choice` `auto` / `any` / `none` / `tool{name}` | `tool_choice` `Auto` / `Required` / `None` / `Tool(name)` | 其他类型、没有 `name` 的 `tool`，以及带有 `name` 的 `auto`、`any` 或 `none` → `ToolChoice::Unknown`（raw，仅限自有）。未知键 → fields `tool_choice.*`。 |
 | `tool_choice.disable_parallel_tool_use` | `parallel_tool_calls = Some(!value)` | |
 | `type` 缺失、为 `null` 或 `custom` 的 `tools[]`（`Tool`） | `ToolDef::Function` | `type` 的写法 → `verbatim`。 |
@@ -82,7 +82,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 任意块上的 `cache_control`（`CacheControlEphemeral`） | `cache = CacheHint { ttl }` | `ttl` `5m` → `FiveMinutes`，`1h` → `OneHour`，其他值 → `Other`；缺失 → `None`。`ephemeral` 以外的 `type` → 提示的 `extras.fields.type`。 |
 | `tool_use`（`id`、`name`、`input`、`cache_control`） | `Block::ToolCall`（`arguments` 为 raw） | `caller` 和 `toolset_name` → 块的 `extras.fields`；但 `caller: {type: "direct"}` 表示普通调用，按 verbatim 保留，使该调用可以发往其他方言。 |
 | `tool_result`（`tool_use_id`、`content`、`is_error`、`cache_control`） | `Block::ToolResult` | 字符串形式的 `content` → form `content: "string"`；`[]` → `"array"`；`is_error: false` → verbatim。`toolset_name` → fields。嵌套在其他 `tool_result` 中超过 4 层的 `tool_result` 会被拒绝：在请求中为 `InvalidRequest`，在回复或流中为 `ProviderError`。 |
-| `thinking`（`thinking`、`signature`） | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""`（省略显示）保持为 `[""]`。`signature: ""` 不是不透明数据，而是变为 form `empty_signature`，因此该块永远不会被视为已签名的思考，并以 `""` 写回；缺失的 `signature` 保持缺失。若 `signature` 是推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，见[推理数据块](cross-format.md#推理数据块)），则解码为其中的原始块，包括来源；此时会忽略 `thinking` 文本。 |
+| `thinking`（`thinking`、`signature`） | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""`（省略显示）保持为 `[""]`。`signature: ""` 不是不透明数据，而是变为 form `empty_signature`，因此该块永远不会被视为已签名的思考，并以 `""` 写回；缺失的 `signature` 保持缺失。若 `signature` 是推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，见[推理数据块](reasoning.md#推理数据块)），则解码为其中的原始块，包括来源；此时会忽略 `thinking` 文本。 |
 | `redacted_thinking`（`data`） | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
 | 任何其他类型（`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result`、`code_execution_tool_result`、`search_result`、`container_upload`、`tool_reference`、将来的类型） | `Block::Unknown`（raw） | 仅限同一方言。`tool_reference`（MCP 工具搜索）发往其他方言被拒绝时，错误消息会提示在 Claude Code 中取消设置 `ENABLE_TOOL_SEARCH`，这样在网关之后工具搜索默认是关闭的。 |
 
@@ -94,7 +94,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 |---|---|---|
 | `system` | 以文本块数组形式的 `system` | 系统提示中的其他块 → `Unsupported`。 |
 | `messages[].blocks` | 数组形式的 `content` | 空文本块会被丢弃，因为 Anthropic 不接受它们。丢弃推理或空文本后变空的消息会被省略。 |
-| 并非来自 Anthropic 或来自另一个 Anthropic 服务商的 `Block::Reasoning` | 丢弃 | [推理](cross-format.md#推理)。这也包括应用以推理数据块发回的其他方言的推理：它只会发往自己的服务商。 |
+| 并非来自 Anthropic 或来自另一个 Anthropic 服务商的 `Block::Reasoning` | 丢弃 | [推理](reasoning.md)。这也包括应用以推理数据块发回的其他方言的推理：它只会发往自己的服务商。 |
 | 没有非空签名的 `thinking` | 自有块（从 Anthropic Messages 读取）：按收到时的原样写出，缺失的 `signature` 保持缺失，`""`（form `empty_signature`）保持为 `""`；其他块丢弃 | 只包含这种自有块的助手轮次会保留。并非从 Anthropic Messages 读取的未签名 Anthropic 推理（由代码构建，没有 Anthropic extras）会被丢弃，因为 Anthropic 会拒绝未签名的思考块。`redacted_thinking` 会被重放。 |
 | 带 base64 `data:` URL 的 `Source::Url`（来自其他方言） | `source: {type: base64, media_type, data}` | 不是 base64 的 `data:` URL → `Unsupported`；媒体类型的检查方式与 base64 相同。 |
 | 文本、图像或文档以外的 `ToolResult` 内容（以及自有的未知块） | `Unsupported` | `RequestToolResultBlock.content`。 |
@@ -104,16 +104,16 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 不匹配 `^[a-zA-Z0-9_-]{1,128}$` 的工具名称 | 以同样方式改写，包括哈希在内最多 128 个字符，记录在 `EgressCtx::tool_names` 中 | 应用于 `tools[].name`、`tool_choice.name` 和 `tool_use.name`。 |
 | `FunctionTool.parameters: None` | `input_schema: {"type":"object","properties":{}}` | 在 OpenAI 中，没有参数即表示参数列表为空。 |
 | 没有 `tool_choice` 的 `parallel_tool_calls: Some(false)` | `tool_choice: {type: auto, disable_parallel_tool_use: true}` | 不会添加到 `none`，因为它的 schema 中没有这个键。 |
-| 没有模式或预算的 `reasoning.effort` `low` 到 `max` | `thinking: {type: adaptive}` 加 `output_config.effort`；在不支持自适应思考的模型上（`EgressCtx::adaptive_thinking = Some(false)`），按[推理强度与预算](cross-format.md#推理强度与预算)的表格得到 `thinking: {type: enabled, budget_tokens}`（`low` 2,048，`medium` 8,192，`high`、`xhigh` 和 `max` 24,576，并调整为至少 1,024 且小于 `max_tokens`；当 `max_tokens` 为 1,024 或更小时，将其增加 1,024，预算为 1,024） | [推理](cross-format.md#推理)。 |
-| 没有推理强度、模式或预算的 `reasoning.summary`，且 `EgressCtx::reasoning = Some(true)` | 不带推理强度的 `thinking: {type: adaptive}`（模型的默认深度）；在不支持自适应思考的模型上使用 `medium` 预算 | OpenAI 的推理模型默认会推理，因此请求摘要的应用期望得到推理（[可读推理与摘要](cross-format.md#可读推理与摘要)）。未知模型或不推理的模型：不发送任何内容。 |
+| 没有模式或预算的 `reasoning.effort` `low` 到 `max` | `thinking: {type: adaptive}` 加 `output_config.effort`；在不支持自适应思考的模型上（`EgressCtx::adaptive_thinking = Some(false)`），按[推理强度与预算](reasoning.md#推理强度与预算)的表格得到 `thinking: {type: enabled, budget_tokens}`（`low` 2,048，`medium` 8,192，`high`、`xhigh` 和 `max` 24,576，并调整为至少 1,024 且小于 `max_tokens`；当 `max_tokens` 为 1,024 或更小时，将其增加 1,024，预算为 1,024） | [推理](reasoning.md)。 |
+| 没有推理强度、模式或预算的 `reasoning.summary`，且 `EgressCtx::reasoning = Some(true)` | 不带推理强度的 `thinking: {type: adaptive}`（模型的默认深度）；在不支持自适应思考的模型上使用 `medium` 预算 | OpenAI 的推理模型默认会推理，因此请求摘要的应用期望得到推理（[可读推理与摘要](reasoning.md#可读推理与摘要)）。未知模型或不推理的模型：不发送任何内容。 |
 | 思考开启时的 `reasoning.summary`（任何值） | `thinking.display: "summarized"` | Claude Opus 4.7 及更高版本默认为 `omitted`（思考文本为空）。不适用于 Token 计数。对于会在工具调用之间写简短进度说明的模型，这些说明会与摘要混在一起返回；从不发送 `display: "updates"`。 |
-| 为其他方言开启思考时的 `sampling.temperature`、`.top_p`、`.top_k` | 省略 | Anthropic 在思考开启时会拒绝它们，或限制 `top_p`（[思考与采样](cross-format.md#思考与采样)）。没有推理设置时，它们按收到时的原样发送，即使发往默认会思考的模型也是如此；对于目录条目注明 `temperature: false` 的模型，网关会拒绝非默认的 `temperature`。 |
+| 为其他方言开启思考时的 `sampling.temperature`、`.top_p`、`.top_k` | 省略 | Anthropic 在思考开启时会拒绝它们，或限制 `top_p`（[思考与采样](reasoning.md#思考与采样)）。没有推理设置时，它们按收到时的原样发送，即使发往默认会思考的模型也是如此；对于目录条目注明 `temperature: false` 的模型，网关会拒绝非默认的 `temperature`。 |
 | 来自其他方言、带 `enabled` 思考的 `tool_choice` `Required` 或 `Tool` | 不带 `thinking` 发送（也不带因思考而提高的 `max_tokens`） | Anthropic 会拒绝这种组合，而且强制调用本来也不包含思考。自适应思考会保留强制工具。 |
 | `reasoning.effort` `none` | 不发送 `thinking`，不发送推理强度 | 这是 Anthropic 的默认行为。因此，在没有 `thinking` 时也会思考的模型（Claude Opus 5 和 5.5、Sonnet 5 和 5.5、Haiku 5.5 以及 Fable）仍会以其默认推理强度思考。思考开启时的 `none`、`minimal` 以及未知的推理强度 → `Unsupported`。 |
 | `reasoning.budget_tokens`（没有模式） | `thinking: {type: enabled, budget_tokens}` | |
 | 没有预算的 `reasoning.mode = Enabled`；带 `Adaptive` 或 `Disabled` 的预算 | `Unsupported` | 这里不做推理强度与预算之间的转换。 |
 | 来自其他方言的 `reasoning.include_encrypted` | 丢弃 | 它只说明要返回哪些推理（Codex 总是发送它）；Anthropic 总是返回已签名的思考。 |
-| `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可重放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](cross-format.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](cross-format.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](cross-format.md#由网关保存的推理)返回，所以该轮次会以可重放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
+| `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可重放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](reasoning.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](reasoning.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](reasoning.md#由网关保存的推理)返回，所以该轮次会以可重放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
 | `output = JsonObject` | `Unsupported`（`json_object output`） | [结构化输出](cross-format.md#结构化输出)。 |
 | `output = JsonSchema` | `output_config.format` | 丢弃 `name`；`description` 和 `strict: false` → `Unsupported`。 |
 | `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](cross-format.md#采样参数)；不适用于 Token 计数，因为计数时会省略采样参数。 |
@@ -155,7 +155,7 @@ Schema `Message`。
 - **停止原因。** `ContentFilter` 变为 `refusal`，因为 Anthropic 没有内容过滤类的停止原因。若 `Other(s)` 是 Anthropic 文档中的值，则写为 `s`；否则 `length`、`max_output_tokens` 和 `max_completion_tokens` 变为 `max_tokens`，`function_call` 和 `tool_calls` 变为 `tool_use`，`content_filter` 变为 `refusal`，其余一律变为 `end_turn`。自有的 `Other` 值按收到时的原样写出。
 - **拒绝回复。** `Refusal` 块变为 `text` 块。
 - **有损的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。这样的调用会以 `input: {}` 写出，因为 `tool_use.input` 必须是对象，所以应用会丢失这段不完整的文本；网关日志中的 KPP 回复仍保留着它。带有此类参数的请求会被 `check()` 拒绝。
-- **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](cross-format.md#推理数据块)）：先是其摘要，然后是推理文本，作为 `thinking`（段落之间以空行分隔），并以原始块的推理数据块作为 `signature`。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
+- **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：先是其摘要，然后是推理文本，作为 `thinking`（段落之间以空行分隔），并以原始块的推理数据块作为 `signature`。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
 - **省略的内容**（[回复](cross-format.md#回复)）：并非从 Anthropic Messages 读取、没有签名的 Anthropic 推理（自有的未签名思考按收到时的原样写出）；图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。
 
 ## Token 计数
@@ -206,7 +206,7 @@ Schema `MessageStreamEvent`。
 - **缺少 `ResponseStart`** 时，会生成一个 ID 为空、模型为请求中模型的 `message_start`。
 - **拒绝回复**变为文本块。
 - **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，但前提是它们构成一个 JSON 对象；否则不写出，输入保持为 `{}`。这与回复一样是有损的。Anthropic 自己的流按收到时的原样重放。
-- **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](cross-format.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
+- **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
 - **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：每个外来的额外事件一帧，每 1,024 字节隐藏文本一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。
 - **错误**：KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。

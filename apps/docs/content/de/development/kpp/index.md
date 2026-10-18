@@ -8,6 +8,7 @@ nav: KPP-Interna
 KPP, das Kaeso Provider Protocol, ist das kanonische Format, das jede Modellanfrage durchläuft. Das Gateway dekodiert, was eine App sendet, nach KPP und kodiert KPP für den Anbieter; die Antwort nimmt denselben Weg zurück. [Formatübersetzung](../../concepts/format-translation.md) beschreibt, was Aufrufer davon sehen; diese Seiten richten sich an alle, die KPP ändern.
 
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
+- [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
@@ -85,7 +86,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `wire` | serde-Bausteine für verlustfreie Wire-Structs ([Wire-Structs](#wire-structs)) |
 | `sse` | Parser und Writer für Event-Streams ([Server-sent Events](#server-sent-events)) |
 | `cross` | Die Regeln für Daten, die den Dialekt wechseln, und die Extras-Allowlist |
-| `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](cross-format.md#reasoning-über-runden-hinweg)) |
+| `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](reasoning.md#reasoning-über-runden-hinweg)) |
 | `keepalive` | Frames, die laufende Streams nicht verstummen lassen ([Keepalives](cross-format.md#keepalives)) |
 | `models` | Hilfsfunktionen für Modelllisten ([Modelllisten](#modelllisten)) |
 | `testing` | Vergleich von JSON und SSE, auch für Crates, die die Codecs nutzen |
@@ -124,9 +125,9 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `tool_choice` | semantisch | `Unknown` nur im Ursprungsdialekt ausdrückbar. |
 | `parallel_tool_calls` | semantisch | |
 | `output` | semantisch | `JsonObject` hat bei Anthropic keine Entsprechung und ist `Unsupported`, ohne Nachbildung ([strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe)). |
-| `reasoning.mode`, `.effort`, `.budget_tokens` | semantisch | Aufwand und Budget werden nach der Tabelle unter [Aufwand und Budget](cross-format.md#aufwand-und-budget) ineinander umgerechnet. |
-| `reasoning.summary` | Hinweis | Steuert nur, ob Zusammenfassungen zurückkommen. Anthropic: `thinking.display: "summarized"` ([lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). |
-| `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantisch | Aufwand und Budget werden nach der Tabelle unter [Aufwand und Budget](reasoning.md#aufwand-und-budget) ineinander umgerechnet. |
+| `reasoning.summary` | Hinweis | Steuert nur, ob Zusammenfassungen zurückkommen. Anthropic: `thinking.display: "summarized"` ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
+| `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `sampling.max_output_tokens` | semantisch | |
 | `sampling.temperature`, `.top_p` | semantisch | Ihre Schreibweise (`1` oder `1.0`) ist Form und bleibt nur innerhalb des Dialekts erhalten ([Sampling](cross-format.md#sampling)). |
 | `sampling.top_k` | semantisch | Nur Anthropic; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
@@ -160,9 +161,9 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er auf feste Weise umgeschrieben und auf dem Rückweg zurückübersetzt. |
 | `ToolResult.call_id`, `.content` | semantisch | |
 | `ToolResult.is_error` | Hinweis für Ziele ohne Fehler-Flag | Für OpenAI Chat und Responses weggelassen; der Inhalt trägt den Fehlertext ([Tool-Fehler](cross-format.md#tool-fehler)). |
-| `Reasoning.summary`, `.text` | Hinweis | Lesbares Reasoning wird in der Anfrage eines anderen Dialekts weggelassen ([Reasoning](cross-format.md#reasoning)). In Antworten wird es zusammen mit dem Originalblock in einem [Reasoning-Blob](cross-format.md#reasoning-blobs) gezeigt. |
-| `Reasoning.opaque` | semantisch für den Ursprung | Wird Byte für Byte an Ursprungsdialekt und -anbieter zurückgespielt; nie anderswohin gesendet, dort fällt der ganze Block weg ([Reasoning](cross-format.md#reasoning)). |
-| `Reasoning.origin` | — | Entscheidet über das Zurückspielen ([Reasoning](cross-format.md#reasoning)). Ein Anthropic-`thinking`-Block ohne Signatur geht nur an Anthropic zurück, wenn er aus Anthropic Messages gelesen wurde. |
+| `Reasoning.summary`, `.text` | Hinweis | Lesbares Reasoning wird in der Anfrage eines anderen Dialekts weggelassen ([Reasoning](reasoning.md)). In Antworten wird es zusammen mit dem Originalblock in einem [Reasoning-Blob](reasoning.md#reasoning-blobs) gezeigt. |
+| `Reasoning.opaque` | semantisch für den Ursprung | Wird Byte für Byte an Ursprungsdialekt und -anbieter zurückgespielt; nie anderswohin gesendet, dort fällt der ganze Block weg ([Reasoning](reasoning.md)). |
+| `Reasoning.origin` | — | Entscheidet über das Zurückspielen ([Reasoning](reasoning.md)). Ein Anthropic-`thinking`-Block ohne Signatur geht nur an Anthropic zurück, wenn er aus Anthropic Messages gelesen wurde. |
 | `Refusal.text` | semantisch | Anthropic hat keinen Verweigerungsblock: in Anfragen dorthin `Unsupported`, in Antworten an Anthropic-Apps ein Textblock. |
 | `Unknown` | semantisch | Nur im Ursprungsdialekt. Eine `function`-Nachricht von OpenAI Chat wird vollständig als ein solcher Block aufbewahrt ([Anfragen](cross-format.md#anfragen)). |
 | `extras` jedes Blocks | wie bei der Anfrage | Auf der Allowlist je Blockart freigegeben ([Extras-Allowlist](cross-format.md#extras)). |
@@ -186,7 +187,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
 Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise: Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md).
 
-Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen kann, und zwar so verpackt, dass es zurückkommen kann ([Reasoning-Blobs](cross-format.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unbekannte Blöcke erreichen nur Apps ihres eigenen Dialekts. Alles andere bleibt für die App unsichtbar ([Antworten](cross-format.md#antworten), `cross::reply_policy`), in Streams ersetzt durch [Keepalive](cross-format.md#keepalives)-Frames. Das Gateway protokolliert die vollständige KPP-Antwort.
+Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen kann, und zwar so verpackt, dass es zurückkommen kann ([Reasoning-Blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unbekannte Blöcke erreichen nur Apps ihres eigenen Dialekts. Alles andere bleibt für die App unsichtbar ([Antworten](cross-format.md#antworten), `cross::reply_policy`), in Streams ersetzt durch [Keepalive](cross-format.md#keepalives)-Frames. Das Gateway protokolliert die vollständige KPP-Antwort.
 
 ## Codec ändern
 

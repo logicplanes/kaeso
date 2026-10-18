@@ -33,7 +33,7 @@ nav: OpenAI Chat
 | `seed` | `sampling.seed`（类型化） | |
 | `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。 |
 | `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](cross-format.md#采样参数)）；`0`：`InvalidRequest`。 |
-| `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](cross-format.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
+| `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
 | `response_format` `{type: text}` | `output = Text`（类型化） | 形式标记 `response_format_text`；未知键为 extras `response_format.<key>`。 |
 | `response_format` `{type: json_object}` | `output = JsonObject`（类型化） | 未知键为 extras `response_format.<key>`。 |
 | `response_format` `{type: json_schema, json_schema: {name, description, schema, strict}}` | `output = JsonSchema`（类型化） | 未知键为 extras（嵌套的为 `json_schema.<key>`）。缺少 `schema`：`{}` + 形式标记 `schema_absent`；缺少 `json_schema` 对象：`InvalidRequest`。来自其他方言、没有名称的 schema 以 `name: "response"` 发送（[结构化输出](cross-format.md#结构化输出)）。 |
@@ -59,7 +59,7 @@ nav: OpenAI Chat
 | 开头的 `system` 和 `developer` 消息 | `GenerateRequest.system` 中的块 | 每条消息的第一个块带有形式标记 `message: {role, content}`，用来保留消息边界、角色以及字符串或数组写法；消息的 `name` 和未知键是该块上的 extras `message.<key>`。第一个部分为未知类型的开头消息仍是一条 `Role::System` 消息，并结束开头的这一段。来自其他方言时：一条 `system` 消息。 |
 | 后续的 `system` 和 `developer` 消息 | `Message { role: System }`（[系统消息](cross-format.md#系统消息)） | `developer`：形式标记 `role: "developer"`。 |
 | `user` | `Message { role: User }` | `name` 和未知键：消息的 extras。 |
-| `assistant` | `Message { role: Assistant }`：先是内容部分，然后是 `refusal`，最后是 `tool_calls` | 没有 `content`：形式标记 `content: "absent"`；`null`：verbatim；`name`、`audio`、`function_call`：extras。`annotations` 不在请求 schema 中，但 SDK 会随每个回复把它发回：`[]` 按 verbatim 保留（形式标记），使对话可以转到另一个服务商；非空值成为第一个文本块的 `TextBlock.citations`，绑定到 Chat（没有文本时：extras `annotations`），其他方言会拒绝它（`citations`），Chat 则以 `annotations` 发回。来自其他方言时，文本块进入 `content`，第一个拒绝进入 `refusal`，工具调用进入 `tool_calls`，因为 Chat 无法将它们交错排列；推理会被丢弃（[推理](cross-format.md#推理)）；没有留下任何 Chat 能显示的内容的轮次（例如只有推理）以 `content: ""` 发送，这样对话保留其轮次，也满足 Chat 关于没有 `tool_calls` 的助手消息必须有内容的规则。 |
+| `assistant` | `Message { role: Assistant }`：先是内容部分，然后是 `refusal`，最后是 `tool_calls` | 没有 `content`：形式标记 `content: "absent"`；`null`：verbatim；`name`、`audio`、`function_call`：extras。`annotations` 不在请求 schema 中，但 SDK 会随每个回复把它发回：`[]` 按 verbatim 保留（形式标记），使对话可以转到另一个服务商；非空值成为第一个文本块的 `TextBlock.citations`，绑定到 Chat（没有文本时：extras `annotations`），其他方言会拒绝它（`citations`），Chat 则以 `annotations` 发回。来自其他方言时，文本块进入 `content`，第一个拒绝进入 `refusal`，工具调用进入 `tool_calls`，因为 Chat 无法将它们交错排列；推理会被丢弃（[推理](reasoning.md)）；没有留下任何 Chat 能显示的内容的轮次（例如只有推理）以 `content: ""` 发送，这样对话保留其轮次，也满足 Chat 关于没有 `tool_calls` 的助手消息必须有内容的规则。 |
 | 助手 `refusal` | `Block::Refusal` | |
 | 助手 `function_call`（已弃用） | 消息的 extras `function_call` | `null` 按 verbatim 保留。按收到时的样子写回；其他方言会拒绝它（`messages[i].function_call`）。 |
 | `tool` 消息 | `Role::User` 消息中的 `Block::ToolResult`；连续的 tool 消息共用一条 KPP 消息 | `tool_call_id` 变为 `call_id`；内容部分变为嵌套的文本块；未知键是工具结果的 extras。来自其他方言的 `is_error` 会被丢弃，因为 Chat 在内容中报告错误（[工具错误](cross-format.md#工具错误)）。来自其他方言时，一条用户消息中的工具结果变为 `tool` 消息，后面跟一条包含其余块的 `user` 消息。 |
@@ -85,7 +85,7 @@ nav: OpenAI Chat
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |
 
-对于来自其他方言的 KPP，`check()` 会拒绝：文本文档、文档 URL、文档的 `title`、`context` 和 `citations`、图像文件 ID、用户消息之外的图像和文档、助手消息之外的拒绝、助手消息之外的引用（以及通过 `check_foreign` 拒绝其他方言的引用）、`top_k`（[采样参数](cross-format.md#采样参数)）、未知的推理模式以及规范枚举之外的推理强度。预算和 `disabled` 会被转换（[推理强度与预算](cross-format.md#推理强度与预算)）。以下提示字段则会被丢弃：推理块（[推理](cross-format.md#推理)）、其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）、`ToolResult::is_error`（其信息由错误内容承载，见[工具错误](cross-format.md#工具错误)），以及其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 不返回可显示的推理（[可读推理与摘要](cross-format.md#可读推理与摘要)）。
+对于来自其他方言的 KPP，`check()` 会拒绝：文本文档、文档 URL、文档的 `title`、`context` 和 `citations`、图像文件 ID、用户消息之外的图像和文档、助手消息之外的拒绝、助手消息之外的引用（以及通过 `check_foreign` 拒绝其他方言的引用）、`top_k`（[采样参数](cross-format.md#采样参数)）、未知的推理模式以及规范枚举之外的推理强度。预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：推理块（[推理](reasoning.md)）、其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）、`ToolResult::is_error`（其信息由错误内容承载，见[工具错误](cross-format.md#工具错误)），以及其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 不返回可显示的推理（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
 
 编解码器无法读取的请求体为 `InvalidRequest`，错误会指明字段及其应有的形式并设置 `param`，而不会给出解析器位置：`` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
@@ -125,7 +125,7 @@ nav: OpenAI Chat
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
 | `message.audio`（`id`、`data`、`expires_at`、`transcript`）、`message.function_call`、未知键 | extras `choice.message.<key>` | 音频对象连同 `transcript` 和 `expires_at` 完整保留。 |
-| 推理、其他方言的未知块 | 无 | 在 Chat 回复中省略（[回复](cross-format.md#回复)）。网关会为下一轮保存可回放的推理，以它之前对应的工具调用为键（[由网关保存的推理](cross-format.md#由网关保存的推理)，`kaeso_codecs::continuity`）。 |
+| 推理、其他方言的未知块 | 无 | 在 Chat 回复中省略（[回复](cross-format.md#回复)）。网关会为下一轮保存可回放的推理，以它之前对应的工具调用为键（[由网关保存的推理](reasoning.md#由网关保存的推理)，`kaeso_codecs::continuity`）。 |
 
 来自其他方言的回复按 OpenAI 的方式写出空值：`content: null`、`refusal: null`、`annotations: []` 和 `logprobs: null`。
 

@@ -12,7 +12,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Unknown blocks, tools and tool choices | `Unsupported` | Unknown blocks left out |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
-| Readable reasoning | Dropped; the [reasoning blob](#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
+| Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
 | Opaque reasoning | Replayed only to the dialect and provider that issued it | Wrapped in a reasoning blob |
 | Cache hints | Dropped where the target caches by itself | — |
 | Sampling settings the target lacks | `Unsupported` | — |
@@ -27,7 +27,7 @@ An app may speak one API format while the provider speaks another. These are the
 - **Provider file ids** the target provider can't resolve ([files](#files)).
 - **Citations from another dialect:** no target documents what citations in earlier turns do, and the formats don't map.
 
-Not refused, because the encoders drop them instead: reasoning blocks the target can't replay ([reasoning](#reasoning)), and cache hints where the target caches by itself ([cache hints](#cache-hints)).
+Not refused, because the encoders drop them instead: reasoning blocks the target can't replay ([reasoning](reasoning.md)), and cache hints where the target caches by itself ([cache hints](#cache-hints)).
 
 `check()` also refuses what a target can't express at all. Anthropic needs `max_tokens`, so a generation request without `sampling.max_output_tokens` is `InvalidRequest` for it, naming the app's own field for the limit, rather than getting an invented value.
 
@@ -43,8 +43,8 @@ OpenAI Chat's deprecated function calling round-trips within Chat and crosses to
 
 Replies flow from one provider to one app, and refusing a finished, paid-for reply would be worse than showing less of it. Data of another dialect is therefore, in this order of preference (`cross::reply_policy`, `cross::reasoning_reply_policy`):
 
-1. **Mapped** where the app's dialect can represent it: reasoning of another dialect becomes an OpenAI Responses reasoning item or an Anthropic `thinking` block, with the original block wrapped in a [reasoning blob](#reasoning-blobs) that the app sends back unchanged.
-2. **Left out** where it can't, and replaced by [keepalive](#keepalives) frames in streams so the connection never goes silent: reasoning for OpenAI Chat apps (the gateway [keeps it](#reasoning-kept-by-the-gateway) between turns), unknown blocks and stream extras from another dialect, foreign citations and extras.
+1. **Mapped** where the app's dialect can represent it: reasoning of another dialect becomes an OpenAI Responses reasoning item or an Anthropic `thinking` block, with the original block wrapped in a [reasoning blob](reasoning.md#reasoning-blobs) that the app sends back unchanged.
+2. **Left out** where it can't, and replaced by [keepalive](#keepalives) frames in streams so the connection never goes silent: reasoning for OpenAI Chat apps (the gateway [keeps it](reasoning.md#reasoning-kept-by-the-gateway) between turns), unknown blocks and stream extras from another dialect, foreign citations and extras.
 
 The gateway logs the KPP reply in full, so nothing is lost from Kaeso's records. Unknown blocks, citations and extras reach another dialect only when the provider sends something the request didn't ask for, because the request side refuses foreign server tools, citations and similar features.
 
@@ -68,7 +68,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `anthropic_messages` | request | `header:anthropic-version` | API versioning of the Anthropic wire format; meaningless elsewhere. A value equal to the pinned version is not stored at all ([the Anthropic version](#the-anthropic-version)). | Anthropic SDKs |
 | `openai_chat`, `openai_responses`, `openai_embeddings` | request | `header:openai-beta` | As `anthropic-beta`. | Codex sends `OpenAI-Beta: responses=experimental` |
 | `anthropic_messages` | request | `cache_control` | Top-level automatic prompt caching. Cache hints are hints ([cache hints](#cache-hints)). | `anthropic_messages/requests/system-string-multi-turn.json`, `explicit-nulls.json` |
-| `anthropic_messages` | reasoning | `display` (`thinking.display`) | Only controls whether thinking text is returned (`summarized` or `omitted`). OpenAI Responses gets `reasoning.summary: "auto"` instead unless it is `omitted` ([readable reasoning and summaries](#readable-reasoning-and-summaries)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
+| `anthropic_messages` | reasoning | `display` (`thinking.display`) | Only controls whether thinking text is returned (`summarized` or `omitted`). OpenAI Responses gets `reasoning.summary: "auto"` instead unless it is `omitted` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
 | `openai_chat` | image | `image_url.detail` | Image resolution hint (`low`, `high`, `auto`): it changes image token cost, not what is asked; targets without it choose their own resolution. | `openai_chat/requests/image-base64-detail.json` |
 | `openai_chat` | document | `file.filename` | The file name OpenAI requires next to inline `file_data`. Metadata, no instruction. | `openai_chat/requests/file-pdf-data.json` |
 | `openai_chat` | request | `prompt_cache_key` | Routes requests to a prompt cache. A cache hint ([cache hints](#cache-hints)). | `openai_chat/requests/all-params-sdk.json` |
@@ -81,7 +81,7 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 
 | Origin dialect | Scope | Key | Condition and reason | Fixture / client |
 | --- | --- | --- | --- | --- |
-| `anthropic_messages` | request | `context_management` | Holds only `edits`, with at least one edit, and every edit is `clear_thinking_*`. Thinking-block clearing only decides which earlier Anthropic `thinking` blocks the model sees, and those never reach another dialect ([reasoning](#reasoning)). | Claude Code 2.1.296 sends `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}` on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
+| `anthropic_messages` | request | `context_management` | Holds only `edits`, with at least one edit, and every edit is `clear_thinking_*`. Thinking-block clearing only decides which earlier Anthropic `thinking` blocks the model sees, and those never reach another dialect ([reasoning](reasoning.md)). | Claude Code 2.1.296 sends `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}` on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `anthropic_messages` | message (`role: "system"`) | `output_config` | `{}`, or only `effort` equal to the request's `output_config.effort`. Repeating the request's effort changes nothing. | Claude Code 2.1.296 repeats the request's effort on its mid-conversation system message; same fixture |
 
 ## Usage
@@ -95,114 +95,6 @@ A system message after the start of a conversation is kept as a `Role::System` m
 - **To Anthropic, from Anthropic Messages:** sent unchanged; the API judges their placement and which models support them. Claude Code sends such messages on every request.
 - **To Anthropic, from other dialects:** `Unsupported`. Anthropic allows them only for some models and only after a user turn, while OpenAI system and developer messages may sit anywhere.
 - **To OpenAI:** later `system` or `developer` messages.
-
-## Reasoning
-
-Anthropic signs its thinking blocks and OpenAI encrypts its reasoning items. Opaque reasoning (signatures, encrypted content, item ids) is only ever replayed to the dialect and provider that issued it.
-
-- **In requests,** readable reasoning text and summaries going to another dialect are dropped as a hint; the [reasoning blob](#reasoning-blobs) next to them restores the original block when the conversation returns to its provider.
-- **Without a signature,** an Anthropic `thinking` block read from Anthropic Messages goes back to Anthropic as received, in requests and replies: an absent `signature` stays absent and `signature: ""` stays `""`. Unsigned Anthropic reasoning that wasn't read from Anthropic Messages, such as a block built by code, has nothing to replay and is left out.
-- **In replies,** reasoning of another dialect is shown in the app's own reasoning shape where it has one, with the original block in a reasoning blob, so it reaches its origin again on the next turn. OpenAI Chat apps have no such shape, so the gateway keeps their reasoning between turns.
-
-Reasoning settings convert between an effort and a token budget:
-
-| From | To | Becomes |
-| --- | --- | --- |
-| Effort `none` | Anthropic | No thinking, Anthropic's default |
-| Effort `low` to `max` | Anthropic model with adaptive thinking | Adaptive thinking with that effort |
-| Effort `low` to `max` | Anthropic model without adaptive thinking | `enabled` thinking with a budget from the table below |
-| A budget alone | Anthropic | `enabled` thinking with that budget |
-| An Anthropic budget | OpenAI | An effort from the table below |
-| Anthropic `thinking: {type: "disabled"}` | OpenAI | Effort `none` |
-
-Both OpenAI dialects document `none` as the lowest value of their shared `ReasoningEffort` enum, so disabled Anthropic thinking always has an equivalent. The effort `minimal` has no row and stays `Unsupported` for Anthropic.
-
-### Effort and budget
-
-The conversion lives in `kaeso_codecs::cross::reasoning_map`.
-
-| Anthropic `budget_tokens` | OpenAI effort |
-| --- | --- |
-| below 4,096 | `low` |
-| 4,096 to 16,383 | `medium` |
-| 16,384 and more | `high` |
-
-An explicit effort in the same request wins over the budget.
-
-| OpenAI effort | Anthropic `budget_tokens` |
-| --- | --- |
-| `low` | 2,048 |
-| `medium` | 8,192 |
-| `high`, `xhigh`, `max` | 24,576 |
-
-This table applies only when the target model has no adaptive thinking (Claude 4.5 and earlier). The gateway says so with `EgressCtx::adaptive_thinking = Some(false)`, from the catalogue's `adaptive_thinking` field; Claude 4.7 and later refuse `enabled` thinking and get adaptive thinking with the effort instead.
-
-The budget is then fitted to Anthropic's rules: at least 1,024 and less than `max_tokens`, so it becomes `max_tokens − 1` when that is smaller. When `max_tokens` is 1,024 or less, no valid budget exists, so `max_tokens` is raised by 1,024 and the budget is 1,024; the app keeps its own `max_tokens` for the answer. `reasoning_map::budget_within` does the fitting and raising, `reasoning_map::fit_budget` only the fitting.
-
-The sources are OpenAI's `ReasoningEffort` enum in the OpenAPI spec (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`; not every model supports every value) and Anthropic's [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) page: `budget_tokens` is at least 1,024 and less than `max_tokens`, and adaptive thinking doesn't exist on Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 and earlier Claude 4 models.
-
-### Readable reasoning and summaries
-
-`reasoning.summary` and `reasoning.include_encrypted` are hints across dialects: they only control which reasoning comes back, so they are dropped where the target has no equivalent. Codex sends both on every request.
-
-OpenAI returns readable reasoning only when the request sets `reasoning.summary`, and Claude Opus 4.7 and later return thinking blocks with empty text unless the request sets `thinking.display: "summarized"`. So, except for token counting:
-
-- a request from another dialect with a reasoning summary (`auto`, `concise`, `detailed`) and thinking on goes to Anthropic with `display: "summarized"`;
-- an Anthropic Messages request with thinking on (`enabled`, `adaptive`, or an effort other than `none`) and a `display` other than `omitted` goes to OpenAI Responses with `summary: "auto"`.
-
-The gateway also tells the encoders whether the target model reasons (`EgressCtx::reasoning`, from the catalogue's `reasoning`). With `Some(true)`:
-
-- a summary without an effort, mode or budget (OpenAI `reasoning: {summary: "auto"}`) turns Anthropic thinking on at the model's default depth: adaptive without an effort, or the `medium` budget, OpenAI's default effort;
-- Anthropic `adaptive` thinking without an effort counts as reasoning for OpenAI Responses: it asks for `include: ["reasoning.encrypted_content"]` and, as above, a summary.
-
-Requests without reasoning settings, the effort `none`, and models that don't reason or aren't known never get reasoning switched on. OpenAI Chat apps, whose format shows no reasoning, ask for no summaries.
-
-### Thinking and sampling
-
-When Kaeso turns thinking on for a request from another dialect, what Anthropic forbids next to thinking is adjusted instead of refused, because sampling settings and forced tools are routine in OpenAI apps:
-
-- `temperature`, `top_p` and `top_k` are left out. Anthropic refuses `temperature` and `top_k` with thinking and limits `top_p` to 0.95 to 1, and Claude Opus 4.7 and later refuse any value that isn't the default.
-- `enabled` thinking is not sent with a forced tool (`tool_choice` `required` or a named tool), a combination Anthropic refuses. Where Anthropic accepts forced tools, with adaptive thinking, the reply starts with the tool call and holds no thinking anyway, so nothing is lost. A forced tool with adaptive thinking is sent unchanged.
-
-An Anthropic app's own settings are sent as received.
-
-### Tool turns without thinking
-
-Anthropic refuses a request with `enabled` thinking whose last assistant turn made tool calls without a replayable thinking block first, signed or redacted ("a final assistant message must start with a thinking block"). Such a request goes to Anthropic without `thinking` for that turn. Adaptive thinking is kept, because adaptive models don't need the leading thinking block.
-
-Since reasoning travels with the conversation, this is rare. It still happens when the turn really came from another provider (a model switch in the middle of a tool loop), when an app dropped the reasoning item, thinking block or blob, or when the gateway no longer holds a Chat app's reasoning because it expired or another key sent the turn.
-
-## Reasoning continuity
-
-Without help, every tool-loop turn of an app on another provider's model would lose that model's reasoning: budget thinking would be switched off on every continuation turn, and adaptive thinking would lose what it reasoned before. `kaeso_codecs::continuity` makes reasoning travel with the conversation, in a blob for Responses and Anthropic apps and in the gateway for Chat apps.
-
-### Reasoning blobs
-
-For OpenAI Responses and Anthropic Messages apps, KPP wraps the whole reasoning block of another dialect (readable text, summaries, signature, encrypted content, redacted data, item id) into a reasoning blob: `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`) followed by the block's KPP JSON, form markers removed, in unpadded base64url.
-
-| App | Gets | Carrying the blob in |
-| --- | --- | --- |
-| OpenAI Responses | A reasoning item with an `rs_kaeso_…` id and the thinking as one summary text, streamed as `response.reasoning_summary_*` events | `encrypted_content` |
-| Anthropic Messages | A `thinking` block with the summaries and reasoning text as thinking, paragraphs separated by a blank line | `signature`, streamed as one `signature_delta` when the block stops |
-
-Both request decoders recognise a blob wherever it sits (`continuity::unwrap_reasoning`) and restore the original block with its origin, so the encoders replay it to its own dialect and provider like any other reasoning.
-
-- **Always sent.** The blob is sent whether or not the app asked for `include: ["reasoning.encrypted_content"]`, and whatever its `store` setting: Kaeso stores nothing, and the SDK agent loops (openai-agents' `to_input_list()`, Codex, Claude Code, the Anthropic tool runner) send output items and content blocks back as received.
-- **The blob wins.** It holds the readable text a second time, because it must restore the block exactly (Anthropic checks thinking text against its signature) while apps may edit or drop the readable copy. When an app sends both back, the blob wins.
-- **Never mistaken for provider data.** The prefix contains `:`, which is in neither the base64 alphabet of Anthropic signatures nor the base64url alphabet of OpenAI's encrypted content. A value with the prefix that doesn't decode is kept as the provider's own opaque data, and the provider then refuses it, so nothing is dropped silently.
-- **Not encrypted or signed by Kaeso.** It holds what the app already saw, and data only the issuing provider can verify.
-
-Requests from other dialects ask OpenAI Responses for `include: ["reasoning.encrypted_content"]` when they set an effort other than `none` or a thinking budget, or turn thinking on for a model the gateway knows reasons ([readable reasoning and summaries](#readable-reasoning-and-summaries)). Otherwise Kaeso can't tell that the model reasons, and OpenAI refuses encrypted reasoning for models that don't. Since these requests carry `store: false` ([Responses storage and ids](#responses-storage-and-ids)), reasoning without encrypted content is not sent to OpenAI, which couldn't resolve its item id.
-
-### Reasoning kept by the gateway
-
-Chat Completions has no field for reasoning, and KPP does not invent one. The reply leaves the reasoning out and the gateway keeps it, keyed by the tool calls it came before. Tool call ids are unique, issued by the provider and sent back by every Chat client, so they key the reasoning without changing the app's format.
-
-1. After a reply, `continuity::reasoning_for_tool_calls` (a complete reply) or a `continuity::ReasoningCollector` (a stream) returns one `CarriedReasoning` per tool call that replayable reasoning came before: Anthropic signed or redacted thinking, or OpenAI encrypted reasoning. Reasoning after the last tool call is not kept.
-2. The gateway stores the entries in Valkey, encrypted under the master key and readable only with the API key that made the request, for `KAESO_CONTINUITY_REASONING_TTL` (an hour by default).
-3. On the app's next request, after decoding and before `check` and encoding, `continuity::tool_calls_missing_reasoning` lists the tool call ids to look up, and `continuity::restore_reasoning` puts what was found back into the assistant turns: reasoning for a turn's first tool call at the start of the turn, for a later call right after the call before it. Turns that already hold reasoning are left alone.
-
-The encoders replay restored blocks to their own provider only.
 
 ## Keepalives
 

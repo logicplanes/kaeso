@@ -8,6 +8,7 @@ nav: KPP 内部实现
 KPP，即 Kaeso Provider Protocol，是每个模型请求都要经过的规范格式。网关把应用发来的内容解码为 KPP，再把 KPP 编码后发给服务商，回复沿同一路径返回。调用方能看到的部分在[格式转换](../../concepts/format-translation.md)中介绍；这些页面面向修改 KPP 的人。
 
 - [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
+- [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
@@ -85,7 +86,7 @@ sequenceDiagram
 | `wire` | 用于无损 wire 结构体的 serde 构件（[Wire 结构体](#wire-结构体)） |
 | `sse` | 事件流的解析器和写入器（[服务器发送事件](#服务器发送事件)） |
 | `cross` | 跨方言数据的规则，以及 extras 允许列表 |
-| `continuity` | 随对话传递的推理（[推理的延续](cross-format.md#推理的延续)） |
+| `continuity` | 随对话传递的推理（[推理的延续](reasoning.md#推理的延续)） |
 | `keepalive` | 让进行中的流不至于沉默的帧（[保活消息](cross-format.md#保活消息)） |
 | `models` | 模型列表的辅助函数（[模型列表](#模型列表)） |
 | `testing` | JSON 和 SSE 的比较工具，也供使用这些编解码器的 crate 使用 |
@@ -124,9 +125,9 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `tool_choice` | 语义 | `Unknown` 只有其来源方言能够表达。 |
 | `parallel_tool_calls` | 语义 | |
 | `output` | 语义 | `JsonObject` 在 Anthropic 中没有对应项，返回 `Unsupported`，不做模拟（[结构化输出](cross-format.md#结构化输出)）。 |
-| `reasoning.mode`、`.effort`、`.budget_tokens` | 语义 | 推理强度与预算按[推理强度与预算](cross-format.md#推理强度与预算)中的表格相互转换。 |
-| `reasoning.summary` | 提示 | 只控制是否返回摘要。Anthropic：`thinking.display: "summarized"`（[可读推理与摘要](cross-format.md#可读推理与摘要)）。 |
-| `reasoning.include_encrypted` | 提示 | 只控制是否返回加密的推理；仅限 OpenAI Responses（[可读推理与摘要](cross-format.md#可读推理与摘要)）。 |
+| `reasoning.mode`、`.effort`、`.budget_tokens` | 语义 | 推理强度与预算按[推理强度与预算](reasoning.md#推理强度与预算)中的表格相互转换。 |
+| `reasoning.summary` | 提示 | 只控制是否返回摘要。Anthropic：`thinking.display: "summarized"`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 |
+| `reasoning.include_encrypted` | 提示 | 只控制是否返回加密的推理；仅限 OpenAI Responses（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 |
 | `sampling.max_output_tokens` | 语义 | |
 | `sampling.temperature`、`.top_p` | 语义 | 它们的写法（`1` 还是 `1.0`）属于形式，只在同一方言内保留（[采样参数](cross-format.md#采样参数)）。 |
 | `sampling.top_k` | 语义 | 仅限 Anthropic；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
@@ -160,9 +161,9 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `ToolCall.*` | 语义 | ID 和名称保持不变；目标因字符或长度不接受时，会以固定方式改写，并在返回时还原。 |
 | `ToolResult.call_id`、`.content` | 语义 | |
 | `ToolResult.is_error` | 对没有错误标志的目标是提示 | 发往 OpenAI Chat 和 Responses 时丢弃，由内容承载错误文本（[工具错误](cross-format.md#工具错误)）。 |
-| `Reasoning.summary`、`.text` | 提示 | 在发往其他方言的请求中，可读推理会被丢弃（[推理](cross-format.md#推理)）。在回复中，它会与原始块一起放在[推理数据块](cross-format.md#推理数据块)中展示。 |
-| `Reasoning.opaque` | 对其来源是语义 | 逐字节回放给其来源方言和服务商；从不发往其他地方，在那里整个块都会被丢弃（[推理](cross-format.md#推理)）。 |
-| `Reasoning.origin` | — | 决定是否回放（[推理](cross-format.md#推理)）。没有签名的 Anthropic `thinking` 块只有在从 Anthropic Messages 读到时才会发回 Anthropic。 |
+| `Reasoning.summary`、`.text` | 提示 | 在发往其他方言的请求中，可读推理会被丢弃（[推理](reasoning.md)）。在回复中，它会与原始块一起放在[推理数据块](reasoning.md#推理数据块)中展示。 |
+| `Reasoning.opaque` | 对其来源是语义 | 逐字节回放给其来源方言和服务商；从不发往其他地方，在那里整个块都会被丢弃（[推理](reasoning.md)）。 |
+| `Reasoning.origin` | — | 决定是否回放（[推理](reasoning.md)）。没有签名的 Anthropic `thinking` 块只有在从 Anthropic Messages 读到时才会发回 Anthropic。 |
 | `Refusal.text` | 语义 | Anthropic 没有拒绝块：发往它的请求返回 `Unsupported`，给 Anthropic 应用的回复中则变为文本块。 |
 | `Unknown` | 语义 | 仅限来源方言。OpenAI Chat 的 `function` 消息作为一个这样的块完整保存（[请求](cross-format.md#请求)）。 |
 | 每个块的 `extras` | 与请求相同 | 允许列表按块类型生效（[Extras 允许列表](cross-format.md#extras)）。 |
@@ -186,7 +187,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 回复和流事件从一个服务商流向一个应用，其中没有提示字段：应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md)。
 
-在应用的格式能够承载时，推理会到达其他方言的应用，并经过包装，以便之后能够原样返回（[推理数据块](cross-format.md#推理数据块)，`cross::reasoning_reply_policy`）。未知块只会到达其自身方言的应用。其余内容都不会出现在应用中（[回复](cross-format.md#回复)，`cross::reply_policy`），流中则以[保活消息](cross-format.md#保活消息)帧代替。网关会记录完整的 KPP 回复。
+在应用的格式能够承载时，推理会到达其他方言的应用，并经过包装，以便之后能够原样返回（[推理数据块](reasoning.md#推理数据块)，`cross::reasoning_reply_policy`）。未知块只会到达其自身方言的应用。其余内容都不会出现在应用中（[回复](cross-format.md#回复)，`cross::reply_policy`），流中则以[保活消息](cross-format.md#保活消息)帧代替。网关会记录完整的 KPP 回复。
 
 ## 修改编解码器
 
