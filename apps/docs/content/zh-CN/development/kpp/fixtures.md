@@ -49,7 +49,7 @@ order: 8
 
 ```bash
 export ANTHROPIC_API_KEY=…
-cargo xtask record anthropic_messages tools-single thinking-signature
+cargo xtask record anthropic_messages tools-single thinking-enabled-budget
 cargo xtask record anthropic_messages --count --all
 ```
 

@@ -101,7 +101,7 @@ Kaeso steht unter der MIT-Lizenz, und alles, was Kaeso ausliefert, hängt nur vo
 
 `cargo deny check` lehnt außerdem Crates mit Sicherheitshinweisen ab, zurückgezogene Crates, Wildcard-Versionen und Crates aus unbekannten Registries oder Git-Repositorys. Einige Crates, die das Gateway nur über andere Crates erreicht, haben eine Ausnahme für eine andere freizügige Lizenz; `deny.toml` nennt jede davon. Werkzeuge, die nur in Tests oder Builds laufen, etwa axe-core, erreichen nie ein Paket, ein Image oder eine veröffentlichte Website. Die Schriften der UI-Bibliothek, Inter und Geist Mono, stehen unter der SIL Open Font License, und `pnpm release:check` lehnt ein Paket ohne ihre Lizenzdateien ab.
 
-Der Bibliothekscode von KPP hängt nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` ab, und seine Richtlinie verbietet `tokio`, `reqwest`, `hyper` und `axum`. Alles andere braucht vorher die Zustimmung des Maintainers.
+Der Bibliothekscode von KPP darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und seine Richtlinie verbietet `tokio`, `reqwest`, `hyper` und `axum`. Alles andere braucht vorher die Zustimmung des Maintainers.
 
 ## Nächste Schritte
 

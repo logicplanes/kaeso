@@ -93,7 +93,7 @@ Kaeso 这样转换推理设置：
 | 关闭思考 | OpenAI | 推理强度 `none` |
 | 从 `low` 到 `max` 的推理强度 | 支持自适应思考的 Claude | 采用该推理强度的自适应思考 |
 | 从 `low` 到 `max` 的推理强度 | 不支持自适应思考的 Claude | 预算：`low` 为 2,048，`medium` 为 8,192，`high`、`xhigh` 和 `max` 为 24,576 个 Token |
-| 推理强度 `none` | Claude | 不思考 |
+| 推理强度 `none` | Claude | 不发送思考设置，模型仅在默认会思考时才思考 |
 
 - **推理强度和预算。** 同一请求中的推理强度优先于预算。目录条目注明时，Claude 模型不支持自适应思考。Claude 4.5 及更早版本都不支持。
 - **调整预算。** Kaeso 会按 Anthropic 的规则调整预算：至少 1,024 个 Token，且小于 `max_tokens`。当 `max_tokens` 为 1,024 或更小时，预算为 1,024，Kaeso 会把 `max_tokens` 增加 1,024，为回答保留空间。

@@ -101,7 +101,7 @@ Kaeso is MIT licensed, and everything it ships depends only on permissively lice
 
 `cargo deny check` also refuses crates with security advisories, yanked crates, wildcard versions, and crates from unknown registries or Git repositories. A few crates that the gateway only reaches through other crates have an exception for another permissive license; `deny.toml` names each one. Tools that run only in tests or builds, such as axe-core, never reach a package, an image or a published site. The UI library's fonts, Inter and Geist Mono, are under the SIL Open Font License, and `pnpm release:check` refuses a package without their license files.
 
-KPP's library code depends only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and its policy bans `tokio`, `reqwest`, `hyper` and `axum`. Anything else needs the maintainer's agreement first.
+KPP's library code may depend only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and its policy bans `tokio`, `reqwest`, `hyper` and `axum`. Anything else needs the maintainer's agreement first.
 
 ## Next steps
 

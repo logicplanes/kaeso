@@ -118,7 +118,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 保活帧以两种方式到达线路：
 
-- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制（`kaeso_codecs::keepalive`）：另一方言的额外事件（例如 `ping`，其节奏已由服务商控制）总能换来一帧；隐藏文本（应用看不到的思考、缓冲中的工具参数）每 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节，即 1,024 字节，换来一帧；编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
+- **带内。** 当来自另一方言的事件没有产生任何字节时，编码器把保活帧加入 `StreamEncoder::encode` 的返回值。一个不依赖时钟的节拍器对此加以限制：另一方言的额外事件（例如 `ping`，其节奏已由服务商控制）总能换来一帧；隐藏文本（应用看不到的思考、缓冲中的工具参数）每 `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` 字节，即 1,024 字节，换来一帧；编码器写出任何内容都会重置计数。应用自身方言的事件从不换来保活帧，因此同一方言内的回放保持精确。
 - **由网关驱动。** `StreamEncoder::keepalive` 按需返回保活帧，用于编码器无法察觉的上游静默。网关在 `KAESO_STREAMS_KEEPALIVE_INTERVAL`（默认 15 秒）内没有向应用写出任何内容时，就会写出它。
 
 OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而不是等到第一段文本，这样在模型思考期间应用也能收到流的消息。
@@ -151,7 +151,7 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 ## 回复 ID
 
-无论应用使用哪种格式，回复都保留服务商的 ID 不变：Claude 的回复以其 Anthropic ID（`msg_…`）到达 OpenAI Chat Completions 或 Responses 应用，OpenAI 的回复以 OpenAI 的 ID（`chatcmpl-…` 或 `resp_…`）到达 Anthropic Messages 应用。流中携带同一个 ID。编解码器从不按应用自身格式的样式编造 ID，因为服务商的 ID 才是在服务商处标识该回复的 ID；应用应把回复 ID 当作不透明的字符串。例外是其他格式没有的 Responses 输出项（[Responses 的存储与 ID](#responses-的存储与-id)）。
+无论应用使用哪种格式，回复都保留服务商的 ID 不变：Claude 的回复以其 Anthropic ID（`msg_…`）到达 OpenAI Chat Completions 或 Responses 应用，OpenAI 的回复以 OpenAI 的 ID（`chatcmpl-…` 或 `resp_…`）到达 Anthropic Messages 应用。流中携带同一个 ID。编解码器从不按应用自身格式的样式编造 ID，因为服务商的 ID 才是在服务商处标识该回复的 ID；应用应把回复 ID 当作不透明的字符串。例外有两种：其他格式没有的 Responses 输出项（[Responses 的存储与 ID](#responses-的存储与-id)），以及没有开始事件的 Responses 流，它会得到 ID `resp_kaeso_<created_at>`（[OpenAI Responses](openai-responses.md)）。
 
 ## Responses 的存储与 ID
 

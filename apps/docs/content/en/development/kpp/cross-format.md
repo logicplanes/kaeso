@@ -118,7 +118,7 @@ A provider can stream for minutes without producing anything the app's format ca
 
 Frames reach the wire in two ways:
 
-- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock (`kaeso_codecs::keepalive`). Another dialect's extra event, such as `ping`, always earns a frame, because the provider already paces it. Hidden text, such as thinking the app can't see or buffered tool arguments, earns one frame per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
+- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock. Another dialect's extra event, such as `ping`, always earns a frame, because the provider already paces it. Hidden text, such as thinking the app can't see or buffered tool arguments, earns one frame per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
 - **Driven by the gateway.** `StreamEncoder::keepalive` returns the frame on demand, for upstream silence the encoder can't see. The gateway writes it when it has written nothing to the app for `KAESO_STREAMS_KEEPALIVE_INTERVAL`, 15 seconds by default.
 
 The OpenAI Chat encoder also sends its role chunk as soon as the response starts, rather than with the first text, so the app hears from the stream while the model thinks.
@@ -151,7 +151,7 @@ KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, w
 
 ## Reply ids
 
-A reply keeps the provider's id as it is, whatever the app's format. A Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`). An OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id. The codecs never make up an id in the app's own pattern: the provider's id names the reply at the provider, and apps treat reply ids as opaque strings. Responses output items, which other formats don't have, are the exception ([Responses storage and ids](#responses-storage-and-ids)).
+A reply keeps the provider's id as it is, whatever the app's format. A Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`). An OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id. The codecs never make up an id in the app's own pattern: the provider's id names the reply at the provider, and apps treat reply ids as opaque strings. The exceptions are Responses output items, which other formats don't have ([Responses storage and ids](#responses-storage-and-ids)), and a Responses stream without a start event, which gets the id `resp_kaeso_<created_at>` ([OpenAI Responses](openai-responses.md)).
 
 ## Responses storage and ids
 

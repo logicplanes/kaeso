@@ -93,7 +93,7 @@ So rechnet Kaeso Reasoning-Einstellungen um:
 | Ausgeschaltetes Denken | OpenAI | Die Aufwandsstufe `none` |
 | Eine Aufwandsstufe von `low` bis `max` | Claude mit adaptivem Denken | Adaptives Denken mit dieser Aufwandsstufe |
 | Eine Aufwandsstufe von `low` bis `max` | Claude ohne adaptives Denken | Ein Budget: `low` 2.048, `medium` 8.192, `high`, `xhigh` und `max` 24.576 Tokens |
-| Die Aufwandsstufe `none` | Claude | Kein Denken |
+| Die Aufwandsstufe `none` | Claude | Keine Einstellung zum Denken; das Modell denkt nur, wenn es das standardmäßig tut |
 
 - **Aufwandsstufe und Budget.** Eine Aufwandsstufe hat Vorrang vor einem Budget in derselben Anfrage. Ein Claude-Modell hat kein adaptives Denken, wenn sein Katalogeintrag das sagt. Claude 4.5 und früher haben keines.
 - **Ein Budget anpassen.** Kaeso passt ein Budget an die Regeln von Anthropic an: mindestens 1.024 Tokens und weniger als `max_tokens`. Ist `max_tokens` 1.024 oder kleiner, beträgt das Budget 1.024, und Kaeso erhöht `max_tokens` um 1.024, damit die Antwort ihren Platz behält.

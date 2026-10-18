@@ -222,7 +222,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | `prompt.id`, `prompt.version`, `prompt.variables` (`Prompt`) | Extras `prompt` (das ganze Objekt; wiederverwendbare Prompts liegen auf dem Server) |
 | `prompt_cache_options.ttl`, `prompt_cache_options.mode` | Extras `prompt_cache_options` (das ganze Objekt) |
 | `context_management[].type`, `context_management[].compact_threshold` | Extras `context_management` (die ganze Liste) |
-| `Error.misalignment` (`MisalignmentErrorDetailsResource`: `review_target`, `error_type`, `detailed_explanation`, `steer`) | `KppError.raw` (der ganze Body), wiedergegeben an Apps eines OpenAI-Dialekts |
+| `Error.misalignment` (`MisalignmentErrorDetailsResource`: `review_target`, `error_type`, `detailed_explanation`, `steer`) | `KppError.raw` (der ganze Body), zurückgespielt an Responses- und Embeddings-Apps |
 | `ResponseError.misalignment` (fehlgeschlagene Antworten, `response.failed`) | `KppError.raw` (die ganze Antwort oder das ganze Event); ein `response.failed`-Event wird in Responses-Streams wiedergegeben |
 | `ResponseError.code` / `.message` | `KppError.kind` (über `ResponseErrorCode`) / `.message` |
 | `Error.type`, `.code`, `.param`, `.message` | `KppError.kind` (mit dem Status), `.param`, `.message`; der Body in `raw` |
