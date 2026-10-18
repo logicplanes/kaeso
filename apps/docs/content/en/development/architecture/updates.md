@@ -24,7 +24,7 @@ flowchart TD
 
 ## The release feed
 
-`update.kaeso.app` is `apps/update`, a static site built from the releases on GitHub. `v1/releases.json` lists the newest releases in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. `v1/history.json` keeps every release with its full notes for the page. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin. `art/<version>.svg` is the release's artwork, drawn by `releaseArtSvg` from the same seed as the console's **What's new** dialog. The page itself shows every release with its notes.
+`update.kaeso.app` is `apps/update`, a static site built from the releases on GitHub. `v1/releases.json` lists the newest releases, always with the newest stable one, in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. `v1/history.json` keeps every release with its full notes for the page. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin. `art/<version>.svg` is the release's artwork, drawn by `releaseArtSvg` from the same seed as the console's **What's new** dialog. The page itself shows every release with its notes.
 
 ## The gateway
 

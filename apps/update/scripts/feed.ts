@@ -136,10 +136,8 @@ const byteLength = (text: string): number => encoder.encode(text).length;
 
 export function capNotes(body: string | null, limit = MAX_NOTES_BYTES): string | null {
   if (body === null || byteLength(body) <= limit) return body;
-  let end = Math.min(body.length, limit);
-  while (end > 0 && byteLength(body.slice(0, end)) > limit) end -= 1;
-  if (end > 0 && /[\uD800-\uDBFF]/.test(body.charAt(end - 1))) end -= 1;
-  return body.slice(0, end);
+  const { read } = encoder.encodeInto(body, new Uint8Array(limit));
+  return body.slice(0, read);
 }
 
 export function historyEntry(release: Release, origin: string): GitHubRelease {
@@ -164,16 +162,22 @@ export function feedEntry(release: Release, origin: string): GitHubRelease {
 }
 
 export function feedEntries(releases: readonly Release[], origin: string, limit = MAX_FEED_BYTES): GitHubRelease[] {
-  const out: GitHubRelease[] = [];
+  const sizeOf = (release: Release): number => byteLength(JSON.stringify(feedEntry(release, origin), null, 2)) + 4;
+  const chosen = new Set<Release>();
   let size = byteLength("[\n]\n");
+  const stable = releases.find((r) => !r.prerelease);
+  if (stable) {
+    chosen.add(stable);
+    size += sizeOf(stable);
+  }
   for (const release of releases) {
-    const entry = feedEntry(release, origin);
-    const added = byteLength(JSON.stringify(entry, null, 2)) + 4;
+    if (chosen.has(release)) continue;
+    const added = sizeOf(release);
     if (size + added > limit) break;
-    out.push(entry);
+    chosen.add(release);
     size += added;
   }
-  return out;
+  return releases.filter((r) => chosen.has(r)).map((r) => feedEntry(r, origin));
 }
 
 export function latestOf(releases: readonly Release[]): Latest {

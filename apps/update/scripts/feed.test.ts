@@ -297,6 +297,21 @@ describe("the feed", () => {
     expect(history[29]?.body).toBe(notes);
   });
 
+  it("keeps the newest stable release even when newer pre-releases fill the feed", async () => {
+    const out = tempDir();
+    const notes = "x".repeat(60_000);
+    const pre = Array.from({ length: 40 }, (_, i) => release(`v2.0.0-rc.${40 - i}`, { prerelease: true, body: notes }));
+    const raw = [...pre, release("v1.9.0", { body: notes }), release("v1.8.0", { body: notes })];
+    await writeFeed({ out, origin: "https://feed.example.com", source: memorySource(raw, {}), maxFeedBytes: 1 << 20 });
+    const feedText = read(out, "v1/releases.json");
+    const feed = JSON.parse(feedText) as GitHubRelease[];
+    expect(new TextEncoder().encode(feedText).length).toBeLessThanOrEqual(1 << 20);
+    expect(feed.at(-1)?.tag_name).toBe("v1.9.0");
+    expect(feed[0]?.tag_name).toBe("v2.0.0-rc.40");
+    expect(feed.some((r) => r.tag_name === "v1.8.0")).toBe(false);
+    expect(feed.filter((r) => r.prerelease).length).toBeLessThan(40);
+  });
+
   it("cuts long notes on a character boundary and leaves short ones alone", () => {
     expect(capNotes(null)).toBeNull();
     expect(capNotes("short")).toBe("short");
