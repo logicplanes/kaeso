@@ -171,7 +171,7 @@ None of these is part of a published package or of the console's or the document
 | `react-docgen-typescript` | MIT | The component registry and the props tables |
 | `@tanstack/router-plugin`, `@tanstack/router-generator` | MIT | The console's route tree, generated from `src/routes`, and its code splitting |
 | `openapi-typescript`, `@redocly/openapi-core` | MIT | The console's Platform API types, generated from `openapi.json` |
-| `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Sample traffic through the gateway in `pnpm seed` |
+| `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Sample traffic through the gateway in `pnpm seed`; `@anthropic-ai/sdk` also requests the release notes in `scripts/release-notes.mjs` ([written release notes](releasing.md#written-release-notes)) |
 | `vitest`, `@vitest/coverage-v8`, `happy-dom` | MIT | Unit and component tests with coverage |
 | `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom` | MIT | Tests from what a person sees |
 | `@playwright/test` | Apache-2.0 | End-to-end tests, and the headless Chromium that draws the documentation's diagrams |

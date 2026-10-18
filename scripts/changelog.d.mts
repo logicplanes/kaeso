@@ -55,5 +55,6 @@ export interface PullRequest {
 export function history(text: string): ChangelogHistory;
 export function generate(pulls: PullRequest[]): string[];
 export function releasable(text: string, version: string, pulls?: PullRequest[]): boolean;
-export function release(text: string, version: string, date: string, pulls?: PullRequest[]): string;
+export function draft(text: string, version: string, pulls?: PullRequest[]): string[];
+export function release(text: string, version: string, date: string, pulls?: PullRequest[], written?: string[] | null): string;
 export function notes(text: string, version: string): string;

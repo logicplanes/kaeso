@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      issues: read
       pull-requests: read
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -52,28 +53,14 @@ jobs:
       - name: Collect the pull requests merged since the latest release
         env:
           GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          latest="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname | head -n 1)"
-          numbers=()
-          while IFS=$'\t' read -r sha subject; do
-            if [[ "$subject" =~ \(#([0-9]+)\)$ ]]; then
-              numbers+=("${BASH_REMATCH[1]}")
-            else
-              while IFS= read -r number; do
-                numbers+=("$number")
-              done < <(gh api "repos/$REPOSITORY/commits/$sha/pulls" --jq '.[] | select(.merged_at != null) | .number')
-            fi
-          done < <(git log --no-merges --format='%H%x09%s' HEAD --not --tags='v*')
-          mkdir -p "$RUNNER_TEMP/pulls"
-          for number in $(printf '%s\n' "${numbers[@]}" | sort -nu); do
-            gh api "repos/$REPOSITORY/pulls/$number" --jq 'select(.merged_at != null) | {number, title, url: .html_url, labels: [.labels[].name], author: .user.login}'
-          done | jq -s . > "$RUNNER_TEMP/pulls/pulls.json"
+          pulls="$RUNNER_TEMP/pulls/pulls.json"
+          node scripts/release-notes.mjs collect --out "$pulls"
           {
-            echo "### Pull requests since ${latest:-the first commit}"
+            echo "### Pull requests since $(jq -r '.since // "the first commit"' "$pulls")"
             echo
-            jq -r 'if length == 0 then "None." else .[] | "- #\(.number) \(.title) (\(.labels | join(", ") | if . == "" then "no labels" else . end))" end' "$RUNNER_TEMP/pulls/pulls.json"
+            jq -r 'if (.pulls | length) == 0 then "None." else .pulls[] | "- #\(.number) \(.title) (\(.labels | join(", ") | if . == "" then "no labels" else . end))" end' "$pulls"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -137,17 +124,36 @@ jobs:
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
         with:
           tool: cargo-edit
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Set the version
         run: node scripts/version.mjs set "$VERSION"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: release-pulls
           path: ${{ runner.temp }}/pulls
+      - name: Write the release notes
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}
+          RELEASE_NOTES_API_URL: https://ai.logicplanes.com
+          RELEASE_NOTES_MODEL: claude-opus-5-5
+        run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md"
       - name: Write the changelog
-        run: node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)" "$RUNNER_TEMP/pulls/pulls.json"
+        run: |
+          set -euo pipefail
+          notes=()
+          if [[ -s "$RUNNER_TEMP/notes/notes.md" ]]; then
+            notes=("$RUNNER_TEMP/notes/notes.md")
+          else
+            echo "The changelog comes from the lines under [Unreleased] or the pull requests' titles and labels." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)" "$RUNNER_TEMP/pulls/pulls.json" "${notes[@]}"
       - name: Keep the changes
         run: |
           set -euo pipefail

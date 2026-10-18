@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
-import { generate, history, notes, releasable, release } from "./changelog.mjs";
+import { draft, generate, history, notes, releasable, release } from "./changelog.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = "https://github.com/logicplanes/kaeso";
@@ -565,5 +565,31 @@ test("the Release workflow writes the changelog from the merged pull requests, a
   assert.deepEqual(allowed, ['{ node scripts/version.mjs files; echo CHANGELOG.md; } > "$allowed"']);
   assert.match(workflow, /git apply --summary "\$patch"/);
   assert.match(workflow, /node scripts\/changelog\.mjs check "\$version" "\$pulls"/);
-  assert.match(workflow, /node scripts\/changelog\.mjs release "\$VERSION" "\$\(date -u \+%F\)" "\$RUNNER_TEMP\/pulls\/pulls\.json"/);
+  assert.match(workflow, /node scripts\/changelog\.mjs release "\$VERSION" "\$\(date -u \+%F\)" "\$RUNNER_TEMP\/pulls\/pulls\.json" "\$\{notes\[@\]\}"/);
+});
+
+test("a draft is the section a release would write, without changing the changelog", () => {
+  const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
+  assert.equal(draft(before, "0.2.0", merged).join("\n"), notes(release(before, "0.2.0", "2026-11-15", merged), "0.2.0"));
+  const curated = changelog([withUnreleased("### Fixed\n\n- Streams end cleanly."), first], ["Unreleased", "0.1.0"]);
+  assert.deepEqual(draft(curated, "0.2.0", merged), ["### Fixed", "", "- Streams end cleanly."]);
+});
+
+test("only the step that writes the release notes sees LOG_AI_KEY, in a job that can only read the repository, and a failure there never stops the release", () => {
+  const workflow = readFileSync(join(root, ".github", "workflows", "release.yml"), "utf8");
+  const uses = workflow.split("\n").filter((line) => line.includes("LOG_AI_KEY"));
+  assert.deepEqual(
+    uses.map((line) => line.trim()),
+    ["LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}"],
+  );
+  const prepare = workflow.slice(workflow.indexOf("\n  prepare:"), workflow.indexOf("\n  checks:"));
+  assert.match(prepare, /\n {4}permissions:\n {6}contents: read\n {4}env:/);
+  const step = prepare.slice(prepare.indexOf("- name: Write the release notes"), prepare.indexOf("- name: Write the changelog"));
+  assert.match(step, /continue-on-error: true/);
+  assert.match(step, /timeout-minutes: 20/);
+  assert.match(step, /RELEASE_NOTES_API_URL: https:\/\/ai\.logicplanes\.com/);
+  assert.match(
+    step,
+    /node scripts\/release-notes\.mjs write --pulls "\$RUNNER_TEMP\/pulls\/pulls\.json" --version "\$VERSION" --out "\$RUNNER_TEMP\/notes\/notes\.md"/,
+  );
 });

@@ -11,6 +11,9 @@ importers:
 
   .:
     devDependencies:
+      '@anthropic-ai/sdk':
+        specifier: 0.133.0
+        version: 0.133.0(zod@4.6.7)
       knip:
         specifier: 6.41.0
         version: 6.41.0

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const GROUPS = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"];
+export const GROUPS = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"];
 
 const sectionName = (line) => /^## \[([^\]]+)\]/.exec(line)?.[1];
 const linkName = (line) => /^\[([^\]]+)\]: /.exec(line)?.[1];
@@ -119,6 +119,7 @@ export const LABELS = [
 ];
 
 const AREAS = LABELS.filter(({ topic }) => topic).map(({ name, topic }) => [name, topic]);
+export const TOPICS = AREAS.map(([, topic]) => topic);
 const DEPENDABOT = "dependabot[bot]";
 const DEPENDENCIES = "dependencies";
 
@@ -136,7 +137,7 @@ const topicOf = ({ labels }) => {
 
 const isDependency = ({ author, labels }) => author === DEPENDABOT || labels.includes(DEPENDENCIES);
 
-const escaped = (text) =>
+export const escaped = (text) =>
   text
     .split(/(`[^`]*`)/)
     .map((part, i) => (i % 2 ? part : part.replace(/[\\<>[\]]/g, "\\$&")))
@@ -206,7 +207,30 @@ export function releasable(text, version, pulls = []) {
   );
 }
 
-export function release(text, version, date, pulls = []) {
+export function draft(text, version, pulls = []) {
+  const folds = folded(version);
+  return fold(
+    drafted(parse(text), pulls)
+      .filter(({ name }) => folds(name))
+      .map((section) => section.body),
+  );
+}
+
+export function context(text, version) {
+  const { sections, links } = parse(text);
+  const folds = folded(version);
+  const markdown = (section) => section?.body.join("\n") ?? "";
+  const previous = sections.find(({ name }) => !folds(name));
+  const pending = sections.find(({ name }) => name === UNRELEASED);
+  return {
+    repository: repositoryOf(links),
+    curated: pending ? fold([pending.body]).join("\n") : "",
+    previous: previous ? { version: previous.name, markdown: markdown(previous) } : null,
+    prereleases: sections.filter(({ name }) => name !== UNRELEASED && folds(name)).map((section) => ({ version: section.name, markdown: markdown(section) })),
+  };
+}
+
+export function release(text, version, date, pulls = [], written = null) {
   const changelog = parse(text);
   if (changelog.sections.some(({ name }) => name === version)) return text;
   const folds = folded(version);
@@ -214,7 +238,7 @@ export function release(text, version, date, pulls = []) {
   const base = repositoryOf(changelog.links);
   if (!base) throw new Error("CHANGELOG.md has no [Unreleased] compare link");
   const drafts = drafted(changelog, pulls);
-  const body = fold(drafts.filter(({ name }) => folds(name)).map((section) => section.body));
+  const body = written ? trim(written) : fold(drafts.filter(({ name }) => folds(name)).map((section) => section.body));
   const sections = [{ heading: `## [${UNRELEASED}]`, body: [] }, { heading: `## [${version}] - ${date}`, body }, ...drafts.filter(({ name }) => !folds(name))];
   const links = changelog.links.flatMap((line) => {
     if (line === unreleased) return [`[Unreleased]: ${base}/compare/v${version}...HEAD`, `[${version}]: ${base}/releases/tag/v${version}`];
@@ -298,14 +322,16 @@ export function history(text) {
 }
 
 const file = join(dirname(fileURLToPath(import.meta.url)), "..", "CHANGELOG.md");
-const pullsFrom = (path) => (path ? JSON.parse(readFileSync(path, "utf8")) : []);
+const pullsOf = (data) => (Array.isArray(data) ? data : (data?.pulls ?? data));
+const pullsFrom = (path) => (path ? pullsOf(JSON.parse(readFileSync(path, "utf8"))) : []);
+const writtenFrom = (path) => (path ? readFileSync(path, "utf8").split("\n") : null);
 const commands = {
   check: (version, pulls) => {
     if (!releasable(readFileSync(file, "utf8"), version, pullsFrom(pulls))) process.exitCode = 1;
   },
-  release: (version, date, pulls) => {
+  release: (version, date, pulls, written) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) throw new Error("release needs a date like 2026-10-16");
-    writeFileSync(file, release(readFileSync(file, "utf8"), version, date, pullsFrom(pulls)));
+    writeFileSync(file, release(readFileSync(file, "utf8"), version, date, pullsFrom(pulls), writtenFrom(written)));
   },
   notes: (version) => process.stdout.write(`${notes(readFileSync(file, "utf8"), version)}\n`),
   draft: (pulls) => process.stdout.write(`${generate(pullsFrom(pulls)).join("\n")}\n`),
@@ -316,7 +342,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [command, ...rest] = process.argv.slice(2);
   if (!commands[command] || rest.length < Math.min(1, commands[command].length)) {
     console.error(
-      "usage: node scripts/changelog.mjs check <version> [pulls.json] | release <version> <date> [pulls.json] | notes <version> | draft <pulls.json> | labels",
+      "usage: node scripts/changelog.mjs check <version> [pulls.json] | release <version> <date> [pulls.json] [notes.md] | notes <version> | draft <pulls.json> | labels",
     );
     process.exit(2);
   }
