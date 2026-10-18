@@ -1,20 +1,22 @@
 ---
 title: Contributing
-description: Report issues, propose changes, and the rules every change to Kaeso follows.
-order: 1
+description: Report a problem, propose a change and get your pull request merged.
+order: 2
 ---
 
-Ideas and questions go to [Discussions](https://github.com/logicplanes/kaeso/discussions), bugs and concrete feature requests to [issues](https://github.com/logicplanes/kaeso/issues). The maintainer reviews pull requests from outside contributors at their discretion; for anything larger than a small fix, open an issue first so the approach can be agreed. Everyone taking part follows the [Code of Conduct](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
+Ask questions and share ideas in [Discussions](https://github.com/logicplanes/kaeso/discussions), and report bugs and concrete feature requests as [issues](https://github.com/logicplanes/kaeso/issues). For anything larger than a small fix, open an issue first, so that you and the maintainer agree on the approach before you write code. Everyone taking part follows the [Code of Conduct](https://github.com/logicplanes/kaeso/blob/dev/CODE_OF_CONDUCT.md).
 
-## Discussions and issues
+## Start a discussion
 
-Discussions are for talking an idea through before anything is decided: **Ideas** for a feature you would like, **Q&A** for questions about installing, running or using Kaeso, **Show and tell** for something you built. An idea that is agreed becomes a feature request.
+Talk an idea through in Discussions before anything is decided. Use **Ideas** for a feature you would like, **Q&A** for questions about installing, running or using Kaeso, and **Show and tell** for something you built. An idea the maintainer agrees to becomes a feature request.
 
-Issues have two templates:
+## Open an issue
+
+Choose the template that fits:
 
 | Template | For |
 | --- | --- |
-| Bug report | Kaeso does something it should not, or fails to do what it should. It asks for the version, the area, what happened, the smallest reproduction, and how Kaeso runs. For anything you see, it also asks for the language, theme and width, and the browser |
+| Bug report | Kaeso does something it shouldn't, or fails to do what it should. It asks for the version, the area, what happened, the smallest reproduction and how Kaeso runs. For something you see, it also asks for the language, the theme, the width and the browser |
 | Feature request | A new capability, a change to an existing one, or something the documentation should explain. Link the provider's documentation or OpenAPI schema for any wire field involved |
 
 Remove API keys, provider keys, session cookies and personal data from anything you paste.
@@ -22,23 +24,45 @@ Remove API keys, provider keys, session cookies and personal data from anything 
 > [!IMPORTANT]
 > Report security problems privately through the repository's [security advisories](https://github.com/logicplanes/kaeso/security/advisories/new), never in a public issue. [`SECURITY.md`](https://github.com/logicplanes/kaeso/blob/dev/SECURITY.md) says what to include and what to expect.
 
-## Making a change
+## Make a change
 
-1. **Branch from `dev`**, the default branch. `prod` holds the latest release and only the maintainer pushes to it ([branches](releasing.md#branches)).
-2. **Write a failing test, then the code.** Every bug fix starts with a test that shows the bug.
-3. **Change everything the change touches, in the same pull request.** A Platform API change updates the gateway, the console and `openapi.json` together. A KPP change starts with a [fixture](kpp/fixtures.md) and updates the dialect's mapping page. A new dependency gets a row under [dependencies](dependencies.md). A change to rights, roles or settings changes a [reference snapshot](testing.md#snapshots-and-references); review its diff and update the matching page.
-4. **Update the documentation** in `apps/docs/content`, in English, German and Simplified Chinese, when people who use, run or integrate Kaeso will notice the change ([writing documentation](documentation.md)).
-5. **Write the title as the changelog's line.** The Release workflow writes the changelog from the merged pull requests: the title becomes the line, a sentence that says what changed for people who use, run or build on Kaeso, such as "Keep dialogs centered and resize them smoothly when their content changes". Don't change `CHANGELOG.md`. The **Labels** workflow sets the area labels and `internal` from the files you change, and the maintainer the type, such as `fixed` ([labels](releasing.md#labels)).
-6. **Run the checks** under [before a change is done](testing.md#before-a-change-is-done), and look at every interface you changed in both themes, at desktop and phone widths, in all three languages.
-7. **Open a pull request into `dev`.** Keep it to one change. The template asks what changed and why, how it was tested, and for a checklist of the steps above.
+1. Branch from `dev`, the default branch.
+2. Write a failing test first. A bug fix starts with a test that shows the bug.
+3. Change the code until the test passes.
+4. Change everything else the change touches, in the same pull request. A Platform API change updates the gateway, the console and `openapi.json` together. A KPP change starts with a [fixture](kpp/fixtures.md) and updates the dialect's mapping page.
+5. Update the documentation in English, German and Simplified Chinese when people who use, run or integrate Kaeso will notice the change ([writing documentation](documentation.md)).
+6. Run the checks under [before a change is done](testing.md#before-a-change-is-done). Look at every interface you changed in light and dark, at desktop and phone widths, in all three languages.
+7. Open a pull request into `dev` that holds this one change. The template asks what changed and why, how you tested it, and for its checklist.
 
-### How changes reach dev
+After a Platform API change, write `openapi.json` again and commit it with the change:
 
-Every change reaches `dev` through a pull request. It can be merged once the required **CI** check is green ([continuous integration](testing.md#continuous-integration)), and it is merged as a single squashed commit; merge commits and rebase merges are turned off. The pull request's title becomes the commit's subject, so write it, and every commit message, to say what changed and why. The maintainer can bypass these rules.
+```bash
+cargo run -q -p kaeso -- openapi > openapi.json
+```
 
-### Stacked pull requests
+A change to rights, roles or settings changes a [reference snapshot](testing.md#snapshots-and-references). Review its diff and update the page it belongs to.
 
-When a change depends on another that isn't merged yet, open them as a stack with GitHub's stacked pull requests instead of one large pull request. The `gh stack` command comes from the `github/gh-stack` extension (`gh extension install github/gh-stack`):
+## Write the title
+
+The title becomes the pull request's line in the changelog, so write a sentence that says what changed for people who use, run or build on Kaeso. For example: "Keep dialogs centered and resize them smoothly when their content changes". Don't edit `CHANGELOG.md`: the Release workflow writes it from the merged pull requests.
+
+The **Labels** workflow sets the area labels, such as `area: console`, and `internal` from the files you change. The maintainer sets a type label, such as `fixed`, when the title's first word doesn't choose the right section ([labels](releasing.md#labels)).
+
+## Get it merged
+
+Your pull request can be merged once the required **CI** check is green ([continuous integration](testing.md#continuous-integration)). It is merged as one squashed commit, whose subject is the title, so make every commit message say what changed and why.
+
+By contributing, you agree that your contributions are licensed under the [MIT License](https://github.com/logicplanes/kaeso/blob/dev/LICENSE).
+
+## Stack dependent pull requests
+
+When a change builds on another that isn't merged yet, open both as a stack instead of one large pull request. Install the `gh stack` command once:
+
+```bash
+gh extension install github/gh-stack
+```
+
+Start a stack on `dev`, add a branch for each change on top of the one below, and open the pull requests:
 
 ```bash
 gh stack init
@@ -46,24 +70,42 @@ gh stack add store-tokens
 gh stack submit
 ```
 
-`gh stack init` starts a stack on `dev`, `gh stack add` adds a branch on top of the current one, and `gh stack submit` pushes every branch and opens a pull request for each, based on the branch below it. `gh stack rebase` brings the stack up to date after a branch below changes. The pull requests are reviewed and merged bottom first, each with its own green CI.
+`gh stack submit` pushes every branch and opens a pull request for each, based on the branch below it. After a branch below changes, `gh stack rebase` brings the rest up to date. The pull requests are reviewed and merged bottom first, each with its own green CI.
 
-## Rules for every change
+## Follow the house rules
 
-- **No code comments, anywhere.** No `//`, `///`, `//!`, `/* */`, JSDoc or JSX comments; no `--` in SQL; no `#` comments in TOML, YAML, Python, shell, Dockerfiles, `.dockerignore`, the Caddyfile, `.env.example` or the ignore and attributes files; no `<!-- -->` in HTML, Astro or Markdown; none in the code blocks of a page. Names, types, small functions and tests explain the code, and this documentation explains the rest. The **No comments** CI job enforces it.
-- **Tests for every change**, asserting on what a person or an app sees, deterministic, with injectable clocks and no sleeps. Coverage thresholds are never lowered; raise them when coverage rises.
+Every change follows these rules, and CI checks most of them:
+
+- **No code comments, anywhere.** Names, types, small functions and tests explain the code, and this documentation explains the rest. That includes `#` in configuration files, `<!-- -->` in Markdown and comments in a page's code blocks. The **No comments** job enforces it.
+- **Tests assert on what a person or an app sees.** They are deterministic, with injected clocks and no sleeps. Coverage thresholds only ever go up.
 - **Interfaces use only `@logicplanes/kaeso-ui`**, with `className` for layout only, and every word in three languages ([translations](translations.md)).
-- **MIT-compatible dependencies only**, checked by `cargo deny` and `pnpm licenses:check` ([license policy](dependencies.md#license-policy)).
+- **pnpm only** for JavaScript, and `pnpm dlx` for a one-off tool. Cargo builds the Rust code, and lockfiles change only through their tool.
 - **No secrets or personal data** in the repository. Use placeholders such as `kaeso.example.com`, `sk-kso-…` and `owner@example.com`.
 - **No plans in the repository.** Roadmaps, to-do lists and open questions go into issues.
-- **pnpm only** for JavaScript; `pnpm dlx` runs a one-off tool. Add a dependency at an exact version with `pnpm --filter <package> add --save-exact <name>`. Cargo builds the Rust code. Lockfiles change only through their tool.
 
-The gateway adds its own rules, such as no panics in library code, no floats for money and exactly one right per endpoint ([gateway](architecture/gateway.md#rules)); so does KPP ([design principles](kpp/index.md#design-principles)).
+The gateway adds rules of its own, such as no panics and no floats for money ([gateway rules](architecture/gateway.md#rules)). So does KPP ([design principles](kpp/index.md#design-principles)).
 
-## AGENTS.md files
+The root of the repository and each of `crates`, `packages`, `apps/console`, `apps/docs` and `apps/showcase` have an `AGENTS.md`. Each sums up the rules and checks of its part, for coding agents and for people.
 
-The root, `crates`, `packages`, `apps/console`, `apps/docs` and `apps/showcase` each have an `AGENTS.md` with the rules and checks of that part, for coding agents and for people. They summarize these pages. `packages/ui/AGENTS.md` holds the rules for apps built with the UI library and ships in its npm package.
+## Add a dependency
 
-## License
+Add a JavaScript dependency at an exact version with `pnpm --filter <package> add --save-exact <name>`, and a Rust one with `cargo add`. Say in one line of the pull request's description why it is needed.
 
-By contributing, you agree that your contributions are licensed under the [MIT License](https://github.com/logicplanes/kaeso/blob/dev/LICENSE).
+Kaeso is MIT licensed, and everything it ships depends only on permissively licensed code. GPL, LGPL and AGPL code is never allowed. Two checks enforce the policy:
+
+| What ships | Allowed licenses | Checked by |
+| --- | --- | --- |
+| The gateway and the updater | The list in `deny.toml`: MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode and Zlib | `cargo deny check` |
+| `kaeso-kpp`, `kaeso-codecs` | The same list, without exceptions | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
+| The UI library, the console and the docs | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 and 0BSD | `pnpm licenses:check`, after `pnpm build` |
+
+`cargo deny check` also refuses crates with security advisories, yanked crates, wildcard versions, and crates from unknown registries or Git repositories. A few crates that the gateway only reaches through other crates have an exception for another permissive license; `deny.toml` names each one. Tools that run only in tests or builds, such as axe-core, never reach a package, an image or a published site.
+
+KPP's library code depends only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and its policy bans `tokio`, `reqwest`, `hyper` and `axum`. Anything else needs the maintainer's agreement first.
+
+## Next steps
+
+- [Local setup](local-setup.md): Get a checkout running with sample data.
+- [Testing](testing.md): Find the suite that covers your change.
+- [Writing documentation](documentation.md): Update the pages your change touches.
+- [Translations](translations.md): Add the German and Chinese for new text.

@@ -1,7 +1,7 @@
 ---
 title: KPP-Interna
 description: Wie die KPP-Typen und -Codecs gebaut sind, für Mitwirkende an kaeso-kpp und kaeso-codecs.
-order: 4
+order: 9
 nav: KPP-Interna
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: Releases
 description: Wie Versionen nummeriert werden, was ein Release veröffentlicht und wie der Maintainer eines erstellt.
-order: 10
+order: 11
 ---
 
 Kaeso wird als Ganzes veröffentlicht: Gateway, Konsole, die Crates von KPP und die Pakete der UI-Bibliothek teilen eine Version, und ein Release veröffentlicht sie alle. Der Maintainer erstellt jedes Release von `prod` aus mit dem Release-Workflow und stellt danach Dokumentation und Showcase aus dem Tag des Releases bereit. Mitwirkende erstellen nie Tags oder Releases.
@@ -29,7 +29,7 @@ Historie und Beispiele dürfen Versionen nennen: `CHANGELOG.md`, Test-Fixtures, 
 
 | Branch | Was er ist | Wer ihn ändert |
 | --- | --- | --- |
-| `dev` | Der Standard-Branch, auf dem alle Arbeit landet | Nur Pull Requests, als ein gesquashter Commit gemergt, sobald die Prüfung **CI** grün ist ([wie Änderungen nach dev gelangen](contributing.md#wie-änderungen-nach-dev-gelangen)) |
+| `dev` | Der Standard-Branch, auf dem alle Arbeit landet | Nur Pull Requests, als ein gesquashter Commit gemergt, sobald die Prüfung **CI** grün ist ([wie Änderungen nach dev gelangen](contributing.md#merge-erreichen)) |
 | `prod` | Das neueste Release oder der Commit, der gleich eines wird; der Release-Workflow läuft nur hier | Der Maintainer, immer als Fast-Forward |
 | `hotfix/X.Y.Z` | Eine Korrektur für das neueste Release, vom Tag des Releases abgezweigt | Der Maintainer, der ihn auf `prod` pusht |
 

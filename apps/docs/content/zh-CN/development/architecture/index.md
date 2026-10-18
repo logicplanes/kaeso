@@ -1,7 +1,7 @@
 ---
 title: 架构
 description: 网关、KPP、控制台、UI 库和文档如何在同一个仓库中协同工作。
-order: 3
+order: 8
 ---
 
 ```mermaid

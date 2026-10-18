@@ -1,7 +1,7 @@
 ---
 title: Architektur
 description: Wie Gateway, KPP, Konsole, UI-Bibliothek und Dokumentation in einem Repository zusammenspielen.
-order: 3
+order: 8
 ---
 
 ```mermaid

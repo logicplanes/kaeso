@@ -87,7 +87,7 @@ Das Stylesheet wird aus demselben Token-Makro erzeugt wie die Inline-Styles, und
 
 ## Vorschau
 
-Der [Entwicklungs-Stack](../local-setup.md#3-entwicklungs-stack-starten) enthält Mailpit, dessen Weboberfläche unter http://127.0.0.1:58025 eine HTML-Kompatibilitätsprüfung und eine dunkle Vorschau bietet. `cargo test -p kaeso-mail --test smtp` sendet jede E-Mail in jeder Sprache dorthin und prüft, dass:
+Der [Entwicklungs-Stack](../stack.md) enthält Mailpit, dessen Weboberfläche unter http://127.0.0.1:58025 eine HTML-Kompatibilitätsprüfung und eine dunkle Vorschau bietet. `cargo test -p kaeso-mail --test smtp` sendet jede E-Mail in jeder Sprache dorthin und prüft, dass:
 
 - jede mit beiden Teilen und beiden Bildern inline ankommt;
 - die HTML-Prüfung von Mailpit, gestützt auf Daten von caniemail und gewichtet nach dem Anteil jeder Mail-App, mindestens 88 % Unterstützung meldet.

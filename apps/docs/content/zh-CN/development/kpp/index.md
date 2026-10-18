@@ -1,7 +1,7 @@
 ---
 title: KPP 内部实现
 description: KPP 的类型和编解码器是如何构建的，面向 kaeso-kpp 和 kaeso-codecs 的贡献者。
-order: 4
+order: 9
 nav: KPP 内部实现
 ---
 
