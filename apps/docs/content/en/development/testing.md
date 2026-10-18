@@ -57,7 +57,7 @@ Then run these for the parts you changed:
 | `pnpm test` | Vitest with coverage thresholds in both libraries, the console and the docs. Then the tests of `scripts/`, among them the [version check](releasing.md#the-version-in-the-repository) |
 | `pnpm i18n` | Every text of the console has German and Chinese with the same placeholders, and nothing is left over ([translations](translations.md#checking)) |
 | `pnpm knip` | Unused files, exports and dependencies |
-| `pnpm build` | Every production build and its bundle budgets. Both sites' builds then run the [site check](releasing.md#the-sites) |
+| `pnpm build` | Every production build and its bundle budgets. Both sites' builds then run `scripts/check-site.mjs`, which checks the sitemap and every page's head |
 | `pnpm licenses:check` | After a build: the license of every package whose code ships ([license policy](contributing.md#add-a-dependency)) |
 | `pnpm release:check` | After a build: both libraries packed as npm would, with every file they must ship, at one version |
 | `pnpm e2e` | Playwright in the console, the docs and the showcase, one after another. The showcase's suite tests its build, so run `pnpm build` first |

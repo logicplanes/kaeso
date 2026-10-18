@@ -57,7 +57,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 | `pnpm test` | 两个库、控制台和文档中带覆盖率阈值的 Vitest。然后运行 `scripts/` 的测试，其中包括[版本检查](releasing.md#仓库中的版本号) |
 | `pnpm i18n` | 控制台的每条文本都有占位符相同的德语和中文，且没有多余的条目（[翻译](translations.md#检查)） |
 | `pnpm knip` | 未使用的文件、导出和依赖 |
-| `pnpm build` | 每个生产构建及其打包预算。随后两个网站的构建会运行[网站检查](releasing.md#网站) |
+| `pnpm build` | 每个生产构建及其打包预算。随后两个网站的构建会运行 `scripts/check-site.mjs`，检查站点地图和每个页面的头部 |
 | `pnpm licenses:check` | 构建之后：每个代码随产品发布的包的许可证（[许可证政策](contributing.md#添加依赖)） |
 | `pnpm release:check` | 构建之后：两个库按 npm 的方式打包，包含必须发布的每个文件，且版本一致 |
 | `pnpm e2e` | 依次运行控制台、文档和展示站点中的 Playwright。展示站点的套件测试其构建产物，所以先运行 `pnpm build` |
