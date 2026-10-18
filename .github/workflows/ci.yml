@@ -469,12 +469,12 @@ jobs:
       - name: The development stack is valid
         run: docker compose -f deploy/compose.dev.yaml --profile console config -q
 
-  images:
-    name: Images
+  image-gateway:
+    name: Images (gateway)
     needs: changes
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
     steps:
@@ -484,11 +484,10 @@ jobs:
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
       - run: mkdir -p "$RUNNER_TEMP/images"
       - id: version
-        name: Versions of the gateway and the console
+        name: Version of the gateway
         run: |
           set -euo pipefail
           echo "gateway=$(cargo +stable metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "kaeso") | .version')" >> "$GITHUB_OUTPUT"
-          echo "console=$(jq -r .version apps/console/package.json)" >> "$GITHUB_OUTPUT"
       - name: Gateway image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
@@ -500,6 +499,28 @@ jobs:
           outputs: type=docker,dest=${{ runner.temp }}/images/gateway.tar
           cache-from: type=gha,scope=ci-gateway
           cache-to: type=gha,mode=max,scope=ci-gateway
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-gateway
+          path: ${{ runner.temp }}/images
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  image-mock:
+    name: Images (mock provider)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - run: mkdir -p "$RUNNER_TEMP/images"
       - name: Mock provider image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
@@ -512,6 +533,33 @@ jobs:
             type=gha,scope=ci-gateway
             type=gha,scope=ci-mock
           cache-to: type=gha,mode=max,scope=ci-mock
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-mock
+          path: ${{ runner.temp }}/images
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  image-updater:
+    name: Images (updater)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - run: mkdir -p "$RUNNER_TEMP/images"
+      - id: version
+        name: Version of the gateway
+        run: |
+          set -euo pipefail
+          echo "gateway=$(cargo +stable metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "kaeso") | .version')" >> "$GITHUB_OUTPUT"
       - name: Updater image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
@@ -522,6 +570,31 @@ jobs:
           outputs: type=docker,dest=${{ runner.temp }}/images/updater.tar
           cache-from: type=gha,scope=ci-updater
           cache-to: type=gha,mode=max,scope=ci-updater
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-updater
+          path: ${{ runner.temp }}/images
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  image-console:
+    name: Images (console)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - run: mkdir -p "$RUNNER_TEMP/images"
+      - id: version
+        name: Version of the console
+        run: echo "console=$(jq -r .version apps/console/package.json)" >> "$GITHUB_OUTPUT"
       - name: Console image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
@@ -544,14 +617,15 @@ jobs:
           docker rm --force console
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: images
+          name: image-console
           path: ${{ runner.temp }}/images
           if-no-files-found: error
           retention-days: 1
+          compression-level: 0
 
   install:
     name: Install test
-    needs: [changes, images]
+    needs: [changes, image-gateway, image-mock, image-updater, image-console]
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -566,7 +640,8 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: images
+          pattern: image-*
+          merge-multiple: true
           path: ${{ runner.temp }}/images
       - run: for image in "$RUNNER_TEMP"/images/*.tar; do docker load --input "$image"; done
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -592,7 +667,8 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm format:check
       - run: pnpm build:packages
       - run: pnpm --filter kaeso-console generate
@@ -615,15 +691,36 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm typecheck
 
   node-test:
-    name: TypeScript test
+    name: TypeScript test (${{ matrix.suite }})
     needs: changes
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: tokens
+            dir: packages/tokens
+            command: pnpm --filter @logicplanes/kaeso-tokens test
+          - suite: ui
+            dir: packages/ui
+            command: pnpm --filter @logicplanes/kaeso-ui test
+          - suite: docs
+            dir: apps/docs
+            command: pnpm --filter kaeso-docs test
+            chromium: true
+          - suite: showcase
+            dir: apps/showcase
+            command: pnpm --filter kaeso-showcase test
+          - suite: scripts
+            dir: scripts
+            command: node --test 'scripts/*.test.mjs'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -633,28 +730,111 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
-      - run: pnpm test
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - id: playwright
+        if: matrix.chromium
+        name: Playwright version
+        run: echo "version=$(pnpm --filter kaeso-docs exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - if: matrix.chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      - if: matrix.chromium
+        run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
+      - run: pnpm build:packages
+      - run: ${{ matrix.command }}
+      - name: Coverage summary
+        if: always()
+        env:
+          DIR: ${{ matrix.dir }}
+        run: |
+          file="$DIR/coverage/coverage-summary.json"
+          if [[ -f "$file" ]]; then
+            {
+              echo "### TypeScript coverage"
+              echo "| Package | Lines | Statements | Branches | Functions |"
+              echo "| --- | ---: | ---: | ---: | ---: |"
+              node -e 'const t = require(process.argv[1]).total; console.log(["", process.argv[2], ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file" "$DIR"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  node-test-console:
+    name: TypeScript test (console ${{ matrix.shard }}/3)
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    env:
+      SHARD: ${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm build:packages
+      - run: pnpm --filter kaeso-console generate
+      - name: A third of the tests, recording their coverage for TypeScript test (console coverage)
+        run: pnpm --filter kaeso-console exec vitest run --coverage --coverage.thresholds=false --shard="$SHARD/3" --reporter=default --reporter=blob --outputFile.blob="$RUNNER_TEMP/vitest/blob-$SHARD.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: vitest-console-${{ matrix.shard }}
+          path: ${{ runner.temp }}/vitest
+          if-no-files-found: error
+          retention-days: 1
+
+  node-coverage-console:
+    name: TypeScript test (console coverage)
+    needs: [changes, node-test-console]
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: vitest-console-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/vitest
+      - name: Every test of the three shards passed, and their coverage meets the console's thresholds
+        run: pnpm --filter kaeso-console exec vitest run --merge-reports="$RUNNER_TEMP/vitest" --coverage
       - name: Coverage summary
         if: always()
         run: |
-          {
-            echo "### TypeScript coverage"
-            echo "| Package | Lines | Statements | Branches | Functions |"
-            echo "| --- | ---: | ---: | ---: | ---: |"
-            for dir in packages/tokens packages/ui apps/console apps/docs; do
-              file="$dir/coverage/coverage-summary.json"
-              if [[ -f "$file" ]]; then
-                node -e 'const t = require(process.argv[1]).total; console.log(["", process.argv[2], ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file" "$dir"
-              fi
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
+          file="apps/console/coverage/coverage-summary.json"
+          if [[ -f "$file" ]]; then
+            {
+              echo "### TypeScript coverage"
+              echo "| Package | Lines | Statements | Branches | Functions |"
+              echo "| --- | ---: | ---: | ---: | ---: |"
+              node -e 'const t = require(process.argv[1]).total; console.log(["", "apps/console", ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   node-build:
     name: TypeScript build
     needs: changes
-    if: needs.changes.outputs.node == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -666,10 +846,20 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build
       - run: pnpm licenses:check
       - run: pnpm release:check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: libraries
+          path: |
+            packages/tokens/dist
+            packages/ui/dist
+            packages/ui/ai
+          if-no-files-found: error
+          retention-days: 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: showcase
@@ -685,20 +875,47 @@ jobs:
           retention-days: 3
 
   e2e-console:
-    name: End-to-end console
-    needs: [changes, images]
+    name: End-to-end console (${{ matrix.part }}/3)
+    needs: [changes, node-build, image-gateway]
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
     env:
       KAESO_GATEWAY_IMAGE: kaeso-gateway:ci
+      PART: ${{ matrix.part }}
+      PART_1: 02-models 03-keys 04-members 05-limits 06-logs 07-project-settings 08-palette 11-instance 13-keyboard 16-period
+      PART_2: 02-models 04-members 10-org 12-lifecycle 19-roles
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - id: specs
+        name: The specs of this part, after 01-public on a stack of its own
+        working-directory: apps/console
+        run: |
+          set -euo pipefail
+          for name in $PART_1 $PART_2; do
+            if [[ ! -f "e2e/$name.spec.ts" ]]; then
+              echo "::error::e2e/$name.spec.ts is named in PART_1 or PART_2 but doesn't exist."
+              exit 1
+            fi
+          done
+          case "$PART" in
+            1) names="$PART_1" ;;
+            2) names="$PART_2" ;;
+            *) names="$(for file in e2e/*.spec.ts; do name="$(basename "$file" .spec.ts)"; [[ "$name" == 01-public || " $PART_1 $PART_2 " == *" $name "* ]] || echo "$name"; done)" ;;
+          esac
+          specs="e2e/01-public.spec.ts"
+          for name in $names; do specs="$specs e2e/$name.spec.ts"; done
+          echo "specs=$specs" >> "$GITHUB_OUTPUT"
+          echo "Part $PART runs \`$specs\`." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: images
+          name: image-gateway
           path: ${{ runner.temp }}/images
       - run: docker load --input "$RUNNER_TEMP/images/gateway.tar"
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
@@ -706,22 +923,73 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:packages
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: libraries
+          path: packages
+      - id: playwright
+        name: Playwright version
+        run: echo "version=$(pnpm --filter kaeso-console exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
       - run: pnpm --filter kaeso-console exec playwright install --with-deps chromium
-      - run: pnpm --filter kaeso-console e2e
+      - run: pnpm --filter kaeso-console generate
+      - name: Playwright
+        env:
+          SPECS: ${{ steps.specs.outputs.specs }}
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ runner.temp }}/blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: console-${{ matrix.part }}.zip
+        run: |
+          read -ra specs <<< "$SPECS"
+          pnpm --filter kaeso-console exec playwright test "${specs[@]}" --reporter=list,blob
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: failure()
+        if: always()
+        with:
+          name: blob-console-${{ matrix.part }}
+          path: ${{ runner.temp }}/blob-report
+          if-no-files-found: ignore
+          retention-days: 1
+
+  e2e-console-report:
+    name: End-to-end console report
+    needs: e2e-console
+    if: always() && needs.e2e-console.result == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline --filter kaeso-console
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: blob-console-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/blob-report
+      - name: One HTML report of every part
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ runner.temp }}/playwright-report
+        run: pnpm --filter kaeso-console exec playwright merge-reports --reporter html "$RUNNER_TEMP/blob-report"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: playwright-console
-          path: |
-            apps/console/playwright-report
-            apps/console/test-results
+          path: ${{ runner.temp }}/playwright-report
+          if-no-files-found: error
           retention-days: 7
 
   e2e-docs:
     name: End-to-end docs
-    needs: changes
+    needs: [changes, node-build]
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -734,8 +1002,19 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:packages
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: libraries
+          path: packages
+      - id: playwright
+        name: Playwright version
+        run: echo "version=$(pnpm --filter kaeso-docs exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
       - run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
       - run: pnpm --filter kaeso-docs e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -748,11 +1027,15 @@ jobs:
           retention-days: 7
 
   e2e-showcase:
-    name: End-to-end showcase
+    name: End-to-end showcase (${{ matrix.shard }}/6)
     needs: [changes, node-build]
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -762,21 +1045,69 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:packages
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: libraries
+          path: packages
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: showcase
           path: apps/showcase/dist
+      - id: playwright
+        name: Playwright version
+        run: echo "version=$(pnpm --filter kaeso-showcase exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
       - run: pnpm --filter kaeso-showcase exec playwright install --with-deps chromium webkit
-      - run: pnpm --filter kaeso-showcase e2e
+      - name: Playwright
+        env:
+          SHARD: ${{ matrix.shard }}
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ runner.temp }}/blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: showcase-${{ matrix.shard }}.zip
+        run: pnpm --filter kaeso-showcase exec playwright test --shard="$SHARD/6" --reporter=list,github,blob
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: failure()
+        if: always()
+        with:
+          name: blob-showcase-${{ matrix.shard }}
+          path: ${{ runner.temp }}/blob-report
+          if-no-files-found: ignore
+          retention-days: 1
+
+  e2e-showcase-report:
+    name: End-to-end showcase report
+    needs: e2e-showcase
+    if: always() && needs.e2e-showcase.result == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline --filter kaeso-showcase
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: blob-showcase-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/blob-report
+      - name: One HTML report of every shard
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ runner.temp }}/playwright-report
+        run: pnpm --filter kaeso-showcase exec playwright merge-reports --reporter html "$RUNNER_TEMP/blob-report"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: playwright-showcase
-          path: |
-            apps/showcase/playwright-report
-            apps/showcase/test-results
+          path: ${{ runner.temp }}/playwright-report
+          if-no-files-found: error
           retention-days: 7
 
   node-dependencies:
@@ -794,7 +1125,8 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm audit --prod --audit-level high
 
   ci:
@@ -818,11 +1150,16 @@ jobs:
       - sdk-conformance
       - sdk-e2e
       - compose
-      - images
+      - image-gateway
+      - image-mock
+      - image-updater
+      - image-console
       - install
       - node-lint
       - node-typecheck
       - node-test
+      - node-test-console
+      - node-coverage-console
       - node-build
       - e2e-console
       - e2e-docs
