@@ -4,6 +4,20 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-18
+
+Kaeso 0.2.1 changes only how releases are published on GitHub. The release page now shows a short summary, while CHANGELOG.md and the documentation keep the full notes. The changes in this release touch only the release workflow, the release-notes script and the releasing guide, so there is nothing to act on when you upgrade a running install.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.2.0...v0.2.1](https://github.com/logicplanes/kaeso/compare/v0.2.0...v0.2.1)
+
+### Changed
+
+#### Documentation
+
+- The release page on GitHub now carries a short version of the notes: a tagline, up to five highlights and every breaking change in one sentence. The full notes stay in `CHANGELOG.md` and in the documentation site's changelog, and the releasing guide explains the short version. ([#147](https://github.com/logicplanes/kaeso/pull/147))
+
 ## [0.2.0] - 2026-10-18
 
 Kaeso 0.2.0 lets self-hosted installs learn about new releases and, with the optional updater, apply them in one click. It also adds installs that sign in with single sign-on alone, CORS for browser apps, and model availability in the project catalogue. Requests that a provider or model would refuse, such as Anthropic Messages requests without max_tokens, are now refused before they are sent, so check any app that relied on Kaeso filling in the limit. The gateway no longer logs the setup link, the console no longer shows an API key's secret a second time, and the documentation is rewritten, with diagrams, code tabs and a changelog page.
@@ -228,6 +242,7 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.1
 [0.2.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.0
 [0.1.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.1.0
