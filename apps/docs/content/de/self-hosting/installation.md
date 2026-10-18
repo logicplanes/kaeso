@@ -4,7 +4,7 @@ description: Die Dateien einer Installation, ihr erster Start, lokale Änderunge
 order: 2
 ---
 
-Der [Schnellstart](../get-started/quick-start.md) ist die Kurzfassung dieser Seite.
+Der [Schnellstart](../get-started/quick-start.md) installiert Kaeso Schritt für Schritt; diese Seite erklärt, was er einrichtet und wie es sich ändern lässt.
 
 ## Die Dateien
 
@@ -17,25 +17,9 @@ Eine Installation ist ein Ordner, auf den nur der eigene Benutzer zugreifen kann
 | `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` erhält. |
 | `compose.override.yaml` | Optional: eigene Änderungen an den Diensten, die erhalten bleiben, wenn `compose.yaml` ersetzt wird. |
 
-Ordner anlegen, `compose.yaml` herunterladen, `.env` mit zufälligen Passwörtern schreiben und einen Hauptschlüssel erzeugen:
+Die ersten drei legt der Schnellstart an. Das Gateway läuft in seinem Container als Benutzer ohne Rechte, daher muss `master-keys` lesbar sein; die Rechte des Ordners halten andere Benutzer des Servers fern. Kopien von `.env` und `master-keys` getrennt von den Datenbank-Backups aufbewahren; siehe [Backups und Hauptschlüssel](backups.md).
 
-```bash
-mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-cat > .env <<EOF
-KAESO_DOMAIN=kaeso.example.com
-POSTGRES_PASSWORD=$(openssl rand -hex 24)
-POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
-CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
-VALKEY_PASSWORD=$(openssl rand -hex 24)
-EOF
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
-chmod 644 master-keys
-```
-
-Das Gateway läuft in seinem Container als Benutzer ohne Rechte, daher muss `master-keys` lesbar sein; die Rechte des Ordners halten andere Benutzer des Servers fern. Kopien von `.env` und `master-keys` getrennt von den Datenbank-Backups aufbewahren; siehe [Backups und Hauptschlüssel](backups.md).
-
-Das `curl` oben lädt das neueste stabile Release. Für ein bestimmtes Release stattdessen von dessen Tag laden, etwa `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`. Jedes Release enthält außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit jeder Variable der `.env` und einem Beispielwert sowie [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) mit jeder Einstellung des Gateways.
+Der Schnellstart lädt die `compose.yaml` des neuesten stabilen Releases. Für ein bestimmtes Release stattdessen von dessen Tag laden, etwa `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`. Jedes Release enthält außerdem [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit jeder Variable der `.env` und einem Beispielwert sowie [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) mit jeder Einstellung des Gateways.
 
 ## Die Datei .env
 

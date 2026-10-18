@@ -4,7 +4,7 @@ description: 安装包含的文件、首次启动、本地修改和命令行。
 order: 2
 ---
 
-[快速开始](../get-started/quick-start.md)是本页的简短版本。
+[快速开始](../get-started/quick-start.md)会一步步安装 Kaeso；本页说明它设置了什么，以及如何修改。
 
 ## 文件
 
@@ -17,25 +17,9 @@ order: 2
 | `master-keys` | 主密钥，作为 Docker secret `master_keys` 交给网关。 |
 | `compose.override.yaml` | 可选：对服务的自定义修改，替换 `compose.yaml` 时会保留。 |
 
-创建文件夹，下载 `compose.yaml`，写入带随机密码的 `.env`，并生成一个主密钥：
+快速开始会创建前三个文件。网关在容器内以非特权用户运行，因此 `master-keys` 必须可读；文件夹的权限会阻止服务器上的其他用户访问。将 `.env` 和 `master-keys` 的副本与数据库备份分开保存；参见[备份和主密钥](backups.md)。
 
-```bash
-mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-cat > .env <<EOF
-KAESO_DOMAIN=kaeso.example.com
-POSTGRES_PASSWORD=$(openssl rand -hex 24)
-POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
-CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
-VALKEY_PASSWORD=$(openssl rand -hex 24)
-EOF
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
-chmod 644 master-keys
-```
-
-网关在容器内以非特权用户运行，因此 `master-keys` 必须可读；文件夹的权限会阻止服务器上的其他用户访问。将 `.env` 和 `master-keys` 的副本与数据库备份分开保存；参见[备份和主密钥](backups.md)。
-
-上面的 `curl` 获取最新的稳定版本。要安装特定版本，请改从该版本的标签下载，例如 `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`。每个版本还附带 [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example)，列出 `.env` 的每个变量及示例值，以及 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)，列出网关的每项设置。
+快速开始下载的是最新稳定版本的 `compose.yaml`。要安装特定版本，请改从该版本的标签下载，例如 `https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml`。每个版本还附带 [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example)，列出 `.env` 的每个变量及示例值，以及 [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml)，列出网关的每项设置。
 
 ## .env 文件
 
