@@ -58,7 +58,7 @@ pnpm --filter kaeso-docs dev
 
 ### 快速开始
 
-````markdown
+~~~markdown
 ---
 title: Quick start
 description: Install Kaeso with Docker Compose, connect a provider and send your first request.
@@ -84,7 +84,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ## Next steps
 
 - [Calling models](calling-models.md): Call models from your app with the OpenAI and Anthropic SDKs.
-````
+~~~
 
 - 一条路走到底，中途没有分支。选项和替代方案放在步骤所链接的指南中。
 - 每一步是一个以动词开头的 `##` 标题，加一句话说明这一步做什么，一条命令或一个代码组，再加一句话说明成功后读者会看到什么。
@@ -92,7 +92,7 @@ The command returns once the gateway, the console and the databases are healthy.
 
 ### 指南
 
-````markdown
+~~~markdown
 ---
 title: Stream replies
 description: Show a model's reply as it is written, with the OpenAI and Anthropic SDKs.
@@ -111,7 +111,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 ## Next steps
 
 - [Model API](../api/model-api.md#streaming): Keepalives, failures and disconnects in detail.
-````
+~~~
 
 - 第一屏就展示完成的任务：一两句话，然后是一个可运行的示例。
 - 各节是读者需要的变体，每节一个以动词开头的 `##` 标题。
@@ -119,7 +119,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 
 ### 概念
 
-````markdown
+~~~markdown
 ---
 title: Request flow
 description: The steps a model request takes through the gateway, from the key to the reply.
@@ -137,7 +137,7 @@ flowchart TD
 ## Check the key
 
 …
-````
+~~~
 
 - 先用一两句话说明读者为什么需要关心，然后是一张图示或一个简短的示例。
 - 标题是名词或短语，按事情发生的顺序排列。
@@ -145,7 +145,7 @@ flowchart TD
 
 ### 参考
 
-````markdown
+~~~markdown
 ---
 title: Model API
 description: The endpoints apps call, how they authenticate and how they name models.
@@ -170,7 +170,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 | Method and path | Format |
 | --- | --- |
 | `POST /v1/chat/completions` | OpenAI Chat Completions |
-````
+~~~
 
 - API 参考页面先给出一个最小的、可运行的请求[代码组](#代码示例)，然后才是事实。
 - 事实写在表格中：每个端点、设置、字段、请求头或错误一行，每个单元格最多两个短句。
@@ -178,7 +178,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 
 ### 故障排除
 
-````markdown
+~~~markdown
 ---
 title: Troubleshooting
 description: Common problems with an install and how to fix them.
@@ -192,7 +192,7 @@ The key is wrong, expired or disabled.
 
 1. Open **API keys** in the project and find the key by its last characters.
 2. If it shows **Expired** or **Disabled**, create a new key.
-````
+~~~
 
 - 每个问题一个 `##` 小节。标题是读者遇到的症状，或确切的报错信息。
 - 下面先用一句话说明原因，再用编号步骤给出解决办法。
@@ -258,7 +258,7 @@ The key is wrong, expired or disabled.
 
 凡是应用会调用 Kaeso 的地方，都用一个代码组展示同一请求的 curl、Python 和 TypeScript 写法：连续的围栏代码块，每个都带一个命名它的 `tab`。本站把它们显示为标签页，并在每个页面上记住读者的选择；GitHub 则依次显示它们。
 
-````markdown
+~~~markdown
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
   -H "Authorization: Bearer $KAESO_API_KEY" \
@@ -284,7 +284,7 @@ const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: pro
 const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
 console.log(response.output_text);
 ```
-````
+~~~
 
 - 标签页依次为 `curl`、`Python` 和 `TypeScript`，顺序和拼写都不能变，因为记住的选择以名称为准。只有当某种语言无法完成该调用时才省略它的标签页。
 - 每个标签页做同一件事。一个代码组至少有两个代码块，代码块之间只能有空行。
@@ -417,7 +417,7 @@ Every request to the model API carries an API key.
 
 系统、架构、请求或数据流、时序、状态和生命周期的每一张图示都写成 Mermaid 代码块。构建时会以 Kaeso 自己的样式把它绘制成浅色和深色两张图片，并跟随网站的主题切换；读者不会收到任何 Mermaid 代码。图示从不在代码块中用制表符或箭头画出，也从不以截图或图片展示：代码块中用 `─`、`│`、`└`、`▶` 或 `→` 等字符画图会导致构建失败。
 
-````markdown
+~~~markdown
 ```mermaid
 sequenceDiagram
   accTitle: 请求流程
@@ -430,7 +430,7 @@ sequenceDiagram
   Provider-->>Gateway: 回复
   Gateway-->>App: 应用格式的回复
 ```
-````
+~~~
 
 - 选择合适的类型：`flowchart` 表示各部分及其连接，`sequenceDiagram` 表示参与方之间的请求和回复，`stateDiagram-v2` 表示生命周期。`flowchart TD`（从上到下）在手机上也易于阅读；比内容栏更宽的图示会在自己的框内滚动。
 - `accTitle:` 用几个词为图示命名，必须填写。`accDescr:` 用一两句话说明它展示了什么；屏幕阅读器会朗读两者，搜索也能连同图示的标签找到它们。
@@ -444,11 +444,11 @@ sequenceDiagram
 
 页面使用 GitHub 风格的 Markdown：**粗体**、_斜体_、~~删除线~~、`代码`、列表、任务列表、表格（`--:` 列右对齐，用于数字）、引用、分隔线和围栏代码块。代码块注明语言，也可以注明文件：
 
-````markdown
+~~~markdown
 ```ts title="support-bot/src/client.ts"
 export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
-````
+~~~
 
 TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。
 

@@ -58,7 +58,7 @@ Die `index.md` eines Ordners ist eine Übersicht: ein oder zwei Sätze dazu, was
 
 ### Schnellstart
 
-````markdown
+~~~markdown
 ---
 title: Quick start
 description: Install Kaeso with Docker Compose, connect a provider and send your first request.
@@ -84,7 +84,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ## Next steps
 
 - [Calling models](calling-models.md): Call models from your app with the OpenAI and Anthropic SDKs.
-````
+~~~
 
 - Ein Weg von Anfang bis Ende, ohne Abzweigungen. Optionen und Alternativen stehen auf den Anleitungen, auf die die Schritte verlinken.
 - Jeder Schritt ist eine `##`-Überschrift, die mit einem Verb beginnt, ein Satz dazu, was der Schritt tut, ein Befehl oder eine Codegruppe und ein Satz dazu, was die Leser sehen, wenn es geklappt hat.
@@ -92,7 +92,7 @@ The command returns once the gateway, the console and the databases are healthy.
 
 ### Anleitung
 
-````markdown
+~~~markdown
 ---
 title: Stream replies
 description: Show a model's reply as it is written, with the OpenAI and Anthropic SDKs.
@@ -111,7 +111,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 ## Next steps
 
 - [Model API](../api/model-api.md#streaming): Keepalives, failures and disconnects in detail.
-````
+~~~
 
 - Der erste Bildschirm zeigt die erledigte Aufgabe: ein, zwei Sätze, dann ein funktionierendes Beispiel.
 - Abschnitte sind die Varianten, die Leser brauchen, jeder eine `##`-Überschrift, die mit einem Verb beginnt.
@@ -119,7 +119,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 
 ### Konzept
 
-````markdown
+~~~markdown
 ---
 title: Request flow
 description: The steps a model request takes through the gateway, from the key to the reply.
@@ -137,7 +137,7 @@ flowchart TD
 ## Check the key
 
 …
-````
+~~~
 
 - Beginnen Sie in ein oder zwei Sätzen damit, warum es die Leser betrifft, dann folgt ein Diagramm oder ein kurzes Beispiel.
 - Überschriften sind Substantive oder kurze Wendungen, in der Reihenfolge, in der die Dinge geschehen.
@@ -145,7 +145,7 @@ flowchart TD
 
 ### Referenz
 
-````markdown
+~~~markdown
 ---
 title: Model API
 description: The endpoints apps call, how they authenticate and how they name models.
@@ -170,7 +170,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 | Method and path | Format |
 | --- | --- |
 | `POST /v1/chat/completions` | OpenAI Chat Completions |
-````
+~~~
 
 - Eine API-Referenz beginnt mit einer minimalen, lauffähigen Anfrage als [Codegruppe](#codebeispiele), dann folgen die Fakten.
 - Fakten stehen in Tabellen: eine Zeile pro Endpunkt, Einstellung, Feld, Header oder Fehler, jede Zelle höchstens zwei kurze Sätze.
@@ -178,7 +178,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 
 ### Fehlerbehebung
 
-````markdown
+~~~markdown
 ---
 title: Troubleshooting
 description: Common problems with an install and how to fix them.
@@ -192,7 +192,7 @@ The key is wrong, expired or disabled.
 
 1. Open **API keys** in the project and find the key by its last characters.
 2. If it shows **Expired** or **Disabled**, create a new key.
-````
+~~~
 
 - Ein `##`-Abschnitt pro Problem. Die Überschrift ist das Symptom, wie es den Lesern begegnet, oder die genaue Meldung.
 - Darunter: die Ursache in einem Satz, dann die Lösung als nummerierte Schritte.
@@ -258,7 +258,7 @@ Leser kopieren Code, bevor sie den Text lesen, deshalb muss der Code so funktion
 
 Wo eine App Kaeso aufrufen würde, zeigen Sie dieselbe Anfrage in curl, Python und TypeScript als eine Codegruppe: aufeinanderfolgende Codeblöcke, jeder mit einem `tab`, der ihn benennt. Die Website zeigt sie als Tabs und merkt sich die Wahl der Leser auf jeder Seite; GitHub zeigt sie nacheinander.
 
-````markdown
+~~~markdown
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
   -H "Authorization: Bearer $KAESO_API_KEY" \
@@ -284,7 +284,7 @@ const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: pro
 const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
 console.log(response.output_text);
 ```
-````
+~~~
 
 - Die Tabs heißen `curl`, `Python` und `TypeScript`, in dieser Reihenfolge und genau so geschrieben, denn die gemerkte Wahl folgt dem Namen. Lassen Sie einen Tab nur weg, wenn diese Sprache den Aufruf nicht machen kann.
 - Jeder Tab tut dasselbe. Eine Gruppe hat mindestens zwei Codeblöcke, und zwischen ihnen stehen nur Leerzeilen.
@@ -417,7 +417,7 @@ PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites we
 
 Jedes Diagramm eines Systems, einer Architektur, eines Anfrage- oder Datenflusses, einer Abfolge, eines Zustands oder eines Lebenszyklus ist ein Mermaid-Block. Der Build zeichnet es in Kaesos eigenem Look, als helles und dunkles Bild, die dem Theme der Website folgen; kein Mermaid-Code erreicht die Leser. Ein Diagramm wird nie mit Rahmenzeichen oder Pfeilen in einem Codeblock gezeichnet und nie als Screenshot oder Bild gezeigt: Der Build schlägt bei einem Codeblock fehl, der mit Zeichen wie `─`, `│`, `└`, `▶` oder `→` zeichnet.
 
-````markdown
+~~~markdown
 ```mermaid
 sequenceDiagram
   accTitle: Ablauf einer Anfrage
@@ -430,7 +430,7 @@ sequenceDiagram
   Provider-->>Gateway: Antwort
   Gateway-->>App: Antwort im Format der App
 ```
-````
+~~~
 
 - Wählen Sie den passenden Typ: `flowchart` für Teile und wie sie verbunden sind, `sequenceDiagram` für Anfragen und Antworten zwischen Beteiligten, `stateDiagram-v2` für einen Lebenszyklus. `flowchart TD`, von oben nach unten, bleibt auf dem Telefon lesbar; ein Diagramm, das breiter als die Spalte ist, scrollt in seinem eigenen Rahmen.
 - `accTitle:` benennt das Diagramm in wenigen Wörtern und ist Pflicht. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet es zusammen mit den Beschriftungen des Diagramms.
@@ -444,11 +444,11 @@ Die Zeichnungen liegen committet in `apps/docs/diagrams/`. `pnpm --filter kaeso-
 
 Seiten sind GitHub-Flavoured Markdown: **fett**, _kursiv_, ~~durchgestrichen~~, `Code`, Listen, Aufgabenlisten, Tabellen (eine Spalte mit `--:` ist rechtsbündig, für Zahlen), Zitate, horizontale Linien und abgegrenzter Code. Ein Codeblock nennt seine Sprache und kann seine Datei nennen:
 
-````markdown
+~~~markdown
 ```ts title="support-bot/src/client.ts"
 export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
-````
+~~~
 
 TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML und Diff werden hervorgehoben; andere Sprachen erscheinen als einfacher Text. Rohes HTML wird nicht gerendert und erscheint als Text.
 

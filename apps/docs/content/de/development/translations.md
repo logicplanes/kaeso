@@ -22,7 +22,7 @@ Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Die Bedeut
 
 | | Englisch | Deutsch | Vereinfachtes Chinesisch |
 | --- | --- | --- | --- |
-| Anrede | Keine in Oberflächen; „you“ auf Dokumentationsseiten | In Oberflächen „Sie“ nur, wo es sich nicht vermeiden lässt: Infinitive, Substantive und unpersönliche Formulierungen bevorzugen. Dokumentationsseiten sprechen die Leser mit „Sie“ an ([Dokumentation schreiben](documentation.md#übersetzen)). Nie „du“ | Keine; neutrale Formulierungen, „您“ nur, wo eine Person angesprochen wird |
+| Anrede | Keine oder „you“ | „Sie“ nur, wo es sich nicht vermeiden lässt: Infinitive, Substantive und unpersönliche Formulierungen bevorzugen; nie „du“ | Keine; neutrale Formulierungen, „您“ nur, wo eine Person angesprochen wird |
 | Buttons | Zuerst ein Verb: „Create key“ | Infinitiv, Verb am Ende: „Schlüssel erstellen“ | Zuerst ein Verb: „创建密钥“ |
 | Titel | Sentence case | Deutsche Groß- und Kleinschreibung, sonst wie ein Satz | Keine Satzzeichen am Ende |
 | Auslassungspunkte | „Loading…“, ein Zeichen | „Wird geladen…“ | „加载中…“ |

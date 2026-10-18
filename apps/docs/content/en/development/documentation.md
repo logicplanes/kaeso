@@ -58,7 +58,7 @@ A folder's `index.md` is an overview: one or two sentences on what the section c
 
 ### Quick start
 
-````markdown
+~~~markdown
 ---
 title: Quick start
 description: Install Kaeso with Docker Compose, connect a provider and send your first request.
@@ -84,7 +84,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ## Next steps
 
 - [Calling models](calling-models.md): Call models from your app with the OpenAI and Anthropic SDKs.
-````
+~~~
 
 - One path, start to finish, with no choices on the way. Options and alternatives go on the guide pages the steps link to.
 - Each step is a `##` heading that starts with a verb, a sentence that says what the step does, one command or code group, and a sentence that says what the reader sees when it worked.
@@ -92,7 +92,7 @@ The command returns once the gateway, the console and the databases are healthy.
 
 ### Guide
 
-````markdown
+~~~markdown
 ---
 title: Stream replies
 description: Show a model's reply as it is written, with the OpenAI and Anthropic SDKs.
@@ -111,7 +111,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 ## Next steps
 
 - [Model API](../api/model-api.md#streaming): Keepalives, failures and disconnects in detail.
-````
+~~~
 
 - The first screen shows the task done: a sentence or two, then a working example.
 - Sections are the variations a reader needs, each a `##` heading that starts with a verb.
@@ -119,7 +119,7 @@ Ask for a stream and Kaeso sends the reply as server-sent events, in the format 
 
 ### Concept
 
-````markdown
+~~~markdown
 ---
 title: Request flow
 description: The steps a model request takes through the gateway, from the key to the reply.
@@ -137,7 +137,7 @@ flowchart TD
 ## Check the key
 
 …
-````
+~~~
 
 - Start with why the reader should care, in one or two sentences, then a diagram or a short example.
 - Headings are nouns or short phrases, in the order things happen.
@@ -145,7 +145,7 @@ flowchart TD
 
 ### Reference
 
-````markdown
+~~~markdown
 ---
 title: Model API
 description: The endpoints apps call, how they authenticate and how they name models.
@@ -170,7 +170,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 | Method and path | Format |
 | --- | --- |
 | `POST /v1/chat/completions` | OpenAI Chat Completions |
-````
+~~~
 
 - An API reference page leads with a minimal runnable request as a [code group](#code-examples), then the facts.
 - Facts are in tables: one row per endpoint, setting, field, header or error, each cell at most two short sentences.
@@ -178,7 +178,7 @@ Call the model API with the OpenAI or Anthropic SDK you already use, at your ins
 
 ### Troubleshooting
 
-````markdown
+~~~markdown
 ---
 title: Troubleshooting
 description: Common problems with an install and how to fix them.
@@ -192,7 +192,7 @@ The key is wrong, expired or disabled.
 
 1. Open **API keys** in the project and find the key by its last characters.
 2. If it shows **Expired** or **Disabled**, create a new key.
-````
+~~~
 
 - One `##` section per problem. The heading is the symptom as the reader meets it, or the exact message.
 - Under it: the cause in one sentence, then the fix as numbered steps.
@@ -258,7 +258,7 @@ Readers copy code before they read prose, so the code has to work as it stands.
 
 Where an app would call Kaeso, show the same request in curl, Python and TypeScript as one code group: consecutive fences, each with a `tab` that names it. The site shows them as tabs and remembers the reader's choice on every page; GitHub shows them one after another.
 
-````markdown
+~~~markdown
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
   -H "Authorization: Bearer $KAESO_API_KEY" \
@@ -284,7 +284,7 @@ const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: pro
 const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
 console.log(response.output_text);
 ```
-````
+~~~
 
 - The tabs are `curl`, `Python` and `TypeScript`, in that order and spelled exactly so, because the remembered choice follows the name. Leave a tab out only when that language can't make the call.
 - Each tab does the same thing. A group holds at least two fences, and nothing but blank lines stands between them.
@@ -415,7 +415,7 @@ PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, 
 
 Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a Mermaid block. The build draws it in Kaeso's own look, as a light and a dark image that follow the site's theme; no Mermaid code reaches the reader. A diagram is never drawn with box-drawing characters or arrows in a code block, and never shown as a screenshot or an image: the build fails on a code block that draws with characters such as `─`, `│`, `└`, `▶` or `→`.
 
-````markdown
+~~~markdown
 ```mermaid
 sequenceDiagram
   accTitle: Request flow
@@ -428,7 +428,7 @@ sequenceDiagram
   Provider-->>Gateway: Reply
   Gateway-->>App: Reply in the app's format
 ```
-````
+~~~
 
 - Choose the type that fits: `flowchart` for parts and how they connect, `sequenceDiagram` for requests and replies between parties, `stateDiagram-v2` for a lifecycle. `flowchart TD`, top to bottom, stays readable on a phone; a diagram wider than the column scrolls inside its own frame.
 - `accTitle:` names the diagram in a few words and is required. `accDescr:` says in one or two sentences what it shows; screen readers read both, and search finds them with the diagram's labels.
@@ -442,11 +442,11 @@ The drawings are committed in `apps/docs/diagrams/`. `pnpm --filter kaeso-docs d
 
 Pages are GitHub-flavoured Markdown: **bold**, _italic_, ~~strikethrough~~, `code`, lists, task lists, tables (a `--:` column is right-aligned, for numbers), block quotes, horizontal rules and fenced code. A fence names its language and may name its file:
 
-````markdown
+~~~markdown
 ```ts title="support-bot/src/client.ts"
 export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
-````
+~~~
 
 TypeScript, TSX, JavaScript, JSON, Bash (`sh`, `shell`, `console`), Python, YAML and diff are highlighted; other languages show as plain text. Raw HTML is not rendered and shows as text.
 
