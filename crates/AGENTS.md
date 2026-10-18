@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Rules for the Rust workspace: the gateway and KPP. The root [`AGENTS.md`](../AGENTS.md) holds the setup, the definition of done and the rules for the whole repository.
+Rules for the Rust workspace: the gateway, the updater and KPP. The root [`AGENTS.md`](../AGENTS.md) holds the setup, the definition of done and the rules for the whole repository.
 
 ## What lives here
 

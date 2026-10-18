@@ -12,24 +12,24 @@ Kaeso, the open-source, self-hosted AI gateway ([kaeso.app](https://kaeso.app)):
 
 ## Layout
 
-| Path            | Holds                                                                                                       | Agent file                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `crates/`       | The gateway (`kaeso`, `kaeso-server`, `kaeso-core`, …), KPP (`kaeso-kpp`, `kaeso-codecs`), `xtask`          | [`crates/AGENTS.md`](crates/AGENTS.md)               |
-| `apps/console`  | The web console                                                                                             | [`apps/console/AGENTS.md`](apps/console/AGENTS.md)   |
-| `apps/docs`     | The documentation site and its pages in `apps/docs/content`                                                 | [`apps/docs/AGENTS.md`](apps/docs/AGENTS.md)         |
-| `apps/showcase` | The UI library's showcase at [ui.kaeso.app](https://ui.kaeso.app)                                           | [`apps/showcase/AGENTS.md`](apps/showcase/AGENTS.md) |
-| `packages/`     | `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui`                                                     | [`packages/AGENTS.md`](packages/AGENTS.md)           |
-| `packages/ui`   | The rules for interfaces built with the library, shipped in the npm package                                 | [`packages/ui/AGENTS.md`](packages/ui/AGENTS.md)     |
-| `deploy/`       | `compose.yaml` (the self-hosting package), `compose.dev.yaml` (the one development stack), both Dockerfiles |                                                      |
-| `e2e/`          | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install                  |                                                      |
-| `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                    |                                                      |
-| `openapi.json`  | The Platform API document, generated from the gateway's code                                                |                                                      |
-| `scripts/`      | The npm package and licence checks, and the version and changelog steps of a release                        |                                                      |
-| `.github/`      | CI and Release workflows, templates                                                                         |                                                      |
+| Path            | Holds                                                                                                                                             | Agent file                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `crates/`       | The gateway (`kaeso`, `kaeso-server`, `kaeso-core`, …), the updater (`kaeso-update`, `kaeso-updater`), KPP (`kaeso-kpp`, `kaeso-codecs`), `xtask` | [`crates/AGENTS.md`](crates/AGENTS.md)               |
+| `apps/console`  | The web console                                                                                                                                   | [`apps/console/AGENTS.md`](apps/console/AGENTS.md)   |
+| `apps/docs`     | The documentation site and its pages in `apps/docs/content`                                                                                       | [`apps/docs/AGENTS.md`](apps/docs/AGENTS.md)         |
+| `apps/showcase` | The UI library's showcase at [ui.kaeso.app](https://ui.kaeso.app)                                                                                 | [`apps/showcase/AGENTS.md`](apps/showcase/AGENTS.md) |
+| `packages/`     | `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui`                                                                                           | [`packages/AGENTS.md`](packages/AGENTS.md)           |
+| `packages/ui`   | The rules for interfaces built with the library, shipped in the npm package                                                                       | [`packages/ui/AGENTS.md`](packages/ui/AGENTS.md)     |
+| `deploy/`       | `compose.yaml` (the self-hosting package), `compose.dev.yaml` (the one development stack), the gateway, console and updater Dockerfiles           |                                                      |
+| `e2e/`          | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install                                                        |                                                      |
+| `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                                                          |                                                      |
+| `openapi.json`  | The Platform API document, generated from the gateway's code                                                                                      |                                                      |
+| `scripts/`      | The package, licence and site checks, and the release's steps: version, changelog, release notes and `release.json`                               |                                                      |
+| `.github/`      | The CI, Release and Labels workflows, the labeler's rules, Dependabot, and the issue and pull request templates                                   |                                                      |
 
 ## Setup
 
-Node.js 24 (`.node-version`), pnpm 11 (pinned in `package.json`, `corepack enable`), rustup (the toolchain in `rust-toolchain.toml` installs itself), Docker with Compose, and Python 3.13.
+Node.js 24 (`.node-version`), pnpm 11 (pinned in `package.json`, `corepack enable`), rustup (the toolchain in `rust-toolchain.toml` installs itself), a Docker engine with Compose, and Python 3.13; `actionlint` for workflow changes, and the GitHub CLI with the `github/gh-stack` extension for stacked pull requests.
 
 ```sh
 pnpm install
@@ -77,7 +77,7 @@ Then, for the parts you changed:
 | `.github/workflows`                                      | `actionlint`                                                                                                                                                                                                                                                                                                                                    |
 | An interface                                             | Look at every screen you changed in light and dark, at desktop and phone widths, in English, German and Chinese                                                                                                                                                                                                                                 |
 
-CI runs these checks for every area a pull request changes, and all of them on `dev`, `prod` and releases; the one required check is **CI**. [Testing](https://docs.kaeso.app/development/testing) explains every suite.
+CI runs these checks in parallel jobs, the longest suites split into shards, for every area a pull request changes, and all of them on `dev`, `prod` and releases; the one required check is **CI**. [Testing](https://docs.kaeso.app/development/testing) explains every suite.
 
 ## Rules
 
@@ -92,8 +92,8 @@ CI runs these checks for every area a pull request changes, and all of them on `
 
 ## Git and releases
 
-- Work on `dev` or on a branch from `dev`, and open pull requests into `dev`. Never push to `prod`: the maintainer pushes `dev` there to make a release.
+- Branch from `dev` and open pull requests into `dev`, one change each; `dev` takes changes only through pull requests. A change that builds on an unmerged pull request goes on top of it as a stack with `gh stack` ([stacked pull requests](https://docs.kaeso.app/development/contributing#stacked-pull-requests)). Never push to `prod`: the maintainer pushes `dev` there to make a release.
 - Never create tags or releases and never publish crates, npm packages, images or sites: the maintainer runs the Release workflow and deploys the sites.
-- Never edit `CHANGELOG.md` in a pull request: the Release workflow writes it from the merged pull requests. The title is the changelog line, so write it as a sentence that says what changed for people who use, run or build on Kaeso; labels choose its section and topic ([the changelog](https://docs.kaeso.app/development/releasing#the-changelog)).
+- Never edit `CHANGELOG.md` in a pull request: the Release workflow writes it, and the release notes, from the merged pull requests. The title is the changelog line, so write it as a sentence that says what changed for people who use, run or build on Kaeso. The Labels workflow sets the `area: …` labels and `internal` from the changed files; a type label such as `added` or `fixed` chooses the section ([labels](https://docs.kaeso.app/development/releasing#labels)).
 - Never write the current version by hand. Only a release changes it, with `node scripts/version.mjs set`; pages write `{{version}}`, code reads `package.json` or `env!("CARGO_PKG_VERSION")`. `node scripts/version.mjs check`, part of `pnpm test`, fails on a version anywhere else and names the file and line.
 - Commit messages say what changed and why.
