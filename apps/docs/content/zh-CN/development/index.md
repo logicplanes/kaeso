@@ -45,5 +45,4 @@ Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区（`pnpm-workspace
 | [翻译](translations.md) | 每个界面如何使用英语、德语和简体中文，以及术语表 |
 | [编写文档](documentation.md) | 本站页面如何编写、链接和翻译 |
 | [依赖与许可证](dependencies.md) | 每个直接依赖、引入它的原因，以及许可证政策 |
-| [性能](performance.md) | 打包预算、编解码器基准测试和模糊测试结果 |
 | [发布](releasing.md) | 版本号、变更日志、Release 工作流及其发布的内容 |

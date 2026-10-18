@@ -68,6 +68,6 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 - **No panics in library code.** No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, panicking indexing or `unsafe` outside tests and the binary's startup (workspace lints, `#![forbid(unsafe_code)]`). Fix the code instead of adding `#[allow]`.
 - **Use the property and snapshot tools.** `kaeso_codecs::testing` for JSON and SSE comparisons, `insta` for snapshots, `proptest` for properties; a case a property test finds becomes an explicit regression test.
 - **Review snapshot diffs** and update what depends on them: rights and roles (`crates/kaeso-core/src/rights/snapshots/`) and settings (`crates/kaeso-server/tests/snapshots/`) change their documentation pages; cross-dialect outcomes (`crates/kaeso-codecs/tests/snapshots/`, `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`) change the mapping pages; emails live in `crates/kaeso-mail/src/snapshots/`.
-- **Compare performance** with `cargo bench -p kaeso-codecs --bench codecs` and the [performance](https://docs.kaeso.app/development/performance) page when touching hot paths.
+- **Compare performance** when touching hot paths: run `cargo bench -p kaeso-codecs --bench codecs` on `dev` and on your branch ([benchmarks](https://docs.kaeso.app/development/testing#benchmarks)).
 - **Refresh the model data** with `cargo xtask models-dev`; never edit `crates/kaeso-core/data/models-dev.json` by hand.
 - Tests that need databases always fail, never skip, when the development stack is down.

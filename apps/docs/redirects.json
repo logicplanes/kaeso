@@ -1,3 +1,4 @@
 {
+  "development/performance": "development/testing.md#benchmarks",
   "development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"
 }

@@ -148,4 +148,4 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的�
 
 `vite.config.ts` 做的事与控制台相同：把来自 `@logicplanes/kaeso-ui` 的导入改写为库中各组件的入口（`uiEntryImports`），并把主题脚本作为 `/theme-init.js` 提供。它还添加 `theme-color` meta 标签，并预加载界面字体。
 
-构建以两项检查结束：`scripts/budget.ts` 根据[打包预算](../performance.md#文档站点)检查框架和每个页面，`scripts/check-site.mjs` 检查构建产物（[网站](../releasing.md#网站)）。随后 `pnpm --filter kaeso-docs licenses:check`（`scripts/licenses.ts`）检查构建中每个包的许可证。
+构建以两项检查结束：`scripts/budget.ts` 根据打包预算检查框架和每个页面，`scripts/check-site.mjs` 检查构建产物（[网站](../releasing.md#网站)）。随后 `pnpm --filter kaeso-docs licenses:check`（`scripts/licenses.ts`）检查构建中每个包的许可证。

@@ -57,7 +57,7 @@ Then, for the parts you changed:
 | `pnpm test` | Vitest with coverage thresholds in both libraries, the console and the docs, then the tests of the scripts in `scripts/` with `node --test`, among them the [version check](releasing.md#the-version-in-the-repository) run on the repository itself |
 | `pnpm i18n` | Every text of the console has German and Chinese with the same placeholders, and nothing is left over ([translations](translations.md#checking)) |
 | `pnpm knip` | Unused files, exports and dependencies |
-| `pnpm build` | Every production build and its bundle budgets ([performance](performance.md)); both sites' builds then run the [site check](releasing.md#the-sites) |
+| `pnpm build` | Every production build and its bundle budgets (`scripts/budget.*` in the console and the docs, `scripts/budgets.mjs` in the UI library); both sites' builds then run the [site check](releasing.md#the-sites) |
 | `pnpm licenses:check` | After a build: the license of every package whose code ships ([dependencies](dependencies.md#license-policy)) |
 | `pnpm release:check` | After a build: packs both libraries as npm would and checks that every file they must ship is there, at one version |
 | `pnpm e2e` | Playwright in the console, the docs and the showcase, one after another; the showcase's suite tests its build, so `pnpm build` comes first |
@@ -270,7 +270,17 @@ mkdir -p fuzz/corpus/sse
 cargo +nightly fuzz run sse fuzz/corpus/sse crates/kaeso-codecs/fixtures -- -max_total_time=600
 ```
 
-A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec. [Performance](performance.md#fuzzing) records the last full run.
+A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
+
+## Benchmarks
+
+`crates/kaeso-codecs/benches/codecs.rs` measures a full decode and encode cycle in each dialect, for a 100-message conversation and a 2,000-event stream. Before you change a codec's hot path, run the benchmarks on `dev` and again on your branch:
+
+```bash
+cargo bench -p kaeso-codecs --bench codecs
+```
+
+criterion prints the change against the previous run. CI only checks that the benchmarks build.
 
 ## Continuous integration
 

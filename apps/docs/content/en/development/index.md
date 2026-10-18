@@ -45,5 +45,4 @@ The documentation and the showcase are deployed as static sites from the release
 | [Translations](translations.md) | How every interface speaks English, German and Simplified Chinese, and the glossary |
 | [Writing documentation](documentation.md) | How pages of this site are written, linked and translated |
 | [Dependencies and licenses](dependencies.md) | Every direct dependency, why it is there, and the license policy |
-| [Performance](performance.md) | Bundle budgets, codec benchmarks and fuzzing results |
 | [Releasing](releasing.md) | Versions, the changelog, the Release workflow and what it publishes |

@@ -57,7 +57,7 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 | `pnpm test` | 在两个库、控制台和文档中运行带覆盖率阈值的 Vitest，然后用 `node --test` 运行 `scripts/` 中脚本的测试，其中包括对仓库本身运行的[版本号检查](releasing.md#仓库中的版本号) |
 | `pnpm i18n` | 控制台的每段文字都有占位符相同的德语和中文，且没有多余的条目（[翻译](translations.md#检查)） |
 | `pnpm knip` | 未使用的文件、导出和依赖 |
-| `pnpm build` | 每个生产构建及其打包预算（[性能](performance.md)）；两个网站的构建随后运行[网站检查](releasing.md#网站) |
+| `pnpm build` | 每个生产构建及其打包预算（控制台和文档的 `scripts/budget.*`，UI 库的 `scripts/budgets.mjs`）；两个网站的构建随后运行[网站检查](releasing.md#网站) |
 | `pnpm licenses:check` | 构建之后：每个代码随产品发布的包的许可证（[依赖](dependencies.md#许可证政策)） |
 | `pnpm release:check` | 构建之后：像 npm 那样打包两个库，并检查它们必须包含的每个文件都在，且版本一致 |
 | `pnpm e2e` | 依次在控制台、文档和展示站点中运行 Playwright；展示站点的套件测试其构建结果，因此要先运行 `pnpm build` |
@@ -270,7 +270,17 @@ mkdir -p fuzz/corpus/sse
 cargo +nightly fuzz run sse fuzz/corpus/sse crates/kaeso-codecs/fixtures -- -max_total_time=600
 ```
 
-崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。[性能](performance.md#模糊测试)记录了最近一次完整运行的结果。
+崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
+
+## 基准测试
+
+`crates/kaeso-codecs/benches/codecs.rs` 在每种方言中测量一次完整的解码和编码，分别针对 100 条消息的对话和 2,000 个事件的流。修改编解码器的关键路径之前，先在 `dev` 上运行基准测试，再在自己的分支上运行一次：
+
+```bash
+cargo bench -p kaeso-codecs --bench codecs
+```
+
+criterion 会显示与上一次运行相比的变化。CI 只检查基准测试能否构建。
 
 ## 持续集成
 

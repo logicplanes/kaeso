@@ -57,7 +57,7 @@ Die [Continuous Integration](#continuous-integration) führt dieselben Prüfunge
 | `pnpm test` | Vitest mit Coverage-Schwellen in beiden Bibliotheken, der Konsole und der Dokumentation, danach die Tests der Skripte in `scripts/` mit `node --test`, darunter die [Versionsprüfung](releasing.md#die-version-im-repository) am Repository selbst |
 | `pnpm i18n` | Jeder Text der Konsole hat Deutsch und Chinesisch mit denselben Platzhaltern, und nichts ist übrig ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
-| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets ([Performance](performance.md)); die Builds beider Websites führen danach die [Website-Prüfung](releasing.md#die-websites) aus |
+| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets (`scripts/budget.*` in Konsole und Dokumentation, `scripts/budgets.mjs` in der UI-Bibliothek); die Builds beider Websites führen danach die [Website-Prüfung](releasing.md#die-websites) aus |
 | `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Abhängigkeiten](dependencies.md#lizenzrichtlinie)) |
 | `pnpm release:check` | Nach einem Build: packt beide Bibliotheken wie npm und prüft, dass jede Datei, die sie ausliefern müssen, in einer Version vorhanden ist |
 | `pnpm e2e` | Playwright in Konsole, Dokumentation und Showcase, nacheinander; die Suite des Showcases testet dessen Build, deshalb kommt `pnpm build` zuerst |
@@ -270,7 +270,17 @@ mkdir -p fuzz/corpus/sse
 cargo +nightly fuzz run sse fuzz/corpus/sse crates/kaeso-codecs/fixtures -- -max_total_time=600
 ```
 
-Ein Absturz landet in `fuzz/artifacts/<target>/`. Ihn mit `cargo +nightly fuzz run <target> <file>` reproduzieren, daraus einen Regressionstest im Codec machen und dann den Codec korrigieren. [Performance](performance.md#fuzzing) hält den letzten vollständigen Lauf fest.
+Ein Absturz landet in `fuzz/artifacts/<target>/`. Ihn mit `cargo +nightly fuzz run <target> <file>` reproduzieren, daraus einen Regressionstest im Codec machen und dann den Codec korrigieren.
+
+## Benchmarks
+
+`crates/kaeso-codecs/benches/codecs.rs` misst in jedem Dialekt einen vollständigen Durchlauf aus Dekodieren und Kodieren, für eine Unterhaltung mit 100 Nachrichten und einen Stream mit 2.000 Events. Bevor Sie einen zeitkritischen Pfad eines Codecs ändern, führen Sie die Benchmarks auf `dev` und danach auf Ihrem Branch aus:
+
+```bash
+cargo bench -p kaeso-codecs --bench codecs
+```
+
+criterion zeigt die Veränderung gegenüber dem vorigen Lauf. CI prüft nur, dass die Benchmarks bauen.
 
 ## Continuous Integration
 

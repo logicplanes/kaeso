@@ -96,7 +96,7 @@ Tests, benchmarks and tools may use more, never as a normal dependency of the li
 | --- | --- | --- | --- |
 | `insta` (with `json`) | `kaeso-codecs` tests | Snapshots of the cross-dialect matrix | Apache-2.0 |
 | `proptest` | `kaeso-codecs` tests | Property tests: SSE chunk splitting, KPP round trips | MIT OR Apache-2.0 |
-| `criterion` | `kaeso-codecs` benchmarks | [Benchmarks](performance.md#kpp) | Apache-2.0 OR MIT |
+| `criterion` | `kaeso-codecs` benchmarks | Benchmarks | Apache-2.0 OR MIT |
 | `libfuzzer-sys` | `fuzz/`, a workspace of its own | The cargo-fuzz targets | (MIT OR Apache-2.0) AND NCSA |
 | `axum`, `tokio`, `serde`, `serde_json` | `crates/kpp-conformance`, never published | The conformance server, never in the library graph, which KPP's `deny.toml` enforces | MIT (`axum`, `tokio`), MIT OR Apache-2.0 |
 
