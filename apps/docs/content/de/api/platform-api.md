@@ -12,6 +12,8 @@ Die vollständige Referenz ist das OpenAPI-Dokument [`openapi.json`](https://git
 docker compose exec gateway kaeso openapi > openapi.json
 ```
 
+[Mit der Platform API automatisieren](automation.md) richtet mit curl ein Projekt, ein Modell und den Schlüssel einer App ein, mit einem Plattform-Schlüssel, einem Projektschlüssel oder einer Sitzung.
+
 ## Authentifizierung
 
 | Methode | Senden | Handelt mit |
@@ -111,98 +113,6 @@ Die Meldung ist ein kurzer Satz für Menschen; die Konsole zeigt sie unveränder
 | 502, 503, 504, 429 | `provider_error` | Nur bei den Modellanfragen des Playgrounds |
 | 503 | `unavailable` | Eine Datenbank oder ein anderer Hintergrunddienst ist nicht erreichbar, etwa „Kaeso cannot reach its database right now; try again shortly.“ |
 
-## Ein Durchgang mit curl
-
-Diese Anfragen richten ein Projekt für eine App ein und rufen darüber ein Modell auf, mit einem Plattform-Schlüssel. Den Schlüssel in der Konsole in den Einstellungen der Organisation unter **Plattform-Schlüssel** erstellen; die ID der Organisation steht in der Adresse der Konsole, `/orgs/org_…`. Die Befehle brauchen `jq`.
-
-```bash
-KAESO=https://kaeso.example.com
-ORG=org_…
-AUTH="Authorization: Bearer sk-kso-org-…"
-```
-
-Ein Projekt erstellen:
-
-```bash
-PROJECT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "Support bot"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects" | jq -r .id)
-```
-
-Den Anthropic-Schlüssel der Organisation hinzufügen. Der erste Schlüssel eines Anbieters wird dessen Standard, den jedes Projekt ohne zugewiesenen Schlüssel nutzt. Das Geheimnis wird nie wieder angezeigt; sichtbar bleiben nur die letzten vier Zeichen.
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "name": "Production", "secret": "sk-ant-…"}' \
-  "$KAESO/platform/v1/orgs/$ORG/credentials"
-```
-
-Ein Modell in den Katalog des Projekts aufnehmen. Preise, Limits und Fähigkeiten kommen von models.dev.
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/models"
-```
-
-Ein Dienstkonto für die App mit der Rolle Entwickler anlegen und einen Schlüssel dafür, der nach 90 Tagen abläuft. Das `secret` der Antwort ist der API-Schlüssel, einmal angezeigt.
-
-```bash
-ACCOUNT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "role": "developer"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts" | jq -r .id)
-
-KEY=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "expires_in_days": 90}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts/$ACCOUNT/keys" | jq -r .secret)
-```
-
-Die Modell-API mit dem neuen Schlüssel aufrufen, wie es die App tun wird:
-
-```bash
-curl -s "$KAESO/v1/messages" -H "x-api-key: $KEY" -H 'anthropic-version: 2023-06-01' \
-  -H 'content-type: application/json' \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 100, "messages": [{"role": "user", "content": "Hello"}]}'
-```
-
-Die Nutzung lesen, gruppiert nach `day` (Standard), `week`, `month`, `model`, `key` oder `member`; Kosten sind mit dem Recht `costs.view` enthalten. `from` und `to` sind Tage in UTC; nach Tagen liegen sie höchstens 400 Tage auseinander. `usage/span` nennt den ersten und letzten Tag mit Nutzung, um einen langen Zeitraum nach Woche oder Monat zu lesen.
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?group_by=model"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage/span"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?from=2026-08-15&group_by=week"
-```
-
-Das Anfrageprotokoll lesen, neueste zuerst, dann einen Eintrag. Der Eintrag enthält den Inhalt der Anfrage, wenn das Projekt Inhalte protokolliert und der Aufrufer `logs.content.view` hat.
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs?limit=10"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs/req_…"
-```
-
-### Mit einem Projektschlüssel
-
-Ein API-Schlüssel mit Plattformzugriff funktioniert ebenso in seinem eigenen Projekt, mit den Rechten seines Mitglieds oder Dienstkontos: `models.manage`, um Modelle hinzuzufügen, `usage.view` und `logs.metadata.view` zum Lesen. Projekte erstellen und Anbieter-Schlüssel hinzufügen sind Rechte der Organisation, die ein Projektschlüssel nie hat. Ein Schlüssel, der einem Mitglied gehört, erstellt mit `POST …/projects/{project}/keys` weitere Schlüssel für dieses Mitglied.
-
-### Mit einer Sitzung
-
-Die Anmeldung mit Passwort funktioniert, solange sie eingeschaltet ist, wie standardmäßig. Das Cookie in einer Datei halten und bei jeder Änderung `Origin` senden:
-
-```bash
-KAESO=https://kaeso.example.com
-JAR=$(mktemp)
-
-curl -s -c "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}' \
-  "$KAESO/platform/v1/auth/password"
-
-ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[0].org_id')
-```
-
-Mit Zwei-Faktor-Authentifizierung antwortet `auth/password` mit 202 und einer `challenge`; abschließen mit `POST /platform/v1/auth/totp` und `{"challenge": "…", "code": "123456"}`, oder mit `recovery_code` anstelle von `code`. Der erste Benutzer einer neuen Installation registriert sich über den Einrichtungslink, den `kaeso setup-link` ausgibt; siehe [Installation](../self-hosting/installation.md).
-
-Danach funktionieren die Anfragen oben mit `-b "$JAR" -H "Origin: $KAESO"` statt `-H "$AUTH"`. Eine Sitzung erstellt mit `POST …/projects/{project}/keys` auch Schlüssel für den eigenen Benutzer.
-
 ## Bereiche
 
 | Pfade | Inhalt |
@@ -244,7 +154,7 @@ Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Mo
 
 `GET orgs/{org}/projects/{project}/playground/models` listet die Modelle, die das Mitglied dort aufrufen kann: den Katalog ohne Embedding-Modelle, eingeschränkt durch den Modellzugriff des Mitglieds. Zu jedem gehören der zu sendende Name, seine Aliasse, ob es Reasoning beherrscht und mit welchen Stufen, ob es `temperature` annimmt, seine Limits und Preise und ob das Projekt einen Anbieter-Schlüssel dafür hat.
 
-`POST orgs/{org}/projects/{project}/playground/responses` nimmt eine OpenAI-Responses-Anfrage mit `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und dem verpflichtenden `"stream": true`. Die Antwort ist der Responses-Event-Stream, den `/v1/responses` sendet, mit Keepalive-Kommentaren. Mit der Sitzung [von oben](#mit-einer-sitzung):
+`POST orgs/{org}/projects/{project}/playground/responses` nimmt eine OpenAI-Responses-Anfrage mit `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und dem verpflichtenden `"stream": true`. Die Antwort ist der Responses-Event-Stream, den `/v1/responses` sendet, mit Keepalive-Kommentaren. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
 
 ```bash
 curl -N -b "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \

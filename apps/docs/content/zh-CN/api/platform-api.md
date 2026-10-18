@@ -12,6 +12,8 @@ Platform API 管理组织、项目、成员、密钥、服务商密钥、模型�
 docker compose exec gateway kaeso openapi > openapi.json
 ```
 
+[用 Platform API 实现自动化](automation.md)演示如何用 curl 设置项目、模型和应用的密钥，可使用平台密钥、项目密钥或会话。
+
 ## 身份验证
 
 | 方式 | 发送 | 以何种权限行事 |
@@ -111,98 +113,6 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 502, 503, 504, 429 | `provider_error` | 仅用于试验场的模型请求 |
 | 503 | `unavailable` | 无法连接数据库或其他后端服务，例如 “Kaeso cannot reach its database right now; try again shortly.” |
 
-## 使用 curl 的完整示例
-
-以下请求使用平台密钥，为一个应用创建项目，并通过它调用模型。请在控制台中组织的设置里，于**平台密钥**下创建该密钥；组织的 ID 就在控制台的地址中，即 `/orgs/org_…`。这些命令需要 `jq`。
-
-```bash
-KAESO=https://kaeso.example.com
-ORG=org_…
-AUTH="Authorization: Bearer sk-kso-org-…"
-```
-
-创建项目：
-
-```bash
-PROJECT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "Support bot"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects" | jq -r .id)
-```
-
-添加组织的 Anthropic 密钥。某个服务商的第一个密钥会成为其默认密钥，所有未分配密钥的项目都使用它。密钥本身不会再次显示，只有最后四个字符保持可见。
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "name": "Production", "secret": "sk-ant-…"}' \
-  "$KAESO/platform/v1/orgs/$ORG/credentials"
-```
-
-把模型加入项目目录。其价格、限制和能力来自 models.dev。
-
-```bash
-curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/models"
-```
-
-为应用创建一个具有开发者角色的服务账号，并为其创建一个 90 天后过期的密钥。响应中的 `secret` 就是 API 密钥，只显示这一次。
-
-```bash
-ACCOUNT=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "role": "developer"}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts" | jq -r .id)
-
-KEY=$(curl -s -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"name": "support-bot", "expires_in_days": 90}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/service-accounts/$ACCOUNT/keys" | jq -r .secret)
-```
-
-像应用那样，用新密钥调用模型 API：
-
-```bash
-curl -s "$KAESO/v1/messages" -H "x-api-key: $KEY" -H 'anthropic-version: 2023-06-01' \
-  -H 'content-type: application/json' \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 100, "messages": [{"role": "user", "content": "Hello"}]}'
-```
-
-读取用量，可按 `day`（默认）、`week`、`month`、`model`、`key` 或 `member` 分组；拥有 `costs.view` 权限时包含费用。`from` 和 `to` 是 UTC 日期；按天分组时，两者最多相隔 400 天。`usage/span` 返回第一个和最后一个有用量的日期，便于按周或按月读取较长的时间段。
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?group_by=model"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage/span"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/usage?from=2026-08-15&group_by=week"
-```
-
-读取请求日志（从新到旧），再读取其中一条。当项目记录内容且调用者拥有 `logs.content.view` 时，条目中包含请求内容。
-
-```bash
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs?limit=10"
-curl -s -H "$AUTH" "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/logs/req_…"
-```
-
-### 使用项目密钥
-
-具有平台访问权限的 API 密钥在其所属项目中也能这样使用，权限为其成员或服务账号的权限：添加模型需要 `models.manage`，读取需要 `usage.view` 和 `logs.metadata.view`。创建项目和添加服务商密钥属于组织权限，项目密钥从不具备。属于某个成员的密钥可以通过 `POST …/projects/{project}/keys` 为该成员创建更多密钥。
-
-### 使用会话
-
-只要密码登录处于开启状态（默认开启），就可以用密码登录。把 Cookie 保存在文件中，并在每次更改时发送 `Origin`：
-
-```bash
-KAESO=https://kaeso.example.com
-JAR=$(mktemp)
-
-curl -s -c "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}' \
-  "$KAESO/platform/v1/auth/password"
-
-ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[0].org_id')
-```
-
-开启双重验证后，`auth/password` 会以 202 和一个 `challenge` 响应；再用 `POST /platform/v1/auth/totp` 和 `{"challenge": "…", "code": "123456"}` 完成登录，也可以用 `recovery_code` 代替 `code`。新部署的第一个用户通过 `kaeso setup-link` 输出的设置链接注册；参见[安装](../self-hosting/installation.md)。
-
-之后，用 `-b "$JAR" -H "Origin: $KAESO"` 代替 `-H "$AUTH"`，上面的请求同样适用。会话还可以通过 `POST …/projects/{project}/keys` 为自己的用户创建密钥。
-
 ## 功能领域
 
 | 路径 | 内容 |
@@ -244,7 +154,7 @@ ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[
 
 `GET orgs/{org}/projects/{project}/playground/models` 列出成员在试验场中可调用的模型：项目目录中除嵌入模型以外的模型，再按成员的模型访问范围筛选。每个模型都附有要发送的名称、别名、是否支持推理及支持的推理强度、是否接受 `temperature`、限制和价格，以及项目是否有对应的服务商密钥。
 
-`POST orgs/{org}/projects/{project}/playground/responses` 接受一个 OpenAI Responses 请求，字段包括 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`，以及必需的 `"stream": true`。响应是 `/v1/responses` 发送的 Responses 事件流，并带有保活注释。使用[上文的会话](#使用会话)：
+`POST orgs/{org}/projects/{project}/playground/responses` 接受一个 OpenAI Responses 请求，字段包括 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`，以及必需的 `"stream": true`。响应是 `/v1/responses` 发送的 Responses 事件流，并带有保活注释。使用[会话](automation.md#改用会话)：
 
 ```bash
 curl -N -b "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
