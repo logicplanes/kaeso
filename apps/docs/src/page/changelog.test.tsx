@@ -97,7 +97,7 @@ describe("the changelog page", () => {
   it("translates its own words in German and marks the English entries as English", async () => {
     app("/de/changelog");
     expect(await screen.findByRole("heading", { level: 1, name: "Änderungen" })).toBeInTheDocument();
-    expect(screen.getByText("Die Änderungen sind auf Englisch geschrieben.")).toBeInTheDocument();
+    expect(screen.getByText("Die Einträge sind auf Englisch verfasst.")).toBeInTheDocument();
     const latest = release("1.2.0");
     expect(within(latest).getByText("Aktuell")).toBeInTheDocument();
     expect(latest.querySelector("time")).toHaveTextContent("15. Nov. 2026");
@@ -115,7 +115,7 @@ describe("the changelog page", () => {
     expect(within(latest).getByText("最新")).toBeInTheDocument();
     expect(latest.querySelector("time")).toHaveTextContent("2026年11月15日");
     expect(within(latest).getByRole("heading", { level: 3, name: "新增" })).toBeInTheDocument();
-    expect(within(release("1.3.0-rc.1")).getByText("预发布")).toBeInTheDocument();
+    expect(within(release("1.3.0-rc.1")).getByText("预发布版本")).toBeInTheDocument();
   });
 
   it("says when there are no releases yet, and keeps a date it can't read as written", () => {
