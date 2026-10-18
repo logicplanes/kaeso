@@ -179,6 +179,17 @@ export function release(overrides: Partial<ReleaseView> = {}): ReleaseView {
   };
 }
 
+export function updateSettings(overrides: Partial<UpdatesView["settings"]> = {}): UpdatesView["settings"] {
+  return {
+    check: true,
+    channel: "stable",
+    mode: "manual",
+    schedule: { frequency: "daily", weekday: "monday", hour: 3, timezone: "UTC" },
+    next_auto_update_at: null,
+    ...overrides,
+  };
+}
+
 export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
   return {
     current: "40.4.2",
@@ -187,7 +198,7 @@ export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
     latest: null,
     releases: [],
     can_apply: false,
-    settings: { check: true, channel: "stable", apply: true },
+    settings: updateSettings(),
     check: { last_checked_at: NOW, last_success_at: NOW, next_check_at: NOW, error: null },
     updater: { state: "ready", version: "40.4.2" },
     job: null,
@@ -211,6 +222,7 @@ export function updateJob(overrides: Partial<UpdateJobView> = {}): UpdateJobView
     reason: null,
     detail: null,
     started_by: { id: USER, name: "Ada Okafor" },
+    automatic: false,
     started_at: NOW,
     finished_at: null,
     ...overrides,

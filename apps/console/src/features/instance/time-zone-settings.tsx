@@ -27,7 +27,7 @@ export function TimeZoneSettings({ settings }: { settings: SettingsView }) {
   return (
     <SettingsSection
       title={t("instance.timeZone", "Time zone")}
-      description={t("instance.timeZoneHint", "Every time in the console shows in it, for everyone on this install.")}
+      description={t("instance.timeZoneHint", "Every time in the console and the automatic update window follow it.")}
     >
       <SettingsGroup>
         <SettingsRow

@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn a_release_without_a_manifest_cannot_be_applied_in_one_click() {
+    fn a_release_without_a_manifest_cannot_be_installed_by_the_updater() {
         let mut old = r("40.2.0");
         old.prepared = false;
         assert_eq!(

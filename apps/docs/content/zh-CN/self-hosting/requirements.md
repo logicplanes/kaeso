@@ -15,7 +15,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 内存 | 4 GB，其中 ClickHouse 约占 2 GB |
 | 磁盘 | 20 GB，另加请求日志所需空间 |
 
-[一键更新](upgrades.md#一键更新)还需要 Docker Engine 25 或更高版本。
+[更新器](upgrades.md#更新器)还需要 Docker Engine 25 或更高版本。
 
 ## 网络
 
@@ -27,7 +27,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 出站 | `api.openai.com`、`api.anthropic.com` | 您使用的服务商 |
 | 出站 | `models.dev` | 模型数据，每天刷新一次 |
 | 出站 | `api.github.com` | 检查 Kaeso 新版本，每天两次 |
-| 出站 | `github.com`、`objects.githubusercontent.com`、`ghcr.io` | 一键更新 |
+| 出站 | `github.com`、`objects.githubusercontent.com`、`ghcr.io` | 更新器 |
 | 出站 | 您的 SMTP 服务器 | 登录链接、邀请、提醒和安全通知（[邮件](email.md)） |
 
 没有互联网访问时，Kaeso 使用版本内置的模型数据，并需要手动更新。请按[无法联网的实例](upgrades.md#无法联网的实例)中的说明关闭出站检查。

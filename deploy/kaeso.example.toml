@@ -47,7 +47,7 @@ interval = "24h"
 [updates]
 check = true
 channel = "stable"
-apply = false
+mode = "manual"
 releases_url = "https://api.github.com/repos/logicplanes/kaeso/releases"
 
 [updater]

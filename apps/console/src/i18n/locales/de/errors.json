@@ -363,7 +363,6 @@
   "errors.fieldInvisibleCharacters": "`{name}` darf keine Zeilenumbrüche oder unsichtbaren Zeichen enthalten.",
   "errors.logDeletionsWaiting": "{count} Protokoll-Löschungen stehen noch aus; erneut versuchen, sobald sie gelaufen sind.",
   "errors.ifMatchForm": "`If-Match` muss ein Entity-Tag aus `ETag` sein, etwa „3“.",
-  "errors.updates.oneClickOff": "Updates mit einem Klick sind aus; schalten Sie sie zuerst in den Update-Einstellungen ein.",
   "errors.updates.noUpdater": "Der Updater ist nicht installiert; aktualisieren Sie diese Installation von Hand.",
   "errors.updates.notNewest": "Das ist nicht das neueste angebotene Release; erneut nach Updates suchen.",
   "errors.updates.manualSteps": "Dieses Release verlangt Schritte von Hand; folgen Sie der Upgrade-Anleitung.",
@@ -389,5 +388,6 @@
   "errors.edgeUnreachable": "Kaeso ist gerade nicht erreichbar; in einer Minute erneut versuchen.",
   "errors.edgeUpdating": "Kaeso wird gerade aktualisiert; in einer Minute erneut versuchen.",
   "errors.toolChoice.named": "eine benannte Funktion in `tool_choice`",
-  "errors.unknownTimeZone": "`{param}` ist keine bekannte Zeitzone; wählen Sie eine wie `Europe/Berlin`."
+  "errors.unknownTimeZone": "`{param}` ist keine bekannte Zeitzone; wählen Sie eine wie `Europe/Berlin`.",
+  "errors.updates.hourRange": "Wählen Sie eine Stunde von 0 bis 23."
 }

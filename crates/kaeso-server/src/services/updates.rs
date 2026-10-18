@@ -4,25 +4,27 @@ use std::time::Duration;
 use futures::StreamExt;
 use kaeso_core::id::UpdateId;
 use kaeso_store::StoreError;
-use kaeso_store::pg::updates::{self, Choices, Finish, JobRow, ReleaseRow, Settings};
+use kaeso_store::pg::updates::{self, Choices, Finish, JobRow, NewJob, ReleaseRow, Settings};
 use kaeso_store::pg::{self, locks};
 use kaeso_update::Version;
 use kaeso_update::manifest::{self, Manifest};
 use kaeso_update::policy::{self, Channel, Plan, Release};
-use kaeso_update::protocol::{JobState, Reason};
+use kaeso_update::protocol::{JobState, Reason, StartRequest};
+use kaeso_update::schedule::{self, Frequency, Mode, Schedule, Weekday};
 use reqwest::StatusCode;
 use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, LINK, RETRY_AFTER};
 use serde::Deserialize;
 use serde_json::json;
 use time::OffsetDateTime;
 
-use crate::services::updater::{self, UpdaterError};
+use crate::services::updater::{self, Updater, UpdaterError};
 use crate::state::AppState;
 
 pub const CHECK_INTERVAL: time::Duration = time::Duration::hours(12);
 pub const RETRY_INTERVAL: time::Duration = time::Duration::hours(1);
 pub const LOST_AFTER: time::Duration = time::Duration::hours(1);
 pub const START_GRACE: time::Duration = time::Duration::minutes(2);
+pub const FRESH_FOR_AUTO: time::Duration = time::Duration::hours(1);
 const JITTER_SECONDS: u32 = 3600;
 const MANIFESTS_AT_ONCE: usize = 4;
 const MANIFESTS_PER_CHECK: usize = 12;
@@ -57,9 +59,8 @@ pub fn running() -> Version {
 pub fn defaults(config: &crate::config::Config) -> Choices {
     let u = &config.updates;
     Choices {
-        check_enabled: u.check,
         channel: u.channel.as_str().to_owned(),
-        apply_enabled: u.apply,
+        mode: u.mode.as_str().to_owned(),
     }
 }
 
@@ -117,6 +118,43 @@ pub fn channel(settings: &Settings) -> Channel {
 
 pub fn plan<'a>(settings: &Settings, releases: &'a [Known]) -> Option<Plan<'a, Known>> {
     policy::plan(&running(), channel(settings), releases)
+}
+
+pub fn mode(settings: &Settings) -> Mode {
+    Mode::parse(&settings.mode).unwrap_or(Mode::Manual)
+}
+
+pub fn schedule(settings: &Settings, timezone: &str) -> Schedule {
+    Schedule {
+        frequency: Frequency::parse(&settings.auto_frequency).unwrap_or(Frequency::Daily),
+        weekday: Weekday::from_number(settings.auto_weekday).unwrap_or(Weekday::Monday),
+        hour: u8::try_from(settings.auto_hour).unwrap_or(schedule::DEFAULT_HOUR),
+        zone: crate::time_zone::or_utc(timezone),
+    }
+}
+
+pub fn next_auto_update(
+    settings: &Settings,
+    timezone: &str,
+    now: OffsetDateTime,
+) -> Option<OffsetDateTime> {
+    if mode(settings) != Mode::Automatic {
+        return None;
+    }
+    let plan = schedule(settings, timezone);
+    let after = settings
+        .auto_window_at
+        .map_or(now, |handled| handled.max(now));
+    match plan.window(now) {
+        Some(start)
+            if settings
+                .auto_window_at
+                .is_none_or(|handled| handled < start) =>
+        {
+            Some(start)
+        }
+        _ => plan.next(after),
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -550,7 +588,7 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
 
 pub async fn due(state: &AppState) -> Result<bool, StoreError> {
     let settings = updates::settings(&state.pg).await?;
-    Ok(settings.check_enabled
+    Ok(state.config.updates.check
         && settings
             .next_check_at
             .is_none_or(|at| state.clock.now() >= at))
@@ -666,6 +704,152 @@ pub async fn finish(
         );
     }
     Ok(finished)
+}
+
+pub async fn dispatch(
+    state: &AppState,
+    client: &Updater<'_>,
+    job: &JobRow,
+) -> Result<Result<(), UpdaterError>, StoreError> {
+    let request = StartRequest {
+        id: UpdateId::from_uuid(job.id).to_string(),
+        version: job.to_version.clone(),
+    };
+    match client.start(&request).await {
+        Ok(_) => Ok(Ok(())),
+        Err(e) if e.certain() => {
+            let detail = e.to_string();
+            finish(
+                state,
+                job,
+                &Outcome {
+                    state: JobState::Failed,
+                    step: &job.step,
+                    reason: Some(if e.refused() {
+                        Reason::UpdaterRefused
+                    } else {
+                        Reason::UpdaterUnreachable
+                    }),
+                    detail: Some(&detail),
+                },
+            )
+            .await?;
+            Ok(Err(e))
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "the updater did not confirm the update; its progress tells");
+            Ok(Ok(()))
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Auto {
+    Off,
+    NotDue,
+    UpToDate,
+    Manual,
+    CheckFailed,
+    UpdaterNotReady,
+    Busy,
+    Started(String),
+    Failed(String),
+}
+
+impl Auto {
+    pub fn summary(&self) -> String {
+        match self {
+            Auto::Off => "automatic updates off".to_owned(),
+            Auto::NotDue => "no update window".to_owned(),
+            Auto::UpToDate => "update window: up to date".to_owned(),
+            Auto::Manual => "update window: the release needs steps by hand".to_owned(),
+            Auto::CheckFailed => "update window: releases couldn't be fetched".to_owned(),
+            Auto::UpdaterNotReady => "update window: the updater isn't ready".to_owned(),
+            Auto::Busy => "update window: an update already runs".to_owned(),
+            Auto::Started(version) => format!("update window: updating to {version}"),
+            Auto::Failed(version) => format!("update window: the update to {version} didn't start"),
+        }
+    }
+}
+
+pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
+    let settings = updates::settings(&state.pg).await?;
+    if mode(&settings) != Mode::Automatic {
+        return Ok(Auto::Off);
+    }
+    let now = state.clock.now();
+    let timezone = kaeso_store::pg::instance::time_zone(&state.pg).await?;
+    let Some(start) = schedule(&settings, &timezone).window(now) else {
+        return Ok(Auto::NotDue);
+    };
+    if !updates::claim_window(&state.pg, start).await? {
+        return Ok(Auto::NotDue);
+    }
+    if settings
+        .last_success_at
+        .is_none_or(|at| now - at > FRESH_FOR_AUTO)
+        && let Checked::Failed(_) = check(state).await?
+    {
+        return Ok(Auto::CheckFailed);
+    }
+    let settings = updates::settings(&state.pg).await?;
+    let releases = known(updates::releases(&state.pg).await?);
+    let Some(plan) = plan(&settings, &releases) else {
+        return Ok(Auto::UpToDate);
+    };
+    if plan.manual.is_some() {
+        return Ok(Auto::Manual);
+    }
+    let Some(client) = updater::of(state) else {
+        return Ok(Auto::UpdaterNotReady);
+    };
+    let required = plan
+        .target
+        .manifest
+        .as_ref()
+        .map_or(0, |m| m.updater_protocol);
+    match client.status().await {
+        Ok(status) if updater::speaks(&status, required) && status.docker => {}
+        _ => return Ok(Auto::UpdaterNotReady),
+    }
+    let to = plan.target.version.to_string();
+    let from = running().to_string();
+    let id = UpdateId::new();
+    let mut tx = state.pg.begin().await?;
+    let started = updates::start_job(
+        &mut *tx,
+        &NewJob {
+            id: id.uuid(),
+            from_version: &from,
+            to_version: &to,
+            started_by: None,
+            automatic: true,
+            started_at: now,
+        },
+    )
+    .await?;
+    if !started {
+        return Ok(Auto::Busy);
+    }
+    crate::platform::audit::system_event(
+        &mut tx,
+        None,
+        "instance.update_start",
+        Some(("update", id.to_string())),
+        Some(json!({ "version": from })),
+        Some(json!({ "version": to, "automatic": true })),
+        now,
+    )
+    .await?;
+    tx.commit().await?;
+    let job = updates::job(&state.pg, id.uuid())
+        .await?
+        .ok_or_else(|| StoreError::Corrupt("the update row vanished".into()))?;
+    tracing::info!(%from, %to, "automatic update started");
+    Ok(match dispatch(state, &client, &job).await? {
+        Ok(()) => Auto::Started(to),
+        Err(_) => Auto::Failed(to),
+    })
 }
 
 pub async fn reconcile(state: &AppState, job: JobRow) -> Result<JobRow, StoreError> {

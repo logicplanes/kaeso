@@ -18,7 +18,7 @@ Kaeso runs on your server as one Docker Compose project. The [quick start](../ge
 
 ## Run
 
-- [Upgrades](upgrades.md): Update to a new release by hand or in one click.
+- [Upgrades](upgrades.md): Update to a new release by hand, from the console or automatically.
 - [Backups and master keys](backups.md): Back up the databases and master keys, and rotate the master key.
 - [Health and metrics](monitoring.md): Check health, scrape Prometheus metrics and read the logs.
 - [Troubleshooting](troubleshooting.md): Find the fix for a problem you see.

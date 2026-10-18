@@ -95,7 +95,7 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 
 - **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
 - **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
-- **For instance admins:** changing account creation, organization creation or the allowed domains, turning on one-click updates, applying an update, and scheduling an organization for deletion or deleting it.
+- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it.
 
 ## Conventions
 

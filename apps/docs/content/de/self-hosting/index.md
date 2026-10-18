@@ -18,7 +18,7 @@ Kaeso läuft auf Ihrem Server als ein Docker-Compose-Projekt. Der [Schnellstart]
 
 ## Betreiben
 
-- [Upgrades](upgrades.md): Aktualisieren Sie auf ein neues Release, von Hand oder mit einem Klick.
+- [Upgrades](upgrades.md): Aktualisieren Sie auf ein neues Release, von Hand, aus der Konsole oder automatisch.
 - [Backups und Hauptschlüssel](backups.md): Sichern Sie die Datenbanken und Hauptschlüssel und rotieren Sie den Hauptschlüssel.
 - [Zustand und Metriken](monitoring.md): Prüfen Sie den Zustand, lesen Sie Prometheus-Metriken ab und lesen Sie die Protokolle.
 - [Fehlerbehebung](troubleshooting.md): Finden Sie die Lösung für ein Problem, das Sie sehen.

@@ -33,7 +33,7 @@ flowchart TD
 | `clickhouse` | Stores request logs and usage rollups | The volume `clickhouse` |
 | `valkey` | Holds rate and budget counters and shared caches | The volume `valkey` |
 
-The optional updater adds two services, `updater` and `docker-proxy`, for [one-click updates](upgrades.md#one-click-updates).
+The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)).
 
 ## Files
 

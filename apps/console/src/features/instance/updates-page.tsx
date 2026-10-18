@@ -4,7 +4,6 @@ import {
   Badge,
   Banner,
   Button,
-  Code,
   CodeBlock,
   DataTable,
   DialogScope,
@@ -15,7 +14,6 @@ import {
   SettingsRow,
   SettingsSection,
   StatusDot,
-  Switch,
   Text,
   Tooltip,
   col,
@@ -24,7 +22,7 @@ import {
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { Markdown } from "@logicplanes/kaeso-ui/markdown";
 import { api, data } from "~/api/client";
-import type { ReleaseView, UpdateJobView, UpdatesView } from "~/api/generated/types";
+import type { ReleaseView, UpdateChannel, UpdateJobView, UpdateMode, UpdateSchedule, UpdatesView, UpdateWeekday } from "~/api/generated/types";
 import { updateJobsQuery, updatesQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
@@ -33,6 +31,7 @@ import { LoadFailed } from "~/features/org/load-failed";
 import { InstancePage } from "./instance-page";
 import { UpdateDialog, type Opened } from "./update-dialog";
 import { checkErrorText, jobResult, UPDATER_DOCS } from "./update-words";
+import { hourLabel, weekdayName } from "~/format/time-zones";
 import { t } from "~/i18n";
 
 export function InstanceUpdatesPage() {
@@ -46,27 +45,11 @@ export function InstanceUpdatesPage() {
     ...updatesQuery,
     refetchInterval: (q) => (q.state.data?.job?.state === "running" ? 5_000 : false),
   });
-  const check = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/instance/updates/check")),
-    invalidates: [["instance", "updates"]],
-    onSuccess: (u) =>
-      u.check.error
-        ? toast.warning(t("instance.updates.checkFailed", "Releases couldn't be fetched; try again later"))
-        : u.latest
-          ? toast.success(t("instance.updates.found", "Kaeso {version} is available", { version: u.latest.version }))
-          : toast.success(t("instance.updates.none", "Kaeso is up to date")),
-  });
   const u = updates.data;
-  const running = u?.job?.state === "running" ? u.job : null;
   return (
     <InstancePage
       title={t("instance.updates.title", "Updates")}
-      description={t("instance.updates.hint", "Kaeso releases on GitHub and how this install moves to them.")}
-      actions={
-        <Button size="sm" leadingIcon={icons.refresh} loading={check.isPending} disabled={!u} onClick={() => check.mutate()}>
-          {t("instance.checkNow", "Check now")}
-        </Button>
-      }
+      description={t("instance.updates.hint", "The Kaeso version this install runs, and how it moves to new releases.")}
     >
       {updates.isError && !u ? (
         <LoadFailed title={t("instance.updates.failed", "The update status couldn't load")} />
@@ -74,22 +57,9 @@ export function InstanceUpdatesPage() {
         <SettingsLoading rows={3} />
       ) : (
         <>
-          <Versions u={u} />
-          {running && (
-            <Banner
-              tone="info"
-              title={t("instance.updates.runningTitle", "Updating to Kaeso {version}", { version: running.to })}
-              actions={
-                <Button size="sm" onClick={() => show({ job: running.id })}>
-                  {t("instance.updates.showProgress", "Show progress")}
-                </Button>
-              }
-            >
-              {t("instance.updates.runningHint", "Kaeso is unavailable for about a minute while it switches over.")}
-            </Banner>
-          )}
-          {u.latest && <Latest u={u} latest={u.latest} running={!!running} onUpdate={() => show({ release: u.latest as ReleaseView })} />}
-          <Choices u={u} />
+          <Status u={u} onUpdate={(release) => show({ release })} onProgress={(job) => show({ job })} />
+          <UpdateSettings u={u} />
+          {u.latest && <Latest u={u} latest={u.latest} />}
           <History />
         </>
       )}
@@ -98,48 +68,49 @@ export function InstanceUpdatesPage() {
   );
 }
 
-function Versions({ u }: { u: UpdatesView }) {
-  const newest = u.latest ? (
-    <span className="flex items-center gap-8">
-      <Code>{u.latest.version}</Code>
-      <Badge tone="info">{t("instance.updates.available", "Update available")}</Badge>
-    </span>
+function checkedText(u: UpdatesView): string {
+  const last = u.check.last_checked_at;
+  const reason = u.latest && !u.can_apply && !u.manual && u.job?.state !== "running" ? blocked(u) : null;
+  if (reason) return reason;
+  if (last && u.check.error) return t("instance.updates.checkFailedHint", "The check {when} failed; Kaeso tries again later.", { when: formatRelative(last) });
+  if (!u.settings.check) return t("instance.updates.checkOffHint", "Checking is off in the gateway's configuration.");
+  if (!last) return t("instance.updates.notCheckedHint", "Not checked yet; Kaeso looks twice a day.");
+  return t("instance.updates.checkedHint", "Checked {when}; Kaeso looks twice a day.", { when: formatRelative(last) });
+}
+
+function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (release: ReleaseView) => void; onProgress: (job: string) => void }) {
+  const running = u.job?.state === "running" ? u.job : null;
+  const latest = u.latest;
+  const action = running ? (
+    <Button size="sm" onClick={() => onProgress(running.id)}>
+      {t("instance.updates.showProgress", "Show progress")}
+    </Button>
+  ) : latest && u.can_apply ? (
+    <Button size="sm" variant="primary" leadingIcon={icons.update} onClick={() => onUpdate(latest)}>
+      {t("instance.updates.update", "Update to {version}", { version: latest.version })}
+    </Button>
+  ) : latest ? (
+    <Badge tone="info">{t("instance.updates.availableVersion", "{version} available", { version: latest.version })}</Badge>
   ) : u.state === "up_to_date" ? (
-    <StatusDot tone="success">{t("instance.updates.upToDate", "Up to date")}</StatusDot>
+    <StatusDot tone="success" icon={icons.success}>
+      {t("instance.updates.upToDate", "Up to date")}
+    </StatusDot>
   ) : (
     <Text tone="secondary">{t("instance.updates.notChecked", "Not checked yet")}</Text>
   );
-  const checked = u.check.last_checked_at ? (
-    u.check.error ? (
-      <Tooltip content={checkErrorText(u.check.error)}>
-        <span className="inline-flex">
-          <StatusDot tone="danger">{t("instance.updates.checkFailedAt", "Failed {when}", { when: formatRelative(u.check.last_checked_at) })}</StatusDot>
-        </span>
-      </Tooltip>
-    ) : (
-      <Text tone="secondary">{formatRelative(u.check.last_checked_at)}</Text>
-    )
+  const description = running ? (
+    t("instance.updates.runningTitle", "Updating to Kaeso {version}", { version: running.to })
+  ) : u.check.error ? (
+    <Tooltip content={checkErrorText(u.check.error)}>
+      <span>{checkedText(u)}</span>
+    </Tooltip>
   ) : (
-    <Text tone="secondary">{t("instance.updates.never", "Never")}</Text>
+    checkedText(u)
   );
   return (
-    <SettingsSection title={t("instance.version", "Version")}>
-      <SettingsGroup>
-        <SettingsRow title={t("instance.updates.running", "Running")} control={<Code>{u.current}</Code>} />
-        <SettingsRow title={t("instance.updates.newest", "Newest release")} control={newest} />
-        <SettingsRow
-          title={t("instance.updates.lastChecked", "Last checked")}
-          description={
-            u.check.error
-              ? t("instance.updates.retryHint", "GitHub couldn't be reached; Kaeso tries again later.")
-              : u.settings.check
-                ? t("instance.updates.checkHint", "Kaeso looks for new releases twice a day.")
-                : t("instance.updates.checkOffHint", "Automatic checks are off.")
-          }
-          control={checked}
-        />
-      </SettingsGroup>
-    </SettingsSection>
+    <SettingsGroup className="mt-40">
+      <SettingsRow title={t("instance.updates.runningVersion", "Kaeso {version}", { version: u.current })} description={description} control={action} />
+    </SettingsGroup>
   );
 }
 
@@ -155,7 +126,6 @@ function manualReason(u: UpdatesView, version: string): string {
 }
 
 function blocked(u: UpdatesView): string | null {
-  if (!u.settings.apply) return t("instance.updates.applyOff", "Turn on one-click updates below to update from here.");
   switch (u.updater.state) {
     case "not_installed":
       return t("instance.updates.noUpdater", "The updater isn't installed, so this install updates by hand.");
@@ -168,24 +138,16 @@ function blocked(u: UpdatesView): string | null {
   }
 }
 
-function Latest({ u, latest, running, onUpdate }: { u: UpdatesView; latest: ReleaseView; running: boolean; onUpdate: () => void }) {
+function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
   const commands = [
     `curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v${latest.version}/compose.yaml`,
     "docker compose pull",
     "docker compose up -d --wait",
   ].join("\n");
-  const reason = blocked(u);
   return (
     <SettingsSection
       title={t("instance.updates.release", "Kaeso {version}", { version: latest.version })}
       description={t("instance.updates.published", "Published {date}", { date: formatDate(latest.published_at) })}
-      actions={
-        u.can_apply ? (
-          <Button size="sm" variant="primary" leadingIcon={icons.update} disabled={running} onClick={onUpdate}>
-            {t("instance.updates.update", "Update to {version}", { version: latest.version })}
-          </Button>
-        ) : undefined
-      }
     >
       <div className="flex flex-col gap-16">
         {u.manual ? (
@@ -203,10 +165,9 @@ function Latest({ u, latest, running, onUpdate }: { u: UpdatesView; latest: Rele
         ) : (
           !u.can_apply && (
             <div className="flex flex-col gap-12">
-              {reason && <Text tone="secondary">{reason}</Text>}
               <CodeBlock title={t("instance.updates.byHandTitle", "Update by hand, in the install's folder")} lang="bash" code={commands} collapseAfter={0} />
               <Link href={UPDATER_DOCS} external>
-                {t("instance.updates.setUpUpdater", "Set up one-click updates")}
+                {t("instance.updates.setUpUpdater", "Set up the updater")}
               </Link>
             </div>
           )
@@ -246,70 +207,147 @@ function Notes({ release }: { release: ReleaseView }) {
   );
 }
 
-function Choices({ u }: { u: UpdatesView }) {
+type SettingsChange = {
+  channel?: UpdateChannel;
+  mode?: UpdateMode;
+  schedule?: UpdateSchedule;
+};
+
+function savedText(body: SettingsChange): string {
+  if (body.mode !== undefined)
+    return body.mode === "automatic"
+      ? t("instance.updates.autoOn", "Updates now install automatically")
+      : t("instance.updates.autoOff", "You now install each update yourself");
+  if (body.schedule) return t("instance.updates.scheduleSaved", "Update window saved");
+  return t("instance.updates.channelSaved", "Channel saved");
+}
+
+const WEEKDAYS: UpdateWeekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+
+function windowText(s: UpdatesView["settings"]): string {
+  return s.next_auto_update_at
+    ? t("instance.updates.nextWindowHint", "Next {date}, {zone} time.", { date: formatDate(s.next_auto_update_at, { time: true }), zone: s.schedule.timezone })
+    : t("instance.updates.noWindowHint", "No window planned; {zone} time.", { zone: s.schedule.timezone });
+}
+
+function UpdateSettings({ u }: { u: UpdatesView }) {
   const save = useApiMutation({
-    mutationFn: async (body: { check?: boolean; channel?: "stable" | "prerelease"; apply?: boolean }) =>
-      data(await api.PATCH("/platform/v1/instance/updates/settings", { body })),
+    mutationFn: async (body: SettingsChange) => data(await api.PATCH("/platform/v1/instance/updates/settings", { body })),
     invalidates: [["instance", "updates"]],
-    onSuccess: (_, body) =>
-      toast.success(
-        body.apply !== undefined
-          ? body.apply
-            ? t("instance.updates.applyOn", "One-click updates are on")
-            : t("instance.updates.applyOffSaved", "One-click updates are off")
-          : body.check !== undefined
-            ? body.check
-              ? t("instance.updates.checkOn", "Kaeso looks for releases again")
-              : t("instance.updates.checkOffSaved", "Kaeso stopped looking for releases")
-            : t("instance.updates.channelSaved", "Channel saved"),
-      ),
+    onSuccess: (_, body) => toast.success(savedText(body)),
   });
-  const pending = save.isPending ? save.variables : undefined;
+  const s = u.settings;
+  const schedule = s.schedule;
+  const plan = (change: Partial<UpdateSchedule>) =>
+    save.mutate({ schedule: { frequency: schedule.frequency, weekday: schedule.weekday, hour: schedule.hour, ...change } });
   return (
     <SettingsSection title={t("common.settings", "Settings")}>
       <SettingsGroup>
         <SettingsRow
-          title={t("instance.updates.checkTitle", "Look for new releases")}
-          description={t("instance.updates.checkRowHint", "Twice a day; off for installs without internet.")}
-          control={
-            <Switch
-              aria-label={t("instance.updates.checkTitle", "Look for new releases")}
-              checked={u.settings.check}
-              loading={pending?.check !== undefined}
-              onCheckedChange={(check) => save.mutate({ check })}
-            />
-          }
-        />
-        <SettingsRow
           title={t("instance.updates.channel", "Releases")}
           description={t("instance.updates.channelHint", "Which releases this install is offered.")}
           control={
-            <div className="w-200">
+            <div className="w-240">
               <Select
                 aria-label={t("instance.updates.channel", "Releases")}
                 size="sm"
-                value={u.settings.channel}
-                onValueChange={(channel) => save.mutate({ channel: channel === "prerelease" ? "prerelease" : "stable" })}
+                fullWidth
+                value={s.channel}
+                disabled={save.isPending}
+                onValueChange={(channel) => channel !== s.channel && save.mutate({ channel: channel === "prerelease" ? "prerelease" : "stable" })}
                 options={[
-                  { value: "stable", label: t("instance.updates.stable", "Stable only") },
-                  { value: "prerelease", label: t("instance.updates.withPre", "With pre-releases") },
+                  {
+                    value: "stable",
+                    label: t("instance.updates.stable", "Stable releases"),
+                    description: t("instance.updates.stableHint", "Tested releases; the right choice for almost every install."),
+                  },
+                  {
+                    value: "prerelease",
+                    label: t("instance.updates.withPre", "Stable and pre-releases"),
+                    description: t("instance.updates.withPreHint", "Also release candidates, a few days before each release."),
+                  },
                 ]}
               />
             </div>
           }
         />
         <SettingsRow
-          title={t("instance.updates.applyTitle", "One-click updates")}
-          description={t("instance.updates.applyHint", "Apply updates from here through the updater.")}
+          title={t("instance.updates.mode", "How updates install")}
+          description={
+            s.mode === "automatic"
+              ? t("instance.updates.automaticHint", "In the update window; major versions wait for you.")
+              : t("instance.updates.manualHint", "You start each update with the button above.")
+          }
           control={
-            <Switch
-              aria-label={t("instance.updates.applyTitle", "One-click updates")}
-              checked={u.settings.apply}
-              loading={pending?.apply !== undefined}
-              onCheckedChange={(apply) => save.mutate({ apply })}
-            />
+            <div className="w-240">
+              <Select
+                aria-label={t("instance.updates.mode", "How updates install")}
+                size="sm"
+                fullWidth
+                value={s.mode}
+                disabled={save.isPending}
+                onValueChange={(mode) => mode !== s.mode && save.mutate({ mode: mode === "automatic" ? "automatic" : "manual" })}
+                options={[
+                  { value: "manual", label: t("instance.updates.manual", "Manually") },
+                  {
+                    value: "automatic",
+                    label: t("instance.updates.automatic", "Automatically"),
+                    disabled: u.updater.state === "not_installed",
+                  },
+                ]}
+              />
+            </div>
           }
         />
+        {s.mode === "automatic" && (
+          <SettingsRow
+            title={t("instance.updates.window", "Update window")}
+            description={windowText(s)}
+            control={
+              <div className="flex flex-wrap items-center gap-8">
+                <div className="w-120">
+                  <Select
+                    aria-label={t("instance.updates.frequency", "How often")}
+                    size="sm"
+                    fullWidth
+                    value={schedule.frequency}
+                    disabled={save.isPending}
+                    onValueChange={(f) => f !== schedule.frequency && plan({ frequency: f === "weekly" ? "weekly" : "daily" })}
+                    options={[
+                      { value: "daily", label: t("instance.updates.daily", "Daily") },
+                      { value: "weekly", label: t("instance.updates.weekly", "Weekly") },
+                    ]}
+                  />
+                </div>
+                {schedule.frequency === "weekly" && (
+                  <div className="w-140">
+                    <Select
+                      aria-label={t("instance.updates.day", "Day")}
+                      size="sm"
+                      fullWidth
+                      value={schedule.weekday}
+                      disabled={save.isPending}
+                      onValueChange={(d) => d !== schedule.weekday && plan({ weekday: d as UpdateWeekday })}
+                      options={WEEKDAYS.map((value, i) => ({ value, label: weekdayName(i) }))}
+                    />
+                  </div>
+                )}
+                <div className="w-96">
+                  <Select
+                    aria-label={t("instance.updates.time", "Time")}
+                    size="sm"
+                    fullWidth
+                    value={String(schedule.hour)}
+                    disabled={save.isPending}
+                    onValueChange={(h) => Number(h) !== schedule.hour && plan({ hour: Number(h) })}
+                    options={HOURS.map((h) => ({ value: String(h), label: hourLabel(h) }))}
+                  />
+                </div>
+              </div>
+            }
+          />
+        )}
       </SettingsGroup>
     </SettingsSection>
   );
@@ -351,8 +389,9 @@ function History() {
     ),
     col.custom(
       { id: "by", header: t("instance.updates.by", "Started by"), size: 160, priority: 2 },
-      (j: UpdateJobView) => j.started_by?.name ?? "",
-      (name: string) => <Text truncate>{name || t("instance.updates.deletedUser", "Deleted user")}</Text>,
+      (j: UpdateJobView) =>
+        j.automatic ? t("instance.updates.automatically", "Automatically") : (j.started_by?.name ?? t("instance.updates.deletedUser", "Deleted user")),
+      (name: string) => <Text truncate>{name}</Text>,
     ),
   ].map((c) => ({ ...c, enableSorting: false }));
   return (

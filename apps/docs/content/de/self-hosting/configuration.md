@@ -29,7 +29,7 @@ services:
 | `KAESO_PUBLIC_URL` | nein | Die öffentliche URL, wenn sie nicht `https://` und die Domain ist, etwa hinter Ihrem eigenen Proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, sofern E-Mails nicht nur protokolliert werden | Wie das Gateway E-Mails sendet ([E-Mail](#e-mail)). |
 | `KAESO_MAIL_TRANSPORT` | nein | `log`, um E-Mails nur zu protokollieren statt sie zu senden. |
-| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Updates mit einem Klick](upgrades.md#updates-mit-einem-klick)). |
+| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Der Updater](upgrades.md#der-updater)). |
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
 
 Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand -hex` sie schreibt, denn sie stehen in Verbindungs-URLs. PostgreSQL behält die Passwörter, die es beim Anlegen seines Volumes hatte; ändern Sie `POSTGRES_PASSWORD` später, sperrt das das Gateway aus. ClickHouse und Valkey übernehmen ihr Passwort bei jedem Start aus der `.env`.
@@ -133,7 +133,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | --- | --- | --- | --- | --- |
 | `KAESO_UPDATES_CHECK` | `updates.check` | Bool | `true` | Zweimal am Tag nach neuen Kaeso-Releases suchen. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | Text | `stable` | Die angebotenen Releases: `stable` oder `prerelease`, um auch Vorabversionen zu erhalten. |
-| `KAESO_UPDATES_APPLY` | `updates.apply` | Bool | `false` | Instanz-Admins erlauben, Updates über den Updater aus der Konsole einzuspielen. |
+| `KAESO_UPDATES_MODE` | `updates.mode` | Text | `manual` | Wie eine neue Installation Updates über den Updater erhält: `manual`, wobei ein Instanz-Admin jedes startet, oder `automatic`, im Update-Fenster. |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | Text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Woher die Liste der Releases kommt, im Format der Releases-API von GitHub. |
 | `KAESO_UPDATER_URL` | `updater.url` | Text | `http://updater:8081` | Adresse des Updaters. |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | Text, Secret | — | Das Token, das Gateway und Updater teilen, mindestens 32 Zeichen. Ohne es ruft das Gateway den Updater nie auf. |
@@ -195,7 +195,7 @@ Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Da
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | Ganzzahl | `3650` | Längste Aufbewahrung von Inhalten, die eine Organisation wählen darf, höchstens 36500 Tage. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | Bool | `true` | Ob sich Organisationen löschen lassen. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | Ganzzahl | `7` | Tage, die eine gelöschte Organisation wiederherstellbar und schreibgeschützt bleibt, bevor sie endgültig entfernt wird, 1 bis 90. |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | Text | `UTC` | Die IANA-Zeitzone einer neuen Installation, etwa `Europe/Berlin`: Die Konsole zeigt jede Zeit darin. Die Einrichtungsseite setzt sie auf die Zeitzone des ersten Benutzers; Instanz-Admins ändern sie später in den Instanzeinstellungen. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | Text | `UTC` | Die IANA-Zeitzone einer neuen Installation, etwa `Europe/Berlin`: Die Konsole zeigt jede Zeit darin, und automatische Updates richten sich danach. Die Einrichtungsseite setzt sie auf die Zeitzone des ersten Benutzers; Instanz-Admins ändern sie später in den Instanzeinstellungen. |
 
 In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen außerdem auf bestimmte E-Mail-Domains beschränken.
 

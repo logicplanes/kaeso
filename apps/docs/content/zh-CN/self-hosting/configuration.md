@@ -29,7 +29,7 @@ services:
 | `KAESO_PUBLIC_URL` | 否 | 公开 URL 不是 `https://` 加域名时使用，例如在您自己的代理后面。 |
 | `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS`、`KAESO_SMTP_USER`、`KAESO_SMTP_PASSWORD`、`KAESO_SMTP_FROM` | 除非只记录邮件，否则需要 `KAESO_SMTP_HOST` | 网关发送邮件的方式（[电子邮件](#电子邮件)）。 |
 | `KAESO_MAIL_TRANSPORT` | 否 | 设为 `log` 时只记录邮件，不发送。 |
-| `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[一键更新](upgrades.md#一键更新)）。 |
+| `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
 
 密码中只用字母和数字，就像 `openssl rand -hex` 生成的那样，因为它们会写进连接 URL。PostgreSQL 保留卷创建时的密码，之后修改 `POSTGRES_PASSWORD` 会让网关无法登录。ClickHouse 和 Valkey 每次启动时都从 `.env` 读取密码。
@@ -133,7 +133,7 @@ services:
 | --- | --- | --- | --- | --- |
 | `KAESO_UPDATES_CHECK` | `updates.check` | 布尔 | `true` | 每天两次检查 Kaeso 新版本。 |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | 文本 | `stable` | 提供哪些版本：`stable`，或 `prerelease` 同时提供预发布版本。 |
-| `KAESO_UPDATES_APPLY` | `updates.apply` | 布尔 | `false` | 允许实例管理员通过更新器在控制台中应用更新。 |
+| `KAESO_UPDATES_MODE` | `updates.mode` | 文本 | `manual` | 新实例通过更新器获取更新的方式：`manual`，由实例管理员逐次启动；或 `automatic`，在更新窗口内自动安装。 |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | 文本 | `https://api.github.com/repos/logicplanes/kaeso/releases` | 版本列表的来源，格式与 GitHub 的 Releases API 相同。 |
 | `KAESO_UPDATER_URL` | `updater.url` | 文本 | `http://updater:8081` | 更新器的地址。 |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | 文本，机密 | — | 网关和更新器共享的令牌，至少 32 个字符。没有它，网关从不调用更新器。 |
@@ -195,7 +195,7 @@ services:
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期，最多 36500 天。 |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | 布尔 | `true` | 是否可以删除组织。 |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | 整数 | `7` | 已删除的组织在被永久移除前保持可恢复和只读的天数，1 到 90。 |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | 文本 | `UTC` | 新安装的 IANA 时区，例如 `Europe/Berlin`：控制台以该时区显示所有时间。设置页面会将其设为第一位用户的时区；实例管理员之后可在实例设置中更改。 |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | 文本 | `UTC` | 新安装的 IANA 时区，例如 `Europe/Berlin`：控制台以该时区显示所有时间，自动更新也遵循该时区。设置页面会将其设为第一位用户的时区；实例管理员之后可在实例设置中更改。 |
 
 在控制台中，实例管理员还可以只允许特定邮箱域名的用户创建账户和组织。
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, j.started_by, u.name AS started_by_name, j.started_at, j.last_contact_at, j.finished_at FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE $1::uuid IS NULL OR j.id < $1 ORDER BY j.id DESC LIMIT $2",
+  "query": "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, j.started_by, u.name AS started_by_name, j.automatic, j.started_at, j.last_contact_at, j.finished_at FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE $1::uuid IS NULL OR j.id < $1 ORDER BY j.id DESC LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -104,6 +104,17 @@
       },
       {
         "ordinal": 9,
+        "name": "automatic",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "update_jobs",
+            "name": "automatic"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "started_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -114,7 +125,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "last_contact_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "finished_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -153,9 +164,10 @@
       true,
       true,
       false,
+      false,
       true,
       true
     ]
   },
-  "hash": "fca98da289a5fc06c0a2f6bd6462cee6524936761440e38e7144c709df07a2a3"
+  "hash": "6a4a216392fa3dc304248d77ff71f9005964a0ed8e2459a8e508867104545046"
 }

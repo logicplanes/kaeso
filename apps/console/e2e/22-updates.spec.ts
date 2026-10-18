@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { STACK_URLS } from "./stack";
+import { CONSOLE_URL, STACK_URLS } from "./stack";
 import { expect, signInAsOwner, test, toastText } from "./support";
 
 test.describe.configure({ mode: "serial" });
@@ -21,15 +21,23 @@ async function openUpdates(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Updates" })).toBeVisible();
 }
 
-async function checkNow(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Check now" }).click();
+async function lookNow(page: Page): Promise<void> {
+  const res = await page.request.post("/platform/v1/instance/updates/check", { headers: { origin: CONSOLE_URL }, data: {} });
+  expect(res.ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Updates" })).toBeVisible();
 }
 
-test("up to date: a check finds nothing newer", async ({ page }) => {
+async function choose(page: Page, select: string, option: string): Promise<void> {
+  await page.getByRole("combobox", { name: select }).click();
+  await page.getByRole("option", { name: new RegExp(`^${option}`) }).click();
+}
+
+test("up to date: a look finds nothing newer and there is no Check now button", async ({ page }) => {
   await scenario({ releases: "none" });
   await openUpdates(page);
-  await checkNow(page);
-  await expect(toastText(page, "Kaeso is up to date")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check now" })).toHaveCount(0);
+  await lookNow(page);
   await expect(page.getByText("Up to date", { exact: true })).toBeVisible();
   await expect(page.getByText("No updates yet")).toBeVisible();
 });
@@ -37,20 +45,16 @@ test("up to date: a check finds nothing newer", async ({ page }) => {
 test("check failed: the reason shows and nothing changes", async ({ page }) => {
   await scenario({ releases: "error" });
   await openUpdates(page);
-  await checkNow(page);
-  await expect(toastText(page, "Releases couldn't be fetched; try again later")).toBeVisible();
-  await expect(page.getByText("GitHub couldn't be reached; Kaeso tries again later.")).toBeVisible();
+  await lookNow(page);
+  await expect(page.getByText(/^The check .* failed; Kaeso tries again later\.$/)).toBeVisible();
 });
 
-test("one click: an update is confirmed, followed and recorded", async ({ page }) => {
+test("from the console: an update is confirmed, followed and recorded", async ({ page }) => {
   const { versions } = await scenario({ releases: "patch" });
   await openUpdates(page);
-  await checkNow(page);
-  await expect(toastText(page, `Kaeso ${versions.patch} is available`)).toBeVisible();
-  await expect(page.getByText("Turn on one-click updates below to update from here.")).toBeVisible();
+  await lookNow(page);
   await expect(page.locator(`nav[aria-label="Settings"]`).getByText("New", { exact: true })).toBeVisible();
-  await page.getByRole("switch", { name: "One-click updates" }).click();
-  await expect(toastText(page, "One-click updates are on")).toBeVisible();
+  await expect(page.getByRole("switch")).toHaveCount(0);
   await page.getByRole("button", { name: `Update to ${versions.patch}` }).click();
   const confirm = page.getByRole("dialog", { name: `Update to Kaeso ${versions.patch}?` });
   await expect(confirm.getByText(/Back up PostgreSQL and ClickHouse first/)).toBeVisible();
@@ -65,7 +69,7 @@ test("one click: an update is confirmed, followed and recorded", async ({ page }
 test("rolled back: the failure says what runs now", async ({ page }) => {
   const { running } = await scenario({ releases: "patch", outcome: "rolled_back" });
   await openUpdates(page);
-  await checkNow(page);
+  await lookNow(page);
   await page.getByRole("button", { name: /^Update to / }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Update now" }).click();
   const dialog = page.getByRole("dialog");
@@ -76,7 +80,7 @@ test("rolled back: the failure says what runs now", async ({ page }) => {
 test("needs attention: a gateway that may have migrated is left for a person", async ({ page }) => {
   const { running } = await scenario({ releases: "patch", outcome: "needs_attention" });
   await openUpdates(page);
-  await checkNow(page);
+  await lookNow(page);
   await page.getByRole("button", { name: /^Update to / }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Update now" }).click();
   const dialog = page.getByRole("dialog");
@@ -90,42 +94,40 @@ test("needs attention: a gateway that may have migrated is left for a person", a
 test("major release: the upgrade guide instead of a button", async ({ page }) => {
   const { versions } = await scenario({ releases: "major" });
   await openUpdates(page);
-  await checkNow(page);
+  await lookNow(page);
   await expect(page.getByText(`Kaeso ${versions.major} is a new major version: update by hand with the upgrade guide.`)).toBeVisible();
   await expect(page.getByRole("link", { name: /Open the upgrade guide/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Update to / })).toHaveCount(0);
 });
 
-test("manual steps: a release that asks for them is never one click", async ({ page }) => {
+test("manual steps: a release that asks for them is never installed by the updater", async ({ page }) => {
   await scenario({ releases: "manual" });
   await openUpdates(page);
-  await checkNow(page);
+  await lookNow(page);
   await expect(page.getByText("A release on the way asks for steps by hand: follow the upgrade guide.")).toBeVisible();
 });
 
 test("updater away: the commands to update by hand", async ({ page }) => {
   const { versions } = await scenario({ releases: "patch", updater: "down" });
   await openUpdates(page);
-  await checkNow(page);
+  await lookNow(page);
   await expect(page.getByText("The updater doesn't answer; check that its container runs.")).toBeVisible();
   await expect(page.getByText(`releases/download/v${versions.patch}/compose.yaml`, { exact: false })).toBeVisible();
 });
 
-test("settings: checking turns on and off, and pre-releases are offered", async ({ page }) => {
+test("settings: pre-releases are offered and updates install automatically in a window", async ({ page }) => {
   await scenario({ releases: "patch" });
   await openUpdates(page);
-  const check = page.getByRole("switch", { name: "Look for new releases" });
-  await expect(check).not.toBeChecked();
-  await check.click();
-  await expect(toastText(page, "Kaeso looks for releases again")).toBeVisible();
-  await expect(check).toBeChecked();
-  await check.click();
-  await expect(toastText(page, "Kaeso stopped looking for releases")).toBeVisible();
-  await expect(check).not.toBeChecked();
-  await expect(page.getByText("Automatic checks are off.")).toBeVisible();
-  await page.getByRole("combobox", { name: "Releases" }).click();
-  await page.getByRole("option", { name: "With pre-releases" }).click();
+  await choose(page, "Releases", "Stable and pre-releases");
   await expect(toastText(page, "Channel saved")).toBeVisible();
-  await checkNow(page);
+  await lookNow(page);
   await expect(page.getByText("Pre-release", { exact: true })).toBeVisible();
+  await choose(page, "How updates install", "Automatically");
+  await expect(toastText(page, "Updates now install automatically")).toBeVisible();
+  await expect(page.getByText("Update window", { exact: true })).toBeVisible();
+  await choose(page, "How often", "Weekly");
+  await expect(toastText(page, "Update window saved")).toBeVisible();
+  await choose(page, "How updates install", "Manually");
+  await expect(toastText(page, "You now install each update yourself")).toBeVisible();
+  await expect(page.getByText("Update window", { exact: true })).toHaveCount(0);
 });

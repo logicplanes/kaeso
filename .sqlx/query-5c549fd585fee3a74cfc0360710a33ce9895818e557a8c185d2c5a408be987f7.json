@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE update_settings SET channel = $1, auto_window_at = CASE WHEN mode <> $2 OR auto_frequency <> $3 OR auto_weekday <> $4 OR auto_hour <> $5 THEN $6 ELSE auto_window_at END, mode = $2, auto_frequency = $3, auto_weekday = $4, auto_hour = $5, updated_at = now() WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Int2",
+        "Int2",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5c549fd585fee3a74cfc0360710a33ce9895818e557a8c185d2c5a408be987f7"
+}

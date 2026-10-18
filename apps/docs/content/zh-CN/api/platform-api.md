@@ -95,7 +95,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，开启一键更新，应用更新，以及计划删除或删除组织。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。
 
 ## 约定
 

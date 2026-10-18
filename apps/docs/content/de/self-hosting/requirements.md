@@ -15,7 +15,7 @@ Kaeso läuft auf einem Linux-Server mit Docker. Bemessen Sie den Speicherplatz d
 | Arbeitsspeicher | 4 GB, davon nutzt ClickHouse etwa 2 GB |
 | Speicherplatz | 20 GB, dazu Platz für Anfrageprotokolle |
 
-[Updates mit einem Klick](upgrades.md#updates-mit-einem-klick) brauchen außerdem Docker Engine 25 oder neuer.
+[Der Updater](upgrades.md#der-updater) braucht außerdem Docker Engine 25 oder neuer.
 
 ## Netzwerk
 
@@ -27,7 +27,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | `api.openai.com`, `api.anthropic.com` | Die Anbieter, die Sie nutzen |
 | Ausgehend | `models.dev` | Modelldaten, einmal am Tag aktualisiert |
 | Ausgehend | `api.github.com` | Die Suche nach neuen Kaeso-Releases, zweimal am Tag |
-| Ausgehend | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | Updates mit einem Klick |
+| Ausgehend | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | Der Updater |
 | Ausgehend | Ihr SMTP-Server | Anmeldelinks, Einladungen, Warnungen und Sicherheitshinweise ([E-Mail](email.md)) |
 
 Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten sind, und Sie aktualisieren von Hand. Schalten Sie die ausgehenden Abfragen ab, wie [Installationen ohne Internetzugang](upgrades.md#installationen-ohne-internetzugang) zeigt.

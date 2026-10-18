@@ -1,10 +1,10 @@
 ---
 title: Upgrades
-description: Update Kaeso by hand or in one click from the console, and know what happens while it updates.
+description: Update Kaeso by hand, from the console or automatically, and know what happens while it updates.
 order: 8
 ---
 
-Every release gives all parts of Kaeso one version number and follows semantic versioning. Its `compose.yaml` pins the release's images. Update by hand, which always works, or in one click from the console once you add the updater.
+Every release gives all parts of Kaeso one version number and follows semantic versioning. Its `compose.yaml` pins the release's images. Update by hand, which always works, or through the updater: from the console, or automatically in a window you set.
 
 ## Update by hand
 
@@ -25,21 +25,20 @@ docker compose up -d --wait
 
 The command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
-When an update can't happen in one click, the console shows these commands with the exact version.
+When the updater can't install a release, the console shows these commands with the exact version.
 
 ## New releases
 
 The gateway looks for new releases on GitHub twice a day, and at least an hour later after a failure. The request carries nothing about your install but the gateway's version.
 
-Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. **Check now** looks at once, even when checks are off. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
+Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. The Platform API's `instance/updates/check` looks at once, even when checks are off. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| **Look for new releases** | On | Looks for releases twice a day. |
-| **Releases** | **Stable only** | **Pre-release** also offers release candidates. An install that runs a pre-release is offered the stable release that follows it. |
-| **One-click updates** | Off | Lets instance admins apply updates from the console through the updater. |
+| **Releases** | **Stable releases** | **Stable releases and pre-releases** also offers release candidates. An install that runs a pre-release is offered the stable release that follows it. |
+| **How updates install** | **Manually** | **Automatically** installs new releases through the updater in the [update window](#update-automatically). |
 
-On a new install, these settings start from `KAESO_UPDATES_CHECK`, `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_APPLY` ([configuration](configuration.md#updates)). After that, instance admins change them on the page, and the instance audit log records each change.
+On a new install, these settings start from `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_MODE` ([configuration](configuration.md#updates)). After that, instance admins change them on the page, and the instance audit log records each change. Only `KAESO_UPDATES_CHECK` stops the gateway from looking, for installs without internet access.
 
 ### Installs without internet access
 
@@ -55,7 +54,7 @@ services:
 
 The gateway then uses the model data built into the release, the **Updates** page shows the running version, and you update by hand. If you keep a mirror that answers like GitHub's releases API, point `KAESO_UPDATES_RELEASES_URL` at it instead.
 
-## One-click updates
+## The updater
 
 The updater is an optional service in `compose.yaml`, with its own Docker socket proxy. It is the only part of Kaeso that talks to Docker, so it is off until you turn it on.
 
@@ -71,7 +70,7 @@ echo "COMPOSE_PROFILES=updater" >> .env
 docker compose up -d --wait
 ```
 
-2. Turn on **One-click updates** under **Settings** › **Instance** › **Updates**. This needs a sign-in within the last 15 minutes.
+2. Under **Settings** › **Instance** › **Updates**, **Update to …** now updates the install, and **Automatically** lets it update in a window. Both need a sign-in within the last 15 minutes.
 
 The page says when the updater isn't installed, doesn't answer, or is too old for a release. When Docker's socket isn't at `/var/run/docker.sock`, as with rootless Docker, set `DOCKER_SOCKET` in `.env`.
 
@@ -92,15 +91,15 @@ secrets:
     file: ./updater-token
 ```
 
-### Which releases update in one click
+### Which releases the updater installs
 
-A release updates in one click when all of these hold. Otherwise, the console shows its notes and the commands to update by hand.
+The updater installs a release when all of these hold. Otherwise, the console shows its notes and the commands to update by hand.
 
 - It isn't a new major version. A migration that needs a manual step always makes a major version.
 - No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so.
 - It carries `release.json`, the signed manifest the updater reads.
 
-### Update in one click
+### Update from the console
 
 Choose **Update to …** and confirm. The console follows the update step by step, and it takes about a minute:
 
@@ -113,6 +112,12 @@ Choose **Update to …** and confirm. The console follows the update step by ste
 The updater doesn't replace itself while it runs. The next `docker compose up -d --wait` in the install's folder starts its new version. Only one update runs at a time, and the instance audit log records each one.
 
 [Updates](../development/architecture/updates.md) explains how the updater verifies a release and switches containers.
+
+### Update automatically
+
+Under **How updates install**, choose **Automatically**, then set the update window: **Daily**, or **Weekly** on a day, at an hour. The hour is in the install's time zone, set under **General**, daylight saving time included. The window stays open for an hour, and the page shows when the next one opens.
+
+In the window, the gateway looks for releases if it hasn't in the last hour. It then updates to the newest release the updater installs, exactly as **Update to …** would. A new major version or a release with steps by hand waits for you. A window the gateway doesn't run through passes, and the next one counts. The history and the audit log record each automatic update without a person.
 
 ### Results
 

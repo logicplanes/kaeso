@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
-import { available, release, updateJob, updates } from "~/test/fixtures/instance-account";
+import { available, release, updateJob, updateSettings, updates } from "~/test/fixtures/instance-account";
 import { hoverReason } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import type { UpdatesView } from "~/api/generated/types";
 
 const PATH = "/settings/instance/updates";
+
+async function choose(user: Awaited<ReturnType<typeof renderApp>>["user"], select: string, option: string) {
+  await user.click(screen.getByRole("combobox", { name: select }));
+  await user.click(await screen.findByRole("option", { name: new RegExp(`^${option}`) }));
+}
 
 function history(jobs: ReturnType<typeof updateJob>[] = []) {
   on("GET", "instance/updates/jobs", page(jobs));
@@ -45,8 +50,9 @@ describe("instance updates page", () => {
     await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "Updates", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("Up to date")).toBeInTheDocument();
-    expect(screen.getByText("40.4.2")).toBeInTheDocument();
-    expect(screen.getByText("Kaeso looks for new releases twice a day.")).toBeInTheDocument();
+    expect(screen.getByText("Kaeso 40.4.2")).toBeInTheDocument();
+    expect(screen.getByText(/^Checked .*; Kaeso looks twice a day\.$/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check now" })).not.toBeInTheDocument();
     expect(await screen.findByText("No updates yet")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
   });
@@ -62,7 +68,7 @@ describe("instance updates page", () => {
       return polls < 2 ? updateJob({ step: "migrating" }) : updateJob({ state: "succeeded", step: "online", finished_at: "2026-10-15T12:01:00Z" });
     });
     const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Update available")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Update to 40.4.3" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kaeso 40.4.3" })).toBeInTheDocument();
     const notes = screen.getByRole("region", { name: "Release notes of 40.4.3" });
     expect(within(notes).getByText("Streams keep their last chunk when a provider closes early.")).toBeInTheDocument();
@@ -280,8 +286,7 @@ describe("instance updates page", () => {
     [{ updater: { state: "not_installed", version: null } }, "The updater isn't installed, so this install updates by hand."],
     [{ updater: { state: "unreachable", version: null } }, "The updater doesn't answer; check that its container runs."],
     [{ updater: { state: "outdated", version: "40.4.0" } }, "The updater is too old for this release; update by hand once."],
-    [{ settings: { check: true, channel: "stable", apply: false } }, "Turn on one-click updates below to update from here."],
-  ] as const)("shows the commands to update by hand when one click can't (%#)", async (change, reason) => {
+  ] as const)("shows the commands to update by hand when the updater can't (%#)", async (change, reason) => {
     signedIn();
     on("GET", "instance/updates", available({ can_apply: false, ...change }));
     history();
@@ -289,13 +294,11 @@ describe("instance updates page", () => {
     expect(await screen.findByText(reason)).toBeInTheDocument();
     expect(screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/)).toBeInTheDocument();
     expect(document.body.textContent).toContain("docker compose up -d --wait");
-    expect(screen.getByRole("link", { name: /Set up one-click updates/ })).toHaveAttribute(
-      "href",
-      "https://docs.kaeso.app/self-hosting/upgrades#one-click-updates",
-    );
+    for (const link of screen.getAllByRole("link", { name: /Set up the updater/ }))
+      expect(link).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades#the-updater");
   });
 
-  it("says when the last check failed and checks again on request", async () => {
+  it("says when the last check failed", async () => {
     signedIn();
     on(
       "GET",
@@ -311,34 +314,27 @@ describe("instance updates page", () => {
       }),
     );
     history();
-    on("POST", "instance/updates/check", available());
     const { user } = await renderApp(PATH);
-    const failed = await screen.findByText(/^Failed /);
-    expect(screen.getByText("GitHub couldn't be reached; Kaeso tries again later.")).toBeInTheDocument();
+    const failed = await screen.findByText(/^The check .* failed; Kaeso tries again later\.$/);
     expect(screen.getByText("Not checked yet")).toBeInTheDocument();
     await hoverReason(user, failed, "api.github.com can't be reached: no connection");
-    await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(await screen.findByText("Kaeso 40.4.3 is available")).toBeInTheDocument();
-    expect(requests("POST", "instance/updates/check")).toHaveLength(1);
   });
 
-  it.each([
-    [null, "Kaeso is up to date"],
-    ["api.github.com answered 500", "Releases couldn't be fetched; try again later"],
-  ])("toasts what a check found (%s)", async (error, toast) => {
+  it("says when it never looked and that checks are off", async () => {
     signedIn();
-    on("GET", "instance/updates", updates({ check: { last_checked_at: null, last_success_at: null, next_check_at: null, error: null } }));
+    on(
+      "GET",
+      "instance/updates",
+      updates({ settings: updateSettings({ check: false }), check: { last_checked_at: null, last_success_at: null, next_check_at: null, error: null } }),
+    );
     history();
-    on("POST", "instance/updates/check", updates({ check: { last_checked_at: null, last_success_at: null, next_check_at: null, error } }));
-    const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Never")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(await screen.findByText(toast)).toBeInTheDocument();
+    await renderApp(PATH);
+    expect(await screen.findByText("Checking is off in the gateway's configuration.")).toBeInTheDocument();
   });
 
   it("changes the settings and says what changed", async () => {
     signedIn();
-    let current: UpdatesView["settings"] = { check: false, channel: "stable", apply: false };
+    let current = updateSettings();
     on("GET", "instance/updates", () => updates({ settings: current }));
     history();
     on("PATCH", "instance/updates/settings", ({ body }: { body: Partial<UpdatesView["settings"]> }) => {
@@ -346,29 +342,91 @@ describe("instance updates page", () => {
       return updates({ settings: current });
     });
     const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Automatic checks are off.")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Look for new releases" }));
-    expect(await screen.findByText("Kaeso looks for releases again")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "One-click updates" }));
-    expect(await screen.findByText("One-click updates are on")).toBeInTheDocument();
-    await user.click(screen.getByRole("combobox", { name: "Releases" }));
-    await user.click(await screen.findByRole("option", { name: "With pre-releases" }));
+    await choose(user, "Releases", "Stable and pre-releases");
     expect(await screen.findByText("Channel saved")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Look for new releases" }));
-    expect(await screen.findByText("Kaeso stopped looking for releases")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "One-click updates" }));
-    expect(await screen.findByText("One-click updates are off")).toBeInTheDocument();
-    await user.click(screen.getByRole("combobox", { name: "Releases" }));
-    await user.click(await screen.findByRole("option", { name: "Stable only" }));
-    await waitFor(() => expect(requests("PATCH", "instance/updates/settings")).toHaveLength(6));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Releases" })).toHaveTextContent("Stable and pre-releases"));
+    await choose(user, "Releases", "Stable releases");
+    await waitFor(() => expect(requests("PATCH", "instance/updates/settings")).toHaveLength(2));
+    expect(requests("PATCH", "instance/updates/settings").map((r) => r.body)).toEqual([{ channel: "prerelease" }, { channel: "stable" }]);
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.queryByText("Updater")).not.toBeInTheDocument();
+  });
+
+  it("says when the updater doesn't answer", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ can_apply: false, updater: { state: "unreachable", version: null } }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByText("The updater doesn't answer; check that its container runs.")).toBeInTheDocument();
+    expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
+  });
+
+  it("needs the updater before updates can install automatically", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ updater: { state: "not_installed", version: null } }));
+    history();
+    const { user } = await renderApp(PATH);
+    const mode = await screen.findByRole("combobox", { name: "How updates install" });
+    expect(mode).toHaveTextContent("Manually");
+    await user.click(mode);
+    expect(await screen.findByRole("option", { name: /Automatically/ })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText("Update window")).not.toBeInTheDocument();
+  });
+
+  it("installs updates automatically in the window you set", async () => {
+    signedIn();
+    let current = updateSettings();
+    on("GET", "instance/updates", () => updates({ settings: current }));
+    history();
+    on("PATCH", "instance/updates/settings", ({ body }: { body: Partial<UpdatesView["settings"]> }) => {
+      current = {
+        ...current,
+        ...body,
+        schedule: { ...current.schedule, ...(body.schedule ?? {}), timezone: "Europe/Berlin" },
+        next_auto_update_at: "2026-10-18T01:00:00Z",
+      };
+      return updates({ settings: current });
+    });
+    const { user } = await renderApp(PATH);
+    await choose(user, "How updates install", "Automatically");
+    expect(await screen.findByText("Updates now install automatically")).toBeInTheDocument();
+    expect(await screen.findByText("Update window")).toBeInTheDocument();
+    expect(screen.getByText("Next 18 Oct 2026, 01:00, Europe/Berlin time.")).toBeInTheDocument();
+    await choose(user, "How often", "Weekly");
+    expect(await screen.findByText("Update window saved")).toBeInTheDocument();
+    await choose(user, "Day", "Sunday");
+    await choose(user, "Time", "05:00");
+    await waitFor(() => expect(requests("PATCH", "instance/updates/settings")).toHaveLength(4));
+    await choose(user, "How often", "Daily");
+    await waitFor(() => expect(requests("PATCH", "instance/updates/settings")).toHaveLength(5));
+    await choose(user, "How updates install", "Manually");
+    expect(await screen.findByText("You now install each update yourself")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Update window")).not.toBeInTheDocument());
     expect(requests("PATCH", "instance/updates/settings").map((r) => r.body)).toEqual([
-      { check: true },
-      { apply: true },
-      { channel: "prerelease" },
-      { check: false },
-      { apply: false },
-      { channel: "stable" },
+      { mode: "automatic" },
+      { schedule: { frequency: "weekly", weekday: "monday", hour: 3 } },
+      { schedule: { frequency: "weekly", weekday: "sunday", hour: 3 } },
+      { schedule: { frequency: "weekly", weekday: "sunday", hour: 5 } },
+      { schedule: { frequency: "daily", weekday: "sunday", hour: 5 } },
+      { mode: "manual" },
     ]);
+  });
+
+  it("says when no window is planned and when the updater is ready without a version", async () => {
+    signedIn();
+    on(
+      "GET",
+      "instance/updates",
+      updates({
+        settings: updateSettings({ mode: "automatic", next_auto_update_at: null }),
+        check: { last_checked_at: null, last_success_at: null, next_check_at: null, error: null },
+        state: "unknown",
+      }),
+    );
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByText("No window planned; UTC time.")).toBeInTheDocument();
+    expect(screen.getByText("Not checked yet; Kaeso looks twice a day.")).toBeInTheDocument();
   });
 
   it("lists past updates with who started them and how they ended", async () => {
@@ -378,13 +436,24 @@ describe("instance updates page", () => {
       updateJob({ id: "upd_3", state: "rollback_failed", reason: "unhealthy", finished_at: "2026-10-15T12:05:00Z" }),
       updateJob({ id: "upd_2", state: "failed", reason: "unverified", started_by: null, finished_at: "2026-10-15T12:04:00Z" }),
       updateJob({ id: "upd_1", state: "succeeded", step: "online", from: "40.4.1", to: "40.4.2", finished_at: "2026-10-15T12:03:00Z" }),
+      updateJob({
+        id: "upd_0",
+        state: "succeeded",
+        step: "online",
+        from: "40.4.0",
+        to: "40.4.1",
+        started_by: null,
+        automatic: true,
+        finished_at: "2026-10-14T03:03:00Z",
+      }),
     ]);
     const { user } = await renderApp(PATH);
     const table = await screen.findByRole("table", { name: "History" });
     expect(await within(table).findByText("40.4.1 to 40.4.2")).toBeInTheDocument();
-    expect(within(table).getByText("Updated")).toBeInTheDocument();
+    expect(within(table).getAllByText("Updated")).toHaveLength(2);
     expect(within(table).getByText("Rollback failed")).toBeInTheDocument();
     expect(within(table).getByText("Deleted user")).toBeInTheDocument();
+    expect(within(table).getByText("Automatically")).toBeInTheDocument();
     await hoverReason(user, within(table).getByText("Not installed"), "The release's signatures didn't check out, so nothing was installed.");
   });
 

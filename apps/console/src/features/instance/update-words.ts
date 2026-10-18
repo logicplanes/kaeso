@@ -1,7 +1,7 @@
 import type { UpdateJobView } from "~/api/generated/types";
 import { t } from "~/i18n";
 
-export const UPDATER_DOCS = "https://docs.kaeso.app/self-hosting/upgrades#one-click-updates";
+export const UPDATER_DOCS = "https://docs.kaeso.app/self-hosting/upgrades#the-updater";
 export const BACKUP_DOCS = "https://docs.kaeso.app/self-hosting/backups";
 
 export const STEPS = ["verifying", "downloading", "switching", "migrating", "online"] as const;
