@@ -116,6 +116,34 @@ export function placeholders(message) {
   return [...found].sort().join(" ");
 }
 
+export const SAME_AS_ENGLISH = new Set(["kaeso.audit.jsonLines", "logs.param.topK", "logs.param.topP"]);
+
+const visible = (text) =>
+  text
+    .replace(/`[^`]*`/g, " ")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/\{[^{}]*\}/g, " ")
+    .replace(/\{[^{}]*\}/g, " ");
+
+const INFORMAL = /(^|[^\p{L}])(du|dich|dir|dein|deine|deinen|deinem|deiner|deines)(?![\p{L}])/iu;
+const HAN = "\\u4e00-\\u9fff";
+const ASCII_BESIDE_HAN = new RegExp(`[${HAN}][,;:?!()]|[,;:?!(][${HAN}]`);
+
+export function styleProblems(locale, key, english, translated) {
+  const text = visible(translated);
+  const problems = [];
+  if (translated === english && !key.endsWith("Example") && !SAME_AS_ENGLISH.has(key)) {
+    const words = text.match(/[A-Za-z]+/g) ?? [];
+    const kept = locale === "de" ? words.length <= 1 : words.every((w) => w === "Kaeso" || /^[A-Z]{2,}$/.test(w));
+    if (!kept) problems.push("is still the English");
+  }
+  if (/"/.test(text)) problems.push(`uses straight quotes; write ${locale === "de" ? "„…“" : "“…”"}`);
+  if (locale === "de" && INFORMAL.test(text)) problems.push("says „du“; address the reader with „Sie“");
+  if (locale === "zh-CN" && text.includes("你")) problems.push("says 你; address the reader with 您");
+  if (locale === "zh-CN" && ASCII_BESIDE_HAN.test(text)) problems.push("uses ASCII punctuation in Chinese text; use full-width punctuation");
+  return problems;
+}
+
 export function check({ write = false } = {}) {
   const { keys, problems } = extract();
   const byArea = new Map(AREAS.map((a) => [a, new Map()]));
@@ -139,6 +167,7 @@ export function check({ write = false } = {}) {
         if (typeof translated !== "string" || !translated.trim()) problems.push(`${file}: "${key}" is missing (${JSON.stringify(text)})`);
         else if (placeholders(translated) !== placeholders(text))
           problems.push(`${file}: "${key}" has placeholders {${placeholders(translated)}}, the English {${placeholders(text)}}`);
+        else for (const problem of styleProblems(locale, key, text, translated)) problems.push(`${file}: "${key}" ${problem} (${JSON.stringify(translated)})`);
       }
       for (const key of Object.keys(catalog)) if (!english.has(key)) problems.push(`${file}: "${key}" is not used in the source`);
     }

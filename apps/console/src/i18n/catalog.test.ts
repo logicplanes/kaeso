@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { check, placeholders } from "../../scripts/i18n.mjs";
+import { check, placeholders, styleProblems } from "../../scripts/i18n.mjs";
 import { formatMessage } from "@logicplanes/kaeso-ui/i18n";
 import { resolve } from "./index";
 
 describe("the console's catalogs", () => {
   it("have every key of the source in German and Chinese, with the same placeholders", () => {
     expect(check().problems).toEqual([]);
+  });
+
+  it("refuse English left in a translation, informal German, 你 and ASCII punctuation in Chinese", () => {
+    expect(styleProblems("de", "keys.create", "Create key", "Create key")).toEqual(["is still the English"]);
+    expect(styleProblems("zh-CN", "common.cancel", "Cancel", "Cancel")).toEqual(["is still the English"]);
+    expect(styleProblems("de", "common.status", "Status", "Status")).toEqual([]);
+    expect(styleProblems("zh-CN", "kaeso.audit.ip", "IP", "IP")).toEqual([]);
+    expect(styleProblems("de", "org.invite.failed", "{email}: {message}", "{email}: {message}")).toEqual([]);
+    expect(styleProblems("zh-CN", "org.sso.domainExample", "example.com", "example.com")).toEqual([]);
+    expect(styleProblems("de", "logs.param.topK", "Top k", "Top k")).toEqual([]);
+    expect(styleProblems("de", "a.b", "Ask {name}", "Fragen Sie {name}")).toEqual([]);
+    expect(styleProblems("de", "a.b", "Your keys", "Deine Schlüssel")).toEqual(["says „du“; address the reader with „Sie“"]);
+    expect(styleProblems("de", "a.b", "Use `du -sh`", "`du -sh` verwenden")).toEqual([]);
+    expect(styleProblems("de", "a.b", 'Type "delete"', 'Zur Bestätigung "löschen" eingeben')).toEqual(["uses straight quotes; write „…“"]);
+    expect(styleProblems("zh-CN", "a.b", "Your keys", "你的密钥")).toEqual(["says 你; address the reader with 您"]);
+    expect(styleProblems("zh-CN", "a.b", "Saved, done", "已保存,完成")).toEqual(["uses ASCII punctuation in Chinese text; use full-width punctuation"]);
+    expect(styleProblems("zh-CN", "a.b", "Send `a, b`", "请发送 `a, b`。")).toEqual([]);
   });
 
   it("read placeholders through plural and select branches", () => {
