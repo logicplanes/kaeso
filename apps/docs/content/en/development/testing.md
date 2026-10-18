@@ -307,7 +307,7 @@ On a pull request, the first job decides which areas changed, and the jobs of un
 | TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check`; the built libraries and sites are what the end-to-end jobs test |
 | End-to-end console (1/3, 2/3, 3/3) | `pnpm --filter kaeso-console e2e` in three parts against the gateway image, each part on a stack of its own |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
-| End-to-end showcase (1/6 to 6/6) | `pnpm --filter kaeso-showcase e2e` in six shards (`playwright test --shard`) against the showcase built by TypeScript build |
+| End-to-end showcase (chromium 1/8 to 8/8, webkit 1/1) | `pnpm --filter kaeso-showcase e2e` against the showcase built by TypeScript build: the `chromium` project in eight shards (`playwright test --shard`), the `webkit` project in a job of its own |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 | CI | The required check |
 
@@ -318,7 +318,7 @@ Each job starts as soon as the jobs it uses have finished, and none builds what 
 - **TypeScript build** builds the libraries and both sites once and hands them on as artifacts. It runs whenever End-to-end console runs, so for Rust and deployment changes too.
 - The three image jobs run side by side. End-to-end console starts once Images (gateway) and TypeScript build have finished; the install test waits for all three images.
 - The console's unit tests take longest of all TypeScript tests, so they run in three shards. Each shard runs with its thresholds off, since a third of the tests covers only part of the code; **TypeScript test (console coverage)** merges what the shards recorded and applies the thresholds of `apps/console/vitest.config.ts` to the whole, as `pnpm test` does.
-- The showcase's tests are independent of each other and run in six shards with Playwright's `--shard`.
+- The showcase's tests are independent of each other. The `chromium` project runs in eight shards with Playwright's `--shard`; the `webkit` project, which has only the navigation sheet's tests, runs in a job of its own, so only that job installs WebKit and the system packages it needs.
 - The console's specs build on each other, so `--shard` can't split them. Each part starts its own stack and runs `01-public` first, then the specs whose data comes only from the specs before them in the same part: part 1 the project's pages (`02-models` to `08-palette`, `11-instance`, `13-keyboard`, `16-period`), part 2 the organization (`02-models`, `04-members`, `10-org`, `12-lifecycle`, `19-roles`), part 3 every other spec. A new spec runs in part 3 unless `PART_1` or `PART_2` in the workflow names it, and a name there without a spec fails the job.
 - When a shard or part fails, **End-to-end showcase report** or **End-to-end console report** merges the shards' blob reports into one HTML report, the artifact `playwright-showcase` or `playwright-console`. These two jobs aren't part of the required check.
 

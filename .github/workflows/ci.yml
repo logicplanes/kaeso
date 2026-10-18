@@ -988,7 +988,7 @@ jobs:
           retention-days: 7
 
   e2e-showcase:
-    name: End-to-end showcase (${{ matrix.shard }}/6)
+    name: End-to-end showcase (${{ matrix.project }} ${{ matrix.shard }}/${{ matrix.shards }})
     needs: [changes, node-build]
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
@@ -996,7 +996,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        project: [chromium]
+        shards: [8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        include:
+          - project: webkit
+            shards: 1
+            shard: 1
+    env:
+      PROJECT: ${{ matrix.project }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -1022,18 +1030,18 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
-      - run: pnpm --filter kaeso-showcase exec playwright install --with-deps chromium webkit
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ matrix.project }}
+      - run: pnpm --filter kaeso-showcase exec playwright install --with-deps "$PROJECT"
       - name: Playwright
         env:
-          SHARD: ${{ matrix.shard }}
+          SHARD: ${{ matrix.shard }}/${{ matrix.shards }}
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ runner.temp }}/blob-report
-          PLAYWRIGHT_BLOB_OUTPUT_NAME: showcase-${{ matrix.shard }}.zip
-        run: pnpm --filter kaeso-showcase exec playwright test --shard="$SHARD/6" --reporter=list,github,blob
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: showcase-${{ matrix.project }}-${{ matrix.shard }}.zip
+        run: pnpm --filter kaeso-showcase exec playwright test --project="$PROJECT" --shard="$SHARD" --reporter=list,github,blob
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
-          name: blob-showcase-${{ matrix.shard }}
+          name: blob-showcase-${{ matrix.project }}-${{ matrix.shard }}
           path: ${{ runner.temp }}/blob-report
           if-no-files-found: ignore
           retention-days: 1

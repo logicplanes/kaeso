@@ -307,7 +307,7 @@ Bei einem Pull Request entscheidet der erste Job, welche Bereiche sich geändert
 | TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check`; die gebauten Bibliotheken und Websites testen die End-to-End-Jobs |
 | End-to-end console (1/3, 2/3, 3/3) | `pnpm --filter kaeso-console e2e` in drei Teilen gegen das Gateway-Image, jeder Teil auf einem eigenen Stack |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
-| End-to-end showcase (1/6 bis 6/6) | `pnpm --filter kaeso-showcase e2e` in sechs Shards (`playwright test --shard`) gegen den Showcase, den TypeScript build gebaut hat |
+| End-to-end showcase (chromium 1/8 bis 8/8, webkit 1/1) | `pnpm --filter kaeso-showcase e2e` gegen den Showcase, den TypeScript build gebaut hat: das Projekt `chromium` in acht Shards (`playwright test --shard`), das Projekt `webkit` in einem eigenen Job |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 | CI | Die Pflichtprüfung |
 
@@ -318,7 +318,7 @@ Jeder Job startet, sobald die Jobs fertig sind, deren Ergebnisse er nutzt, und k
 - **TypeScript build** baut die Bibliotheken und beide Websites einmal und gibt sie als Artefakte weiter. Der Job läuft immer, wenn End-to-end console läuft, also auch bei Änderungen an Rust und am Deployment.
 - Die drei Image-Jobs laufen nebeneinander. End-to-end console startet, sobald Images (gateway) und TypeScript build fertig sind; der Installationstest wartet auf alle drei Images.
 - Die Unit-Tests der Konsole dauern von allen TypeScript-Tests am längsten und laufen deshalb in drei Shards. Jeder Shard läuft ohne Schwellen, weil ein Drittel der Tests nur einen Teil des Codes abdeckt; **TypeScript test (console coverage)** führt zusammen, was die Shards aufgezeichnet haben, und wendet die Schwellen aus `apps/console/vitest.config.ts` auf das Ganze an, wie `pnpm test` es tut.
-- Die Tests des Showcases hängen nicht voneinander ab und laufen in sechs Shards mit Playwrights `--shard`.
+- Die Tests des Showcases hängen nicht voneinander ab. Das Projekt `chromium` läuft in acht Shards mit Playwrights `--shard`; das Projekt `webkit`, das nur die Tests des Navigations-Sheets enthält, läuft in einem eigenen Job, sodass nur dieser Job WebKit und die dafür nötigen Systempakete installiert.
 - Die Specs der Konsole bauen aufeinander auf, deshalb kann `--shard` sie nicht aufteilen. Jeder Teil startet einen eigenen Stack und führt zuerst `01-public` aus, dann die Specs, deren Daten nur aus den Specs vor ihnen im selben Teil stammen: Teil 1 die Seiten des Projekts (`02-models` bis `08-palette`, `11-instance`, `13-keyboard`, `16-period`), Teil 2 die Organisation (`02-models`, `04-members`, `10-org`, `12-lifecycle`, `19-roles`), Teil 3 jede andere Spec. Eine neue Spec läuft in Teil 3, solange `PART_1` oder `PART_2` im Workflow sie nicht nennt, und ein Name dort ohne Spec lässt den Job fehlschlagen.
 - Schlägt ein Shard oder Teil fehl, führt **End-to-end showcase report** oder **End-to-end console report** die Blob-Berichte der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-showcase` oder `playwright-console`. Diese beiden Jobs gehören nicht zur Pflichtprüfung.
 
