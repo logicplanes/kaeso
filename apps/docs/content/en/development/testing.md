@@ -81,7 +81,7 @@ node apps/console/scripts/stack.mjs up --e2e
 KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 ```
 
-The specs build on each other, starting with `01-public`, which sets the install up. CI runs them in three parts, and a new spec runs in part 3 unless `PART_1` or `PART_2` in `.github/workflows/ci.yml` names it. A test fails on any error the browser reports, including a `console.error`, so specs import `test` and `expect` from `apps/console/e2e/support.ts`.
+The specs build on each other, starting with `01-public`, which sets the install up. CI runs them in five parts, and a new spec runs in part 5 unless `PART_1`, `PART_2`, `PART_3` or `PART_4` in `.github/workflows/ci.yml` names it. A test fails on any error the browser reports, including a `console.error`, so specs import `test` and `expect` from `apps/console/e2e/support.ts`.
 
 ### The documentation site
 
@@ -271,9 +271,9 @@ The one required check is **CI**. It passes when **Changes** and **No comments**
 | TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
 | TypeScript libraries | `pnpm build:packages`, once for every job that needs the libraries |
-| TypeScript test | `pnpm test`, one job per workspace, the console's in three shards whose coverage is merged and checked in one more job |
+| TypeScript test | `pnpm test`, one job per workspace, the console's in six shards whose coverage is merged and checked in one more job |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check` |
-| End-to-end console, docs and showcase | Each package's `e2e`, the console's in three parts and the showcase's in shards |
+| End-to-end console, docs and showcase | Each package's `e2e`, the console's in five parts and the showcase's in shards, its accessibility checks in shards of their own |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 When an end-to-end shard fails, the job **End-to-end console report** or **End-to-end showcase report** merges the shards' results into one HTML report, the artifact `playwright-console` or `playwright-showcase`.

@@ -788,7 +788,7 @@ jobs:
           fi
 
   node-test-console:
-    name: TypeScript test (console ${{ matrix.shard }}/3)
+    name: TypeScript test (console ${{ matrix.shard }}/6)
     needs: [changes, libraries]
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
@@ -796,7 +796,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6]
     env:
       SHARD: ${{ matrix.shard }}
     steps:
@@ -815,8 +815,8 @@ jobs:
           name: libraries
           path: packages
       - run: pnpm --filter kaeso-console generate
-      - name: A third of the tests, recording their coverage for TypeScript test (console coverage)
-        run: pnpm --filter kaeso-console exec vitest run --coverage --coverage.thresholds=false --shard="$SHARD/3" --reporter=default --reporter=blob --outputFile.blob="$RUNNER_TEMP/vitest/blob-$SHARD.json"
+      - name: A sixth of the tests, recording their coverage for TypeScript test (console coverage)
+        run: pnpm --filter kaeso-console exec vitest run --coverage --coverage.thresholds=false --shard="$SHARD/6" --reporter=default --reporter=blob --outputFile.blob="$RUNNER_TEMP/vitest/blob-$SHARD.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: vitest-console-${{ matrix.shard }}
@@ -846,7 +846,7 @@ jobs:
           pattern: vitest-console-*
           merge-multiple: true
           path: ${{ runner.temp }}/vitest
-      - name: Every test of the three shards passed, and their coverage meets the console's thresholds
+      - name: Every test of the six shards passed, and their coverage meets the console's thresholds
         run: pnpm --filter kaeso-console exec vitest run --merge-reports="$RUNNER_TEMP/vitest" --coverage
       - name: Coverage summary
         if: always()
@@ -896,7 +896,7 @@ jobs:
           retention-days: 3
 
   e2e-console:
-    name: End-to-end console (${{ matrix.part }}/3)
+    name: End-to-end console (${{ matrix.part }}/5)
     needs: [changes, libraries, image-gateway]
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
@@ -904,31 +904,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3]
+        part: [1, 2, 3, 4, 5]
     env:
       KAESO_GATEWAY_IMAGE: kaeso-gateway:ci
       PART: ${{ matrix.part }}
-      PART_1: 02-models 03-keys 04-members 05-limits 06-logs 07-project-settings 08-palette 11-instance 13-keyboard 16-period
-      PART_2: 02-models 04-members 10-org 12-lifecycle 19-roles
+      PART_1: 02-models 03-keys 04-members 05-limits 06-logs 08-palette 13-keyboard
+      PART_2: 02-models 04-members 10-org 11-instance
+      PART_3: 02-models 04-members 12-lifecycle 19-roles
+      PART_4: 09-account 14-sso 15-project-switch 16-period 17-playground 18-accounts
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Pull the stack's images while the job sets up
+        run: nohup docker compose -f deploy/compose.dev.yaml --profile console --profile sso pull --quiet --ignore-buildable > "$RUNNER_TEMP/pull.log" 2>&1 &
       - id: specs
         name: The specs of this part, after 01-public on a stack of its own
         working-directory: apps/console
         run: |
           set -euo pipefail
-          for name in $PART_1 $PART_2; do
+          named="$PART_1 $PART_2 $PART_3 $PART_4"
+          for name in $named; do
             if [[ ! -f "e2e/$name.spec.ts" ]]; then
-              echo "::error::e2e/$name.spec.ts is named in PART_1 or PART_2 but doesn't exist."
+              echo "::error::e2e/$name.spec.ts is named in PART_1, PART_2, PART_3 or PART_4 but doesn't exist."
               exit 1
             fi
           done
           case "$PART" in
             1) names="$PART_1" ;;
             2) names="$PART_2" ;;
-            *) names="$(for file in e2e/*.spec.ts; do name="$(basename "$file" .spec.ts)"; [[ "$name" == 01-public || " $PART_1 $PART_2 " == *" $name "* ]] || echo "$name"; done)" ;;
+            3) names="$PART_3" ;;
+            4) names="$PART_4" ;;
+            *) names="$(for file in e2e/*.spec.ts; do name="$(basename "$file" .spec.ts)"; [[ "$name" == 01-public || " $named " == *" $name "* ]] || echo "$name"; done)" ;;
           esac
           specs="e2e/01-public.spec.ts"
           for name in $names; do specs="$specs e2e/$name.spec.ts"; done
@@ -1056,15 +1063,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [chromium]
-        shards: [8]
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        project: [chromium, a11y]
+        shards: [5]
+        shard: [1, 2, 3, 4, 5]
         include:
+          - project: chromium
+            browser: chromium
+          - project: a11y
+            browser: chromium
           - project: webkit
+            browser: webkit
             shards: 1
             shard: 1
     env:
       PROJECT: ${{ matrix.project }}
+      BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -1090,8 +1103,8 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ matrix.project }}
-      - run: pnpm --filter kaeso-showcase exec playwright install --with-deps "$PROJECT"
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
+      - run: pnpm --filter kaeso-showcase exec playwright install --with-deps "$BROWSER"
       - name: Playwright
         env:
           SHARD: ${{ matrix.shard }}/${{ matrix.shards }}

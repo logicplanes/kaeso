@@ -81,7 +81,7 @@ node apps/console/scripts/stack.mjs up --e2e
 KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 ```
 
-Die Specs bauen aufeinander auf, beginnend mit `01-public`, das die Installation einrichtet. CI führt sie in drei Teilen aus, und eine neue Spec läuft in Teil 3, sofern `PART_1` oder `PART_2` in `.github/workflows/ci.yml` sie nicht nennt. Ein Test schlägt bei jedem Fehler fehl, den der Browser meldet, auch bei einem `console.error`. Specs importieren deshalb `test` und `expect` aus `apps/console/e2e/support.ts`.
+Die Specs bauen aufeinander auf, beginnend mit `01-public`, das die Installation einrichtet. CI führt sie in fünf Teilen aus, und eine neue Spec läuft in Teil 5, sofern `PART_1`, `PART_2`, `PART_3` oder `PART_4` in `.github/workflows/ci.yml` sie nicht nennt. Ein Test schlägt bei jedem Fehler fehl, den der Browser meldet, auch bei einem `console.error`. Specs importieren deshalb `test` und `expect` aus `apps/console/e2e/support.ts`.
 
 ### Die Dokumentations-Website
 
@@ -271,9 +271,9 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` und `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
 | TypeScript libraries | `pnpm build:packages`, einmal für jeden Job, der die Bibliotheken braucht |
-| TypeScript test | `pnpm test`, ein Job pro Workspace; die Konsole in drei Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
+| TypeScript test | `pnpm test`, ein Job pro Workspace; die Konsole in sechs Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check` |
-| End-to-end console, docs und showcase | Das `e2e` jedes Pakets; die Konsole in drei Teilen, der Showcase in Shards |
+| End-to-end console, docs und showcase | Das `e2e` jedes Pakets; die Konsole in fünf Teilen, der Showcase in Shards, seine Barrierefreiheitsprüfungen in eigenen Shards |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 Schlägt ein End-to-End-Shard fehl, führt der Job **End-to-end console report** oder **End-to-end showcase report** die Ergebnisse der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-console` oder `playwright-showcase`.
