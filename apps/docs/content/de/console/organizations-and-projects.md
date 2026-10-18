@@ -8,7 +8,7 @@ Eine Organisation umfasst Mitglieder, Anbieter-Schlüssel und Projekte. Ein Proj
 
 ## Organisation erstellen
 
-Öffnen Sie das Menü am Fuß der Seitenleiste und wählen Sie **Organisation erstellen**. Sie werden Inhaber der neuen Organisation, und sie beginnt mit einem Standardprojekt. Wer Organisationen erstellen darf, legt die Installation fest ([Instanzeinstellungen](instance-administration.md#einstellungen)).
+Öffnen Sie das Menü am Fuß der Seitenleiste und wählen Sie **Organisation erstellen**. Sie werden Inhaber der neuen Organisation, und sie beginnt mit einem Standardprojekt. Wer Organisationen erstellen darf, legt die Installation fest ([Instanzeinstellungen](instance-administration.md#installationseinstellungen-ändern)).
 
 Dasselbe Menü listet Ihre Organisationen und wechselt zwischen ihnen.
 

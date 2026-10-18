@@ -1,59 +1,76 @@
 ---
 title: Konto und Sprache
-description: Profil, Passwort, Zwei-Faktor-Authentifizierung, Sitzungen, Design und Sprache des eigenen Kontos.
+description: Schützen Sie Ihr Konto, melden Sie andere Browser ab und wählen Sie Design und Sprache.
 order: 9
 ---
 
-Das eigene Konto liegt unter **Konto** im Menü am Fuß der Seitenleiste:
+Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat diese Seiten:
 
 | Seite | Inhalt |
 | --- | --- |
-| Profil | Bild, Name, E-Mail-Adresse und Konto-ID; das Konto löschen |
+| Profil | Bild, Name, E-Mail-Adresse und Konto-ID sowie das Löschen des Kontos |
 | Sicherheit | Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes |
-| Sitzungen | Die Browser, in denen man angemeldet ist |
-| API-Schlüssel | Die eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
-| Mitgliedschaften | Die eigenen Organisationen und ihre Projekte mit den eigenen Rollen; eine Organisation verlassen |
-| Benachrichtigungen | Welche E-Mails man erhält |
+| Sitzungen | Die Browser, in denen Sie angemeldet sind |
+| API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
+| Mitgliedschaften | Ihre Organisationen und deren Projekte mit Ihren Rollen sowie das Verlassen einer Organisation |
+| Benachrichtigungen | Welche E-Mails Sie erhalten |
 | Darstellung | Design und Sprache |
 
-## E-Mail-Adresse
+## E-Mail-Adresse ändern
 
-**E-Mail ändern** sendet einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald der Link geöffnet wird. Sie erfordert eine kürzliche Anmeldung.
+Wählen Sie unter **Profil** **E-Mail ändern** und geben Sie die neue Adresse ein. Kaeso schickt einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald Sie den Link öffnen.
 
-## Passwort
+## Passwort ändern
 
-**Passwort ändern** meldet die anderen Sitzungen ab. Wer sich nur mit Links oder Single Sign-on anmeldet und kein Passwort hat, legt mit **Passwort festlegen** eines an.
+Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ihre anderen Sitzungen ab. Melden Sie sich nur mit Links oder Single Sign-on an, haben Sie kein Passwort, und **Passwort festlegen** fügt eines hinzu.
 
-## Zwei-Faktor-Authentifizierung
+## Zwei-Faktor-Authentifizierung einschalten
 
-Die Zwei-Faktor-Authentifizierung verlangt bei jeder Anmeldung mit Passwort einen Code aus einer Authenticator-App; Anmeldelinks und Single Sign-on brauchen keinen.
+Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort nach einem Code aus einer Authenticator-App. Anmeldelinks und Single Sign-on fragen nicht danach.
 
-1. Unter **Sicherheit** **Einrichten** wählen.
-2. Den QR-Code mit der App scannen oder den Einrichtungsschlüssel eingeben.
-3. Den sechsstelligen Code aus der App eingeben und **Einschalten** wählen.
-4. Die 10 Wiederherstellungscodes sichern, die die Konsole nur dieses eine Mal zeigt: kopieren oder **.txt herunterladen**. Jeder ersetzt einmal einen Code bei der Anmeldung.
+1. Wählen Sie unter **Sicherheit** **Einrichten**.
+2. Scannen Sie den QR-Code mit Ihrer Authenticator-App, oder geben Sie den Einrichtungsschlüssel ein.
+3. Geben Sie den sechsstelligen Code aus der App ein und wählen Sie **Einschalten**.
+4. Bewahren Sie die 10 Wiederherstellungscodes auf, die die Konsole einmal zeigt: Kopieren Sie sie oder wählen Sie **.txt herunterladen**. Jeder Code meldet Sie einmal an, statt eines Codes aus der App.
 
-**Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung; beides erfordert eine kürzliche Anmeldung. Wer Authenticator und Wiederherstellungscodes verloren hat, lässt die Zwei-Faktor-Authentifizierung von einem Instanz-Admin zurücksetzen.
+**Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
 
-## Sitzungen
+## Andere Browser abmelden
 
-**Sitzungen** listet jeden Browser, in dem man angemeldet ist, und wie die Anmeldung erfolgte. **Beenden** meldet einen davon ab, **Überall abmelden** alle außer dem aktuellen. Eine Sitzung endet nach 7 Tagen ohne Nutzung und spätestens nach 30 Tagen.
+**Sitzungen** listet jeden Browser, in dem Sie angemeldet sind, und wie Sie sich angemeldet haben. **Beenden** meldet einen davon ab, und **Überall abmelden** meldet alle außer diesem ab.
 
-## Eine Organisation verlassen und das Konto löschen
+Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
-**Organisation verlassen** unter **Mitgliedschaften** nimmt einen aus der Organisation und ihren Projekten und archiviert die eigenen Schlüssel dort. **Konto löschen** unter **Profil** nimmt einen aus jeder Organisation und archiviert alle eigenen Schlüssel; im Verlauf erscheint man als gelöschter Benutzer. Bestätigt wird mit der eigenen E-Mail-Adresse, und es erfordert eine kürzliche Anmeldung.
+## Heikle Aktion bestätigen
 
-Beides geht nicht, solange man der letzte Inhaber einer Organisation ist: zuerst jemand anderen zum Inhaber machen.
+Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt.
 
-## Benachrichtigungen
+- In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
+- In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
 
-**Budget-Warnungen** und **Ablaufende Schlüssel** schalten diese E-Mails ein oder aus. Sicherheits-E-Mails, etwa zu einem geänderten Passwort, werden immer gesendet.
+## E-Mails wählen
 
-## Design und Sprache
+Unter **Benachrichtigungen** schalten **Budget-Warnungen** und **Ablaufende Schlüssel** diese E-Mails ein oder aus. Sicherheits-E-Mails, etwa zu einem geänderten Passwort, schickt Kaeso immer.
+
+## Design und Sprache wählen
 
 Unter **Darstellung**:
 
-- **Design**: **System**, **Hell** oder **Dunkel**. Es wird in diesem Browser gespeichert.
-- **Sprache**: **Automatisch**, English, Deutsch oder 简体中文. Automatisch folgt der Sprache des Browsers, oder Englisch, wenn die Konsole diese Sprache nicht hat. Die Wahl wird im Konto gespeichert, gilt also auch in anderen Browsern, und E-Mails von Kaeso verwenden sie ebenfalls.
+- **Design** ist **System**, **Hell** oder **Dunkel**. Dieser Browser speichert es.
+- **Sprache** ist automatisch, English, Deutsch oder 简体中文. Automatisch folgt der Sprache Ihres Browsers, oder Englisch, wenn die Konsole sie nicht hat. Kaeso speichert die Wahl in Ihrem Konto, sodass sie Ihnen in andere Browser folgt, und auch E-Mails von Kaeso verwenden sie.
 
-Produktnamen und Modell-IDs bleiben in jeder Sprache unverändert.
+Produktnamen und Modell-IDs bleiben in jeder Sprache, wie sie sind.
+
+## Organisation verlassen oder Konto löschen
+
+**Organisation verlassen** unter **Mitgliedschaften** nimmt Sie aus der Organisation und ihren Projekten und archiviert Ihre Schlüssel dort.
+
+**Konto löschen** unter **Profil** nimmt Sie aus jeder Organisation und archiviert alle Ihre Schlüssel. Der Verlauf zeigt Sie als gelöschten Benutzer. Bestätigen Sie mit Ihrer E-Mail-Adresse.
+
+Beides geht nicht, solange Sie der letzte Inhaber einer Organisation sind. Machen Sie zuerst jemand anderen zum Inhaber.
+
+## Nächste Schritte
+
+- [Organisationen und Projekte](organizations-and-projects.md): Verlangen Sie Zwei-Faktor-Authentifizierung oder Single Sign-on für eine Organisation.
+- [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Ihre Apps und Skripte.
+- [Anmeldung und Single Sign-on](../self-hosting/sign-in.md): Sehen Sie, wie die Anmeldeseite funktioniert und wie Sie wieder hineinkommen.

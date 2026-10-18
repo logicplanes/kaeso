@@ -15,7 +15,7 @@ Each model brings its prices, limits and capabilities from [models.dev](https://
 - **Add every current OpenAI model**, or Anthropic model, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later.
 - **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it.
 
-The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#model-sources). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
+The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
 
 ## Availability
 
