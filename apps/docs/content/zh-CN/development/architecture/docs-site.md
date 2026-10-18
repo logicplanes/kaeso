@@ -138,7 +138,7 @@ frontmatter 恰好有四个字段：`title` 和 `description`（一句简短的�
 | `404.html` | 每种语言一个，标记为 `noindex`；在框架中显示“未找到” |
 | `sitemap.xml` | 每种语言的每个页面及其 `hreflang` 替代版本，不含 `lastmod`，因为构建不知道页面最后修改的时间 |
 | `robots.txt` | 允许所有访问，并指明站点地图 |
-| `site.webmanifest`、图标、`og.png`、`CNAME` | 来自 `public/` 的静态文件 |
+| `site.webmanifest`、图标、`og.png` | 来自 `public/` 的静态文件 |
 | `<旧路径>.html`、`_redirects` | `redirects.json` 中的每个地址在每种语言下各有一个标记为 `noindex` 的页面，把读者转到页面的新位置；同样的迁移也以永久重定向的形式写入 `_redirects`，供读取该文件的托管服务使用 |
 | `csp.txt`、`_headers` | 站点的[内容安全策略](../releasing.md#内容安全策略)，每个页面也在 `<meta>` 中携带它 |
 
