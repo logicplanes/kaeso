@@ -16,7 +16,8 @@ export default defineConfig({
     colorScheme: "light",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "chromium", testIgnore: "a11y.spec.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "a11y", testMatch: "a11y.spec.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "webkit", testMatch: "nav-sheet.spec.ts", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: {

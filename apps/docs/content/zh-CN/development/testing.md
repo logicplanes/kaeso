@@ -81,7 +81,7 @@ node apps/console/scripts/stack.mjs up --e2e
 KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 ```
 
-各个 spec 前后依赖，从设置实例的 `01-public` 开始。CI 分三部分运行它们；除非 `.github/workflows/ci.yml` 中的 `PART_1` 或 `PART_2` 列出了新的 spec，它都会在第 3 部分运行。浏览器报告的任何错误（包括 `console.error`）都会让测试失败，所以 spec 从 `apps/console/e2e/support.ts` 导入 `test` 和 `expect`。
+各个 spec 前后依赖，从设置实例的 `01-public` 开始。CI 分五部分运行它们；除非 `.github/workflows/ci.yml` 中的 `PART_1`、`PART_2`、`PART_3` 或 `PART_4` 列出了新的 spec，它都会在第 5 部分运行。浏览器报告的任何错误（包括 `console.error`）都会让测试失败，所以 spec 从 `apps/console/e2e/support.ts` 导入 `test` 和 `expect`。
 
 ### 文档站点
 
@@ -271,9 +271,9 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | TypeScript lint | `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
 | TypeScript libraries | `pnpm build:packages`，为所有需要这些库的作业构建一次 |
-| TypeScript test | `pnpm test`，每个工作区一个作业；控制台分三个分片，其覆盖率由另一个作业合并并检查 |
+| TypeScript test | `pnpm test`，每个工作区一个作业；控制台分六个分片，其覆盖率由另一个作业合并并检查 |
 | TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check` |
-| End-to-end console、docs 和 showcase | 每个包的 `e2e`；控制台分三部分，展示站点分多个分片 |
+| End-to-end console、docs 和 showcase | 每个包的 `e2e`；控制台分五部分，展示站点分多个分片，其无障碍检查使用单独的分片 |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。
