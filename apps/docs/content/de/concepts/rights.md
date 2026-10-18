@@ -76,7 +76,7 @@ Jede Änderung an Rollen und Rechten folgt diesen Regeln:
 1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Das gilt, wenn Sie Rolle oder Rechte eines Mitglieds ändern, einladen, ein Projektmitglied hinzufügen, ein Dienstkonto oder eine eigene Rolle erstellen oder ändern und die Rolle für Single Sign-on wählen.
 2. **Nur auf Gleichgestellte wirken.** Sie können Rolle und Rechte eines Mitglieds nur ändern oder das Mitglied entfernen, wenn Sie jedes Recht haben, das das Mitglied in diesem Geltungsbereich hat.
 3. **Inhaber verwalten Inhaber.** Nur Inhaber machen, ändern, entfernen und laden Inhaber ein. Eine Organisation verliert nie ihren letzten Inhaber.
-4. **Erforderliche Rechte werden geprüft.** Kaeso prüft, was jedes Recht erfordert, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Kaeso lehnt eine Änderung an einer eigenen Rolle ab, nach der jemand mit dieser Rolle ein Recht ohne ein erforderliches hätte. Die eigenen Rechte dieser Personen ändern sich dabei nie.
+4. **Erforderliche Rechte werden geprüft.** Kaeso prüft, was jedes Recht erfordert, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Kaeso lehnt eine Änderung an einer eigenen Rolle ab, nach der ein Träger der Rolle ein Recht ohne ein erforderliches hätte. Die eigenen Rechte der Träger ändern sich dabei nie.
 5. **Schlüssel haben keine eigenen Rechte.** Ein API-Schlüssel handelt als sein Mitglied oder Dienstkonto in seinem Projekt. Ein Plattform-Schlüssel einer Organisation handelt mit den Rechten der Rolle Admin in seiner Organisation.
 
 Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Rollen und Vergaben.
@@ -124,7 +124,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
-| `security.sso.manage` | SSO verwalten | Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen, die darüber kommen. | kürzliche Anmeldung |
+| `security.sso.manage` | SSO verwalten | Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen festlegen, die darüber beitreten. | kürzliche Anmeldung |
 | `security.sso.require` | SSO verlangen | Von Mitgliedern die Anmeldung bei dieser Organisation per SSO verlangen. | sensibel; kürzliche Anmeldung |
 | `security.2fa.require` | Zwei-Faktor verlangen | Zwei-Faktor-Authentifizierung für Mitglieder verlangen. | kürzliche Anmeldung |
 | `security.key_policy.manage` | Schlüssellaufzeit festlegen | Die maximale Schlüssellaufzeit der Organisation festlegen. |  |

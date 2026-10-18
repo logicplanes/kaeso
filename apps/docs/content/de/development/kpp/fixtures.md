@@ -45,7 +45,7 @@ Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikat
 
 ## Live-Antworten aufzeichnen
 
-`cargo xtask record` sendet Anfrage-Fixtures an den echten Anbieter und speichert, was zurückkommt. Es ist opt-in, läuft nur auf Ihrem Rechner und nie in der CI und braucht den API-Schlüssel des Anbieters in der Umgebung:
+`cargo xtask record` sendet Anfrage-Fixtures an den echten Anbieter und speichert, was zurückkommt. Es läuft nur auf ausdrücklichen Aufruf, nur auf Ihrem Rechner und nie in der CI und braucht den API-Schlüssel des Anbieters in der Umgebung:
 
 ```bash
 export ANTHROPIC_API_KEY=…

@@ -99,7 +99,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 - **Roh, wo es auf Bytes ankommt.** Tool-Argumente, JSON-Schemas, unbekannte Blöcke und Zitate sind `RawJson`; opakes Reasoning wird so aufbewahrt, wie es ankam, und mit seinem `Origin` versehen.
 - **Semantisch oder Hinweis.** Jedes Feld ist entweder semantisch (ein Ziel muss es einhalten oder mit `Unsupported` ablehnen) oder ein Hinweis (es darf ignoriert werden). [Feldklassen](#feldklassen) listet sie auf.
 - **Gebundene Extras.** Was KPP nicht modelliert, wird in `Extras` aufbewahrt, mit dem Dialekt versehen, aus dem es kam, und nur in diesen Dialekt zurückgeschrieben. `fields` sind semantisch: Ein anderer Dialekt lehnt sie ab, außer sie stehen auf der [Allowlist](cross-format.md#extras). `form` ist Darstellung (ein String oder ein Array, `null` oder fehlend, wie Chunks gruppiert waren), und andere Dialekte ignorieren es. Unbekannte Schlüssel verschachtelter Objekte verwenden Schlüsselpfade mit Punkten, etwa `function.x`, daher lässt sich ein Schlüssel, der selbst einen `.` enthält, nicht mitführen ([Wire-Structs](codec-design.md#wire-structs)).
-- **Ablehnen vor dem Senden.** `check()` gibt `Unsupported` zurück und nennt die Funktion, die ein Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird.
+- **Ablehnen vor dem Senden.** `check()` gibt `Unsupported` zurück und nennt das Feature, das ein Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird.
 - **Nichts fällt stillschweigend weg.** Jedes Feld und jeder Block einer eingehenden Payload landet an genau einer Stelle: in einem typisierten KPP-Feld, einem dialektgebundenen `Extras`-Eintrag, einem `Unknown`-Item oder einem `KppError` der Art `Unsupported`. Ein Match-Arm, der Daten verwirft, ist ein Bug.
 - **Additive öffentliche API.** Öffentliche Enums und erweiterbare Structs sind `#[non_exhaustive]`; Enum-Varianten umschließen `#[non_exhaustive]`-Structs mit Konstruktoren (`TextBlock::new`, `Block::text`, …), sodass Felder hinzukommen können, ohne Code zu brechen, der Werte baut oder matcht. Der `Codec`-Trait ist versiegelt.
 
@@ -159,7 +159,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `Document.source` | semantisch | Textquellen nur für Anthropic. OpenAI Chat Completions lehnt auch URL-Quellen ab. |
 | `Document.title`, `.context` | semantisch | Nur Anthropic; für OpenAI `Unsupported`. |
 | `Document.citations` | semantisch | Nur Anthropic; für OpenAI `Unsupported`, da OpenAI keine Dokumente zitieren kann. |
-| `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er auf feste Weise umgeschrieben und auf dem Rückweg zurückübersetzt. |
+| `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er deterministisch umgeschrieben und auf dem Rückweg zurückübersetzt. |
 | `ToolResult.call_id`, `.content` | semantisch | |
 | `ToolResult.is_error` | Hinweis für Ziele ohne Fehler-Flag | Für OpenAI Chat und Responses weggelassen; der Inhalt trägt den Fehlertext ([Tool-Fehler](cross-format.md#tool-fehler)). |
 | `Reasoning.summary`, `.text` | Hinweis | Lesbares Reasoning wird in der Anfrage eines anderen Dialekts weggelassen ([Reasoning](reasoning.md)). In Antworten wird es zusammen mit dem Originalblock in einem [Reasoning-Blob](reasoning.md#reasoning-blobs) gezeigt. |
@@ -204,7 +204,7 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 | Suite | Was sie belegt |
 | --- | --- |
 | `crates/kaeso-kpp/tests/types.rs` | Die KPP-Typen allein: stabile Namen der Fehlerarten und Blöcke, `validate()` und `required_capabilities()`. |
-| Fixture-Round-Trips (die `tests`-Module jedes Dialekts) | `decode → KPP → encode` reproduziert jede [Fixture](fixtures.md) eines Dialekts als gleichen JSON-Wert (bei Streams als gleiche Event-Folge), bei Streams unter vielen Chunk-Aufteilungen. Fixtures, die abgelehnt werden müssen, scheitern mit der genannten `Unsupported`-Funktion. |
+| Fixture-Round-Trips (die `tests`-Module jedes Dialekts) | `decode → KPP → encode` reproduziert jede [Fixture](fixtures.md) eines Dialekts als gleichen JSON-Wert (bei Streams als gleiche Event-Folge), bei Streams unter vielen Chunk-Aufteilungen. Fixtures, die abgelehnt werden müssen, scheitern mit dem genannten `Unsupported`-Feature. |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | Für jede Generierungs-Fixture von Dialekt A und jeden anderen Dialekt B: Anfragen durchlaufen `decode_A → check_B → encode_B` und müssen sich mit dem Decoder von B wieder dekodieren lassen, ohne dass sich die Unterhaltung ändert; Antworten und Streams durchlaufen `decode_A → encode_B → decode_B` und müssen Text, Verweigerungen und Tool-Aufrufe behalten, auch zurück in A. Anfragen und Antworten zur Token-Zählung wechseln zwischen Anthropic und Responses. Die Ergebnisse sind `insta`-Snapshots. |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` dekodiert Anbieterfehler und kodiert Fehler mit einem Status in jedem Dialekt, der Embeddings-Codec lehnt Generierungsantworten ab, und er behält einen Base64-Vektor, wie er empfangen wurde, wenn keine Anfrage eine andere Kodierung verlangt. |
 | `crates/kaeso-codecs/tests/number_spelling.rs` | `temperature: 1` kommt in Anthropic-, Chat- und Responses-Anfragen als `1` zurück und `1.0` als `1.0`, ein geänderter Wert wird als neuer Wert geschrieben, ein anderer Dialekt bekommt die eigene Schreibweise des Ziels, und Antworten von Responses behalten die Schreibweise der Zahlen, die sie wiedergeben. |
@@ -223,4 +223,4 @@ KPP speichert `temperature`, `top_p` und die Penalties als `f64`, daher bewahren
 
 `testing::sse_diff` vergleicht Streams Item für Item. Es vergleicht den Event-Namen, dann die Daten als JSON oder als Text, wenn sie kein JSON sind, dann die Felder `id`, `retry` und die unbekannten Felder in ihrer Reihenfolge. `ComparableItem::Event.data` ist `None` für einen Frame ohne `data:`-Zeile, und Kommentare werden exakt verglichen.
 
-Ändert eine Änderung die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.
+Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.

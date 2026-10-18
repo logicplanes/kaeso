@@ -18,7 +18,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 
 ## E-Mail-Adresse ändern
 
-Wählen Sie unter **Profil** **E-Mail ändern** und geben Sie die neue Adresse ein. Kaeso schickt einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald Sie den Link öffnen.
+Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein. Kaeso schickt einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald Sie den Link öffnen.
 
 ## Passwort ändern
 
@@ -28,7 +28,7 @@ Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ih
 
 Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort nach einem Code aus einer Authenticator-App. Anmeldelinks und Single Sign-on fragen nicht danach.
 
-1. Wählen Sie unter **Sicherheit** **Einrichten**.
+1. Wählen Sie unter **Sicherheit** die Option **Einrichten**.
 2. Scannen Sie den QR-Code mit Ihrer Authenticator-App, oder geben Sie den Einrichtungsschlüssel ein.
 3. Geben Sie den sechsstelligen Code aus der App ein und wählen Sie **Einschalten**.
 4. Bewahren Sie die 10 Wiederherstellungscodes auf, die die Konsole einmal zeigt: Kopieren Sie sie oder wählen Sie **.txt herunterladen**. Jeder Code meldet Sie einmal an, statt eines Codes aus der App.
@@ -41,7 +41,7 @@ Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort nach ei
 
 Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
-## Heikle Aktion bestätigen
+## Sensible Aktion bestätigen
 
 Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt.
 

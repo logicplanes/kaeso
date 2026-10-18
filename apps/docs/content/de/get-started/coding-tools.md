@@ -72,5 +72,5 @@ Jedes Tool, in dem Sie eine Basis-URL für OpenAI oder Anthropic setzen können,
 ## Nächste Schritte
 
 - [API-Schlüssel](../console/api-keys.md): Beschränken Sie den Schlüssel eines Tools auf die Modelle, die es braucht, oder geben Sie ihm ein Ablaufdatum.
-- [Limits und Budgets](../console/limits-and-budgets.md): Begrenzen Sie, wie viele Tokens oder wie viel Geld ein Tool verbrauchen kann.
+- [Limits und Budgets](../console/limits-and-budgets.md): Begrenzen Sie, wie viele Token oder wie viel Geld ein Tool verbrauchen kann.
 - [Formatübersetzung](../concepts/format-translation.md): Sehen Sie, was erhalten bleibt, wenn ein Tool das Modell eines anderen Anbieters aufruft.

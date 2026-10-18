@@ -48,9 +48,9 @@ Der Titel wird zur Zeile des Pull Requests im Changelog. Schreiben Sie deshalb e
 
 Der Workflow **Labels** setzt die Bereichs-Labels, etwa `area: console`, und `internal` anhand der Dateien, die Sie ändern. Der Maintainer setzt ein Typ-Label wie `fixed`, wenn das erste Wort des Titels nicht den richtigen Abschnitt wählt ([Labels](releasing.md#labels)).
 
-## Merge erreichen
+## Pull Request mergen lassen
 
-Ihr Pull Request kann gemergt werden, sobald die erforderliche Prüfung **CI** grün ist ([Continuous Integration](testing.md#continuous-integration)). Er wird als ein einziger gesquashter Commit gemergt, dessen Betreff der Titel ist. Lassen Sie deshalb jede Commit-Nachricht sagen, was sich warum geändert hat.
+Ihr Pull Request kann gemergt werden, sobald die erforderliche Prüfung **CI** grün ist ([Continuous Integration](testing.md#continuous-integration)). Er wird als ein einziger gesquashter Commit gemergt, dessen Betreff der Titel ist. Beschreiben Sie deshalb in jeder Commit-Nachricht, was sich warum geändert hat.
 
 Mit Ihrem Beitrag stimmen Sie zu, dass er unter der [MIT-Lizenz](https://github.com/logicplanes/kaeso/blob/dev/LICENSE) steht.
 
@@ -85,7 +85,7 @@ Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 
 Das Gateway hat eigene Regeln, etwa keine Panics und keine Gleitkommazahlen für Geld ([Regeln des Gateways](architecture/gateway.md#regeln)). KPP ebenso ([Entwurfsprinzipien](kpp/index.md#entwurfsprinzipien)).
 
-Das Wurzelverzeichnis des Repositorys und jedes von `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
+Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
 
 ## Abhängigkeit hinzufügen
 
@@ -99,7 +99,7 @@ Kaeso steht unter der MIT-Lizenz, und alles, was Kaeso ausliefert, hängt nur vo
 | `kaeso-kpp`, `kaeso-codecs` | Dieselbe Liste, ohne Ausnahmen | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | Die UI-Bibliothek, die Konsole und die Dokumentation | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 und 0BSD | `pnpm licenses:check`, nach `pnpm build` |
 
-`cargo deny check` lehnt außerdem Crates mit Sicherheitshinweisen ab, zurückgezogene Crates, Wildcard-Versionen und Crates aus unbekannten Registries oder Git-Repositorys. Einige Crates, die das Gateway nur über andere Crates erreicht, haben eine Ausnahme für eine andere freizügige Lizenz; `deny.toml` nennt jede davon. Werkzeuge, die nur in Tests oder Builds laufen, etwa axe-core, erreichen nie ein Paket, ein Image oder eine veröffentlichte Website. Die Schriften der UI-Bibliothek, Inter und Geist Mono, stehen unter der SIL Open Font License, und `pnpm release:check` lehnt ein Paket ohne ihre Lizenzdateien ab.
+`cargo deny check` lehnt außerdem Crates mit Sicherheitshinweisen, zurückgezogene Crates, Wildcard-Versionen und Crates aus unbekannten Registries oder Git-Repositorys ab. Einige Crates, die das Gateway nur über andere Crates erreicht, haben eine Ausnahme für eine andere freizügige Lizenz; `deny.toml` nennt jede davon. Werkzeuge, die nur in Tests oder Builds laufen, etwa axe-core, erreichen nie ein Paket, ein Image oder eine veröffentlichte Website. Die Schriften der UI-Bibliothek, Inter und Geist Mono, stehen unter der SIL Open Font License, und `pnpm release:check` lehnt ein Paket ohne ihre Lizenzdateien ab.
 
 Der Bibliothekscode von KPP darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und seine Richtlinie verbietet `tokio`, `reqwest`, `hyper` und `axum`. Alles andere braucht vorher die Zustimmung des Maintainers.
 

@@ -12,7 +12,7 @@ Wählen Sie **Modelle hinzufügen** und durchsuchen Sie die Modelle eines Anbiet
 
 Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen. Zwei Abkürzungen decken den Rest ab:
 
-- **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für Anthropic, fügt jedes nicht veraltete Text- und Embedding-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu.
+- **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für Anthropic, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu.
 - **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft.
 
 Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
@@ -31,7 +31,7 @@ Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem An
 
 Auch Anfragen ändern die Verfügbarkeit. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md). Gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Jede Antwort zählt nur für den Anbieter-Schlüssel, der sie erhalten hat.
 
-Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso schickt Anfragen danach weiter an seinen Anbieter, nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Das Audit-Log verzeichnet jede Prüfung.
+Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso schickt Anfragen danach weiter an seinen Anbieter, nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Das Audit-Log verzeichnet jede Prüfung.
 
 ## Werte eines Modells ändern
 
@@ -53,7 +53,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 
 ## Modell entfernen
 
-Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt Anfragen danach ab sofort ab, und Aliasse und Modelllisten, die es nennen, verlieren es.
+Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt Anfragen nach dem Modell ab sofort ab, und Aliasse und Modelllisten, die es nennen, verlieren es.
 
 ## Alias erstellen
 

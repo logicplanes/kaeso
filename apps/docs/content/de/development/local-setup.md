@@ -59,7 +59,7 @@ Richten Sie die Installation über die Platform API ein und füllen Sie sie mit 
 pnpm seed
 ```
 
-Sie erhalten die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, Schlüsseln, Modellen, einem Alias und Limits. Der Befehl sendet außerdem einige hundert Anfragen an den Mock-Anbieter und legt 70 Tage frühere Anfragen an. Um die Installation stattdessen von Hand einzurichten, überspringen Sie diesen Schritt und öffnen den Einrichtungslink.
+Sie erhalten die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, Schlüsseln, Modellen, einem Alias und Limits. Der Befehl sendet außerdem einige hundert Anfragen an den Mock-Anbieter und legt einen Verlauf früherer Anfragen über 70 Tage an. Um die Installation stattdessen von Hand einzurichten, überspringen Sie diesen Schritt und öffnen den Einrichtungslink.
 
 ## Konsole öffnen
 

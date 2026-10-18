@@ -153,7 +153,7 @@ const response = await client.responses.create({ model: "claude-haiku-4-5", inpu
 console.log(response.output_text);
 ```
 
-Haben Sie ein anderes Modell hinzugefügt, verwenden Sie dessen ID. Die Antwort enthält das Haiku des Modells. Öffnen Sie im Projekt **Anfrageprotokolle**: Dort steht die Anfrage mit Status, Tokens, Kosten und Zeiten.
+Haben Sie ein anderes Modell hinzugefügt, verwenden Sie dessen ID. Die Antwort enthält das Haiku des Modells. Öffnen Sie im Projekt **Anfrageprotokolle**: Dort steht die Anfrage mit Status, Token, Kosten und Zeiten.
 
 ## Nächste Schritte
 

@@ -1,10 +1,10 @@
 ---
 title: Zustand und Metriken
-description: Die Health-Checks, Prometheus-Metriken und Logs einer laufenden Installation.
+description: Die Health-Checks, Prometheus-Metriken und Protokolle einer laufenden Installation.
 order: 10
 ---
 
-Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Logs. In der Konsole zeigt **Einstellungen** › **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
+Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Protokolle. In der Konsole zeigt **Einstellungen** › **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
 
 ## Health-Checks
 
@@ -51,7 +51,7 @@ services:
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` oder `dropped`: Prüfen Sie die Einstellungen für [E-Mail](email.md) |
 | `kaeso_build_info{version}` | Die laufende Version |
 
-## Logs
+## Protokolle
 
 Das Gateway schreibt JSON auf die Standardausgabe, eine Zeile je Ereignis:
 

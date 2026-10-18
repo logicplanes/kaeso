@@ -20,7 +20,7 @@ Schlagen Sie hier jedes Feld des Formats OpenAI Embeddings nach: wohin es in KPP
 
 ## Anfrage: `CreateEmbeddingRequest`
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `model` | `EmbedRequest.model` typisiert | Erforderlich. |
 | `input` String | `input = [EmbedInput::Text]` typisiert | Die kanonische Schreibweise für einen Text. |
@@ -42,7 +42,7 @@ Die Spezifikation erlaubt 1 bis 2.048 Eingaben und höchstens 8.192 Token je Ein
 
 ## Antwort: `CreateEmbeddingResponse`
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `object` (`list`) | keins | Ein anderer Wert: Form `object`. |
 | `model` | `EmbedResponse.model` typisiert | |

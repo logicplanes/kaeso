@@ -10,12 +10,12 @@ Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink
 
 Die Anmeldeseite fragt zuerst nach der E-Mail-Adresse. Dann bietet sie an, was für diese Adresse funktioniert: ein Passwort, einen Anmeldelink und Single Sign-on, wenn die Domain der Adresse zu einer Organisation mit Identitätsanbieter gehört.
 
-In zwei Fällen zeigt die Seite sofort die Schaltfläche eines Anbieters:
+In zwei Fällen zeigt die Seite sofort den Button eines Anbieters:
 
 - Passwörter und Anmeldelinks sind abgeschaltet, und genau eine Organisation hat einen Identitätsanbieter.
 - Jemand öffnet den Anmeldelink der Organisation, etwa `https://kaeso.example.com/sign-in?org=org_…`, den ihre Seite **Sicherheit** zeigt. Solange andere Methoden eingeschaltet sind, bietet die Seite außerdem **Stattdessen mit E-Mail anmelden** an.
 
-Die Schaltfläche lautet **Weiter mit** und dem Namen, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt.
+Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt.
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 

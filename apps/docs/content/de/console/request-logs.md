@@ -11,7 +11,7 @@ Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, To
 Öffnen Sie die Seite **Anfrageprotokolle** eines Projekts. Sie listet Anfragen, die neuesten zuerst, aus der letzten Stunde, den letzten 24 Stunden, 7 Tagen oder 30 Tagen oder einem selbst gewählten Zeitraum.
 
 - **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, Anbieter, Status, Fehlerart, Streaming und Quelle ein: die API oder der Playground. **Nur fehlgeschlagene** behält die Fehler.
-- **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wenn Sie nach unten gescrollt haben, nennt eine Schaltfläche die Zahl der neuen.
+- **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wenn Sie nach unten gescrollt haben, nennt ein Button die Zahl der neuen.
 - Die Anzeigeoptionen wählen die Spalten und die Dichte.
 - **Anfrage per ID öffnen** findet die Anfrage, deren Header `kaeso-request-id` Ihre App erhalten hat.
 
@@ -28,9 +28,9 @@ Wählen Sie eine Anfrage, um sie zu öffnen:
 | Antwort | Was die App zurückbekommen hat |
 | Rohdaten | Der Protokolleintrag, wie die Platform API ihn liefert |
 
-Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitlimit** oder **Client getrennt**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
+Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitüberschreitung** oder **Client getrennt**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
 
-Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort in einem Format, das diese Konsole noch nicht lesen kann, etwa von einem neueren Gateway, zeigt sie so, wie sie gespeichert wurde.
+Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort, die in einem Format protokolliert wurde, das diese Konsole noch nicht lesen kann (etwa von einem neueren Gateway), erscheint so, wie sie gespeichert wurde.
 
 ## Protokolle exportieren
 

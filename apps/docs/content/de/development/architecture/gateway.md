@@ -47,7 +47,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 | `kaeso-server` | Die Router für `/v1`, `/platform/v1`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
 | `kaeso-core` | Fachregeln ohne I/O: IDs, Rechte und Rollen, das Schlüsselformat, die Modellauflösung, der Katalog, Fähigkeiten, Limits, Kosten und der Assembler für Stream-Antworten. `data/` enthält die Modelldaten, die jedes Release mitliefert |
 | `kaeso-store` | PostgreSQL über sqlx, ClickHouse, die Valkey-Verbindung mit ihrer Cache-Invalidierung und die Migrationen beider Datenbanken |
-| `kaeso-upstream` | Der Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodys und Abbruch |
+| `kaeso-upstream` | Der Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodies und Abbruch |
 | `kaeso-crypto` | Envelope-Verschlüsselung (AES-256-GCM), der Schlüsselring der Hauptschlüssel, Passwörter, TOTP und die schwärzenden Typen für Geheimnisse |
 | `kaeso-mail` | Der SMTP-Versand und jede E-Mail, in drei Sprachen ([E-Mails](emails.md)) |
 | `kaeso-update` | Updates ohne I/O: das Release-Manifest, die Update-Richtlinie und das Protokoll des Updaters ([Updates](updates.md)) |
@@ -88,7 +88,7 @@ Tests prüfen, dass jede Variable ihrem Schlüssel folgt und eindeutig zurückf�
 
 Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, `^[a-z0-9]+(-[a-z0-9]+)*$`. Die Regel steht in `ProviderId` und `ID_PATTERN` in `crates/kaeso-core/src/provider.rs`, und jede ID, die ins Gateway gelangt, geht durch sie. Das betrifft Konfigurationsschlüssel und -variablen, Anbieter-Schlüssel und Katalogmodelle in der Platform API, das Supplement und den Import von models.dev.
 
-Eine Prüfung zur Compile-Zeit hält jede ID in `PROVIDERS` an die Regel. Die CHECK-Constraints von PostgreSQL auf den Spalten `provider` nutzen dasselbe Muster, was ein Store-Test vergleicht. Ein weiterer Test prüft jeden Anbieter im mitgelieferten models.dev-Snapshot.
+Eine Prüfung zur Compile-Zeit stellt sicher, dass jede ID in `PROVIDERS` der Regel folgt. Die CHECK-Constraints von PostgreSQL auf den Spalten `provider` nutzen dasselbe Muster, was ein Store-Test vergleicht. Ein weiterer Test prüft jeden Anbieter im mitgelieferten models.dev-Snapshot.
 
 ## Modelldaten
 
@@ -96,7 +96,7 @@ Eine Prüfung zur Compile-Zeit hält jede ID in `PROVIDERS` an die Regel. Die CH
 
 | Datei | Inhalt |
 | --- | --- |
-| `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugang funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde, und seinen SHA-256 |
+| `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugang funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde und welchen SHA-256 er hat |
 | `supplement.toml` | Felder, die models.dev nicht hat, jedes mit seiner Quelle in der `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts`, wo models.dev keine nennt, und `egress_dialect`, das Format, das Kaeso an ein OpenAI-Modell sendet |
 
 Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Das Gateway synchronisiert models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`) und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.

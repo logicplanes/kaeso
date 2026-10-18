@@ -18,7 +18,7 @@ Schlagen Sie hier jedes Feld des Formats Anthropic Messages nach: wohin es in KP
 - **fields**: roh in `Extras::fields` aufbewahrt. Diese Felder sind semantisch: Sie werden nur an Anthropic zurückgeschrieben, für andere Dialekte mit `Unsupported` abgelehnt ([Extras](cross-format.md#extras)), sofern die [Allowlist](cross-format.md#extras) sie nicht weglassen lässt, und in Antworten an andere Dialekte weggelassen ([Antworten](cross-format.md#antworten)). Verschachtelte Objekte verwenden Schlüsselpfade mit Punkten (`metadata.x`).
 - **form**: eine codec-interne Darstellungsmarkierung in `Extras::form`, die andere Dialekte ignorieren. `verbatim` steht für den allgemeinen Mechanismus von `wire::Ext` (die Schreibweisen `null`, `false` und `[]`).
 - **raw**: vollständig in einem `RawItem`, `Citation` oder `RawUsage` aufbewahrt.
-- **Eigene** Daten haben Extras oder eine Herkunft `anthropic_messages`; **fremde** Daten stammen aus einem anderen Dialekt.
+- **Eigene** Daten haben Extras oder einen Ursprung `anthropic_messages`; **fremde** Daten stammen aus einem anderen Dialekt.
 
 **Zahlen.** Typisierte Zahlenfelder werden als `u32` oder `u64` gelesen, `temperature` und `top_p` als JSON-Zahlen, die KPP als `f64` hält. Ein Wert außerhalb ihres Bereichs wird nie verändert: Das Dekodieren schlägt fehl, mit `InvalidRequest` in einer Anfrage (`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``) und `ProviderError` in einer Antwort des Anbieters.
 
@@ -31,7 +31,7 @@ Schlagen Sie hier jedes Feld des Formats Anthropic Messages nach: wohin es in KP
 
 Schemas `CreateMessageParams` und `CountMessageTokensParams`.
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `model` | `model` | |
 | `messages[]` (`InputMessage`) | `messages[]` | Unbekannte Schlüssel → `extras.fields` der Nachricht. |
@@ -69,7 +69,7 @@ Schemas `CreateMessageParams` und `CountMessageTokensParams`.
 
 Diese Regeln gelten für Anfragen und Antworten gleichermaßen.
 
-| Wire-Block | KPP | Hinweise |
+| Wire-Block | KPP | Anmerkungen |
 |---|---|---|
 | `text` (`text`, `citations`, `cache_control`) | `Block::Text` | `citations[]` → `Citation { origin, raw }`; `null` und `[]` → verbatim. |
 | `image` `source.type: base64` (`media_type`, `data`) | `Image { source: Base64 }` | |
@@ -84,7 +84,7 @@ Diese Regeln gelten für Anfragen und Antworten gleichermaßen.
 | `cache_control` an jedem Block (`CacheControlEphemeral`) | `cache = CacheHint { ttl }` | `ttl` `5m` → `FiveMinutes`, `1h` → `OneHour`, andere Werte → `Other`; fehlend → `None`. Ein anderer `type` als `ephemeral` → `extras.fields.type` des Hinweises. |
 | `tool_use` (`id`, `name`, `input`, `cache_control`) | `Block::ToolCall` (`arguments` raw) | `caller` und `toolset_name` → `extras.fields` des Blocks, außer `caller: {type: "direct"}`, ein gewöhnlicher Aufruf: Er bleibt verbatim, damit der Aufruf zu anderen Dialekten wechseln kann. |
 | `tool_result` (`tool_use_id`, `content`, `is_error`, `cache_control`) | `Block::ToolResult` | `content` als String → form `content: "string"`; `[]` → `"array"`; `is_error: false` → verbatim. `toolset_name` → fields. Ein `tool_result`, das mehr als 4 Ebenen tief in einem anderen steckt, wird abgelehnt: `InvalidRequest` in einer Anfrage, `ProviderError` in einer Antwort oder einem Stream. |
-| `thinking` (`thinking`, `signature`) | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""` (Anzeige ausgelassen) bleibt `[""]`. `signature: ""` sind keine opaken Daten: Daraus wird form `empty_signature`, sodass der Block nie als signiertes Thinking gilt, und er wird mit `""` zurückgeschrieben; eine fehlende `signature` bleibt weg. Eine `signature`, die ein Reasoning-Blob ist (`kpp:reasoning:v1:…`, Reasoning eines anderen Dialekts, das Kaeso der App gegeben hat, siehe [Reasoning-Blobs](reasoning.md#reasoning-blobs)), wird zum ursprünglichen Block darin dekodiert, samt Herkunft; der `thinking`-Text wird dann ignoriert. |
+| `thinking` (`thinking`, `signature`) | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""` (Anzeige ausgelassen) bleibt `[""]`. `signature: ""` sind keine opaken Daten: Daraus wird form `empty_signature`, sodass der Block nie als signiertes Thinking gilt, und er wird mit `""` zurückgeschrieben; eine fehlende `signature` bleibt weg. Eine `signature`, die ein Reasoning-Blob ist (`kpp:reasoning:v1:…`, Reasoning eines anderen Dialekts, das Kaeso der App gegeben hat, siehe [Reasoning-Blobs](reasoning.md#reasoning-blobs)), wird zum ursprünglichen Block darin dekodiert, samt Ursprung; der `thinking`-Text wird dann ignoriert. |
 | `redacted_thinking` (`data`) | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
 | jeder andere Typ (`server_tool_use`, `web_search_tool_result`, `web_fetch_tool_result`, `code_execution_tool_result`, `search_result`, `container_upload`, `tool_reference`, künftige Typen) | `Block::Unknown` (raw) | Nur im selben Dialekt. Wird eine `tool_reference` (MCP-Tool-Suche) für einen anderen Dialekt abgelehnt, rät die Meldung, `ENABLE_TOOL_SEARCH` in Claude Code zu entfernen; dann ist die Tool-Suche hinter einem Gateway standardmäßig aus. |
 
@@ -92,12 +92,12 @@ Diese Regeln gelten für Anfragen und Antworten gleichermaßen.
 
 Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Messages stammt.
 
-| KPP | Wire | Hinweise |
+| KPP | Wire | Anmerkungen |
 |---|---|---|
 | `system` | `system` als Array von Textblöcken | Andere Blöcke im System-Prompt → `Unsupported`. |
 | `messages[].blocks` | `content` als Array | Leere Textblöcke entfallen, weil Anthropic sie ablehnt. Nachrichten, die nach dem Weglassen von Reasoning oder leerem Text leer sind, entfallen. |
 | `Block::Reasoning`, das nicht von Anthropic oder von einem anderen Anthropic-Anbieter stammt | weggelassen | [Reasoning](reasoning.md). Das gilt auch für Reasoning eines anderen Dialekts, das eine App in einem Reasoning-Blob zurückgesendet hat: Es geht nur an seinen eigenen Anbieter. |
-| `thinking` ohne nicht leere Signatur | eigene Blöcke (aus Anthropic Messages gelesen): so geschrieben, wie sie ankamen, eine fehlende `signature` bleibt weg und `""` (form `empty_signature`) bleibt `""`; andere weggelassen | Ein Assistenten-Zug, der nur einen solchen eigenen Block enthält, bleibt erhalten. Unsigniertes Anthropic-Reasoning, das nicht aus Anthropic Messages gelesen wurde (per Code gebaut, ohne Anthropic-Extras), wird weggelassen, weil Anthropic unsignierte Thinking-Blöcke ablehnt. `redacted_thinking` wird wiedergegeben. |
+| `thinking` ohne nicht leere Signatur | eigene Blöcke (aus Anthropic Messages gelesen): so geschrieben, wie sie ankamen, eine fehlende `signature` bleibt weg und `""` (form `empty_signature`) bleibt `""`; andere weggelassen | Eine Assistentenrunde, die nur einen solchen eigenen Block enthält, bleibt erhalten. Unsigniertes Anthropic-Reasoning, das nicht aus Anthropic Messages gelesen wurde (per Code gebaut, ohne Anthropic-Extras), wird weggelassen, weil Anthropic unsignierte Thinking-Blöcke ablehnt. `redacted_thinking` wird zurückgespielt. |
 | `Source::Url` mit einer base64-`data:`-URL (aus einem anderen Dialekt) | `source: {type: base64, media_type, data}` | Eine `data:`-URL, die nicht base64 ist → `Unsupported`; Medientypen werden wie bei base64 geprüft. |
 | Inhalt eines `ToolResult` außer Text, Bild oder Dokument (und eigenen unbekannten Blöcken) | `Unsupported` | `RequestToolResultBlock.content`. |
 | `Block::Refusal` | `Unsupported` (`refusal block`) | |
@@ -109,13 +109,13 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | `reasoning.effort` `low` bis `max` ohne Modus oder Budget | `thinking: {type: adaptive}` plus `output_config.effort`; bei Modellen ohne adaptives Thinking (`EgressCtx::adaptive_thinking = Some(false)`) `thinking: {type: enabled, budget_tokens}` nach der Tabelle unter [Aufwand und Budget](reasoning.md#aufwand-und-budget) (`low` 2.048, `medium` 8.192, `high`, `xhigh` und `max` 24.576, angepasst auf mindestens 1.024 und weniger als `max_tokens`; ist `max_tokens` 1.024 oder kleiner, wird es um 1.024 erhöht und das Budget ist 1.024) | [Reasoning](reasoning.md). |
 | `reasoning.summary` ohne Aufwand, Modus oder Budget, mit `EgressCtx::reasoning = Some(true)` | `thinking: {type: adaptive}` ohne Aufwand (die Standardtiefe des Modells); bei Modellen ohne adaptives Thinking das Budget für `medium` | Reasoning-Modelle von OpenAI denken standardmäßig nach, also erwartet eine App, die Zusammenfassungen anfordert, Reasoning ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). Unbekannte Modelle oder Modelle ohne Reasoning: Es wird nichts gesendet. |
 | `reasoning.summary` (jeder Wert) bei eingeschaltetem Thinking | `thinking.display: "summarized"` | Claude Opus 4.7 und später verwenden standardmäßig `omitted` (leerer Thinking-Text). Nicht bei der Token-Zählung. Bei Modellen, die zwischen Tool-Aufrufen kurze Fortschrittsnotizen schreiben, kommen diese mit den Zusammenfassungen gemischt zurück; `display: "updates"` wird nie gesendet. |
-| `sampling.temperature`, `.top_p`, `.top_k`, wenn Thinking für einen anderen Dialekt eingeschaltet ist | weggelassen | Anthropic lehnt sie zusammen mit Thinking ab oder schränkt `top_p` ein ([Thinking und Sampling](reasoning.md#thinking-und-sampling)). Ohne Reasoning-Einstellungen werden sie so gesendet, wie sie ankamen, auch an Modelle, die standardmäßig nachdenken; das Gateway lehnt eine nicht standardmäßige `temperature` für Modelle ab, deren Katalogeintrag `temperature: false` sagt. |
+| `sampling.temperature`, `.top_p`, `.top_k`, wenn Thinking in einer Anfrage aus einem anderen Dialekt eingeschaltet ist | weggelassen | Anthropic lehnt sie zusammen mit Thinking ab oder schränkt `top_p` ein ([Thinking und Sampling](reasoning.md#thinking-und-sampling)). Ohne Reasoning-Einstellungen werden sie so gesendet, wie sie ankamen, auch an Modelle, die standardmäßig nachdenken; das Gateway lehnt eine nicht standardmäßige `temperature` für Modelle ab, deren Katalogeintrag `temperature: false` sagt. |
 | `tool_choice` `Required` oder `Tool` aus einem anderen Dialekt, mit `enabled`-Thinking | ohne `thinking` gesendet (und ohne dessen erhöhtes `max_tokens`) | Anthropic lehnt die Kombination ab, und ein erzwungener Aufruf enthält ohnehin kein Thinking. Adaptives Thinking behält das erzwungene Tool. |
 | `reasoning.effort` `none` | kein `thinking`, kein Aufwand | Der Standard von Anthropic. Modelle, die ohne `thinking` nachdenken (Claude Opus 5 und 5.5, Sonnet 5 und 5.5, Haiku 5.5 und Fable), denken daher weiter mit ihrem Standardaufwand nach. `none` bei eingeschaltetem Thinking, `minimal` und unbekannte Aufwände → `Unsupported`. |
 | `reasoning.budget_tokens` (ohne Modus) | `thinking: {type: enabled, budget_tokens}` | |
 | `reasoning.mode = Enabled` ohne Budget; ein Budget mit `Adaptive` oder `Disabled` | `Unsupported` | Hier gilt keine Umrechnung zwischen Aufwand und Budget. |
 | `reasoning.include_encrypted` aus einem anderen Dialekt | weggelassen | Es sagt nur, welches Reasoning zurückkommen soll (Codex sendet es immer); Anthropic gibt immer signiertes Thinking zurück. |
-| `thinking` `enabled`, wenn die letzte Nachricht (abgesehen von Systemnachrichten danach) Tool-Ergebnisse zurückgibt und der letzte Assistenten-Zug Tool-Aufrufe machte, ohne mit einem wiedergebbaren Thinking-Block zu beginnen (signiertes `thinking` oder `redacted_thinking`; etwa weil dieser Zug von einem anderen Anbieter kam) | die Anfrage wird ohne `thinking` und `output_config.effort` gesendet | Anthropic lehnt eine solche Anfrage ab („a final assistant message must start with a thinking block“); siehe [Tool-Runden ohne Thinking](reasoning.md#tool-runden-ohne-thinking). `adaptive`-Thinking bleibt: Laut der Dokumentation zu adaptivem Thinking braucht es den führenden Block nicht. Sonst wird nichts festgehalten. Das ist selten, weil Thinking von Claude aus Responses- und Anthropic-Apps in [Reasoning-Blobs](reasoning.md#reasoning-blobs) zurückkommt und aus Chat-Apps über den [Speicher des Gateways](reasoning.md#vom-gateway-aufbewahrtes-reasoning), sodass der Zug mit wiedergebbarem Thinking beginnt. Die Regel gilt auch für Anfragen von Anthropic-Apps. |
+| `thinking` `enabled`, wenn die letzte Nachricht (abgesehen von Systemnachrichten danach) Tool-Ergebnisse zurückgibt und die letzte Assistentenrunde Tool-Aufrufe machte, ohne mit einem zurückspielbaren Thinking-Block zu beginnen (signiertes `thinking` oder `redacted_thinking`; etwa weil diese Runde von einem anderen Anbieter kam) | die Anfrage wird ohne `thinking` und `output_config.effort` gesendet | Anthropic lehnt eine solche Anfrage ab („a final assistant message must start with a thinking block“); siehe [Tool-Runden ohne Thinking](reasoning.md#tool-runden-ohne-thinking). `adaptive`-Thinking bleibt: Laut der Dokumentation zu adaptivem Thinking braucht es den führenden Block nicht. Sonst wird nichts festgehalten. Das ist selten, weil Thinking von Claude aus Responses- und Anthropic-Apps in [Reasoning-Blobs](reasoning.md#reasoning-blobs) zurückkommt und aus Chat-Apps über den [Speicher des Gateways](reasoning.md#vom-gateway-aufbewahrtes-reasoning), sodass die Runde mit zurückspielbarem Thinking beginnt. Die Regel gilt auch für Anfragen von Anthropic-Apps. |
 | `output = JsonObject` | `Unsupported` (`json_object output`) | [Strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe). |
 | `output = JsonSchema` | `output_config.format` | `name` wird weggelassen; `description` und `strict: false` → `Unsupported`. |
 | `sampling.seed`, `.frequency_penalty`, `.presence_penalty` | `Unsupported` | [Sampling](cross-format.md#sampling); nicht bei der Token-Zählung, bei der Sampling entfällt. |
@@ -134,7 +134,7 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 
 Schema `Message`.
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `id`, `model` | `id`, `model` | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `content[]` | `blocks` | Wie bei den [Content-Blöcken](#content-blöcke); Tool-IDs und -Namen werden über `EgressCtx` zurückübersetzt. |
@@ -150,7 +150,7 @@ Schema `Message`.
 | `usage.cache_creation.ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens` | `usage.cache_write_breakdown` | |
 | `usage.output_tokens` | `usage.output_tokens` | Enthält das Thinking. |
 | `usage.output_tokens_details.thinking_tokens` | `usage.reasoning_tokens` | |
-| das ganze `usage` (mit `server_tool_use`, `service_tier`, `inference_geo`, `iterations` und unbekannten Schlüsseln) | `usage.raw` (an seine Herkunft gebunden) | Wird für Anthropic-Antworten mit denselben Schlüsseln und Werten wieder geschrieben. |
+| das ganze `usage` (mit `server_tool_use`, `service_tier`, `inference_geo`, `iterations` und unbekannten Schlüsseln) | `usage.raw` (an seinen Ursprung gebunden) | Wird für Anthropic-Antworten mit denselben Schlüsseln und Werten wieder geschrieben. |
 
 Antworten aus anderen Dialekten (`encode_response`) erhalten `type: "message"`, `role: "assistant"`, `stop_sequence: null` (oder die Sequenz) und `stop_details: null`. Die Nutzung wird aus den typisierten Feldern gebildet: `cache_creation` aus der Aufschlüsselung oder `null`, und `output_tokens_details`, wenn `reasoning_tokens` bekannt ist.
 
@@ -164,7 +164,7 @@ Antworten aus anderen Dialekten (`encode_response`) erhalten `type: "message"`, 
 
 Schema `CountMessageTokensResponse`.
 
-| Wire-Feld | KPP | Hinweise |
+| Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `input_tokens` | `CountTokensResponse::input_tokens` | Alle Eingabe-Token; der Endpunkt meldet eine Gesamtzahl. |
 | unbekannte Schlüssel | `extras.fields` | |
@@ -173,7 +173,7 @@ Schema `CountMessageTokensResponse`.
 
 Schema `MessageStreamEvent`.
 
-| SSE-Event | KPP | Hinweise |
+| SSE-Event | KPP | Anmerkungen |
 |---|---|---|
 | `message_start` | `ResponseStart { id, model, usage }` | Andere Schlüssel von `message` (`type`, `role`, `content: []`, `stop_reason`, `stop_sequence`, `stop_details`, …) → fields `message.*`. |
 | `content_block_start` `text` | `BlockStart(Text)` | Anfänglicher Text und Zitate → `BlockDelta`s mit form `in_start`. |
@@ -204,12 +204,12 @@ Schema `MessageStreamEvent`.
 
 Kodieren von Events aus anderen Dialekten:
 
-- **Ein Block nach dem anderen.** Verschachtelte Blöcke werden in Startreihenfolge gepuffert, und `ResponseDelta` oder `ResponseStop` schließt offene Blöcke. Ein OpenAI-Stream, der seinen Textblock bis zum Ende offen hält, liefert seine Tool-Aufrufe daher erst am Ende. Mehrere fremde `ResponseDelta`s werden zu einem `message_delta` zusammengeführt.
+- **Ein Block nach dem anderen.** Sich überlappende Blöcke werden in Startreihenfolge gepuffert, und `ResponseDelta` oder `ResponseStop` schließt offene Blöcke. Ein OpenAI-Stream, der seinen Textblock bis zum Ende offen hält, liefert seine Tool-Aufrufe daher erst am Ende. Mehrere fremde `ResponseDelta`s werden zu einem `message_delta` zusammengeführt.
 - **Ein fehlendes `ResponseStart`** wird zu einem `message_start` mit leerer ID und dem Modell der Anfrage.
 - **Verweigerungen** werden zu Textblöcken.
-- **Argumente von Tool-Aufrufen** aus anderen Dialekten werden gesammelt und beim Ende des Blocks als ein `input_json_delta` geschrieben, aber nur, wenn sie ein JSON-Objekt bilden; sonst wird keines geschrieben und die Eingabe bleibt `{}`. Das ist verlustbehaftet, wie bei Antworten. Die eigenen Streams von Anthropic werden so wiedergegeben, wie sie ankamen.
+- **Argumente von Tool-Aufrufen** aus anderen Dialekten werden gesammelt und beim Ende des Blocks als ein `input_json_delta` geschrieben, aber nur, wenn sie ein JSON-Objekt bilden; sonst wird keines geschrieben und die Eingabe bleibt `{}`. Das ist verlustbehaftet, wie bei Antworten. Die eigenen Streams von Anthropic werden so zurückgespielt, wie sie ankamen.
 - **Reasoning-Blöcke** aus anderen Dialekten werden zu `thinking`-Blöcken ([Reasoning-Blobs](reasoning.md#reasoning-blobs)): Zusammenfassungen und Reasoning-Text als `thinking_delta`s mit einer Leerzeile zwischen den Teilen, opake Deltas gesammelt, und beim Ende des Blocks ein `signature_delta` mit dem Reasoning-Blob des ganzen Blocks.
-- **Weggelassen** ([Antworten](cross-format.md#antworten)): fremde Zitat- und unbekannte Deltas, unbekannte Blöcke und `Extra`-Events, wie bei vollständigen Antworten. Während sie eintreffen, schreibt der Encoder dosierte `event: ping`-Frames (`{"type": "ping"}`, so wie Anthropic sie sendet): einen pro fremdem Extra-Event und einen pro 1.024 Byte verborgenem Text ([Keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gibt dem Gateway denselben Frame.
+- **Weggelassen** ([Antworten](cross-format.md#antworten)): fremde Zitat- und unbekannte Deltas, unbekannte Blöcke und `Extra`-Events, wie bei vollständigen Antworten. Während sie eintreffen, schreibt der Encoder getaktete `event: ping`-Frames (`{"type": "ping"}`, so wie Anthropic sie sendet): einen pro fremdem Extra-Event und einen pro 1.024 Byte verborgenem Text ([Keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gibt dem Gateway denselben Frame.
 - **Stoppgründe:** `StopReason::Other` wird wie bei Antworten abgebildet.
 - **Fehler:** Ein KPP-`Error` wird zu `event: error` mit seinem Body wie unter [Fehler](#fehler), ohne `request_id`: von Anthropic dekodierte Fehler so, wie sie ankamen, andere als `{"type":"error","error":{type,message}}`.
 
@@ -233,9 +233,9 @@ Schema `ErrorResponse`. Dekodierfehler, bei Anfragen wie bei Antworten von Anbie
 
 - `error.message` → `message`; der ganze Body (mit `request_id` und `error.details`) → `raw`; der HTTP-Status → `status`; `retry-after-ms` oder `retry-after` → `retry_after`, das als `retry-after` zurückgeschrieben wird, auf ganze Sekunden aufgerundet.
 - Ein zu langer Prompt ist ein 400 `invalid_request_error` wie jeder andere, nur die Meldung unterscheidet ihn. Ändert Anthropic den Wortlaut, wird der Fehler als `InvalidRequest` dekodiert.
-- Ein unbekannter `error.type` oder ein Body, der keine `ErrorResponse` ist (etwa das HTML-413 von Cloudflare, JSON, dessen `type` nicht `error` ist, oder eines mit einem Schlüssel auf oberster Ebene, den Kaeso nicht tragen kann), erhält seine Art aus dem Status: 400, 409 und 422 `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied`, 404 `NotFound`, 408 und 504 `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, 503 und 529 `Overloaded` und `ProviderError` für jeden anderen Status und für Stream-Fehler, die keinen haben. Ein dokumentierter `error.type` hat immer Vorrang vor dem Status. Status und roher Body (als String, wenn er kein JSON ist) bleiben erhalten, und solche Bodys werden wieder in der Fehlerform von Anthropic kodiert.
+- Ein unbekannter `error.type` oder ein Body, der keine `ErrorResponse` ist (etwa das HTML-413 von Cloudflare, JSON, dessen `type` nicht `error` ist, oder eines mit einem Schlüssel auf oberster Ebene, den Kaeso nicht tragen kann), erhält seine Art aus dem Status: 400, 409 und 422 `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied`, 404 `NotFound`, 408 und 504 `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, 503 und 529 `Overloaded` und `ProviderError` für jeden anderen Status und für Stream-Fehler, die keinen haben. Ein dokumentierter `error.type` hat immer Vorrang vor dem Status. Status und roher Body (als String, wenn er kein JSON ist) bleiben erhalten, und solche Bodies werden wieder in der Fehlerform von Anthropic kodiert.
 - Von Anthropic dekodierte Fehler werden aus `raw` mit ihrem Status wieder kodiert, sodass Anthropic-Apps sie unverändert sehen; andere werden als `{"type":"error","error":{"type","message"},"request_id":null}` gebildet.
-- `request_id` ist in `ErrorResponse` Pflicht, ein String oder `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) schreibt dort die übergebene ID hinein, auch in einen aus `raw` wieder kodierten Body, wo sie die ID von Anthropic ersetzt; das Gateway übergibt die ID, die es in `kaeso-request-id` sendet, und behält den Header `request-id` von Anthropic in seinem Anfrageprotokoll. `encode_error` schreibt `null` in die Bodys, die es bildet.
+- `request_id` ist in `ErrorResponse` Pflicht, ein String oder `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) schreibt dort die übergebene ID hinein, auch in einen aus `raw` wieder kodierten Body, wo sie die ID von Anthropic ersetzt; das Gateway übergibt die ID, die es in `kaeso-request-id` sendet, und behält den Header `request-id` von Anthropic in seinem Anfrageprotokoll. `encode_error` schreibt `null` in die Bodies, die es bildet.
 - Andere Antwort-Header (etwa `anthropic-ratelimit-*` und `request-id`) gehören nicht zu `KppError`.
 
 ## Modelle
@@ -246,7 +246,7 @@ Schema `ErrorResponse`. Dekodierfehler, bei Anfragen wie bei Antworten von Anbie
 
 `decode_models_query` macht aus dem Query-String ein `ModelsQuery`.
 
-| Parameter | KPP | Hinweise |
+| Parameter | KPP | Anmerkungen |
 |---|---|---|
 | `limit` | `limit` | Nur Ziffern (ohne Vorzeichen), 1 bis 1000, einmal; alles andere → `InvalidRequest` (Parameter `limit`). Fehlt er, übergibt das Gateway den dokumentierten Standard von 20 an `ModelList::page`. |
 | `after_id`, `before_id` | `after_id`, `before_id` | Nicht leer, jeweils einmal; beide zusammen → `InvalidRequest` (Parameter `before_id`). Eine ID, die nicht in der gefilterten, deduplizierten Liste steht → `InvalidRequest` von `ModelList::page` (Parameter `after_id` oder `before_id`), statt einer leeren Seite, die das Blättern einer App stillschweigend beenden würde; ein Cursor, den `lifecycle` herausfiltert, gilt als unbekannt. |
@@ -291,7 +291,7 @@ Namen und Werte werden prozentdekodiert (`+` ist ein Leerzeichen); ein fehlerhaf
 
 Verlustbehaftet gegenüber Anthropic-Apps: `owned_by` (OpenAI) hat hier kein Feld, und Extras aus anderen Dialekten werden weggelassen ([Antworten](cross-format.md#antworten)). Ein Modell aus einem anderen Dialekt erhält die Standardwerte oben (`display_name` ist die ID, `lifecycle: "active"`, `capabilities: null`, `line`, `max_*` und Datumswerte `null`).
 
-Auf der Egress-Seite baut `encode_model_request` `GET /v1/models/{model_id}` mit `anthropic-version: 2023-06-01` und ohne Body, was auch einen Alias wie `claude-sonnet-4-5` auflöst (die Seite [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md)), `encode_models_request` baut `GET /v1/models` mit demselben Header und `limit`, `after_id`, `before_id` und `lifecycle[]` der Query, jeder Wert prozentkodiert (`Unsupported` für jeden anderen Parameter), und `decode_models` und `decode_model` nehmen die Antwort eines Anbieters entgegen; ein Status außer 2xx geht an `decode_error`. Dekodierte Extras tragen die Herkunft `anthropic_messages` ohne Anbieter, weil diese Funktionen keinen `EgressCtx` erhalten.
+Auf der Egress-Seite baut `encode_model_request` `GET /v1/models/{model_id}` mit `anthropic-version: 2023-06-01` und ohne Body, was auch einen Alias wie `claude-sonnet-4-5` auflöst (die Seite [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md)), `encode_models_request` baut `GET /v1/models` mit demselben Header und `limit`, `after_id`, `before_id` und `lifecycle[]` der Query, jeder Wert prozentkodiert (`Unsupported` für jeden anderen Parameter), und `decode_models` und `decode_model` nehmen die Antwort eines Anbieters entgegen; ein Status außer 2xx geht an `decode_error`. Dekodierte Extras tragen den Ursprung `anthropic_messages` ohne Anbieter, weil diese Funktionen keinen `EgressCtx` erhalten.
 
 ## Round Trips
 

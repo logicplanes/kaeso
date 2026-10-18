@@ -104,7 +104,7 @@ Schließt eine App die Verbindung, stoppt Kaeso die Anfrage beim Anbieter sofort
 
 Eine solche Anfrage, und ebenso einen abgebrochenen Stream, berechnet Kaeso mit dem, was der Anbieter gemeldet hat, plus einer Schätzung des Rests:
 
-- die Eingabe aus der Nutzung, die der Anbieter zu Beginn des Streams meldet, sonst aus seinem Endpunkt zum Zählen von Tokens, sonst aus der Größe der Anfrage;
+- die Eingabe aus der Nutzung, die der Anbieter zu Beginn des Streams meldet, sonst aus seinem Endpunkt zum Zählen von Token, sonst aus der Größe der Anfrage;
 - die Ausgabe aus dem empfangenen Inhalt.
 
 Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limits verwenden dieselben Zahlen. Schätzungen der Ausgabe fallen bei Reasoning, das der Anbieter nicht streamt, zu niedrig aus.
@@ -117,6 +117,6 @@ Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and en
 
 ## Nutzung und Protokolle
 
-Kaeso berechnet die Tokens zu den Preisen des Modells zum Zeitpunkt der Anfrage, dem Schlüssel, dem Mitglied und dem Projekt, und rechnet sie auf ihre Budgets an. Das Anfrageprotokoll hält die Metadaten fest. Anfrage und Antwort hält es fest, wenn die Inhaltsprotokollierung für Organisation und Projekt eingeschaltet ist.
+Kaeso berechnet die Token zu den Preisen des Modells zum Zeitpunkt der Anfrage, dem Schlüssel, dem Mitglied und dem Projekt, und rechnet sie auf ihre Budgets an. Das Anfrageprotokoll hält die Metadaten fest. Anfrage und Antwort hält es fest, wenn die Inhaltsprotokollierung für Organisation und Projekt eingeschaltet ist.
 
 Die Protokollierung hält nie eine Anfrage auf. Einträge warten im Speicher und gehen stapelweise an ClickHouse. Ist der Puffer voll, verwirft Kaeso die ältesten Einträge ([Anfrageprotokolle](../console/request-logs.md)).

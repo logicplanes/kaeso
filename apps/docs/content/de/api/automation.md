@@ -43,7 +43,7 @@ curl -s "$ORG_URL/credentials" \
   -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" '{provider: "anthropic", name: "Production", secret: $secret}')"
 ```
 
-Der erste Schlüssel eines Anbieters wird sein Standard, den jedes Projekt verwendet, solange Sie ihm keinen anderen zuweisen. Die Antwort zeigt nur die letzten vier Zeichen des Schlüssels, und Kaeso zeigt das Geheimnis nie wieder.
+Der erste Schlüssel eines Anbieters wird sein Standard, den jedes Projekt verwendet, solange Sie ihm keinen anderen zuweisen. Die Antwort zeigt nur die letzten vier Zeichen des Schlüssels, und Kaeso zeigt das Secret nie wieder.
 
 ## Modell hinzufügen
 
@@ -74,7 +74,7 @@ KAESO_API_KEY=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/ke
   -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret)
 ```
 
-`KAESO_API_KEY` enthält nun den Schlüssel der App, `sk-kso-…`. Kaeso zeigt das Geheimnis eines Schlüssels nur einmal, legen Sie es also dort ab, wo die App es liest.
+`KAESO_API_KEY` enthält nun den Schlüssel der App, `sk-kso-…`. Kaeso zeigt das Secret eines Schlüssels nur einmal, legen Sie es also dort ab, wo die App es liest.
 
 ## Modell aufrufen
 

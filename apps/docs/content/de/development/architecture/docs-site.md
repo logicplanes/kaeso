@@ -10,7 +10,7 @@ Die Dokumentation ist das Paket `kaeso-docs` in `apps/docs`: Markdown-Seiten, be
 flowchart TD
   accTitle: Von Markdown zur Website
   accDescr: Beim Build liest scripts/content die Seiten in content und die gezeichneten Diagramme in diagrams, prüft sie und schreibt virtuelle Module für die Website jeder Sprache, jede Seite und die Suche. Die React-App in src zeichnet sie mit der UI-Bibliothek, und Vite schreibt dist.
-  pages[content/sprache/**/*.md] --> content[scripts/content, in Vite<br>Frontmatter, Links, Anker, Bilder,<br>Suchbegriffe, jede Sprache]
+  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>Frontmatter, Links, Anker, Bilder,<br>Suchbegriffe, jede Sprache]
   diagrams[diagrams/*.svg<br>Mermaid-Blöcke, gezeichnet] --> content
   content --> modules[Virtuelle Module<br>Website, Seite und Suche pro Sprache]
   modules --> app[src/, React und kaeso-ui]
@@ -57,7 +57,7 @@ Die Zeichnungen sind in `apps/docs/diagrams/` committet, benannt nach einem Hash
 
 `src/router.tsx` hat einen Routenbaum pro Sprache. Sein Layout lädt das Website-Modul der Sprache, das die Seitenleiste sowie Titel und Beschreibung jeder Seite enthält, sodass die Seitenleiste mit dem Rahmen gezeichnet wird und nie springt. Jede Adresse lädt den eigenen Chunk ihrer Seite.
 
-- Wer mit der Maus über einen Link fährt oder ihn fokussiert, lädt den Chunk der Seite (`defaultPreload: "intent"`), sodass Seiten sofort aufgehen.
+- Fährt jemand mit der Maus über einen Link oder fokussiert ihn, wird der Chunk der Seite geladen (`defaultPreload: "intent"`), sodass sich Seiten sofort öffnen.
 - Die Suche und ihr Index laden kurz nach dem ersten Zeichnen. Was jemand tippt, bevor sie geladen ist, wird zu ihrer Abfrage.
 - Das HTML jeder Seite lädt die Chunks ihrer Sprache und der Seite selbst vorab.
 - `vite.config.ts` schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten um (`uiEntryImports`), wie in der Konsole.
@@ -67,6 +67,6 @@ Der erste Besuch einer englischen Adresse folgt den Sprachen des Browsers und we
 
 ## Ausgabe
 
-`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`: eine HTML-Datei für jede Seite in jeder Sprache, mit ihrem Kopf für Suchmaschinen und Linkvorschauen. Daneben liegen eine `404.html` pro Sprache, `sitemap.xml`, `robots.txt`, eine Seite unter jeder alten Adresse aus `redirects.json` und die [Content Security Policy](../releasing.md#content-security-policy) der Website in `csp.txt` und `_headers`.
+`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`: eine HTML-Datei für jede Seite in jeder Sprache, mit ihrem `<head>` für Suchmaschinen und Linkvorschauen. Daneben liegen eine `404.html` pro Sprache, `sitemap.xml`, `robots.txt`, eine Seite unter jeder alten Adresse aus `redirects.json` und die [Content Security Policy](../releasing.md#content-security-policy) der Website in `csp.txt` und `_headers`.
 
-Der Build endet mit zwei Prüfungen. `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre Bundle-Budgets, und `scripts/check-site.mjs` prüft die Sitemap und den Kopf jeder Seite. `pnpm --filter kaeso-docs licenses:check` prüft danach die Lizenz jedes Pakets im Build.
+Der Build endet mit zwei Prüfungen. `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre Bundle-Budgets, und `scripts/check-site.mjs` prüft die Sitemap und den `<head>` jeder Seite. `pnpm --filter kaeso-docs licenses:check` prüft danach die Lizenz jedes Pakets im Build.

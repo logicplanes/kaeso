@@ -127,11 +127,11 @@ Jede Antwort trägt einen Header `kaeso-request-id`. Protokollieren Sie ihn in I
 1. Öffnen Sie im Projekt **Anfrageprotokolle**.
 2. Wählen Sie **Anfrage per ID öffnen**, und fügen Sie die ID ein.
 
-Der Eintrag zeigt Status, Modell, Tokens, Kosten und Zeiten. Eine fehlgeschlagene Anfrage zeigt auch ihren Fehler, den Ihre App im Format ihres SDK erhalten hat.
+Der Eintrag zeigt Status, Modell, Token, Kosten und Zeiten. Eine fehlgeschlagene Anfrage zeigt auch ihren Fehler, den Ihre App im Format ihres SDK erhalten hat.
 
 ## Nächste Schritte
 
-- [Coding-Tools](coding-tools.md): Richten Sie Claude Code, Codex und andere Tools auf Ihre Installation.
+- [Coding-Tools](coding-tools.md): Richten Sie Claude Code, Codex und andere Tools auf Ihre Installation aus.
 - [Modell-API](../api/model-api.md): Schlagen Sie jeden Endpunkt, jeden Header und jeden Modellnamen nach.
 - [Fehler](../api/errors.md): Erfahren Sie, was ein Fehler bedeutet und wie Ihre App damit umgeht.
 - [Formatübersetzung](../concepts/format-translation.md): Sehen Sie, was erhalten bleibt, wenn ein SDK das Modell eines anderen Anbieters aufruft.

@@ -8,7 +8,7 @@ Jede Änderung bringt Tests mit, die prüfen, was eine Person oder eine App sieh
 
 ## Bevor eine Änderung fertig ist
 
-Jede Änderung besteht diese Befehle:
+Jede Änderung besteht diese Prüfungen:
 
 ```bash
 pnpm lint
@@ -57,14 +57,14 @@ Die [Continuous Integration](#continuous-integration) führt dieselben Prüfunge
 | `pnpm test` | Vitest mit Coverage-Schwellen in beiden Bibliotheken, der Konsole und der Dokumentation. Danach die Tests von `scripts/`, darunter die [Versionsprüfung](releasing.md#die-version-im-repository) |
 | `pnpm i18n` | Jeder Text der Konsole hat Deutsch und Chinesisch mit denselben Platzhaltern, und nichts ist übrig ([Übersetzungen](translations.md#prüfen)) |
 | `pnpm knip` | Ungenutzte Dateien, Exporte und Abhängigkeiten |
-| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets. Die Builds beider Websites führen danach `scripts/check-site.mjs` aus, das die Sitemap und den Kopf jeder Seite prüft |
+| `pnpm build` | Jeden Produktions-Build und seine Bundle-Budgets. Die Builds beider Websites führen danach `scripts/check-site.mjs` aus, das die Sitemap und den `<head>` jeder Seite prüft |
 | `pnpm licenses:check` | Nach einem Build: die Lizenz jedes Pakets, dessen Code ausgeliefert wird ([Lizenzrichtlinie](contributing.md#abhängigkeit-hinzufügen)) |
 | `pnpm release:check` | Nach einem Build: beide Bibliotheken so gepackt, wie npm es tut, mit jeder Datei, die sie ausliefern müssen, in einer Version |
 | `pnpm e2e` | Playwright in Konsole, Dokumentation und Showcase, nacheinander. Die Suite des Showcases testet dessen Build, führen Sie also zuerst `pnpm build` aus |
 
 `pnpm --filter <package> <script>` führt das Skript eines Pakets aus. Die Pakete heißen `kaeso-console`, `kaeso-docs`, `kaeso-showcase`, `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens`. Nachdem Sie eine Bibliothek geändert haben, führen Sie vor einem gefilterten Lauf `pnpm build:packages` aus. Die Coverage-Schwellen jedes Pakets stehen in seiner `vitest.config.ts` und steigen nur.
 
-Playwright braucht Chromium, einmal installiert:
+Playwright braucht Chromium, das Sie einmalig installieren:
 
 ```bash
 pnpm --filter kaeso-console exec playwright install chromium
@@ -89,7 +89,7 @@ Unit-Tests und End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixt
 
 ### Die UI-Bibliothek und der Showcase
 
-Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine Unit-Tests. Seine End-to-End-Suite führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und Seitenköpfe.
+Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine Unit-Tests. Seine End-to-End-Suite führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und `<head>` der Seiten.
 
 ## Rust
 
@@ -115,13 +115,13 @@ cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
 
 Die Coverage-Befehle sind Aliasse in `.cargo/config.toml`, wo auch ihre Schwellen und die ausgelassenen Dateien stehen. Tests, die die Datenbanken brauchen, schlagen fehl, statt übersprungen zu werden, wenn die Datenbanken fehlen.
 
-`cargo sqlx prepare --check` braucht `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` mit angewandten Migrationen. Das Gateway des Stacks wendet sie beim Start an. Ohne es führen Sie `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres` aus.
+`cargo sqlx prepare --check` braucht `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` mit angewandten Migrationen. Das Gateway des Stacks wendet sie beim Start an. Ohne den Stack führen Sie `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres` aus.
 
 `kaeso-kpp` und `kaeso-codecs` nennen das älteste unterstützte Rust als `rust-version` in ihrer `Cargo.toml`, und CI testet jedes Crate damit. Um das selbst zu tun, installieren Sie diese Version mit `rustup toolchain install <version>` und führen `cargo +<version> test --locked -p <crate>` aus.
 
 ### Testdatenbanken
 
-Jeder Test legt eigene Datenbanken auf PostgreSQL, ClickHouse und Valkey der Entwicklung an, sodass Tests ohne gemeinsamen Zustand parallel laufen. `kaeso-testkit` benennt und entfernt sie:
+Jeder Test legt eigene Datenbanken auf den Entwicklungsinstanzen von PostgreSQL, ClickHouse und Valkey an, sodass Tests ohne gemeinsamen Zustand parallel laufen. `kaeso-testkit` benennt und entfernt sie:
 
 | Name | Angelegt von | Gelöscht |
 | --- | --- | --- |
@@ -166,7 +166,7 @@ sequenceDiagram
   accDescr: Das SDK sendet eine Anfrage, deren Modell einen Quelldialekt und eine Fixture nennt. Der Server dekodiert sie mit dem Codec des Endpunkts, dekodiert die Fixture mit dem Codec des Quelldialekts in KPP, kodiert das mit dem Codec des Endpunkts und gibt Antwort, Stream oder Fehler zurück, die das SDK parst.
   participant SDK
   participant Server as kpp-conformance
-  SDK->>Server: Anfrage, Modell "dialect:fixture"
+  SDK->>Server: Anfrage, Modell „dialect:fixture“
   Note over Server: Mit dem Codec des Endpunkts dekodieren
   Note over Server: Die Fixture mit dem Codec des<br>Quelldialekts in KPP dekodieren
   Note over Server: Mit dem Codec des Endpunkts kodieren
@@ -192,7 +192,7 @@ Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts l
 e2e/.venv/bin/pytest -q e2e/sdk
 ```
 
-Diese Suite führt die SDKs gegen das Gateway aus, auf den Datenbanken der Entwicklung. Sie baut das Gateway und `kaeso-testkit`, startet den Mock-Anbieter und das Gateway und richtet Benutzer, Projekte, Anbieter-Schlüssel, Modelle und API-Schlüssel über die Platform API ein. Die Tests decken Streaming, Keepalives, Tools, Bilder, PDFs, Reasoning, beide Richtungen zwischen Anbietern, das Zählen von Tokens, Embeddings, Modelllisten, jede Fehlerklasse, Limits, Wiederholungen der SDKs und Verbindungsabbrüche ab.
+Diese Suite führt die SDKs gegen das Gateway aus, auf den Datenbanken der Entwicklung. Sie baut das Gateway und `kaeso-testkit`, startet den Mock-Anbieter und das Gateway und richtet Benutzer, Projekte, Anbieter-Schlüssel, Modelle und API-Schlüssel über die Platform API ein. Die Tests decken Streaming, Keepalives, Tools, Bilder, PDFs, Reasoning, beide Richtungen zwischen Anbietern, das Zählen von Token, Embeddings, Modelllisten, jede Fehlerklasse, Limits, Wiederholungen der SDKs und Verbindungsabbrüche ab.
 
 Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Antwort anhand von Markierungen in der Anfrage:
 
@@ -200,7 +200,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | --- | --- |
 | `[mock:fixture=NAME]` im Prompt | Antwortet mit dieser Fixture im Format des Anbieters |
 | `[mock:gate=NAME]` im Prompt | Hält die Anfrage fest, bis der Test das Gate öffnet |
-| Eine Modell-ID, die mit `unserved-` beginnt | Das „Modell nicht gefunden“ des Formats |
+| Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |
 | `[mock:models=list-only]` im Anbieter-Schlüssel | Beantwortet nur `GET /v1/models/{id}` mit einem bloßen 404 |
@@ -258,7 +258,7 @@ criterion zeigt die Veränderung gegenüber dem vorigen Lauf. CI prüft nur, das
 
 Der CI-Workflow, `.github/workflows/ci.yml`, läuft für jeden Pull Request, bei jedem Push auf `dev` und `prod` und innerhalb des Release-Workflows. Bei einem Pull Request entscheidet sein erster Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen. Überall sonst läuft jeder Job.
 
-Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und **No comments** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([Merge erreichen](contributing.md#merge-erreichen)).
+Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und **No comments** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([Pull Request mergen lassen](contributing.md#pull-request-mergen-lassen)).
 
 | Job | Führt aus |
 | --- | --- |

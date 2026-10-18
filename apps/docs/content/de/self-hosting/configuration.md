@@ -56,7 +56,7 @@ Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand 
 | `KAESO_LISTEN` | `listen` | Text | `0.0.0.0:8080` | Adresse der Modell-API, der Platform API und der Health-Checks. |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | Text | `0.0.0.0:9100` | Adresse der Prometheus-Metriken. Nie öffentlich weiterleiten. |
 | `KAESO_PUBLIC_URL` | `public_url` | Text | erforderlich | Die Adresse, die Personen und Apps verwenden, etwa `https://kaeso.example.com`, ohne Pfad. Sie muss `https` sein, außer `http` auf einer Loopback-Adresse für die Entwicklung. |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway glaubt. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
+| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
 
@@ -110,7 +110,7 @@ Diese Einstellungen schalten Anmeldemethoden für die ganze Installation ein ode
 | `KAESO_AUTH_OIDC` | `auth.oidc` | Bool | `true` | Anmeldung über den OIDC-Identitätsanbieter einer Organisation erlauben. |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | Bool | `true` | OIDC-Anfragen an private und Loopback-Adressen erlauben. Schalten Sie es ab, wo Admins von Organisationen Ihr internes Netz nicht über das Gateway erreichen sollen. |
 
-### Fehlgeschlagene API-Schlüssel
+### Fehlgeschlagene Schlüsselprüfungen
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
@@ -127,7 +127,7 @@ Diese Einstellungen schalten Anmeldemethoden für die ganze Installation ein ode
 
 ### Updates
 
-Die ersten drei Einstellungen gelten nur für eine neue Installation. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Updates** ([Upgrades](upgrades.md)).
+Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Updates** ([Upgrades](upgrades.md)).
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
@@ -149,7 +149,7 @@ Die ersten drei Einstellungen gelten nur für eine neue Installation. Danach än
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
 | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` | `upstream.stream_idle_timeout` | Text | `300s` | Streaming: längste Stille zwischen zwei Chunks; höchstens 24h. |
 
-Ein Modell im Katalog eines Projekts kann eigene Timeouts festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)).
+Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)).
 
 ### Streams an Apps
 
@@ -183,7 +183,7 @@ Chat Completions hat kein Feld für dieses Reasoning, deshalb hält das Gateway 
 
 ### Standards der Instanz
 
-Diese Einstellungen gelten nur für eine neue Installation. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Einstellungen** oder über die Platform API, und die gespeicherten Werte haben Vorrang.
+Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Einstellungen** oder über die Platform API, und die gespeicherten Werte haben Vorrang.
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |

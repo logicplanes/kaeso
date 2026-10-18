@@ -41,14 +41,14 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
 - **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog mit Aliassen in jedem Projekt.
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.
-- **Anfrageprotokolle.** Status, Tokens, Kosten und Zeiten jeder Anfrage, und ihr Inhalt, wo Sie ihn behalten möchten.
+- **Anfrageprotokolle.** Status, Token, Kosten und Zeiten jeder Anfrage, und ihr Inhalt, wo Sie ihn behalten möchten.
 - **Eine Konsole.** Eine Weboberfläche für all das, auf Englisch, Deutsch und vereinfachtem Chinesisch.
 
 ## Wie die Teile zusammenspielen
 
 ```mermaid
 flowchart TD
-  accTitle: Wie die Teile zusammenpassen
+  accTitle: Wie die Teile zusammenspielen
   accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft OpenAI oder Anthropic auf.
   apps[Apps] -- /v1 --> gateway[Gateway]
   console[Konsole] -- /platform/v1 --> gateway
