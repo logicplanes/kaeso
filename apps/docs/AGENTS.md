@@ -65,7 +65,7 @@ pnpm --filter kaeso-docs e2e
 
 [Writing documentation](content/en/development/documentation.md) is the binding style guide; read it before you write a page. In short:
 
-- **Every page earns its place**: a named reader, a task, no other page that says the same, more than a paragraph's worth. Otherwise remove or merge it, with a redirect in `redirects.json`. Numbers only CI acts on stay in the code that enforces them.
+- **Every page earns its place**: a named reader, a task, no other page that says the same, more than a paragraph's worth. Otherwise remove or merge it, and change every link to it in the same commit. Numbers only CI acts on stay in the code that enforces them.
 - **One page type** (quick start, guide, concept, reference, troubleshooting) with that type's template. Guides link to the reference; the same table is never on both.
 - **Voice:** address the reader as "you" („Sie“ in German), imperative instructions, active voice, present tense, sentences under 20 words and never over 30, paragraphs of at most four sentences. No filler, marketing, hedging, exclamation points or "we".
 - **Lead with a runnable example** on every API page and app guide, within the first screen. Requests are a code group of consecutive fences with `tab="curl"`, `tab="Python"` and `tab="TypeScript"`, in that order, using the official OpenAI and Anthropic SDKs, `kaeso.example.com`, the key from `KAESO_API_KEY` and `claude-haiku-4-5`.
