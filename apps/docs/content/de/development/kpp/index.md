@@ -7,7 +7,12 @@ nav: KPP-Interna
 
 KPP, das Kaeso Provider Protocol, ist das kanonische Format, das jede Modellanfrage durchläuft. Das Gateway dekodiert, was eine App sendet, nach KPP und kodiert KPP für den Anbieter; die Antwort nimmt denselben Weg zurück. [Formatübersetzung](../../concepts/format-translation.md) beschreibt, was Aufrufer davon sehen; diese Seiten richten sich an alle, die KPP ändern.
 
-Am besten mit [dem Weg einer Anfrage](#der-weg-einer-anfrage) und den [Entwurfsprinzipien](#entwurfsprinzipien) beginnen; der Rest dieser Seite und die Seiten darunter sind Nachschlagewerk.
+- [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
+- [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
+- [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
+- [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
+- [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
+- [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 
 ## Der Weg einer Anfrage
 
@@ -56,15 +61,6 @@ Streams nehmen denselben Weg mit `dispatch::stream_decoder` und `dispatch::strea
 
 `Codec` selbst ist ein versiegelter Trait aus assoziierten Funktionen, die zur Compile-Zeit gewählt werden: Anfragen, Antworten, Fehler, Stream-Decoder und -Encoder sowie Modelllisten, für beide Seiten des Gateways. Auf der Ingress-Seite spricht eine App das Format mit Kaeso; auf der Egress-Seite spricht Kaeso es mit einem Anbieter.
 
-## Seiten
-
-| Seite | Inhalt |
-| --- | --- |
-| [Formatwechsel](cross-format.md) | Die Regeln für Daten, die von einem API-Format in ein anderes wechseln, und ihre Gründe |
-| [Feldklassen](field-classes.md) | Jedes KPP-Feld als semantisch oder Hinweis |
-| [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md), [OpenAI Embeddings](openai-embeddings.md) | Jedes Wire-Feld jedes Formats, wohin es in KPP gehört, und seine Quelle |
-| [Fixtures und Aufzeichnungen](fixtures.md) | Die echten Payloads, gegen die die Codecs getestet werden, und wie neue aufgezeichnet werden |
-
 ## Crates und Module
 
 | Crate | Inhalt |
@@ -99,7 +95,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 - **Zustandslos.** Ein `GenerateRequest` trägt immer die ganze Unterhaltung.
 - **Nachrichten aus geordneten Content-Blöcken.** Die Reihenfolge der Blöcke bleibt von Anfang bis Ende erhalten.
 - **Roh, wo es auf Bytes ankommt.** Tool-Argumente, JSON-Schemas, unbekannte Blöcke und Zitate sind `RawJson`; opakes Reasoning wird so aufbewahrt, wie es ankam, und mit seinem `Origin` versehen.
-- **Semantisch oder Hinweis.** Jedes Feld ist entweder semantisch (ein Ziel muss es einhalten oder mit `Unsupported` ablehnen) oder ein Hinweis (es darf ignoriert werden). [Feldklassen](field-classes.md) listet sie auf.
+- **Semantisch oder Hinweis.** Jedes Feld ist entweder semantisch (ein Ziel muss es einhalten oder mit `Unsupported` ablehnen) oder ein Hinweis (es darf ignoriert werden). [Feldklassen](#feldklassen) listet sie auf.
 - **Gebundene Extras.** Was KPP nicht modelliert, wird in `Extras` aufbewahrt, mit dem Dialekt versehen, aus dem es kam, und nur in diesen Dialekt zurückgeschrieben. `fields` sind semantisch: Ein anderer Dialekt lehnt sie ab, außer sie stehen auf der [Allowlist](cross-format.md#extras). `form` ist Darstellung (ein String oder ein Array, `null` oder fehlend, wie Chunks gruppiert waren), und andere Dialekte ignorieren es. Unbekannte Schlüssel verschachtelter Objekte verwenden Schlüsselpfade mit Punkten, etwa `function.x`, daher lässt sich ein Schlüssel, der selbst einen `.` enthält, nicht mitführen ([Wire-Structs](#wire-structs)).
 - **Ablehnen vor dem Senden.** `check()` gibt `Unsupported` zurück und nennt die Funktion, die ein Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird.
 - **Nichts fällt stillschweigend weg.** Jedes Feld und jeder Block einer eingehenden Payload landet an genau einer Stelle: in einem typisierten KPP-Feld, einem dialektgebundenen `Extras`-Eintrag, einem `Unknown`-Item oder einem `KppError` der Art `Unsupported`. Ein Match-Arm, der Daten verwirft, ist ein Bug.
@@ -109,14 +105,98 @@ KPP-Werte und Fehler werden als Wert zurückgegeben. `KppError` und einige Enum-
 
 Jeder KPP-Typ implementiert `serde` für Logs und Snapshots. Diese JSON-Form ist über Patch-Releases hinweg stabil, aber kein Wire-Format. Ihre Namen stehen in Snake Case und schreiben OpenAI als `openai`, wie `DialectId` (`openai_chat`): `OpaqueKind::OpenAiEncryptedReasoning` ist `openai_encrypted_reasoning`.
 
-## Einen Codec ändern
+## Feldklassen
 
-1. **Zuerst die Fixture.** Die echte Payload in `crates/kaeso-codecs/fixtures/<dialect>/` ablegen, mit einer Herkunftszeile in der `README.md` dieses Ordners ([Fixtures](fixtures.md)).
-2. **Die Quelle nennen.** Jede Abbildung nennt ihre Quelle auf der Mapping-Seite des Dialekts: die Dokumentation des Anbieters oder das OpenAPI-Schema beim festgelegten Spezifikations-Commit. Die Quellen sind die [OpenAPI-Spezifikation von OpenAI](https://github.com/openai/openai-openapi), die auf der Seite [Anthropic Messages](anthropic-messages.md) genannte OpenAPI-Spezifikation von Anthropic, die Typen der offiziellen SDKs ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)) und die Dokumentation der Anbieter. Wo die Quellen mehrdeutig sind, das vorsichtige Verhalten wählen, `Unsupported`, und ein Issue eröffnen.
-3. **Erst ein fehlschlagender Test, dann Code.** Jedes Wire-Feld wird auf ein typisiertes KPP-Feld, einen an den Ursprung gebundenen `Extras`-Eintrag, ein `Unknown`-Item oder einen `Unsupported`-Fehler abgebildet.
-4. **Die Mapping-Seite des Dialekts aktualisieren**, in allen drei Sprachen, im selben Pull Request.
+Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
-Fehlermeldungen richten sich an die Person, die Kaeso aufgerufen hat: Sie nennen das Feld, das das Ziel nicht unterstützt, und was zu tun ist.
+- **Semantisch.** Das Ziel muss das Feld einhalten. Kann der Zieldialekt oder das Modell es nicht ausdrücken, gibt `check()` des Codecs `Unsupported` zurück und nennt das Feld, und es wird nichts gesendet.
+- **Hinweis.** Das Ziel darf das Feld ignorieren. Der Codec lässt es nur weg, wo das Ziel keine Entsprechung hat; ein Ziel, das einen Hinweis ausdrücken kann, bekommt ihn immer.
+
+### `GenerateRequest`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `model` | semantisch | Wird vom Gateway vor dem Kodieren aufgelöst. |
+| `system` | semantisch | |
+| `messages` | semantisch | |
+| `tools` (`Function`) | semantisch | Sein `cache` ist ein Hinweis, wie bei Blöcken ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
+| `tools` (`Unknown`) | semantisch | Nur im Ursprungsdialekt ausdrückbar. |
+| `tool_choice` | semantisch | `Unknown` nur im Ursprungsdialekt ausdrückbar. |
+| `parallel_tool_calls` | semantisch | |
+| `output` | semantisch | `JsonObject` hat bei Anthropic keine Entsprechung und ist `Unsupported`, ohne Nachbildung ([strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe)). |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantisch | Aufwand und Budget werden nach der Tabelle unter [Aufwand und Budget](cross-format.md#aufwand-und-budget) ineinander umgerechnet. |
+| `reasoning.summary` | Hinweis | Steuert nur, ob Zusammenfassungen zurückkommen. Anthropic: `thinking.display: "summarized"` ([lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). |
+| `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](cross-format.md#lesbares-reasoning-und-zusammenfassungen)). |
+| `sampling.max_output_tokens` | semantisch | |
+| `sampling.temperature`, `.top_p` | semantisch | Ihre Schreibweise (`1` oder `1.0`) ist Form und bleibt nur innerhalb des Dialekts erhalten ([Sampling](cross-format.md#sampling)). |
+| `sampling.top_k` | semantisch | Nur Anthropic; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
+| `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](cross-format.md#sampling)). |
+| `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
+| `sampling.frequency_penalty`, `.presence_penalty` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
+| `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. |
+| `stream` | semantisch | |
+| `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](cross-format.md#extras). |
+| `extras.form` | Hinweis | Form-Markierungen für die Darstellung; andere Dialekte ignorieren sie. |
+
+### `Message`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `role` | semantisch | Eine `System`-Nachricht nach dem Beginn der Unterhaltung ist für Anthropic `Unsupported`, außer die Anfrage kam aus Anthropic Messages ([Systemnachrichten](cross-format.md#systemnachrichten)). |
+| `blocks` | semantisch | Die Reihenfolge der Blöcke bleibt erhalten. |
+| `extras` | wie bei der Anfrage | |
+
+### `Block`
+
+| Variante / Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `Text.text` | semantisch | |
+| `Text.citations` | semantisch | Roh und an den Ursprung gebunden; ein anderer Dialekt bekommt `Unsupported`. |
+| `Text.cache`, `Image.cache`, `Document.cache`, `ToolCall.cache`, `ToolResult.cache` | Hinweis | Für OpenAI weggelassen, weil OpenAI selbst cacht ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
+| `Image.source` | semantisch | Eine `FileId` funktioniert nur beim Anbieter, der sie ausgegeben hat ([Dateien](cross-format.md#dateien)). OpenAI Chat Completions nimmt Bilder nur als URL oder Base64. |
+| `Document.source` | semantisch | Textquellen nur für Anthropic. OpenAI Chat Completions lehnt auch URL-Quellen ab. |
+| `Document.title`, `.context` | semantisch | Nur Anthropic; für OpenAI `Unsupported`. |
+| `Document.citations` | semantisch | Nur Anthropic; für OpenAI `Unsupported`, da OpenAI keine Dokumente zitieren kann. |
+| `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er auf feste Weise umgeschrieben und auf dem Rückweg zurückübersetzt. |
+| `ToolResult.call_id`, `.content` | semantisch | |
+| `ToolResult.is_error` | Hinweis für Ziele ohne Fehler-Flag | Für OpenAI Chat und Responses weggelassen; der Inhalt trägt den Fehlertext ([Tool-Fehler](cross-format.md#tool-fehler)). |
+| `Reasoning.summary`, `.text` | Hinweis | Lesbares Reasoning wird in der Anfrage eines anderen Dialekts weggelassen ([Reasoning](cross-format.md#reasoning)). In Antworten wird es zusammen mit dem Originalblock in einem [Reasoning-Blob](cross-format.md#reasoning-blobs) gezeigt. |
+| `Reasoning.opaque` | semantisch für den Ursprung | Wird Byte für Byte an Ursprungsdialekt und -anbieter zurückgespielt; nie anderswohin gesendet, dort fällt der ganze Block weg ([Reasoning](cross-format.md#reasoning)). |
+| `Reasoning.origin` | — | Entscheidet über das Zurückspielen ([Reasoning](cross-format.md#reasoning)). Ein Anthropic-`thinking`-Block ohne Signatur geht nur an Anthropic zurück, wenn er aus Anthropic Messages gelesen wurde. |
+| `Refusal.text` | semantisch | Anthropic hat keinen Verweigerungsblock: in Anfragen dorthin `Unsupported`, in Antworten an Anthropic-Apps ein Textblock. |
+| `Unknown` | semantisch | Nur im Ursprungsdialekt. Eine `function`-Nachricht von OpenAI Chat wird vollständig als ein solcher Block aufbewahrt ([Anfragen](cross-format.md#anfragen)). |
+| `extras` jedes Blocks | wie bei der Anfrage | Auf der Allowlist je Blockart freigegeben ([Extras-Allowlist](cross-format.md#extras)). |
+
+### `CacheHint`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `ttl` | Hinweis | |
+| `extras` | Hinweis | Fällt mit dem Hinweis weg. |
+
+### `EmbedRequest`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `model`, `input`, `dimensions`, `encoding` | semantisch | |
+| `user` | Hinweis | |
+| `extras` | wie bei `GenerateRequest` | |
+
+### Antworten und Stream-Events
+
+Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise: Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md).
+
+Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen kann, und zwar so verpackt, dass es zurückkommen kann ([Reasoning-Blobs](cross-format.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unbekannte Blöcke erreichen nur Apps ihres eigenen Dialekts. Alles andere bleibt für die App unsichtbar ([Antworten](cross-format.md#antworten), `cross::reply_policy`), in Streams ersetzt durch [Keepalive](cross-format.md#keepalives)-Frames. Das Gateway protokolliert die vollständige KPP-Antwort.
+
+## Codec ändern
+
+1. Legen Sie die echte Payload in `crates/kaeso-codecs/fixtures/<dialect>/` ab, mit einer Herkunftszeile in der `README.md` dieses Ordners ([Fixtures](fixtures.md)).
+2. Nennen Sie die Quelle jeder Abbildung auf der Mapping-Seite des Dialekts. Die Quellen sind die [OpenAPI-Spezifikation von OpenAI](https://github.com/openai/openai-openapi), die auf der Seite [Anthropic Messages](anthropic-messages.md) genannte OpenAPI-Spezifikation von Anthropic, die Typen der offiziellen SDKs ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)) und die Dokumentation der Anbieter. Wo sie mehrdeutig sind, wählen Sie `Unsupported` und eröffnen ein Issue.
+3. Schreiben Sie einen fehlschlagenden Test, dann den Code. Jedes Wire-Feld wird auf ein typisiertes KPP-Feld, einen an den Ursprung gebundenen `Extras`-Eintrag, ein `Unknown`-Item oder einen `Unsupported`-Fehler abgebildet.
+4. Aktualisieren Sie die Mapping-Seite des Dialekts in allen drei Sprachen, im selben Pull Request.
+
+Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen Sie das Feld, das das Ziel nicht unterstützt, und sagen Sie, was zu tun ist.
+
 ## Typen
 
 Die Typen sind davon geprägt, was die Codecs brauchen, um verlustfrei zu bleiben:
