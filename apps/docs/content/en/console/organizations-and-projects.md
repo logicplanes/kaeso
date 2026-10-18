@@ -8,7 +8,7 @@ An organization holds members, provider keys and projects. A project holds a mod
 
 ## Create an organization
 
-Open the menu at the foot of the sidebar and choose **Create organization**. You become its owner, and it starts with a default project. The install decides who may create organizations ([instance settings](instance-administration.md#settings)).
+Open the menu at the foot of the sidebar and choose **Create organization**. You become its owner, and it starts with a default project. The install decides who may create organizations ([instance settings](instance-administration.md#change-install-settings)).
 
 The same menu lists your organizations and switches between them.
 

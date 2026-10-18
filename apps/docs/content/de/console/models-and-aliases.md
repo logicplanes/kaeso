@@ -15,7 +15,7 @@ Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https
 - **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für Anthropic, fügt jedes nicht veraltete Text- und Embedding-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu.
 - **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft.
 
-Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modellquellen). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
+Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
 
 ## Verfügbarkeit
 
