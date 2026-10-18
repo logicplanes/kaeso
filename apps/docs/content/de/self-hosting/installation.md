@@ -67,7 +67,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso user sign-in-link <email>` | Gibt einen einmaligen Anmeldelink für einen aktiven Benutzer aus, 15 Minuten gültig ([Wieder hineinkommen](sign-in.md#wieder-hineinkommen)) |
 | `kaeso user reset-2fa <email>` | Entfernt die Zwei-Faktor-Authentifizierung und die Wiederherstellungscodes eines Benutzers, beendet seine Sitzungen und benachrichtigt ihn per E-Mail. Das Audit-Log der Instanz hält es fest |
 | `kaeso master-key generate` | Gibt einen neuen Hauptschlüssel als `id:base64` aus |
-| `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden ([Hauptschlüssel rotieren](backups.md#den-hauptschlüssel-rotieren)) |
+| `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden ([Hauptschlüssel rotieren](backups.md#hauptschlüssel-rotieren)) |
 | `kaeso migrate` | Führt die Migrationen von PostgreSQL und ClickHouse aus und beendet sich |
 | `kaeso serve` | Startet das Gateway. Das ist der Standardbefehl des Images |
 

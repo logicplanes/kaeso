@@ -19,7 +19,7 @@ docker compose logs --tail 100 gateway
 | 缺少 `.env` 中的某个变量 | Compose 本身就会拒绝启动并指明该变量：设置 `KAESO_DOMAIN`、`POSTGRES_PASSWORD`、`POSTGRES_SUPERUSER_PASSWORD`、`CLICKHOUSE_PASSWORD` 和 `VALKEY_PASSWORD`，并确认 `compose.yaml` 旁边有 `master-keys` |
 | 需要 `KAESO_SMTP_HOST` | 填写 SMTP 服务器，或设置 `KAESO_MAIL_TRANSPORT=log` 在没有邮件服务器的情况下试用 Kaeso；参见[电子邮件](email.md) |
 | 其他设置无效 | 在 `compose.override.yaml` 中改正；[配置](configuration.md)列出了允许的值 |
-| 某个主密钥 ID 未配置 | 数据库中有用 `master-keys` 中缺失的密钥加密的机密；把该密钥加回去，参见[主密钥](backups.md#主密钥) |
+| 某个主密钥 ID 未配置 | 数据库中有用 `master-keys` 中缺失的密钥加密的机密；把该密钥加回去，参见[主密钥](backups.md#妥善保管主密钥) |
 | 数据库已被更新版本的 Kaeso 迁移 | 旧镜像正在连接较新的数据库；启动较新的版本，或执行[降级](upgrades.md#降级) |
 | PostgreSQL 或 ClickHouse 拒绝密码 | 数据库创建之后修改了 `.env` 中的密码，而数据库保留最初的密码；把旧密码改回去 |
 
