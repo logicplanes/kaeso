@@ -1,70 +1,121 @@
 ---
 title: Platform API
-description: 像控制台一样通过 HTTP 管理部署。
+description: 通过 HTTP 管理部署时如何进行身份验证、翻页、处理错误以及查找路由。
 order: 3
 ---
 
-Platform API 管理组织、项目、成员、密钥、服务商密钥、模型、限额、用量和日志。它位于 `/platform/v1` 下，与模型 API 使用同一域名。控制台只使用这个 API，因此控制台能做的一切，脚本也都能做。
+Platform API 管理控制台显示的一切：组织、项目、成员、密钥、服务商密钥、模型、限额、用量和日志。它位于部署域名下的 `/platform/v1`，控制台只使用这个 API。
 
-完整的参考是由网关代码生成的 OpenAPI 文档 [`openapi.json`](https://github.com/logicplanes/kaeso/blob/dev/openapi.json)，其中每个操作都注明了它所检查的那一项权限。获取当前运行版本的文档：
+把平台密钥放在 `KAESO_PLATFORM_KEY` 中，用您组织的 ID 替换 `org_…`，即可列出组织的项目：
+
+```bash tab="curl"
+curl https://kaeso.example.com/platform/v1/orgs/org_…/projects \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+```
+
+```python tab="Python"
+import json
+import os
+import urllib.request
+
+request = urllib.request.Request(
+    "https://kaeso.example.com/platform/v1/orgs/org_…/projects",
+    headers={"Authorization": f"Bearer {os.environ['KAESO_PLATFORM_KEY']}"},
+)
+with urllib.request.urlopen(request) as response:
+    print(json.load(response))
+```
+
+```ts tab="TypeScript"
+const response = await fetch("https://kaeso.example.com/platform/v1/orgs/org_…/projects", {
+  headers: { Authorization: `Bearer ${process.env.KAESO_PLATFORM_KEY}` },
+});
+console.log(await response.json());
+```
+
+响应是一页项目：
+
+```json
+{
+  "data": [
+    {
+      "id": "proj_…",
+      "org_id": "org_…",
+      "name": "Support bot",
+      "is_default": false,
+      "content_logging": true,
+      "created_at": "2026-10-01T09:30:00Z"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+[用 Platform API 实现自动化](automation.md)逐步演示如何设置项目、模型和应用的密钥。
+
+## OpenAPI 文档
+
+[`openapi.json`](https://github.com/logicplanes/kaeso/blob/dev/openapi.json) 描述每个操作：路径、字段、响应，以及它检查的那一项权限。网关根据自身代码生成该文档。获取您所运行版本的文档：
 
 ```bash
 docker compose exec gateway kaeso openapi > openapi.json
 ```
 
-[用 Platform API 实现自动化](automation.md)演示如何用 curl 设置项目、模型和应用的密钥，可使用平台密钥、项目密钥或会话。
-
 ## 身份验证
 
 | 方式 | 发送 | 以何种权限行事 |
 | --- | --- | --- |
-| 会话 | `auth/*` 下的登录端点设置的会话 Cookie | 已登录用户的权限 |
-| 具有平台访问权限的 API 密钥 | `Authorization: Bearer sk-kso-…` | 其成员或服务账号的权限，仅限于其所属项目 |
 | 平台密钥 | `Authorization: Bearer sk-kso-org-…` | 管理员角色的权限，适用于其组织及组织内的所有项目 |
+| 具有平台访问权限的 API 密钥 | `Authorization: Bearer sk-kso-…` | 其成员或服务账号的权限，仅限于其所属项目 |
+| 会话 | `auth/*` 下的登录端点设置的会话 Cookie | 您自己的权限 |
 
-会话供控制台和使用 curl 的人员使用。Cookie 是 HttpOnly 的 `__Host-kaeso_session`；在位于 localhost 等回环地址的 `http://` 部署上为 `kaeso_session`。项目密钥适合单个项目的脚本和 CI，平台密钥适合整个组织的自动化。
+自动化整个组织时使用平台密钥，单个项目的脚本和 CI 使用项目密钥。会话供控制台和使用 curl 的人员使用。会话 Cookie 是 `__Host-kaeso_session`；在位于 localhost 等回环地址的 `http://` 部署上为 `kaeso_session`。
 
-- **密钥只能访问 `orgs/{org}/*`。** `me/*`、`instance/*` 以及 `auth/*` 中需要登录的路由会以 403 拒绝密钥，组织级路由也会以 403 拒绝项目密钥。Platform API 只从 `Authorization` 读取密钥，从不读取 `x-api-key`。
-- **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`；默认为 `inference`。这需要 `keys.platform_access.grant` 权限。参见 [API 密钥](../console/api-keys.md)。
+- **密钥只能访问 `orgs/{org}/*`。** `me/*`、`instance/*` 以及 `auth/*` 中需要登录的路由会对密钥返回 403。组织级路由会对项目密钥返回 403。
+- **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
+- **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`。默认为 `inference`，授予平台访问权限需要 `keys.platform_access.grant` 权限（[API 密钥](../console/api-keys.md)）。
 - **平台密钥只能在会话中创建**，且创建者必须拥有管理员角色的全部权限。平台密钥从不调用模型。
-- **组织策略作用于会话。** 要求单点登录的组织会以 403 拒绝其他会话；要求双重验证的组织会拒绝没有第二重验证的密码会话。
-- **未知密钥会被限流。** 来自同一地址、使用未知 API 密钥的请求过多时（模型 API 和 Platform API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`，直到时间窗口结束；相关设置见 [API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)。
+- **组织策略作用于会话。** 要求单点登录的组织会对其他会话返回 403。要求双重验证的组织会对没有第二重验证的密码会话返回 403。
+- **未知密钥会被限流。** 来自同一地址、使用未知密钥的请求过多时（两个 API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`（[API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)）。
 
 ### 跨站请求
 
-除 `GET`、`HEAD` 和 `OPTIONS` 之外，凡是携带会话 Cookie 的请求，以及发往公开 `auth/*` 端点的此类请求，都必须发送 `Origin`，其值为部署公开 URL 的源，例如 `Origin: https://kaeso.example.com`。浏览器会自动发送它；`Referer` 不能代替它。缺少该请求头或源不同时，响应为 `403 permission_denied`，消息会指明应发送的请求头。这样，其他网站既无法借用某人的会话执行操作，也无法让浏览器登录到他们的账户。
+携带会话 Cookie 且会更改内容的请求，必须发送值为部署源的 `Origin`，例如 `Origin: https://kaeso.example.com`。发往公开 `auth/*` 端点的此类请求也是如此。浏览器会自动发送该请求头，`Referer` 不能代替它。缺少该请求头或源不同时，Kaeso 返回 `403 permission_denied`，并在消息中指明该请求头。
+
+这样，其他网站既无法借用您的会话执行操作，也无法让您的浏览器登录到他们的账户。
 
 - 使用 API 密钥或平台密钥的请求不需要 `Origin`。
-- 读取请求从不需要它，`GET auth/methods` 和 `GET auth/oidc/start` 也不例外。
-- 代为调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送部署的源。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`；参见[登录和单点登录](../self-hosting/sign-in.md#直接前往提供商的链接)。
+- `GET`、`HEAD` 和 `OPTIONS` 从不需要它，`GET auth/methods` 和 `GET auth/oidc/start` 也不例外。
+- 调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送部署的源。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`（[登录和单点登录](../self-hosting/sign-in.md#直接前往提供商的链接)）。
 
 ### 近期登录
 
-在会话中，部分操作要求在最近 15 分钟内登录过；否则响应为 `403 recent_sign_in_required`，控制台会请用户重新登录。密钥不受此限制。
+在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录。密钥不受此限制。
 
-- 所需权限在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的操作：`org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
-- 自己的账户中：更改电子邮件地址或通知设置、关闭双重验证、生成新的恢复码、删除账户。
-- 实例管理员：更改实例设置，以及计划删除、恢复或删除组织。
+- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
+- **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
+- **实例管理员：** 更改实例设置或更新设置、应用更新，以及计划删除或删除组织。
 
 ## 约定
 
 | 主题 | 规则 |
 | --- | --- |
-| 格式 | 基于 JSON 的 REST。路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会以 400 被拒绝 |
-| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`key_…`、`opk_…`、`svc_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`inv_…`、`ses_…`、`req_…`、`evt_…` |
-| 时间 | RFC 3339，UTC |
-| 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会以 400 被拒绝 |
-| 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元 |
-| 创建 | 对集合发送 `POST`，以 201 和该资源响应 |
-| 更新 | 发送只含待更改字段的 `PATCH` |
-| 操作 | `POST …/archive`、`…/disable`、`…/enable`、`…/replace`、`…/restore`；归档会保留记录 |
-| 删除 | `DELETE`，仅用于确实会删除内容的地方：服务商密钥、别名、目录中的模型、限额、自定义角色、会话、邀请、账户 |
-| 审计 | 每项更改都会在同一事务中写入其所在层级的审计日志 |
-| 请求 ID | 每个响应都带有 `kaeso-request-id` |
+| 格式 | 基于 JSON 的 REST：路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会得到 400。 |
+| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`。 |
+| 时间 | RFC 3339，UTC。 |
+| 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
+| 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元。 |
+| 创建 | 对集合发送 `POST`，以 201 和新资源响应。 |
+| 更新 | 发送只含待更改字段的 `PATCH`。 |
+| 操作 | `POST …/archive`、`…/disable`、`…/enable`、`…/replace` 或 `…/restore`。归档会保留记录。 |
+| 删除 | `DELETE`，仅用于确实会删除内容的地方：服务商密钥、别名、目录中的模型、限额、自定义角色、会话、邀请和您的账户。 |
+| 审计 | 每项更改都会在同一事务中写入其所在层级的审计日志。 |
+| 请求 ID | 每个响应都带有 `kaeso-request-id`。 |
 
 ### 列表
 
-列表接受 `limit`（1 到 100，默认 20）和 `after`，后者为上一页的 `next_cursor`；筛选条件是另外的查询参数。列表按 ID 排序，即按创建顺序；请求日志和审计日志则从新到旧。
+列表接受 `limit`（1 到 100，默认 20）和 `after`，后者为上一页的 `next_cursor`。其他查询参数用于筛选。列表按创建顺序排列，但请求日志和审计日志从新到旧。
 
 ```json
 { "data": [], "has_more": true, "next_cursor": "…" }
@@ -74,15 +125,17 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 修订版本
 
-目录中的模型和限额带有 `revision`，每次更改都会递增；读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改你读取的那个修订版本：条目在此期间被更改时，响应为 `412 conflict`。不带 `If-Match` 时，更改作用于当前修订版本。
+目录中的模型和限额带有 `revision`，每次更改都会递增。读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改您读取的那个修订版本。条目在此期间被更改时，Kaeso 返回 `412 conflict`；不带 `If-Match` 时，更改作用于当前修订版本。
 
 ### 已计划删除的组织
 
-已计划删除的组织在恢复或删除之前为只读。读取按调用者的权限正常进行。组织中的每项更改，包括退出组织和接受加入该组织的邀请，都返回 `409 org_scheduled_for_deletion`，但 `POST orgs/{org}/restore` 和实例管理员的 `instance/orgs/{org}/*` 除外。其密钥完全无法通过身份验证。
+已计划删除的组织在恢复或删除之前为只读。读取按调用方的权限正常进行，其密钥则完全无法通过身份验证。组织中的每项更改都返回 `409 org_scheduled_for_deletion`，包括退出组织和接受加入该组织的邀请。只有 `POST orgs/{org}/restore` 和实例管理员的 `instance/orgs/{org}/*` 仍可使用。
 
-`auth/session` 会在每个成员资格中显示这类组织，带有 `org_state`、`org_deletion_due_at`，以及缩减为仅能查看、导出和 `org.delete` 的权限。它还包含实例的 `org_deletion` 策略（`allowed`、`grace_days`）。
+`auth/session` 会在每个成员资格中用 `org_state` 和 `org_deletion_due_at` 标出这类组织。成员在其中的权限缩减为查看、导出和 `org.delete`。会话还包含实例的 `org_deletion` 策略，带有 `allowed` 和 `grace_days`。
 
 ## 错误
+
+每个错误都使用同一种正文：
 
 ```json
 {
@@ -94,102 +147,110 @@ docker compose exec gateway kaeso openapi > openapi.json
 }
 ```
 
-消息是写给人看的一句短句，控制台会原样显示。`param` 指出出错的正文字段、查询参数或路径参数；当仅缺一项权限即可放行请求时，`right` 指出调用者缺少的那项权限。不适用时两者都会省略。
+消息是写给人看的一句短句，控制台会原样显示。`param` 指出出错的字段、查询参数或路径参数。当仅缺一项权限即可放行请求时，`right` 指出调用方缺少的那项权限。不适用时两者都会省略。
 
 | 状态码 | `type` | 何时出现 |
 | --- | --- | --- |
-| 400 | `invalid_request` | 正文不是 JSON、字段未知、参数类型或格式错误、值超出范围 |
-| 401 | `authentication` | 没有会话或密钥，或会话、密钥未知、已过期或已结束 |
-| 403 | `permission_denied` | 缺少权限、密钥用于其不能访问的路由、缺少 `Origin`、组织策略 |
-| 403 | `recent_sign_in_required` | 参见[近期登录](#近期登录) |
-| 404 | `not_found` | 路径未知，或对象不存在或调用者无权查看 |
-| 405 | `invalid_request` | 路径不接受该方法；`Allow` 列出它接受的方法 |
-| 409 | `conflict` | 更改与当前状态冲突，例如名称已被占用 |
-| 409 | `org_scheduled_for_deletion` | 在等待删除的组织中进行更改 |
-| 412 | `conflict` | `If-Match` 指定的是较旧的修订版本 |
-| 413 | `request_too_large` | 正文大于 `KAESO_BODY_LIMITS_PLATFORM_API`，默认为 1 MiB |
-| 429 | `rate_limited` | 未知密钥过多，或试验场请求触及限额；`Retry-After` 说明何时重试 |
-| 500 | `internal` | 网关内部故障；消息会给出需报告的请求 ID |
-| 502, 503, 504, 429 | `provider_error` | 仅用于试验场的模型请求 |
-| 503 | `unavailable` | 无法连接数据库或其他后端服务，例如 “Kaeso cannot reach its database right now; try again shortly.” |
+| 400 | `invalid_request` | 正文不是 JSON，或含有未知字段。参数类型或格式错误，或值超出范围。 |
+| 401 | `authentication` | 没有会话或密钥，或会话、密钥未知、已过期或已结束。 |
+| 403 | `permission_denied` | 缺少权限、密钥用于其不能访问的路由、缺少 `Origin`，或组织策略不允许。 |
+| 403 | `recent_sign_in_required` | 该操作需要[近期登录](#近期登录)。 |
+| 404 | `not_found` | 路径不存在，或对象不存在或调用方无权查看。 |
+| 405 | `invalid_request` | 路径不接受该方法。`Allow` 列出它接受的方法。 |
+| 409 | `conflict` | 更改与当前状态冲突，例如名称已被占用。 |
+| 409 | `org_scheduled_for_deletion` | 在已计划删除的组织中进行更改。 |
+| 412 | `conflict` | `If-Match` 指定的是较旧的修订版本。 |
+| 413 | `request_too_large` | 正文大于 `KAESO_BODY_LIMITS_PLATFORM_API`，默认为 1 MiB。 |
+| 429 | `rate_limited` | 来自同一地址的登录尝试或未知密钥过多，或试验场请求触及限额。`Retry-After` 说明何时重试。 |
+| 500 | `internal` | 网关内部故障。消息会给出可报告的请求 ID。 |
+| 503 | `unavailable` | Kaeso 无法连接数据库或其他后端服务，例如 “Kaeso cannot reach its database right now; try again shortly.” |
+| 429, 502, 503, 504 | `provider_error` | 服务商失败，仅用于[试验场](#试验场)请求。 |
 
-## 功能领域
+## 路由
+
+路由相对于 `/platform/v1`。[`openapi.json`](#openapi-文档) 列出了每个路由及其字段。
 
 | 路径 | 内容 |
 | --- | --- |
-| `auth/*` | 首次设置、登录方式、密码和双重验证、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册、邀请 |
-| `me`、`me/*` | 你的个人资料、头像和语言（`locale`：`auto`、`en`、`de`、`zh-CN`）、电子邮件地址、密码、双重验证和恢复码、会话、成员资格、你的密钥、通知、创建组织、删除账户 |
-| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限、项目和默认项目、服务商密钥（每个服务商可有多个、默认密钥、分配给项目）、安全（单点登录、强制单点登录和双重验证、密钥有效期）、平台密钥、日志设置、存储和删除、用量、审计日志、所有权转让、删除和恢复 |
-| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额、密钥策略、目录（搜索、预览、批量）和别名、限额、内容日志、请求日志和导出、用量、审计日志、[试验场](#试验场) |
-| `instance/*` | 仅限实例管理员：用户及其邀请、会话和管理员标记；组织及其成员、项目、用量和存储；设置和测试邮件；models.dev 的状态和同步；系统健康、存储和日志缓冲区；更新：最新版本、更新设置、通过更新器应用更新及其进度；实例审计日志 |
+| `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员资格，以及能否创建组织（`can_create_orgs`）。 |
+| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员资格、密钥和通知，以及创建组织和删除账户。 |
+| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
+| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容记录、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
+| `instance/*` | 供实例管理员使用：用户、组织、实例设置、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
 
-实例管理员可以看到每个组织的元数据，但看不到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何活跃用户设为所有者，包括管理员本人；实例管理员就是通过这种方式进入组织进行管理的，此操作会记录在该组织的审计日志中。只有实例管理员能通过 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。
+实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何活跃用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
 
-没有计费相关的路由。`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
+只有实例管理员能用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
 
 ## 角色和权限
 
-每个组织成员有一个组织角色，每个项目成员和服务账号有一个项目角色，并可在角色之外单独添加或移除权限。角色可以是内置角色，也可以是组织的自定义角色（`role_…`）。组织角色还持有在所有项目中的权限。[权限](../concepts/rights.md)列出了所有权限和内置角色。
+每个组织成员有一个组织角色。每个项目成员和服务账号有一个项目角色。角色可以是内置角色，也可以是组织的自定义角色（`role_…`），并可按成员单独添加或移除权限。组织角色还包含在每个项目中的权限。[权限](../concepts/rights.md)列出了每项权限和每个内置角色。
 
-| 路由 | 权限 | 内容 |
+| 路由 | 权限 | 返回 |
 | --- | --- | --- |
-| `GET orgs/{org}/rights` | `org.view` | 按类别列出的所有权限，包括名称、描述、标记（`sensitive`、`recent_sign_in`、`cloud_only`）及其依赖的权限 |
-| `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色，包括其权限、在所有项目中的权限和持有人数；`?scope=org` 或 `project` |
-| `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改和删除自定义角色，每个组织最多 50 个 |
-| `GET orgs/{org}/members/{user}/rights` | `members.view` | 成员的有效组织权限、在所有项目中的权限，以及在调用者可见的每个项目中的权限，均附来源 |
-| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 成员在此项目中的有效权限，附来源 |
-| `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | 调用者自己在此项目中的权限，附来源 |
-| `GET orgs/{org}/rights/{right}/grantors`、`GET …/projects/{project}/rights/{right}/grantors` | `members.view`、`project.view` | 可以向谁申请某项权限：最多 10 位持有该权限且可以更改权限的活跃成员，所有者优先 |
-| `GET orgs/{org}/projects/{project}/audit-log` | `project.audit_log.view` | 项目中的更改 |
+| `GET orgs/{org}/rights` | `org.view` | 按类别列出的每项权限，包括名称、说明、标记（`sensitive`、`recent_sign_in`、`cloud_only`）及其所需的权限。 |
+| `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色，包括其权限和持有人数。可用 `?scope=org` 或 `?scope=project` 筛选。 |
+| `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改或删除自定义角色。每个组织最多 50 个。 |
+| `GET orgs/{org}/members/{user}/rights` | `members.view` | 成员在组织中、在每个项目中，以及在调用方可见的每个项目中的有效权限及其来源。 |
+| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 成员在此项目中的有效权限及其来源。 |
+| `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | 调用方自己在此项目中的权限及其来源。 |
+| `GET orgs/{org}/rights/{right}/grantors` | `members.view` | 最多 10 位拥有该权限且可以更改权限的活跃成员，所有者优先。 |
+| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | 同上，针对此项目中的权限。 |
 
-授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 的形式发送，其中 `role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的旧名称。返回时带有 `role`（`{id, kind, name}`）、有效的 `rights`，组织授权还带有 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`；单点登录设置接受 `default_role`。
+授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 发送。`role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的名称。响应包含 `{id, kind, name}` 形式的 `role`、有效的 `rights`，组织授权还包含 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`，单点登录设置接受 `default_role`。
 
-每次更改权限，无论针对授权还是自定义角色，都遵循[授权规则](../concepts/rights.md#授权规则)。授予调用者自己没有的权限，或更改持有调用者所缺权限的成员，会以 403 被拒绝，例如 “You can't grant `audit_log.view`: you don't hold it yourself.” 授予权限时缺少它依赖的权限，或移除其他权限所依赖的权限，会以 400 被拒绝，消息会同时指出两项权限，例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
+每次更改权限都遵循[授权规则](../concepts/rights.md#授权规则)：
 
-有效权限的来源包括 `owner`、`role`（组织角色，用于组织权限）、`project_role`、`added`、`org_role`（组织角色在所有项目中的权限）、`org_right`（延伸到项目中的组织权限，例如 `projects.view.all`）以及 `key`（在项目中行事的 API 密钥）。
+- 授予自己没有的权限，或更改拥有您所缺权限的成员，会得到 403，例如 “You can't grant `audit_log.view`: you don't hold it yourself.”
+- 授予某项权限却缺少它所需的权限，或移除另一项权限所需的权限，会得到 400，消息会同时指出两者。例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
+
+有效权限会列出其来源：
+
+| 来源 | 权限来自 |
+| --- | --- |
+| `owner` | 组织所有者身份 |
+| `role` | 组织角色，用于组织权限 |
+| `project_role` | 项目角色 |
+| `added` | 为成员单独添加的权限 |
+| `org_role` | 组织角色在每个项目中的权限 |
+| `org_right` | 延伸到项目中的组织权限，例如 `projects.view.all` |
+| `key` | 在项目中行事的 API 密钥 |
 
 ## 试验场
 
-控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它的两个路由都需要会话和项目权限 `playground.use`；密钥会以 403 被拒绝，因为应用应在 `/v1` 上调用模型。
+控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它的两个路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。
 
-`GET orgs/{org}/projects/{project}/playground/models` 列出成员在试验场中可调用的模型：项目目录中除嵌入模型以外的模型，再按成员的模型访问范围筛选。每个模型都附有要发送的名称、别名、是否支持推理及支持的推理强度、是否接受 `temperature`、限制和价格，以及项目是否有对应的服务商密钥。
+| 路由 | 作用 |
+| --- | --- |
+| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入模型的目录，再按成员的模型访问范围收窄。每个模型都带有名称、别名、推理强度、限额和价格，以及是否接受 `temperature`、项目是否有对应的服务商密钥。 |
+| `POST orgs/{org}/projects/{project}/playground/responses` | 接受带 `"stream": true` 的 OpenAI Responses 请求，并以 `/v1/responses` 发送的事件流响应，包括保活注释。 |
 
-`POST orgs/{org}/projects/{project}/playground/responses` 接受一个 OpenAI Responses 请求，字段包括 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`，以及必需的 `"stream": true`。响应是 `/v1/responses` 发送的 Responses 事件流，并带有保活注释。使用[会话](automation.md#改用会话)：
+请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary` 和必须为 `true` 的 `stream`。使用[会话](automation.md#改用会话)：
 
 ```bash
-curl -N -b "$JAR" -H "Origin: $KAESO" -H 'content-type: application/json' \
-  -d '{"model": "claude-haiku-4-5", "input": "Hello", "stream": true, "reasoning": {"summary": "auto"}}' \
-  "$KAESO/platform/v1/orgs/$ORG/projects/$PROJECT/playground/responses"
+curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/playground/responses \
+  -b "$JAR" \
+  -H "Origin: https://kaeso.example.com" \
+  -H "content-type: application/json" \
+  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways.", "stream": true}'
 ```
 
-试验场请求与其他模型请求无异，只是由成员直接发出，不使用密钥：
+试验场请求与其他模型请求一样，只是由成员在没有密钥的情况下发出：
 
-- **相同的处理路径。** 模型在项目目录中解析，包括别名和 `provider/model`，并按成员的模型访问范围检查。使用项目的服务商密钥；关闭流会取消发往服务商的请求。
-- **限额。** 成员和项目的速率与预算适用；密钥限额不适用，因为没有密钥。
-- **用量和日志。** 请求计入项目的费用和该成员的用量；按 `key` 查看用量时显示为 `playground`。请求以来源 `playground` 记录日志，项目记录内容时也包括内容；`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
+- **相同的路径。** 模型在项目目录中解析，包括别名和 `provider/model`，且必须在成员的模型访问范围内。Kaeso 使用项目的服务商密钥，关闭流会取消发往服务商的请求。
+- **限额。** 成员和项目的速率与预算适用。密钥限额不适用，因为没有密钥。
+- **用量和日志。** 请求计入项目，并算作该成员的用量；按 `key` 查看用量时显示为 `playground`。其日志条目的来源为 `playground`，项目记录内容时还包含请求内容。`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
 
 流开始之前的错误是 Platform API 错误：
 
 | 状态码 | `type` | 原因 |
 | --- | --- | --- |
-| 400 | `invalid_request` | 模型不在目录中，或服务商不向项目的服务商密钥提供该模型时，`param` 为 `model`；发送 `"stream": false` 时为 `stream` |
-| 403 | `permission_denied` | 模型超出成员的模型访问范围 |
-| 409 | `conflict` | 项目已归档，或尚未为模型的服务商设置服务商密钥 |
-| 409 | `org_scheduled_for_deletion` | 组织正在等待删除 |
-| 429 | `rate_limited` | 触及速率或预算，消息中会注明 |
-| 503 | `unavailable` | 无法读取目录、服务商密钥或限额，或网关正在重启 |
-| 502, 429, 503, 504 | `provider_error` | 服务商失败或拒绝了服务商密钥、对请求限速、过载或未及时响应 |
+| 400 | `invalid_request` | 模型不在目录中，或服务商不向项目的服务商密钥提供该模型时，`param` 为 `model`。`"stream": false` 时为 `stream`。 |
+| 403 | `permission_denied` | 模型不在成员的模型访问范围内。 |
+| 409 | `conflict` | 项目已归档，或没有该模型服务商的服务商密钥。 |
+| 409 | `org_scheduled_for_deletion` | 组织已计划删除。 |
+| 429 | `rate_limited` | 达到了速率或预算，消息会指明是哪一个。 |
+| 503 | `unavailable` | Kaeso 无法读取目录、服务商密钥或限额，或正在重启。 |
+| 429, 502, 503, 504 | `provider_error` | 服务商对请求限速、失败或拒绝了服务商密钥、过载，或未及时响应。 |
 
-流开始之后，错误以 Responses 的 `error` 事件送达，与 `/v1` 相同。
-
-## 控制台如何使用它
-
-控制台与网关同源提供，因此其会话 Cookie 是第一方 Cookie，无需 CORS。它只保存 HttpOnly Cookie，并像浏览器一样在每次更改时发送 `Origin`。此外，它会：
-
-- 读取 `auth/session`，获取用户、其成员资格（包括组织角色、权限和在所有项目中的权限）、是否为实例管理员，以及能否创建组织（`can_create_orgs`）；
-- 读取项目的 `my-rights` 来决定在项目中显示哪些内容，并从 `orgs/{org}/rights` 获取权限名称、分组和依赖关系；
-- 用 `models/search` 和 `models/preview` 填充模型表单；
-- 收到 `recent_sign_in_required` 时提示重新登录，然后重试该操作；
-- 以流式文件下载 `logs/export` 和 `audit-log/export`；
-- 用 `fetch` 流式接收试验场的回复，**停止**会中止该请求，从而取消发往服务商的请求；
-- 绘制用量图表时，约三个月以内按天、约一年以内按周、更长按月，**全部时间**从 `usage/span` 的 `first_day` 开始。
+流开始后，错误以 Responses 的 `error` 事件到达，与 `/v1` 上相同。
