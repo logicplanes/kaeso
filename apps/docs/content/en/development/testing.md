@@ -96,7 +96,7 @@ Component tests run in happy-dom with Testing Library. The showcase has no unit 
 Install the Cargo tools once:
 
 ```bash
-cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
+cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 ```
 
 | Command | Checks |
@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
 | `cargo test --workspace --all-features` | Every test |
 | `cargo coverage-kpp` | The tests of `kaeso-kpp` and `kaeso-codecs` under `cargo llvm-cov`, with their coverage threshold |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | The examples in both crates' READMEs, their documentation on docs.rs, which `cargo llvm-cov` doesn't run |
-| `cargo coverage-gateway` | The tests of every other crate except `kpp-conformance` and `xtask`, with their coverage threshold |
+| `cargo coverage-gateway` | The tests of every other crate except `kpp-conformance` and `xtask` under `cargo llvm-cov nextest`, each test in a process of its own and all of them at once, with their coverage threshold |
 | `cargo test -p xtask -p kpp-conformance` | The repository tasks and the conformance server, which the coverage commands leave out |
 | `cargo deny check` | Licenses, advisories, bans and sources of every dependency (`deny.toml`) |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | KPP's stricter policy: no runtime or HTTP crates in the library |
