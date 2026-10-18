@@ -1,60 +1,69 @@
 ---
 title: API-Schlüssel
-description: Schlüssel für Apps und Skripte erstellen, einschränken und abschalten.
+description: Erstellen Sie Schlüssel für Apps und Skripte, begrenzen Sie, was sie dürfen, und schalten Sie sie ab.
 order: 5
 ---
 
-Apps und Skripte rufen Kaeso mit einem **API-Schlüssel** auf. Ein Schlüssel gehört einem Mitglied oder einem Dienstkonto in einem Projekt und handelt dort mit dessen Rechten; eigener Modellzugriff und eigene Limits können ihn weiter einschränken.
-
-Ein Schlüssel besteht aus `sk-kso-` und 48 Buchstaben und Ziffern. Kaeso speichert nur einen Hash davon: Die Konsole zeigt den ganzen Schlüssel einmal, beim Erstellen, und danach nur seine ersten und letzten Zeichen.
+Apps und Skripte rufen Kaeso mit einem API-Schlüssel auf. Ein Schlüssel gehört einem Mitglied oder einem Dienstkonto in einem Projekt und handelt dort mit dessen Rechten. Eigener Modellzugriff und eigene Limits können ihn weiter einschränken.
 
 ## Schlüssel erstellen
 
-Auf der Seite **API-Schlüssel** eines Projekts **Schlüssel erstellen** wählen und vier Schritte ausfüllen:
+1. Wählen Sie auf der Seite **API-Schlüssel** eines Projekts **Schlüssel erstellen**.
+2. **Wofür ist der Schlüssel?** Geben Sie ihm einen Namen, etwa `checkout-web`. Anfrageprotokolle und Warnungen zeigen ihn. Wählen Sie unter **Für** sich selbst oder ein Dienstkonto des Projekts.
+3. **Wann läuft er ab?** Wählen Sie 1, 7, 30 oder 90 Tage, **An einem Datum** oder **Nie**. Ein Schlüssel mit Datum endet zu Beginn dieses Tages, UTC.
+4. **Was darf er aufrufen?** Wählen Sie **Inferenz** für Apps, die Modelle aufrufen, **Plattform** für Skripte, die das Projekt über die Platform API verwalten, oder **Inferenz und Plattform** für beides.
+5. **Modelle und Limits**, optional: Wählen Sie die Modelle, die der Schlüssel aufrufen darf, und setzen Sie eigene [Limits](limits-and-budgets.md). Ohne sie darf der Schlüssel aufrufen, was sein Inhaber darf, innerhalb der Limits seines Inhabers und des Projekts.
 
-1. **Wofür ist der Schlüssel?** Ein Name, etwa `checkout-web`, der in Anfrageprotokollen und Warnungen erscheint, und **Für**: die eigene Person oder ein Dienstkonto des Projekts.
-2. **Wann läuft er ab?** In 1, 7, 30 oder 90 Tagen, **An einem Datum** oder **Nie**. Standard sind 90 Tage oder die längste erlaubte Wahl. Ein Schlüssel mit Datum endet zu Beginn dieses Tages, UTC. Eine maximale Schlüssellaufzeit der Organisation oder des Projekts blendet längere Optionen und **Nie** aus.
-3. **Was darf er aufrufen?**
-   - **Inferenz**: die Modell-API, für Apps.
-   - **Plattform**: die Platform API, mit den Rechten des Inhabers in diesem Projekt, für Skripte.
-   - **Inferenz und Plattform**: beides.
-4. **Modelle und Limits**, optional: die Modelle, die er aufrufen darf, und eigene [Limits](limits-and-budgets.md). Ohne sie darf er, was sein Inhaber darf, innerhalb der Limits des Inhabers und des Projekts.
+**Schlüssel erstellt** zeigt dann den Schlüssel und eine Beispielanfrage damit. Ein Schlüssel besteht aus `sk-kso-` und 48 Buchstaben und Ziffern, und danach zeigt die Konsole nur noch seine ersten und letzten Zeichen.
 
-**Schlüssel erstellt** zeigt danach den Schlüssel mit einer Beispielanfrage. Ihn kopieren, bevor der Dialog geschlossen wird: Beim Schließen vergisst die Konsole ihn und kann ihn nicht erneut zeigen; wurde er noch nicht kopiert, fragt sie vorher nach.
+> [!IMPORTANT]
+> Kopieren Sie den Schlüssel, bevor Sie den Dialog schließen. Kaeso speichert nur einen Hash davon und kann ihn nicht erneut anzeigen. Haben Sie ihn nicht kopiert, fragt die Konsole vor dem Schließen nach.
 
-| Zum Erstellen | Recht |
+Standardmäßig läuft ein Schlüssel nach 90 Tagen ab, oder nach der längsten erlaubten Wahl. Setzt die Organisation oder das Projekt eine maximale Schlüssellaufzeit, sind längere Wahlen und **Nie** ausgeblendet.
+
+Einen Schlüssel zu erstellen erfordert diese Rechte:
+
+| Zu erstellen | Recht |
 | --- | --- |
-| Eigener Schlüssel | **Eigene Schlüssel erstellen** |
+| Eigene Schlüssel | **Eigene Schlüssel erstellen** |
 | Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** |
-| Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben** und eine kürzliche Anmeldung |
+| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben** und eine kürzliche Anmeldung |
 
-> [!TIP]
-> Jeder App und jeder Umgebung einen eigenen Schlüssel geben. Nutzung, Protokolle und Limits gehören dann ihm allein, und wird er abgeschaltet, betrifft das nichts anderes.
+Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre Nutzung, Protokolle und Limits ihre eigenen, und das Abschalten eines Schlüssels betrifft nichts anderes.
 
-## Die Schlüsselliste und das Sheet eines Schlüssels
+## Schlüssel finden und ändern
 
-**Aktiv** listet die Schlüssel, die funktionieren; **Alle** zeigt zusätzlich deaktivierte, abgelaufene und archivierte. **Inhaber der Schlüssel** über der Liste zeigt nur die Schlüssel eines Mitglieds oder Dienstkontos.
+**Aktiv** listet die Schlüssel, die funktionieren. **Alle** zeigt auch deaktivierte, abgelaufene und archivierte Schlüssel. **Inhaber der Schlüssel** über der Liste zeigt die Schlüssel eines Mitglieds oder Dienstkontos.
 
-Einen Schlüssel wählen, um sein Sheet zu öffnen: wem er gehört, sein Zugriff, wer ihn wann erstellt hat, sein Ablauf, seine letzte Nutzung und seine ID. Seine **Modelle** und **Limits** lassen sich dort jederzeit ändern, mit dem Recht **Limits verwalten**.
+Wählen Sie einen Schlüssel, um sein Sheet zu öffnen. Es zeigt, wem der Schlüssel gehört, seinen Zugriff, wer ihn wann erstellt hat, seinen Ablauf, seine letzte Nutzung und seine ID. Mit dem Recht **Limits verwalten** können Sie dort jederzeit seine **Modelle** und **Limits** ändern.
 
-## Deaktivieren, aktivieren, archivieren
+## Schlüssel abschalten
+
+Das Menü im Sheet eines Schlüssels hat drei Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
-| Deaktivieren | Der Schlüssel funktioniert sofort nicht mehr; er lässt sich wieder aktivieren |
+| Deaktivieren | Der Schlüssel hört sofort auf zu funktionieren. Sie können ihn wieder aktivieren |
 | Aktivieren | Ein deaktivierter Schlüssel funktioniert wieder |
-| Archivieren | Der Schlüssel funktioniert endgültig nicht mehr; das lässt sich nicht rückgängig machen, sein Verlauf bleibt erhalten |
+| Archivieren | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten |
 
-Die Aktionen stehen im Menü des Sheets. Eigene Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller **Alle Schlüssel verwalten**.
+Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller **Alle Schlüssel verwalten**.
 
-Ein Schlüssel endet außerdem, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. 7 Tage und 1 Tag vor dem Ablauf schickt Kaeso eine E-Mail: an den Inhaber oder, beim Schlüssel eines Dienstkontos, an die Admins des Projekts. Jede Person kann diese E-Mails in ihrem Konto unter **Benachrichtigungen** abschalten.
+Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ablaufende Schlüssel** in den **Benachrichtigungen** ihres Kontos abschalten.
 
-**API-Schlüssel** im eigenen Konto listet die eigenen Schlüssel aus allen Projekten, um sie zu deaktivieren, zu aktivieren oder zu archivieren; neue Schlüssel entstehen in einem Projekt.
+**API-Schlüssel** in Ihrem [Konto](account.md) listet Ihre eigenen Schlüssel aus allen Projekten, wo Sie sie deaktivieren, aktivieren oder archivieren können. Neue Schlüssel erstellen Sie in einem Projekt.
 
 ## Plattform-Schlüssel
 
-**Plattform-Schlüssel** in den Einstellungen der Organisation sind für Skripte und Infrastruktur, die die ganze Organisation verwalten, etwa Terraform. Ein Plattform-Schlüssel beginnt mit `sk-kso-org-`, handelt mit den Rechten der Rolle Admin in der Organisation und jedem Projekt und ruft nie Modelle auf.
+Plattform-Schlüssel sind für Skripte und Infrastruktur, die die ganze Organisation verwalten, etwa Terraform. Ein Plattform-Schlüssel beginnt mit `sk-kso-org-`. Er handelt mit den Rechten der Rolle Admin in der Organisation und jedem Projekt und ruft nie Modelle auf.
 
-**Plattform-Schlüssel erstellen** fragt, wofür er verwendet wird und wann er abläuft, mit denselben Optionen und der maximalen Schlüssellaufzeit der Organisation. Das erfordert das Recht **Plattform-Schlüssel erstellen** und eine kürzliche Anmeldung. Plattform-Schlüssel werden wie API-Schlüssel deaktiviert, aktiviert und archiviert, mit dem Recht **Plattform-Schlüssel deaktivieren**.
+1. Öffnen Sie in den **Organisationseinstellungen** **Plattform-Schlüssel** und wählen Sie **Plattform-Schlüssel erstellen**.
+2. Geben Sie an, was den Schlüssel verwendet und wann er abläuft. Die Wahlen und die maximale Schlüssellaufzeit der Organisation sind dieselben wie bei API-Schlüsseln.
 
-Wie Skripte sich mit Schlüsseln anmelden, erklärt [Platform API](../api/platform-api.md).
+Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen** und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**.
+
+## Nächste Schritte
+
+- [Modelle aufrufen](../get-started/calling-models.md): Senden Sie Ihre erste Anfrage mit dem neuen Schlüssel.
+- [Limits und Budgets](limits-and-budgets.md): Begrenzen Sie, was ein Schlüssel anfragen und ausgeben darf.
+- [Platform API](../api/platform-api.md): Verwalten Sie Projekte, Schlüssel und Modelle aus Skripten.
