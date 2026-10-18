@@ -199,6 +199,7 @@ test("notes that break the rules go back to the model once with the problems, an
   assert.deepEqual(earlier, { role: "assistant", content: JSON.stringify(first) });
   assert.equal(problems.role, "user");
   assert.equal(problems.content, correction(["Fixed topic 1 entry 1 is longer than 800 characters"]));
+  assert.equal(calls[1].options.signal, calls[0].options.signal);
 });
 
 test("notes that still break the rules after the correction fall back, after two requests", async () => {

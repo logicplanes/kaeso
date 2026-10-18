@@ -193,7 +193,7 @@ export function factsOf(collected, changelog, version = null) {
   };
 }
 
-export async function ask(client, facts, model = MODEL, earlier = null) {
+export async function ask(client, facts, model = MODEL, earlier = null, signal = AbortSignal.timeout(DEADLINE)) {
   const messages = [{ role: "user", content: prompt(facts) }];
   if (earlier) messages.push({ role: "assistant", content: JSON.stringify(earlier.output) }, { role: "user", content: correction(earlier.problems) });
   const stream = client.messages.stream(
@@ -204,7 +204,7 @@ export async function ask(client, facts, model = MODEL, earlier = null) {
       messages,
       output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
     },
-    { signal: AbortSignal.timeout(DEADLINE) },
+    { signal },
   );
   const message = await stream.finalMessage();
   if (message.stop_reason !== "end_turn") throw new Error(`the model stopped with ${message.stop_reason}`);
@@ -324,10 +324,11 @@ export async function write({ collected, changelog, version = null, client, mode
     return null;
   }
   try {
-    let output = await ask(client, facts, model);
+    const signal = AbortSignal.timeout(DEADLINE);
+    let output = await ask(client, facts, model, null, signal);
     let problems = check(output, facts);
     if (problems.length) {
-      output = await ask(client, facts, model, { output, problems });
+      output = await ask(client, facts, model, { output, problems }, signal);
       problems = check(output, facts);
     }
     if (problems.length) throw new Error(`the notes break the rules: ${problems.slice(0, 5).join("; ")}`);
