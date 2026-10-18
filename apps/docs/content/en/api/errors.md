@@ -156,6 +156,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | Status | Cause |
 | --- | --- |
 | 400 | Kaeso can't read the request, or the model doesn't take a setting or field the request uses. |
+| 400 | The request counts tokens, and the model's provider has no endpoint for counting them. |
 | 400 | The context is too long for the model. |
 | 400 | Several providers in the project serve the model id. Send `provider/model` instead. |
 | 400 | The project has no provider key for the model's provider. |

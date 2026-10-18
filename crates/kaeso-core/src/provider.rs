@@ -136,7 +136,7 @@ pub struct Provider {
     pub default_base_url: &'static str,
     pub auth: AuthStyle,
     pub generation: DialectId,
-    pub count_tokens: DialectId,
+    pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
 }
@@ -148,7 +148,7 @@ pub const PROVIDERS: &[Provider] = &[
         default_base_url: "https://api.openai.com",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiResponses,
-        count_tokens: DialectId::OpenAiResponses,
+        count_tokens: Some(DialectId::OpenAiResponses),
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[
             DialectId::OpenAiResponses,
@@ -162,7 +162,7 @@ pub const PROVIDERS: &[Provider] = &[
         default_base_url: "https://api.anthropic.com",
         auth: AuthStyle::XApiKey,
         generation: DialectId::AnthropicMessages,
-        count_tokens: DialectId::AnthropicMessages,
+        count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
     },

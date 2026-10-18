@@ -488,6 +488,28 @@ fn duties_fill_what_kpp_cannot_know() {
     assert_eq!(info.max_output_tokens, Some(64_000));
 }
 
+#[test]
+fn a_provider_without_token_counting_refuses_count_requests_and_still_generates() {
+    let mut e = eff(&entry("openai", "gpt-4o"));
+    e.provider = Box::leak(Box::new(Provider {
+        count_tokens: None,
+        ..*e.provider
+    }));
+    for ingress in [
+        DialectId::AnthropicMessages,
+        DialectId::OpenAiChat,
+        DialectId::OpenAiResponses,
+    ] {
+        let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
+        let u = prepare(&mut count, ingress, &e).unwrap_err();
+        assert_eq!(u.capability, "token counting");
+        assert_eq!(u.param, Some("model"));
+        assert_eq!(u.message, "The model `gpt-4o` cannot count tokens.");
+        let mut generate = Request::Generate(user(vec![Block::text("hi")]));
+        assert!(prepare(&mut generate, ingress, &e).is_ok(), "{ingress}");
+    }
+}
+
 fn refusal(
     g: GenerateRequest,
     ingress: DialectId,

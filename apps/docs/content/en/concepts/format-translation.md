@@ -71,6 +71,10 @@ These are refused in every format, even when the format stays the same:
 - another format's built-in tools, such as web search, and their results
 - citations, and file ids from another provider
 
+### Token counts
+
+`/v1/messages/count_tokens` and `/v1/responses/input_tokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso refuses the request with 400 and a message that says the model can't count tokens. Kaeso doesn't estimate the count, because an estimate never matches the provider's own.
+
 ## What Kaeso leaves out
 
 When the target has no place for them, Kaeso leaves out hints that don't change what the model writes:

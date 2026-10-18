@@ -156,6 +156,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | Status | Ursache |
 | --- | --- |
 | 400 | Kaeso kann die Anfrage nicht lesen, oder das Modell nimmt eine Einstellung oder ein Feld der Anfrage nicht an. |
+| 400 | Die Anfrage zählt Token, und der Anbieter des Modells hat keinen Endpunkt zum Zählen von Token. |
 | 400 | Der Kontext ist zu lang für das Modell. |
 | 400 | Mehrere Anbieter im Projekt bieten die Modell-ID an. Senden Sie stattdessen `provider/model`. |
 | 400 | Das Projekt hat keinen Anbieter-Schlüssel für den Anbieter des Modells. |

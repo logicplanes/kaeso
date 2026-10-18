@@ -71,6 +71,10 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 - eingebaute Tools eines anderen Formats, etwa die Websuche, und ihre Ergebnisse
 - Zitate und Datei-IDs eines anderen Anbieters
 
+### Token-Zählung
+
+`/v1/messages/count_tokens` und `/v1/responses/input_tokens` fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
+
 ## Was Kaeso weglässt
 
 Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern, was das Modell schreibt:

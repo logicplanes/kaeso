@@ -180,6 +180,7 @@
   "errors.model.noStructured": "The model `{model}` does not support structured output (a JSON schema).",
   "errors.model.noTemperature": "The model `{model}` does not accept `temperature` (only the default of 1).",
   "errors.model.noText": "The model `{model}` does not produce text.",
+  "errors.model.noTokenCount": "The model `{model}` cannot count tokens.",
   "errors.model.noTools": "The model `{model}` does not support tool calling.",
   "errors.modelCannotTake": "The model cannot take this request as it is; check its settings.",
   "errors.modelIdForm": "A model id has 1 to 200 characters and no spaces.",

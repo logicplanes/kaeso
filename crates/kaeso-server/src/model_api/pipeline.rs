@@ -617,6 +617,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 provider,
                 auth: eff.provider.auth,
                 dialect: plan.dialect,
+                count_tokens: eff.provider.count_tokens,
                 app_req,
                 req,
                 adaptive_thinking: plan.adaptive_thinking,

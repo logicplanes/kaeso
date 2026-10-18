@@ -18,6 +18,7 @@ pub(super) struct InputCounter {
     pub(super) provider: &'static str,
     pub(super) auth: AuthStyle,
     pub(super) dialect: DialectId,
+    pub(super) count_tokens: Option<DialectId>,
     pub(super) app_req: Request,
     pub(super) req: Request,
     pub(super) adaptive_thinking: Option<bool>,
@@ -54,10 +55,7 @@ fn with_causes(e: &UpstreamError) -> String {
 impl InputCounter {
     pub(super) async fn count(self) -> Input {
         let (provider, sent_bytes) = (self.provider, self.sent_bytes);
-        if matches!(
-            self.dialect,
-            DialectId::AnthropicMessages | DialectId::OpenAiResponses
-        ) {
+        if self.count_tokens == Some(self.dialect) {
             match self.ask_provider().await {
                 Ok(n) => return Input::Counted(n),
                 Err(e) => tracing::warn!(
