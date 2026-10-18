@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE update_settings SET last_checked_at = $1, etag = COALESCE($2, etag), last_error = $3, next_check_at = $4, blocked_until = $5, last_success_at = CASE WHEN $3::text IS NULL THEN $1 ELSE last_success_at END, updated_at = now() WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b0241f06373d1b890a13b1e4da2b64150e69b34bf69851d9537323c30542e09c"
+}

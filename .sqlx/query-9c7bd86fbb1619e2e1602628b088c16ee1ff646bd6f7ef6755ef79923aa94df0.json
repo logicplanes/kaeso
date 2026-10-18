@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO update_jobs (id, from_version, to_version, state, step, started_by, started_at) VALUES ($1, $2, $3, 'running', 'verifying', $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c7bd86fbb1619e2e1602628b088c16ee1ff646bd6f7ef6755ef79923aa94df0"
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:b86b709ba8cd30d6a2c78709b219cb494c66415bdb1018d91d6ac3b475b87b91",
+      "size": 1815,
+      "platform": {
+        "architecture": "arm64",
+        "os": "linux"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:01a0086df04b76ab9c388f1f4df90c5552f806c85791a21948d1f4197fed63ad",
+      "size": 1111,
+      "annotations": {
+        "vnd.docker.reference.digest": "sha256:b86b709ba8cd30d6a2c78709b219cb494c66415bdb1018d91d6ac3b475b87b91",
+        "vnd.docker.reference.type": "attestation-manifest"
+      },
+      "platform": {
+        "architecture": "unknown",
+        "os": "unknown"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:cd9af6f39df40d613e45407d2e62e4c865cdf03506a37c14f783bf37d527af5c",
+      "size": 1815,
+      "platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:0ad2df05c3eb09bbf86b62b22642dd946aa52b693069521918e69ad0b4c5b804",
+      "size": 1111,
+      "annotations": {
+        "vnd.docker.reference.digest": "sha256:cd9af6f39df40d613e45407d2e62e4c865cdf03506a37c14f783bf37d527af5c",
+        "vnd.docker.reference.type": "attestation-manifest"
+      },
+      "platform": {
+        "architecture": "unknown",
+        "os": "unknown"
+      }
+    }
+  ],
+  "annotations": {
+    "org.opencontainers.image.description": "The web console for the Kaeso gateway.",
+    "org.opencontainers.image.documentation": "https://docs.kaeso.app",
+    "org.opencontainers.image.licenses": "MIT",
+    "org.opencontainers.image.source": "https://github.com/logicplanes/kaeso",
+    "org.opencontainers.image.title": "Kaeso console",
+    "org.opencontainers.image.url": "https://kaeso.app",
+    "org.opencontainers.image.vendor": "Light Code Labs",
+    "org.opencontainers.image.version": "0.1.0"
+  }
+}

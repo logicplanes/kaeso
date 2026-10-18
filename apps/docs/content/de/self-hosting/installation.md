@@ -12,7 +12,7 @@ Eine Installation ist ein Ordner, auf den nur der eigene Benutzer zugreifen kann
 
 | Datei | Inhalt |
 | --- | --- |
-| `compose.yaml` | Die Dienste, aus dem Kaeso-Release. Für ein Upgrade durch die Datei des neuen Releases ersetzen. |
+| `compose.yaml` | Die Dienste, aus dem Kaeso-Release. Für ein Upgrade durch die Datei des neuen Releases ersetzen; der optionale [Updater](upgrades.md#updates-mit-einem-klick) ändert darin nur die Image-Versionen. |
 | `.env` | Die eigenen Einstellungen: Domain, Datenbankpasswörter, E-Mail. Docker Compose liest sie aus demselben Ordner. |
 | `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` erhält. |
 | `compose.override.yaml` | Optional: eigene Änderungen an den Diensten, die erhalten bleiben, wenn `compose.yaml` ersetzt wird. |
@@ -51,6 +51,8 @@ Das `curl` oben lädt das neueste stabile Release. Für ein bestimmtes Release s
 | `KAESO_PUBLIC_URL` | nein | Die öffentliche URL, wenn sie nicht `https://` und `KAESO_DOMAIN` ist, etwa hinter einem eigenen Proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, außer E-Mails werden nur protokolliert | Wie das Gateway E-Mails versendet. Siehe [E-Mail](email.md). |
 | `KAESO_MAIL_TRANSPORT` | nein | `log`, um E-Mails nur zu protokollieren statt zu senden, zum Ausprobieren. |
+| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES=updater` | nein | Das Geheimnis, das Gateway und Updater teilen, und das Profil, das den Updater startet, für [Updates mit einem Klick](upgrades.md#updates-mit-einem-klick). |
+| `DOCKER_SOCKET` | nein | Wo der Socket von Docker liegt, für den Proxy des Updaters, wenn nicht unter `/var/run/docker.sock`. |
 
 In den Passwörtern nur Buchstaben und Ziffern verwenden, wie `openssl rand -hex` sie erzeugt, denn sie landen in Verbindungs-URLs. PostgreSQL und ClickHouse übernehmen ihre Passwörter, wenn ihre Volumes zum ersten Mal angelegt werden; eine spätere Änderung in der `.env` ändert die Passwörter der Datenbanken nicht. Valkey liest sein Passwort bei jedem Start aus der `.env`.
 

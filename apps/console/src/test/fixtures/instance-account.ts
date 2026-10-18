@@ -7,8 +7,11 @@ import type {
   MemberView,
   ModelsDevStatus,
   SessionListItem,
+  ReleaseView,
   SettingsView,
   SystemView,
+  UpdateJobView,
+  UpdatesView,
 } from "~/api/generated/types";
 import { NOW, ORG, PROJECT, USER } from "../fixtures";
 
@@ -158,6 +161,57 @@ export function key(overrides: Partial<KeyView> = {}): KeyView {
     state: "active",
     expires_at: null,
     last_used_at: null,
+    ...overrides,
+  };
+}
+
+export function release(overrides: Partial<ReleaseView> = {}): ReleaseView {
+  return {
+    version: "0.4.3",
+    published_at: NOW,
+    prerelease: false,
+    major: false,
+    manual_steps: false,
+    notes: "### Fixed\n\n- Streams keep their last chunk when a provider closes early.",
+    url: "https://github.com/logicplanes/kaeso/releases/tag/v0.4.3",
+    ...overrides,
+  };
+}
+
+export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
+  return {
+    current: "0.4.2",
+    state: "up_to_date",
+    manual: null,
+    latest: null,
+    releases: [],
+    can_apply: false,
+    settings: { check: true, channel: "stable", apply: true },
+    check: { last_checked_at: NOW, last_success_at: NOW, next_check_at: NOW, error: null },
+    updater: { state: "ready", version: "0.4.2" },
+    job: null,
+    upgrade_guide: "https://docs.kaeso.app/self-hosting/upgrades",
+    ...overrides,
+  };
+}
+
+export function available(overrides: Partial<UpdatesView> = {}): UpdatesView {
+  const r = release();
+  return updates({ state: "available", latest: r, releases: [r], can_apply: true, ...overrides });
+}
+
+export function updateJob(overrides: Partial<UpdateJobView> = {}): UpdateJobView {
+  return {
+    id: "upd_01k7a3f8m2xq4v9c5r6t8w0yz1",
+    from: "0.4.2",
+    to: "0.4.3",
+    state: "running",
+    step: "verifying",
+    reason: null,
+    detail: null,
+    started_by: { id: USER, name: "Ada Okafor" },
+    started_at: NOW,
+    finished_at: null,
     ...overrides,
   };
 }

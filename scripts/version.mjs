@@ -24,6 +24,9 @@ export const ALLOWED = [
   { path: "apps/showcase/src/demos/*.tsx", why: "the versions of demo data" },
   { path: "apps/docs/content/*/development/architecture/gateway.md", version: "0.1.0", why: "the schema and the log form of the first release" },
   { path: "apps/docs/content/*/self-hosting/upgrades.md", version: "0.1.0", why: "the migrations of the first release" },
+  { path: "apps/docs/content/*/development/architecture/updates.md", version: "0.1.0", why: "the signed release the updater's tests verify" },
+  { path: "crates/kaeso-updater/tests/verify.rs", version: "0.1.0", why: "the signed images of the first release the updater's tests verify" },
+  { path: "crates/kaeso-updater/tests/fixtures/*", version: "0.1.0", why: "the attestations and image indexes of the first release" },
 ];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;

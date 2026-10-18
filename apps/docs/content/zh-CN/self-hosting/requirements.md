@@ -6,7 +6,7 @@ order: 1
 
 ## 服务器
 
-- 装有 Docker Engine 和 Docker Compose 2.24 或更高版本的 Linux。镜像提供 `linux/amd64` 和 `linux/arm64` 两种架构。
+- 装有 Docker Engine 和 Docker Compose 2.24 或更高版本的 Linux。镜像提供 `linux/amd64` 和 `linux/arm64` 两种架构。[一键更新](upgrades.md#一键更新)需要 Docker Engine 25 或更高版本，更新器使用其 API 版本 1.44。
 - 至少 2 个 vCPU 和 4 GB 内存，其中 ClickHouse 约占 2 GB。
 - 至少 20 GB 磁盘，另加请求日志所需的空间。
 
@@ -16,6 +16,7 @@ order: 1
 - 端口 80 和 443 对互联网开放，用于申请证书和提供 HTTPS。UDP 端口 443 开放时，Caddy 也通过 HTTP/3 提供服务。
 - 能以 HTTPS 访问所用的服务商（`api.openai.com`、`api.anthropic.com`）和 `models.dev`，网关每天从 `models.dev` 更新一次模型数据。无法访问 `models.dev` 的安装使用版本内置的模型数据；可在 [`compose.override.yaml`](installation.md#本地修改) 中设置 `KAESO_MODELS_DEV_SYNC=false` 关闭更新。
 - 一台 SMTP 服务器，用于发送登录链接、邀请、预算提醒和安全通知。参见[电子邮件](email.md)。
+- 能通过 HTTPS 访问 `api.github.com`（网关每天两次在此检查 Kaeso 新版本），以及为[一键更新](upgrades.md#一键更新)访问 `github.com`、`objects.githubusercontent.com` 和 `ghcr.io`。无法访问时请手动更新，并按[升级](upgrades.md#无法联网的安装)所述关闭检查。
 
 ## 请求日志所需磁盘
 

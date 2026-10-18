@@ -12,7 +12,7 @@ order: 2
 
 | 文件 | 内容 |
 | --- | --- |
-| `compose.yaml` | 来自 Kaeso 版本的服务定义。升级时用新版本的文件替换它。 |
+| `compose.yaml` | 来自 Kaeso 版本的服务定义。升级时用新版本的文件替换它；可选的[更新器](upgrades.md#一键更新)只修改其中的镜像版本。 |
 | `.env` | 自己的设置：域名、数据库密码、电子邮件。Docker Compose 从同一个文件夹中读取它。 |
 | `master-keys` | 主密钥，作为 Docker secret `master_keys` 交给网关。 |
 | `compose.override.yaml` | 可选：对服务的自定义修改，替换 `compose.yaml` 时会保留。 |
@@ -51,6 +51,8 @@ chmod 644 master-keys
 | `KAESO_PUBLIC_URL` | 否 | 公开 URL 不是 `https://` 加 `KAESO_DOMAIN` 时使用，例如位于自己的代理之后。 |
 | `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS`、`KAESO_SMTP_USER`、`KAESO_SMTP_PASSWORD`、`KAESO_SMTP_FROM` | `KAESO_SMTP_HOST` 必填，除非邮件只记录到日志 | 网关发送邮件的方式。参见[电子邮件](email.md)。 |
 | `KAESO_MAIL_TRANSPORT` | 否 | 设为 `log` 时只记录邮件而不发送，用于试用 Kaeso。 |
+| `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES=updater` | 否 | 网关与更新器共享的密钥，以及启动更新器的配置文件，用于[一键更新](upgrades.md#一键更新)。 |
+| `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器的代理使用的位置。 |
 
 密码只使用字母和数字（`openssl rand -hex` 生成的正是如此），因为它们会写入连接 URL。PostgreSQL 和 ClickHouse 在首次创建各自的卷时采用密码；之后在 `.env` 中修改，并不会改变数据库已有的密码。Valkey 每次启动时都从 `.env` 读取密码。
 

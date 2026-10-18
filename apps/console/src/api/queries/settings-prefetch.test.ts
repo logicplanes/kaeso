@@ -123,6 +123,7 @@ describe("settings prefetch by link", () => {
     prefetchSettingsPath(c, "/settings/instance/orgs");
     prefetchSettingsPath(c, "/settings/instance/settings");
     prefetchSettingsPath(c, "/settings/instance/model-sources");
+    prefetchSettingsPath(c, "/settings/instance/updates");
     prefetchSettingsPath(c, "/settings/instance/catalogue");
     prefetchSettingsPath(c, "/settings/instance");
     prefetchSettingsPath(c, "/settings/orgs");
@@ -133,6 +134,7 @@ describe("settings prefetch by link", () => {
       ["instance", "orgs", { search: "", sort: "created" }],
       ["instance", "settings"],
       ["instance", "models-dev"],
+      ["instance", "updates"],
     ]);
   });
 });

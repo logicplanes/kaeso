@@ -95,6 +95,19 @@ order: 3
 | `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | 获取 models.dev 数据的地址。 |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | text | `24h` | 获取 models.dev 数据的间隔。 |
 
+### 更新
+
+| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- | --- |
+| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | 新安装时每天两次检查 Kaeso 新版本；无法联网的安装请关闭。之后由实例管理员在控制台中更改。 |
+| `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | 新安装可获取的版本：`stable`，或 `prerelease` 以同时获取预发布版本。之后由实例管理员在控制台中更改。 |
+| `KAESO_UPDATES_APPLY` | `updates.apply` | bool | `false` | 新安装的实例管理员能否通过更新器在控制台中应用更新。之后由他们在控制台中更改。 |
+| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://api.github.com/repos/logicplanes/kaeso/releases` | 获取 Kaeso 版本列表的地址，格式与 GitHub 发布 API 相同。 |
+| `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | 更新器的地址，更新器是应用更新的可选服务。 |
+| `KAESO_UPDATER_TOKEN` | `updater.token` | text，机密 | — | 网关与更新器共享的密钥，至少 32 个字符；未设置时网关从不调用更新器。 |
+
+[升级](upgrades.md)介绍了检查、渠道和更新器。
+
 ### 服务商调用
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |

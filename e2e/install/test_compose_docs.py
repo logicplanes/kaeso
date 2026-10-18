@@ -80,4 +80,4 @@ def test_the_reverse_proxy_overrides_in_the_docs_merge_with_the_compose_file(lan
         networks = joined["services"][service]["networks"]
         assert networks["kaeso-proxy"]["aliases"] == [alias]
         assert "edge" in networks
-    assert set(joined["services"]["gateway"]["networks"]) == {"edge", "data", "kaeso-proxy"}
+    assert set(joined["services"]["gateway"]["networks"]) == {"edge", "data", "updates", "kaeso-proxy"}

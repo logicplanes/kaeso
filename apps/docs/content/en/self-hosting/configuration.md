@@ -95,6 +95,19 @@ The gateway reads its settings from `KAESO_*` environment variables, optionally 
 | `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | Where models.dev data is fetched from. |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | text | `24h` | How often models.dev is fetched. |
 
+### Updates
+
+| Variable | TOML key | Type | Default | What it does |
+| --- | --- | --- | --- | --- |
+| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day on a new install; off for installs without internet access. Instance admins change it later in the console. |
+| `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases a new install is offered: `stable`, or `prerelease` for pre-releases too. Instance admins change it later in the console. |
+| `KAESO_UPDATES_APPLY` | `updates.apply` | bool | `false` | Whether instance admins of a new install may apply updates from the console through the updater. They change it later in the console. |
+| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Where the list of Kaeso releases is fetched from, in the form of GitHub's releases API. |
+| `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | Address of the updater, the optional service that applies updates. |
+| `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater. |
+
+[Upgrades](upgrades.md) explains the check, the channels and the updater.
+
 ### Provider calls
 
 | Variable | TOML key | Type | Default | What it does |

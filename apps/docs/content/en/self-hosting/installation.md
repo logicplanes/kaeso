@@ -12,7 +12,7 @@ An install is a folder that only you can read, with these files:
 
 | File | What it holds |
 | --- | --- |
-| `compose.yaml` | The services, from the Kaeso release. Replace it with the new release's file to upgrade. |
+| `compose.yaml` | The services, from the Kaeso release. Replace it with the new release's file to upgrade; the optional [updater](upgrades.md#one-click-updates) changes only its image versions. |
 | `.env` | Your settings: the domain, the database passwords, email. Docker Compose reads it from the same folder. |
 | `master-keys` | The master keys, handed to the gateway as the Docker secret `master_keys`. |
 | `compose.override.yaml` | Optional: your own changes to the services, kept when `compose.yaml` is replaced. |
@@ -51,6 +51,8 @@ The `curl` above fetches the newest stable release. To install a particular rele
 | `KAESO_PUBLIC_URL` | no | The public URL, when it is not `https://` and `KAESO_DOMAIN`, for example behind your own proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, unless email is only logged | How the gateway sends email. See [email](email.md). |
 | `KAESO_MAIL_TRANSPORT` | no | `log` to only log emails instead of sending them, for trying Kaeso. |
+| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES=updater` | no | The secret the gateway and the updater share, and the profile that starts the updater, for [one-click updates](upgrades.md#one-click-updates). |
+| `DOCKER_SOCKET` | no | Where Docker's socket is, for the updater's proxy, when it isn't `/var/run/docker.sock`. |
 
 Use letters and digits only in the passwords, as `openssl rand -hex` writes them, because they go into connection URLs. PostgreSQL and ClickHouse take their passwords when their volumes are first created; changing them in `.env` later doesn't change the passwords the databases have. Valkey reads its password from `.env` at every start.
 

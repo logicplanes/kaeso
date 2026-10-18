@@ -16,6 +16,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = "kaeso-install-test"
 SETUP_LINK = re.compile(r"#token=(\S+)")
+CADDY = "caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f"
+UNREACHABLE = "Kaeso can't be reached right now; try again in a minute."
+UPDATING = "Kaeso is being updated; try again in a minute."
 
 
 class Install(NamedTuple):
@@ -41,6 +44,15 @@ def image(variable: str, target: str) -> str:
     return tag
 
 
+def updater_image() -> str:
+    if os.environ.get("KAESO_TEST_UPDATER_IMAGE"):
+        return os.environ["KAESO_TEST_UPDATER_IMAGE"]
+    tag = "kaeso-updater:install-test"
+    dockerfile = ROOT / "deploy" / "updater.Dockerfile"
+    subprocess.run(["docker", "build", "-f", str(dockerfile), "-t", tag, str(ROOT)], check=True)
+    return tag
+
+
 def poll(fetch, what: str, seconds: float = 120):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
@@ -61,6 +73,7 @@ def install(tmp_path_factory):
     gateway = image("KAESO_TEST_GATEWAY_IMAGE", "gateway")
     mock = image("KAESO_TEST_MOCK_IMAGE", "mock")
     console = os.environ.get("KAESO_TEST_CONSOLE_IMAGE")
+    updater = updater_image()
     (work / "master-keys").write_text(
         subprocess.check_output(["docker", "run", "--rm", gateway, "master-key", "generate"], text=True)
     )
@@ -74,6 +87,9 @@ def install(tmp_path_factory):
         "KAESO_TEST_GATEWAY_IMAGE": gateway,
         "KAESO_TEST_MOCK_IMAGE": mock,
         "KAESO_TEST_CONSOLE_IMAGE": console or "",
+        "KAESO_TEST_UPDATER_IMAGE": updater,
+        "KAESO_UPDATER_TOKEN": os.urandom(32).hex(),
+        "COMPOSE_PROFILES": "updater",
     }
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
@@ -100,25 +116,32 @@ def install(tmp_path_factory):
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
 
 
-def test_a_fresh_install_serves_both_sdks_and_records_usage(install):
-    url, token = install.url, install.token
-    http = httpx.Client(base_url=url, headers={"origin": url}, timeout=30)
-
-    def post(path: str, body: dict) -> dict:
-        r = http.post(f"/platform/v1{path}", json=body)
-        assert r.status_code in (200, 201), f"{path}: {r.status_code} {r.text}"
-        return r.json()
-
-    post(
-        "/auth/setup",
-        {
-            "token": token,
+@pytest.fixture(scope="module")
+def owner(install) -> httpx.Client:
+    http = httpx.Client(base_url=install.url, headers={"origin": install.url}, timeout=30)
+    r = http.post(
+        "/platform/v1/auth/setup",
+        json={
+            "token": install.token,
             "email": "owner@example.com",
             "name": "Owner",
             "password": "correct horse battery",
             "org_name": "First org",
         },
     )
+    assert r.status_code == 200, r.text
+    return http
+
+
+def test_a_fresh_install_serves_both_sdks_and_records_usage(install, owner):
+    url = install.url
+    http = owner
+
+    def post(path: str, body: dict) -> dict:
+        r = http.post(f"/platform/v1{path}", json=body)
+        assert r.status_code in (200, 201), f"{path}: {r.status_code} {r.text}"
+        return r.json()
+
     org = http.get("/platform/v1/auth/session").json()["memberships"][0]["org_id"]
     project = post(f"/orgs/{org}/projects", {"name": "First project"})["id"]
     base = f"/orgs/{org}/projects/{project}"
@@ -169,3 +192,76 @@ def test_the_gateway_gets_no_more_database_rights_than_it_needs(install):
     assert "ACCESS_DENIED" in create_user.stderr
     anonymous = query("-e", "VALKEYCLI_AUTH=", "valkey", "valkey-cli", "ping")
     assert "NOAUTH" in anonymous.stdout
+
+
+def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
+    assert {name: install.health.get(name) for name in ("updater", "docker-proxy")} == {
+        "updater": "healthy",
+        "docker-proxy": "healthy",
+    }
+    status = owner.get("/platform/v1/instance/updates")
+    assert status.status_code == 200, status.text
+    assert status.json()["updater"]["state"] == "ready", status.json()
+    assert status.json()["settings"]["apply"] is False
+    stranger = subprocess.run(
+        ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--entrypoint", "wget", CADDY,
+         "-qO-", "-T", "5", "http://docker-proxy:2375/v1.44/version"],
+        capture_output=True,
+        text=True,
+    )
+    assert stranger.returncode != 0, stranger.stdout
+
+
+def flag(state: str | None) -> None:
+    command = f"printf '%s' '{state}' > /m/active" if state else "rm -f /m/active"
+    subprocess.run(
+        ["docker", "run", "--rm", "-v", f"{PROJECT}_maintenance:/m", "--entrypoint", "sh", CADDY, "-c", command],
+        check=True,
+    )
+
+
+def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, owner):
+    url = install.url
+    install.run("stop", "gateway", "console")
+    try:
+        for maintenance, message in [(None, UNREACHABLE), ('{"state":"updating","step":"migrating"}', UPDATING)]:
+            flag(maintenance)
+            platform = httpx.get(f"{url}/platform/v1/auth/session", timeout=10)
+            assert platform.status_code == 503
+            assert platform.headers["retry-after"] == "30"
+            assert platform.json() == {"error": {"type": "unavailable", "message": message}}
+
+            oa = openai.OpenAI(base_url=f"{url}/v1", api_key="sk-kso-test", max_retries=0)
+            with pytest.raises(openai.APIStatusError) as raised:
+                oa.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": "Hello"}])
+            assert raised.value.status_code == 503
+            assert raised.value.body["message"] == message
+            assert raised.value.body["type"] == "service_unavailable_error"
+
+            an = anthropic.Anthropic(base_url=url, api_key="sk-kso-test", max_retries=0)
+            with pytest.raises(anthropic.APIStatusError) as raised:
+                an.messages.create(model="claude-haiku-4-5", max_tokens=10, messages=[{"role": "user", "content": "Hello"}])
+            assert raised.value.status_code == 529
+            assert raised.value.body["error"] == {"type": "overloaded_error", "message": message}
+
+            page = httpx.get(f"{url}/settings/instance/updates", headers={"accept": "text/html"}, timeout=10)
+            assert page.status_code == 503
+            assert page.headers["content-type"].startswith("text/html")
+            assert "default-src 'none'" in page.headers["content-security-policy"]
+            assert "Kaeso" in page.text
+            status = httpx.get(f"{url}/kaeso-maintenance.json", timeout=10)
+            if maintenance:
+                assert status.json() == {"state": "updating", "step": "migrating"}
+            else:
+                assert status.status_code == 404
+    finally:
+        flag(None)
+        install.run("start", "gateway", "console")
+
+    def back() -> bool:
+        try:
+            return httpx.get(f"{url}/platform/v1/instance/updates", cookies=owner.cookies, timeout=5).status_code == 200
+        except httpx.HTTPError:
+            return False
+
+    poll(back, "the gateway answering again", seconds=120)

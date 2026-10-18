@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM update_releases",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "3fa472343754dc6d1ce70514f84be02ee9f74856f7f8bb4d684965fc03af5111"
+}

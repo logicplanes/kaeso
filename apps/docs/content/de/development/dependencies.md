@@ -64,6 +64,20 @@ Kaeso steht unter der MIT-Lizenz, und alles, was es ausliefert, hängt nur von p
 | `http-body-util` (nur Tests) | Lesen von Antwort-Bodies in den Tests des Servers | MIT |
 | `rsa`, `chrono` | Der Mock-Identitätsanbieter in `kaeso-testkit`, nur in Tests | MIT OR Apache-2.0 |
 
+### Der Updater
+
+Der Updater (`crates/kaeso-updater`) nutzt `tokio`, `axum`, `reqwest`, `serde`, `serde_json`, `tracing`, `secrecy`, `subtle`, `sha2`, `base64`, `url`, `time`, `futures` und `thiserror` wie das Gateway, und diese:
+
+| Crate | Wofür | Lizenz |
+| --- | --- | --- |
+| `kaeso-update` | Das Release-Manifest, die Update-Regeln und das Protokoll des Updaters, aus demselben Workspace; auch das Gateway nutzt es | MIT |
+| `semver` | Release-Versionen vergleichen, im Gateway und im Updater | MIT OR Apache-2.0 |
+| `sigstore` (nur Feature `verify`) | Die Build-Provenance-Attestierungen des Release-Workflows prüfen: die Zertifikatskette bis zur Zertifizierungsstelle von Sigstore, den Certificate-Transparency-Nachweis, die Identität des Workflows, die DSSE-Signatur und den Eintrag im Transparenzlog | Apache-2.0 |
+| `rustls-pki-types` | Die Zertifikate der Vertrauensbasis, für `sigstore` | MIT OR Apache-2.0 |
+| `aws-lc-rs` | Den signierten Zeitstempel des Transparenzlogs mit dem Rekor-Schlüssel prüfen, den `sigstore` auslässt | ISC AND (Apache-2.0 OR ISC) |
+
+Das Self-Hosting-Paket führt [`wollomatic/socket-proxy`](https://github.com/wollomatic/socket-proxy) (MIT, mit Teilen unter Apache-2.0) als Docker-Socket-Proxy des Updaters aus, nur im Profil `updater`.
+
 ### KPP
 
 Der Bibliothekscode von `kaeso-kpp` und `kaeso-codecs` darf nur `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` verwenden; alles andere braucht die Zustimmung des Maintainers und hier eine Zeile. Genutzt werden:
