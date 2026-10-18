@@ -329,7 +329,7 @@ export function check(output, facts) {
       const where = `highlight ${i + 1}`;
       if (!hasKeys(value, ["title", "text", "prs"])) return problems.push(`${where} isn't a highlight`);
       text(value.title, TITLE_LIMIT, `${where}'s title`);
-      if (typeof value.title === "string" && /[.!?:]\s*$/.test(value.title)) problems.push(`${where}'s title ends with punctuation`);
+      if (typeof value.title === "string" && TITLE_END.test(value.title)) problems.push(`${where}'s title ends with punctuation`);
       if (typeof value.title === "string" && (words(value.title) < 2 || words(value.title) > 5)) problems.push(`${where}'s title isn't two to five words`);
       entry({ text: value.text, prs: value.prs }, where, false, POINT_LIMIT, true);
       if (!oneSentence(value.text)) problems.push(`${where} is more than one sentence`);
@@ -409,7 +409,8 @@ const split = (line) => {
 };
 
 const masked = (text) => text.replace(/`[^`]*`/g, (span) => `\`${"x".repeat(span.length - 2)}\``);
-const SENTENCE_END = /(?<!\b(?:e\.g|i\.e|etc|vs|\p{Lu}))[.!?](?=\s+\S)/u;
+const SENTENCE_END = /(?<!\b(?:e\.g|i\.e|etc|vs)|\.\p{Lu})[.!?](?=\s+\S)/u;
+const TITLE_END = /[.,;:!?…]+\s*$/u;
 
 export const emphasised = (text) => typeof text === "string" && /[*~]|(?:^|[^\p{L}\p{N}])_|_(?:[^\p{L}\p{N}]|$)/u.test(text.replace(/`[^`]*`/g, " "));
 
@@ -486,7 +487,7 @@ export function body({ changelog, version, brief = null, docs = DOCS_URL, notify
   const tagline = short ? [escaped(short.tagline.trim())] : [];
   const entries = found.sections.flatMap((section) => [section.markdown, ...section.topics.map(({ markdown }) => markdown)]).flatMap(items);
   const highlights = short
-    ? short.highlights.map(({ title, text, prs }) => `- **${escaped(title.trim().replace(/[.!?:]+$/, ""))}.** ${escaped(text.trim())}${refs(numbered(prs))}`)
+    ? short.highlights.map(({ title, text, prs }) => `- **${escaped(title.trim().replace(TITLE_END, ""))}.** ${escaped(text.trim())}${refs(numbered(prs))}`)
     : entries.slice(0, HIGHLIGHTS).map(cut);
   const breaking = short
     ? short.breaking.map(({ text, prs }) => `- ${escaped(text.trim())}${refs(numbered(prs))}`)
