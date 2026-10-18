@@ -229,7 +229,7 @@ jobs:
           {
             echo "### KPP line coverage"
             echo '```'
-            cargo llvm-cov report --summary-only --ignore-filename-regex '(/tests/|/tests_[a-z_]+\.rs|/models_tests\.rs|/test_support\.rs|/benches/)' | tail -n 1
+            cargo llvm-cov report --summary-only --ignore-filename-regex '(/tests/|/tests_[a-z_]+\.rs|/models_tests\.rs|/test_support\.rs)' | tail -n 1
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -392,22 +392,6 @@ jobs:
           workspaces: fuzz
           save-if: ${{ github.ref == 'refs/heads/dev' }}
       - run: cargo check --manifest-path fuzz/Cargo.toml --bins
-
-  bench:
-    name: Benchmarks build
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
-        with:
-          save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - run: cargo bench -p kaeso-codecs --bench codecs --no-run
 
   sdk-conformance:
     name: SDK conformance
@@ -1184,7 +1168,6 @@ jobs:
       - openapi
       - rust-dependencies
       - fuzz
-      - bench
       - sdk-conformance
       - sdk-e2e
       - compose

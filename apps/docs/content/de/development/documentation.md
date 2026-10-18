@@ -38,7 +38,7 @@ Eine Seite gibt es, weil echte Leser sie öffnen, um etwas zu erledigen. Bevor S
 3. **Steht es schon woanders?** Ein Thema hat eine Seite. Überschneiden sich zwei Seiten, erklärt eine davon, und die andere verlinkt darauf.
 4. **Würde ein Absatz auf einer anderen Seite reichen?** Eine Seite unter etwa 150 Wörtern, oder eine, die nur Links aufzählt, wird zum Abschnitt der Seite, von der ihre Leser kommen.
 
-Eine Seite, die an einer dieser Fragen scheitert, wird entfernt oder zusammengelegt, nicht gekürzt. Zahlen und Listen, nach denen nur CI handelt, etwa Bundle-Budgets, Coverage-Schwellen oder Benchmark-Ergebnisse, bleiben im Code oder in der Konfiguration, die sie durchsetzt; die Dokumentation nennt den Befehl, der sie prüft. Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen, tragen ihre Adresse mit der passendsten Seite in `apps/docs/redirects.json` ein ([Wo eine Seite liegt](#wo-eine-seite-liegt)) und reparieren die Links, die der Build nennt.
+Eine Seite, die an einer dieser Fragen scheitert, wird entfernt oder zusammengelegt, nicht gekürzt. Zahlen und Listen, nach denen nur CI handelt, etwa Bundle-Budgets oder Coverage-Schwellen, bleiben im Code oder in der Konfiguration, die sie durchsetzt; die Dokumentation nennt den Befehl, der sie prüft. Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen, tragen ihre Adresse mit der passendsten Seite in `apps/docs/redirects.json` ein ([Wo eine Seite liegt](#wo-eine-seite-liegt)) und reparieren die Links, die der Build nennt.
 
 ## Seitentypen
 

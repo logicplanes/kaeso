@@ -39,7 +39,7 @@ Then run these for the parts you changed:
 
 | Changed | Also run |
 | --- | --- |
-| KPP | The [SDK conformance suite](#sdk-conformance), `cargo test --doc -p kaeso-kpp -p kaeso-codecs`, the [fuzz targets' checks](#fuzzing) and `cargo bench -p kaeso-codecs --bench codecs --no-run` |
+| KPP | The [SDK conformance suite](#sdk-conformance), `cargo test --doc -p kaeso-kpp -p kaeso-codecs` and the [fuzz targets' checks](#fuzzing) |
 | The gateway | The [SDK suite](#sdk-suite) |
 | `deploy/`, a Dockerfile, packaging | The [install test](#install-test) and `docker build -f deploy/console.Dockerfile .` |
 | `.github/workflows` | `actionlint` |
@@ -244,16 +244,6 @@ cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates
 
 A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
 
-## Benchmarks
-
-`crates/kaeso-codecs/benches/codecs.rs` measures a full decode and encode cycle in each dialect, for a 100-message conversation and a 2,000-event stream. Before you change a codec's hot path, run the benchmarks on `dev` and again on your branch:
-
-```bash
-cargo bench -p kaeso-codecs --bench codecs
-```
-
-criterion prints the change against the previous run. CI only checks that the benchmarks build.
-
 ## Continuous integration
 
 The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. Everywhere else, every job runs.
@@ -273,7 +263,7 @@ The one required check is **CI**. It passes when **Changes** and **No comments**
 | Query data | The PostgreSQL migrations, then `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` is current |
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |
-| Fuzz targets, Benchmarks build | The fuzz targets and the benchmarks build |
+| Fuzz targets | The fuzz targets build |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` and `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` for both Compose files |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |

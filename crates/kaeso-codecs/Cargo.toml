@@ -33,11 +33,6 @@ thiserror.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 insta.workspace = true
-criterion.workspace = true
-
-[[bench]]
-name = "codecs"
-harness = false
 
 [lints]
 workspace = true
