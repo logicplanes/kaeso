@@ -22,7 +22,7 @@ Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Die Bedeut
 
 | | Englisch | Deutsch | Vereinfachtes Chinesisch |
 | --- | --- | --- | --- |
-| Anrede | Keine oder „you“ | „Sie“ nur, wo es sich nicht vermeiden lässt: Infinitive, Substantive und unpersönliche Formulierungen bevorzugen; nie „du“ | Keine; neutrale Formulierungen, „您“ nur, wo eine Person angesprochen wird |
+| Anrede | Keine oder „you“ | „Sie“ mit „Ihr“, „Ihre“, „Ihnen“, nie „du“; Überschriften, Buttons, Menüeinträge und kurze Hinweise bleiben im Infinitiv („Schlüssel erstellen“, „gleich erneut versuchen“) | „您“, wo eine Person angesprochen wird, nie „你“; sonst neutrale Formulierungen |
 | Buttons | Zuerst ein Verb: „Create key“ | Infinitiv, Verb am Ende: „Schlüssel erstellen“ | Zuerst ein Verb: „创建密钥“ |
 | Titel | Sentence case | Deutsche Groß- und Kleinschreibung, sonst wie ein Satz | Keine Satzzeichen am Ende |
 | Auslassungspunkte | „Loading…“, ein Zeichen | „Wird geladen…“ | „加载中…“ |
@@ -75,6 +75,18 @@ Nie übersetzt werden: Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, mod
 | session | Sitzung | 会话 |
 | settings | Einstellungen | 设置 |
 | instance | Instanz | 实例 |
+| install (a Kaeso installation) | Installation | 实例 |
+| active (key, account) | aktiv | 有效 |
+| release | Release | 版本 |
+| pre-release | Vorabversion | 预发布版本 |
+| update | Update | 更新 |
+| updater | Updater | 更新器 |
+| catalogue | Katalog | 目录 |
+| availability | Verfügbarkeit | 可用性 |
+| identity provider | Identitätsanbieter | 身份提供商 |
+| issuer URL | Issuer-URL | 颁发者 URL |
+| holder of a role | Träger einer Rolle | 持有者 |
+| inference | Inferenz | 模型调用 |
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
@@ -127,7 +139,7 @@ tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("si
 
 ### Was das Gateway schreibt
 
-Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client übersetzt, was er kennt, sobald Antworten eintreffen (`src/api/`, Schlüssel `errors.*` und `rights.*`), und ordnet Rechte und Rollen über ihre ID und Meldungen über ihren englischen Text samt Werten zu; alles, was er nicht kennt, wird so gezeigt, wie das Gateway es geschrieben hat. Ein Sprachwechsel lädt die Daten neu.
+Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client übersetzt, was er kennt, sobald Antworten eintreffen (`src/api/`, Schlüssel `errors.*` und `rights.*`), und ordnet Rechte und Rollen über ihre ID und Meldungen über ihren englischen Text samt Werten zu; alles, was er nicht kennt, wird so gezeigt, wie das Gateway es geschrieben hat. Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
 
 ## Die UI-Bibliothek
 
@@ -188,7 +200,8 @@ root.render(
 
 ## Prüfen
 
-- `pnpm i18n --write` schreibt die `src/i18n/locales/en/<area>.json` der Konsole aus dem Quellcode, die Liste für Übersetzende; `pnpm i18n` prüft, dass jeder Schlüssel Deutsch und Chinesisch mit denselben Platzhaltern hat und dass nichts übrig ist. `pnpm test` führt die Prüfung ebenfalls aus.
+- `pnpm i18n --write` schreibt die `src/i18n/locales/en/<area>.json` der Konsole aus dem Quellcode, die Liste für Übersetzende; `pnpm i18n` prüft, dass jeder Schlüssel Deutsch und Chinesisch mit denselben Platzhaltern hat und dass nichts übrig ist. Außerdem lehnt es eine Übersetzung ab, die noch englisch ist (Namen, Code, Abkürzungen und einige Begriffe wie „Top k“ bleiben erlaubt), „du“ im Deutschen, „你“ im Chinesischen, gerade Anführungszeichen und halbbreite Satzzeichen neben chinesischen Zeichen. `pnpm test` führt die Prüfung ebenfalls aus.
+- Der Katalogtest der UI-Bibliothek, `gen` des Showcase und der Nachrichtentest der Dokumentationswebsite lehnen dasselbe ab: Englisch in einer Übersetzung und eine informelle Anrede. Die Tests des Mail-Crates schlagen fehl, wenn eine deutsche oder chinesische E-Mail einen englischen Satz behält oder „du“ oder „Tokens“ verwendet.
 - `pnpm lint` lehnt Text ab, der direkt in die Konsole geschrieben ist: JSX-Text, Text-Props (`label`, `title`, `description`, `placeholder`, `aria-label` und andere), Textfelder von Objekten und als Literale geschriebene Toasts (die Regel `kaeso/no-literal-text`).
 - `apps/console/src/copy.test.ts` prüft deutsche und chinesische Beschreibungen gegen dieselben Längengrenzen wie die englischen, mit 15 % Spielraum.
 - Jede geänderte Seite auf Deutsch und Chinesisch ansehen, in Telefon- und Desktopbreite und in beiden Themes: die Sprache unter **Darstellung** wählen oder `kaeso:locale` im Speicher des Browsers setzen. Im Showcase `/de/components/<slug>/states` und `/zh-CN/components/<slug>/states` einer geänderten Komponente ansehen.
