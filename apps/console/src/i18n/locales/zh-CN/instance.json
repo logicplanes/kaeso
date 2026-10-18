@@ -388,5 +388,14 @@
   "instance.whatIsDeletedHint": "项目、密钥、服务商密钥、设置、用量和日志，将被永久删除。",
   "instance.wholeDays": "请输入整数天数，至少为 1",
   "instance.withContent": "含内容",
-  "instance.youreOwner": "您现在是所有者"
+  "instance.youreOwner": "您现在是所有者",
+  "instance.updates.checkUnreachable": "无法连接 {host}：{cause}",
+  "instance.updates.causeTimeout": "响应超时",
+  "instance.updates.causeNoConnection": "无法建立连接",
+  "instance.updates.causeFailed": "请求失败",
+  "instance.updates.checkRateLimited": "{host} 暂时不再接受请求",
+  "instance.updates.checkStatus": "{host} 返回了 {status}",
+  "instance.updates.checkUnreadable": "无法读取来自 {host} 的版本列表：{detail}",
+  "instance.updates.checkTooLarge": "来自 {host} 的版本列表超过 4 MiB",
+  "instance.updates.checkNoClient": "网关无法创建 HTTP 客户端"
 }

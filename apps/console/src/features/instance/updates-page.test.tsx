@@ -316,7 +316,7 @@ describe("instance updates page", () => {
     const failed = await screen.findByText(/^Failed /);
     expect(screen.getByText("GitHub couldn't be reached; Kaeso tries again later.")).toBeInTheDocument();
     expect(screen.getByText("Not checked yet")).toBeInTheDocument();
-    await hoverReason(user, failed, "api.github.com cannot be reached (no connection)");
+    await hoverReason(user, failed, "api.github.com can't be reached: no connection");
     await user.click(screen.getByRole("button", { name: "Check now" }));
     expect(await screen.findByText("Kaeso 40.4.3 is available")).toBeInTheDocument();
     expect(requests("POST", "instance/updates/check")).toHaveLength(1);

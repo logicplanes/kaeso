@@ -49,7 +49,7 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 - No internal names (ClickHouse, Valkey, configuration keys, module paths) and no trailing technical detail: log those with `tracing`.
 - Internal causes (`ApiError::internal`, `#[error]` of internal types, log lines) start lowercase; copy starts with a capital letter or a code span.
 
-`crates/kaeso-server/tests/error_copy.rs` and `crates/kaeso-server/tests/common/copy.rs` enforce it. The model API (`/v1`) keeps its providers' error formats.
+`crates/kaeso-server/tests/error_copy.rs` and `crates/kaeso-server/tests/common/copy.rs` enforce it. The console translates every message it can show (`apps/console/src/api/gateway-errors.ts`); `error_copy.rs` fails on a message without a rule there, so a new message comes with its German and Chinese in the same pull request. The model API (`/v1`) keeps its providers' error formats.
 
 ## KPP rules
 
