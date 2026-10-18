@@ -23,10 +23,11 @@ const rules = () => {
 
 const labelsFor = (files) =>
   rules()
-    .filter(({ mode, globs }) => {
-      const matches = (file) => globs.some((glob) => matchesGlob(file, glob));
-      return mode === "any-glob-to-all-files" ? files.every(matches) : files.some(matches);
-    })
+    .filter(({ mode, globs }) =>
+      mode === "any-glob-to-all-files"
+        ? globs.some((glob) => files.every((file) => matchesGlob(file, glob)))
+        : globs.some((glob) => files.some((file) => matchesGlob(file, glob))),
+    )
     .map(({ label }) => label)
     .sort();
 
@@ -70,6 +71,7 @@ test("every file of the self-hosting package gets its area", () => {
 
 test("a pull request that changes only CI, tests, tooling or contributor guides is internal", () => {
   assert.deepEqual(labelsFor([".github/workflows/ci.yml", ".github/labeler.yml"]), ["internal"]);
+  assert.deepEqual(labelsFor([".github/labeler.yml", "scripts/labeler.test.mjs", "rustfmt.toml"]), ["internal"]);
   assert.deepEqual(labelsFor(["scripts/changelog.mjs", "scripts/changelog.test.mjs", "AGENTS.md", "apps/docs/AGENTS.md"]), ["area: documentation", "internal"]);
   assert.deepEqual(labelsFor(["apps/console/src/keys.test.tsx", "apps/console/e2e/keys.spec.ts"]), ["area: console", "internal"]);
   assert.deepEqual(labelsFor(["crates/kaeso-codecs/tests/round_trip.rs", "fuzz/fuzz_targets/decode.rs"]), ["area: kpp", "internal"]);
