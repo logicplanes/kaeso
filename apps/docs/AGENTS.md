@@ -57,9 +57,23 @@ pnpm --filter kaeso-docs e2e
    - every error is a toast, never a banner or text in the page;
    - nothing changes size when its state changes, and nothing shifts after the first paint;
    - a focus ring shows for the keyboard only, never after a click.
-9. **Code blocks in pages never contain comments**; explain a command in the sentence before it.
+9. **Code blocks in pages never contain comments** or `$` prompts; explain a command in the sentence before it.
 10. **Diagrams are Mermaid, drawn by the build.** Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a ` ```mermaid ` block with `accTitle` and, in a sentence or two, `accDescr`, its labels translated like the page; never ASCII or box-drawing art in a code block, never a screenshot or an image of a diagram. `check:content` fails on a code block that draws with box-drawing characters or arrows. The build draws them in strict mode into static images, so nothing of them runs in a reader's browser; `pnpm --filter kaeso-docs diagrams` draws new and changed diagrams into `diagrams/`, which is committed with the page; [writing documentation](content/en/development/documentation.md#diagrams) has the rules.
 11. **Tests assert on what a person sees**, and the content build's tests on what an author writes. The coverage thresholds are in `vitest.config.ts`.
+
+## Writing pages
+
+[Writing documentation](content/en/development/documentation.md) is the binding style guide; read it before you write a page. In short:
+
+- **Every page earns its place**: a named reader, a task, no other page that says the same, more than a paragraph's worth. Otherwise remove or merge it, with a redirect in `redirects.json`. Numbers only CI acts on stay in the code that enforces them.
+- **One page type** (quick start, guide, concept, reference, troubleshooting) with that type's template. Guides link to the reference; the same table is never on both.
+- **Voice:** address the reader as "you" („Sie“ in German), imperative instructions, active voice, present tense, sentences under 20 words and never over 30, paragraphs of at most four sentences. No filler, marketing, hedging, exclamation points or "we".
+- **Lead with a runnable example** on every API page and app guide, within the first screen. Requests are a code group of consecutive fences with `tab="curl"`, `tab="Python"` and `tab="TypeScript"`, in that order, using the official OpenAI and Anthropic SDKs, `kaeso.example.com`, the key from `KAESO_API_KEY` and `claude-haiku-4-5`.
+- **Highlighting:** bold only for console labels and defined names, code for everything the reader types, no emphasis.
+- **Callouts:** `NOTE`, `TIP`, `IMPORTANT` or `WARNING`; at most one per section and three per page, under 50 words. No `CAUTION`.
+- **Next steps:** quick starts, guides and overviews end with `## Next steps`, a list of two to four `[Page title](page.md): One sentence.` items, shown as link cards.
+- **Length:** title at most 6 words, introduction one to three sentences, quick start at most 10 steps, guide or concept at most 1,500 words, headings `##` and `###` only.
+- Finish with the checklist under [before you merge](content/en/development/documentation.md#before-you-merge).
 
 ## Where things are
 

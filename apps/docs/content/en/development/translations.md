@@ -22,7 +22,7 @@ Every language has the same voice: short, plain, no filler. Translate the meanin
 
 | | English | German | Simplified Chinese |
 | --- | --- | --- | --- |
-| Address | None, or "you" | "Sie" only where it can't be avoided; prefer infinitives, nouns and impersonal phrasing; never "du" | None; neutral phrasing, "您" only where a person is addressed |
+| Address | None in interfaces; "you" on documentation pages | In interfaces, "Sie" only where it can't be avoided; prefer infinitives, nouns and impersonal phrasing. Documentation pages address the reader as "Sie" ([writing documentation](documentation.md#translating)). Never "du" | None; neutral phrasing, "您" only where a person is addressed |
 | Buttons | A verb first: "Create key" | Infinitive, verb last: „Schlüssel erstellen“ | A verb first: "创建密钥" |
 | Titles | Sentence case | German capitalization, otherwise sentence style | No trailing punctuation |
 | Ellipsis | "Loading…", one character | „Wird geladen…“ | "加载中…" |
