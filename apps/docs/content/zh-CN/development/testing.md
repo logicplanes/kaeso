@@ -276,7 +276,7 @@ cargo +nightly fuzz run sse fuzz/corpus/sse crates/kaeso-codecs/fixtures -- -max
 
 CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推送到 `dev` 和 `prod` 时，以及在 Release 工作流内部运行。Release 工作流自己的推送（发布提交以及合入 `dev` 的版本）不会再次触发它，因为该版本已经通过了每个作业。
 
-在拉取请求上，第一个作业判断哪些领域发生了变化，未变化领域的作业会被跳过；其他情况下会运行所有作业。唯一的必需检查是 **CI**：当 **Changes** 和 **No comments** 通过、其他每个作业都通过或被跳过时，它才通过。合入 `dev` 的拉取请求必须等它通过后才能合并（[变更如何进入 dev](contributing.md#变更如何进入-dev)）。
+在拉取请求上，第一个作业判断哪些领域发生了变化，未变化领域的作业会被跳过；其他情况下会运行所有作业。唯一的必需检查是 **CI**：当 **Changes** 和 **No comments** 通过、其他每个作业都通过或被跳过时，它才通过；只要有一个作业失败、超时或被取消，它就失败。合入 `dev` 的拉取请求必须等它通过后才能合并（[变更如何进入 dev](contributing.md#变更如何进入-dev)）。
 
 | 作业 | 运行内容 |
 | --- | --- |
@@ -297,14 +297,30 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推
 | SDK conformance | `pytest -q e2e/conformance` |
 | SDK end-to-end | 在开发环境栈上运行 `pytest -q e2e/sdk` |
 | Compose config | 对 `deploy/compose.yaml` 和 `deploy/compose.dev.yaml` 运行 `docker compose config` |
-| Images | 构建网关、模拟服务商和控制台镜像，并标注 `Cargo.toml` 和 `apps/console/package.json` 中的版本；检查控制台镜像能响应 `/healthz`、以内容安全策略提供控制台，并对 `/assets/` 下不存在的文件返回 404 |
+| Images (gateway)、Images (mock provider)、Images (updater)、Images (console) | 并行构建这四个镜像，并标注 `Cargo.toml` 和 `apps/console/package.json` 中的版本；控制台的作业还会检查其镜像能响应 `/healthz`、以内容安全策略提供控制台，并对 `/assets/` 下不存在的文件返回 404 |
 | Install test | 用这些镜像（包括真实的控制台）运行 `pytest -q e2e/install` |
 | TypeScript lint | `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
-| TypeScript test | `pnpm test`，每个包的覆盖率显示在作业摘要中 |
-| TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check` |
-| End-to-end console | 针对网关镜像运行 `pnpm --filter kaeso-console e2e` |
+| TypeScript libraries | 只运行一次 `pnpm build:packages`；TypeScript 测试和端到端作业使用它构建的结果 |
+| TypeScript test (tokens, ui, docs, showcase, scripts) | 按工作区拆分的 `pnpm test`，每个工作区一个作业：`packages/tokens`、`packages/ui`、`apps/docs` 和 `apps/showcase` 的测试，以及 `node --test 'scripts/*.test.mjs'`，各自使用所属包的覆盖率阈值，覆盖率显示在作业摘要中 |
+| TypeScript test (console 1/3, 2/3, 3/3) | 控制台的单元测试，分成三个分片（`vitest run --shard`），每个分片记录自己的覆盖率 |
+| TypeScript test (console coverage) | 合并三个分片（`vitest run --merge-reports --coverage`）：有测试失败或合并后的覆盖率低于控制台的阈值时失败 |
+| TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check`；End-to-end showcase 测试的就是这里构建出的展示站点 |
+| End-to-end console (1/3, 2/3, 3/3) | 针对网关镜像分三部分运行 `pnpm --filter kaeso-console e2e`，每部分使用自己的栈 |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
-| End-to-end showcase | 针对 TypeScript build 构建的展示站点运行 `pnpm --filter kaeso-showcase e2e` |
+| End-to-end showcase (chromium 1/8 至 8/8, webkit 1/1) | 针对 TypeScript build 构建的展示站点运行 `pnpm --filter kaeso-showcase e2e`：`chromium` 项目分成八个分片（`playwright test --shard`），`webkit` 项目在单独的作业中运行 |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 | CI | 必需检查 |
+
+### 作业如何编排
+
+每个作业在它所依赖的作业完成后立即开始，任何作业都不会重复构建其他作业已经构建好的内容：
+
+- **TypeScript libraries** 只构建一次 `packages/`，并以制品的形式传给 TypeScript 测试和端到端作业，它们不再自行构建。只要其中任何一个作业运行，它就会运行，因此 Rust 和部署的变更也会触发它，因为 End-to-end console 会测试这些变更。**TypeScript build** 以同样的方式传出它构建的展示站点。
+- 四个镜像作业并行运行。Images (gateway) 和 TypeScript libraries 完成后，End-to-end console 立即开始；安装测试等待全部四个镜像。
+- 控制台的单元测试是所有 TypeScript 测试中耗时最长的，因此分成三个分片运行。每个分片在关闭阈值的情况下运行，因为三分之一的测试只覆盖部分代码；**TypeScript test (console coverage)** 合并各分片记录的覆盖率，并像 `pnpm test` 一样，把 `apps/console/vitest.config.ts` 中的阈值应用到整体上。
+- 展示站点的测试彼此独立。`chromium` 项目用 Playwright 的 `--shard` 分成八个分片运行；`webkit` 项目只包含导航侧滑面板的测试，在单独的作业中运行，因此只有这个作业需要安装 WebKit 及其所需的系统软件包。
+- 控制台的用例相互依赖，因此无法用 `--shard` 拆分。每部分启动自己的栈，先运行 `01-public`，再运行那些数据只来自同一部分中前面用例的用例：第 1 部分是项目的页面（`02-models` 至 `08-palette`、`11-instance`、`13-keyboard`、`16-period`），第 2 部分是组织（`02-models`、`04-members`、`10-org`、`12-lifecycle`、`19-roles`），第 3 部分是其余所有用例。新用例只要没有被工作流中的 `PART_1` 或 `PART_2` 列出，就会在第 3 部分运行；那里列出的名称如果没有对应的用例，作业就会失败。
+- 某个分片或部分失败时，**End-to-end showcase report** 或 **End-to-end console report** 会把各分片的 blob 报告合并成一个 HTML 报告，即制品 `playwright-showcase` 或 `playwright-console`。这两个作业不属于必需检查。
+
+缓存让重复的工作保持简短：pnpm 存储（以 `pnpm-lock.yaml` 为键）、Playwright 的浏览器（以 Playwright 版本为键；命中时只安装系统软件包）、Rust 的构建输出（在 `dev` 上写入，每个拉取请求都会读取），以及每个镜像的层（Docker Buildx 的 `gha` 缓存，同样从 `dev` 读取）。
