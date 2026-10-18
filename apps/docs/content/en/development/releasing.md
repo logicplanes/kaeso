@@ -54,17 +54,63 @@ On npm, a stable release gets the `latest` tag and a pre-release the `next` tag.
 
 ## The changelog
 
-`CHANGELOG.md` at the repository root follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Every change people will notice adds a line under `[Unreleased]` in the same pull request, saying what changed from the point of view of someone who uses, runs or builds on Kaeso.
+`CHANGELOG.md` at the repository root follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Pull requests don't change it: the Release workflow writes each version's section from the pull requests merged since the latest release, from their titles and labels. A pull request's title therefore is its line in the changelog, a sentence that says what changed for someone who uses, runs or builds on Kaeso, such as "Keep dialogs centered and resize them smoothly when their content changes".
 
-A release turns the lines under `[Unreleased]` into the version's section, `## [X.Y.Z] - YYYY-MM-DD`, leaves `## [Unreleased]` empty above it, and updates the links at the end of the file: `[Unreleased]` compares with the new tag, and a new link points at the version's release. That section becomes the release's notes on GitHub. A release with nothing under `[Unreleased]` is refused, unless `CHANGELOG.md` already has a section for that version or, for a stable release, for a pre-release of it.
+Each line is the title, without a final full stop, and a link to the pull request: `- Keep dialogs centered and resize them smoothly when their content changes ([#38](https://github.com/logicplanes/kaeso/pull/38))`. Markdown in a title can't add HTML, links, headings or lists to the changelog; code spans stay code. The lines follow these rules:
 
-A stable release after pre-releases of its version, such as `0.2.0` after `0.2.0-rc.1` and `0.2.0-rc.2`, folds their sections and anything new under `[Unreleased]` into the one section `## [0.2.0] - YYYY-MM-DD`. The lines under each heading (such as `### Added`) and each topic within it (such as `#### Model API`) come together, newest first, and the pre-releases' sections and links are removed. The stable release's notes therefore list everything the version changes since the last stable release. `scripts/changelog.mjs` makes these changes.
+- **Section.** A type label chooses it; of several, `security` comes first, then the order of Keep a Changelog. Without one, the title's first word does: Add or Introduce puts it under Added, Deprecate under Deprecated, Remove or Drop under Removed, Fix under Fixed, and any other word under Changed.
+- **Topic.** Exactly one area label puts the line under that topic, such as `#### Console`, after the section's lines without a topic. No area label, or several, leaves it without one.
+- **Order.** Sections follow Keep a Changelog: Added, Changed, Deprecated, Removed, Fixed, Security. Topics follow the table below, and lines the pull requests' numbers.
+- **Breaking changes.** A pull request labelled `breaking` is also named at the top of the version's section, as **Breaking:** and its title. The label changes nothing else; the version is still the one the maintainer chooses ([versions](#versions)).
+- **Dependencies.** Dependabot's pull requests, and others labelled `dependencies`, become one line under Changed, "Dependencies updated", with a link to each.
+- **Left out.** Pull requests labelled `internal`, such as updates to CI, tests or tooling, Dependabot's updates of the workflows' actions included.
 
-Both sites show the changelog at `/changelog`. The documentation ([the changelog page](architecture/docs-site.md#the-changelog)) and the showcase read `CHANGELOG.md` through `history` in `scripts/changelog.mjs`, so a release needs no extra step for them. Built from a release's tag, they have nothing under `[Unreleased]` and leave it out; built from `dev`, they show those lines first, marked as not released yet.
+Lines written under `[Unreleased]` by hand make a curated release: when `[Unreleased]` has any, the release uses only them and leaves the pull requests out. A curated release suits notes that deserve more than titles, and a hotfix, whose commits have no pull request.
+
+A release turns these lines into the version's section, `## [X.Y.Z] - YYYY-MM-DD`, leaves `## [Unreleased]` empty above it, and updates the links at the end of the file: `[Unreleased]` compares with the new tag, and a new link points at the version's release. That section becomes the release's notes on GitHub. A release with nothing to list is refused: nothing under `[Unreleased]` and no merged pull request without `internal`, unless `CHANGELOG.md` already has a section for that version or, for a stable release, for a pre-release of it.
+
+A stable release after pre-releases of its version, such as `0.2.0` after `0.2.0-rc.1` and `0.2.0-rc.2`, folds their sections and the pull requests merged since the last of them into the one section `## [0.2.0] - YYYY-MM-DD`. The lines under each heading (such as `### Added`) and each topic within it (such as `#### Console`) come together, newest first, and the pre-releases' sections and links are removed. The stable release's notes therefore list everything the version changes since the last stable release. `scripts/changelog.mjs` makes these changes.
+
+Both sites show the changelog at `/changelog`. The documentation ([the changelog page](architecture/docs-site.md#the-changelog)) and the showcase read `CHANGELOG.md` through `history` in `scripts/changelog.mjs`, so a release needs no extra step for them. Built from a release's tag, they have nothing under `[Unreleased]` and leave it out; built from `dev`, they show the lines written under `[Unreleased]` first, when there are any, marked as not released yet.
+
+### Labels
+
+| Label | In the release's notes |
+| --- | --- |
+| `added`, `changed`, `deprecated`, `removed`, `fixed`, `security` | The section, such as Added; `changed` is the default |
+| `breaking` | Also named at the top, as a breaking change |
+| `internal` | Left out |
+| `area: gateway`, `area: kpp`, `area: console`, `area: ui library`, `area: documentation`, `area: self-hosting` | The topic: Gateway, KPP, Console, UI library, Documentation or Self-hosting |
+
+The **Labels** workflow (`.github/workflows/labels.yml`) sets the area labels and `internal` from the files a pull request changes, following `.github/labeler.yml`, each time it is opened or pushed to, and removes those that no longer fit. A pull request gets `area: console` when it changes a file in `apps/console`, and `internal` when every file it changes is a test, a fixture, a workflow, a script, a contributor guide or other tooling. Set one of these labels by hand after the last push, since the next push sets them from the files again. The workflow runs on `pull_request_target` with the labeler action alone, never checks out the pull request's code, and may only read the repository and write labels.
+
+The maintainer sets the type label before merging when the title's first word doesn't choose the right section, and `breaking` when people need to change something to upgrade. `node scripts/changelog.mjs labels` lists every label with its colour and description, for creating them in a repository:
+
+```bash
+node scripts/changelog.mjs labels | while IFS=$'\t' read -r name color description; do
+  gh label create "$name" --color "$color" --description "$description" --force
+done
+```
+
+Validate collects the pull requests: every commit on `prod` that no `v*` tag contains, merge commits left out, gives its pull request through the `(#123)` that ends a squashed commit's subject or, without one, through GitHub's list of the merged pull requests a commit belongs to. Validate reads them with a token that may only read the repository and pull requests, lists them with their labels in its summary, and hands them to Prepare as JSON, from which `scripts/changelog.mjs` writes the section. `node scripts/changelog.mjs draft pulls.json` prints the section a file of pull requests in that form makes.
+
+### Written release notes
+
+When the repository has the secret `LOG_AI_KEY`, Prepare has the version's section written by `claude-opus-5-5` through the Anthropic Messages API of the maintainer's Kaeso instance. The Release workflow sets its address as `RELEASE_NOTES_API_URL`, `https://ai.logicplanes.com`, and the model as `RELEASE_NOTES_MODEL`. `scripts/release-notes.mjs` sends what Validate collected about the merged pull requests, all of them public: their number, title, body (at most 4,000 characters), labels, author, merge date, the paths of the files they change with the lines added and removed, the issues they close, and their human co-authors; pull requests labelled `internal` are left out. With them go the previous release's section, for its style, the lines under `[Unreleased]`, and the sections of the version's pre-releases. `LOG_AI_KEY` is a repository secret that only this step reads.
+
+The answer is JSON in a fixed schema: a summary, the breaking changes, the entries by section and topic with the pull requests each one describes, and the contributors. The script accepts it only when every user-visible pull request is in exactly one entry and no other number appears, the contributors are exactly the people of the release, and every text is plain: no HTML, links, addresses, headings, emojis or mentions of anyone else. It then writes the Markdown itself: the summary, the breaking changes, the contributors as `@login`, with first contributions marked, a link to the changes since the previous release, and each entry with links to its pull requests. Whatever a pull request says, it can't add a link, HTML or a mention to the changelog. A contributor's first contribution is one without a merged pull request or a commit in the repository before the previous release; bots, Dependabot and coding assistants are never contributors.
+
+Lines under `[Unreleased]` go to the model as the maintainer's own wording, which it keeps. Without the secret, or when the request fails, is refused or cut off, or the answer breaks a rule, the step leaves a notice or a warning in the run, and the release writes the section from the lines under `[Unreleased]` or the titles and labels, as above. The step never stops the release: it gives up after 20 minutes at most.
+
+`pnpm release:notes --dry-run` shows the notes of the next release without changing a file. With `LOG_AI_KEY` in the environment it prints what the model writes, and without it the section the release would write. `--since` chooses the tag to start after, `--head` another commit than `HEAD`, and `--version` the version the compare link names:
+
+```bash
+pnpm release:notes --dry-run --since v{{version}} --head origin/dev
+```
 
 ## Making a release
 
-1. **Get `dev` ready.** CI on `dev` is green, every check under [before a change is done](testing.md#before-a-change-is-done) passes, `pnpm release:check` included, and `CHANGELOG.md` describes everything the release changes.
+1. **Get `dev` ready.** CI on `dev` is green, every check under [before a change is done](testing.md#before-a-change-is-done) passes, `pnpm release:check` included, and every pull request merged since the latest release has the labels its line needs ([labels](#labels)), or the lines under `[Unreleased]` describe everything the release changes.
 2. **Refresh the model data**, so a fresh install starts with current models and prices, and merge the result into `dev` through a pull request:
 
    ```bash
@@ -104,7 +150,7 @@ Both sites show the changelog at `/changelog`. The documentation ([the changelog
 
 ## Pre-releases
 
-A pre-release, such as `0.2.0-rc.1`, is made from `prod` like any release. It gets the `next` tag on npm, is marked as a pre-release on GitHub, and gets only its version as an image tag, so `latest` stays on the newest stable release. Each pre-release gets its own changelog section until the stable release folds them into one ([the changelog](#the-changelog)), so the stable release needs no new lines of its own.
+A pre-release, such as `0.2.0-rc.1`, is made from `prod` like any release. It gets the `next` tag on npm, is marked as a pre-release on GitHub, and gets only its version as an image tag, so `latest` stays on the newest stable release. Each pre-release gets its own changelog section, from the pull requests merged since the release before it, until the stable release folds them into one ([the changelog](#the-changelog)), together with the pull requests merged after the last pre-release.
 
 ## Hotfixes
 
@@ -117,7 +163,7 @@ A hotfix fixes the latest release without what `dev` has gathered since. It work
    git switch -c hotfix/0.2.1 v0.2.0
    ```
 
-2. **Fix it** with a test that shows the bug, add a line under `[Unreleased]` in `CHANGELOG.md`, commit, and run the checks.
+2. **Fix it** with a test that shows the bug, add a line under `[Unreleased]` in `CHANGELOG.md`, commit, and run the checks. The hotfix's commits have no pull request, so this line is its changelog ([the changelog](#the-changelog)).
 3. **Push the branch to `prod`.** This is a fast-forward, because `prod` is at the release's commit:
 
    ```bash
@@ -154,8 +200,8 @@ The jobs that write to the repository or publish anything run in the `release` e
 
 | Job | What it does |
 | --- | --- |
-| Validate | Refuses a run on any branch but `prod`, a version that isn't semantic, a tag that already exists, a version that isn't newer than the latest tag, a `CHANGELOG.md` with nothing under `[Unreleased]` and no section for the version (or, for a stable version, a pre-release of it), and a version that a file already states by hand |
-| Prepare | Runs `node scripts/version.mjs set` with the version, which writes it into every file that states it ([the version in the repository](#the-version-in-the-repository)) and fails if the version is still written by hand anywhere else. Then moves the changelog, folding the sections of a stable version's pre-releases into its own. It can only read the repository, holds no Git credentials, and hands its changes to Tag as a patch |
+| Validate | Refuses a run on any branch but `prod`, a version that isn't semantic, a tag that already exists, a version that isn't newer than the latest tag, a release with nothing to list (nothing under `[Unreleased]`, no merged pull request without `internal`, and no section for the version or, for a stable version, a pre-release of it), and a version that a file already states by hand. Collects the pull requests merged since the latest release with their bodies, files, closed issues and people, lists them with their labels in its summary and hands them to Prepare ([the changelog](#the-changelog)) |
+| Prepare | Runs `node scripts/version.mjs set` with the version, which writes it into every file that states it ([the version in the repository](#the-version-in-the-repository)) and fails if the version is still written by hand anywhere else. Then has the release notes written ([written release notes](#written-release-notes)) and makes them the version's section of the changelog; without them, it writes the section from the lines under `[Unreleased]` or, when there are none, from the merged pull requests, folding the sections of a stable version's pre-releases into its own. It can only read the repository, holds no Git credentials, and hands its changes to Tag as a patch |
 | Checks | Runs the whole CI workflow on `prod`'s commit, every job, whatever changed |
 | Tag | Applies the patch, refusing one that creates, deletes or renames a file, changes a file's mode, or changes any file other than `CHANGELOG.md` and those `node scripts/version.mjs files` lists. If the patch changes files, commits "Release X.Y.Z" to `prod`; if it changes none, tags `prod`'s commit itself. Refuses when `prod` moved since the run started. Tags `vX.Y.Z` and pushes `prod` and the tag together, both or neither |
 | Sync dev | Brings the release into `dev`: nothing to do when `dev` already has it, a fast-forward when `dev` has nothing new, otherwise the merge commit "Merge release X.Y.Z into dev" when it merges cleanly. When the `dev` rules refuse its push, it finishes with a warning and its summary shows the command a repository admin runs. Fails, and its summary says how to merge by hand, when the merge conflicts, when the release changes a file in `.github/workflows` that `dev` doesn't have, or when `dev` moved during the run |

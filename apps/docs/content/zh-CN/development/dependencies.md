@@ -185,7 +185,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 | `react-docgen-typescript` | MIT | 组件注册表和属性表格 |
 | `@tanstack/router-plugin`、`@tanstack/router-generator` | MIT | 控制台的路由树（由 `src/routes` 生成）及其代码拆分 |
 | `openapi-typescript`、`@redocly/openapi-core` | MIT | 控制台的 Platform API 类型，由 `openapi.json` 生成 |
-| `openai`、`@anthropic-ai/sdk` | Apache-2.0、MIT | `pnpm seed` 中经过网关的示例流量 |
+| `openai`、`@anthropic-ai/sdk` | Apache-2.0、MIT | `pnpm seed` 中经过网关的示例流量；`@anthropic-ai/sdk` 还在 `scripts/release-notes.mjs` 中请求版本说明（[撰写的版本说明](releasing.md#撰写的版本说明)） |
 | `vitest`、`@vitest/coverage-v8`、`happy-dom` | MIT | 带覆盖率的单元测试和组件测试 |
 | `@testing-library/react`、`@testing-library/user-event`、`@testing-library/jest-dom` | MIT | 从用户所见出发的测试 |
 | `@playwright/test` | Apache-2.0 | 端到端测试，以及绘制文档图示的无头 Chromium |

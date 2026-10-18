@@ -31,12 +31,14 @@
     "knip": "pnpm build:packages && pnpm --filter kaeso-console generate && pnpm --filter kaeso-showcase gen && knip",
     "licenses:check": "node scripts/licenses.mjs && pnpm -r --if-present licenses:check",
     "release:check": "node scripts/check-pack.mjs",
+    "release:notes": "node scripts/release-notes.mjs",
     "e2e": "pnpm -r --workspace-concurrency=1 --if-present e2e",
     "stack:up": "pnpm --filter kaeso-console stack:up",
     "stack:down": "pnpm --filter kaeso-console stack:down",
     "seed": "pnpm --filter kaeso-console seed"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "knip": "6.41.0",
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.1"

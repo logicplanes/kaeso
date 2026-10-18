@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
+import { release } from "../../../../scripts/changelog.mjs";
 import type { Block } from "../../src/markdown/ast.ts";
 import { buildChangelog, changelogClash, changelogToc, withChangelog } from "./changelog.ts";
 import { buildDocs } from "./docs.ts";
@@ -185,6 +186,33 @@ describe("a changelog with markup that could run", () => {
       "~~~",
     ].join("\n");
     expect(problemsOf(entry)).toEqual([]);
+  });
+});
+
+describe("a release written from pull requests", () => {
+  const pull = (number: number, title: string, labels: string[]) => ({ number, title, url: `${repoUrl}/pull/${number}`, labels });
+  const before = `# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-09-01\n\n### Added\n\n- Batches.\n\n[Unreleased]: ${repoUrl}/compare/v1.0.0...HEAD\n[1.0.0]: ${repoUrl}/releases/tag/v1.0.0\n`;
+
+  it("builds without problems and shows markup in a title as text, with the link to its pull request", () => {
+    const written = release(before, "1.1.0", "2026-10-01", [
+      pull(7, "Keep <Select> and [the menu](javascript:alert(1)) open around `<Dialog>`", ["fixed", "area: console"]),
+      pull(8, "Rename the budget fields", ["breaking"]),
+    ]);
+    repo({ "CHANGELOG.md": written });
+    const { content, problems } = buildChangelog(join(root, "CHANGELOG.md"), root);
+    expect(problems).toEqual([]);
+    const [latest] = content.releases;
+    expect(latest?.version).toBe("1.1.0");
+    expect(text(latest?.intro ?? [])).toContain(`${repoUrl}/pull/8`);
+    expect(latest?.sections.map((s) => [s.name, s.topics.map((t) => t.name)])).toEqual([
+      ["Changed", []],
+      ["Fixed", ["Console"]],
+    ]);
+    const fixed = text(latest?.sections[1]?.topics[0]?.blocks ?? []);
+    expect(fixed).toContain("<Select>");
+    expect(fixed).toContain("javascript:alert(1)");
+    expect(fixed).toContain(`${repoUrl}/pull/7`);
+    expect(fixed).not.toContain('"href":"javascript');
   });
 });
 

@@ -185,7 +185,7 @@ Keines davon ist Teil eines veröffentlichten Pakets oder des Builds der Konsole
 | `react-docgen-typescript` | MIT | Die Komponenten-Registry und die Props-Tabellen |
 | `@tanstack/router-plugin`, `@tanstack/router-generator` | MIT | Der Routenbaum der Konsole, aus `src/routes` generiert, und seine Aufteilung in Chunks |
 | `openapi-typescript`, `@redocly/openapi-core` | MIT | Die Typen der Platform API für die Konsole, aus `openapi.json` generiert |
-| `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Beispielverkehr durch das Gateway in `pnpm seed` |
+| `openai`, `@anthropic-ai/sdk` | Apache-2.0, MIT | Beispielverkehr durch das Gateway in `pnpm seed`; `@anthropic-ai/sdk` fordert außerdem die Release-Notizen in `scripts/release-notes.mjs` an ([geschriebene Release-Notizen](releasing.md#geschriebene-release-notizen)) |
 | `vitest`, `@vitest/coverage-v8`, `happy-dom` | MIT | Unit- und Komponententests mit Coverage |
 | `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom` | MIT | Tests aus Sicht dessen, was eine Person sieht |
 | `@playwright/test` | Apache-2.0 | End-to-End-Tests und das Headless-Chromium, das die Diagramme der Dokumentation zeichnet |

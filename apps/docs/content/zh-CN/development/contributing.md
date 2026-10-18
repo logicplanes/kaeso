@@ -28,7 +28,7 @@ Issue 有两个模板：
 2. **先写一个失败的测试，再写代码。** 每个缺陷修复都从一个能复现该缺陷的测试开始。
 3. **在同一个拉取请求中修改变更涉及的所有内容。** Platform API 的变更要同时更新网关、控制台和 `openapi.json`。KPP 的变更从一个 [fixture](kpp/fixtures.md) 开始，并更新该方言的映射页面。新增的依赖要在[依赖与许可证](dependencies.md)中添加一行。对权限、角色或设置的修改会改变[参考快照](testing.md#快照与参考文档)；审阅其差异，并更新对应的页面。
 4. **更新文档**：如果使用、运行或集成 Kaeso 的人会注意到这项变更，就用英语、德语和简体中文更新 `apps/docs/content` 中的页面（[编写文档](documentation.md)）。
-5. **在 `CHANGELOG.md` 中添加一行**：每个会被人注意到的变更都要在 `[Unreleased]` 下添加（[变更日志](releasing.md#变更日志)）。
+5. **把标题写成变更日志中的一行。** Release 工作流根据已合并的拉取请求写出变更日志：标题就是那一行，用一句话向使用、运行 Kaeso 或基于它进行开发的人说明改变了什么，例如“Keep dialogs centered and resize them smoothly when their content changes”。不要修改 `CHANGELOG.md`。**Labels** 工作流会根据你修改的文件设置领域标签和 `internal`，维护者则设置类型，例如 `fixed`（[标签](releasing.md#标签)）。
 6. **运行检查**：[完成变更之前](testing.md#完成变更之前)中的所有检查，并在两种主题下、在桌面和手机宽度下、用全部三种语言查看每个修改过的界面。
 7. **向 `dev` 发起拉取请求。** 每个拉取请求只包含一个变更。模板会询问变更内容和原因、测试方式，并附有上述步骤的检查清单。
 
