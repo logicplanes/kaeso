@@ -138,7 +138,7 @@ The unit tests and the e2e suite read `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_C
 | `404.html` | One per language, marked `noindex`; shows "not found" in the frame |
 | `sitemap.xml` | Every page in every language with its `hreflang` alternates, without `lastmod`, since the build doesn't know when a page last changed |
 | `robots.txt` | Allows everything and names the sitemap |
-| `site.webmanifest`, the icons, `og.png`, `CNAME` | Static files from `public/` |
+| `site.webmanifest`, the icons, `og.png` | Static files from `public/` |
 | `<old path>.html`, `_redirects` | For every address in `redirects.json`, in every language: a `noindex` page that sends the reader to where the page moved, and the same moves as permanent redirects for hosts that read `_redirects` |
 | `csp.txt`, `_headers` | The site's [Content Security Policy](../releasing.md#content-security-policy), which every page also carries in a `<meta>` |
 

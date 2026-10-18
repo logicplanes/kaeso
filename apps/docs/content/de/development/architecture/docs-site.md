@@ -138,7 +138,7 @@ Die Unit-Tests und die E2E-Suite lesen `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_
 | `404.html` | Eine pro Sprache, als `noindex` markiert; zeigt „nicht gefunden“ im Rahmen |
 | `sitemap.xml` | Jede Seite in jeder Sprache mit ihren `hreflang`-Alternativen, ohne `lastmod`, da der Build nicht weiß, wann sich eine Seite zuletzt geändert hat |
 | `robots.txt` | Erlaubt alles und nennt die Sitemap |
-| `site.webmanifest`, die Icons, `og.png`, `CNAME` | Statische Dateien aus `public/` |
+| `site.webmanifest`, die Icons, `og.png` | Statische Dateien aus `public/` |
 | `<alter Pfad>.html`, `_redirects` | Für jede Adresse in `redirects.json`, in jeder Sprache: eine `noindex`-Seite, die den Leser dorthin schickt, wohin die Seite gezogen ist, und dieselben Umzüge als dauerhafte Weiterleitungen für Hosts, die `_redirects` lesen |
 | `csp.txt`, `_headers` | Die [Content Security Policy](../releasing.md#content-security-policy) der Website, die jede Seite auch in einem `<meta>` trägt |
 

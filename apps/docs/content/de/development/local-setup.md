@@ -14,7 +14,7 @@ Diese Seite führt von einem frischen Klon zum aus dem Quellcode gebauten Gatewa
 | [Node.js](https://nodejs.org) | 24, wie in `.node-version` | Konsole, UI-Bibliothek, Dokumentation und Skripte |
 | pnpm | 11, in `package.json` festgelegt und von Corepack bereitgestellt | Den TypeScript-Workspace |
 | [Rust](https://rustup.rs) über rustup | 1.99, in `rust-toolchain.toml` festgelegt | Gateway und KPP |
-| [Docker](https://docs.docker.com/get-docker/) mit Compose | Compose 2.24 oder neuer | Den Entwicklungs-Stack |
+| Eine Docker-Engine mit Compose | Compose 2.24 oder neuer | Den Entwicklungs-Stack |
 | [Python](https://www.python.org) | 3.13 | Nur die [End-to-End-Tests](testing.md#end-to-end-tests) |
 
 Corepack ist bei Node.js dabei. Einmal einschalten, dann stellt es genau die pnpm-Version bereit, die das Repository festlegt:
@@ -24,6 +24,15 @@ corepack enable
 ```
 
 rustup installiert Rust 1.99 mit rustfmt, clippy und llvm-tools beim ersten `cargo`-Aufruf im Repository; `rustup show` erledigt das vorab.
+
+Jede Docker-Engine mit Compose betreibt den Stack: Docker Engine unter Linux oder [Colima](https://github.com/abiosoft/colima) unter macOS, das ohne Desktop-App auskommt. Mit Homebrew:
+
+```bash
+brew install colima docker docker-compose docker-buildx
+colima start --cpu 4 --memory 8
+```
+
+Homebrew installiert Compose und Buildx als Plugins des Befehls `docker`. Damit `docker compose` sie findet, den Plugin-Ordner von Homebrew unter `cliPluginsExtraDirs` in `~/.docker/config.json` eintragen, wie ihre Installationshinweise sagen: `lib/docker/cli-plugins` unter `brew --prefix`, auf Apple Silicon etwa `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`. Acht Gigabyte Speicher lassen Platz für die Datenbanken des Stacks und den ersten Build des Gateways. Colima teilt nur den eigenen Home-Ordner mit seiner virtuellen Maschine, daher gehören der Checkout und jede ausprobierte Installation dort hinein.
 
 ## 1. Code holen
 
@@ -55,7 +64,7 @@ Das baut das Image des Gateways aus dem Checkout (`kaeso-dev-gateway`, aus `depl
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
 | `provider` | Eine nachgebildete OpenAI- und Anthropic-API, sodass kein echter Anbieter-Schlüssel nötig ist | Nur innerhalb des Stacks |
 | `idp` | Ein nachgebildeter OpenID-Connect-Anbieter für Single Sign-on | `http://idp.localhost:18091` |
-| `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Instanz-Einstellungen → Updates**; `POST /__scenario` mit `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) und `outcome` (`succeeded`, `rolled_back`) ändert, was sie antworten | `http://127.0.0.1:18092` |
+| `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Einstellungen** › **Instanz** › **Updates**; `POST /__scenario` mit `releases` (`patch`, `major`, `manual`, `none`, `error`), `updater` (`ready`, `down`) und `outcome` (`succeeded`, `rolled_back`) ändert, was sie antworten | `http://127.0.0.1:18092` |
 | `master-key` | Schreibt den Hauptschlüssel des Gateways vor dessen Start in ein Volume | |
 
 Der Stack ist das Compose-Projekt `kaeso-dev`, definiert in `deploy/compose.dev.yaml`. Die Rust-Tests brauchen nur die Datenbanken und Mailpit, die auch ohne Gateway starten:

@@ -87,7 +87,7 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 
 ## README 中的录屏
 
-README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在 **服务商** 页面连接一个 Anthropic 密钥，在 **API 密钥** 页面创建一个密钥，从它叠加在页面上的终端面板用这个密钥发送一个请求，然后在开启 **实时** 的 **请求日志** 页面等待这个请求出现。
+README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在**服务商**页面连接一个 Anthropic 密钥，在 **API 密钥**页面创建一个密钥，从它叠加在页面上的终端面板用这个密钥发送一个请求，然后在开启**实时**的**请求日志**页面等待这个请求出现。
 
 重新录制时，先准备一个刚填充过种子数据的栈并运行控制台，并事先安装 `ffmpeg`，例如用 `brew install ffmpeg`：
 
