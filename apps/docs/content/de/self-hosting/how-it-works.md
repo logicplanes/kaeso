@@ -22,7 +22,7 @@ flowchart TD
 
 ## Dienste
 
-`compose.yaml` startet sechs Dienste. Sie legt die Images von Gateway und Konsole auf die Version des Releases fest, alle anderen auf eine Version und einen Digest.
+`compose.yaml` startet sechs Dienste. Die Datei legt die Images von Gateway und Konsole auf die Version des Releases fest, alle anderen auf eine Version und einen Digest.
 
 | Dienst | Aufgabe | Seine Daten |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Back
 1. PostgreSQL, ClickHouse und Valkey starten. Das Gateway wartet, bis PostgreSQL und Valkey gesund sind.
 2. Das Gateway prüft seine Einstellungen. Eine fehlende oder ungültige Einstellung hält es an, mit einer Meldung, die die Einstellung nennt, nie ihren Wert.
 3. Das Gateway migriert PostgreSQL, bevor es irgendetwas bereitstellt. ClickHouse migriert es im Hintergrund und versucht es erneut, bis ClickHouse antwortet.
-4. Solange die Installation keine Benutzer hat, protokolliert das Gateway, dass sie noch nicht eingerichtet ist. Den Einrichtungslink protokolliert es nie, denn wer das Log liest, könnte damit die Installation übernehmen.
+4. Solange die Installation keine Benutzer hat, protokolliert das Gateway, dass sie noch nicht eingerichtet ist. Den Einrichtungslink protokolliert es nie, denn wer das Protokoll liest, könnte damit die Installation übernehmen.
 5. Sobald Gateway und Konsole gesund sind, startet Caddy und bezieht das Zertifikat im Hintergrund.
 
 `kaeso setup-link` gibt den Einrichtungslink aus, der den ersten Benutzer anlegt. Dieser wird Instanz-Admin und Inhaber der ersten Organisation. Alle anderen kommen per Einladung dazu oder registrieren sich, wo die Instanz es erlaubt ([Instanzverwaltung](../console/instance-administration.md)).

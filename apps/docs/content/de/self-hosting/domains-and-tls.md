@@ -57,7 +57,7 @@ Leiten Sie dann diese Pfade weiter:
 Richten Sie den Proxy für Kaeso ein:
 
 - Schalten Sie die Pufferung von Antworten für `/v1/` ab, damit gestreamte Antworten die Apps sofort erreichen.
-- Geben Sie `X-Forwarded-For` weiter. Das Gateway glaubt dem Header nur von `KAESO_TRUSTED_PROXIES`, standardmäßig den privaten Netzen. Hinter einem Proxy, dem es nicht vertraut, sehen Logs und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
+- Geben Sie `X-Forwarded-For` weiter. Das Gateway vertraut dem Header nur, wenn er von `KAESO_TRUSTED_PROXIES` kommt, standardmäßig den privaten Netzen. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
 - Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
 - Leiten Sie den Metrik-Port 9100 nie weiter.
 
@@ -98,7 +98,7 @@ Proxys und Load Balancer schließen Verbindungen, über die eine Weile keine Byt
 - Einen SSE-Kommentar, `: keepalive`, für Chat Completions und Responses.
 - Ein `ping`-Event für Anthropic Messages.
 
-Halten Sie das Intervall deutlich unter dem kürzesten Leerlauf-Timeout auf dem Weg. Das Gateway sendet die Header der Antwort, sobald der Anbieter antwortet, noch vor dem ersten Event. Seine eigenen Grenzen für einen Stream sind `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` und `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` ([Aufrufe an Anbieter](configuration.md#aufrufe-an-anbieter)).
+Halten Sie das Intervall deutlich unter dem kürzesten Leerlauf-Zeitlimit auf dem Weg. Das Gateway sendet die Header der Antwort, sobald der Anbieter antwortet, noch vor dem ersten Event. Seine eigenen Grenzen für einen Stream sind `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` und `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` ([Aufrufe an Anbieter](configuration.md#aufrufe-an-anbieter)).
 
 Der [Ablauf einer Anfrage](../concepts/request-flow.md) erklärt, was passiert, wenn ein Stream abbricht oder die App verschwindet.
 

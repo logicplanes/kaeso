@@ -25,7 +25,7 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 
 1. Öffnen Sie in der Konsole **Einstellungen** › **Instanz** › **Einstellungen**. Der Abschnitt **E-Mail** zeigt den Transport, den SMTP-Host und den Absender.
 2. Wählen Sie **Test-E-Mail senden**. Sie geht an Sie oder an die Adresse, die Sie eingeben.
-3. Scheitert sie oder kommt sie nicht an, lesen Sie die Antwort des SMTP-Servers im Log des Gateways mit `docker compose logs gateway`.
+3. Scheitert sie oder kommt sie nicht an, lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways mit `docker compose logs gateway`.
 
 Die [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an) nennt die üblichen Ursachen.
 
@@ -60,7 +60,7 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 
 Sicherheits- und Organisationshinweise werden immer gesendet. Welche Warnungen sie erhält, wählt jede Person unter **Einstellungen** › **Konto** › **Benachrichtigungen**, und jede Warnung sagt in ihrer Fußzeile, wie sie sich abschalten lässt.
 
-Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder reisen in der E-Mail mit, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
+Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder sind in die E-Mail eingebettet, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
 
 ## Sprachen
 

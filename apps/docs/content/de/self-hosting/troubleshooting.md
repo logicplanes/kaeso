@@ -4,7 +4,7 @@ description: Finden Sie die Meldung oder das Symptom, das Sie auf einer Installa
 order: 11
 ---
 
-Suchen Sie die Meldung oder das Symptom, das Sie sehen, und folgen Sie der Lösung. Die meisten Probleme zeigen sich im Log des Gateways, das die beteiligte Einstellung, Anfrage oder den Dienst nennt:
+Suchen Sie die Meldung oder das Symptom, das Sie sehen, und folgen Sie der Lösung. Die meisten Probleme zeigen sich im Protokoll des Gateways, das die beteiligte Einstellung, Anfrage oder den Dienst nennt:
 
 ```bash
 docker compose logs --tail 100 gateway
@@ -79,7 +79,7 @@ Ist Kaeso schon eingerichtet, sagt der Befehl das; melden Sie sich dann unter Ih
 Das Gateway erreicht den SMTP-Server nicht, oder der Server lehnt die E-Mail ab.
 
 1. Wählen Sie **Test-E-Mail senden** unter **Einstellungen** › **Instanz** › **Einstellungen**.
-2. Lesen Sie die Antwort des SMTP-Servers im Log des Gateways.
+2. Lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways.
 3. Prüfen Sie `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS` und die Zugangsdaten in der `.env`, und ob der Server von `KAESO_SMTP_FROM` senden darf.
 
 Mit `KAESO_MAIL_TRANSPORT=log` protokolliert das Gateway E-Mails nur und sendet sie nie ([E-Mail](email.md)).
@@ -104,7 +104,7 @@ In den OpenAI-Formaten kommen manche 503-Fehler des Gateways als 500 an.
 
 Ein Proxy oder Load Balancer zwischen App und Kaeso schließt Verbindungen, die zu lange ruhen.
 
-1. Setzen Sie `KAESO_STREAMS_KEEPALIVE_INTERVAL` in der `compose.override.yaml` unter das Leerlauf-Timeout des Proxys. Der Standard ist 15 Sekunden.
+1. Setzen Sie `KAESO_STREAMS_KEEPALIVE_INTERVAL` in der `compose.override.yaml` unter das Leerlauf-Zeitlimit des Proxys. Der Standard ist 15 Sekunden.
 2. Hinter Ihrem eigenen Proxy schalten Sie die Pufferung von Antworten für `/v1/` ab.
 
 [Lange Streams](domains-and-tls.md#lange-streams) erklärt die Keepalives.
@@ -114,7 +114,7 @@ Ein Proxy oder Load Balancer zwischen App und Kaeso schließt Verbindungen, die 
 Einträge erscheinen wenige Sekunden nach der Anfrage. Erscheinen keine, nimmt ClickHouse keine Schreibvorgänge an: `/readyz` meldet `degraded`, und `kaeso_log_buffer_rows` wächst.
 
 1. Führen Sie `docker compose logs clickhouse` aus und beheben Sie, was dort gemeldet wird.
-2. Suchen Sie im Log des Gateways nach `ClickHouse migrations failed`.
+2. Suchen Sie im Protokoll des Gateways nach `ClickHouse migrations failed`.
 
 Zeilen warten im Speicher des Gateways bis zu `KAESO_LOGS_BUFFER_SIZE`, danach fallen die ältesten weg.
 
@@ -145,5 +145,5 @@ Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter 
 
 Die Konsole zeigte „Im Gateway ist etwas schiefgelaufen; Anfrage req_… an die Administration melden.“ Das Gateway ist auf eine Weise gescheitert, die der Aufrufer nicht beheben kann, und sein Log enthält die Ursache.
 
-1. Suchen Sie die ID im Log: `docker compose logs gateway | grep req_…`.
+1. Suchen Sie die ID im Protokoll: `docker compose logs gateway | grep req_…`.
 2. Lesen Sie die Zeile `internal error` mit ihrer Ursache.

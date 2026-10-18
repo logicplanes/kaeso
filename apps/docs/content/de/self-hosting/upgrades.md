@@ -8,7 +8,7 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 
 ## Von Hand aktualisieren
 
-1. Lesen Sie die Release Notes auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Einstellungen** › **Instanz** › **Updates**.
+1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Einstellungen** › **Instanz** › **Updates**.
 2. [Sichern](backups.md) Sie PostgreSQL und ClickHouse, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
 3. Laden Sie im Ordner der Installation die neue `compose.yaml` über die alte. `.env`, `master-keys` und `compose.override.yaml` bleiben, wie sie sind.
 
@@ -31,7 +31,7 @@ Wenn ein Update nicht mit einem Klick möglich ist, zeigt die Konsole diese Befe
 
 Das Gateway sucht zweimal am Tag auf GitHub nach neuen Releases, nach einem Fehler frühestens eine Stunde später. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways.
 
-Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release Notes aller Releases seither und wann das Gateway zuletzt gesucht hat. **Jetzt prüfen** sucht sofort, auch wenn die Suche abgeschaltet ist. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
+Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat. **Jetzt prüfen** sucht sofort, auch wenn die Suche abgeschaltet ist. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |
@@ -94,9 +94,9 @@ secrets:
 
 ### Welche Releases sich mit einem Klick einspielen lassen
 
-Ein Release lässt sich mit einem Klick einspielen, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release Notes und die Befehle für das Update von Hand.
+Ein Release lässt sich mit einem Klick einspielen, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und die Befehle für das Update von Hand.
 
-- Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, macht immer eine Hauptversion.
+- Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, führt immer zu einer neuen Hauptversion.
 - Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn seine `compose.yaml` sich über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen.
 - Es bringt `release.json` mit, das signierte Manifest, das der Updater liest.
 
@@ -108,7 +108,7 @@ Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt 
 2. **Herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater.
 3. **Umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
 4. **Migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
-5. **Wieder online.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.
+5. **Wieder erreichbar.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.
 
 Der Updater ersetzt sich nicht selbst, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet seine neue Version. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
 
@@ -135,7 +135,7 @@ Entfernen Sie danach beide `…-previous`-Container mit `docker rm`. Solange ein
 
 ### Was der Updater darf
 
-Der Updater kann Container anlegen; wer ihn kontrolliert, kontrolliert also den Server als root. Er ist so gebaut, dass diese Macht eng bleibt:
+Der Updater kann Container anlegen; wer ihn kontrolliert, kontrolliert also den Server als root. Er ist so gebaut, dass diese Befugnis möglichst begrenzt bleibt:
 
 - Er antwortet nur dem Gateway, in einem internen Netzwerk und nur mit dem gemeinsamen Token. Das Gateway übergibt ihm eine Versionsnummer und sonst nichts.
 - Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht.

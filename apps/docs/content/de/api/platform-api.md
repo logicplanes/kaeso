@@ -72,12 +72,12 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automatisieren, und einen Projektschlüssel für Skripte und CI in einem Projekt. Sitzungen dienen der Konsole und Personen mit curl. Das Sitzungs-Cookie heißt `__Host-kaeso_session`, bei einer `http://`-Installation unter einer Loopback-Adresse wie localhost `kaeso_session`.
 
-- **Schlüssel erreichen nur `orgs/{org}/*`.** `me/*`, `instance/*` und die angemeldeten Routen von `auth/*` beantworten Schlüssel mit 403. Routen auf Organisationsebene beantworten Projektschlüssel mit 403.
+- **Schlüssel erreichen nur `orgs/{org}/*`.** `me/*`, `instance/*` und die Routen von `auth/*`, die eine Anmeldung voraussetzen, beantworten Schlüssel mit 403. Routen auf Organisationsebene beantworten Projektschlüssel mit 403.
 - **Schlüssel stehen in `Authorization`.** Die Platform API liest nie `x-api-key`.
 - **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`. Standard ist `inference`, und Plattformzugriff erfordert das Recht `keys.platform_access.grant` ([API-Schlüssel](../console/api-keys.md)).
 - **Plattform-Schlüssel entstehen nur in einer Sitzung**, durch jemanden, der jedes Recht der Rolle Admin hat. Sie rufen nie Modelle auf.
 - **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet andere Sitzungen mit 403. Eine, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Passwortsitzungen ohne zweiten Faktor mit 403.
-- **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene API-Schlüssel](../self-hosting/configuration.md#fehlgeschlagene-api-schlüssel)).
+- **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene Schlüsselprüfungen](../self-hosting/configuration.md#fehlgeschlagene-schlüsselprüfungen)).
 
 ### Websiteübergreifende Anfragen
 
@@ -174,7 +174,7 @@ Die Routen sind relativ zu `/platform/v1`. [`openapi.json`](#openapi-dokument) n
 | --- | --- |
 | `auth/*` | Einrichtung beim ersten Start, Anmeldemethoden, Anmeldung mit Passwort und zweitem Faktor, Anmeldelinks, Passwort-Reset, Single Sign-on, Sitzungen, Registrierung, wo die Instanz die Adresse zulässt, und Einladungen. `auth/session` liefert den Benutzer, seine Mitgliedschaften mit Rollen und Rechten und ob er Organisationen erstellen darf (`can_create_orgs`). |
 | `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel und Benachrichtigungen, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
-| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Eigentümerwechsel, Löschen und Wiederherstellen. |
+| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Inhaberwechsel, Löschen und Wiederherstellen. |
 | `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder mit ihrem Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits und die Schlüsselrichtlinie. Außerdem der Katalog und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log und der [Playground](#playground). |
 | `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen, der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
 
@@ -184,12 +184,12 @@ Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zur�
 
 ## Rollen und Rechte
 
-Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`), und pro Mitglied lassen sich Rechte hinzufügen oder entfernen. Eine Organisationsrolle hält außerdem Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede eingebaute Rolle.
+Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`), und pro Mitglied lassen sich Rechte hinzufügen oder entfernen. Eine Organisationsrolle hält außerdem Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede integrierte Rolle.
 
 | Route | Recht | Antwortet mit |
 | --- | --- | --- |
 | `GET orgs/{org}/rights` | `org.view` | Jedem Recht nach Kategorie, mit Name, Beschreibung, Kennzeichen (`sensitive`, `recent_sign_in`, `cloud_only`) und den Rechten, die es braucht. |
-| `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Eingebauten und eigenen Rollen mit ihren Rechten und der Zahl ihrer Inhaber. `?scope=org` oder `?scope=project` filtert sie. |
+| `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Integrierten und eigenen Rollen mit ihren Rechten und der Zahl ihrer Träger. `?scope=org` oder `?scope=project` filtert sie. |
 | `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Erstellt, ändert oder löscht eine eigene Rolle. Eine Organisation hat höchstens 50. |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | Den wirksamen Rechten eines Mitglieds in der Organisation, in jedem Projekt und in jedem Projekt, das der Aufrufer sehen kann, mit ihren Quellen. |
 | `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Den wirksamen Rechten eines Mitglieds in diesem Projekt, mit ihren Quellen. |
@@ -197,7 +197,7 @@ Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitg
 | `GET orgs/{org}/rights/{right}/grantors` | `members.view` | Bis zu 10 aktiven Mitgliedern, die das Recht haben und Rechte ändern dürfen, Inhaber zuerst. |
 | `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | Dasselbe, für ein Recht in diesem Projekt. |
 
-Senden Sie eine Vergabe als `{"role": "developer", "rights_added": [], "rights_removed": []}`. `role` ist der Name einer eingebauten Rolle oder die ID einer eigenen Rolle; `preset` ist ihr veralteter Name. Die Antwort enthält `role` als `{id, kind, name}`, die wirksamen `rights` und bei Vergaben in der Organisation `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`, die Einrichtung von Single Sign-on nimmt `default_role`.
+Senden Sie eine Vergabe als `{"role": "developer", "rights_added": [], "rights_removed": []}`. `role` ist der Name einer integrierten Rolle oder die ID einer eigenen Rolle; `preset` ist ihr veralteter Name. Die Antwort enthält `role` als `{id, kind, name}`, die wirksamen `rights` und bei Vergaben in der Organisation `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`, die Einrichtung von Single Sign-on nimmt `default_role`.
 
 Jede Änderung von Rechten folgt den [Vergaberegeln](../concepts/rights.md#vergaberegeln):
 
@@ -222,7 +222,7 @@ Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Mo
 
 | Route | Tut |
 | --- | --- |
-| `GET orgs/{org}/projects/{project}/playground/models` | Listet die Modelle, die das Mitglied aufrufen kann: den Katalog ohne Embeddings-Modelle, eingeschränkt auf den Modellzugriff des Mitglieds. Jedes hat Namen, Aliasse, Reasoning-Stufen, Limits und Preise, ob es `temperature` annimmt und ob das Projekt einen Anbieter-Schlüssel dafür hat. |
+| `GET orgs/{org}/projects/{project}/playground/models` | Listet die Modelle, die das Mitglied aufrufen kann: den Katalog ohne Embeddings-Modelle, eingeschränkt auf den Modellzugriff des Mitglieds. Jedes hat Namen, Aliasse, Aufwandsstufen, Limits und Preise, ob es `temperature` annimmt und ob das Projekt einen Anbieter-Schlüssel dafür hat. |
 | `POST orgs/{org}/projects/{project}/playground/responses` | Nimmt eine OpenAI-Responses-Anfrage mit `"stream": true` und antwortet mit dem Event-Stream, den `/v1/responses` sendet, samt Keepalive-Kommentaren. |
 
 Die Anfrage nimmt `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und `stream`, das `true` sein muss. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
@@ -251,6 +251,6 @@ Fehler vor dem Beginn des Streams sind Fehler der Platform API:
 | 409 | `org_scheduled_for_deletion` | Die Organisation ist zur Löschung vorgemerkt. |
 | 429 | `rate_limited` | Eine Rate oder ein Budget ist erreicht, und die Meldung nennt sie. |
 | 503 | `unavailable` | Kaeso kann den Katalog, die Anbieter-Schlüssel oder die Limits nicht lesen, oder Kaeso startet gerade neu. |
-| 429, 502, 503, 504 | `provider_error` | Der Anbieter hat die Rate der Anfrage begrenzt, ist gescheitert oder hat den Anbieter-Schlüssel abgelehnt, ist überlastet oder hat nicht rechtzeitig geantwortet. |
+| 429, 502, 503, 504 | `provider_error` | Der Anbieter hat die Anfrage wegen seines Ratenlimits abgelehnt, ist gescheitert oder hat den Anbieter-Schlüssel abgelehnt, ist überlastet oder hat nicht rechtzeitig geantwortet. |
 
 Hat der Stream begonnen, kommen Fehler als Responses-Events vom Typ `error`, wie auf `/v1`.

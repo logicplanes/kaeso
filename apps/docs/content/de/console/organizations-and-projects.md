@@ -41,12 +41,12 @@ Mit Single Sign-on melden sich Mitglieder über Ihren OpenID-Connect-Identitäts
 2. **Welche App meldet Personen an?** Geben Sie ihre Client-ID und ihr Client-Secret ein.
 3. **Welche E-Mail-Domains melden sich darüber an?** Die Anmeldeseite leitet Personen mit einer Adresse unter diesen Domains zu Ihrem Anbieter. Internationalisierte Domains funktionieren in beiden Schreibweisen, `bücher.example` oder `xn--bcher-kva.example`.
 4. **Beitritt ohne Einladung möglich?** Wählen Sie **Nur mit Einladung** oder die Rolle, mit der Personen ohne Kaeso-Konto beitreten. Diese Rolle kann nicht Inhaber sein.
-5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, lautet die Schaltfläche „Weiter mit SSO“. **Ohne Klick starten** leitet Personen direkt zu Ihrem Anbieter, wenn die Anmeldeseite nur ihn anbietet, außer direkt nach dem Abmelden oder wenn der Anbieter sie abgewiesen hat.
+5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, steht auf dem Button „Weiter mit SSO“. **Ohne Klick starten** leitet Personen direkt zu Ihrem Anbieter, wenn die Anmeldeseite nur ihn anbietet, außer direkt nach dem Abmelden oder wenn der Anbieter sie abgewiesen hat.
 
 Nach dem Verbinden zeigt die Seite zwei Adressen:
 
 - Die **Weiterleitungs-URL**: Tragen Sie sie beim Anbieter als Callback der Anmeldung ein.
-- Den **Anmeldelink**: Er öffnet die Anmeldeseite mit der Schaltfläche Ihres Anbieters, sodass Mitglieder keine Adresse eingeben. Teilen Sie ihn, etwa im Intranet.
+- Den **Anmeldelink**: Er öffnet die Anmeldeseite mit dem Button Ihres Anbieters, sodass Mitglieder keine Adresse eingeben. Teilen Sie ihn, etwa im Intranet.
 
 **Single Sign-on bearbeiten** ändert die Verbindung, und ein leeres Client-Secret behält das gespeicherte. **Trennen** entfernt sie, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 
@@ -69,7 +69,7 @@ Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die O
 Wählen Sie unter **Allgemein** **Organisation löschen** und bestätigen Sie mit dem Namen der Organisation. Sie brauchen dafür das Recht **Organisation löschen**, das Inhaber haben, und die Installation muss das Löschen erlauben.
 
 1. Alle API-Schlüssel der Organisation hören sofort auf zu funktionieren, und Kaeso informiert die Mitglieder per E-Mail.
-2. Während einer Schonfrist, 7 Tage, sofern die Installation nichts anderes festlegt, ist die Organisation schreibgeschützt, und jede Seite zeigt einen Hinweis. Ein Inhaber kann noch **Organisation wiederherstellen** wählen.
+2. Während einer Schonfrist von 7 Tagen (sofern die Installation keine andere festlegt) ist die Organisation schreibgeschützt, und jede Seite zeigt einen Hinweis. Ein Inhaber kann noch **Organisation wiederherstellen** wählen.
 3. Nach der Schonfrist löscht Kaeso ihre Projekte, Schlüssel, Anbieter-Schlüssel, Einstellungen, Nutzung und Protokolle endgültig.
 
 ## Audit-Log lesen

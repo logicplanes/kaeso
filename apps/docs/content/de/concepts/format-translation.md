@@ -28,7 +28,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse.
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
-- **Sampling.** Temperatur, Top P, maximale Tokens und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen.
+- **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen.
 - **Die ID des Endnutzers.** `metadata.user_id` bei Anthropic und `safety_identifier` bei OpenAI.
 - **Reasoning.** Aufwandsstufen und Denk-Budgets werden ineinander umgerechnet ([Reasoning](#reasoning)).
 - **Streams.** Kaeso übersetzt sie Event für Event in das Format der App.
@@ -89,18 +89,18 @@ So rechnet Kaeso Reasoning-Einstellungen um:
 
 | Von der App | Nach | Wird zu |
 | --- | --- | --- |
-| Ein Denk-Budget | OpenAI | Eine Aufwandsstufe: unter 4.096 Tokens `low`, 4.096 bis 16.383 `medium`, ab 16.384 `high` |
+| Ein Denk-Budget | OpenAI | Eine Aufwandsstufe: unter 4.096 Token `low`, 4.096 bis 16.383 `medium`, ab 16.384 `high` |
 | Ausgeschaltetes Denken | OpenAI | Die Aufwandsstufe `none` |
 | Eine Aufwandsstufe von `low` bis `max` | Claude mit adaptivem Denken | Adaptives Denken mit dieser Aufwandsstufe |
-| Eine Aufwandsstufe von `low` bis `max` | Claude ohne adaptives Denken | Ein Budget: `low` 2.048, `medium` 8.192, `high`, `xhigh` und `max` 24.576 Tokens |
+| Eine Aufwandsstufe von `low` bis `max` | Claude ohne adaptives Denken | Ein Budget: `low` 2.048, `medium` 8.192, `high`, `xhigh` und `max` 24.576 Token |
 | Die Aufwandsstufe `none` | Claude | Keine Einstellung zum Denken; das Modell denkt nur, wenn es das standardmäßig tut |
 
 - **Aufwandsstufe und Budget.** Eine Aufwandsstufe hat Vorrang vor einem Budget in derselben Anfrage. Ein Claude-Modell hat kein adaptives Denken, wenn sein Katalogeintrag das sagt. Claude 4.5 und früher haben keines.
-- **Ein Budget anpassen.** Kaeso passt ein Budget an die Regeln von Anthropic an: mindestens 1.024 Tokens und weniger als `max_tokens`. Ist `max_tokens` 1.024 oder kleiner, beträgt das Budget 1.024, und Kaeso erhöht `max_tokens` um 1.024, damit die Antwort ihren Platz behält.
+- **Ein Budget anpassen.** Kaeso passt ein Budget an die Regeln von Anthropic an: mindestens 1.024 Token und weniger als `max_tokens`. Ist `max_tokens` 1.024 oder kleiner, beträgt das Budget 1.024, und Kaeso erhöht `max_tokens` um 1.024, damit die Antwort ihren Platz behält.
 - **Denken und Sampling.** Schaltet Kaeso das Denken von Claude für eine Anfrage aus einem anderen Format ein, lässt es `temperature`, `top_p` und `top_k` weg. Anthropic lehnt sie zusammen mit Denken ab. Die eigenen Einstellungen einer Anthropic-App gehen so hinaus, wie sie kamen.
 - **Erzwungene Tool-Aufrufe.** Anthropic lehnt Denken mit Budget zusammen mit einem erzwungenen Tool-Aufruf ab (`required` oder ein benanntes Tool). Kaeso sendet die Anfrage dann ohne Denken. Adaptives Denken behält das erzwungene Tool.
 - **Tool-Züge von anderswo.** Bei eingeschaltetem Denken mit Budget enthalten die Tool-Aufrufe des letzten Assistenten-Zugs vielleicht kein Denken, das Claude wiedergeben kann, etwa weil ein anderer Anbieter sie erzeugt hat. Kaeso sendet die Anfrage dann ohne Denken. Adaptives Denken bleibt eingeschaltet.
-- **Wann Reasoning eingeschaltet wird.** Der Katalog sagt, ob ein Modell Reasoning nutzt (models.dev `reasoning`). Bei einem solchen Modell schaltet `reasoning: {summary: "auto"}` ohne Aufwandsstufe das Denken von Claude in seiner Standardtiefe ein: adaptives Denken oder das Budget von 8.192 Tokens. Eine Anthropic-App, die Denken ohne Aufwandsstufe einschaltet, erhält das verschlüsselte Reasoning von OpenAI für den nächsten Zug zurück. Kaeso schaltet Reasoning nie für ein Modell ein, das kein Reasoning nutzt oder von dem das nicht bekannt ist. Eine Anfrage, die bei einem solchen Modell eine Aufwandsstufe, Denken oder ein Budget verlangt, lehnt Kaeso ab.
+- **Wann Reasoning eingeschaltet wird.** Der Katalog sagt, ob ein Modell Reasoning nutzt (models.dev `reasoning`). Bei einem solchen Modell schaltet `reasoning: {summary: "auto"}` ohne Aufwandsstufe das Denken von Claude in seiner Standardtiefe ein: adaptives Denken oder das Budget von 8.192 Token. Eine Anthropic-App, die Denken ohne Aufwandsstufe einschaltet, erhält das verschlüsselte Reasoning von OpenAI für den nächsten Zug zurück. Kaeso schaltet Reasoning nie für ein Modell ein, das kein Reasoning nutzt oder von dem das nicht bekannt ist. Eine Anfrage, die bei einem solchen Modell eine Aufwandsstufe, Denken oder ein Budget verlangt, lehnt Kaeso ab.
 
 ## Reasoning zwischen Zügen
 

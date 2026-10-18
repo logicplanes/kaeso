@@ -75,7 +75,7 @@ Der Body hat kein Feld für die ID der Anfrage. Lesen Sie sie deshalb aus dem He
 
 ## Anthropic-Format
 
-Dieselbe Anfrage mit dem Anthropic-SDK:
+Dieselbe Anfrage mit dem Anthropic SDK:
 
 ```bash tab="curl"
 curl -i https://kaeso.example.com/v1/messages \

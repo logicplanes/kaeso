@@ -19,7 +19,7 @@ Apps und Skripte rufen Kaeso mit einem API-Schlüssel auf. Ein Schlüssel gehör
 > [!IMPORTANT]
 > Kopieren Sie den Schlüssel, bevor Sie den Dialog schließen. Kaeso speichert nur einen Hash davon und kann ihn nicht erneut anzeigen. Haben Sie ihn nicht kopiert, fragt die Konsole vor dem Schließen nach.
 
-Standardmäßig läuft ein Schlüssel nach 90 Tagen ab, oder nach der längsten erlaubten Wahl. Setzt die Organisation oder das Projekt eine maximale Schlüssellaufzeit, sind längere Wahlen und **Nie** ausgeblendet.
+Standardmäßig läuft ein Schlüssel nach 90 Tagen ab, oder nach der längsten erlaubten Option. Setzt die Organisation oder das Projekt eine maximale Schlüssellaufzeit, sind längere Optionen und **Nie** ausgeblendet.
 
 Einen Schlüssel zu erstellen erfordert diese Rechte:
 
@@ -47,7 +47,7 @@ Das Menü im Sheet eines Schlüssels hat drei Aktionen:
 | Aktivieren | Ein deaktivierter Schlüssel funktioniert wieder |
 | Archivieren | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten |
 
-Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller **Alle Schlüssel verwalten**.
+Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
 
 Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ablaufende Schlüssel** in den **Benachrichtigungen** ihres Kontos abschalten.
 
@@ -57,8 +57,8 @@ Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Proj
 
 Plattform-Schlüssel sind für Skripte und Infrastruktur, die die ganze Organisation verwalten, etwa Terraform. Ein Plattform-Schlüssel beginnt mit `sk-kso-org-`. Er handelt mit den Rechten der Rolle Admin in der Organisation und jedem Projekt und ruft nie Modelle auf.
 
-1. Öffnen Sie in den **Organisationseinstellungen** **Plattform-Schlüssel** und wählen Sie **Plattform-Schlüssel erstellen**.
-2. Geben Sie an, was den Schlüssel verwendet und wann er abläuft. Die Wahlen und die maximale Schlüssellaufzeit der Organisation sind dieselben wie bei API-Schlüsseln.
+1. Öffnen Sie in den **Organisationseinstellungen** die Seite **Plattform-Schlüssel** und wählen Sie **Plattform-Schlüssel erstellen**.
+2. Geben Sie an, was den Schlüssel verwendet und wann er abläuft. Die Optionen und die maximale Schlüssellaufzeit der Organisation sind dieselben wie bei API-Schlüsseln.
 
 Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen** und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**.
 

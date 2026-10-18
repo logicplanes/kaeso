@@ -97,7 +97,7 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts. [Modelle
 | `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf |
 | `GET /v1/models/{model}` | Eines davon |
 
-`/v1/embeddings` bedient nur Embedding-Modelle, die nur OpenAI anbietet, und Embedding-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
+`/v1/embeddings` bedient nur Embeddings-Modelle, die nur OpenAI anbietet, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
 
 Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, sonst im OpenAI-Format.
 
@@ -107,7 +107,7 @@ Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen M
 
 | | OpenAI-Format | Anthropic-Format |
 | --- | --- | --- |
-| Seiten | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` |
+| Paginierung | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` |
 | Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie models.dev sie kennzeichnet |
 
 `GET /v1/models/{model}` nimmt jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
@@ -165,7 +165,7 @@ Ein Browser erlaubt einer Webseite den Aufruf eines anderen Origins nur, wenn di
 - **Preflights.** Eine `OPTIONS`-Anfrage mit `Origin` und `Access-Control-Request-Method` von einem gelisteten Origin erhält ohne Schlüssel 204. Die Antwort trägt `Access-Control-Allow-Origin` mit diesem Origin, `Access-Control-Allow-Methods: GET, POST` und `Access-Control-Max-Age: 7200`. `Access-Control-Allow-Headers` nennt diejenigen angefragten Header, die die offiziellen SDKs senden: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` und `x-stainless-…`. Ein Preflight ist keine Modellanfrage: Er wird weder protokolliert noch berechnet noch auf Limits angerechnet.
 - **Antworten.** Jede Antwort an einen gelisteten Origin, auch eine Fehlerantwort, trägt `Access-Control-Allow-Origin` mit diesem Origin und `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, retry-after, retry-after-ms`, damit die App diese Header lesen kann.
 - **Andere Origins** erhalten keine CORS-Header, also blockiert der Browser den Aufruf, und ihre Preflights erhalten ein leeres 204. Jede Antwort auf `/v1` trägt `Vary: Origin`, damit Caches die Antworten auseinanderhalten.
-- **Keine Cookies.** Kaeso sendet nie `Access-Control-Allow-Credentials`, da Schlüssel in Headern reisen. Die Platform API, die Health-Checks und die Metriken beantworten nie Cross-Origin-Anfragen.
+- **Keine Cookies.** Kaeso sendet nie `Access-Control-Allow-Credentials`, da Schlüssel in Headern übertragen werden. Die Platform API, die Health-Checks und die Metriken beantworten nie Cross-Origin-Anfragen.
 
 Beide SDKs laufen im Browser nur, wenn die App `dangerouslyAllowBrowser: true` übergibt.
 
