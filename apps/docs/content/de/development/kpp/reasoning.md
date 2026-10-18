@@ -47,7 +47,7 @@ Diese Tabelle gilt nur, wenn das Zielmodell kein adaptives Thinking hat (Claude 
 
 Das Budget wird dann an die Regeln von Anthropic angepasst: mindestens 1.024 und kleiner als `max_tokens`, also `max_tokens − 1`, wenn das kleiner ist. Ist `max_tokens` 1.024 oder kleiner, gibt es kein gültiges Budget, daher wird `max_tokens` um 1.024 erhöht und das Budget ist 1.024: Die App behält ihr eigenes `max_tokens` für die Antwort. `reasoning_map::budget_within` übernimmt Anpassen und Erhöhen, `reasoning_map::fit_budget` nur das Anpassen.
 
-Die Quellen sind das Enum `ReasoningEffort` von OpenAI in der OpenAPI-Spezifikation (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`; nicht jedes Modell unterstützt jeden Wert) und die Seite [Extended Thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) von Anthropic: `budget_tokens` ist mindestens 1.024 und kleiner als `max_tokens`, und adaptives Thinking gibt es nicht bei Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 und früheren Claude-4-Modellen.
+Die erste Quelle ist das Enum `ReasoningEffort` von OpenAI in der OpenAPI-Spezifikation: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` und `max`, wobei nicht jedes Modell jeden Wert unterstützt. Die zweite ist die Seite [Extended Thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) von Anthropic. Dort steht, dass `budget_tokens` mindestens 1.024 und kleiner als `max_tokens` ist und dass es adaptives Thinking bei Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 und früheren Claude-4-Modellen nicht gibt.
 
 ## Lesbares Reasoning und Zusammenfassungen
 
@@ -78,7 +78,11 @@ Die eigenen Einstellungen einer Anthropic-App werden so gesendet, wie sie ankame
 
 Anthropic lehnt eine Anfrage mit `enabled`-Thinking ab, deren letzter Assistentenzug Tool-Aufrufe ohne vorangehenden, zurückspielbaren Thinking-Block gemacht hat, einen signierten oder einen redigierten („a final assistant message must start with a thinking block“). Eine solche Anfrage geht für diese Runde ohne `thinking` an Anthropic. Adaptives Thinking bleibt erhalten, weil adaptive Modelle den führenden Thinking-Block nicht brauchen.
 
-Da Reasoning mit der Unterhaltung mitreist, ist das selten. Es kommt trotzdem vor, wenn die Runde wirklich von einem anderen Anbieter stammt (ein Modellwechsel mitten in einer Tool-Schleife), wenn eine App das Reasoning-Item, den Thinking-Block oder den Blob weggelassen hat oder wenn das Gateway das Reasoning einer Chat-App nicht mehr hat, weil es abgelaufen ist oder ein anderer API-Schlüssel die Runde gesendet hat.
+Da Reasoning mit der Unterhaltung mitreist, ist das selten. Es kommt trotzdem in drei Fällen vor:
+
+- Die Runde stammt wirklich von einem anderen Anbieter, nach einem Modellwechsel mitten in einer Tool-Schleife.
+- Die App hat das Reasoning-Item, den Thinking-Block oder den Blob weggelassen.
+- Das Gateway hat das Reasoning einer Chat-App nicht mehr, weil es abgelaufen ist oder ein anderer API-Schlüssel die Runde gesendet hat.
 
 ## Reasoning über Runden hinweg
 
@@ -86,7 +90,7 @@ Ohne Hilfe würde jede Runde einer Tool-Schleife, in der eine App das Modell ein
 
 ### Reasoning-Blobs
 
-Für Apps von OpenAI Responses und Anthropic Messages verpackt KPP den ganzen Reasoning-Block eines anderen Dialekts (lesbarer Text, Zusammenfassungen, Signatur, verschlüsselter Inhalt, redigierte Daten, Item-ID) in einen Reasoning-Blob: `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`), gefolgt vom KPP-JSON des Blocks ohne Form-Markierungen, in base64url ohne Padding.
+Für Apps von OpenAI Responses und Anthropic Messages verpackt KPP den ganzen Reasoning-Block eines anderen Dialekts in einen Reasoning-Blob. Das umfasst lesbaren Text, Zusammenfassungen, Signatur, verschlüsselten Inhalt, redigierte Daten und die Item-ID. Der Blob ist `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`), gefolgt vom KPP-JSON des Blocks in base64url ohne Padding, ohne Form-Markierungen.
 
 | App | Bekommt | Blob steckt in |
 | --- | --- | --- |
@@ -95,7 +99,7 @@ Für Apps von OpenAI Responses und Anthropic Messages verpackt KPP den ganzen Re
 
 Beide Anfrage-Decoder erkennen einen Blob, wo immer er steht (`continuity::unwrap_reasoning`), und stellen den Originalblock mit seinem Ursprung wieder her, sodass die Encoder ihn wie jedes andere Reasoning an seinen eigenen Dialekt und Anbieter zurückspielen.
 
-- **Immer gesendet.** Der Blob wird gesendet, ob die App `include: ["reasoning.encrypted_content"]` angefordert hat oder nicht, und unabhängig von ihrer Einstellung für `store`: Kaeso speichert nichts, und die Agent-Schleifen der SDKs (`to_input_list()` von openai-agents, Codex, Claude Code, der Tool Runner von Anthropic) senden Ausgabe-Items und Content-Blöcke so zurück, wie sie ankamen.
+- **Immer gesendet.** Der Blob wird gesendet, ob die App `include: ["reasoning.encrypted_content"]` angefordert hat oder nicht, und unabhängig von ihrer Einstellung für `store`. Kaeso speichert nichts, und die Agent-Schleifen der SDKs senden Ausgabe-Items und Content-Blöcke so zurück, wie sie ankamen. Zu diesen Schleifen gehören `to_input_list()` von openai-agents, Codex, Claude Code und der Tool Runner von Anthropic.
 - **Der Blob hat Vorrang.** Er enthält den lesbaren Text ein zweites Mal, weil er den Block exakt wiederherstellen muss (Anthropic prüft den Thinking-Text gegen seine Signatur), während Apps die lesbare Kopie bearbeiten oder weglassen können. Sendet eine App beides zurück, hat der Blob Vorrang.
 - **Nie mit Daten des Anbieters verwechselt.** Das Präfix enthält `:`, das weder im base64-Alphabet der Anthropic-Signaturen noch im base64url-Alphabet des verschlüsselten Inhalts von OpenAI vorkommt. Ein Wert mit dem Präfix, der sich nicht dekodieren lässt, bleibt als opake Daten des Anbieters erhalten, und der Anbieter lehnt ihn dann ab, sodass nichts stillschweigend wegfällt.
 - **Von Kaeso weder verschlüsselt noch signiert.** Er enthält, was die App schon gesehen hat, und Daten, die nur der ausgebende Anbieter prüfen kann.
@@ -108,6 +112,6 @@ Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antw
 
 1. Nach einer Antwort liefern `continuity::reasoning_for_tool_calls` (bei einer vollständigen Antwort) oder ein `continuity::ReasoningCollector` (bei einem Stream) ein `CarriedReasoning` pro Tool-Aufruf, dem zurückspielbares Reasoning vorausging: signiertes oder redigiertes Thinking von Anthropic, verschlüsseltes Reasoning von OpenAI. Reasoning nach dem letzten Tool-Aufruf wird nicht aufbewahrt.
 2. Das Gateway speichert die Einträge in Valkey, verschlüsselt mit dem Hauptschlüssel und nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, für `KAESO_CONTINUITY_REASONING_TTL` (standardmäßig eine Stunde).
-3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Call-IDs auf, und `continuity::restore_reasoning` setzt das Gefundene wieder in die Assistentenzüge ein: Reasoning für den ersten Tool-Aufruf eines Zugs an den Anfang des Zugs, für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Züge, die bereits Reasoning enthalten, bleiben unverändert.
+3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Call-IDs auf. `continuity::restore_reasoning` setzt das Gefundene dann wieder in die Assistentenzüge ein. Reasoning für den ersten Tool-Aufruf eines Zugs kommt an den Anfang des Zugs, Reasoning für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Züge, die bereits Reasoning enthalten, bleiben unverändert.
 
 Die Encoder spielen wiederhergestellte Blöcke nur an ihren eigenen Anbieter zurück.

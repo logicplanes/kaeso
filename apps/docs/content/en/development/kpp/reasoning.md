@@ -47,7 +47,7 @@ This table applies only when the target model has no adaptive thinking (Claude 4
 
 The budget is then fitted to Anthropic's rules: at least 1,024 and less than `max_tokens`, so it becomes `max_tokens − 1` when that is smaller. When `max_tokens` is 1,024 or less, no valid budget exists, so `max_tokens` is raised by 1,024 and the budget is 1,024; the app keeps its own `max_tokens` for the answer. `reasoning_map::budget_within` does the fitting and raising, `reasoning_map::fit_budget` only the fitting.
 
-The sources are OpenAI's `ReasoningEffort` enum in the OpenAPI spec (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`; not every model supports every value) and Anthropic's [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) page: `budget_tokens` is at least 1,024 and less than `max_tokens`, and adaptive thinking doesn't exist on Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 and earlier Claude 4 models.
+The first source is OpenAI's `ReasoningEffort` enum in the OpenAPI spec: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`, though not every model supports every value. The second is Anthropic's [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) page. It says that `budget_tokens` is at least 1,024 and less than `max_tokens`, and that adaptive thinking doesn't exist on Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 and earlier Claude 4 models.
 
 ## Readable reasoning and summaries
 
@@ -78,7 +78,11 @@ An Anthropic app's own settings are sent as received.
 
 Anthropic refuses a request with `enabled` thinking whose last assistant turn made tool calls without a replayable thinking block first, signed or redacted ("a final assistant message must start with a thinking block"). Such a request goes to Anthropic without `thinking` for that turn. Adaptive thinking is kept, because adaptive models don't need the leading thinking block.
 
-Since reasoning travels with the conversation, this is rare. It still happens when the turn really came from another provider (a model switch in the middle of a tool loop), when an app dropped the reasoning item, thinking block or blob, or when the gateway no longer holds a Chat app's reasoning because it expired or another key sent the turn.
+Since reasoning travels with the conversation, this is rare. It still happens in three cases:
+
+- The turn really came from another provider, after a model switch in the middle of a tool loop.
+- The app dropped the reasoning item, thinking block or blob.
+- The gateway no longer holds a Chat app's reasoning, because it expired or another key sent the turn.
 
 ## Reasoning continuity
 
@@ -86,7 +90,7 @@ Without help, every tool-loop turn of an app on another provider's model would l
 
 ### Reasoning blobs
 
-For OpenAI Responses and Anthropic Messages apps, KPP wraps the whole reasoning block of another dialect (readable text, summaries, signature, encrypted content, redacted data, item id) into a reasoning blob: `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`) followed by the block's KPP JSON, form markers removed, in unpadded base64url.
+For OpenAI Responses and Anthropic Messages apps, KPP wraps the whole reasoning block of another dialect into a reasoning blob. That covers its readable text, summaries, signature, encrypted content, redacted data and item id. The blob is `continuity::REASONING_BLOB_PREFIX` (`kpp:reasoning:v1:`) followed by the block's KPP JSON in unpadded base64url, with the form markers removed.
 
 | App | Gets | Carrying the blob in |
 | --- | --- | --- |
@@ -95,7 +99,7 @@ For OpenAI Responses and Anthropic Messages apps, KPP wraps the whole reasoning 
 
 Both request decoders recognise a blob wherever it sits (`continuity::unwrap_reasoning`) and restore the original block with its origin, so the encoders replay it to its own dialect and provider like any other reasoning.
 
-- **Always sent.** The blob is sent whether or not the app asked for `include: ["reasoning.encrypted_content"]`, and whatever its `store` setting: Kaeso stores nothing, and the SDK agent loops (openai-agents' `to_input_list()`, Codex, Claude Code, the Anthropic tool runner) send output items and content blocks back as received.
+- **Always sent.** The blob is sent whether or not the app asked for `include: ["reasoning.encrypted_content"]`, and whatever its `store` setting. Kaeso stores nothing, and the SDK agent loops send output items and content blocks back as received. Those loops include openai-agents' `to_input_list()`, Codex, Claude Code and the Anthropic tool runner.
 - **The blob wins.** It holds the readable text a second time, because it must restore the block exactly (Anthropic checks thinking text against its signature) while apps may edit or drop the readable copy. When an app sends both back, the blob wins.
 - **Never mistaken for provider data.** The prefix contains `:`, which is in neither the base64 alphabet of Anthropic signatures nor the base64url alphabet of OpenAI's encrypted content. A value with the prefix that doesn't decode is kept as the provider's own opaque data, and the provider then refuses it, so nothing is dropped silently.
 - **Not encrypted or signed by Kaeso.** It holds what the app already saw, and data only the issuing provider can verify.
@@ -108,6 +112,6 @@ Chat Completions has no field for reasoning, and KPP does not invent one. The re
 
 1. After a reply, `continuity::reasoning_for_tool_calls` (a complete reply) or a `continuity::ReasoningCollector` (a stream) returns one `CarriedReasoning` per tool call that replayable reasoning came before: Anthropic signed or redacted thinking, or OpenAI encrypted reasoning. Reasoning after the last tool call is not kept.
 2. The gateway stores the entries in Valkey, encrypted under the master key and readable only with the API key that made the request, for `KAESO_CONTINUITY_REASONING_TTL` (an hour by default).
-3. On the app's next request, after decoding and before `check` and encoding, `continuity::tool_calls_missing_reasoning` lists the tool call ids to look up, and `continuity::restore_reasoning` puts what was found back into the assistant turns: reasoning for a turn's first tool call at the start of the turn, for a later call right after the call before it. Turns that already hold reasoning are left alone.
+3. On the app's next request, after decoding and before `check` and encoding, `continuity::tool_calls_missing_reasoning` lists the tool call ids to look up. `continuity::restore_reasoning` then puts what was found back into the assistant turns. Reasoning for a turn's first tool call goes at the start of the turn, and reasoning for a later call right after the call before it. Turns that already hold reasoning are left alone.
 
 The encoders replay restored blocks to their own provider only.

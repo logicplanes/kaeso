@@ -23,7 +23,7 @@ An app may speak one API format while the provider speaks another. These are the
 `cross::check_foreign` walks a request and refuses with `Unsupported` what the target can't use:
 
 - **Extras fields from another dialect**, unless the field is on the [allowlist](#extras) or crosses by its value (`cross::is_droppable_value`). Extras that hold fields but no origin are refused with `InvalidRequest` instead, because nobody could write them back.
-- **Unknown blocks, tools and tool choices from another dialect.** An unknown block without a `type` but with a `role` holds a whole message, such as an OpenAI Chat `function` message, and is named `` `<role>` message `` with the hint "Remove the message, or send the request to a model served through its original format."
+- **Unknown blocks, tools and tool choices from another dialect.** An unknown block without a `type` but with a `role` holds a whole message, such as an OpenAI Chat `function` message. The refusal names it `` `<role>` message `` and adds the hint "Remove the message, or send the request to a model served through its original format."
 - **Provider file ids** the target provider can't resolve ([files](#files)).
 - **Citations from another dialect:** no target documents what citations in earlier turns do, and the formats don't map.
 
@@ -31,7 +31,18 @@ Not refused, because the encoders drop them instead: reasoning blocks the target
 
 `check()` also refuses what a target can't express at all. Anthropic needs `max_tokens`, so a generation request without `sampling.max_output_tokens` is `InvalidRequest` for it, naming the app's own field for the limit, rather than getting an invented value.
 
-A refusal names the field the app sent, never the target's, in `param` and, for the output limit, in the message: `cross::app_field` reads the request's origin and, for OpenAI Chat, which of `max_completion_tokens` and `max_tokens` it carried (`max_completion_tokens` when it sent both). An output limit below 16 for OpenAI Responses is `max_completion_tokens` or `max_tokens` from a Chat app and `max_tokens` from an Anthropic app; a missing one for Anthropic is `max_completion_tokens` from Chat and `max_output_tokens` from Responses. Stop sequences are `stop_sequences` from Anthropic and `stop` from Chat; the output format is `response_format`, `text.format` or `output_config.format`; the reasoning effort is `reasoning_effort`, `reasoning.effort` or `output_config.effort`, and other reasoning settings are `reasoning_effort`, `reasoning` or `thinking`. A request built in code, without an origin, gets the target's names. Content is named by its place in KPP (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
+A refusal names the field the app sent, never the target's. It names it in `param` and, for the output limit, in the message too. `cross::app_field` reads the request's origin and, for OpenAI Chat, which of `max_completion_tokens` and `max_tokens` it carried; it picks `max_completion_tokens` when the app sent both. The names follow the app's format:
+
+| Refused setting | From Anthropic | From Chat | From Responses |
+| --- | --- | --- | --- |
+| An output limit below 16, for OpenAI Responses | `max_tokens` | `max_completion_tokens` or `max_tokens` | |
+| A missing output limit, for Anthropic | | `max_completion_tokens` | `max_output_tokens` |
+| Stop sequences | `stop_sequences` | `stop` | |
+| The output format | `output_config.format` | `response_format` | `text.format` |
+| The reasoning effort | `output_config.effort` | `reasoning_effort` | `reasoning.effort` |
+| Other reasoning settings | `thinking` | `reasoning_effort` | `reasoning` |
+
+A request built in code, without an origin, gets the target's names. Content is named by its place in KPP (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
 
 OpenAI Chat's deprecated function calling round-trips within Chat and crosses to no other dialect. Legacy calls have no call ids, so they are no KPP tool calls:
 
@@ -107,7 +118,7 @@ A provider can stream for minutes without producing anything the app's format ca
 
 Frames reach the wire in two ways:
 
-- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock (`kaeso_codecs::keepalive`): another dialect's extra event, such as `ping`, which the provider already paces, always earns a frame; hidden text (thinking the app can't see, buffered tool arguments) earns one per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024; anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
+- **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock (`kaeso_codecs::keepalive`). Another dialect's extra event, such as `ping`, always earns a frame, because the provider already paces it. Hidden text, such as thinking the app can't see or buffered tool arguments, earns one frame per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
 - **Driven by the gateway.** `StreamEncoder::keepalive` returns the frame on demand, for upstream silence the encoder can't see. The gateway writes it when it has written nothing to the app for `KAESO_STREAMS_KEEPALIVE_INTERVAL`, 15 seconds by default.
 
 The OpenAI Chat encoder also sends its role chunk as soon as the response starts, rather than with the first text, so the app hears from the stream while the model thinks.
@@ -140,7 +151,7 @@ KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, w
 
 ## Reply ids
 
-A reply keeps the provider's id as it is, whatever the app's format: a Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`), and an OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id. The codecs never make up an id in the app's own pattern, because the provider's id is the one that names the reply at the provider, and apps treat reply ids as opaque strings. Responses output items, which other formats don't have, are the exception ([Responses storage and ids](#responses-storage-and-ids)).
+A reply keeps the provider's id as it is, whatever the app's format. A Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`). An OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id. The codecs never make up an id in the app's own pattern: the provider's id names the reply at the provider, and apps treat reply ids as opaque strings. Responses output items, which other formats don't have, are the exception ([Responses storage and ids](#responses-storage-and-ids)).
 
 ## Responses storage and ids
 
