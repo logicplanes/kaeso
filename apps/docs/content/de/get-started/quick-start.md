@@ -1,23 +1,23 @@
 ---
 title: Schnellstart
-description: Kaeso mit Docker Compose installieren, einen Anbieter verbinden und die erste Anfrage senden.
+description: Installieren Sie Kaeso mit Docker Compose, verbinden Sie einen Anbieter, und senden Sie die erste Anfrage.
 order: 1
 ---
 
-Eine Compose-Datei betreibt die ganze Installation: das Gateway, die Konsole, PostgreSQL, ClickHouse, Valkey und Caddy, das ein TLS-Zertifikat für die eigene Domain besorgt. Diese Seite führt von einem leeren Server bis zur ersten Anfrage.
+Installieren Sie Kaeso auf einem Server, verbinden Sie OpenAI oder Anthropic, und senden Sie Ihre erste Anfrage darüber. Eine Compose-Datei betreibt die ganze Installation: das Gateway, die Konsole, PostgreSQL, ClickHouse, Valkey und Caddy, das das TLS-Zertifikat für Ihre Domain besorgt.
 
-## Was benötigt wird
+## Bevor Sie beginnen
 
 - Ein Server mit Docker Engine und Docker Compose 2.24 oder neuer, 2 vCPUs, 4 GB Arbeitsspeicher und 20 GB Festplatte ([Anforderungen](../self-hosting/requirements.md)).
-- Eine Domain wie `kaeso.example.com`, deren DNS-Eintrag auf den Server zeigt, und die Ports 80 und 443 offen zum Internet, damit Caddy ein Zertifikat erhält.
+- Eine Domain wie `kaeso.example.com`, deren DNS-Eintrag auf den Server zeigt. Die Ports 80 und 443 müssen zum Internet offen sein, damit Caddy ein Zertifikat erhält.
 - Ein API-Schlüssel von OpenAI oder Anthropic.
 
 > [!TIP]
-> Zum Ausprobieren auf dem eigenen Rechner `localhost` als Domain verwenden und `https://localhost` öffnen. Caddy signiert das Zertifikat dann mit seiner eigenen lokalen Zertifizierungsstelle. Der Browser fragt einmal nach, ob er es akzeptieren soll; [Auf dem eigenen Rechner ausprobieren](../self-hosting/installation.md#auf-dem-eigenen-rechner-ausprobieren) zeigt, wie curl und die SDKs ihm vertrauen.
+> Um Kaeso auf Ihrem eigenen Rechner auszuprobieren, verwenden Sie `localhost` als Domain und öffnen `https://localhost`. Caddy signiert das Zertifikat dann selbst, und Ihr Browser fragt einmal, ob er es akzeptieren soll. [Auf dem eigenen Rechner ausprobieren](../self-hosting/installation.md#auf-dem-eigenen-rechner-ausprobieren) zeigt, wie curl und die SDKs ihm vertrauen.
 
 ## Die Compose-Datei herunterladen
 
-Jedes Release veröffentlicht eine `compose.yaml`, die seine Gateway- und Konsolen-Images festlegt. Die Datei in einen neuen Ordner legen, den nur der eigene Benutzer lesen kann:
+Jedes Release veröffentlicht eine `compose.yaml`, die seine Gateway- und Konsolen-Images festlegt. Laden Sie sie in einen neuen Ordner, den nur Sie lesen können:
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
@@ -26,7 +26,7 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ## Die Einstellungen schreiben
 
-`.env` mit der Domain und vier zufälligen Passwörtern anlegen:
+Legen Sie `.env` mit Ihrer Domain und vier zufälligen Passwörtern an:
 
 ```bash
 cat > .env <<EOF
@@ -38,7 +38,7 @@ VALKEY_PASSWORD=$(openssl rand -hex 24)
 EOF
 ```
 
-Das Gateway verschickt Anmeldelinks, Einladungen und Warnungen per E-Mail und startet nicht ohne einen Weg, sie zu senden. Den SMTP-Server ergänzen; Kaeso erreicht ihn über Port 587 mit STARTTLS, sofern [nichts anderes eingestellt](../self-hosting/email.md) ist:
+Das Gateway verschickt Anmeldelinks, Einladungen und Warnungen per E-Mail und startet nicht ohne einen Weg, sie zu senden. Ergänzen Sie Ihren SMTP-Server. Kaeso erreicht ihn über Port 587 mit STARTTLS, sofern [Sie nichts anderes einstellen](../self-hosting/email.md):
 
 ```bash
 cat >> .env <<'EOF'
@@ -49,7 +49,7 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 EOF
 ```
 
-Ohne Mailserver lässt sich Kaeso ausprobieren, indem das Gateway seine E-Mails nur protokolliert. Anmeldung mit Passwort und Einrichtungslink funktionieren weiterhin; Anmeldelinks und Einladungen werden nicht zugestellt.
+Um Kaeso ohne Mailserver auszuprobieren, lassen Sie das Gateway seine E-Mails nur protokollieren. Anmeldung mit Passwort und Einrichtungslink funktionieren weiterhin, Anmeldelinks und Einladungen werden aber nicht zugestellt:
 
 ```bash
 echo KAESO_MAIL_TRANSPORT=log >> .env
@@ -57,69 +57,84 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 
 ## Den Hauptschlüssel erzeugen
 
-Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert. Einen in die Datei `master-keys` erzeugen, die Compose dem Gateway als Docker-Secret übergibt:
+Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert. Erzeugen Sie einen in die Datei `master-keys`, die Compose dem Gateway als Docker-Secret übergibt:
 
 ```bash
 docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
 chmod 644 master-keys
 ```
 
-Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte, deshalb muss die Datei lesbar sein; der Ordner hält andere Benutzer des Servers fern.
+Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte, deshalb muss die Datei lesbar sein. Die Rechte des Ordners halten andere Benutzer des Servers fern.
 
 > [!IMPORTANT]
-> Eine Kopie von `master-keys` sicher aufbewahren, getrennt von den Datenbank-Backups. Ohne sie lassen sich die gespeicherten Anbieter-Schlüssel nicht entschlüsseln und müssen neu eingegeben werden.
+> Bewahren Sie eine Kopie von `master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.
 
 ## Kaeso starten
+
+Starten Sie alle Dienste, und warten Sie, bis jeder gesund ist:
 
 ```bash
 docker compose up -d --wait
 ```
 
-Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden und das Gateway die Datenbanken vorbereitet. Der Befehl kehrt zurück, sobald jeder Dienst healthy meldet, Caddy eingeschlossen, oder schlägt fehl und nennt den Dienst, der es nicht tut. Caddy ist healthy, sobald es Anfragen bedient, und beantragt das Zertifikat für eine neue Domain im Hintergrund; bis es eines hat, können HTTPS-Anfragen noch fehlschlagen. `docker compose logs caddy` zeigt, wann es das Zertifikat erhält oder warum nicht.
+Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden und das Gateway die Datenbanken vorbereitet. Der Befehl kehrt zurück, sobald jeder Dienst gesund ist, oder nennt den Dienst, der es nicht ist. Caddy beantragt das Zertifikat im Hintergrund, deshalb können HTTPS-Anfragen fehlschlagen, bis es eines hat. `docker compose logs caddy` zeigt, wann es das Zertifikat erhält oder warum nicht.
 
 ## Den ersten Benutzer anlegen
 
-Der Einrichtungslink legt den ersten Benutzer an. Ihn im Terminal ausgeben:
+Der Einrichtungslink legt den ersten Benutzer an. Geben Sie ihn im Terminal aus:
 
 ```bash
 docker compose exec gateway kaeso setup-link
 ```
 
-Der Link funktioniert einmal, innerhalb von 24 Stunden. Ein erneuter Aufruf des Befehls gibt einen neuen Link aus und macht den alten ungültig.
+Der Link funktioniert einmal, innerhalb von 24 Stunden. Rufen Sie den Befehl erneut auf, gibt er einen neuen Link aus und macht den alten ungültig.
 
-Den Link öffnen, Name, E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und einen Namen für die Organisation eingeben und **Kaeso einrichten** wählen. Damit ist man Instanz-Admin und Inhaber der ersten Organisation, die ein Standardprojekt mitbringt.
+Öffnen Sie den Link, und geben Sie Ihren Namen, Ihre E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und einen Namen für Ihre Organisation ein. Wählen Sie dann **Kaeso einrichten**. Damit sind Sie Instanz-Admin und Inhaber der ersten Organisation, die ein Standardprojekt mitbringt.
 
 ## Einen Anbieter-Schlüssel hinzufügen
 
-Anbieter-Schlüssel gehören zur Organisation. In der Seitenleiste **Anbieter** öffnen und **Schlüssel hinzufügen** wählen. OpenAI oder Anthropic wählen, den Schlüssel des Anbieters einfügen, ihn benennen, etwa `Production`, und **Schlüssel hinzufügen** wählen.
+Anbieter-Schlüssel gehören zur Organisation, und jedes Projekt nutzt den Standardschlüssel des Anbieters.
 
-Der erste Schlüssel eines Anbieters wird dessen Standard, den jedes Projekt nutzt. Kaeso zeigt den Schlüssel nie wieder an. Siehe [Anbieter-Schlüssel](../console/provider-keys.md).
+1. Öffnen Sie in der Seitenleiste **Anbieter**, und wählen Sie **Schlüssel hinzufügen**.
+2. Wählen Sie OpenAI oder Anthropic, und fügen Sie den Schlüssel des Anbieters ein.
+3. Benennen Sie ihn, etwa `Production`, und wählen Sie **Schlüssel hinzufügen**.
+
+Der erste Schlüssel eines Anbieters wird dessen Standard. Kaeso zeigt den Schlüssel nie wieder an; siehe [Anbieter-Schlüssel](../console/provider-keys.md).
 
 ## Ein Modell hinzufügen
 
-Eine Anfrage kann nur Modelle aus dem Katalog des Projekts nennen. Das Standardprojekt öffnen, **Modelle** wählen, dann **Modelle hinzufügen**. Den Anbieter wählen, nach einem Modell suchen, etwa `claude-haiku-4-5` von Anthropic oder `gpt-5-mini` von OpenAI, und es hinzufügen. Preise, Limits und Fähigkeiten kommen von [models.dev](https://models.dev); siehe [Modelle und Aliasse](../console/models-and-aliases.md).
+Eine Anfrage kann nur ein Modell aus dem Katalog des Projekts nennen.
+
+1. Öffnen Sie das Standardprojekt, und wählen Sie **Modelle**, dann **Modelle hinzufügen**.
+2. Wählen Sie den Anbieter, und suchen Sie nach einem Modell, etwa `claude-haiku-4-5` von Anthropic oder `gpt-5-mini` von OpenAI.
+3. Fügen Sie es hinzu.
+
+Preise, Limits und Fähigkeiten des Modells kommen von [models.dev](https://models.dev); siehe [Modelle und Aliasse](../console/models-and-aliases.md).
 
 ## Einen API-Schlüssel erstellen
 
-Im Projekt **API-Schlüssel** wählen, dann **Schlüssel erstellen**. Den Schlüssel nach der App benennen, die ihn nutzen wird, etwa `support-bot`, die Laufzeit von 90 Tagen und den Zugriff **Inferenz** beibehalten und ihn erstellen.
+1. Wählen Sie im Projekt **API-Schlüssel**, dann **Schlüssel erstellen**.
+2. Benennen Sie den Schlüssel nach der App, die ihn nutzen wird, etwa `support-bot`.
+3. Behalten Sie die Laufzeit von 90 Tagen und den Zugriff **Inferenz** bei, und erstellen Sie den Schlüssel.
 
-Den Schlüssel sofort kopieren. Er wird nur einmal angezeigt, und Kaeso speichert nur einen Hash davon: Ein verlorener Schlüssel lässt sich nicht wiederherstellen, nur ersetzen.
-
-## Die erste Anfrage senden
-
-Den Schlüssel in die Shell übernehmen und das Modell mit curl aufrufen:
+Kopieren Sie den Schlüssel sofort. Kaeso zeigt ihn nur einmal an und speichert nur einen Hash davon: Einen verlorenen Schlüssel können Sie nicht wiederherstellen, nur ersetzen. Übernehmen Sie ihn in Ihre Shell:
 
 ```bash
 export KAESO_API_KEY=sk-kso-…
-curl https://kaeso.example.com/v1/chat/completions \
-  -H "Authorization: Bearer $KAESO_API_KEY" \
-  -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
 ```
 
-Apps behalten ihr offizielles SDK und ändern nur Basis-URL und Schlüssel. Das OpenAI-SDK für Python (`pip install openai`) ruft dasselbe Claude-Modell auf; Kaeso übersetzt Anfrage und Antwort.
+## Die erste Anfrage senden
 
-```python
+Rufen Sie das Modell mit curl auf, oder mit dem OpenAI SDK für Python (`pip install openai`) oder TypeScript (`npm install openai`). Das OpenAI SDK ruft das Claude-Modell auf, das Sie hinzugefügt haben: Kaeso übersetzt Anfrage und Antwort.
+
+```bash tab="curl"
+curl https://kaeso.example.com/v1/responses \
+  -H "Authorization: Bearer $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways."}'
+```
+
+```python tab="Python"
 import os
 from openai import OpenAI
 
@@ -129,14 +144,20 @@ response = client.responses.create(model="claude-haiku-4-5", input="Write a haik
 print(response.output_text)
 ```
 
-Das Modell verwenden, das hinzugefügt wurde. Dann im Projekt **Anfrageprotokolle** öffnen: Beide Anfragen stehen dort mit Status, Tokens, Kosten und Zeiten.
+```ts tab="TypeScript"
+import OpenAI from "openai";
 
-## Weiter
+const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
 
-| Ziel | Seite |
-| --- | --- |
-| Modelle aus TypeScript oder mit dem Anthropic-SDK aufrufen und Antworten streamen | [Modelle aufrufen](calling-models.md) |
-| Claude Code oder Codex auf die eigene Installation ausrichten | [Coding-Tools](coding-tools.md) |
-| Personen einladen, Limits und Budgets festlegen | [Die Konsole nutzen](../console/index.md) |
-| Über den eigenen Identitätsanbieter anmelden | [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) |
-| Backups, Upgrades und Monitoring planen | [Selbst hosten](../self-hosting/index.md) |
+const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
+console.log(response.output_text);
+```
+
+Haben Sie ein anderes Modell hinzugefügt, verwenden Sie dessen ID. Die Antwort enthält das Haiku des Modells. Öffnen Sie im Projekt **Anfrageprotokolle**: Dort steht die Anfrage mit Status, Tokens, Kosten und Zeiten.
+
+## Nächste Schritte
+
+- [Modelle aufrufen](calling-models.md): Nutzen Sie auch das Anthropic SDK, streamen Sie Antworten, und finden Sie eine Anfrage in den Protokollen.
+- [Coding-Tools](coding-tools.md): Richten Sie Claude Code oder Codex auf Ihre Installation aus.
+- [Die Konsole verwenden](../console/index.md): Laden Sie Personen ein, und legen Sie Limits und Budgets fest.
+- [Selbst hosten](../self-hosting/index.md): Planen Sie Anmeldung, Backups, Upgrades und Monitoring.
