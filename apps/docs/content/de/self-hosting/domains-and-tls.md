@@ -1,31 +1,37 @@
 ---
 title: Domains und TLS
-description: Die Domain einer Installation, ihr Zertifikat und der Betrieb hinter einem eigenen Proxy.
+description: Stellen Sie Kaeso mit Zertifikat unter Ihrer Domain bereit oder hinter einem Proxy, den Sie schon betreiben.
 order: 5
 ---
 
-## Eine Domain
+Eine Installation antwortet unter einer Domain. Caddy bezieht das Zertifikat, leitet `/v1` und `/platform` an das Gateway weiter und alle anderen Pfade an die Konsole.
 
-Eine Installation antwortet unter einer Domain: Caddy leitet `/v1/…` und `/platform/…` an das Gateway weiter und alle übrigen Pfade an die Konsole. Da Konsole und APIs denselben Origin teilen, bleibt das Sitzungscookie der Konsole ein First-Party-Cookie, und es gibt keinen Cross-Origin-Verkehr einzurichten. Web-Apps auf anderen Origins, die die Modell-API aus dem Browser aufrufen, brauchen [`KAESO_CORS_ALLOWED_ORIGINS`](configuration.md#browser-apps).
+## Domain festlegen
 
-`KAESO_DOMAIN` in der `.env` legt die Domain fest, die öffentliche URL `KAESO_PUBLIC_URL` folgt daraus als `https://<domain>`. Einrichtungslinks, E-Mails und die Codebeispiele der Konsole verwenden sie.
+Legen Sie die Domain vor dem ersten Start in der `.env` fest:
 
-## Zertifikate
+```bash title=".env"
+KAESO_DOMAIN=kaeso.example.com
+```
 
-Caddy holt beim ersten Start ein Zertifikat für `KAESO_DOMAIN` von einer öffentlichen Zertifizierungsstelle und erneuert es selbst. Dafür muss vor dem ersten Start:
+Die öffentliche URL ist `https://` und die Domain. Einrichtungslinks, E-Mails und die Codebeispiele der Konsole verwenden sie.
 
-- der DNS-Eintrag der Domain auf den Server zeigen;
-- der Server auf den Ports 80 und 443 aus dem Internet erreichbar sein.
+Weil Konsole und APIs denselben Origin teilen, gibt es keinen Cross-Origin-Verkehr einzurichten. Nur Web-Apps auf anderen Origins, die die Modell-API aus dem Browser aufrufen, brauchen [`KAESO_CORS_ALLOWED_ORIGINS`](configuration.md#browser-apps).
 
-`docker compose up -d --wait` wartet nicht auf das Zertifikat: Caddy meldet healthy, sobald er Anfragen bedient, und holt das Zertifikat einer neuen Domain im Hintergrund; über HTTPS antwortet die Domain also erst, wenn Caddy es hat.
+## Zertifikat beziehen
 
-Die Zertifikate liegen im Volume `caddy_data`. Lässt sich keines ausstellen, zeigt `docker compose logs caddy` die Antwort der Zertifizierungsstelle; DNS-Eintrag oder Firewall korrigieren und dann `docker compose restart caddy` ausführen.
+Caddy bezieht beim ersten Start ein Zertifikat von einer öffentlichen Zertifizierungsstelle und erneuert es selbst. Bevor Sie Kaeso starten:
 
-Mit `KAESO_DOMAIN=localhost` nutzt Caddy stattdessen ein Zertifikat seiner eigenen lokalen Zertifizierungsstelle; siehe [Auf dem eigenen Rechner ausprobieren](installation.md#auf-dem-eigenen-rechner-ausprobieren).
+1. Richten Sie den DNS-Eintrag der Domain auf den Server.
+2. Öffnen Sie die Ports 80 und 443 zum Internet.
 
-## Ein eigener Reverse Proxy
+HTTPS-Anfragen können eine Minute lang scheitern, während Caddy das Zertifikat bezieht. Führen Sie `docker compose logs caddy` aus, um zu sehen, wann er es hat oder warum nicht. Nachdem Sie den DNS-Eintrag oder die Firewall korrigiert haben, führen Sie `docker compose restart caddy` aus.
 
-Um Kaeso hinter einem vorhandenen Proxy oder Load Balancer zu betreiben, den Dienst `caddy` abschalten und Gateway und Konsole auf der Loopback-Adresse veröffentlichen, und zwar in der `compose.override.yaml`, damit ein Upgrade die Änderung behält:
+Caddy bewahrt seine Zertifikate im Volume `caddy_data` auf. Mit `KAESO_DOMAIN=localhost` signiert er stattdessen eines mit seiner eigenen lokalen Zertifizierungsstelle ([Auf dem eigenen Rechner ausprobieren](installation.md#auf-dem-eigenen-rechner-ausprobieren)).
+
+## Eigenen Reverse Proxy verwenden
+
+Um Kaeso hinter einem Proxy oder Load Balancer zu betreiben, den Sie schon haben, schalten Sie Caddy ab und veröffentlichen Gateway und Konsole auf der Loopback-Adresse:
 
 ```yaml
 services:
@@ -39,27 +45,31 @@ services:
       - "127.0.0.1:3000:3000"
 ```
 
-Kaeso mit `docker compose up -d --wait` starten. Ohne Caddy wartet sonst nichts auf Gateway und Konsole; erst `--wait` sorgt dafür, dass Compose zurückkehrt, wenn beide healthy sind.
+Schreiben Sie das in die `compose.override.yaml`, damit ein Upgrade es beibehält, und starten Sie Kaeso mit `docker compose up -d --wait`. Ohne Caddy wartet sonst nichts auf das Gateway, deshalb sorgt erst `--wait` dafür, dass Compose zurückkehrt, wenn es gesund ist.
 
-Dann weiterleiten:
+Leiten Sie dann diese Pfade weiter:
 
-| Pfad | Ziel |
+| Pfad | An |
 | --- | --- |
 | `/v1/` und `/platform/` | Das Gateway, Port 8080 |
 | Alles andere | Die Konsole, Port 3000 |
 
-- Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, `KAESO_PUBLIC_URL` in der `.env` darauf setzen, etwa `https://kaeso.example.com`.
-- Das Puffern von Antworten für `/v1/` abschalten, damit gestreamte Antworten die Apps sofort erreichen.
-- `X-Forwarded-For` weitergeben. Das Gateway glaubt dem Header nur von den Netzen in `KAESO_TRUSTED_PROXIES`, standardmäßig den privaten Bereichen. Hinter einem nicht vertrauenswürdigen Proxy sieht jeder Client wie der Proxy aus: Logs zeigen dessen Adresse, und die Anmeldung und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) zählen alle Clients als einen.
-- Den Metrik-Port 9100 nie weiterleiten.
+Richten Sie den Proxy für Kaeso ein:
 
-### Ein Proxy in Docker
+- Schalten Sie die Pufferung von Antworten für `/v1/` ab, damit gestreamte Antworten die Apps sofort erreichen.
+- Geben Sie `X-Forwarded-For` weiter. Das Gateway glaubt dem Header nur von `KAESO_TRUSTED_PROXIES`, standardmäßig den privaten Netzen. Hinter einem Proxy, dem es nicht vertraut, sehen Logs und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
+- Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
+- Leiten Sie den Metrik-Port 9100 nie weiter.
 
-Läuft der eigene Proxy in Docker auf demselben Server, ihn über ein Docker-Netzwerk statt über veröffentlichte Ports mit Gateway und Konsole verbinden. Dafür ein Netzwerk nur für den Proxy und Kaeso verwenden: Compose macht den Namen jedes Dienstes in jedem Netzwerk, dem er beitritt, zu einem DNS-Namen. In einem Netzwerk, das andere Stacks mitnutzen, könnten `gateway` und `console` auf deren Container zeigen oder Kaesos Container auf deren Namen antworten. Das Netzwerk anlegen und den beiden Diensten dort Aliase geben, die nicht kollidieren können:
+### Proxy in Docker anbinden
+
+Läuft Ihr Proxy in Docker auf demselben Server, verbinden Sie ihn über ein Docker-Netzwerk mit Kaeso statt über veröffentlichte Ports. Legen Sie ein Netzwerk nur für den Proxy und Kaeso an:
 
 ```bash
 docker network create kaeso-proxy
 ```
+
+Verbinden Sie dann Gateway und Konsole damit, mit Aliasen, die kein anderer Stack verwendet:
 
 ```yaml
 services:
@@ -79,14 +89,20 @@ networks:
     external: true
 ```
 
-Den Container des Proxys mit `kaeso-proxy` verbinden und an `kaeso-gateway:8080` und `kaeso-console:3000` weiterleiten. Im Compose-Projekt behalten die Dienste ihre Namen, sodass Befehle wie `docker compose logs gateway` gleich bleiben.
+Verbinden Sie den Container Ihres Proxys mit `kaeso-proxy` und leiten Sie an `kaeso-gateway:8080` und `kaeso-console:3000` weiter. Die Aliase sind nötig, weil Compose jeden Dienstnamen in jedem Netzwerk, dem der Dienst beitritt, zu einem DNS-Namen macht. In einem Netzwerk, das andere Stacks mitnutzen, könnte `gateway` sonst den Container eines anderen Stacks erreichen.
 
 ## Lange Streams
 
-Proxys und Load Balancer schließen Verbindungen, über die eine Weile keine Bytes fließen, oft nach 60 oder 100 Sekunden. Ein Modell, das vor der Antwort nachdenkt, kann länger schweigen, und eine App in einem OpenAI-Format, die ein Claude-Modell aufruft, erhält von diesem Reasoning nichts. Solange eine gestreamte Antwort offen ist und `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang (Standard 15 Sekunden) nichts an die App geschrieben wurde, schreibt das Gateway deshalb ein Keepalive, das das SDK der App ignoriert: einen SSE-Kommentar (`: keepalive`) für Chat Completions und Responses, ein `ping`-Ereignis für Anthropic Messages.
+Proxys und Load Balancer schließen Verbindungen, über die eine Weile keine Bytes fließen, oft nach 60 oder 100 Sekunden. Ein Modell, das vor der Antwort nachdenkt, kann länger still sein. Solange ein Stream offen ist und `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang (standardmäßig 15 Sekunden) nichts geschrieben wurde, schreibt das Gateway deshalb ein Keepalive, das das SDK der App ignoriert:
 
-- Das Intervall deutlich unter dem kürzesten Leerlauf-Timeout auf dem Weg halten; `0s` schaltet Keepalives ab.
-- Das Gateway sendet die Header der Antwort, sobald der Anbieter antwortet, noch vor dem ersten Ereignis.
-- Die eigenen Grenzen des Gateways für einen Stream sind `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` und `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`; siehe [Aufrufe an Anbieter](configuration.md#aufrufe-an-anbieter).
+- Einen SSE-Kommentar, `: keepalive`, für Chat Completions und Responses.
+- Ein `ping`-Event für Anthropic Messages.
 
-[Ablauf einer Anfrage](../concepts/request-flow.md) beschreibt, was geschieht, wenn ein Stream abbricht oder die App verschwindet.
+Halten Sie das Intervall deutlich unter dem kürzesten Leerlauf-Timeout auf dem Weg. Das Gateway sendet die Header der Antwort, sobald der Anbieter antwortet, noch vor dem ersten Event. Seine eigenen Grenzen für einen Stream sind `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` und `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` ([Aufrufe an Anbieter](configuration.md#aufrufe-an-anbieter)).
+
+Der [Ablauf einer Anfrage](../concepts/request-flow.md) erklärt, was passiert, wenn ein Stream abbricht oder die App verschwindet.
+
+## Nächste Schritte
+
+- [E-Mail](email.md): Verbinden Sie einen SMTP-Server, damit Anmeldelinks und Einladungen ankommen.
+- [Zustand und Metriken](monitoring.md): Prüfen Sie den Zustand der Installation und lesen Sie ihre Metriken ab.

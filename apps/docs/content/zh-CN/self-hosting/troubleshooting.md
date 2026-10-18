@@ -39,7 +39,7 @@ docker compose exec gateway kaeso setup-link
 
 ## 网站没有证书
 
-Caddy 需要域名的 DNS 记录指向服务器，并且端口 80 和 443 处于开放状态。`docker compose logs caddy` 会显示证书颁发机构的答复；参见[证书](domains-and-tls.md#证书)。
+Caddy 需要域名的 DNS 记录指向服务器，并且端口 80 和 443 处于开放状态。`docker compose logs caddy` 会显示证书颁发机构的答复；参见[证书](domains-and-tls.md#获取证书)。
 
 ## 有人丢失了第二重验证因素
 

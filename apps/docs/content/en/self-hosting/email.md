@@ -1,84 +1,89 @@
 ---
 title: Email
-description: How Kaeso sends email, what it sends, in which language, and how to test it.
+description: Connect an SMTP server, test it, and see which emails Kaeso sends and in which language.
 order: 6
 ---
 
-Kaeso sends email for sign-in links, invitations, password resets, key expiry warnings, budget alerts and security notices. The gateway sends every email itself, over SMTP.
+The gateway sends every email itself, over SMTP: sign-in links, invitations, password resets, key expiry warnings, budget alerts and security notices. It doesn't start until it has an SMTP server, unless you tell it to only log emails.
 
 ## Set up SMTP
 
-Add your SMTP server to `.env` and apply it with `docker compose up -d --wait`:
+Add your SMTP server to `.env`:
 
-```bash
+```bash title=".env"
 KAESO_SMTP_HOST=smtp.example.com
 KAESO_SMTP_PORT=587
 KAESO_SMTP_TLS=starttls
 KAESO_SMTP_USER=kaeso
 KAESO_SMTP_PASSWORD=…
-KAESO_SMTP_FROM=Kaeso <kaeso@example.com>
+KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 ```
 
-| Setting | What to know |
-| --- | --- |
-| `KAESO_SMTP_TLS` | `starttls` on port 587, `tls` for implicit TLS (usually port 465), `none` only for a local mail catcher |
-| `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD` | Leave both out for a server that needs no sign-in; a password needs a user |
-| `KAESO_SMTP_FROM` | The sender of every email, as an address or `Name <address>`. Defaults to `Kaeso <kaeso@` and your domain; use an address your SMTP server may send from |
+Apply it with `docker compose up -d --wait`. Without `KAESO_SMTP_FROM`, Kaeso sends from `kaeso@` at your domain, so set an address your SMTP server may send from. Leave out the user and password for a server that needs no sign-in. [Configuration](configuration.md#email) lists every email setting and its values.
 
-The gateway refuses to start without `KAESO_SMTP_HOST` unless email is only logged. [Configuration](configuration.md#email) lists every email setting.
+## Send a test email
 
-## Without a mail server
+1. In the console, open **Settings** › **Instance** › **Settings**. The **Mail** section shows the transport, the SMTP host and the sender.
+2. Choose **Send test email**. It goes to you, or to the address you enter.
+3. If it fails or doesn't arrive, read the SMTP server's answer in the gateway's log with `docker compose logs gateway`.
 
-To try Kaeso without a mail server, set `KAESO_MAIL_TRANSPORT=log`. The gateway then only logs that an email would have been sent, with its kind, never its recipient or content. Signing in with a password works, and `kaeso setup-link` prints the setup link either way, but sign-in links, invitations and alerts never arrive.
+[Troubleshooting](troubleshooting.md#email-doesnt-arrive) has the usual causes.
+
+## Try Kaeso without a mail server
+
+Set `KAESO_MAIL_TRANSPORT=log` in `.env`. The gateway then logs the kind of each email instead of sending it, never its recipient or content.
+
+Password sign-in still works, and `kaeso setup-link` prints the setup link either way. Sign-in links, invitations and alerts never arrive.
 
 ## What Kaeso sends
 
-| Email | Subject | Sent when |
-| --- | --- | --- |
-| Invitation | {inviter} invited you to {org} on Kaeso | Someone invites a person to an organization |
-| Instance invitation | {inviter} invited you to Kaeso | An instance admin invites a person to the install |
-| Sign-in link | Sign in to Kaeso | Someone asks for a sign-in link |
-| Password reset | Reset your Kaeso password | Someone asks to reset their password |
-| Email change | Confirm your new Kaeso email address | Someone changes their email address; sent to the new address |
-| Sign-up | Finish creating your Kaeso account | Someone signs up where the instance allows it |
-| Password changed | Your Kaeso password was changed | A password changes |
-| Two-factor on | Two-factor authentication is on | Someone turns on two-factor authentication |
-| Two-factor off | Two-factor authentication is off | Someone turns off two-factor authentication |
-| Two-factor reset | Your two-factor authentication was reset | An instance admin, or `kaeso user reset-2fa` on the server, resets it |
-| Email changed | Your Kaeso email address was changed | An email address changes |
-| Signed out | You were signed out of Kaeso | Every session of a person was ended |
-| Account deactivated | Your Kaeso account was deactivated | An instance admin deactivates an account |
-| Organization deletion | {org} is scheduled for deletion | An organization is scheduled for deletion; sent to its members and to instance admins |
-| Ownership | You are now an owner of {org} | Someone makes a person an owner |
-| Key expiry | The API key {key} expires on {date} | One of a person's API keys expires soon |
-| Budget alert | {scope} used {percent}% of its {budget} | A budget reaches one of its alert thresholds |
-| Test | Kaeso test email | An instance admin sends a test email |
+| Email | Sent when |
+| --- | --- |
+| Invitation | Someone invites a person to an organization |
+| Instance invitation | An instance admin invites a person to the install |
+| Sign-in link | Someone asks for a sign-in link |
+| Password reset | Someone asks to reset their password |
+| Email change | Someone changes their email address; sent to the new address |
+| Sign-up | Someone signs up where the instance allows it |
+| Password changed | A password changes |
+| Two-factor on | Someone turns on two-factor authentication |
+| Two-factor off | Someone turns off two-factor authentication |
+| Two-factor reset | An instance admin, or `kaeso user reset-2fa`, resets it |
+| Email changed | An email address changes |
+| Signed out | Every session of a person ends |
+| Account deactivated | An instance admin deactivates an account |
+| Organization deletion | An organization is scheduled for deletion; sent to its members and to instance admins |
+| Ownership | Someone makes a person an owner |
+| Key expiry | One of a person's API keys expires soon |
+| Budget alert | A budget reaches one of its alert thresholds |
+| Test | An instance admin sends a test email |
 
-Security and organization notices are always sent. Alerts say in their footer how to turn them off, and each person chooses which ones they get under **Settings** › **Account** › **Notifications**.
+Security and organization notices are always sent. Each person chooses which alerts they get under **Settings** › **Account** › **Notifications**, and every alert says in its footer how to turn it off.
+
+Every email has an HTML and a plain-text part, in light and dark. Its images travel inside the email, so it loads nothing from your install and carries no tracking pixels.
 
 ## Languages
 
-Every email exists in English, German and Simplified Chinese, with dates and numbers written the way each language writes them.
+Every email exists in English, German and Simplified Chinese. Kaeso picks the language for each recipient:
 
 | Recipient | Language |
 | --- | --- |
-| A person with an account | Their choice under **Settings** › **Account** › **Appearance**; on Automatic, the language of the browser that caused the email; otherwise English |
-| Someone without an account yet, for an invitation or a sign-up link | The language of the person who invited them or asked, otherwise English; an invitee who already has an account gets their own choice |
-| Emails sent without a browser: key expiry warnings, budget alerts, organization deletion notices | Each recipient's choice, otherwise English |
-
-## How emails look
-
-Every email has the console's look: the Kaeso wordmark at the top left, one heading, one sentence, at most one button, and a footer that names the install. The HTML part never shows a raw link; the plain-text part says the same with the link in full.
-
-- **Light and dark.** Mail apps that follow the system's dark mode, and Outlook.com's own dark mode, get Kaeso's dark colors. Apps that invert colors themselves get a light design built to survive the inversion.
-- **Nothing from outside.** The wordmark images travel inside the email, so they always show and never load anything from your install. There are no web fonts, external images, scripts or tracking pixels.
+| A person with an account | Their choice under **Settings** › **Account** › **Appearance**. On Automatic, the language of the browser that caused the email, otherwise English |
+| Someone without an account, for an invitation or a sign-up link | The language of the person who invited them or asked, otherwise English |
+| Recipients of key expiry warnings, budget alerts and deletion notices | Each recipient's choice, otherwise English |
 
 ## Delivery
 
-Emails wait in a queue in the gateway's memory, up to 1,024 of them, and up to 16 are delivered at a time. When the SMTP server fails temporarily, the gateway tries three more times, after 1, 5 and 30 seconds; when it refuses an email for good, the gateway doesn't retry. Either way, an email that can't be delivered is logged. When the gateway stops, it waits up to 10 seconds for queued emails; any still unsent are lost.
+Emails wait in a queue in the gateway's memory, up to 1,024 of them, and up to 16 go out at a time:
 
-`kaeso_emails_total{kind, outcome}` counts emails by `outcome`: `sent`, `failed`, or `dropped` when the queue was full. See [health and metrics](monitoring.md).
+- When the SMTP server fails for the moment, the gateway tries three more times, after 1, 5 and 30 seconds.
+- When the server refuses an email for good, the gateway doesn't try again.
+- When the queue is full, the gateway drops the email.
+- When the gateway stops, it waits up to 10 seconds for queued emails, and any still unsent are lost.
 
-## Test it
+The gateway logs every email it can't deliver. `kaeso_emails_total` counts emails by `outcome`, `sent`, `failed` or `dropped` ([health and metrics](monitoring.md)).
 
-In the console, open **Settings** › **Instance** › **Settings**. The **Mail** section shows the transport, the SMTP host and the sender; **Send test email** sends one to you, or to the recipient you enter. If it fails or doesn't arrive, the gateway's log has the SMTP server's answer, and [troubleshooting](troubleshooting.md#email-doesnt-arrive) has more.
+## Next steps
+
+- [Sign-in and single sign-on](sign-in.md): Choose how people sign in.
+- [Troubleshooting](troubleshooting.md#email-doesnt-arrive): Find out why an email doesn't arrive.

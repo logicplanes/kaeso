@@ -18,7 +18,7 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v{{version}}/
 
 ## 在自己的电脑上试用
 
-在 `.env` 中设置 `KAESO_DOMAIN=localhost`，启动 Kaeso 后打开 `https://localhost`。Caddy 用自己的本地证书颁发机构签发证书，浏览器会请您确认一次。没有邮件服务器时，再设置 `KAESO_MAIL_TRANSPORT=log`（[邮件](email.md#没有邮件服务器时)）。
+在 `.env` 中设置 `KAESO_DOMAIN=localhost`，启动 Kaeso 后打开 `https://localhost`。Caddy 用自己的本地证书颁发机构签发证书，浏览器会请您确认一次。没有邮件服务器时，再设置 `KAESO_MAIL_TRANSPORT=log`（[邮件](email.md#不用邮件服务器试用-kaeso)）。
 
 curl 和 SDK 不信任 Caddy 的本地证书颁发机构。从容器中复制出它的根证书：
 

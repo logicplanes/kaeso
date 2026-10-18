@@ -18,7 +18,7 @@ Jedem Release liegen außerdem zwei Beispieldateien bei: [`env.example`](https:/
 
 ## Auf dem eigenen Rechner ausprobieren
 
-Setzen Sie `KAESO_DOMAIN=localhost` in der `.env`, starten Sie Kaeso und öffnen Sie `https://localhost`. Caddy signiert das Zertifikat mit seiner eigenen lokalen Zertifizierungsstelle, die Ihr Browser einmal bestätigen lässt. Ohne Mailserver setzen Sie außerdem `KAESO_MAIL_TRANSPORT=log` ([E-Mail](email.md#ohne-mailserver)).
+Setzen Sie `KAESO_DOMAIN=localhost` in der `.env`, starten Sie Kaeso und öffnen Sie `https://localhost`. Caddy signiert das Zertifikat mit seiner eigenen lokalen Zertifizierungsstelle, die Ihr Browser einmal bestätigen lässt. Ohne Mailserver setzen Sie außerdem `KAESO_MAIL_TRANSPORT=log` ([E-Mail](email.md#kaeso-ohne-mailserver-ausprobieren)).
 
 curl und die SDKs vertrauen Caddys lokaler Zertifizierungsstelle nicht. Kopieren Sie ihr Stammzertifikat aus dem Container:
 

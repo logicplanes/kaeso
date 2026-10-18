@@ -35,11 +35,11 @@ If Kaeso is already set up, the command says so; sign in at your domain instead.
 
 ## Locked out of an install without passwords
 
-On an install that signs in only through single sign-on, a broken identity provider, or a setup session that ended before single sign-on worked, leaves no way in. Don't turn passwords back on: print a one-time sign-in link for an instance admin with `kaeso user sign-in-link`, as [getting back in](sign-in.md#getting-back-in) describes.
+On an install that signs in only through single sign-on, a broken identity provider, or a setup session that ended before single sign-on worked, leaves no way in. Don't turn passwords back on: print a one-time sign-in link for an instance admin with `kaeso user sign-in-link`, as [getting back in](sign-in.md#get-back-in) describes.
 
 ## The site has no certificate
 
-Caddy needs the domain's DNS record to point at the server and ports 80 and 443 to be open. `docker compose logs caddy` shows the certificate authority's answer; see [certificates](domains-and-tls.md#certificates).
+Caddy needs the domain's DNS record to point at the server and ports 80 and 443 to be open. `docker compose logs caddy` shows the certificate authority's answer; see [certificates](domains-and-tls.md#get-a-certificate).
 
 ## Someone lost their second factor
 
