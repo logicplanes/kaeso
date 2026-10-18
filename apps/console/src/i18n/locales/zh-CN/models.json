@@ -37,7 +37,7 @@
   "models.availability": "可用性",
   "models.available": "可用",
   "models.availableSince": "可用，检查于 {date}",
-  "models.backToModels": "返回模型",
+  "models.backToModels": "返回模型列表",
   "models.cacheRead": "缓存读取 {read}",
   "models.cacheReadWrite": "缓存读取 {read}，缓存写入 {write}",
   "models.cacheWrite": "缓存写入 {write}",

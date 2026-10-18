@@ -1,7 +1,7 @@
 {
   "signIn.appCode": "Code aus Ihrer Authenticator-App",
   "signIn.back": "Zurück zur Anmeldung",
-  "signIn.challengeExpires": "Die Anfrage läuft {when} ab. {link}",
+  "signIn.challengeExpires": "Die Bestätigung läuft {when} ab. {link}",
   "signIn.checkEmail": "Posteingang prüfen",
   "signIn.codeHint": "Den 6-stelligen Code aus der Authenticator-App eingeben.",
   "signIn.createAccount": "Konto erstellen",

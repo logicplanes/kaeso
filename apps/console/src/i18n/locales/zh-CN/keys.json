@@ -28,7 +28,7 @@
   "keys.neverUsed": "从未使用",
   "keys.noLimits": "此密钥没有限额，适用其所有者和项目的限额。",
   "keys.none": "暂无密钥",
-  "keys.noneActive": "没有活跃的密钥",
+  "keys.noneActive": "没有有效的密钥",
   "keys.noneActiveHint": "已停用、已过期和已归档的密钥在“全部”下。",
   "keys.noneForFilter": "没有符合筛选条件的密钥",
   "keys.noneHint": "创建密钥，然后在每个发往网关的请求中携带它。",
