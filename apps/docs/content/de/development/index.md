@@ -45,5 +45,4 @@ Dokumentation und Showcase werden als statische Websites aus dem Tag des Release
 | [Übersetzungen](translations.md) | Wie jede Oberfläche Englisch, Deutsch und vereinfachtes Chinesisch spricht, und das Glossar |
 | [Dokumentation schreiben](documentation.md) | Wie Seiten dieser Website geschrieben, verlinkt und übersetzt werden |
 | [Abhängigkeiten und Lizenzen](dependencies.md) | Jede direkte Abhängigkeit, warum es sie gibt, und die Lizenzrichtlinie |
-| [Performance](performance.md) | Bundle-Budgets, Codec-Benchmarks und Fuzzing-Ergebnisse |
 | [Releases](releasing.md) | Versionen, das Changelog, der Release-Workflow und was er veröffentlicht |

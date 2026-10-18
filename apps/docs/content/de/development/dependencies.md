@@ -96,7 +96,7 @@ Tests, Benchmarks und Werkzeuge dürfen mehr verwenden, nie als normale Abhängi
 | --- | --- | --- | --- |
 | `insta` (mit `json`) | Tests von `kaeso-codecs` | Snapshots der dialektübergreifenden Matrix | Apache-2.0 |
 | `proptest` | Tests von `kaeso-codecs` | Property-Tests: Aufteilung von SSE-Chunks, KPP-Round-Trips | MIT OR Apache-2.0 |
-| `criterion` | Benchmarks von `kaeso-codecs` | [Benchmarks](performance.md#kpp) | Apache-2.0 OR MIT |
+| `criterion` | Benchmarks von `kaeso-codecs` | Benchmarks | Apache-2.0 OR MIT |
 | `libfuzzer-sys` | `fuzz/`, ein eigener Workspace | Die cargo-fuzz-Targets | (MIT OR Apache-2.0) AND NCSA |
 | `axum`, `tokio`, `serde`, `serde_json` | `crates/kpp-conformance`, nie veröffentlicht | Der Konformitätsserver, nie im Abhängigkeitsgraphen der Bibliothek, was die `deny.toml` von KPP erzwingt | MIT (`axum`, `tokio`), MIT OR Apache-2.0 |
 

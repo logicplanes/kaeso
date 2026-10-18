@@ -96,7 +96,7 @@ Kaeso 采用 MIT 许可证，它发布的一切都只依赖采用宽松许可证
 | --- | --- | --- | --- |
 | `insta`（启用 `json`） | `kaeso-codecs` 的测试 | 跨方言矩阵的快照 | Apache-2.0 |
 | `proptest` | `kaeso-codecs` 的测试 | 属性测试：SSE 分块拆分、KPP 往返 | MIT OR Apache-2.0 |
-| `criterion` | `kaeso-codecs` 的基准测试 | [基准测试](performance.md#kpp) | Apache-2.0 OR MIT |
+| `criterion` | `kaeso-codecs` 的基准测试 | 基准测试 | Apache-2.0 OR MIT |
 | `libfuzzer-sys` | `fuzz/`，一个独立的工作区 | cargo-fuzz 目标 | (MIT OR Apache-2.0) AND NCSA |
 | `axum`、`tokio`、`serde`、`serde_json` | `crates/kpp-conformance`，从不发布 | 一致性测试服务器，从不进入库的依赖图，由 KPP 的 `deny.toml` 强制保证 | MIT（`axum`、`tokio`），MIT OR Apache-2.0 |
 
