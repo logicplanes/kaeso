@@ -4,7 +4,7 @@ description: The real payloads the codecs are tested against, and how to record 
 order: 8
 ---
 
-Every codec change starts with a fixture: a real request body, reply, stream or error, in `crates/kaeso-codecs/fixtures`. Every fixture round-trips through its own codec, the cross-dialect matrix runs every generation fixture through every other dialect, the [SDK conformance suite](../testing.md#sdk-conformance) serves them to the official SDKs, the gateway's mock provider answers with them, and the fuzz targets start from them.
+Every codec change starts with a fixture: a real request body, reply, stream or error, in `crates/kaeso-codecs/fixtures`. Every fixture round-trips through its own codec, and the cross-dialect matrix runs every generation fixture through every other dialect. The [SDK conformance suite](../testing.md#sdk-conformance) serves the fixtures to the official SDKs, the gateway's mock provider answers with them, and the fuzz targets start from them.
 
 ## Layout
 
@@ -68,9 +68,9 @@ cargo xtask record openai_responses --count --all
 | `--dry-run` | Prints what would be sent and sends nothing |
 
 - It reads `requests/<name>.json` and, when it exists, `<name>.headers.json`, whose allowlisted headers (`anthropic-beta`, `anthropic-version`, `openai-beta`) are sent along. Anthropic requests carry `anthropic-version: 2023-06-01` unless that file names another version.
-- It writes `responses/recorded-<name>.json` for a 2xx reply (in `responses/count_tokens/` or `responses/input_tokens/` with `--count`), `streams/recorded-<name>.sse` when the request has `"stream": true` (the raw bytes as received), or `errors/recorded-<name>.json` (`.txt` when the body isn't JSON) with `recorded-<name>.meta.json` (the status and any `retry-after`) for an error, and adds a row with the model and the UTC time to `RECORDED.md` in that folder. JSON bodies are indented by two spaces and keep the provider's key order.
+- It writes a 2xx reply to `responses/recorded-<name>.json`, or to `responses/count_tokens/` or `responses/input_tokens/` with `--count`. A request with `"stream": true` gets `streams/recorded-<name>.sse`, the raw bytes as received. An error gets `errors/recorded-<name>.json` (`.txt` when the body isn't JSON) and `recorded-<name>.meta.json` with the status and any `retry-after`. Each recording adds a row with the model and the UTC time to `RECORDED.md` in that folder. JSON bodies are indented by two spaces and keep the provider's key order.
 - `ANTHROPIC_BASE_URL` and `OPENAI_BASE_URL` change the API addresses.
 - API keys are read from the environment and never written, and request headers are never stored.
-- Before anything is written, it removes the query string from every URL that carries a cloud signing credential (AWS Signature Version 4, Google Cloud signed URLs, Azure shared access signatures), such as the presigned links a web search can return; everything else stays byte for byte.
+- Before anything is written, it removes the query string from every URL that carries a cloud signing credential: AWS Signature Version 4, Google Cloud signed URLs and Azure shared access signatures. A web search can return such presigned links. Everything else stays byte for byte.
 
 The code is in `crates/xtask/src/record.rs`. Review every recorded file before committing it: it holds whatever the model said, and it must not contain personal data. The round-trip tests pick recorded fixtures up by themselves.

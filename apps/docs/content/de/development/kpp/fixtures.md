@@ -4,7 +4,7 @@ description: Die echten Payloads, gegen die die Codecs getestet werden, und wie 
 order: 8
 ---
 
-Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer Antwort, einem Stream oder einem Fehler in `crates/kaeso-codecs/fixtures`. Jede Fixture durchläuft einen Round Trip durch ihren eigenen Codec, die Cross-Dialekt-Matrix schickt jede Generierungs-Fixture durch jeden anderen Dialekt, die [SDK-Konformitätssuite](../testing.md#sdk-konformität) liefert sie an die offiziellen SDKs aus, der Mock-Anbieter des Gateways antwortet mit ihnen, und die Fuzz-Targets gehen von ihnen aus.
+Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer Antwort, einem Stream oder einem Fehler in `crates/kaeso-codecs/fixtures`. Jede Fixture durchläuft einen Round Trip durch ihren eigenen Codec, und die Cross-Dialekt-Matrix schickt jede Generierungs-Fixture durch jeden anderen Dialekt. Die [SDK-Konformität](../testing.md#sdk-konformität) liefert die Fixtures an die offiziellen SDKs aus, der Mock-Anbieter des Gateways antwortet mit ihnen, und die Fuzz-Targets gehen von ihnen aus.
 
 ## Aufbau
 
@@ -68,9 +68,9 @@ cargo xtask record openai_responses --count --all
 | `--dry-run` | Gibt aus, was gesendet würde, und sendet nichts |
 
 - Es liest `requests/<name>.json` und, falls vorhanden, `<name>.headers.json`, dessen Header von der Allowlist (`anthropic-beta`, `anthropic-version`, `openai-beta`) mitgesendet werden. Anthropic-Anfragen tragen `anthropic-version: 2023-06-01`, außer diese Datei nennt eine andere Version.
-- Es schreibt `responses/recorded-<name>.json` bei einer 2xx-Antwort (mit `--count` in `responses/count_tokens/` oder `responses/input_tokens/`), `streams/recorded-<name>.sse`, wenn die Anfrage `"stream": true` enthält (die rohen Bytes, wie empfangen), oder bei einem Fehler `errors/recorded-<name>.json` (`.txt`, wenn der Body kein JSON ist) mit `recorded-<name>.meta.json` (der Status und ein etwaiges `retry-after`), und fügt in `RECORDED.md` dieses Ordners eine Zeile mit dem Modell und der UTC-Zeit hinzu. JSON-Bodies werden mit zwei Leerzeichen eingerückt und behalten die Schlüsselreihenfolge des Anbieters.
+- Es schreibt eine 2xx-Antwort nach `responses/recorded-<name>.json`, mit `--count` nach `responses/count_tokens/` oder `responses/input_tokens/`. Eine Anfrage mit `"stream": true` ergibt `streams/recorded-<name>.sse`, die rohen Bytes, wie empfangen. Ein Fehler ergibt `errors/recorded-<name>.json` (`.txt`, wenn der Body kein JSON ist) und `recorded-<name>.meta.json` mit dem Status und einem etwaigen `retry-after`. Jede Aufzeichnung fügt in `RECORDED.md` dieses Ordners eine Zeile mit dem Modell und der UTC-Zeit hinzu. JSON-Bodies werden mit zwei Leerzeichen eingerückt und behalten die Schlüsselreihenfolge des Anbieters.
 - `ANTHROPIC_BASE_URL` und `OPENAI_BASE_URL` ändern die API-Adressen.
 - API-Schlüssel werden aus der Umgebung gelesen und nie geschrieben, und Anfrage-Header werden nie gespeichert.
-- Bevor etwas geschrieben wird, entfernt es den Query-String jeder URL, die Zugangsdaten einer Cloud-Signatur trägt (AWS Signature Version 4, signierte URLs von Google Cloud, Shared Access Signatures von Azure), etwa bei vorsignierten Links aus einer Websuche; alles andere bleibt Byte für Byte erhalten.
+- Bevor etwas geschrieben wird, entfernt es den Query-String jeder URL, die Zugangsdaten einer Cloud-Signatur trägt: AWS Signature Version 4, signierte URLs von Google Cloud und Shared Access Signatures von Azure. Solche vorsignierten Links kann eine Websuche liefern. Alles andere bleibt Byte für Byte erhalten.
 
 Der Code steht in `crates/xtask/src/record.rs`. Prüfen Sie jede aufgezeichnete Datei vor dem Commit: Sie enthält, was immer das Modell gesagt hat, und darf keine personenbezogenen Daten enthalten. Die Round-Trip-Tests nehmen aufgezeichnete Fixtures von selbst auf.

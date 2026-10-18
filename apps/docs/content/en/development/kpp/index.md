@@ -219,8 +219,8 @@ Write error messages for the person who called Kaeso: name the field the target 
 
 `kaeso_codecs::testing` compares JSON structurally: key order never matters, and numbers compare exactly as `serde_json` reads them, so `1` and `1.0` differ while `1e0` and `1.0` are the same number.
 
-KPP stores `temperature`, `top_p` and the penalties as `f64`, so the codecs keep their spelling themselves. OpenAI Chat Completions and Anthropic Messages list the keys written as integers in the request form marker `integers` and write them as integers again while the value is still a whole number; OpenAI Responses records a different spelling as a form override that applies only while the value is unchanged. A changed value is written as the new value, and another dialect gets the target's own spelling (`1.0`).
+KPP stores `temperature`, `top_p` and the penalties as `f64`, so the codecs keep their spelling themselves. OpenAI Chat Completions and Anthropic Messages list the keys written as integers in the request form marker `integers`. They write those keys as integers again while the value is still a whole number. OpenAI Responses records a different spelling as a form override, which applies only while the value is unchanged. A changed value is written as the new value, and another dialect gets the target's own spelling (`1.0`).
 
-`testing::sse_diff` compares streams item by item: the event name, the data as JSON (or as text when it isn't JSON; `ComparableItem::Event.data` is `None` for a frame without a `data:` line), then the `id`, `retry` and unknown fields in order; comments compare exactly.
+`testing::sse_diff` compares streams item by item. It compares the event name, then the data as JSON, or as text when it isn't JSON, then the `id`, `retry` and unknown fields in order. `ComparableItem::Event.data` is `None` for a frame without a `data:` line, and comments compare exactly.
 
 When a change alters cross-dialect output, review the snapshot diff: run `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`, then read the changed `.snap` files before committing them.

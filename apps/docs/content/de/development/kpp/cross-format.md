@@ -23,7 +23,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 `cross::check_foreign` durchläuft eine Anfrage und lehnt mit `Unsupported` ab, was das Ziel nicht verwenden kann:
 
 - **Extras-Felder aus einem anderen Dialekt**, außer das Feld steht auf der [Allowlist](#extras) oder darf aufgrund seines Werts das Format wechseln (`cross::is_droppable_value`). Extras, die Felder, aber keinen Ursprung haben, werden stattdessen mit `InvalidRequest` abgelehnt, weil niemand sie zurückschreiben könnte.
-- **Unbekannte Blöcke, Tools und Tool-Auswahlen aus einem anderen Dialekt.** Ein unbekannter Block ohne `type`, aber mit `role` enthält eine ganze Nachricht, etwa eine `function`-Nachricht von OpenAI Chat, und wird `` `<role>` message `` genannt, mit dem Hinweis „Remove the message, or send the request to a model served through its original format.“
+- **Unbekannte Blöcke, Tools und Tool-Auswahlen aus einem anderen Dialekt.** Ein unbekannter Block ohne `type`, aber mit `role` enthält eine ganze Nachricht, etwa eine `function`-Nachricht von OpenAI Chat. Die Ablehnung nennt ihn `` `<role>` message `` und fügt den Hinweis „Remove the message, or send the request to a model served through its original format.“ hinzu.
 - **Datei-IDs eines Anbieters**, die der Zielanbieter nicht auflösen kann ([Dateien](#dateien)).
 - **Zitate aus einem anderen Dialekt:** Kein Ziel dokumentiert, was Zitate in früheren Runden bewirken, und die Formate lassen sich nicht aufeinander abbilden.
 
@@ -31,7 +31,18 @@ Nicht abgelehnt wird, was die Encoder stattdessen weglassen: Reasoning-Blöcke, 
 
 `check()` lehnt auch ab, was ein Ziel überhaupt nicht ausdrücken kann. Anthropic braucht `max_tokens`, daher ist eine Generierungsanfrage ohne `sampling.max_output_tokens` dort `InvalidRequest` und nennt das Feld der App für das Limit, statt einen erfundenen Wert zu bekommen.
 
-Eine Ablehnung nennt das Feld, das die App gesendet hat, nie das des Ziels, in `param` und beim Ausgabelimit auch in der Meldung: `cross::app_field` liest den Ursprung der Anfrage und bei OpenAI Chat, welches von `max_completion_tokens` und `max_tokens` sie enthielt (`max_completion_tokens`, wenn sie beide gesendet hat). Ein Ausgabelimit unter 16 für OpenAI Responses ist `max_completion_tokens` oder `max_tokens` aus einer Chat-App und `max_tokens` aus einer Anthropic-App; ein fehlendes für Anthropic ist `max_completion_tokens` aus Chat und `max_output_tokens` aus Responses. Stoppsequenzen sind `stop_sequences` aus Anthropic und `stop` aus Chat; das Ausgabeformat ist `response_format`, `text.format` oder `output_config.format`; der Reasoning-Aufwand ist `reasoning_effort`, `reasoning.effort` oder `output_config.effort`, und andere Reasoning-Einstellungen sind `reasoning_effort`, `reasoning` oder `thinking`. Eine im Code gebaute Anfrage ohne Ursprung bekommt die Namen des Ziels. Inhalte werden nach ihrer Stelle in KPP benannt (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
+Eine Ablehnung nennt das Feld, das die App gesendet hat, nie das des Ziels. Sie nennt es in `param` und beim Ausgabelimit auch in der Meldung. `cross::app_field` liest den Ursprung der Anfrage und bei OpenAI Chat, welches von `max_completion_tokens` und `max_tokens` sie enthielt; hat die App beide gesendet, wählt es `max_completion_tokens`. Die Namen folgen dem Format der App:
+
+| Abgelehnte Einstellung | Aus Anthropic | Aus Chat | Aus Responses |
+| --- | --- | --- | --- |
+| Ein Ausgabelimit unter 16, für OpenAI Responses | `max_tokens` | `max_completion_tokens` oder `max_tokens` | |
+| Ein fehlendes Ausgabelimit, für Anthropic | | `max_completion_tokens` | `max_output_tokens` |
+| Stoppsequenzen | `stop_sequences` | `stop` | |
+| Das Ausgabeformat | `output_config.format` | `response_format` | `text.format` |
+| Der Reasoning-Aufwand | `output_config.effort` | `reasoning_effort` | `reasoning.effort` |
+| Andere Reasoning-Einstellungen | `thinking` | `reasoning_effort` | `reasoning` |
+
+Eine im Code gebaute Anfrage ohne Ursprung bekommt die Namen des Ziels. Inhalte werden nach ihrer Stelle in KPP benannt (`messages[i].blocks[j]`, `system[i]`, `tools[i]`).
 
 Das veraltete Function Calling von OpenAI Chat übersteht den Round Trip innerhalb von Chat und wechselt in keinen anderen Dialekt. Legacy-Aufrufe haben keine Aufruf-IDs, daher sind sie keine KPP-Tool-Aufrufe:
 
@@ -107,7 +118,7 @@ Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format d
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 
-- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr (`kaeso_codecs::keepalive`): Ein Extra-Event eines anderen Dialekts wie `ping`, das der Anbieter bereits taktet, bringt immer einen Frame ein; verborgener Text (Thinking, das die App nicht sehen kann, gepufferte Tool-Argumente) bringt einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes ein, also 1.024; alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App bringen nie Frames ein, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
+- **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr (`kaeso_codecs::keepalive`). Ein Extra-Event eines anderen Dialekts wie `ping` bringt immer einen Frame ein, weil der Anbieter es bereits taktet. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, bringt einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes ein, also 1.024. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App bringen nie Frames ein, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
 - **Vom Gateway gesteuert.** `StreamEncoder::keepalive` liefert den Frame auf Abruf, für Stille beim Anbieter, die der Encoder nicht sehen kann. Das Gateway schreibt ihn, wenn es `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang nichts an die App geschrieben hat, standardmäßig 15 Sekunden.
 
 Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die Antwort beginnt, statt mit dem ersten Text, sodass die App vom Stream hört, während das Modell denkt.
@@ -140,7 +151,7 @@ KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren a
 
 ## IDs von Antworten
 
-Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die App auch spricht: Eine Claude-Antwort erreicht eine OpenAI-Chat-Completions- oder Responses-App mit ihrer Anthropic-ID (`msg_…`), und eine OpenAI-Antwort erreicht eine Anthropic-Messages-App mit der ID von OpenAI (`chatcmpl-…` oder `resp_…`). Streams tragen dieselbe ID. Die Codecs erfinden nie eine ID im Muster der App, weil die ID des Anbieters die Antwort beim Anbieter benennt; Apps behandeln IDs von Antworten als undurchsichtige Zeichenketten. Ausgabe-Items von Responses, die andere Formate nicht haben, sind die Ausnahme ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)).
+Eine Antwort behält die ID des Anbieters unverändert, in welchem Format die App auch spricht. Eine Claude-Antwort erreicht eine OpenAI-Chat-Completions- oder Responses-App mit ihrer Anthropic-ID (`msg_…`). Eine OpenAI-Antwort erreicht eine Anthropic-Messages-App mit der ID von OpenAI (`chatcmpl-…` oder `resp_…`). Streams tragen dieselbe ID. Die Codecs erfinden nie eine ID im Muster der App, weil die ID des Anbieters die Antwort beim Anbieter benennt; Apps behandeln IDs von Antworten als undurchsichtige Zeichenketten. Ausgabe-Items von Responses, die andere Formate nicht haben, sind die Ausnahme ([Speicherung und IDs bei Responses](#speicherung-und-ids-bei-responses)).
 
 ## Speicherung und IDs bei Responses
 
