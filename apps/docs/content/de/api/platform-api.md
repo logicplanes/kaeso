@@ -234,13 +234,7 @@ Jedes Mitglied einer Organisation hat eine Organisationsrolle, jedes Projektmitg
 
 Eine Vergabe wird als `{"role": "developer", "rights_added": [], "rights_removed": []}` gesendet, wobei `role` der Name einer eingebauten Rolle oder die ID einer eigenen Rolle ist; `preset` ist ihr veralteter Name. Zurück kommt sie mit `role` (`{id, kind, name}`), den wirksamen `rights` und, bei Organisationsvergaben, `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`; die Einrichtung von Single Sign-on nimmt `default_role`.
 
-Jede Änderung von Rechten, an einer Vergabe oder einer eigenen Rolle, folgt denselben Regeln:
-
-- Sie vergibt nur Rechte, die der Aufrufer hat: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt, Rechte in jedem Projekt nur, wenn der Aufrufer sie in jedem Projekt hat.
-- Sie ändert oder entfernt nur Mitglieder, deren Rechte der Aufrufer alle hat. Nur Inhaber ernennen, ändern, entfernen oder laden Inhaber ein.
-- Jedes vergebene Recht kommt mit den Rechten, die es braucht, sonst lautet die Antwort 400, etwa „`logs.delete` needs `logs.storage.view`.“
-- Sie entfernt kein Recht, das ein verbleibendes Recht braucht, sonst lautet die Antwort 400, etwa „`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.“ Eine Änderung an einer eigenen Rolle wird auch abgelehnt, wenn sie einen Inhaber in diesem Zustand zurückließe.
-- Eine Änderung an einer eigenen Rolle gilt sofort für alle Inhaber, und eine Rolle, die jemand innehat, lässt sich nicht löschen.
+Jede Änderung von Rechten, an einer Vergabe oder einer eigenen Rolle, folgt den [Vergaberegeln](../concepts/rights.md#vergaberegeln). Eine Änderung, die gegen eine verstößt, wird mit 400 abgelehnt, und die Meldung nennt die betroffenen Rechte, etwa „`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.“
 
 Die Quellen eines wirksamen Rechts sind `owner`, `role` (die Organisationsrolle, bei Organisationsrechten), `project_role`, `added`, `org_role` (die Rechte der Organisationsrolle in jedem Projekt), `org_right` (ein Organisationsrecht, das in Projekte hineinreicht, etwa `projects.view.all`) und `key` (ein API-Schlüssel, der im Projekt handelt).
 

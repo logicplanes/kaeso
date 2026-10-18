@@ -234,13 +234,7 @@ ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[
 
 授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 的形式发送，其中 `role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的旧名称。返回时带有 `role`（`{id, kind, name}`）、有效的 `rights`，组织授权还带有 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`；单点登录设置接受 `default_role`。
 
-每次更改权限，无论针对授权还是自定义角色，都遵循相同的规则：
-
-- 只能授予调用者自己持有的权限：组织权限在组织中持有，项目权限在该项目中持有，在所有项目中的权限只有调用者在所有项目中都持有时才能授予。
-- 只能更改或移除其权限全部为调用者所持有的成员。只有所有者可以任命、更改、移除或邀请所有者。
-- 授予的每项权限都必须连同其依赖的权限一起授予，否则响应为 400，例如 “`logs.delete` needs `logs.storage.view`.”
-- 不能移除其余权限所依赖的权限，否则响应为 400，例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.” 如果对自定义角色的更改会让某个持有人陷入这种状态，该更改同样会被拒绝。
-- 对自定义角色的更改会立即作用于所有持有人；有人持有的角色无法删除。
+每次更改权限，无论针对授权还是自定义角色，都遵循[授权规则](../concepts/rights.md#授权规则)。违反规则的更改会以 400 被拒绝，消息会指出涉及的权限，例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
 
 有效权限的来源包括 `owner`、`role`（组织角色，用于组织权限）、`project_role`、`added`、`org_role`（组织角色在所有项目中的权限）、`org_right`（延伸到项目中的组织权限，例如 `projects.view.all`）以及 `key`（在项目中行事的 API 密钥）。
 
