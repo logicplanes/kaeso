@@ -3,15 +3,18 @@ import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import type { SettingsView } from "~/api/generated/types";
 import { signedIn } from "~/test/fixtures";
-import { instanceSettings } from "~/test/fixtures/instance-account";
+import { instanceSettings, system } from "~/test/fixtures/instance-account";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
-const PATH = "/settings/instance/settings";
+const PATH = "/settings/instance/general";
+const LOGGING = "/settings/instance/logging";
+const SYSTEM = "/settings/instance/system";
 
 function settingsApi(initial: Partial<SettingsView> = {}) {
   let current = instanceSettings(initial);
+  on("GET", "instance/system", system());
   on("GET", "instance/settings", () => current);
   on("PATCH", "instance/settings", ({ body }: { body: Partial<SettingsView> }) => {
     current = { ...current, ...body };
@@ -32,32 +35,21 @@ async function setNumber(user: UserEvent, name: string, value: string) {
   if (value) await user.type(input, value);
 }
 
-describe("instance settings page", () => {
-  it("shows how the install works", async () => {
+describe("instance general page", () => {
+  it("shows who can join, how people sign in and deleting organizations", async () => {
     signedIn();
     settingsApi();
     await renderApp(PATH);
-    expect(await screen.findByRole("heading", { name: "Settings", level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "General", level: 1 })).toBeInTheDocument();
     expect(await screen.findByRole("combobox", { name: "Account creation" })).toHaveTextContent("Invitation only");
     expect(screen.getByRole("combobox", { name: "Organization creation" })).toHaveTextContent("Instance admins only");
     expect(screen.queryByRole("button", { name: "Edit domains" })).not.toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Organizations can be deleted" })).toBeChecked();
     expect(screen.getByRole("textbox", { name: "Grace period" })).toHaveValue("7");
-    expect(screen.getByRole("textbox", { name: "Default metadata retention" })).toHaveValue("90");
-    expect(screen.getByRole("textbox", { name: "Maximum content retention" })).toHaveValue("90");
     expect(screen.getAllByText("On")).toHaveLength(2);
     expect(screen.getByText("Off")).toBeInTheDocument();
-    expect(screen.getByText("smtp")).toBeInTheDocument();
-    expect(screen.getByText("mail.example.com:587")).toBeInTheDocument();
-    expect(screen.getByText("kaeso@example.com")).toBeInTheDocument();
-  });
-
-  it("leaves out the host for mail that doesn't use one", async () => {
-    signedIn();
-    settingsApi({ mail: { transport: "log", host: null, port: null, from: "kaeso@example.com" } as never });
-    await renderApp(PATH);
-    expect(await screen.findByText("log")).toBeInTheDocument();
-    expect(screen.queryByText("Host")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Default metadata retention" })).not.toBeInTheDocument();
+    expect(screen.queryByText("smtp")).not.toBeInTheDocument();
   });
 
   it("shows the API's message when the settings couldn't load", async () => {
@@ -126,10 +118,26 @@ describe("deleting organizations", () => {
 });
 
 describe("request log retention", () => {
+  it("says when the settings couldn't load", async () => {
+    signedIn();
+    on("GET", "instance/settings", apiError(429, "rate_limited", "Too many requests; try again in a minute."));
+    await renderApp(LOGGING);
+    expect(await screen.findByText("The instance settings couldn't load")).toBeInTheDocument();
+  });
+
+  it("has a page of its own", async () => {
+    signedIn();
+    settingsApi();
+    await renderApp(LOGGING);
+    expect(await screen.findByRole("heading", { name: "Logging", level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole("textbox", { name: "Default metadata retention" })).toHaveValue("90");
+    expect(screen.getByRole("textbox", { name: "Maximum content retention" })).toHaveValue("90");
+  });
+
   it("explains what keeps the retention from being saved", async () => {
     signedIn();
     settingsApi();
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(LOGGING);
     await screen.findByRole("textbox", { name: "Default metadata retention" });
     const save = () => screen.getByRole("button", { name: "Save retention" });
     await hoverReason(user, save(), "No change to save");
@@ -150,7 +158,7 @@ describe("request log retention", () => {
   it("saves the defaults and maximums together", async () => {
     signedIn();
     settingsApi();
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(LOGGING);
     await screen.findByRole("textbox", { name: "Default metadata retention" });
     await setNumber(user, "Default metadata retention", "60");
     await setNumber(user, "Maximum metadata retention", "180");
@@ -161,11 +169,28 @@ describe("request log retention", () => {
 });
 
 describe("the test email", () => {
+  it("shows how the install sends mail on the system page", async () => {
+    signedIn();
+    settingsApi();
+    await renderApp(SYSTEM);
+    expect(await screen.findByText("smtp")).toBeInTheDocument();
+    expect(screen.getByText("mail.example.com:587")).toBeInTheDocument();
+    expect(screen.getByText("kaeso@example.com")).toBeInTheDocument();
+  });
+
+  it("leaves out the host for mail that doesn't use one", async () => {
+    signedIn();
+    settingsApi({ mail: { transport: "log", host: null, port: null, from: "kaeso@example.com" } as never });
+    await renderApp(SYSTEM);
+    expect(await screen.findByText("log")).toBeInTheDocument();
+    expect(screen.queryByText("Host")).not.toBeInTheDocument();
+  });
+
   it("sends one to yourself when no recipient is given", async () => {
     signedIn();
     settingsApi();
     on("POST", "instance/settings/test-email", { to: "owner@example.com" });
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(SYSTEM);
     await user.click(await screen.findByRole("button", { name: "Send test email" }));
     const dialog = await screen.findByRole("dialog", { name: "Send a test email" });
     await user.click(within(dialog).getByRole("button", { name: "Send test email" }));
@@ -178,7 +203,7 @@ describe("the test email", () => {
     signedIn();
     settingsApi();
     on("POST", "instance/settings/test-email", ({ body }: { body: { to: string } }) => ({ to: body.to }));
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(SYSTEM);
     await user.click(await screen.findByRole("button", { name: "Send test email" }));
     const dialog = await screen.findByRole("dialog", { name: "Send a test email" });
     const input = within(dialog).getByRole("textbox", { name: /Recipient/ });
@@ -195,7 +220,7 @@ describe("the test email", () => {
   it("opens with an empty recipient after one was typed and cancelled", async () => {
     signedIn();
     settingsApi();
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(SYSTEM);
     await user.click(await screen.findByRole("button", { name: "Send test email" }));
     const dialog = await screen.findByRole("dialog", { name: "Send a test email" });
     await user.type(within(dialog).getByRole("textbox", { name: /Recipient/ }), "ops");
@@ -211,7 +236,7 @@ describe("the test email", () => {
     signedIn();
     settingsApi();
     on("POST", "instance/settings/test-email", apiError(502, "mail_failed", "The mail server refused the connection."));
-    const { user } = await renderApp(PATH);
+    const { user } = await renderApp(SYSTEM);
     await user.click(await screen.findByRole("button", { name: "Send test email" }));
     const dialog = await screen.findByRole("dialog", { name: "Send a test email" });
     await user.click(within(dialog).getByRole("button", { name: "Send test email" }));

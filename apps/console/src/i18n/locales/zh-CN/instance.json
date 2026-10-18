@@ -35,7 +35,6 @@
   "instance.backToUsers": "返回用户列表",
   "instance.cantDeactivateSelf": "不能停用自己",
   "instance.checkNow": "立即检查",
-  "instance.checkedEvery": "每 10 秒检查一次",
   "instance.chooseUser": "请选择用户",
   "instance.clickhouseHint": "请求日志和用量。",
   "instance.contentAboveMax": "内容的默认保留期超过了上限",
@@ -118,7 +117,6 @@
   "instance.keptWithContent": "元数据保留 {metadata} 天，内容保留 {content} 天。",
   "instance.last30Days": "最近 30 天",
   "instance.last30DaysHint": "所有项目的请求、Token 和费用，以及存储的日志",
-  "instance.lastChecked": "上次检查：{when} · 每 10 秒",
   "instance.lastSync": "上次同步",
   "instance.logBuffer": "请求日志缓冲区",
   "instance.logEntries": "请求日志条目",
@@ -221,7 +219,6 @@
   "instance.sessionsEnded": "已结束所有会话",
   "instance.setInConfig": "在网关配置中设置。",
   "instance.settingsFailed": "实例设置加载失败",
-  "instance.settingsHint": "适用于此实例上所有人的设置。",
   "instance.signIn": "登录",
   "instance.signInHint": "组织对其成员的登录要求。",
   "instance.signInLink": "登录链接",
@@ -263,7 +260,7 @@
   "instance.updates.byHand": "手动更新",
   "instance.updates.byHandTitle": "在安装目录中手动更新",
   "instance.updates.channel": "发布渠道",
-  "instance.updates.channelHint": "此实例可获取哪些版本。",
+  "instance.updates.channelHint": "此实例接收哪些版本。",
   "instance.updates.channelSaved": "渠道已保存",
   "instance.updates.checkFailed": "无法获取版本信息，请稍后再试",
   "instance.updates.checkFailedAt": "{when}失败",
@@ -397,5 +394,8 @@
   "instance.updates.checkStatus": "{host} 返回了 {status}",
   "instance.updates.checkUnreadable": "无法读取来自 {host} 的版本列表",
   "instance.updates.checkTooLarge": "来自 {host} 的版本列表超过 4 MiB",
-  "instance.updates.checkNoClient": "网关无法创建 HTTP 客户端"
+  "instance.updates.checkNoClient": "网关无法创建 HTTP 客户端",
+  "instance.generalHint": "谁可以加入此实例，以及组织可以做什么。",
+  "instance.loggingHint": "请求日志的保留时长：新组织的默认值和上限。",
+  "instance.systemHint": "网关及其服务的实时状态，每 10 秒刷新一次。"
 }

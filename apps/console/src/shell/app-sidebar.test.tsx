@@ -155,7 +155,7 @@ describe("the organization switcher", () => {
     expect(screen.getByText("owner@example.com")).toBeInTheDocument();
     expect(within(menu).getByRole("menuitem", { name: "Organization settings" })).toHaveAttribute("href", `/settings/orgs/${ORG}/general`);
     expect(within(menu).getByRole("menuitem", { name: "Account" })).toHaveAttribute("href", "/settings/account/profile");
-    expect(within(menu).getByRole("menuitem", { name: "Instance" })).toHaveAttribute("href", "/settings/instance/users");
+    expect(within(menu).getByRole("menuitem", { name: "Instance" })).toHaveAttribute("href", "/settings/instance/general");
     await user.click(within(menu).getByRole("menuitemradio", { name: "Globex" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/orgs/org_globex"));
   });

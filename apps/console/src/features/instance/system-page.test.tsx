@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { signedIn, whoAmI, user as account } from "~/test/fixtures";
-import { system } from "~/test/fixtures/instance-account";
-import { hoverReason } from "~/test/fixtures/org";
+import { instanceSettings, system } from "~/test/fixtures/instance-account";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -59,16 +58,13 @@ describe("instance system page", () => {
     expect(await screen.findByText("starting")).toBeInTheDocument();
   });
 
-  it("checks again on request and says when it last checked", async () => {
+  it("refreshes by itself every 10 seconds, without a button", async () => {
     signedIn();
     on("GET", "instance/system", system());
-    const { user } = await renderApp(PATH);
+    await renderApp(PATH);
     await screen.findByText("Ready");
-    const check = screen.getByRole("button", { name: "Check now" });
-    await hoverReason(user, check, /Last checked .* · every 10 seconds/);
-    const before = requests("GET", "instance/system").length;
-    await user.click(check);
-    await waitFor(() => expect(requests("GET", "instance/system").length).toBe(before + 1));
+    expect(screen.getByText("Live state of the gateway and its services, refreshed every 10 seconds.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check now" })).not.toBeInTheDocument();
   });
 
   it("says when the system status couldn't load", async () => {
@@ -76,14 +72,6 @@ describe("instance system page", () => {
     on("GET", "instance/system", apiError(429, "rate_limited", "Too many requests; try again in a minute."));
     await renderApp(PATH);
     expect(await screen.findByText("The system status couldn't load")).toBeInTheDocument();
-  });
-
-  it("says how often it checks while the first check runs", async () => {
-    signedIn();
-    on("GET", "instance/system", () => new Promise(() => {}));
-    const { user } = await renderApp(PATH);
-    await hoverReason(user, await screen.findByRole("button", { name: "Check now" }), "Checked every 10 seconds");
-    expect(screen.queryByText("Ready")).not.toBeInTheDocument();
   });
 });
 
@@ -96,11 +84,11 @@ describe("the instance area", () => {
     expect(requests("GET", "instance/system")).toHaveLength(0);
   });
 
-  it("opens on the users page", async () => {
+  it("opens on the general page", async () => {
     signedIn();
-    on("GET", "instance/users", { data: [], has_more: false, next_cursor: null });
+    on("GET", "instance/settings", instanceSettings());
     await renderApp("/settings/instance");
-    expect(await screen.findByRole("heading", { name: "Users", level: 1 })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/settings/instance/users");
+    expect(await screen.findByRole("heading", { name: "General", level: 1 })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/settings/instance/general");
   });
 });

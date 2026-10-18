@@ -34,7 +34,7 @@ To get into an organization, choose **Add owner** and pick any active user, or *
 
 ## Change install settings
 
-Under **Settings**:
+Under **General**:
 
 | Setting | Choices |
 | --- | --- |
@@ -42,11 +42,12 @@ Under **Settings**:
 | Organization creation | **Instance admins only**, **Users on allowed domains** or **Any signed-in user** |
 | Allowed domains | The domains for the two settings above. `*.example.com` covers subdomains |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
-| Request log retention | The defaults for new organizations, and the longest an organization may choose |
+
+Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.
 
 Changing account creation, organization creation or the allowed domains needs a recent sign-in.
 
-Sign-in methods and email are set in the gateway's [configuration](../self-hosting/configuration.md), and this page shows them read-only. **Send test email** checks that the gateway can send mail.
+Sign-in methods and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows the sign-in methods and **System** shows email, both read-only. **Send test email** on **System** checks that the gateway can send mail.
 
 ## Sync model data
 
@@ -54,7 +55,7 @@ Sign-in methods and email are set in the gateway's [configuration](../self-hosti
 
 ## Check the system
 
-**System** shows the gateway's version and state, and whether PostgreSQL, ClickHouse and Valkey are up. It also shows the request log buffer and the storage. The page checks every 10 seconds, and **Check now** checks at once.
+**System** shows the gateway's version and state, and whether PostgreSQL, ClickHouse and Valkey are up. It also shows the request log buffer, the storage and how the gateway sends email. The page refreshes every 10 seconds.
 
 ## Update Kaeso
 

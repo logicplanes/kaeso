@@ -6,7 +6,7 @@ test.describe.configure({ mode: "serial" });
 async function openAccounts(page: Page) {
   await signInWithPassword(page, OWNER.email, NEW_PASSWORD);
   await expectSignedIn(page);
-  await page.goto("/settings/instance/settings");
+  await page.goto("/settings/instance/general");
   await expect(page.getByRole("heading", { level: 2, name: "Accounts" })).toBeVisible();
 }
 

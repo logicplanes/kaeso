@@ -6,8 +6,8 @@ test.describe.configure({ mode: "serial" });
 async function openInstance(page: Page, label: string) {
   await signInAsOwner(page);
   await page.goto("/settings/instance");
-  await expect(page).toHaveURL(/\/settings\/instance\/users$/);
-  if (label !== "Users") await page.locator(`nav[aria-label="Settings"] a[href^="/settings/instance/"]`).getByText(label, { exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/instance\/general$/);
+  if (label !== "General") await page.locator(`nav[aria-label="Settings"] a[href^="/settings/instance/"]`).getByText(label, { exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: label })).toBeVisible();
 }
 
@@ -49,18 +49,19 @@ test("organizations: one is created with an owner and opens with its metadata", 
   await expect(page.getByRole("link", { name: "Open organization" })).toBeVisible();
 });
 
-test("settings: retention defaults change and a test email is sent", async ({ page }) => {
-  await openInstance(page, "Settings");
+test("logging and system: retention defaults change and a test email is sent", async ({ page }) => {
+  await openInstance(page, "Logging");
   await page.getByRole("textbox", { name: "Default content retention" }).fill("14");
   await page.getByRole("button", { name: "Save retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
+  await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
   await page.getByRole("button", { name: "Send test email" }).click();
   await page.getByRole("dialog", { name: "Send a test email" }).getByRole("button", { name: "Send test email" }).click();
   await expect(toastText(page, "Test email sent to owner@example.com")).toBeVisible();
 });
 
-test("settings: the deletion grace period changes, and with deletion off no organization offers it", async ({ page }) => {
-  await openInstance(page, "Settings");
+test("general: the deletion grace period changes, and with deletion off no organization offers it", async ({ page }) => {
+  await openInstance(page, "General");
   await page.getByRole("textbox", { name: "Grace period" }).fill("3");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(toastText(page, "Deletions wait 3 days")).toBeVisible();
@@ -74,7 +75,7 @@ test("settings: the deletion grace period changes, and with deletion off no orga
   await expect(page.getByRole("button", { name: "Transfer ownership" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete organization" })).toHaveCount(0);
 
-  await page.goto("/settings/instance/settings");
+  await page.goto("/settings/instance/general");
   await page.getByRole("switch", { name: "Organizations can be deleted" }).click();
   await expect(toastText(page, "Organizations can be deleted")).toBeVisible();
   await page.getByRole("textbox", { name: "Grace period" }).fill("7");
@@ -93,6 +94,8 @@ test("model sources, system and the instance audit log", async ({ page }) => {
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
   await expect(page.getByText("Ready")).toBeVisible();
   await expect(page.getByText("PostgreSQL").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check now" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Send test email" })).toBeVisible();
 
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/audit-log"]`).click();
   await expect(page.getByRole("heading", { level: 1, name: "Audit log" })).toBeVisible();

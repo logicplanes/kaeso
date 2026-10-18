@@ -34,7 +34,7 @@ Um in eine Organisation zu gelangen, wählen Sie **Inhaber hinzufügen** und ein
 
 ## Installationseinstellungen ändern
 
-Unter **Einstellungen**:
+Unter **Allgemein**:
 
 | Einstellung | Auswahl |
 | --- | --- |
@@ -42,11 +42,12 @@ Unter **Einstellungen**:
 | Organisationserstellung | **Nur Instanz-Admins**, **Benutzer erlaubter Domains** oder **Alle angemeldeten Benutzer** |
 | Erlaubte Domains | Die Domains für die beiden Einstellungen darüber. `*.example.com` umfasst Subdomains |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
-| Aufbewahrung der Anfrageprotokolle | Die Standards für neue Organisationen und die längste Aufbewahrung, die eine Organisation wählen darf |
+
+Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf.
 
 Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung.
 
-Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest, und diese Seite zeigt sie nur an. **Test-E-Mail senden** prüft, ob das Gateway E-Mails senden kann.
+Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt die Anmeldemethoden und **System** die E-Mail, beide nur zur Ansicht. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 
 ## Modelldaten synchronisieren
 
@@ -54,7 +55,7 @@ Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuratio
 
 ## System prüfen
 
-**System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. Es zeigt außerdem den Puffer der Anfrageprotokolle und den Speicher. Die Seite prüft alle 10 Sekunden, und **Jetzt prüfen** prüft sofort.
+**System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. Es zeigt außerdem den Puffer der Anfrageprotokolle, den Speicher und wie das Gateway E-Mails sendet. Die Seite aktualisiert sich alle 10 Sekunden.
 
 ## Kaeso aktualisieren
 
