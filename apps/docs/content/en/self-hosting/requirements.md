@@ -15,7 +15,7 @@ Kaeso runs on one Linux server with Docker. Size the disk by how many requests y
 | Memory | 4 GB, of which ClickHouse uses about 2 GB |
 | Disk | 20 GB, plus room for request logs |
 
-[One-click updates](upgrades.md#one-click-updates) also need Docker Engine 25 or newer.
+[The updater](upgrades.md#the-updater) also needs Docker Engine 25 or newer.
 
 ## Network
 
@@ -27,7 +27,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | `api.openai.com`, `api.anthropic.com` | The providers you use |
 | Outgoing | `models.dev` | Model data, refreshed once a day |
 | Outgoing | `api.github.com` | Looking for new Kaeso releases, twice a day |
-| Outgoing | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | One-click updates |
+| Outgoing | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | The updater |
 | Outgoing | Your SMTP server | Sign-in links, invitations, alerts and security notices ([email](email.md)) |
 
 Without internet access, Kaeso works with the model data built into the release, and you update by hand. Turn off the outgoing checks as [installs without internet access](upgrades.md#installs-without-internet-access) shows.

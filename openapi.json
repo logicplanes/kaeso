@@ -2839,7 +2839,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Changes whether the gateway looks for releases, which ones it offers, and whether updates apply in one click (turning that on needs a recent sign-in).",
+        "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
         "description": "**Access:** a console session of an instance admin.",
         "operationId": "patchInstanceUpdatesSettings",
         "requestBody": {
@@ -19223,9 +19223,14 @@
                 "to",
                 "state",
                 "step",
+                "automatic",
                 "started_at"
               ],
               "properties": {
+                "automatic": {
+                  "type": "boolean",
+                  "description": "Whether the gateway started it by itself in the update window."
+                },
                 "detail": {
                   "type": [
                     "string",
@@ -19266,7 +19271,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/UpdateActor",
-                      "description": "Who started it; `null` once that user is deleted."
+                      "description": "Who started it; `null` when the gateway started it in the update window or once that user is deleted."
                     },
                     {
                       "type": "null"
@@ -21325,7 +21330,7 @@
         "properties": {
           "major": {
             "type": "boolean",
-            "description": "Whether it is a new major version, which is never applied in one click."
+            "description": "Whether it is a new major version, which the updater never installs."
           },
           "manual_steps": {
             "type": "boolean",
@@ -22948,6 +22953,14 @@
           }
         }
       },
+      "UpdateFrequency": {
+        "type": "string",
+        "description": "How often automatic updates run.",
+        "enum": [
+          "daily",
+          "weekly"
+        ]
+      },
       "UpdateId": {
         "type": "string",
         "examples": [
@@ -22964,9 +22977,14 @@
           "to",
           "state",
           "step",
+          "automatic",
           "started_at"
         ],
         "properties": {
+          "automatic": {
+            "type": "boolean",
+            "description": "Whether the gateway started it by itself in the update window."
+          },
           "detail": {
             "type": [
               "string",
@@ -23007,7 +23025,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/UpdateActor",
-                "description": "Who started it; `null` once that user is deleted."
+                "description": "Who started it; `null` when the gateway started it in the update window or once that user is deleted."
               },
               {
                 "type": "null"
@@ -23031,17 +23049,77 @@
           }
         }
       },
+      "UpdateMode": {
+        "type": "string",
+        "description": "How the install takes updates through the updater.",
+        "enum": [
+          "manual",
+          "automatic"
+        ]
+      },
+      "UpdateSchedule": {
+        "type": "object",
+        "description": "When automatic updates run.",
+        "required": [
+          "frequency",
+          "weekday",
+          "hour"
+        ],
+        "properties": {
+          "frequency": {
+            "$ref": "#/components/schemas/UpdateFrequency",
+            "description": "Every day or once a week."
+          },
+          "hour": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The hour the update window opens, 0 to 23, in the instance's time zone.",
+            "example": 3,
+            "maximum": 23,
+            "minimum": 0
+          },
+          "weekday": {
+            "$ref": "#/components/schemas/UpdateWeekday",
+            "description": "The day of a weekly update; ignored for a daily one."
+          }
+        }
+      },
+      "UpdateScheduleView": {
+        "type": "object",
+        "description": "When automatic updates run.",
+        "required": [
+          "frequency",
+          "weekday",
+          "hour",
+          "timezone"
+        ],
+        "properties": {
+          "frequency": {
+            "$ref": "#/components/schemas/UpdateFrequency",
+            "description": "Every day or once a week."
+          },
+          "hour": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The hour the update window opens, 0 to 23, in the instance's time zone; it stays open for an hour.",
+            "example": 3,
+            "minimum": 0
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The instance's IANA time zone, which the hour follows, daylight saving time included; set in the instance settings.",
+            "example": "Europe/Berlin"
+          },
+          "weekday": {
+            "$ref": "#/components/schemas/UpdateWeekday",
+            "description": "The day of a weekly update."
+          }
+        }
+      },
       "UpdateSettingsChange": {
         "type": "object",
         "description": "Changes to the update settings.",
         "properties": {
-          "apply": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Whether instance admins may apply updates in one click; turning it on needs a recent sign-in."
-          },
           "channel": {
             "oneOf": [
               {
@@ -23053,12 +23131,27 @@
               }
             ]
           },
-          "check": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Whether the gateway looks for new releases twice a day."
+          "mode": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpdateMode",
+                "description": "`manual` or `automatic`; choosing `automatic` needs a recent sign-in."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schedule": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UpdateSchedule",
+                "description": "When automatic updates run."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -23068,22 +23161,48 @@
         "required": [
           "check",
           "channel",
-          "apply"
+          "mode",
+          "schedule"
         ],
         "properties": {
-          "apply": {
-            "type": "boolean",
-            "description": "Whether instance admins may apply updates in one click through the updater."
-          },
           "channel": {
             "$ref": "#/components/schemas/UpdateChannel",
             "description": "Which releases are offered."
           },
           "check": {
             "type": "boolean",
-            "description": "Whether the gateway looks for new releases twice a day."
+            "description": "Whether the gateway looks for new releases twice a day; `updates.check` in the configuration turns it off for installs without internet."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/UpdateMode",
+            "description": "`manual` (an instance admin starts each update) or `automatic` (the gateway installs new releases in the update window)."
+          },
+          "next_auto_update_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the next update window opens, while automatic updates are on."
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/UpdateScheduleView",
+            "description": "When automatic updates run."
           }
         }
+      },
+      "UpdateWeekday": {
+        "type": "string",
+        "description": "A day of the week.",
+        "enum": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ]
       },
       "UpdaterView": {
         "type": "object",
@@ -23122,7 +23241,7 @@
         "properties": {
           "can_apply": {
             "type": "boolean",
-            "description": "Whether the newest release can be applied now: one-click updates are on, nothing asks for steps by hand, the updater is ready and no update runs."
+            "description": "Whether the newest release can be applied now: nothing asks for steps by hand, the updater is ready and no update runs."
           },
           "check": {
             "$ref": "#/components/schemas/UpdateCheckView",
@@ -23160,7 +23279,7 @@
               "string",
               "null"
             ],
-            "description": "Why the newest release can't be applied in one click: `major` (a new major version), `manual_steps` (a release on the way asks for steps by hand) or `not_prepared` (it has no release manifest); `null` when it can."
+            "description": "Why the updater can't install the newest release: `major` (a new major version), `manual_steps` (a release on the way asks for steps by hand) or `not_prepared` (it has no release manifest); `null` when it can."
           },
           "releases": {
             "type": "array",

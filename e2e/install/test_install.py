@@ -202,7 +202,7 @@ def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
     status = owner.get("/platform/v1/instance/updates")
     assert status.status_code == 200, status.text
     assert status.json()["updater"]["state"] == "ready", status.json()
-    assert status.json()["settings"]["apply"] is False
+    assert status.json()["settings"]["mode"] == "manual"
     stranger = subprocess.run(
         ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--entrypoint", "wget", CADDY,
          "-qO-", "-T", "5", "http://docker-proxy:2375/v1.44/version"],

@@ -29,7 +29,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_PUBLIC_URL` | no | The public URL, when it isn't `https://` and the domain, such as behind your own proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, unless emails are only logged | How the gateway sends email ([email](#email)). |
 | `KAESO_MAIL_TRANSPORT` | no | `log` to only log emails instead of sending them. |
-| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([one-click updates](upgrades.md#one-click-updates)). |
+| `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
 
 Use only letters and digits in the passwords, as `openssl rand -hex` writes them, because they go into connection URLs. PostgreSQL keeps the passwords it had when its volume was created, so changing `POSTGRES_PASSWORD` later locks the gateway out. ClickHouse and Valkey take their password from `.env` at every start.
@@ -133,7 +133,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | --- | --- | --- | --- | --- |
 | `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases offered: `stable`, or `prerelease` for pre-releases too. |
-| `KAESO_UPDATES_APPLY` | `updates.apply` | bool | `false` | Let instance admins apply updates from the console through the updater. |
+| `KAESO_UPDATES_MODE` | `updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual`, where an instance admin starts each one, or `automatic`, in the update window. |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Where the list of releases comes from, in the form of GitHub's releases API. |
 | `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | Address of the updater. |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The token the gateway and the updater share, at least 32 characters. Without it, the gateway never calls the updater. |
@@ -195,7 +195,7 @@ These settings only seed a new install. After that, instance admins change them 
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, at most 36500 days. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | bool | `true` | Whether organizations can be deleted. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it and automatic updates follow it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
 
 In the console, instance admins can also allow account and organization creation for some email domains only.
 

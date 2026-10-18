@@ -132,7 +132,12 @@ test("a viewer has no playground: no sidebar item, and its address says which ri
 test("tapping the prompt on a phone does not zoom the page", async ({ page, browser }) => {
   await signInAsOwner(page);
   const origin = new URL(page.url()).origin;
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: await page.context().storageState() });
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    storageState: await page.context().storageState(),
+  });
   const phone = await context.newPage();
   await phone.goto(`${origin}/orgs/${org}/projects/${project}/playground?models=openai/gpt-5.4-mini`);
   const prompt = phone.getByRole("textbox", { name: "Prompt" });

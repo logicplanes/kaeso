@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE update_settings SET auto_window_at = $1 WHERE id = 1 AND (auto_window_at IS NULL OR auto_window_at < $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2ce923423581c0f5effe2b10c8babf82e266c55a647c080a735648c97c5e76cc"
+}

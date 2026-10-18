@@ -306,7 +306,13 @@ async fn checking_finds_newer_releases_with_their_notes_and_asks_github_conditio
     assert_eq!(before.body["updater"]["state"], "not_installed");
     assert_eq!(
         before.body["settings"],
-        json!({ "check": false, "channel": "stable", "apply": false })
+        json!({
+            "check": false,
+            "channel": "stable",
+            "mode": "manual",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": 3, "timezone": "UTC" },
+            "next_auto_update_at": null,
+        })
     );
     assert_eq!(before.body["can_apply"], false);
     assert_eq!(
@@ -354,7 +360,7 @@ async fn checking_finds_newer_releases_with_their_notes_and_asks_github_conditio
         .call(
             Method::PATCH,
             "/instance/updates/settings",
-            Some(json!({ "channel": "prerelease", "check": true })),
+            Some(json!({ "channel": "prerelease" })),
             Some(&owner.cookie),
         )
         .await;
@@ -366,13 +372,17 @@ async fn checking_finds_newer_releases_with_their_notes_and_asks_github_conditio
     assert_eq!(changed[0]["before"]["channel"], "stable");
     assert_eq!(
         changed[0]["after"],
-        json!({ "check": true, "channel": "prerelease", "apply": false })
+        json!({
+            "channel": "prerelease",
+            "mode": "manual",
+            "window": { "frequency": "daily", "weekday": 1, "hour": 3 },
+        })
     );
     s.cleanup().await;
 }
 
 #[tokio::test]
-async fn a_major_or_manual_release_is_never_offered_in_one_click() {
+async fn a_major_or_manual_release_is_never_installed_through_the_updater() {
     let s = TestServices::start().await;
     let (gh, url) = github(vec![(next_major(), false, false)]).await;
     let (_, updater_url) = updater().await;
@@ -382,7 +392,6 @@ async fn a_major_or_manual_release_is_never_offered_in_one_click() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -492,7 +501,6 @@ async fn an_updater_is_lost_an_hour_after_it_last_answered_not_after_the_start()
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -627,51 +635,60 @@ async fn an_install_without_internet_records_the_failure_quietly() {
 }
 
 #[tokio::test]
-async fn one_click_updates_need_the_setting_the_updater_and_a_recent_sign_in() {
+async fn updating_and_choosing_automatic_updates_need_a_recent_sign_in() {
     let s = TestServices::start().await;
     let (_, url) = github(stable()).await;
-    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let (_, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
     let owner = app.setup().await;
-    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+    let checked = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
         .await;
-    let version = json!({ "version": next_patch() });
-
-    let off = app
-        .post(
-            "/instance/updates/apply",
-            version.clone(),
-            Some(&owner.cookie),
-        )
-        .await;
-    assert_eq!(off.status, StatusCode::CONFLICT);
     assert_eq!(
-        off.body["error"]["message"],
-        "One-click updates are off; turn them on in the update settings first."
+        checked.body["can_apply"], true,
+        "a ready updater is all it takes"
     );
 
     app.clock.advance(time::Duration::minutes(16));
     let stale = app
-        .call(
-            Method::PATCH,
-            "/instance/updates/settings",
-            Some(json!({ "apply": true })),
+        .post(
+            "/instance/updates/apply",
+            json!({ "version": next_patch() }),
             Some(&owner.cookie),
         )
         .await;
     assert_eq!(stale.status, StatusCode::FORBIDDEN);
     assert_eq!(stale.error_type(), "recent_sign_in_required");
+    let automatic = app
+        .call(
+            Method::PATCH,
+            "/instance/updates/settings",
+            Some(json!({ "mode": "automatic" })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(automatic.status, StatusCode::FORBIDDEN);
+    assert_eq!(automatic.error_type(), "recent_sign_in_required");
     let unchanged = app
         .call(
             Method::PATCH,
             "/instance/updates/settings",
-            Some(json!({ "check": false })),
+            Some(json!({ "mode": "manual" })),
             Some(&owner.cookie),
         )
         .await;
     assert_eq!(
         unchanged.status,
         StatusCode::OK,
-        "turning things off needs no recent sign-in"
+        "staying manual needs no recent sign-in"
     );
     s.cleanup().await;
 }
@@ -680,14 +697,7 @@ async fn one_click_updates_need_the_setting_the_updater_and_a_recent_sign_in() {
 async fn without_the_updater_the_admin_is_told_to_update_by_hand() {
     let s = TestServices::start().await;
     let (_, url) = github(stable()).await;
-    let app = App::start_with(
-        &s,
-        &[
-            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
-            ("KAESO_UPDATES_APPLY", "true"),
-        ],
-    )
-    .await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
     let owner = app.setup().await;
     app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
         .await;
@@ -717,7 +727,6 @@ async fn an_update_runs_once_is_audited_and_its_result_is_recorded() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -823,7 +832,6 @@ async fn a_rolled_back_update_and_an_updater_that_refuses_are_failures() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -901,7 +909,6 @@ async fn a_running_update_the_updater_forgot_is_marked_interrupted() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -945,7 +952,6 @@ async fn a_start_the_updater_does_not_confirm_stays_running_until_it_reports() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", updater_url.as_str()),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -1074,7 +1080,6 @@ async fn an_unreachable_updater_changes_nothing() {
             ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
             ("KAESO_UPDATER_URL", "http://127.0.0.1:9/"),
             ("KAESO_UPDATER_TOKEN", token()),
-            ("KAESO_UPDATES_APPLY", "true"),
         ],
     )
     .await;
@@ -1122,7 +1127,7 @@ async fn only_instance_admins_see_or_change_updates() {
         (
             Method::PATCH,
             "/instance/updates/settings",
-            Some(json!({ "check": false })),
+            Some(json!({ "mode": "manual" })),
         ),
         (
             Method::POST,
@@ -1134,6 +1139,253 @@ async fn only_instance_admins_see_or_change_updates() {
         let r = app.call(method.clone(), path, body, Some(&member)).await;
         assert_eq!(r.status, StatusCode::FORBIDDEN, "{method} {path}");
     }
+    s.cleanup().await;
+}
+
+fn next_hour(app: &App) -> time::OffsetDateTime {
+    use kaeso_core::clock::Clock;
+    let now = app.clock.now();
+    now.replace_minute(0).unwrap().replace_second(0).unwrap() + time::Duration::hours(1)
+}
+
+async fn update_settings(app: &App, owner: &Owner, body: Value) -> common::Resp {
+    app.call(
+        Method::PATCH,
+        "/instance/updates/settings",
+        Some(body),
+        Some(&owner.cookie),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn automatic_updates_follow_a_window_in_the_instance_time_zone() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+
+    let fresh = app.get("/instance/updates", &owner.cookie).await;
+    assert_eq!(fresh.body["settings"]["mode"], "manual");
+    assert_eq!(
+        fresh.body["settings"]["schedule"],
+        json!({ "frequency": "daily", "weekday": "monday", "hour": 3, "timezone": "UTC" })
+    );
+    assert_eq!(fresh.body["settings"]["next_auto_update_at"], Value::Null);
+
+    let late = update_settings(
+        &app,
+        &owner,
+        json!({ "schedule": { "frequency": "weekly", "weekday": "sunday", "hour": 24 } }),
+    )
+    .await;
+    assert_eq!(late.status, StatusCode::BAD_REQUEST);
+    assert_eq!(late.body["error"]["param"], "schedule.hour");
+    app.call(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "Europe/Berlin" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let on = update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "weekly", "weekday": "sunday", "hour": 4 },
+        }),
+    )
+    .await;
+    assert_eq!(on.status, StatusCode::OK, "{:?}", on.body);
+    assert_eq!(on.body["settings"]["mode"], "automatic");
+    assert_eq!(
+        on.body["settings"]["schedule"],
+        json!({ "frequency": "weekly", "weekday": "sunday", "hour": 4, "timezone": "Europe/Berlin" })
+    );
+    let next = time::OffsetDateTime::parse(
+        on.body["settings"]["next_auto_update_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap();
+    assert_eq!(next.weekday(), time::Weekday::Sunday);
+    assert!([2, 3].contains(&next.hour()), "04:00 in Berlin is {next}");
+
+    let changed = audit(&app, &owner, "instance.update_settings").await;
+    assert_eq!(changed[0]["before"]["mode"], "manual");
+    assert_eq!(changed[0]["after"]["mode"], "automatic");
+    assert_eq!(
+        changed[0]["after"]["window"],
+        json!({ "frequency": "weekly", "weekday": 7, "hour": 4 })
+    );
+
+    let manual = update_settings(&app, &owner, json!({ "mode": "manual" })).await;
+    assert_eq!(manual.body["settings"]["next_auto_update_at"], Value::Null);
+    assert_eq!(
+        manual.body["settings"]["schedule"]["weekday"], "sunday",
+        "the window stays for next time"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_gateway_updates_by_itself_in_the_window_and_only_once() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let (updater, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let window = next_hour(&app);
+    let on = update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": window.hour() },
+        }),
+    )
+    .await;
+    assert_eq!(on.status, StatusCode::OK, "{:?}", on.body);
+    assert_eq!(
+        on.body["settings"]["next_auto_update_at"],
+        window
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    );
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "update_check")
+        .unwrap();
+
+    let before = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(before.ends_with("; no update window"), "{before}");
+    assert!(updater.lock().unwrap().started.is_empty());
+
+    app.clock.set(window + time::Duration::minutes(5));
+    let during = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        during.ends_with(&format!("update window: updating to {}", next_patch())),
+        "{during}"
+    );
+    let started = updater.lock().unwrap().started.clone();
+    assert_eq!(started.len(), 1);
+    assert_eq!(started[0]["version"], next_patch());
+
+    let history = app.get("/instance/updates/jobs", &owner.cookie).await;
+    assert_eq!(history.body["data"][0]["automatic"], true);
+    assert_eq!(history.body["data"][0]["started_by"], Value::Null);
+    let start = audit(&app, &owner, "instance.update_start").await;
+    assert_eq!(start[0]["after"]["automatic"], true);
+
+    updater.lock().unwrap().finish_as = Some("succeeded");
+    app.clock.advance(time::Duration::minutes(10));
+    let later = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(later.ends_with("; no update window"), "{later}");
+    assert_eq!(
+        updater.lock().unwrap().started.len(),
+        1,
+        "one update per window"
+    );
+    let next = app.get("/instance/updates", &owner.cookie).await;
+    assert_eq!(
+        next.body["settings"]["next_auto_update_at"],
+        (window + time::Duration::days(1))
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_major_release_waits_for_an_admin_even_in_the_window() {
+    let s = TestServices::start().await;
+    let (_, url) = github(vec![(next_major(), false, false)]).await;
+    let (updater, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let window = next_hour(&app);
+    update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": window.hour() },
+        }),
+    )
+    .await;
+    app.clock.set(window + time::Duration::minutes(1));
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "update_check")
+        .unwrap();
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        summary.ends_with("update window: the release needs steps by hand"),
+        "{summary}"
+    );
+    assert!(updater.lock().unwrap().started.is_empty());
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn without_the_updater_the_window_passes_quietly() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let window = next_hour(&app);
+    update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": window.hour() },
+        }),
+    )
+    .await;
+    app.clock.set(window + time::Duration::minutes(1));
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "update_check")
+        .unwrap();
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        summary.ends_with("update window: the updater isn't ready"),
+        "{summary}"
+    );
     s.cleanup().await;
 }
 

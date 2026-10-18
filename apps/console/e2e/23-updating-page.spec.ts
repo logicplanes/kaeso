@@ -32,7 +32,12 @@ async function serve(page: Page, maintenance: string | null, back = false): Prom
     if (back) {
       return route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>Kaeso</title>" });
     }
-    return route.fulfill({ status: 503, contentType: "text/html; charset=utf-8", headers: { "content-security-policy": CSP, "retry-after": "30" }, body: PAGE });
+    return route.fulfill({
+      status: 503,
+      contentType: "text/html; charset=utf-8",
+      headers: { "content-security-policy": CSP, "retry-after": "30" },
+      body: PAGE,
+    });
   });
 }
 

@@ -74,7 +74,7 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
    git push origin dev:prod
    ```
 
-4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样实例永远不会一键应用它：
+4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样更新器永远不会安装它：
 
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0

@@ -34,9 +34,9 @@ expression: settings_reference()
 | `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | bool | `true` | Fetch models.dev periodically. Off for installs without internet; the built-in snapshot is used. |
 | `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | Where models.dev data is fetched from. |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | text | `24h` | How often models.dev is fetched. |
-| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day on a new install, off for installs without internet; instance admins change it later in the console. |
+| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day; turn it off for installs without internet. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console. |
-| `KAESO_UPDATES_APPLY` | `updates.apply` | bool | `false` | Whether instance admins of a new install may apply updates from the console through the updater; they change it later in the console. |
+| `KAESO_UPDATES_MODE` | `updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual` (an instance admin starts each one in the console) or `automatic` (Kaeso installs them in the update window). Instance admins change it later in the console. |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://api.github.com/repos/logicplanes/kaeso/releases` | Where the list of Kaeso releases is fetched from, in the form of GitHub's releases API. |
 | `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | Address of the updater, the optional service that applies updates. |
 | `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater. |
@@ -62,6 +62,6 @@ expression: settings_reference()
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, in days; at most 36500. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | bool | `true` | Whether organizations can be deleted on a new install. Instance admins change it later in the instance settings. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it and automatic updates follow it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
 | `KAESO_LOG_LEVEL` | `log.level` | text | `info,sqlx=warn` | Log level or filter, e.g. `info` or `info,kaeso_server=debug`. |
 | `KAESO_LOG_FORMAT` | `log.format` | text | `json` | `json` for structured logs, `text` for development. |

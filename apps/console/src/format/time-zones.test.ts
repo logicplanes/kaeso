@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
-import { browserTimeZone, clockIn, offsetOf, timeZoneNames } from "./time-zones";
+import { browserTimeZone, clockIn, hourLabel, offsetOf, timeZoneNames, weekdayName } from "./time-zones";
 
 afterEach(() => setFormatLocale("en"));
 
@@ -23,8 +23,12 @@ describe("time zone words", () => {
     expect(browserTimeZone()).toBeTruthy();
   });
 
-  it("writes the time there in the console's language", () => {
+  it("writes hours and weekdays in the console's language", () => {
+    expect(hourLabel(3)).toBe("03:00");
+    expect(weekdayName(0)).toBe("Monday");
+    expect(weekdayName(6)).toBe("Sunday");
     setFormatLocale("de");
+    expect(weekdayName(0)).toBe("Montag");
     expect(clockIn("Asia/Tokyo", new Date("2026-07-01T12:00:00Z"))).toBe("Mi., 1. Juli, 21:00");
   });
 });

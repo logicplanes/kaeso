@@ -41,7 +41,7 @@ Under **General**:
 | Account creation | **Invitation only**, **Allowed email domains** or **Anyone**. Invited people can always create their account |
 | Organization creation | **Instance admins only**, **Users on allowed domains** or **Any signed-in user** |
 | Allowed domains | The domains for the two settings above. `*.example.com` covers subdomains |
-| Time zone | The install's time zone. Every time in the console shows in it, for everyone. **Use this zone** switches to your browser's |
+| Time zone | The install's time zone. Every time in the console shows in it, for everyone, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.
@@ -60,14 +60,14 @@ Sign-in methods and email are set in the gateway's [configuration](../self-hosti
 
 ## Update Kaeso
 
-**Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out.
+**Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out. The gateway looks for releases twice a day, and the page says when it last looked and when it looks next.
 
-- **Check now** looks for a release at once. Otherwise the gateway looks twice a day.
-- The page's settings turn that check off, offer pre-releases, and turn on one-click updates through the [updater](../self-hosting/upgrades.md#one-click-updates).
-- With the updater, **Update to …** updates the install after you confirm, and follows each step until Kaeso is back.
+- **Releases** offers stable releases only, or pre-releases too. Only the gateway's [configuration](../self-hosting/configuration.md) turns the check off, for installs without internet access.
+- With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone.
+- **Update to …** updates the install after you confirm, in either mode, and follows each step until Kaeso is back.
 - Without the updater, or for a release that needs steps by hand, the page shows the commands and the upgrade guide.
 
-The history lists every update, with who started it and how it ended.
+The history lists every update, with who started it, or **Automatically**, and how it ended.
 
 ## Read the audit log
 

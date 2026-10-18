@@ -41,7 +41,7 @@ Unter **Allgemein**:
 | Kontoerstellung | **Nur auf Einladung**, **Erlaubte E-Mail-Domains** oder **Alle**. Eingeladene können ihr Konto immer anlegen |
 | Organisationserstellung | **Nur Instanz-Admins**, **Benutzer erlaubter Domains** oder **Alle angemeldeten Benutzer** |
 | Erlaubte Domains | Die Domains für die beiden Einstellungen darüber. `*.example.com` umfasst Subdomains |
-| Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
+| Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle, und automatische Updates richten sich nach ihr. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf.
@@ -60,14 +60,14 @@ Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuratio
 
 ## Kaeso aktualisieren
 
-**Updates** zeigt die Version der Installation und das neueste Kaeso-Release mit den Release-Notizen aller Releases seither. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen zeigt, dass ein neueres Release erschienen ist.
+**Updates** zeigt die Version der Installation und das neueste Kaeso-Release mit den Release-Notizen aller Releases seither. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen zeigt, dass ein neueres Release erschienen ist. Das Gateway sucht zweimal täglich nach Releases, und die Seite sagt, wann es zuletzt gesucht hat und wann es das nächste Mal sucht.
 
-- **Jetzt prüfen** sucht sofort nach einem Release. Sonst sucht das Gateway zweimal täglich.
-- Die Einstellungen der Seite schalten diese Prüfung ab, bieten Vorabversionen an und schalten Updates mit einem Klick über den [Updater](../self-hosting/upgrades.md#updates-mit-einem-klick) ein.
-- Mit dem Updater aktualisiert **Auf … aktualisieren** die Installation, nachdem Sie bestätigt haben, und verfolgt jeden Schritt, bis Kaeso wieder da ist.
+- **Releases** bietet nur stabile Releases an oder auch Vorabversionen. Nur die [Konfiguration](../self-hosting/configuration.md) des Gateways schaltet die Suche ab, für Installationen ohne Internetzugang.
+- Mit dem [Updater](../self-hosting/upgrades.md#der-updater) wählt **Wie Updates installiert werden** zwischen **Von Hand** und **Automatisch**. Automatisch installiert Kaeso neue Releases in einem Update-Fenster: täglich oder wöchentlich, zu einer Stunde in der Zeitzone der Installation.
+- **Auf … aktualisieren** aktualisiert die Installation, nachdem Sie bestätigt haben, in beiden Modi, und verfolgt jeden Schritt, bis Kaeso wieder da ist.
 - Ohne Updater, oder für ein Release, das Schritte von Hand verlangt, zeigt die Seite die Befehle und die Upgrade-Anleitung.
 
-Der Verlauf listet jedes Update mit der Person, die es gestartet hat, und seinem Ausgang.
+Der Verlauf listet jedes Update mit der Person, die es gestartet hat, oder **Automatisch**, und seinem Ausgang.
 
 ## Audit-Log lesen
 

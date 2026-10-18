@@ -1,10 +1,10 @@
 ---
 title: Upgrades
-description: Aktualisieren Sie Kaeso von Hand oder mit einem Klick in der Konsole, und wissen Sie, was während des Updates passiert.
+description: Aktualisieren Sie Kaeso von Hand, aus der Konsole oder automatisch, und wissen Sie, was während des Updates passiert.
 order: 8
 ---
 
-Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic Versioning. Seine `compose.yaml` legt die Images des Releases fest. Aktualisieren Sie von Hand, was immer funktioniert, oder mit einem Klick in der Konsole, sobald Sie den Updater hinzufügen.
+Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic Versioning. Seine `compose.yaml` legt die Images des Releases fest. Aktualisieren Sie von Hand, was immer funktioniert, oder über den Updater: aus der Konsole oder automatisch in einem Fenster, das Sie festlegen.
 
 ## Von Hand aktualisieren
 
@@ -25,21 +25,20 @@ docker compose up -d --wait
 
 Der Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
-Wenn ein Update nicht mit einem Klick möglich ist, zeigt die Konsole diese Befehle mit der genauen Version.
+Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Befehle mit der genauen Version.
 
 ## Neue Releases
 
 Das Gateway sucht zweimal am Tag auf GitHub nach neuen Releases, nach einem Fehler frühestens eine Stunde später. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways.
 
-Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat. **Jetzt prüfen** sucht sofort, auch wenn die Suche abgeschaltet ist. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
+Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat. `instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |
-| **Nach neuen Releases suchen** | Ein | Sucht zweimal am Tag nach Releases. |
-| **Releases** | **Nur stabile** | **Vorabversion** bietet auch Release Candidates an. Eine Installation, die eine Vorabversion ausführt, erhält das stabile Release angeboten, das darauf folgt. |
-| **Updates mit einem Klick** | Aus | Erlaubt Instanz-Admins, Updates über den Updater aus der Konsole einzuspielen. |
+| **Releases** | **Stabile Releases** | **Stabile Releases und Vorabversionen** bietet auch Release Candidates an. Eine Installation, die eine Vorabversion ausführt, erhält das stabile Release angeboten, das darauf folgt. |
+| **Wie Updates installiert werden** | **Von Hand** | **Automatisch** installiert neue Releases über den Updater im [Update-Fenster](#automatisch-aktualisieren). |
 
-Auf einer neuen Installation beginnen diese Einstellungen mit `KAESO_UPDATES_CHECK`, `KAESO_UPDATES_CHANNEL` und `KAESO_UPDATES_APPLY` ([Konfiguration](configuration.md#updates)). Danach ändern Instanz-Admins sie auf der Seite, und das Audit-Log der Instanz hält jede Änderung fest.
+Auf einer neuen Installation beginnen diese Einstellungen mit `KAESO_UPDATES_CHANNEL` und `KAESO_UPDATES_MODE` ([Konfiguration](configuration.md#updates)). Danach ändern Instanz-Admins sie auf der Seite, und das Audit-Log der Instanz hält jede Änderung fest. Nur `KAESO_UPDATES_CHECK` hält das Gateway von der Suche ab, für Installationen ohne Internetzugang.
 
 ### Installationen ohne Internetzugang
 
@@ -55,7 +54,7 @@ services:
 
 Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die Seite **Updates** zeigt die laufende Version, und Sie aktualisieren von Hand. Betreiben Sie einen Spiegel, der wie die Releases-API von GitHub antwortet, richten Sie stattdessen `KAESO_UPDATES_RELEASES_URL` darauf.
 
-## Updates mit einem Klick
+## Der Updater
 
 Der Updater ist ein optionaler Dienst in der `compose.yaml`, mit einem eigenen Proxy für den Docker-Socket. Er ist der einzige Teil von Kaeso, der mit Docker spricht, und deshalb aus, bis Sie ihn einschalten.
 
@@ -71,7 +70,7 @@ echo "COMPOSE_PROFILES=updater" >> .env
 docker compose up -d --wait
 ```
 
-2. Schalten Sie **Updates mit einem Klick** unter **Einstellungen** › **Instanz** › **Updates** ein. Das verlangt eine Anmeldung innerhalb der letzten 15 Minuten.
+2. Unter **Einstellungen** › **Instanz** › **Updates** aktualisiert **Auf … aktualisieren** die Installation jetzt, und **Automatisch** lässt sie in einem Fenster aktualisieren. Beides verlangt eine Anmeldung innerhalb der letzten 15 Minuten.
 
 Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Liegt der Docker-Socket nicht unter `/var/run/docker.sock`, etwa bei rootless Docker, setzen Sie `DOCKER_SOCKET` in der `.env`.
 
@@ -92,15 +91,15 @@ secrets:
     file: ./updater-token
 ```
 
-### Welche Releases sich mit einem Klick einspielen lassen
+### Welche Releases der Updater installiert
 
-Ein Release lässt sich mit einem Klick einspielen, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und die Befehle für das Update von Hand.
+Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und die Befehle für das Update von Hand.
 
 - Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, führt immer zu einer neuen Hauptversion.
 - Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn seine `compose.yaml` sich über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen.
 - Es bringt `release.json` mit, das signierte Manifest, das der Updater liest.
 
-### Mit einem Klick aktualisieren
+### Aus der Konsole aktualisieren
 
 Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt das Update Schritt für Schritt, und es dauert etwa eine Minute:
 
@@ -113,6 +112,12 @@ Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt 
 Der Updater ersetzt sich nicht selbst, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet seine neue Version. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
 
 [Updates](../development/architecture/updates.md) erklärt, wie der Updater ein Release prüft und Container umstellt.
+
+### Automatisch aktualisieren
+
+Wählen Sie unter **Wie Updates installiert werden** die Option **Automatisch**, und legen Sie dann das Update-Fenster fest: **Täglich** oder **Wöchentlich** an einem Tag, zu einer Stunde. Die Stunde gilt in der Zeitzone der Installation, die Sie unter **Allgemein** festlegen, Sommerzeit eingeschlossen. Das Fenster bleibt eine Stunde offen, und die Seite zeigt, wann sich das nächste öffnet.
+
+Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde nicht getan hat. Dann aktualisiert es auf das neueste Release, das der Updater installiert, genau wie **Auf … aktualisieren**. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie. Läuft das Gateway während eines Fensters nicht, verstreicht es, und das nächste zählt. Verlauf und Audit-Log halten jedes automatische Update ohne Person fest.
 
 ### Ergebnisse
 

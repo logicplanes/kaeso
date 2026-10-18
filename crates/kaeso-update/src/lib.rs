@@ -3,6 +3,7 @@
 pub mod manifest;
 pub mod policy;
 pub mod protocol;
+pub mod schedule;
 
 pub use semver::Version;
 

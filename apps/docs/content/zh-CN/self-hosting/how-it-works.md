@@ -33,7 +33,7 @@ flowchart TD
 | `clickhouse` | 保存请求日志和用量汇总 | 卷 `clickhouse` |
 | `valkey` | 保存速率和预算计数器以及共享缓存 | 卷 `valkey` |
 
-可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于[一键更新](upgrades.md#一键更新)。
+可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。
 
 ## 文件
 

@@ -34,3 +34,14 @@ export function clockIn(zone: string, at: Date = new Date()): string {
     return "";
   }
 }
+
+export function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+const MONDAY = Date.UTC(2026, 9, 19);
+
+export function weekdayName(index: number): string {
+  const tag = formatLocale() === "en" ? "en-GB" : formatLocale();
+  return new Intl.DateTimeFormat(tag, { weekday: "long", timeZone: "UTC" }).format(new Date(MONDAY + index * 86_400_000));
+}

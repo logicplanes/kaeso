@@ -158,7 +158,7 @@ pub struct ModelsDevConfig {
 pub struct UpdatesConfig {
     pub check: bool,
     pub channel: kaeso_update::policy::Channel,
-    pub apply: bool,
+    pub mode: kaeso_update::schedule::Mode,
     pub releases_url: Url,
 }
 

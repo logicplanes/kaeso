@@ -63,6 +63,12 @@ async fn setup_takes_the_first_users_time_zone_and_admins_change_it() {
     assert_eq!(who.body["timezone"], "Asia/Tokyo");
     assert_eq!(zone_of(&who), "Asia/Tokyo", "the header follows at once");
 
+    let updates = app.get("/instance/updates", &cookie).await;
+    assert_eq!(
+        updates.body["settings"]["schedule"]["timezone"],
+        "Asia/Tokyo"
+    );
+
     let audit = app
         .get(
             "/instance/audit-log?action=instance.settings_update",
