@@ -1,84 +1,89 @@
 ---
 title: E-Mail
-description: Wie Kaeso E-Mails versendet, was es sendet, in welcher Sprache und wie es sich testen lässt.
+description: Verbinden Sie einen SMTP-Server, testen Sie ihn und sehen Sie, welche E-Mails Kaeso in welcher Sprache sendet.
 order: 6
 ---
 
-Kaeso sendet E-Mails für Anmeldelinks, Einladungen, das Zurücksetzen von Passwörtern, Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen und Sicherheitshinweise. Das Gateway versendet jede E-Mail selbst über SMTP.
+Das Gateway sendet jede E-Mail selbst, über SMTP: Anmeldelinks, Einladungen, Passwort-Resets, Warnungen zum Ablauf von Schlüsseln, Budgetwarnungen und Sicherheitshinweise. Ohne SMTP-Server startet es nicht, außer Sie lassen E-Mails nur protokollieren.
 
 ## SMTP einrichten
 
-Den SMTP-Server in die `.env` eintragen und mit `docker compose up -d --wait` übernehmen:
+Tragen Sie Ihren SMTP-Server in die `.env` ein:
 
-```bash
+```bash title=".env"
 KAESO_SMTP_HOST=smtp.example.com
 KAESO_SMTP_PORT=587
 KAESO_SMTP_TLS=starttls
 KAESO_SMTP_USER=kaeso
 KAESO_SMTP_PASSWORD=…
-KAESO_SMTP_FROM=Kaeso <kaeso@example.com>
+KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 ```
 
-| Einstellung | Gut zu wissen |
-| --- | --- |
-| `KAESO_SMTP_TLS` | `starttls` auf Port 587, `tls` für implizites TLS (meist Port 465), `none` nur für einen lokalen Mail-Catcher |
-| `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD` | Beide weglassen, wenn der Server keine Anmeldung verlangt; ein Passwort braucht einen Benutzer |
-| `KAESO_SMTP_FROM` | Der Absender jeder E-Mail, als Adresse oder `Name <address>`. Standard ist `Kaeso <kaeso@` und die eigene Domain; eine Adresse verwenden, von der der SMTP-Server senden darf |
+Übernehmen Sie die Werte mit `docker compose up -d --wait`. Ohne `KAESO_SMTP_FROM` sendet Kaeso von `kaeso@` unter Ihrer Domain; setzen Sie also eine Adresse, von der Ihr SMTP-Server senden darf. Für einen Server ohne Anmeldung lassen Sie Benutzer und Passwort weg. Die [Konfiguration](configuration.md#e-mail) listet jede E-Mail-Einstellung und ihre Werte.
 
-Ohne `KAESO_SMTP_HOST` startet das Gateway nicht, außer E-Mails werden nur protokolliert. [Konfiguration](configuration.md#e-mail) listet jede E-Mail-Einstellung.
+## Test-E-Mail senden
 
-## Ohne Mailserver
+1. Öffnen Sie in der Konsole **Einstellungen** › **Instanz** › **Einstellungen**. Der Abschnitt **E-Mail** zeigt den Transport, den SMTP-Host und den Absender.
+2. Wählen Sie **Test-E-Mail senden**. Sie geht an Sie oder an die Adresse, die Sie eingeben.
+3. Scheitert sie oder kommt sie nicht an, lesen Sie die Antwort des SMTP-Servers im Log des Gateways mit `docker compose logs gateway`.
 
-Um Kaeso ohne Mailserver auszuprobieren, `KAESO_MAIL_TRANSPORT=log` setzen. Das Gateway protokolliert dann nur, dass eine E-Mail gesendet worden wäre, mit ihrer Art, nie mit Empfänger oder Inhalt. Die Anmeldung mit Passwort funktioniert, und `kaeso setup-link` gibt den Einrichtungslink in jedem Fall aus, aber Anmeldelinks, Einladungen und Warnungen kommen nie an.
+Die [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an) nennt die üblichen Ursachen.
+
+## Kaeso ohne Mailserver ausprobieren
+
+Setzen Sie `KAESO_MAIL_TRANSPORT=log` in der `.env`. Das Gateway protokolliert dann die Art jeder E-Mail, statt sie zu senden, nie aber Empfänger oder Inhalt.
+
+Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den Einrichtungslink in jedem Fall aus. Anmeldelinks, Einladungen und Warnungen kommen nie an.
 
 ## Was Kaeso sendet
 
-| E-Mail | Betreff | Gesendet, wenn |
-| --- | --- | --- |
-| Einladung | {inviter} hat Sie zu {org} auf Kaeso eingeladen | Jemand eine Person in eine Organisation einlädt |
-| Einladung in die Instanz | {inviter} hat Sie zu Kaeso eingeladen | Ein Instanz-Admin eine Person in die Installation einlädt |
-| Anmeldelink | Bei Kaeso anmelden | Jemand einen Anmeldelink anfordert |
-| Passwort zurücksetzen | Kaeso-Passwort zurücksetzen | Jemand sein Passwort zurücksetzen will |
-| Änderung der E-Mail-Adresse | Neue E-Mail-Adresse für Kaeso bestätigen | Jemand seine E-Mail-Adresse ändert; an die neue Adresse gesendet |
-| Registrierung | Kaeso-Konto fertigstellen | Sich jemand registriert, wo die Instanz es erlaubt |
-| Passwort geändert | Ihr Kaeso-Passwort wurde geändert | Sich ein Passwort ändert |
-| Zwei-Faktor an | Zwei-Faktor-Authentifizierung ist eingeschaltet | Jemand die Zwei-Faktor-Authentifizierung aktiviert |
-| Zwei-Faktor aus | Zwei-Faktor-Authentifizierung ist ausgeschaltet | Jemand die Zwei-Faktor-Authentifizierung deaktiviert |
-| Zwei-Faktor zurückgesetzt | Ihre Zwei-Faktor-Authentifizierung wurde zurückgesetzt | Ein Instanz-Admin oder `kaeso user reset-2fa` auf dem Server sie zurücksetzt |
-| E-Mail-Adresse geändert | Ihre E-Mail-Adresse für Kaeso wurde geändert | Sich eine E-Mail-Adresse ändert |
-| Abgemeldet | Sie wurden von Kaeso abgemeldet | Jede Sitzung einer Person beendet wurde |
-| Konto deaktiviert | Ihr Kaeso-Konto wurde deaktiviert | Ein Instanz-Admin ein Konto deaktiviert |
-| Löschung der Organisation | {org} ist zur Löschung vorgemerkt | Eine Organisation zur Löschung vorgemerkt wird; an ihre Mitglieder und an Instanz-Admins gesendet |
-| Inhaberschaft | Sie sind jetzt Inhaber von {org} | Jemand eine Person zum Inhaber macht |
-| Ablauf eines Schlüssels | Der API-Schlüssel {key} läuft am {date} ab | Einer der API-Schlüssel einer Person bald abläuft |
-| Budget-Warnung | {scope} hat {percent} % des {budget} verbraucht | Ein Budget eine seiner Warnschwellen erreicht |
-| Test | Kaeso-Test-E-Mail | Ein Instanz-Admin eine Test-E-Mail sendet |
+| E-Mail | Gesendet, wenn |
+| --- | --- |
+| Einladung | Jemand eine Person in eine Organisation einlädt |
+| Einladung zur Instanz | Ein Instanz-Admin eine Person in die Installation einlädt |
+| Anmeldelink | Jemand einen Anmeldelink anfordert |
+| Passwort-Reset | Jemand sein Passwort zurücksetzen will |
+| Adressänderung | Jemand seine E-Mail-Adresse ändert; geht an die neue Adresse |
+| Registrierung | Sich jemand registriert, wo die Instanz es erlaubt |
+| Passwort geändert | Ein Passwort sich ändert |
+| Zwei-Faktor an | Jemand die Zwei-Faktor-Authentifizierung einschaltet |
+| Zwei-Faktor aus | Jemand die Zwei-Faktor-Authentifizierung abschaltet |
+| Zwei-Faktor zurückgesetzt | Ein Instanz-Admin oder `kaeso user reset-2fa` sie zurücksetzt |
+| Adresse geändert | Eine E-Mail-Adresse sich ändert |
+| Abgemeldet | Jede Sitzung einer Person endet |
+| Konto deaktiviert | Ein Instanz-Admin ein Konto deaktiviert |
+| Löschung einer Organisation | Eine Organisation zur Löschung vorgemerkt wird; geht an ihre Mitglieder und an Instanz-Admins |
+| Inhaberschaft | Jemand eine Person zum Inhaber macht |
+| Ablauf eines Schlüssels | Einer der API-Schlüssel einer Person bald abläuft |
+| Budgetwarnung | Ein Budget eine seiner Warnschwellen erreicht |
+| Test | Ein Instanz-Admin eine Test-E-Mail sendet |
 
-Sicherheits- und Organisationshinweise werden immer gesendet. Warnungen nennen in ihrer Fußzeile, wie sie sich abschalten lassen, und jede Person wählt unter **Einstellungen** › **Konto** › **Benachrichtigungen**, welche sie erhält.
+Sicherheits- und Organisationshinweise werden immer gesendet. Welche Warnungen sie erhält, wählt jede Person unter **Einstellungen** › **Konto** › **Benachrichtigungen**, und jede Warnung sagt in ihrer Fußzeile, wie sie sich abschalten lässt.
+
+Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder reisen in der E-Mail mit, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
 
 ## Sprachen
 
-Jede E-Mail gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch, mit Datumsangaben und Zahlen so, wie jede Sprache sie schreibt.
+Jede E-Mail gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch. Kaeso wählt die Sprache für jeden Empfänger:
 
 | Empfänger | Sprache |
 | --- | --- |
-| Eine Person mit Konto | Ihre Wahl unter **Einstellungen** › **Konto** › **Darstellung**; bei „Automatisch“ die Sprache des Browsers, der die E-Mail ausgelöst hat; sonst Englisch |
-| Jemand ohne Konto, für eine Einladung oder einen Registrierungslink | Die Sprache der Person, die eingeladen oder angefordert hat, sonst Englisch; wer eingeladen wird und schon ein Konto hat, erhält die eigene Wahl |
-| E-Mails, die ohne Browser gesendet werden: Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen, Hinweise zur Löschung von Organisationen | Die Wahl jedes Empfängers, sonst Englisch |
-
-## Wie E-Mails aussehen
-
-Jede E-Mail sieht aus wie die Konsole: die Kaeso-Wortmarke oben links, eine Überschrift, ein Satz, höchstens ein Button und eine Fußzeile, die die Installation nennt. Der HTML-Teil zeigt nie einen rohen Link; der Textteil sagt dasselbe und enthält den Link vollständig.
-
-- **Hell und dunkel.** Mail-Apps, die dem Dunkelmodus des Systems folgen, und der eigene Dunkelmodus von Outlook.com erhalten Kaesos dunkle Farben. Apps, die Farben selbst umkehren, erhalten ein helles Design, das die Umkehrung übersteht.
-- **Nichts von außen.** Die Bilder der Wortmarke reisen in der E-Mail mit, werden also immer angezeigt und laden nie etwas von der Installation. Es gibt keine Webfonts, externen Bilder, Skripte oder Tracking-Pixel.
+| Eine Person mit Konto | Ihre Wahl unter **Einstellungen** › **Konto** › **Darstellung**. Bei Automatisch die Sprache des Browsers, der die E-Mail ausgelöst hat, sonst Englisch |
+| Jemand ohne Konto, für eine Einladung oder einen Registrierungslink | Die Sprache der Person, die eingeladen oder angefragt hat, sonst Englisch |
+| Empfänger von Ablaufwarnungen, Budgetwarnungen und Löschhinweisen | Die Wahl jedes Empfängers, sonst Englisch |
 
 ## Zustellung
 
-E-Mails warten in einer Warteschlange im Speicher des Gateways, bis zu 1.024 Stück, und bis zu 16 werden gleichzeitig zugestellt. Scheitert der SMTP-Server vorübergehend, versucht das Gateway es dreimal erneut, nach 1, 5 und 30 Sekunden; lehnt er eine E-Mail endgültig ab, gibt es keinen neuen Versuch. In beiden Fällen wird eine nicht zustellbare E-Mail protokolliert. Beim Beenden wartet das Gateway bis zu 10 Sekunden auf die Warteschlange; was dann noch nicht gesendet ist, geht verloren.
+E-Mails warten in einer Warteschlange im Speicher des Gateways, bis zu 1.024 Stück, und bis zu 16 gehen gleichzeitig hinaus:
 
-`kaeso_emails_total{kind, outcome}` zählt E-Mails nach `outcome`: `sent`, `failed` oder `dropped`, wenn die Warteschlange voll war. Siehe [Zustand und Metriken](monitoring.md).
+- Scheitert der SMTP-Server vorübergehend, versucht es das Gateway noch dreimal, nach 1, 5 und 30 Sekunden.
+- Lehnt der Server eine E-Mail endgültig ab, versucht es das Gateway nicht erneut.
+- Ist die Warteschlange voll, verwirft das Gateway die E-Mail.
+- Wenn das Gateway anhält, wartet es bis zu 10 Sekunden auf E-Mails in der Warteschlange; was dann noch nicht gesendet ist, geht verloren.
 
-## Testen
+Das Gateway protokolliert jede E-Mail, die es nicht zustellen kann. `kaeso_emails_total` zählt E-Mails nach `outcome`, `sent`, `failed` oder `dropped` ([Zustand und Metriken](monitoring.md)).
 
-In der Konsole **Einstellungen** › **Instanz** › **Einstellungen** öffnen. Der Abschnitt **E-Mail** zeigt Transport, SMTP-Host und Absender; **Test-E-Mail senden** schickt eine an die eigene Adresse oder an den eingegebenen Empfänger. Schlägt sie fehl oder kommt sie nicht an, steht die Antwort des SMTP-Servers im Log des Gateways, mehr unter [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an).
+## Nächste Schritte
+
+- [Anmeldung und Single Sign-on](sign-in.md): Legen Sie fest, wie sich Personen anmelden.
+- [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an): Finden Sie heraus, warum eine E-Mail nicht ankommt.

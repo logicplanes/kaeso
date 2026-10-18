@@ -18,7 +18,7 @@ Each release also attaches two example files: [`env.example`](https://github.com
 
 ## Trying it on your computer
 
-Set `KAESO_DOMAIN=localhost` in `.env`, start Kaeso and open `https://localhost`. Caddy signs the certificate with its own local authority, which your browser asks you to accept once. Without a mail server, also set `KAESO_MAIL_TRANSPORT=log` ([email](email.md#without-a-mail-server)).
+Set `KAESO_DOMAIN=localhost` in `.env`, start Kaeso and open `https://localhost`. Caddy signs the certificate with its own local authority, which your browser asks you to accept once. Without a mail server, also set `KAESO_MAIL_TRANSPORT=log` ([email](email.md#try-kaeso-without-a-mail-server)).
 
 curl and the SDKs don't trust Caddy's local authority. Copy its root certificate out of the container:
 
@@ -64,7 +64,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | Command | Does |
 | --- | --- |
 | `kaeso setup-link` | Prints the setup link while the install has no users. The link works once, for 24 hours, and a new one retires the older ones |
-| `kaeso user sign-in-link <email>` | Prints a one-time sign-in link for an active user, valid for 15 minutes ([get back in](sign-in.md#getting-back-in)) |
+| `kaeso user sign-in-link <email>` | Prints a one-time sign-in link for an active user, valid for 15 minutes ([get back in](sign-in.md#get-back-in)) |
 | `kaeso user reset-2fa <email>` | Removes a user's two-factor authentication and recovery codes, ends their sessions and emails them. The instance audit log records it |
 | `kaeso master-key generate` | Prints a new master key as `id:base64` |
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotating-the-master-key)) |

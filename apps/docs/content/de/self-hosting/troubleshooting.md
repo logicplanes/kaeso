@@ -39,7 +39,7 @@ Auf einer Installation, die sich nur per Single Sign-on anmeldet, lässt ein def
 
 ## Die Seite hat kein Zertifikat
 
-Caddy braucht einen DNS-Eintrag der Domain, der auf den Server zeigt, und offene Ports 80 und 443. `docker compose logs caddy` zeigt die Antwort der Zertifizierungsstelle; siehe [Zertifikate](domains-and-tls.md#zertifikate).
+Caddy braucht einen DNS-Eintrag der Domain, der auf den Server zeigt, und offene Ports 80 und 443. `docker compose logs caddy` zeigt die Antwort der Zertifizierungsstelle; siehe [Zertifikate](domains-and-tls.md#zertifikat-beziehen).
 
 ## Jemand hat den zweiten Faktor verloren
 
