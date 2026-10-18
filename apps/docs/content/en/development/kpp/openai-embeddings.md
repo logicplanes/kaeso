@@ -4,6 +4,8 @@ description: How every field of the OpenAI Embeddings format maps to KPP and bac
 order: 7
 ---
 
+Look up any field of the OpenAI Embeddings format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
+
 - **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)
 - **Endpoints:** `POST /v1/embeddings`, and the [models](#models) endpoints shared by every OpenAI codec
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_embeddings/`

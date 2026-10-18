@@ -5,6 +5,8 @@ order: 5
 nav: OpenAI Chat
 ---
 
+在这里查阅 OpenAI Chat Completions 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
+
 - **编解码器：**`kaeso_codecs::openai_chat::OpenAiChat`（`crates/kaeso-codecs/src/openai_chat/`）
 - **端点：**`POST /v1/chat/completions`（JSON 和 SSE），以及所有 OpenAI 编解码器共用的[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/openai_chat/`

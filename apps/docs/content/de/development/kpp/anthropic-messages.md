@@ -4,6 +4,8 @@ description: Wie jedes Feld des Formats Anthropic Messages auf KPP abgebildet wi
 order: 4
 ---
 
+Schlagen Sie hier jedes Feld des Formats Anthropic Messages nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
+
 - **Codec:** `kaeso_codecs::anthropic_messages::AnthropicMessages` (`crates/kaeso-codecs/src/anthropic_messages/`)
 - **Endpunkte:** `POST /v1/messages` (JSON und SSE), `POST /v1/messages/count_tokens` und die [Modell-Endpunkte](#modelle)
 - **Fixtures:** `crates/kaeso-codecs/fixtures/anthropic_messages/`

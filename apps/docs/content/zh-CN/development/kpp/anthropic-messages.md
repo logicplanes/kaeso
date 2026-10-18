@@ -4,6 +4,8 @@ description: Anthropic Messages 格式的每个字段如何映射到 KPP 并映�
 order: 4
 ---
 
+在这里查阅 Anthropic Messages 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
+
 - **编解码器：**`kaeso_codecs::anthropic_messages::AnthropicMessages`（`crates/kaeso-codecs/src/anthropic_messages/`）
 - **端点：**`POST /v1/messages`（JSON 和 SSE）、`POST /v1/messages/count_tokens`，以及[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/anthropic_messages/`

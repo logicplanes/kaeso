@@ -41,11 +41,11 @@ Jeder Dialektordner und seine Ordner `requests/`, `responses/`, `streams/`, `err
 | `schema:` | Ein Body, der aus den festgelegten OpenAPI-Schemas gebaut wurde |
 | `RECORDED.md` | Eine Live-Aufzeichnung mit `cargo xtask record`, mit Modell und Zeitpunkt |
 
-Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen, und die Konventionen, die sie teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Mit jeder neuen Fixture kommt dort eine Zeile hinzu.
+Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen, und die Konventionen, die sie teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
 
 ## Live-Antworten aufzeichnen
 
-`cargo xtask record` sendet Anfrage-Fixtures an den echten Anbieter und speichert, was zurückkommt. Es ist opt-in, läuft nur auf dem eigenen Rechner und nie in der CI und braucht den API-Schlüssel des Anbieters in der Umgebung:
+`cargo xtask record` sendet Anfrage-Fixtures an den echten Anbieter und speichert, was zurückkommt. Es ist opt-in, läuft nur auf Ihrem Rechner und nie in der CI und braucht den API-Schlüssel des Anbieters in der Umgebung:
 
 ```bash
 export ANTHROPIC_API_KEY=…
@@ -73,4 +73,4 @@ cargo xtask record openai_responses --count --all
 - API-Schlüssel werden aus der Umgebung gelesen und nie geschrieben, und Anfrage-Header werden nie gespeichert.
 - Bevor etwas geschrieben wird, entfernt es den Query-String jeder URL, die Zugangsdaten einer Cloud-Signatur trägt (AWS Signature Version 4, signierte URLs von Google Cloud, Shared Access Signatures von Azure), etwa bei vorsignierten Links aus einer Websuche; alles andere bleibt Byte für Byte erhalten.
 
-Der Code steht in `crates/xtask/src/record.rs`. Jede aufgezeichnete Datei vor dem Commit prüfen: Sie enthält, was immer das Modell gesagt hat, und darf keine personenbezogenen Daten enthalten. Die Round-Trip-Tests nehmen aufgezeichnete Fixtures von selbst auf.
+Der Code steht in `crates/xtask/src/record.rs`. Prüfen Sie jede aufgezeichnete Datei vor dem Commit: Sie enthält, was immer das Modell gesagt hat, und darf keine personenbezogenen Daten enthalten. Die Round-Trip-Tests nehmen aufgezeichnete Fixtures von selbst auf.

@@ -223,4 +223,4 @@ KPP speichert `temperature`, `top_p` und die Penalties als `f64`, daher bewahren
 
 `testing::sse_diff` vergleicht Streams Item für Item: den Event-Namen, die Daten als JSON oder als Text, wenn sie kein JSON sind (`ComparableItem::Event.data` ist `None` für einen Frame ohne `data:`-Zeile), dann die Felder `id`, `retry` und die unbekannten Felder in ihrer Reihenfolge; Kommentare werden exakt verglichen.
 
-Ändert eine Änderung die Ausgabe über Dialekte hinweg, den Snapshot-Diff prüfen: `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` ausführen und die geänderten `.snap`-Dateien lesen, bevor sie committet werden.
+Ändert eine Änderung die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.

@@ -4,6 +4,8 @@ description: Wie jedes Feld des OpenAI-Responses-Formats auf KPP abgebildet wird
 order: 6
 ---
 
+Schlagen Sie hier jedes Feld des Formats OpenAI Responses nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
+
 - **Codec:** `kaeso_codecs::openai_responses::OpenAiResponses` (`crates/kaeso-codecs/src/openai_responses/`)
 - **Endpunkte:** `POST /v1/responses` (JSON und SSE), `POST /v1/responses/input_tokens` und die [Modell-Endpunkte](#modelle), die alle OpenAI-Codecs teilen
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_responses/`

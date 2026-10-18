@@ -5,6 +5,8 @@ order: 5
 nav: OpenAI Chat
 ---
 
+Look up any field of the OpenAI Chat Completions format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
+
 - **Codec:** `kaeso_codecs::openai_chat::OpenAiChat` (`crates/kaeso-codecs/src/openai_chat/`)
 - **Endpoints:** `POST /v1/chat/completions` (JSON and SSE), and the [models](#models) endpoints shared by every OpenAI codec
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_chat/`
