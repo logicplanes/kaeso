@@ -1,62 +1,50 @@
 ---
 title: 邮件
-description: 网关如何构建它发送的邮件，面向 kaeso-mail crate 的贡献者。
+description: 网关如何构建它发送的邮件，供修改 kaeso-mail crate 时参考。
 order: 4
 ---
 
-Kaeso 发送的每封邮件都来自网关的 `crates/kaeso-mail`：一个布局、一份由 Kaeso 设计令牌生成的样式表，以及每封邮件一个函数，规定这封邮件的内容，提供英语、德语和简体中文三种语言。[邮件](../../self-hosting/email.md)介绍运维人员需要设置和能看到的内容；本页介绍设计及其背后的原因。
+Kaeso 发送的每封邮件都来自 `crates/kaeso-mail`：一套布局、一份由 Kaeso 令牌构建的样式表，以及每封邮件一个函数，提供英语、德语和简体中文。[电子邮件](../../self-hosting/email.md)介绍运维人员需要设置和会看到的内容；本页介绍代码。
 
 ## 邮件的构成
 
 | 部分 | 登录邮件中的内容 | 样式 |
 | --- | --- | --- |
-| 文字标识 | Kaeso | 单独放在左上角，距左 28px、距上 28px |
-| 标题 | 登录 Kaeso | `title-lg`，28/34，semibold |
-| 一句话 | 此链接仅可使用一次，15 分钟后过期。 | `body-lg`，15/22，次要色 |
-| 一个按钮 | 登录 | `xl` 胶囊按钮，白底墨色 |
-| 一行弱化文字 | 如果您没有请求登录，可以忽略此邮件。 | `small`，13/18，三级色 |
-| 页脚 | 此邮件由 kaeso.example.com 上的 Kaeso 发送。 | `caption`，12/16；说明安装实例和发送原因 |
+| 文字标志 | Kaeso | 单独位于左上角，距左 28px、距上 28px |
+| 标题 | Sign in to Kaeso | `title-lg` |
+| 一句话 | The link works once and expires in 15 minutes. | `body-lg`，次要色 |
+| 一个按钮 | Sign in | `xl` 胶囊，白底墨色 |
+| 一行弱提示 | If you did not ask to sign in, you can ignore this email. | `small`，第三级颜色 |
+| 页脚 | Sent by Kaeso at kaeso.example.com. | `caption` |
 
-- **没有卡片。** 只有一个左对齐的栏，最宽 562px，直接放在画布上，与控制台一样：浅色模式为白色，深色模式为黑色。没有面板，没有边框，四周也没有灰色背景。
-- **文案。** 主题最多 60 个字符且不带句号，标题最多 48 个字符，然后最多一句话、一个按钮和一行次要说明，例如链接的有效期，或者如果不是本人操作该怎么办。句子遵循网关的文案规则：一句话，第二层意思用分号连接，以句号结尾，最多 100 个字符。有测试强制执行这些上限。
-- **不显示原始链接。** HTML 中从不显示 URL，由按钮承载链接。纯文本部分在单独一行写出完整链接，纯文本客户端、测试和控制台的端到端测试读取的就是这一行。
-- **页脚。** “此邮件由 … 上的 Kaeso 发送”，中间是安装的主机名（取自 `KAESO_PUBLIC_URL` 并链接到它）；通知类邮件还会说明收到它的原因：安全和组织通知说明它们总会发送，提醒类邮件说明如何关闭。
-- **纯文本**部分按相同顺序写出相同的文字，并以 `-- ` 签名行结尾。
+- **没有卡片。** 单个左对齐的栏，最宽 562px，直接放在画布上：浅色模式为白色，深色模式为黑色。
+- **长度限制。** 主题最多 60 个字符且不带句号，标题最多 48 个字符，句子最多 100 个字符。德语和中文多 15%：69、55 和 115。由测试强制执行。
+- **不显示原始链接。** HTML 中从不显示 URL，由按钮承载它。纯文本部分在单独一行给出完整链接，用词和顺序与 HTML 相同。
+- **页脚。** “Sent by Kaeso at” 加上实例的主机名，来自 `KAESO_PUBLIC_URL`。通知还会说明收到它的原因：安全和组织通知总会发送，提醒则说明如何关闭。
 
-每封邮件渲染后的文本和 HTML 都作为快照保存在 `crates/kaeso-mail/src/snapshots/` 中。
+每封邮件的文本和 HTML 都是 `crates/kaeso-mail/src/snapshots/` 中的快照。
 
 ## 构建方式
 
 | 文件 | 职责 |
 | --- | --- |
-| `templates.rs` | 每封邮件一个函数（[Kaeso 发送的邮件](../../self-hosting/email.md#kaeso-发送的邮件)），它同时就是这封邮件的文案目录：主题、标题、句子、按钮、次要说明以及发送原因，每种语言各一份。`Email::render` 为某个安装渲染它。 |
-| `locale.rs` | `Locale`（`en`、`de`、`zh-CN`）、如何选择语言，以及每种语言书写日期和数字的方式。 |
-| `layout.rs` | 共用的布局，包括 HTML 版本（maud：编译期检查，每个值都会转义）和纯文本版本。 |
-| `style.rs` | `@logicplanes/kaeso-tokens` 的值，只在其 `token!` 宏中写一次；每个角色的内联样式在编译期由这些值组合而成；以及样式表。布局从不自己写颜色或尺寸。 |
-| `assets.rs`、`assets/` | 文字标志的图片及其 SVG 源文件。 |
-| `mailer.rs` | 最多容纳 1,024 封邮件的队列、在 1、5 和 30 秒后的三次重试、SMTP、日志和内存三种传输方式，以及 MIME 结构。 |
+| `templates.rs` | 每封邮件一个函数，构成 [Kaeso 发送的邮件](../../self-hosting/email.md#kaeso-发送的邮件)的目录：每种语言的主题、标题、句子、按钮、弱提示以及发送原因 |
+| `locale.rs` | `Locale`（`en`、`de`、`zh-CN`），以及各语言书写日期和数字的方式 |
+| `layout.rs` | 共用的布局，包括用 maud 生成的 HTML 和纯文本 |
+| `style.rs` | `token!` 宏中 `@logicplanes/kaeso-tokens` 的值、每个角色的内联样式和样式表。布局从不自己写颜色或尺寸 |
+| `assets.rs`、`assets/` | 文字标志图片及其 SVG 源文件 |
+| `mailer.rs` | 最多 1,024 封邮件的队列、分别在 1、5 和 30 秒后的三次重试、SMTP、日志和内存三种传输方式，以及 MIME 结构 |
 
-**适合邮件的 HTML。** 用表格搭建结构（`role="presentation"`），凡是能写成内联样式的都写成内联样式；`<style>` 块只放无法内联的内容：配色方案、样式重置和深色模式。Windows 版 Outlook 会忽略 `max-width`，因此通过条件注释给它一个固定 562px 的栏、Segoe UI 字体和 96 DPI 的图片。不使用网络字体，不引用外部 CSS 或图片，没有脚本，也没有跟踪像素。字体栈与控制台相同，只是去掉了网络字体：已安装 Inter 时使用 Inter，否则使用各平台的界面字体。
-
-**按钮**在所有客户端中都能正常显示：一个带内边距、圆角为 9999px 的链接（`xl` 胶囊：高 48px，左右内边距 22px，15px 中等字重）；Windows 版 Outlook 无法为链接设置内边距或圆角，因此另用一个弧度为 50% 的 VML `roundrect`。VML 需要固定宽度，按每个字符 9px（每个中文字符 16px）根据按钮文字计算，确保文字不会换行。
-
-**隐藏的预览文本。** 句子后面跟着不可见字符，让收件箱列表在主题之后显示这句话，而不是布局开头的文字。
-
-**转义。** 用户自己起的名称，例如组织、邀请人、密钥和项目的名称，由 maud 在文本和属性中转义。唯一未经转义的标记都是固定内容：doctype、Outlook 的条件注释，以及会转义其中嵌入的 URL 和文字的 VML 按钮。测试会让每个名称都带上标记和引号来验证。
-
-**MIME。** `multipart/alternative`，纯文本在前；HTML 部分是 `multipart/related`，以 `Content-ID` 内联携带两张文字标志 PNG，且不带文件名，这样邮件应用不会把它们列为附件。
+- **适合邮件的 HTML。** 用表格搭建结构，能写成内联样式的都写成内联样式。`<style>` 块只包含配色方案、重置样式和深色模式。条件注释为 Windows 版 Outlook 提供固定的 562px 栏宽。不使用网络字体、外部图片、脚本或跟踪像素。
+- **按钮**是一个带内边距和全圆角的链接。Windows 版 Outlook 无法给链接加内边距或圆角，所以为它使用 VML `roundrect`，宽度根据标签计算，因此从不换行。
+- **转义。** maud 会在文本和属性中转义用户选择的名称，例如组织、密钥和项目。唯一不转义的标记是固定的：doctype、Outlook 的条件注释，以及会转义所嵌入内容的 VML 按钮。测试会把标记和引号放进每个名称中。
+- **MIME。** `multipart/alternative`，纯文本在前；HTML 部分通过 `Content-ID` 内嵌两张文字标志 PNG，所以邮件应用不会把它们列为附件。
 
 ## 语言
 
-每封邮件都有英语、德语和简体中文版本。各语言的设计相同，只有文字不同，HTML 的 `lang` 标明使用的语言。英语是源语言。
+`kaeso-server` 中的 `services::mail_lang` 选择语言。用户在账户设置中的选择优先（`users.locale`；`null` 表示自动）。否则取触发这封邮件的请求的 `Accept-Language` 中第一种 Kaeso 支持的语言。数据库无法应答时由回退规则决定，所以这次查询永远不会阻止邮件发送。[电子邮件](../../self-hosting/email.md#语言)列出了每种收件人的规则。
 
-**使用哪种语言。** 由 `kaeso-server` 中的 `services::mail_lang` 决定，依据是用户在账户设置中的选择（`users.locale`，`null` 表示自动），以及触发这封邮件的请求的 `Accept-Language`：按偏好顺序取其中第一个 Kaeso 支持的语言，所以 `de-AT` 为德语，任何中文都为简体中文，任何英语都为英语。查询用户的选择绝不会阻止邮件发送：数据库无法应答时，由后备规则决定。针对各类收件人的规则见[邮件](../../self-hosting/email.md#语言)。
-
-**撰写。** 每封邮件的函数对语言做一次 `match`，写出完整的句子，并按名称填入值，绝不拼接片段。术语表和写作风格见 [`@logicplanes/kaeso-ui` 的写作规则](https://github.com/logicplanes/kaeso/blob/dev/packages/ui/foundations/writing.md)。邮件以正式的语气称呼收件人：德语用简短句子中的“Sie”；中文简洁，使用“您”和全角标点，中文与拉丁文字或数字之间留一个空格，这个空格由 `locale::zh` 加在衔接处，绝不加在名称内部。
-
-德语和中文沿用控制台 15% 的余量来遵守文案规则：主题 69 个字符，标题 55 个字符，句子 115 个字符。测试会检查这些上限、布局标签与英语版本是否一致，以及每种语言中每封邮件的主题和标题。
-
-**日期和数字**遵循各语言的习惯：
+每封邮件的函数对语言做一次 `match`，写完整的句子，并按名称填入值，从不拼接片段。德语用 “Sie” 称呼对方。中文使用“您”和全角标点，并在中文与拉丁字母或数字之间加空格，由 `locale::zh` 在衔接处添加。日期和数字遵循各自的语言：
 
 | | 英语 | 德语 | 中文 |
 | --- | --- | --- | --- |
@@ -66,32 +54,28 @@ Kaeso 发送的每封邮件都来自网关的 `crates/kaeso-mail`：一个布局
 
 ## 文字标志
 
-界面在左上角单独显示文字标志，尺寸为 60×12（`Logo.Wordmark size="nav"`），邮件也一样：图片为 64×16，四周留 2px 空白，放在 26px 处，使字形从 28px 开始，与下方文字对齐。
+邮件以两张内嵌 PNG 携带文字标志，浅色和深色各一张，合计约 6 KB。自托管实例的地址可能是内部地址，而且许多邮件应用会屏蔽远程图片，所以链接的图片可能无法显示。每张 PNG 都是显示尺寸的三倍，由 `assets/wordmark-light.svg` 和 `assets/wordmark-dark.svg` 渲染而成。一个测试会用 resvg 重新渲染这些 SVG，与提交的 PNG 不一致时就会失败。重新生成它们：
 
-**内联提供，而不是链接。** 自托管安装的公开 URL 可能只在内网可用或并不确定，链接的图片可能加载失败，而且许多邮件应用默认屏蔽远程图片。内联部分总能显示，也不依赖安装本身。两张 PNG 加起来约 6 KB。
-
-**在任何屏幕上都清晰。** 每张 PNG 都是显示尺寸的三倍（192×48），由 `assets/wordmark-light.svg` 和 `assets/wordmark-dark.svg` 渲染而成，其路径与 `@logicplanes/kaeso-ui` 中的一致。一个测试会用 resvg 重新渲染这两个 SVG，如果与已提交的 PNG 不同就失败；`KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets` 会重新生成它们。两张图片都带有 `alt="Kaeso"` 以及 `width` 和 `height` 属性。
+```bash
+KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
+```
 
 ## 深色模式
 
-Kaeso 自己控制深色模式，而不是交给各个邮件应用自动反色。邮件应用分为三类，每类各有一层处理：
+Kaeso 自己设定深色模式，而不是交给各个邮件应用自动反色。邮件应用分为三类，每类各有一层处理：
 
-1. **遵循 `prefers-color-scheme` 的应用**，例如 macOS 和 iOS 上的 Apple Mail、Mac、iOS 和 Android 版 Outlook、Thunderbird、Samsung Email 和 Hey。文档声明支持两种配色方案（`<meta name="color-scheme" content="light dark">`、`supported-color-schemes` 以及 `:root { color-scheme: light dark }`），告诉它们不要反色。样式表中的 `@media (prefers-color-scheme: dark)` 规则用 `!important` 把每个角色切换为对应的深色令牌，否则内联样式会优先：黑色画布、`#fafafa` 的文字、`#a3a3a3` 和 `#858585` 的次要与第三级文字、`#fafafa` 底黑字的按钮，以及用浅色文字标志替换深色文字标志。
-2. **Outlook.com 和新版 Outlook**，它们会自行把邮件调暗，并用 `data-ogsc`（颜色）和 `data-ogsb`（背景）标记重新着色的元素。同样的规则放在 `[data-ogsc]` 和 `[data-ogsb]` 下，用 Kaeso 的深色值替换它们的推测，结果与第一层一致。
-3. **不经询问就反色的应用**，例如 Gmail 应用、深色模式下的 Windows 版 Outlook，以及使用其他服务商账户的 Gmail（它会丢弃 `<style>`）。这类应用无法切换任何样式，因此浅色设计本身要经得起反色：
-   - 文字是接近黑色的 `#0a0a0a`，绝不用纯黑；按钮底色是 `#0a0a0a`、文字为白色，反色后会变成浅色胶囊配深色文字，正是深色主题自己的按钮样式；
-   - 浅色文字标志带有 1.25px 的白色描边，在白底上看不见；当它背后的背景被调暗而图片没有被调暗时，描边会勾勒出字形，让文字标志保持清晰；
-   - 深色文字标志在条件注释中用 `display:none`、`max-height:0` 和 `mso-hide:all` 隐藏，因此绝不会单独出现。
+1. **遵循 `prefers-color-scheme` 的应用**，例如 Apple Mail 和 Thunderbird。文档声明支持两种配色方案，所以它们不会反色；`@media (prefers-color-scheme: dark)` 用 `!important` 把每个角色切换为深色令牌。
+2. **Outlook.com 和新版 Outlook**，它们会自行调暗邮件，并用 `data-ogsc` 和 `data-ogsb` 标记重新着色的元素。这些属性下的同一套规则用 Kaeso 的深色值替换它们的猜测。
+3. **不经询问就反色的应用**，例如 Gmail 应用。浅色设计经得起反色：接近黑色的文字、反色后变成深色主题浅色胶囊的按钮、浅色文字标志周围的白色描边，以及始终隐藏的深色文字标志。
 
-样式表与内联样式由同一个令牌宏生成，测试会检查每条深色规则都带 `!important`，以及每个角色在每一层都有规则。
+样式表与内联样式来自同一个令牌宏。测试检查每条深色规则都带 `!important`，并且每个角色在每一层都有规则。
 
-## 预览
+## 预览邮件
 
-[开发环境栈](../stack.md)包含 Mailpit，其网页界面位于 [http://127.0.0.1:58025](http://127.0.0.1:58025)，提供 HTML 兼容性检查和深色预览。`cargo test -p kaeso-mail --test smtp` 会把每封邮件的每种语言版本发送到 Mailpit，并检查：
+[开发栈](../stack.md)包含 Mailpit，它在 http://127.0.0.1:58025 上的网页界面提供 HTML 兼容性检查和深色预览。把每种语言的每封邮件发送到那里：
 
-- 每封邮件都带着两个部分和两张内联图片送达；
-- Mailpit 的 HTML 检查（基于 caniemail 数据，并按各邮件应用的份额加权）报告至少 88% 的支持率。
+```bash
+cargo test -p kaeso-mail --test smtp
+```
 
-随后测试会删除它发送的邮件。`KAESO_TEST_SMTP_URL` 和 `KAESO_TEST_MAIL_API` 可以让它指向其他地址。
-
-每封邮件的得分约为 91% 支持、8% 部分支持、1% 不支持。部分支持和不支持的项目都在预期之内：用于深色模式的 `@media`、`<style>` 和 `!important`，在不支持它们的应用中由第三层兜底；`border-radius`，在 Windows 版 Outlook 中由 VML 代替；以及 `<body>` 上的样式，由外层包装重复设置。
+该测试检查每封邮件到达时都带有两个部分和两张内嵌图片，并检查 Mailpit 的 HTML 检查报告的邮件应用支持度足够。之后它会删除自己的邮件。`KAESO_TEST_SMTP_URL` 和 `KAESO_TEST_MAIL_API` 可以让它指向别处。

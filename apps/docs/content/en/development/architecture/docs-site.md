@@ -1,10 +1,10 @@
 ---
 title: Documentation site
-description: How the Markdown pages in apps/docs/content become the static site at docs.kaeso.app.
+description: How the build turns the Markdown pages into docs.kaeso.app, for changes to apps/docs.
 order: 3
 ---
 
-The documentation is the `kaeso-docs` package in `apps/docs`: Markdown pages in three languages, built into a static site that looks and works like the console and is drawn only with `@logicplanes/kaeso-ui`. [Writing documentation](../documentation.md) explains how to write a page; this page explains how the site works.
+The documentation is the `kaeso-docs` package in `apps/docs`: Markdown pages, compiled at build time into a static site drawn only with `@logicplanes/kaeso-ui`. [Writing documentation](../documentation.md) covers the pages; this page covers the code that turns them into the site.
 
 ```mermaid
 flowchart TD
@@ -17,135 +17,56 @@ flowchart TD
   app --> dist[dist/]
 ```
 
-## Content model
-
-| Piece | Where | Rule |
-| --- | --- | --- |
-| A language | `content/en`, `content/de`, `content/zh-CN` | English at `/`, the others under `/de` and `/zh-CN`; every language has the same files with the same `order` |
-| A page | `content/<language>/<folders>/<name>.md` | Its address is its path: `content/en/console/api-keys.md` is `/console/api-keys`; `index.md` is its folder's page |
-| The home page | `content/<language>/index.md` | Required |
-| A sidebar group | A folder in a language | Named by its `index.md`'s `title`, or by the folder's name; placed by that `index.md`'s `order` |
-| A nested page | A folder inside a group, with `index.md` | Its pages are indented under it; at most three folder levels |
-| Order inside a folder | Frontmatter `order` | The folder's `index.md` first, then by `order`, then by label |
-| A page's sidebar label | Frontmatter `nav` | Defaults to the title; a group's `index.md` defaults to the language's "Overview" (the home page: "Introduction"), a nested folder's `index.md` to its title |
-| Images and files | Anywhere in `content/` | Published only when a page shows or links to them, with their size read at build time |
-| A diagram | A `mermaid` code block in a page | Drawn in Chromium into a light and a dark SVG in `apps/docs/diagrams/`, named by a hash of its source and of the site's look, and shown as images that follow the theme; `accTitle` is required |
-| Drafts and private notes | Names starting with `_` or `.` | Left out of the site |
-
-Frontmatter has exactly four fields: `title` and `description` (one short sentence, at most 140 characters) are required, `order` and `nav` are optional. Any other field is an error, so a typo never silently does nothing.
-
 ## The build
 
 `apps/docs/scripts/content` turns the pages into the site's modules:
 
 | File | Job |
 | --- | --- |
-| `frontmatter.ts` | The four fields, with a message for each mistake; one sentence per description, in Latin and Chinese punctuation |
-| `slug.ts` | GitHub's heading anchors (`## Rate limits` is `#rate-limits`, repeats get `-1`, `-2`) and addresses from file names |
-| `compile.ts` | One page: marked's lexer with raw HTML turned off, then the page format of `src/markdown/ast.ts`; links checked; callouts; code groups from consecutive fences with a `tab`; link cards from lists of page links; search words |
-| `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes, search |
-| `docs.ts` | Every language: a site each, with its prefix and labels, and the check that they hold the same pages in the same order |
-| `changelog.ts` | The changelog page, made from `CHANGELOG.md` in every language ([the changelog](#the-changelog)) |
-| `diagram.ts` | A diagram's title and description, the Mermaid configuration made from Kaeso's tokens, and the hash that names its drawings |
-| `mermaid.ts` | Draws diagrams with the `mermaid` package in headless Chromium, with Inter loaded, and turns each into a light and a dark SVG with no stylesheet or script |
-| `diagrams.ts` | `pnpm --filter kaeso-docs diagrams`: draws the missing diagrams into `apps/docs/diagrams/` and removes the unused ones |
-| `plugin.ts` | The Vite plugin: virtual modules, reload on a change in development, an HTML file per page and language with its head for search engines and link previews, `404.html`s and the sitemap |
+| `frontmatter.ts` | The four frontmatter fields, with a message for each mistake |
+| `slug.ts` | GitHub's heading anchors and the addresses made from file names |
+| `compile.ts` | One page: marked's lexer with raw HTML off, then the page format of `src/markdown/ast.ts`, with links checked, code groups made from consecutive fences with a `tab`, link cards made from lists of page links, and search words collected |
+| `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes |
+| `docs.ts` | Every language, and the check that they hold the same pages in the same order |
+| `changelog.ts` | The `/changelog` page, made from `CHANGELOG.md` through `history` in `scripts/changelog.mjs` |
+| `diagram.ts`, `mermaid.ts`, `diagrams.ts` | The diagrams: their Mermaid configuration from Kaeso's tokens, their drawing in headless Chromium, and `pnpm --filter kaeso-docs diagrams` |
+| `redirects.ts` | The pages at old addresses from `redirects.json` |
+| `plugin.ts` | The Vite plugin: virtual modules, reloads in development, an HTML file per page and language, the `404.html` files and the sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: the same checks without building the app |
 
-Every problem names its file:
+In development, a problem is printed and the page still renders. The build and `check:content` fail on it, naming the file.
 
-- a link to a page or heading that doesn't exist;
-- an image without alt text or from outside `content/`;
-- a link with a scheme other than http, https or mailto;
-- a second `#` heading, or two files with one address;
-- a page missing in a language, or with another `order` there.
+## Safety
 
-In development they are printed and the page still renders; the build and `check:content` fail on them.
+Anyone can propose a page from a browser on GitHub, so the build treats pages as untrusted text:
 
-### Safety
-
-Pages are edited in a browser on GitHub, so the build treats them as untrusted text:
-
-- marked only tokenizes, with its HTML tokenizers off: `<script>`, `<img onerror>` and every other tag stay literal text;
-- link references are off, and links keep only http, https and mailto, checked after whitespace and control characters are removed, so `java\nscript:` is caught;
-- images come only from `content/`;
-- the browser receives plain objects, never HTML, and nothing sets `innerHTML`.
+- marked only tokenizes, with its HTML tokenizers off, so `<script>`, `<img onerror>` and every other tag stay literal text.
+- Link references are off, and links keep only http, https and mailto. The scheme is checked after whitespace and control characters are removed, so `java\nscript:` is caught.
+- Images come only from `content/`.
+- The browser receives plain objects, never HTML, and nothing sets `innerHTML`.
 
 `scripts/content/compile.test.ts` holds the cases.
 
-### Links that work on GitHub and on the site
+## Diagrams
 
-A link is written between files, as GitHub follows it: `[keys](../console/api-keys.md#create-a-key)`. The build resolves it against the file's folder, checks that the page and the heading exist, and writes the site's address in the page's language (`/de/console/api-keys#schlüssel-erstellen`). Headings use GitHub's anchors, so the same anchor works in both places; a translated page links to the translated heading's anchor.
+A `mermaid` block becomes two static SVG files at build time, so no Mermaid code reaches the browser and the strict content security policy holds. `mermaid.ts` draws each diagram in Chromium with the colours, type and radius of `@logicplanes/kaeso-tokens`, once light and once dark. It then writes every computed style onto its element and drops the stylesheet, so an SVG shown with `<img>` needs nothing from the page.
 
-### Diagrams
+The drawings are committed in `apps/docs/diagrams/`, named by a hash of the diagram's source, the Mermaid version and the configuration. A build without Chromium only reads them. The page shows both with `ThemeImage`, and the one for the current theme is displayed.
 
-A `mermaid` code block becomes a diagram at build time, so readers get two static SVG files and no Mermaid code, and the strict content security policy stays as it is. `mermaid.ts` renders each diagram twice in headless Chromium, with the colours, the type and the radius of `@logicplanes/kaeso-tokens` as Mermaid's theme variables and labels as SVG text, measured in Inter. It then writes every computed style onto its element and drops the stylesheet, the shadows and the generated attributes, so an SVG shown with `<img>` needs nothing from the page. The drawings live in `apps/docs/diagrams/`, named by a hash of the diagram's source, the Mermaid version and the configuration; they are committed, so a build without Chromium only reads them. `pnpm build` and the dev server draw what is missing, and `check:content` fails on a diagram drawn for an older source and on a drawing no page uses.
+## Loading
 
-The page shows a diagram as `ThemeImage` from `@logicplanes/kaeso-ui`: both images, with only the one for the current theme displayed, following the site's theme setting and printing the light one. Its alternative text is the diagram's `accTitle`, `accDescr` is its description for screen readers, and both, with the diagram's labels, are search words. A diagram shrinks to a phone's column by a quarter at most and scrolls sideways in its own region beyond that, never the page. A diagram that doesn't parse fails the build with its file and line; a code block that draws a diagram with box-drawing characters or arrows fails it too.
+`src/router.tsx` has one route tree per language. Its layout loads the language's site module, which holds the sidebar and every page's title and description, so the sidebar paints with the frame and never shifts. Every address loads its page's own chunk.
 
-### The changelog
+- Hovering or focusing a link loads the page's chunk (`defaultPreload: "intent"`), so pages open at once.
+- The search and its index load a moment after the first paint. What someone types before it has loaded becomes its query.
+- Every page's HTML preloads the chunks of its language and of the page itself.
+- `vite.config.ts` rewrites imports from `@logicplanes/kaeso-ui` to the library's per-component entries (`uiEntryImports`), as the console's does.
+- The site fetches nothing but its own chunks, which the router's loaders keep, so it needs no TanStack Query.
 
-`/changelog` in every language is the one page that isn't a file in `content/`. The build makes it from `CHANGELOG.md` at the repository root, so the changelog has one source and is never translated by hand.
+The first visit to an English address follows the browser's languages and moves to `/de` or `/zh-CN` without a navigation. A language chosen in the menu or the search is remembered as `kaeso-docs:locale`. The tab a reader chooses in a code group is remembered as `kaeso-docs:code-tab`, and every group with a tab of that name opens on it, on every page.
 
-- **Parsing.** `history` in `scripts/changelog.mjs`, which also moves the changelog during a release, splits the file into releases, sections such as `### Added`, and topics such as `#### Model API`. `changelog.ts` compiles each part as it compiles a page, following the file's link references. A link to anything other than a full address or a version on the page fails the build.
-- **Languages.** The page's own words, the section names included, belong to the site and are translated. The entries stay in English, marked `lang="en"` on the German and Chinese pages, which say so below their description.
-- **Releases.** Each version's anchor is `v` and the version, as its Git tag, in every language: `/de/changelog#v{{version}}`. The newest stable release is marked Latest, as on GitHub, and pre-releases are marked as such. Each release shows its date in the page's language and links to its GitHub release and to the changes since the release before.
-- **Unreleased.** `[Unreleased]` is left out when it has no lines, as on the release tags the sites are built from. With lines, it comes first and says that they aren't in a release yet.
-- **Placement.** The page follows the introduction in the sidebar, names GitHub's feed of releases for feed readers, and comes last in search results.
+## Output
 
-The unit tests and the e2e suite read `e2e/fixtures/CHANGELOG.md`; `KAESO_DOCS_CHANGELOG` chooses another file.
+`pnpm --filter kaeso-docs build` writes `apps/docs/dist`: an HTML file for every page in every language, with its head for search engines and link previews. Next to them are a `404.html` per language, `sitemap.xml`, `robots.txt`, a page at every old address in `redirects.json`, and the site's [content security policy](../releasing.md#content-security-policy) in `csp.txt` and `_headers`.
 
-## The app
-
-| Folder | Job |
-| --- | --- |
-| `src/router.tsx` | One route tree per language: a layout that loads the language's site module and the library's messages, and a route per address |
-| `src/site/` | Loads a language's site module, its search index and the library's messages, each once |
-| `src/page/` | The page (title, description, content, previous and next, Edit on GitHub, "On this page"), not found, and a page that can't load |
-| `src/markdown/` | The page format (`ast.ts`) and its drawing with library components (`render.tsx`) |
-| `src/shell/` | `AppFrame` with the sidebar, the search, the language and theme selects, links through the router, toasts |
-| `src/i18n/` | The languages and their addresses, the remembered preference, and the site's own words in `messages/` |
-
-**The frame** is the console's: `AppFrame` with its Skip to content link and `Sidebar`, the wordmark alone at the top left (28px in and 28px down), the panel inset on the chrome, and below 1024px the phone bar and navigation sheet; the phone bar holds the search button beside the navigation toggle.
-
-**A page** is laid out like the console's settings pages: a `title-lg` title and a `body-lg` description in a 640px column. Text is `body-lg`, headings are `title` (`##`) and `title-sm` (`###`), code is a `CodeBlock`, a code group is one `CodeBlock` with a tab per fence, each heading is a `Link` to itself whose `#` shows on hover and keyboard focus, a list of page links is a grid of `Link` cards, callouts are `Banner`s, and tables are `Table`s inside a horizontal `ScrollArea`. From 1280px, "On this page" (`TableOfContents`) stands to the right; its column is kept on pages without it, so the text never moves between pages.
-
-**Loading.** Hovering or focusing a link loads the page's chunk (`defaultPreload: "intent"`), so pages open at once. The search (`CommandPalette`) and its index load a moment after the first paint. The search button in the sidebar or the phone bar, ⌘K or Ctrl+K opens it, and anything typed before it has loaded becomes its query. It finds pages by title, description and words, headings by their own words, and offers the theme and the other languages.
-
-**Language and theme.** The first visit to an English address follows the browser's languages and moves to `/de` or `/zh-CN` without a navigation. Choosing a language in the menu or the search opens the same page in that language and is remembered as `kaeso-docs:locale`. The tab a reader chooses in a code group is remembered as `kaeso-docs:code-tab`: every group that has a tab of that name opens on it, on every page, and the group the reader clicked keeps its place on the screen while the groups above it change height. The theme is the library's: system, light or dark, applied before the first paint by the theme script.
-
-**Errors** are toasts. A page whose chunk can't load keeps the frame, shows an empty state with "Try again" and explains in a toast; a search that can't load closes with a toast.
-
-## Design choices
-
-- **Frontmatter, not a sidebar file.** A page's place is its folder and its `order`; a section's name and place are its `index.md`'s. Moving or adding a page on GitHub touches one file per language, never a second file that must agree.
-- **A leading `# Title`.** GitHub shows frontmatter as a small table, so a page may start with `# ` and its title to read well there; the site drops that heading. Any other `#` heading is an error.
-- **Callouts.** GitHub's five alerts become `Banner`s: Note neutral, Tip success, Important info, Warning and Caution warning. Caution doesn't take the danger tone, because the danger banner has `role="alert"`, which a screen reader announces as the page opens.
-- **Tables** keep words whole. A column whose cells are all short (at most 20 characters) stays on one line, other columns are at least 140px wide, and a table wider than the page scrolls sideways instead of squeezing its columns.
-- **No TanStack Query.** The site fetches nothing but its own chunks, which the router's loaders load and keep (`defaultStaleTime: Infinity`).
-- **Not supported, on purpose:** raw HTML, MDX or components in pages, footnotes, images from other sites, link reference definitions.
-- **Code** is highlighted for the library's languages (TypeScript, TSX, JavaScript, JSON, Bash, Python, YAML, diff, and their aliases); anything else is plain text in the same block.
-- **One version.** The pages describe the latest release; there are no versioned copies.
-
-## The build output
-
-`pnpm --filter kaeso-docs build` writes `apps/docs/dist`:
-
-| Output | What it is |
-| --- | --- |
-| The app | The JavaScript and CSS chunks |
-| `<path>.html` | One file for every page in every language: `/de/console/api-keys` is `de/console/api-keys.html` |
-| `404.html` | One per language, marked `noindex`; shows "not found" in the frame |
-| `sitemap.xml` | Every page in every language with its `hreflang` alternates, without `lastmod`, since the build doesn't know when a page last changed |
-| `robots.txt` | Allows everything and names the sitemap |
-| `site.webmanifest`, the icons, `og.png` | Static files from `public/` |
-| `<old path>.html`, `_redirects` | For every address in `redirects.json`, in every language: a `noindex` page that sends the reader to where the page moved, and the same moves as permanent redirects for hosts that read `_redirects` |
-| `csp.txt`, `_headers` | The site's [Content Security Policy](../releasing.md#content-security-policy), which every page also carries in a `<meta>` |
-
-A page's head holds its `lang`, `<title>` and description, its canonical address, `hreflang` alternates in the three languages and `x-default`, Open Graph and Twitter tags with `og.png`, its `og:locale` with the other two as alternates, and structured data: `WebSite` on a language's home page, `TechArticle` on every other page.
-
-Any static host serves the output: a request for `/console/api-keys` gets `console/api-keys.html`, and an unknown address gets `404.html`. The maintainer publishes it to docs.kaeso.app.
-
-`vite.config.ts` does what the console's does: it rewrites imports from `@logicplanes/kaeso-ui` to the library's per-component entries (`uiEntryImports`) and serves the theme script as `/theme-init.js`. It also adds the `theme-color` meta tags and preloads the interface font.
-
-The build ends with two checks: `scripts/budget.ts` checks the frame and every page against their bundle budgets, and `scripts/check-site.mjs` checks the output ([the sites](../releasing.md#deploy-the-sites)). `pnpm --filter kaeso-docs licenses:check` (`scripts/licenses.ts`) then checks the license of every package in the build.
+The build ends with two checks. `scripts/budget.ts` checks the frame and every page against their bundle budgets, and `scripts/check-site.mjs` checks the sitemap and every page's head. `pnpm --filter kaeso-docs licenses:check` then checks the license of every package in the build.
