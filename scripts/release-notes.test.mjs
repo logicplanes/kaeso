@@ -162,7 +162,7 @@ test("the request streams the release's data to the configured model with struct
   assert.equal(calls.length, 1);
   const [{ params, options }] = calls;
   assert.equal(params.model, MODEL);
-  assert.equal(params.max_tokens, 32000);
+  assert.equal(params.max_tokens, 64000);
   assert.deepEqual(params.output_config, { effort: "high", format: { type: "json_schema", schema: SCHEMA } });
   assert.equal(params.system, SYSTEM);
   assert.equal("thinking" in params || "tool_choice" in params || "betas" in params, false);
