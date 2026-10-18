@@ -1,7 +1,7 @@
 ---
 title: 跨格式的推理
 description: 编解码器如何在各 API 格式之间传递推理内容、推理设置及其签名。
-order: 2
+order: 3
 ---
 
 Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的推理（签名、加密内容、item ID）只会回放给签发它的方言和服务商。

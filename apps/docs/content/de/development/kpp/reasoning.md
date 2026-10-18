@@ -1,7 +1,7 @@
 ---
 title: Reasoning über Formate hinweg
 description: Wie die Codecs Reasoning, seine Einstellungen und seine Signaturen zwischen den API-Formaten weitergeben.
-order: 2
+order: 3
 ---
 
 Anthropic signiert seine Thinking-Blöcke, und OpenAI verschlüsselt seine Reasoning-Items. Opakes Reasoning (Signaturen, verschlüsselter Inhalt, Item-IDs) wird immer nur an den Dialekt und den Anbieter zurückgespielt, die es ausgegeben haben.

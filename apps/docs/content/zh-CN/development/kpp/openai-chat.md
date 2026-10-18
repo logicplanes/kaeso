@@ -1,7 +1,7 @@
 ---
 title: OpenAI Chat Completions
 description: OpenAI Chat Completions 格式的每个字段如何映射到 KPP 以及如何映射回来。
-order: 4
+order: 5
 nav: OpenAI Chat
 ---
 
@@ -175,7 +175,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 
 chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`（`n` 是来自该 chunk 的事件数，另加上面的结构标记），其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]`、错误），打开的 chunk 就会被写出，因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后；`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。
 
-SSE 帧的处理遵循规范（[服务器发送事件](index.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。chunk 的 SSE `id`、`retry` 和未知字段（OpenAI 不会发送）以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中；该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件：它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只重放给 Chat 应用。
+SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。chunk 的 SSE `id`、`retry` 和未知字段（OpenAI 不会发送）以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中；该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件：它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只重放给 Chat 应用。
 
 OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `function.name`，但 schema 允许它们出现在后面的 chunk 中，一些兼容 OpenAI 的服务商也确实在那里发送 `id` 和 `name`，而且之前的第一个 chunk 是 `choices: []`，`id` 和 `model` 为空。Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂扣开始事件和该调用，直到知道这些值；事件的顺序从不改变。保持在本格式内的流会原样重放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
 
@@ -210,7 +210,7 @@ Responses 和 Embeddings 编解码器使用同一张 code 表（`openai_response
 
 ## 模型
 
-`GET /v1/models` 和 `GET /v1/models/{model}` 实现在 `crates/kaeso-codecs/src/openai_models.rs` 中，由 Chat、Responses 和 Embeddings 编解码器共用，因为所有 OpenAI API 都以同一种结构列出模型。fixture 位于 `fixtures/openai_chat/models/`，三个编解码器都会对它们做往返测试。来源：规范中的 `Model` 和 `ListModelsResponse` schema，以及 `listModels` 和 `retrieveModel` 操作，其 `x-oaiMeta` 示例被用作 fixture。应用的请求不带 `anthropic-version` 请求头时即为 OpenAI 格式（`dispatch::models_dialect`，见[模型列表](index.md#模型列表)）；网关随后用 `openai_chat` 编码。
+`GET /v1/models` 和 `GET /v1/models/{model}` 实现在 `crates/kaeso-codecs/src/openai_models.rs` 中，由 Chat、Responses 和 Embeddings 编解码器共用，因为所有 OpenAI API 都以同一种结构列出模型。fixture 位于 `fixtures/openai_chat/models/`，三个编解码器都会对它们做往返测试。来源：规范中的 `Model` 和 `ListModelsResponse` schema，以及 `listModels` 和 `retrieveModel` 操作，其 `x-oaiMeta` 示例被用作 fixture。应用的请求不带 `anthropic-version` 请求头时即为 OpenAI 格式（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）；网关随后用 `openai_chat` 编码。
 
 ### 查询参数
 

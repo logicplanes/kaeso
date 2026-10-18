@@ -1,7 +1,7 @@
 ---
 title: OpenAI Chat Completions
 description: Wie jedes Feld des Formats OpenAI Chat Completions auf KPP abgebildet wird und zurück.
-order: 4
+order: 5
 nav: OpenAI Chat
 ---
 
@@ -175,7 +175,7 @@ Einfache `data:`-Frames mit je einem JSON-Chunk, am Ende `data: [DONE]`.
 
 Gruppierung in Chunks: Das erste Event jedes Chunks trägt die Form-Markierung `chunk` (`n` ist die Zahl der Events aus diesem Chunk, dazu die Gestalt-Markierungen oben), die anderen tragen `in_chunk`, damit der Encoder sie wieder als einen Frame schreibt. Ein offener Chunk wird geschrieben, sobald ein Event ankommt, das nicht dazugehört (ein Event eines anderen Dialekts, `[DONE]`, ein Fehler), sodass ein verworfenes Event nie einen Chunk hinter `[DONE]` schiebt; nach `[DONE]` oder einem Fehler wird kein Chunk mehr geschrieben. Tool-Argumente für einen Block, den Chat nicht zeigen kann, werden weggelassen.
 
-Das SSE-Framing folgt der Spezifikation ([Server-sent Events](index.md#server-sent-events)): Ein `id`, das NUL enthält, oder ein `retry`, das nicht aus ASCII-Ziffern besteht, die in ein `u64` passen, gilt als unbekanntes Feld. SSE-`id`, `retry` und unbekannte SSE-Felder eines Chunks, die OpenAI nicht sendet, bleiben in der Form `chunk.sse` als `{"id", "retry", "other": [[name, value], …]}` erhalten; der Chunk wird wie jeder andere dekodiert, und die Felder werden an Chat-Apps zurückgeschrieben. Ein Frame ohne `data:`-Zeile, etwa `retry: 3000` oder `event: ping` allein, ist nach der Spezifikation kein Event: Er wird zu einem `Extra`, dessen rohes JSON keinen Schlüssel `data` hat, und wird ohne Datenzeile zurückgeschrieben. Benannte Events und Frames nach `[DONE]` bleiben vollständig erhalten und werden nur an Chat-Apps wiedergegeben.
+Das SSE-Framing folgt der Spezifikation ([Server-sent Events](codec-design.md#server-sent-events)): Ein `id`, das NUL enthält, oder ein `retry`, das nicht aus ASCII-Ziffern besteht, die in ein `u64` passen, gilt als unbekanntes Feld. SSE-`id`, `retry` und unbekannte SSE-Felder eines Chunks, die OpenAI nicht sendet, bleiben in der Form `chunk.sse` als `{"id", "retry", "other": [[name, value], …]}` erhalten; der Chunk wird wie jeder andere dekodiert, und die Felder werden an Chat-Apps zurückgeschrieben. Ein Frame ohne `data:`-Zeile, etwa `retry: 3000` oder `event: ping` allein, ist nach der Spezifikation kein Event: Er wird zu einem `Extra`, dessen rohes JSON keinen Schlüssel `data` hat, und wird ohne Datenzeile zurückgeschrieben. Benannte Events und Frames nach `[DONE]` bleiben vollständig erhalten und werden nur an Chat-Apps wiedergegeben.
 
 OpenAI sendet `id`, `type` und `function.name` eines Tool-Aufrufs in dessen erstem Chunk, das Schema erlaubt sie aber auch in einem späteren, und manche OpenAI-kompatiblen Anbieter senden `id` und `name` dort, nach einem ersten Chunk mit `choices: []` und leerem `id` und `model`. Anthropic und Responses kündigen beides beim Start eines Blocks an, deshalb hält der Decoder den Start und den Aufruf wie oben zurück, bis er sie kennt; die Reihenfolge der Events ändert sich nie. Streams, die in diesem Format bleiben, geben jeden Chunk exakt wieder. Die Fixture ist `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
 
@@ -210,7 +210,7 @@ Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`opena
 
 ## Modelle
 
-`GET /v1/models` und `GET /v1/models/{model}` sind in `crates/kaeso-codecs/src/openai_models.rs` umgesetzt, das die Codecs für Chat, Responses und Embeddings gemeinsam nutzen, weil alle OpenAI-APIs Modelle in derselben Gestalt auflisten. Die Fixtures liegen in `fixtures/openai_chat/models/`, und alle drei Codecs prüfen an ihnen den Round Trip. Quellen: die Schemas `Model` und `ListModelsResponse` der Spezifikation und die Operationen `listModels` und `retrieveModel`, deren `x-oaiMeta`-Beispiele als Fixtures dienen. Die Anfrage einer App ist OpenAI, wenn sie keinen Header `anthropic-version` trägt (`dispatch::models_dialect`, siehe [Modelllisten](index.md#modelllisten)); das Gateway kodiert dann mit `openai_chat`.
+`GET /v1/models` und `GET /v1/models/{model}` sind in `crates/kaeso-codecs/src/openai_models.rs` umgesetzt, das die Codecs für Chat, Responses und Embeddings gemeinsam nutzen, weil alle OpenAI-APIs Modelle in derselben Gestalt auflisten. Die Fixtures liegen in `fixtures/openai_chat/models/`, und alle drei Codecs prüfen an ihnen den Round Trip. Quellen: die Schemas `Model` und `ListModelsResponse` der Spezifikation und die Operationen `listModels` und `retrieveModel`, deren `x-oaiMeta`-Beispiele als Fixtures dienen. Die Anfrage einer App ist OpenAI, wenn sie keinen Header `anthropic-version` trägt (`dispatch::models_dialect`, siehe [Modelllisten](codec-design.md#modelllisten)); das Gateway kodiert dann mit `openai_chat`.
 
 ### Query-Parameter
 

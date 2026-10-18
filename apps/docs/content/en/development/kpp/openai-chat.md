@@ -1,7 +1,7 @@
 ---
 title: OpenAI Chat Completions
 description: How every field of the OpenAI Chat Completions format maps to KPP and back.
-order: 4
+order: 5
 nav: OpenAI Chat
 ---
 
@@ -175,7 +175,7 @@ Bare `data:` frames, one JSON chunk each, ending with `data: [DONE]`.
 
 Chunk grouping: the first event of each chunk carries the form marker `chunk` (`n` is the number of events from that chunk, plus the shape markers above) and the others carry `in_chunk`, so the encoder writes them back as one frame. An open chunk is written as soon as an event arrives that is not part of it (another dialect's event, `[DONE]`, an error), so a dropped event never puts a chunk after `[DONE]`; no chunk is written after `[DONE]` or an error. Tool arguments for a block Chat cannot show are left out.
 
-SSE framing follows the spec ([server-sent events](index.md#server-sent-events)): an `id` that contains NUL, or a `retry` that is not ASCII digits fitting a `u64`, counts as an unknown field. A chunk's SSE `id`, `retry` and unknown fields, which OpenAI does not send, are kept in form `chunk.sse` as `{"id", "retry", "other": [[name, value], …]}`; the chunk is decoded like any other, and the fields are written back to Chat apps. A frame without a `data:` line, such as `retry: 3000` or `event: ping` alone, is not an event under the spec: it becomes an `Extra` whose raw JSON has no `data` key and is written back without a data line. Named events and frames after `[DONE]` are kept whole and replayed only to Chat apps.
+SSE framing follows the spec ([server-sent events](codec-design.md#server-sent-events)): an `id` that contains NUL, or a `retry` that is not ASCII digits fitting a `u64`, counts as an unknown field. A chunk's SSE `id`, `retry` and unknown fields, which OpenAI does not send, are kept in form `chunk.sse` as `{"id", "retry", "other": [[name, value], …]}`; the chunk is decoded like any other, and the fields are written back to Chat apps. A frame without a `data:` line, such as `retry: 3000` or `event: ping` alone, is not an event under the spec: it becomes an `Extra` whose raw JSON has no `data` key and is written back without a data line. Named events and frames after `[DONE]` are kept whole and replayed only to Chat apps.
 
 OpenAI sends a tool call's `id`, `type` and `function.name` in its first chunk, but the schema allows them in a later chunk, and some OpenAI-compatible providers send `id` and `name` there, after a first chunk with `choices: []` and an empty `id` and `model`. Anthropic and Responses announce both when a block starts, so the decoder holds the start and the call until it knows them, as above; the order of events never changes. Streams that stay in this format replay every chunk exactly. The fixture is `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
 
@@ -210,7 +210,7 @@ The Responses and Embeddings codecs use the same code table (`openai_responses::
 
 ## Models
 
-`GET /v1/models` and `GET /v1/models/{model}` are implemented in `crates/kaeso-codecs/src/openai_models.rs`, shared by the Chat, Responses and Embeddings codecs, because all OpenAI APIs list models in one shape. The fixtures are in `fixtures/openai_chat/models/`, and all three codecs round-trip them. Sources: the spec's `Model` and `ListModelsResponse` schemas and the `listModels` and `retrieveModel` operations, whose `x-oaiMeta` examples serve as fixtures. An app's request is OpenAI when it carries no `anthropic-version` header (`dispatch::models_dialect`, see [model listings](index.md#model-listings)); the gateway then encodes with `openai_chat`.
+`GET /v1/models` and `GET /v1/models/{model}` are implemented in `crates/kaeso-codecs/src/openai_models.rs`, shared by the Chat, Responses and Embeddings codecs, because all OpenAI APIs list models in one shape. The fixtures are in `fixtures/openai_chat/models/`, and all three codecs round-trip them. Sources: the spec's `Model` and `ListModelsResponse` schemas and the `listModels` and `retrieveModel` operations, whose `x-oaiMeta` examples serve as fixtures. An app's request is OpenAI when it carries no `anthropic-version` header (`dispatch::models_dialect`, see [model listings](codec-design.md#model-listings)); the gateway then encodes with `openai_chat`.
 
 ### Query parameters
 

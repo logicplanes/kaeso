@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: Wie jedes Feld des Formats OpenAI Embeddings auf KPP abgebildet wird und zurück.
-order: 6
+order: 7
 ---
 
 - **Codec:** `kaeso_codecs::openai_embeddings::OpenAiEmbeddings` (`crates/kaeso-codecs/src/openai_embeddings/`)

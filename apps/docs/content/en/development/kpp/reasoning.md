@@ -1,7 +1,7 @@
 ---
 title: Reasoning across formats
 description: How the codecs carry reasoning, its settings and its signatures between the API formats.
-order: 2
+order: 3
 ---
 
 Anthropic signs its thinking blocks and OpenAI encrypts its reasoning items. Opaque reasoning (signatures, encrypted content, item ids) is only ever replayed to the dialect and provider that issued it.

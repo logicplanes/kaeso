@@ -1,7 +1,7 @@
 ---
 title: Formatwechsel
 description: Die Regeln, denen die Codecs folgen, wenn eine Anfrage oder Antwort das API-Format wechselt, und ihre Gründe.
-order: 1
+order: 2
 ---
 
 Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht. Für diesen Fall gelten die folgenden Regeln der Codecs, jeweils mit ihrem Grund. Eine Anfrage, die in ihrem eigenen Format bleibt, wird exakt reproduziert, und keine dieser Regeln greift.
