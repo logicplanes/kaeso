@@ -613,6 +613,7 @@ test("the first sentence ends at any full stop before more text, never inside co
   assert.equal(firstSentence("Loads 3.6 kB less. 25 kB on the overview."), "Loads 3.6 kB less.");
   assert.equal(firstSentence('Shows it again. "Check now" asks.'), "Shows it again.");
   assert.equal(firstSentence("Refuses tools, e.g. a named function. Then more."), "Refuses tools, e.g. a named function.");
+  assert.equal(firstSentence("Adds U.S. regions for data residency. Then more."), "Adds U.S. regions for data residency.");
 });
 
 test("a short version with more than one sentence or a title outside two to five words goes back to the model", async () => {
@@ -621,6 +622,9 @@ test("a short version with more than one sentence or a title outside two to five
     [(short) => (short.highlights[0].text = "A page lists batches. pnpm builds it."), /highlight 1 is more than one sentence/],
     [(short) => (short.highlights[0].title = "Batches"), /highlight 1's title isn't two to five words/],
     [(short) => (short.highlights[0].title = "A page for every batch you run"), /highlight 1's title isn't two to five words/],
+    [(short) => (short.highlights[0].title = "**Bold** batch page"), /highlight 1's title has emphasis/],
+    [(short) => (short.highlights[0].text = "Use *this* page now."), /highlight 1 has emphasis/],
+    [(short) => (short.tagline = "Streams stay _open_."), /the tagline has emphasis/],
   ]) {
     const output = valid();
     change(output.release);
@@ -639,4 +643,6 @@ test("a short version file with more than one sentence or a badly sized title is
     /title isn't two to five words.*more than one sentence/,
   );
   assert.match(briefFrom({ ...short, breaking: [{ text: "Send it. Then wait.", prs: [11] }] }).problems.join(), /breaking change 1 is more than one sentence/);
+  assert.match(briefFrom({ ...short, tagline: "Read ~~this~~ now." }).problems.join(), /the tagline has emphasis/);
+  assert.deepEqual(briefFrom({ ...short, tagline: "Sends max_tokens and `**kept**` code." }).problems, []);
 });

@@ -318,6 +318,10 @@ export function check(output, facts) {
   if (!hasKeys(short, ["tagline", "highlights", "breaking"])) return [...problems, "release doesn't have the schema's shape"];
   text(short.tagline, TAGLINE_LIMIT, "the tagline");
   if (!oneSentence(short.tagline)) problems.push("the tagline is more than one sentence");
+  const bare = (value, where) => {
+    if (emphasised(value)) problems.push(`${where} has emphasis`);
+  };
+  bare(short.tagline, "the tagline");
   if (!Array.isArray(short.highlights) || !short.highlights.length || short.highlights.length > HIGHLIGHTS)
     problems.push(`release needs one to ${HIGHLIGHTS} highlights`);
   else
@@ -329,6 +333,8 @@ export function check(output, facts) {
       if (typeof value.title === "string" && (words(value.title) < 2 || words(value.title) > 5)) problems.push(`${where}'s title isn't two to five words`);
       entry({ text: value.text, prs: value.prs }, where, false, POINT_LIMIT, true);
       if (!oneSentence(value.text)) problems.push(`${where} is more than one sentence`);
+      bare(value.title, `${where}'s title`);
+      bare(value.text, where);
     });
   const breaking = Array.isArray(output.breaking) ? output.breaking : [];
   if (!Array.isArray(short.breaking) || short.breaking.length !== breaking.length) problems.push("release's breaking changes don't match breaking");
@@ -336,6 +342,7 @@ export function check(output, facts) {
     short.breaking.forEach((value, i) => {
       entry(value, `release's breaking change ${i + 1}`, false, POINT_LIMIT);
       if (!oneSentence(value?.text)) problems.push(`release's breaking change ${i + 1} is more than one sentence`);
+      bare(value?.text, `release's breaking change ${i + 1}`);
       const same = (prs) => (Array.isArray(prs) ? [...new Set(prs)].sort(byNumber).join() : null);
       if (same(value?.prs) !== same(breaking[i]?.prs))
         problems.push(`release's breaking change ${i + 1} names other pull requests than breaking change ${i + 1}`);
@@ -402,7 +409,9 @@ const split = (line) => {
 };
 
 const masked = (text) => text.replace(/`[^`]*`/g, (span) => `\`${"x".repeat(span.length - 2)}\``);
-const SENTENCE_END = /(?<!\b(?:e\.g|i\.e|etc|vs))[.!?](?=\s+\S)/u;
+const SENTENCE_END = /(?<!\b(?:e\.g|i\.e|etc|vs|\p{Lu}))[.!?](?=\s+\S)/u;
+
+export const emphasised = (text) => typeof text === "string" && /[*~]|(?:^|[^\p{L}\p{N}])_|_(?:[^\p{L}\p{N}]|$)/u.test(text.replace(/`[^`]*`/g, " "));
 
 export const oneSentence = (text) => typeof text !== "string" || !SENTENCE_END.test(masked(text.trim()));
 
@@ -422,7 +431,7 @@ const items = (markdown) =>
 export function briefFrom(value, people = new Set()) {
   const problems = [];
   const fine = (text, limit, where) => {
-    const problem = plain(text, limit, people);
+    const problem = plain(text, limit, people) ?? (emphasised(text) ? "has emphasis" : null);
     if (problem) problems.push(`${where} ${problem}`);
   };
   const prs = (list, where) => {
