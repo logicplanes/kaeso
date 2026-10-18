@@ -10,4 +10,4 @@ order: 1
 
 - [快速开始](quick-start.md)：用 Docker Compose 安装 Kaeso，连接服务商并发送第一个请求。
 - [调用模型](calling-models.md)：在应用中通过 OpenAI 和 Anthropic SDK 或 curl 调用模型。
-- [编程工具](coding-tools.md)：让 Claude Code、Codex 和其他编程工具使用您的安装。
+- [编程工具](coding-tools.md)：让 Claude Code、Codex 和其他编程工具使用您的实例。

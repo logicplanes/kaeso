@@ -44,7 +44,7 @@ services:
 | `kaeso_log_buffer_rows`、`kaeso_log_buffer_bytes` | 缓冲区持续增长：ClickHouse 不接受写入 |
 | `kaeso_log_rows_dropped_total`、`kaeso_clickhouse_write_failures_total` | 任何增长：日志行已丢失或面临丢失 |
 | `kaeso_usage_rows_dropped_total` | 任何增长：PostgreSQL 永久拒绝了用量记录，日志行 `a usage row cannot be recorded` 会说明原因 |
-| `kaeso_valkey_failures_total{operation}`、`kaeso_limits_fail_open_total{reason}` | Valkey 出现问题。在此期间，硬预算以 503 拒绝请求，其他限额则不经检查直接放行 |
+| `kaeso_valkey_failures_total{operation}`、`kaeso_limits_fail_open_total{reason}` | Valkey 出现问题。在此期间，硬性预算以 503 拒绝请求，其他限额则不经检查直接放行 |
 | `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"` |
 | `kaeso_auth_failures_total{method, reason}` | 登录或密钥失败突增。`reason="throttled"` 统计被 [API 密钥限流](configuration.md#api-密钥限流)拒绝的请求 |
 | `kaeso_key_failure_blocks_total` | 任何增长：有地址在猜测 API 密钥 |

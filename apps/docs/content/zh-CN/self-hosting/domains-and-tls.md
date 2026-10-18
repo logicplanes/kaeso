@@ -16,7 +16,7 @@ KAESO_DOMAIN=kaeso.example.com
 
 公开 URL 为 `https://` 加该域名。设置链接、邮件和控制台中的代码示例都使用它。
 
-由于控制台和 API 共用同一个来源，不需要配置任何跨域访问。只有在其他来源上、从浏览器调用模型 API 的 Web 应用才需要 [`KAESO_CORS_ALLOWED_ORIGINS`](configuration.md#浏览器应用)。
+由于控制台和 API 共用同一个源，不需要配置任何跨域访问。只有在其他源上、从浏览器调用模型 API 的 Web 应用才需要 [`KAESO_CORS_ALLOWED_ORIGINS`](configuration.md#浏览器应用)。
 
 ## 获取证书
 

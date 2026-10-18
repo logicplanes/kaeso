@@ -1,6 +1,6 @@
 ---
 title: 编程工具
-description: 让 Claude Code、Codex 和其他编程工具使用您的安装。
+description: 让 Claude Code、Codex 和其他编程工具使用您的实例。
 order: 3
 ---
 
@@ -12,7 +12,7 @@ order: 3
 
 ## 设置 Claude Code
 
-Claude Code 使用 Anthropic Messages。在 `~/.claude/settings.json` 中把它指向您的安装：
+Claude Code 使用 Anthropic Messages。在 `~/.claude/settings.json` 中把它指向您的实例：
 
 ```json
 {

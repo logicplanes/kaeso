@@ -1,10 +1,10 @@
 ---
 title: 使用控制台
-description: 在控制台（部署的网页界面）中管理组织、项目、密钥和模型。
+description: 在控制台（您实例的网页界面）中管理组织、项目、密钥和模型。
 order: 3
 ---
 
-控制台运行在部署的域名下，例如 `https://kaeso.example.com`。使用邮箱地址登录；登录页提供哪些方式，见[登录和单点登录](../self-hosting/sign-in.md)。
+控制台运行在您实例的域名下，例如 `https://kaeso.example.com`。使用邮箱地址登录；登录页提供哪些方式，见[登录和单点登录](../self-hosting/sign-in.md)。
 
 - [组织和项目](organizations-and-projects.md)：创建组织和项目，连接单点登录，并管理它们的设置。
 - [成员和角色](members-and-roles.md)：邀请成员，为其分配角色和权限，并创建服务账号。
@@ -15,7 +15,7 @@ order: 3
 - [请求日志](request-logs.md)：查找任意请求，导出日志，并选择保留哪些内容。
 - [试验场](playground.md)：并排比较最多四个模型。
 - [账户和语言](account.md)：保护账户安全，并选择主题和语言。
-- [实例管理](instance-administration.md)：管理部署的用户、组织、设置和更新。
+- [实例管理](instance-administration.md)：管理实例的用户、组织、设置和更新。
 
 ## 熟悉界面
 

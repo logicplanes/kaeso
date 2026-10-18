@@ -66,7 +66,7 @@ services:
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用来源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`；设为 `*` 时网关不会启动。 |
+| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`；设为 `*` 时网关不会启动。 |
 
 没有这项设置时，Kaeso 不发送任何 CORS 响应头。[模型 API](../api/model-api.md) 介绍了浏览器应用如何调用 Kaeso。
 
@@ -155,7 +155,7 @@ services:
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一个保活信号，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
 
 ### 推理连续性
 
@@ -191,8 +191,8 @@ Chat Completions 没有存放这段推理的字段，所以网关把它保存在
 | `KAESO_INSTANCE_ACCOUNT_CREATION` | `instance.account_creation` | 文本 | `invitation_only` | 谁可以不经邀请创建账户：`invitation_only` 或 `everyone`。 |
 | `KAESO_INSTANCE_METADATA_RETENTION_DAYS` | `instance.metadata_retention_days` | 整数 | `90` | 新组织保留请求日志元数据的天数，至少为 1，且不超过下面的上限。 |
 | `KAESO_INSTANCE_CONTENT_RETENTION_DAYS` | `instance.content_retention_days` | 整数 | `30` | 新组织保留请求日志内容的天数，至少为 1，且不长于元数据。 |
-| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS` | `instance.max_metadata_retention_days` | 整数 | `3650` | 组织可选择的最长元数据保留期限，最多 36500 天。 |
-| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期限，最多 36500 天。 |
+| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS` | `instance.max_metadata_retention_days` | 整数 | `3650` | 组织可选择的最长元数据保留期，最多 36500 天。 |
+| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期，最多 36500 天。 |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | 布尔 | `true` | 是否可以删除组织。 |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | 整数 | `7` | 已删除的组织在被永久移除前保持可恢复和只读的天数，1 到 90。 |
 

@@ -67,7 +67,7 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 | 413 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 429 | `insufficient_quota` | `insufficient_quota`，服务商因计费原因拒绝时 |
-| 500, 502 | `server_error` | |
+| 500、502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
 
@@ -169,14 +169,14 @@ try {
 | 413 | 正文大于 `KAESO_BODY_LIMITS_MODEL_API`，默认为 32 MiB。 |
 | 429 | 达到了速率限制或预算，消息会指明是哪一个。预算用尽时，消息会说明何时重置。 |
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
-| 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此部署中不可用。 |
+| 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此实例中不可用。 |
 | 502 | Kaeso 无法连接服务商，或传输失败。 |
 | 503 | Kaeso 无法加载目录、密钥、服务商密钥或限额，或正在重启。OpenAI 格式对这些情况返回 500。 |
 | 503 | 服务商过载，适用于 OpenAI 格式。 |
 | 504 | 服务商未及时响应。 |
 | 529 | 服务商过载，适用于 Anthropic 格式。 |
 
-流一旦开始，其状态码就无法再更改。服务商失败或提前结束流时，流会以采用应用所用格式的错误事件结束。
+流一旦开始，其状态码就无法再更改。服务商出错或提前结束流时，流会以采用应用所用格式的错误事件结束。
 
 ## 服务商错误
 

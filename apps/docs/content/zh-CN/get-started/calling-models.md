@@ -4,7 +4,7 @@ description: 使用 OpenAI 或 Anthropic SDK，或者用 curl，调用项目中�
 order: 2
 ---
 
-把官方 OpenAI 或 Anthropic SDK 指向您的安装，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，因此 OpenAI SDK 也能调用 Claude。
+把官方 OpenAI 或 Anthropic SDK 指向您的实例，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，因此 OpenAI SDK 也能调用 Claude。
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
@@ -122,7 +122,7 @@ for await (const event of stream) {
 
 ## 在日志中查找请求
 
-每个回复都带有 `kaeso-request-id` 请求头。在应用中记录它，就能在 Kaeso 中找到同一个请求：
+每个回复都带有 `kaeso-request-id` 响应头。在应用中记录它，就能在 Kaeso 中找到同一个请求：
 
 1. 在项目中打开**请求日志**。
 2. 选择**按 ID 打开请求**，然后粘贴该 ID。
@@ -131,7 +131,7 @@ for await (const event of stream) {
 
 ## 后续步骤
 
-- [编程工具](coding-tools.md)：让 Claude Code、Codex 和其他工具使用您的安装。
+- [编程工具](coding-tools.md)：让 Claude Code、Codex 和其他工具使用您的实例。
 - [模型 API](../api/model-api.md)：查阅每个端点、请求头和模型名称。
 - [错误](../api/errors.md)：了解错误的含义，以及应用该如何处理。
 - [格式转换](../concepts/format-translation.md)：了解 SDK 调用其他服务商的模型时，哪些内容能够保留。

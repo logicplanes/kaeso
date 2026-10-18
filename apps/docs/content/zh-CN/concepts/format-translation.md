@@ -60,7 +60,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 无论哪种格式，即使格式不变，Kaeso 也会拒绝以下内容：
 
-- 多个 choice（`n`）
+- 多个候选结果（`n`）
 - Chat Completions 的音频输入（`input_audio`）
 - 存储状态：`store: true`、`previous_response_id`、`conversation` 和 `background`
 
