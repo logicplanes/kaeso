@@ -140,6 +140,18 @@ test("a planned version can be checked before the release sets it", () => {
   assert.deepEqual(strays(repo, "1.6.0"), []);
 });
 
+test("a version is looked for as written, even with characters a regular expression would read as syntax", () => {
+  const repo = fake(tree("1.4.0", { "apps/docs/content/en/upgrades.md": "Kaeso 2.0.0-a|b brings batches.\nA build of 2.0.0-a(b ships later.\n" }));
+  assert.deepEqual(
+    strays(repo, "2.0.0-a|b").map(({ file, line }) => `${file}:${line}`),
+    ["apps/docs/content/en/upgrades.md:1"],
+  );
+  assert.deepEqual(
+    strays(repo, "2.0.0-a(b").map(({ file, line }) => `${file}:${line}`),
+    ["apps/docs/content/en/upgrades.md:2"],
+  );
+});
+
 test("history and examples are allowed where ALLOWED says, some only while their version is current", () => {
   const gateway = "apps/docs/content/de/development/architecture/gateway.md";
   const first = { [gateway]: "Das Schema von 0.1.0 ist ein Satz.\n", "scripts/changelog.test.mjs": 'release(text, "0.1.0", "2026-11-02");\n' };
