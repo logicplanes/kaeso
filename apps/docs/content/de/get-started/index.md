@@ -1,15 +1,13 @@
 ---
 title: Erste Schritte
-description: Kaeso installieren, einen Anbieter verbinden und die erste Anfrage senden.
+description: Kaeso installieren, die erste Anfrage senden und Ihre Apps und Coding-Tools anbinden.
 order: 1
 ---
 
-Am besten mit dem [Schnellstart](quick-start.md) beginnen. Er installiert Kaeso mit Docker Compose und sendet eine erste Anfrage darüber.
+Diese Seiten führen Sie von einem leeren Server zu Apps und Coding-Tools, die Modelle über Kaeso aufrufen. Beginnen Sie mit dem Schnellstart, und binden Sie dann an, was Sie bauen.
 
-| Seite | Was zu tun ist |
-| --- | --- |
-| [Schnellstart](quick-start.md) | Kaeso installieren, den ersten Benutzer anlegen, einen Anbieter verbinden, ein Modell und einen API-Schlüssel hinzufügen und eine Anfrage senden |
-| [Modelle aufrufen](calling-models.md) | Modelle aus Python, TypeScript und mit curl aufrufen, Antworten streamen und eine Anfrage in den Protokollen finden |
-| [Coding-Tools](coding-tools.md) | Claude Code, Codex und andere Tools auf die eigene Installation ausrichten |
+## Nächste Schritte
 
-Wer Kaeso aus dem Quellcode betreiben will, um daran zu arbeiten, liest [Lokale Einrichtung](../development/local-setup.md).
+- [Schnellstart](quick-start.md): Installieren Sie Kaeso mit Docker Compose, verbinden Sie einen Anbieter, und senden Sie Ihre erste Anfrage.
+- [Modelle aufrufen](calling-models.md): Rufen Sie Modelle aus Ihrer App mit den SDKs von OpenAI und Anthropic oder mit curl auf.
+- [Coding-Tools](coding-tools.md): Richten Sie Claude Code, Codex und andere Coding-Tools auf Ihre Installation aus.

@@ -1,15 +1,13 @@
 ---
 title: Get started
-description: Install Kaeso, connect a provider and send the first request.
+description: Install Kaeso, send your first request, and connect your apps and coding tools.
 order: 1
 ---
 
-Start with the [quick start](quick-start.md). It installs Kaeso with Docker Compose and sends a first request through it.
+These pages take you from an empty server to apps and coding tools that call models through Kaeso. Start with the quick start, then connect what you build.
 
-| Page | What you do |
-| --- | --- |
-| [Quick start](quick-start.md) | Install Kaeso, create the first user, connect a provider, add a model and an API key, and send a request |
-| [Calling models](calling-models.md) | Call models from Python, TypeScript and curl, stream replies, and find a request in the logs |
-| [Coding tools](coding-tools.md) | Point Claude Code, Codex and other tools at your install |
+## Next steps
 
-To run Kaeso from source while you work on it, see [local setup](../development/local-setup.md).
+- [Quick start](quick-start.md): Install Kaeso with Docker Compose, connect a provider and send your first request.
+- [Calling models](calling-models.md): Call models from your app with the OpenAI and Anthropic SDKs, or with curl.
+- [Coding tools](coding-tools.md): Point Claude Code, Codex and other coding tools at your install.
