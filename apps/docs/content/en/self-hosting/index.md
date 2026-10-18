@@ -1,44 +1,24 @@
 ---
 title: Self-hosting
-description: Run, configure and look after a Kaeso install.
+description: Run Kaeso on your own server and keep it configured, updated and backed up.
 order: 5
 ---
 
-A Kaeso install is six containers behind one domain, started by the `compose.yaml` attached to every release. The [quick start](../get-started/quick-start.md) gets one running; these pages cover the rest.
+Kaeso runs on your server as one Docker Compose project. The [quick start](../get-started/quick-start.md) installs it; these pages cover everything after that.
 
-| Service | Image | Role | Reachable from |
-| --- | --- | --- | --- |
-| `caddy` | `caddy:2.11.7-alpine` | Terminates TLS with a certificate it obtains and renews itself, and routes requests | The internet, ports 80 and 443 |
-| `gateway` | `ghcr.io/logicplanes/kaeso-gateway` | Serves the model API (`/v1`) and the Platform API (`/platform`) | Caddy |
-| `console` | `ghcr.io/logicplanes/kaeso-console` | Serves the web interface (every other path) | Caddy |
-| `postgres` | `postgres:18.6-alpine` | Users, organizations, keys, encrypted provider keys, catalogues, limits, usage, audit logs | The gateway only |
-| `clickhouse` | `clickhouse/clickhouse-server:26.3.48.2-alpine` | Request logs and usage rollups | The gateway only |
-| `valkey` | `valkey/valkey:9.1.2-alpine` | Rate and budget counters, shared caches | The gateway only |
+## Set up
 
-The gateway and console images carry the version of the release whose `compose.yaml` you run; the third-party images are pinned by version and digest.
+- [Requirements](requirements.md): Size the server, open the network and plan disk for request logs.
+- [How an install works](how-it-works.md): See which services run, what each one keeps and how they are isolated.
+- [Installation](installation.md): Install a particular release, try Kaeso on your computer and run its commands.
+- [Configuration](configuration.md): Look up every setting and where it goes.
+- [Domains and TLS](domains-and-tls.md): Serve Kaeso on your domain, or behind a proxy you already run.
+- [Email](email.md): Connect an SMTP server and see which emails Kaeso sends.
+- [Sign-in and single sign-on](sign-in.md): Choose how people sign in, and get back in when nothing works.
 
-## Isolation
+## Run
 
-- The databases sit on an internal network with no route outside. Their data lives in the named volumes `postgres`, `clickhouse` and `valkey`; Caddy keeps its certificates in `caddy_data` and `caddy_config`.
-- No container can gain privileges. The gateway and the console run without Linux capabilities, and the gateway's file system is read-only. Caddy keeps only the right to bind ports 80 and 443, and sends `Strict-Transport-Security`.
-- The gateway signs in to PostgreSQL as `kaeso`, which owns the Kaeso database but is not a superuser. ClickHouse's `kaeso` user can't manage users or grants. Valkey requires its password on every connection.
-- Caddy doesn't route the gateway's metrics port, 9100.
-
-## More than one gateway
-
-Gateway instances keep no state of their own. To run several, put them behind the same proxy and point them at the same PostgreSQL, ClickHouse and Valkey. Caches are invalidated across instances through Valkey, background jobs run on one instance at a time under PostgreSQL locks, and each instance buffers and writes its own request log rows and usage.
-
-## Pages
-
-| Page | Covers |
-| --- | --- |
-| [Requirements](requirements.md) | Server size, network, disk for request logs |
-| [Installation](installation.md) | The files of an install, the first start, local changes, the command line |
-| [Configuration](configuration.md) | How settings are read, every `KAESO_*` setting, API key throttling |
-| [Domains and TLS](domains-and-tls.md) | The domain, certificates, your own reverse proxy, long streams |
-| [Email](email.md) | SMTP, what Kaeso sends and in which language, testing |
-| [Sign-in and single sign-on](sign-in.md) | Sign-in methods, installs on single sign-on alone, getting back in |
-| [Upgrades](upgrades.md) | Moving to a new release |
-| [Backups and master keys](backups.md) | What to back up, restoring, rotating the master key |
-| [Health and metrics](monitoring.md) | Health checks, Prometheus metrics, logs |
-| [Troubleshooting](troubleshooting.md) | Common problems and their fixes |
+- [Upgrades](upgrades.md): Update to a new release by hand or in one click.
+- [Backups and master keys](backups.md): Back up the databases and master keys, and rotate the master key.
+- [Health and metrics](monitoring.md): Check health, scrape Prometheus metrics and read the logs.
+- [Troubleshooting](troubleshooting.md): Find the fix for a problem you see.

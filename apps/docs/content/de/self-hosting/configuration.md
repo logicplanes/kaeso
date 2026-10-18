@@ -1,7 +1,7 @@
 ---
 title: Konfiguration
 description: Jede Einstellung einer Kaeso-Installation, wohin sie gehört und wie das Gateway sie liest.
-order: 3
+order: 4
 ---
 
 Eine Installation hält ihre Einstellungen neben der `compose.yaml`. Die Variablen aus [der ersten Tabelle](#einstellungen-in-der-env) gehören in die `.env`, jede andere Einstellung des Gateways in die `compose.override.yaml`:

@@ -1,0 +1,90 @@
+---
+title: So funktioniert eine Installation
+description: Die Dienste einer Kaeso-Installation, was jeder von ihnen speichert und wie sie voneinander getrennt sind.
+nav: Funktionsweise
+order: 2
+---
+
+Eine Kaeso-Installation ist ein Docker-Compose-Projekt, das unter einer Domain antwortet. Wenn Sie seine Teile kennen, wissen Sie, was Sie sichern, welche Ports Sie öffnen und wo Sie bei einem Fehler nachsehen.
+
+```mermaid
+flowchart TD
+  accTitle: Die Dienste einer Kaeso-Installation
+  accDescr: Caddy nimmt HTTPS-Anfragen an und leitet die APIs an das Gateway und alles andere an die Konsole weiter. Nur das Gateway erreicht PostgreSQL, ClickHouse und Valkey, und es ruft die Anbieter auf.
+  clients[Apps und Browser] -->|HTTPS| caddy[Caddy]
+  caddy -->|/v1 und /platform| gateway[Gateway]
+  caddy -->|Alle anderen Pfade| console[Konsole]
+  gateway --> postgres[(PostgreSQL)]
+  gateway --> clickhouse[(ClickHouse)]
+  gateway --> valkey[(Valkey)]
+  gateway -->|HTTPS| providers[OpenAI und Anthropic]
+```
+
+## Dienste
+
+`compose.yaml` startet sechs Dienste. Sie legt die Images von Gateway und Konsole auf die Version des Releases fest, alle anderen auf eine Version und einen Digest.
+
+| Dienst | Aufgabe | Seine Daten |
+| --- | --- | --- |
+| `caddy` | Terminiert TLS mit einem Zertifikat, das er selbst bezieht und erneuert, und leitet Anfragen weiter | Die Volumes `caddy_data` und `caddy_config` |
+| `gateway` | Stellt die Modell-API, die Platform API und die Health-Checks auf Port 8080 bereit und die Metriken auf Port 9100. Ruft die Anbieter auf und sendet E-Mails | Keine |
+| `console` | Stellt die Weboberfläche bereit | Keine |
+| `postgres` | Speichert Benutzer, Organisationen, Projekte, Schlüssel, verschlüsselte Anbieter-Schlüssel, Kataloge, Limits, Nutzung und Audit-Logs | Das Volume `postgres` |
+| `clickhouse` | Speichert Anfrageprotokolle und Nutzungsaggregate | Das Volume `clickhouse` |
+| `valkey` | Hält Raten- und Budgetzähler und gemeinsame Caches | Das Volume `valkey` |
+
+Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, für [Updates mit einem Klick](upgrades.md#updates-mit-einem-klick).
+
+## Dateien
+
+Eine Installation ist ein Ordner, den nur Sie lesen können. Er enthält diese Dateien:
+
+| Datei | Enthält |
+| --- | --- |
+| `compose.yaml` | Die Dienste, aus dem Kaeso-Release. Ein Upgrade ersetzt sie. |
+| `.env` | Ihre Einstellungen: die Domain, die Datenbankpasswörter und E-Mail ([Konfiguration](configuration.md#einstellungen-in-der-env)). |
+| `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` liest. |
+| `compose.override.yaml` | Optional. Ihre eigenen Änderungen an den Diensten, die ein Upgrade beibehält. |
+
+Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Backups auf ([Backups und Hauptschlüssel](backups.md)).
+
+## Der erste Start
+
+`docker compose up -d --wait` startet die Dienste in dieser Reihenfolge und kehrt zurück, sobald jeder als gesund gemeldet ist:
+
+1. PostgreSQL, ClickHouse und Valkey starten. Das Gateway wartet, bis PostgreSQL und Valkey gesund sind.
+2. Das Gateway prüft seine Einstellungen. Eine fehlende oder ungültige Einstellung hält es an, mit einer Meldung, die die Einstellung nennt, nie ihren Wert.
+3. Das Gateway migriert PostgreSQL, bevor es irgendetwas bereitstellt. ClickHouse migriert es im Hintergrund und versucht es erneut, bis ClickHouse antwortet.
+4. Solange die Installation keine Benutzer hat, protokolliert das Gateway, dass sie noch nicht eingerichtet ist. Den Einrichtungslink protokolliert es nie, denn wer das Log liest, könnte damit die Installation übernehmen.
+5. Sobald Gateway und Konsole gesund sind, startet Caddy und bezieht das Zertifikat im Hintergrund.
+
+`kaeso setup-link` gibt den Einrichtungslink aus, der den ersten Benutzer anlegt. Dieser wird Instanz-Admin und Inhaber der ersten Organisation. Alle anderen kommen per Einladung dazu oder registrieren sich, wo die Instanz es erlaubt ([Instanzverwaltung](../console/instance-administration.md)).
+
+## Isolation
+
+Die Dienste teilen so wenig wie möglich:
+
+- PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk ohne Weg nach außen, und nur das Gateway erreicht sie.
+- Kein Container kann Rechte hinzugewinnen. Gateway und Konsole laufen ohne Linux-Capabilities, und das Dateisystem des Gateways ist schreibgeschützt. Caddy behält nur das Recht, die Ports 80 und 443 zu belegen.
+- Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort.
+- Caddy sendet `Strict-Transport-Security` und leitet den Metrik-Port des Gateways, 9100, nie weiter.
+
+## Mehrere Gateways
+
+Das Gateway hält keinen eigenen Zustand. Für mehrere Instanzen stellen Sie sie hinter denselben Proxy und verbinden sie mit denselben PostgreSQL-, ClickHouse- und Valkey-Diensten:
+
+- Valkey meldet jeder Instanz, wenn sich ein Eintrag im Cache ändert.
+- Hintergrundjobs laufen jeweils auf einer Instanz, unter PostgreSQL-Sperren.
+- Migrationen laufen unter einer Sperre, sodass eine Instanz migriert, während die anderen warten.
+- Jede Instanz puffert und schreibt ihre eigenen Zeilen der Anfrageprotokolle und ihre eigene Nutzung.
+
+## Namen, die bleiben
+
+Jedes Release behält diese Namen, damit eine neue `compose.yaml` Ihre Daten findet:
+
+- Das Compose-Projekt `kaeso` mit seinen Diensten `caddy`, `gateway`, `console`, `postgres`, `clickhouse` und `valkey`, dazu `updater` und `docker-proxy` im Profil `updater`.
+- Die Volumes `kaeso_postgres`, `kaeso_clickhouse` und `kaeso_valkey` für Daten, `kaeso_caddy_data` und `kaeso_caddy_config` für Zertifikate sowie `kaeso_maintenance` und `kaeso_updater` für den Updater.
+- Die Images `ghcr.io/logicplanes/kaeso-gateway`, `ghcr.io/logicplanes/kaeso-console` und `ghcr.io/logicplanes/kaeso-updater`, getaggt mit der Version des Releases.
+
+> [!WARNING]
+> Führen Sie Compose im Ordner der Installation aus, ohne `-p` oder `COMPOSE_PROJECT_NAME`. Unter einem anderen Projektnamen startet Compose mit neuen, leeren Volumes.

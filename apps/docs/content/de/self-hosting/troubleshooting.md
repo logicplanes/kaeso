@@ -1,7 +1,7 @@
 ---
 title: Fehlerbehebung
 description: Häufige Probleme mit einer Installation und ihre Lösung.
-order: 10
+order: 11
 ---
 
 Mit dem Log des Gateways beginnen; es nennt die Einstellung, die Anfrage oder den betroffenen Dienst:
@@ -69,7 +69,7 @@ In den OpenAI-Formaten kommen manche eigene 503-Fehler des Gateways als 500 an.
 
 ## Streams brechen nach einer Minute ab
 
-Ein Proxy oder Load Balancer zwischen App und Kaeso schließt Verbindungen im Leerlauf. Das Gateway schreibt alle 15 Sekunden ein Keepalive, solange ein Stream schweigt; schließt ein Proxy auf dem Weg Verbindungen früher, `KAESO_STREAMS_KEEPALIVE_INTERVAL` in der [`compose.override.yaml`](installation.md#lokale-änderungen) senken. Hinter einem eigenen Proxy außerdem das Puffern von Antworten für `/v1/` abschalten. Siehe [Lange Streams](domains-and-tls.md#lange-streams).
+Ein Proxy oder Load Balancer zwischen App und Kaeso schließt Verbindungen im Leerlauf. Das Gateway schreibt alle 15 Sekunden ein Keepalive, solange ein Stream schweigt; schließt ein Proxy auf dem Weg Verbindungen früher, `KAESO_STREAMS_KEEPALIVE_INTERVAL` in der [`compose.override.yaml`](installation.md#dienste-ändern) senken. Hinter einem eigenen Proxy außerdem das Puffern von Antworten für `/v1/` abschalten. Siehe [Lange Streams](domains-and-tls.md#lange-streams).
 
 ## Anfrageprotokolle fehlen oder kommen spät
 

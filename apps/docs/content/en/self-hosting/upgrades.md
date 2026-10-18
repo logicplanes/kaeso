@@ -1,7 +1,7 @@
 ---
 title: Upgrades
 description: Learn about new releases, update by hand or in one click with the updater, and what happens while Kaeso updates.
-order: 7
+order: 8
 ---
 
 Releases follow semantic versioning, and every part of Kaeso shares the release's version number. Each release's notes are on the [releases page](https://github.com/logicplanes/kaeso/releases) and, for instance admins, in the console under **Settings** › **Instance** › **Updates**. Each release's `compose.yaml` pins the gateway, console and updater images of that release.
@@ -24,7 +24,7 @@ The three settings start from `KAESO_UPDATES_CHECK`, `KAESO_UPDATES_CHANNEL` and
 
 ### Installs without internet access
 
-Turn **Look for new releases** off, or set `KAESO_UPDATES_CHECK=false` in [`compose.override.yaml`](installation.md#local-changes) before the first start. The page then shows the running version and updates by hand as below. `KAESO_UPDATES_RELEASES_URL` points the gateway at a mirror that answers like GitHub's releases API, if you keep one; the gateway then fetches release manifests only from the mirror's own address.
+Turn **Look for new releases** off, or set `KAESO_UPDATES_CHECK=false` in [`compose.override.yaml`](installation.md#change-the-services) before the first start. The page then shows the running version and updates by hand as below. `KAESO_UPDATES_RELEASES_URL` points the gateway at a mirror that answers like GitHub's releases API, if you keep one; the gateway then fetches release manifests only from the mirror's own address.
 
 ## Which releases update in one click
 

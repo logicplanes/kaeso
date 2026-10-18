@@ -1,33 +1,46 @@
 ---
 title: Requirements
-description: What a server needs to run Kaeso.
+description: The server, network access and disk space a Kaeso install needs.
 order: 1
 ---
 
+Kaeso runs on one Linux server with Docker. Size the disk by how many requests you log.
+
 ## Server
 
-- Linux with Docker Engine and Docker Compose 2.24 or newer. The images are published for `linux/amd64` and `linux/arm64`. [One-click updates](upgrades.md#one-click-updates) need Docker Engine 25 or newer, whose API version 1.44 the updater speaks.
-- At least 2 vCPUs and 4 GB of memory, of which ClickHouse uses about 2 GB.
-- At least 20 GB of disk, plus room for request logs.
+| Resource | Minimum |
+| --- | --- |
+| System | Linux with Docker Engine and Docker Compose 2.24 or newer, on `linux/amd64` or `linux/arm64` |
+| CPU | 2 vCPUs |
+| Memory | 4 GB, of which ClickHouse uses about 2 GB |
+| Disk | 20 GB, plus room for request logs |
+
+[One-click updates](upgrades.md#one-click-updates) also need Docker Engine 25 or newer.
 
 ## Network
 
-- A domain whose DNS record points at the server.
-- Ports 80 and 443 open to the internet, for the certificate and for HTTPS. Caddy also answers HTTP/3 on UDP port 443 where it is open.
-- Outgoing HTTPS to the providers you use (`api.openai.com`, `api.anthropic.com`) and to `models.dev`, where the gateway refreshes model data once a day. An install without internet access to `models.dev` works with the model data built into the release; turn the refresh off with `KAESO_MODELS_DEV_SYNC=false` in [`compose.override.yaml`](installation.md#local-changes).
-- Outgoing HTTPS to `api.github.com`, where the gateway looks for new Kaeso releases twice a day, and, for [one-click updates](upgrades.md#one-click-updates), to `github.com`, `objects.githubusercontent.com` and `ghcr.io`. An install without it updates by hand; turn the check off as [upgrades](upgrades.md#installs-without-internet-access) describes.
-- An SMTP server for sign-in links, invitations, budget alerts and security notices. See [email](email.md).
+The install needs a domain whose DNS record points at the server, and these connections:
+
+| Direction | Ports or hosts | For |
+| --- | --- | --- |
+| Incoming | TCP ports 80 and 443, and UDP port 443 for HTTP/3 | The certificate and HTTPS |
+| Outgoing | `api.openai.com`, `api.anthropic.com` | The providers you use |
+| Outgoing | `models.dev` | Model data, refreshed once a day |
+| Outgoing | `api.github.com` | Looking for new Kaeso releases, twice a day |
+| Outgoing | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | One-click updates |
+| Outgoing | Your SMTP server | Sign-in links, invitations, alerts and security notices ([email](email.md)) |
+
+Without internet access, Kaeso works with the model data built into the release, and you update by hand. Turn off the outgoing checks as [installs without internet access](upgrades.md#installs-without-internet-access) shows.
 
 ## Disk for request logs
 
-Request logs live in ClickHouse. Measured on 200,000 synthetic requests with about 2.5 KB of request and reply text each, after ClickHouse merged its parts:
+Request logs live in ClickHouse. Plan for this much disk per million requests:
 
-| Data | On disk per million requests |
+| Logging | Per million requests |
 | --- | --- |
-| Metadata: model, status, tokens, cost, timing | About 63 MB |
-| Content: requests and replies | About 545 MB, or 0.21 bytes per byte of text |
-| Usage rollups | At most 40 MB, usually far less |
+| Metadata only: model, status, tokens, cost and timing | About 0.1 GB |
+| Metadata and content, at about 2.5 KB of text per request | About 0.65 GB |
 
-Plan for about 0.1 GB per million requests without content logging and 0.65 GB with it, and scale the content share with the size of your prompts and replies. Retention caps the total: at a million requests a day and the default retention of 90 days for metadata and 30 days for content, that is about 6 GB of metadata and 16 GB of content.
+Content grows with the size of your prompts and replies. Retention caps the total. At a million requests a day, the default retention keeps about 6 GB of metadata (90 days) and 16 GB of content (30 days).
 
-Each organization sets its retention under [logging](../console/request-logs.md#retention), within the instance's maximums. The organization's **Logging** page and the instance's **System** page show the actual sizes.
+Each organization chooses its retention on its **Logging** page, within the instance's maximums ([request logs](../console/request-logs.md)). The instance's **System** page shows how much the logs take.

@@ -1,7 +1,7 @@
 ---
 title: Email
 description: How Kaeso sends email, what it sends, in which language, and how to test it.
-order: 5
+order: 6
 ---
 
 Kaeso sends email for sign-in links, invitations, password resets, key expiry warnings, budget alerts and security notices. The gateway sends every email itself, over SMTP.

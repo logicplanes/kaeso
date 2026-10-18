@@ -1,7 +1,7 @@
 ---
 title: 配置
 description: Kaeso 实例的每项设置、它们的位置，以及网关如何读取它们。
-order: 3
+order: 4
 ---
 
 实例的设置保存在 `compose.yaml` 旁边。[第一张表](#env-中的设置)中的变量写在 `.env` 里，网关的其他设置都写在 `compose.override.yaml` 里：

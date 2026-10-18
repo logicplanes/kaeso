@@ -1,7 +1,7 @@
 ---
 title: E-Mail
 description: Wie Kaeso E-Mails versendet, was es sendet, in welcher Sprache und wie es sich testen lässt.
-order: 5
+order: 6
 ---
 
 Kaeso sendet E-Mails für Anmeldelinks, Einladungen, das Zurücksetzen von Passwörtern, Warnungen vor ablaufenden Schlüsseln, Budget-Warnungen und Sicherheitshinweise. Das Gateway versendet jede E-Mail selbst über SMTP.
