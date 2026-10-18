@@ -50,6 +50,12 @@ const MAIL_FLUSH_WAIT: Duration = Duration::from_secs(10);
 const HTTP2_PING_INTERVAL: Duration = Duration::from_secs(30);
 const HTTP2_PING_TIMEOUT: Duration = Duration::from_secs(20);
 const ACCEPT_RETRY_WAIT: Duration = Duration::from_secs(1);
+const POSTGRES_RETRY_WAIT: Duration = Duration::from_secs(2);
+const CLICKHOUSE_MIGRATION_RETRY_WAIT: Duration = Duration::from_secs(5);
+const USAGE_FLUSH_INTERVAL: Duration = Duration::from_secs(10);
+const METRICS_SHUTDOWN_GRACE: Duration = Duration::from_secs(1);
+const IN_FLIGHT_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
+const LOG_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Default)]
 pub struct Overrides {
@@ -117,7 +123,7 @@ async fn migrate_postgres(pool: &sqlx::PgPool) -> Result<(), StoreError> {
             Err(StoreError::Migrate(msg)) => return Err(StoreError::Migrate(msg)),
             Err(e) if tokio::time::Instant::now() < deadline => {
                 tracing::warn!(error = %e, "PostgreSQL is not reachable yet; retrying");
-                tokio::time::sleep(Duration::from_secs(2)).await;
+                tokio::time::sleep(POSTGRES_RETRY_WAIT).await;
             }
             Err(e) => return Err(e),
         }
@@ -158,7 +164,7 @@ pub fn spawn_clickhouse_migrations(state: AppState, shutdown: CancellationToken)
             }
             tokio::select! {
                 () = shutdown.cancelled() => return,
-                () = tokio::time::sleep(Duration::from_secs(5)) => {}
+                () = tokio::time::sleep(CLICKHOUSE_MIGRATION_RETRY_WAIT) => {}
             }
         }
     });
@@ -169,10 +175,10 @@ pub fn spawn_usage_flusher(state: AppState, shutdown: CancellationToken) {
         loop {
             tokio::select! {
                 () = shutdown.cancelled() => return,
-                () = tokio::time::sleep(Duration::from_secs(10)) => {}
+                () = tokio::time::sleep(USAGE_FLUSH_INTERVAL) => {}
             }
             if let Err(e) = crate::services::usage::flush(&state).await {
-                tracing::warn!(error = %e, "cannot write usage; retrying in 10 seconds");
+                tracing::warn!(error = %e, retry_in = ?USAGE_FLUSH_INTERVAL, "cannot write usage; retrying");
             }
         }
     });
@@ -213,13 +219,13 @@ pub async fn run(
             internal,
             metrics_app,
             shutdown.clone(),
-            Duration::from_secs(1),
+            METRICS_SHUTDOWN_GRACE,
             header_read_timeout
         ),
     );
     public?;
     internal?;
-    let open = state.in_flight.end(Duration::from_secs(10)).await;
+    let open = state.in_flight.end(IN_FLIGHT_SHUTDOWN_WAIT).await;
     if open > 0 {
         tracing::error!(open, "requests could not record their outcome at shutdown");
     }
@@ -227,7 +233,7 @@ pub async fn run(
         Ok(n) => tracing::info!(rows = n, "usage written"),
         Err(e) => tracing::error!(error = %e, "cannot write the last usage at shutdown"),
     }
-    let written = crate::services::logs::flush_all(&state, Duration::from_secs(10)).await;
+    let written = crate::services::logs::flush_all(&state, LOG_FLUSH_SHUTDOWN_WAIT).await;
     let left = state.logs.len();
     if left > 0 {
         tracing::error!(

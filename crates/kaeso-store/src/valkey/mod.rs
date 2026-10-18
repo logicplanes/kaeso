@@ -8,6 +8,10 @@ use tokio::sync::mpsc;
 use crate::StoreError;
 
 const INVALIDATE: &str = "invalidate";
+const CONNECTION_TIMEOUT: Duration = Duration::from_secs(1);
+const RESPONSE_TIMEOUT: Duration = Duration::from_secs(1);
+const MAX_RECONNECT_DELAY: Duration = Duration::from_millis(200);
+const SUBSCRIBE_RETRY_WAIT: Duration = Duration::from_secs(1);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Invalidation {
@@ -36,10 +40,10 @@ impl Valkey {
         let client = redis::Client::open(url.expose_secret())
             .map_err(|_| StoreError::Config("KAESO_VALKEY_URL is not a valid Valkey URL".into()))?;
         let config = ConnectionManagerConfig::new()
-            .set_connection_timeout(Some(Duration::from_secs(1)))
-            .set_response_timeout(Some(Duration::from_secs(1)))
+            .set_connection_timeout(Some(CONNECTION_TIMEOUT))
+            .set_response_timeout(Some(RESPONSE_TIMEOUT))
             .set_number_of_retries(1)
-            .set_max_delay(Duration::from_millis(200));
+            .set_max_delay(MAX_RECONNECT_DELAY);
         let manager = ConnectionManager::new_lazy_with_config(client.clone(), config)?;
         Ok(Valkey {
             client,
@@ -107,7 +111,7 @@ impl Valkey {
                         tracing::warn!(error = %e, "cannot subscribe to Valkey invalidations; retrying");
                     }
                 }
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                tokio::time::sleep(SUBSCRIBE_RETRY_WAIT).await;
             }
         });
         rx
