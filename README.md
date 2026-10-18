@@ -22,6 +22,27 @@
 <img alt="A walk through the Kaeso console: connecting an Anthropic provider key, creating an API key, sending a request to claude-haiku-5-5 from a terminal, and the request arriving at the top of the request logs" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-light.gif#gh-light-mode-only">
 <img alt="A walk through the Kaeso console: connecting an Anthropic provider key, creating an API key, sending a request to claude-haiku-5-5 from a terminal, and the request arriving at the top of the request logs" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-dark.gif#gh-dark-mode-only">
 
+## Quick start
+
+```bash
+mkdir -m 700 kaeso && cd kaeso
+curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+cat > .env <<EOF
+KAESO_DOMAIN=localhost
+KAESO_MAIL_TRANSPORT=log
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
+CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
+VALKEY_PASSWORD=$(openssl rand -hex 24)
+EOF
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+chmod 644 master-keys
+docker compose up -d --wait
+docker compose exec gateway kaeso setup-link
+```
+
+Open the link it prints to create the first user, then follow the [quick start](https://docs.kaeso.app/get-started/quick-start) to run Kaeso on your own domain, connect a provider and send the first request.
+
 ## License
 
 [MIT](LICENSE). The Kaeso name and logo are not covered by the license. Third-party notices are in [NOTICE.md](NOTICE.md).
