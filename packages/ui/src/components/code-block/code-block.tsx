@@ -57,7 +57,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const tokenLines = highlighted && highlighted.lang === (current.lang ?? "ts") && highlighted.text === text ? highlighted.tokens : null;
   const collapsed = collapseAfter > 0 && lines.length > collapseAfter && !expanded;
   const visible = collapsed ? collapseAfter : lines.length;
-  const codeClass = cn("relative overflow-x-auto py-16 scrollbar-quiet focus-ring-inset", collapsed && "overflow-y-hidden");
+  const codeClass = cn("relative overflow-x-auto py-16 scrollbar-quiet focus-ring-inset", collapsed && "overflow-y-hidden", copy && "coarse:mr-40");
   const source = (
     <pre className="mono text-small text-fg">
       <code className={cn("grid", !wrap && "min-w-max")}>
