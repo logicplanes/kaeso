@@ -259,7 +259,7 @@ describe("creating a platform key", () => {
       within(calendar)
         .queryAllByRole("button")
         .filter((b) => /, \d{4}$/.test(b.getAttribute("aria-label") ?? "") && !b.hasAttribute("disabled"));
-    if (days().length === 0) await user.click(within(calendar).getByRole("button", { name: /Next Month/ }));
+    if (days().length === 0) await user.click(within(calendar).getByRole("button", { name: /next month/i }));
     await user.click(days()[0] as HTMLElement);
     await waitFor(() => expect(within(dialog).getByRole("button", { name: "Create key" })).not.toHaveAttribute("aria-disabled", "true"));
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));

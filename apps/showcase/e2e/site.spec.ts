@@ -116,7 +116,7 @@ test.describe("search on a phone", () => {
 
   const words = {
     en: { search: "Search", nav: "Open navigation", placeholder: "Search pages, components and props" },
-    de: { search: "Suchen", nav: "Navigation öffnen", placeholder: "Seiten, Komponenten, Props suchen" },
+    de: { search: "Suchen", nav: "Navigation öffnen", placeholder: "Seiten, Komponenten und Props suchen" },
     "zh-CN": { search: "搜索", nav: "打开导航", placeholder: "搜索页面、组件和属性" },
   } as const;
 

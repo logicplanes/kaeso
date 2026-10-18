@@ -190,7 +190,7 @@ describe("CreateKeyDialog", () => {
       within(calendar)
         .queryAllByRole("button")
         .filter((b) => /, \d{4}$/.test(b.getAttribute("aria-label") ?? "") && !b.hasAttribute("disabled"));
-    if (enabled().length === 0) await user.click(within(calendar).getByRole("button", { name: /Next Month/ }));
+    if (enabled().length === 0) await user.click(within(calendar).getByRole("button", { name: /next month/i }));
     expect(
       within(calendar)
         .getAllByRole("button")

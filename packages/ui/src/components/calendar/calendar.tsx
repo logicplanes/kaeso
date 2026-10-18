@@ -59,8 +59,8 @@ function localized(locale: string, t: UiText): { formatters: Partial<Formatters>
       formatWeekdayName: (weekday) => weekdayShort.format(weekday).replace(/\.$/, ""),
     },
     labels: {
-      labelPrevious: () => t("calendar.previousMonth", "Go to the Previous Month"),
-      labelNext: () => t("calendar.nextMonth", "Go to the Next Month"),
+      labelPrevious: () => t("calendar.previousMonth", "Go to the previous month"),
+      labelNext: () => t("calendar.nextMonth", "Go to the next month"),
       labelNav: () => t("calendar.navigation", "Navigation bar"),
       labelGrid: (month) => monthYear.format(month),
       labelWeekday: (weekday) => weekdayLong.format(weekday),
