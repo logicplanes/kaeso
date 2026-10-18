@@ -17,13 +17,13 @@ curl -i https://kaeso.example.com/v1/responses \
 
 ```python tab="Python"
 import os
-import openai
+from openai import APIStatusError, OpenAI
 
-client = openai.OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
 
 try:
     client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
-except openai.APIStatusError as error:
+except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
     print(error.message)
 ```
@@ -87,9 +87,9 @@ curl -i https://kaeso.example.com/v1/messages \
 
 ```python tab="Python"
 import os
-import anthropic
+from anthropic import Anthropic, APIStatusError
 
-client = anthropic.Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
 
 try:
     client.messages.create(
@@ -97,7 +97,7 @@ try:
         max_tokens=1024,
         messages=[{"role": "user", "content": "Write a haiku about gateways."}],
     )
-except anthropic.APIStatusError as error:
+except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
     print(error.message)
 ```
