@@ -9,10 +9,6 @@ repository.workspace = true
 homepage.workspace = true
 publish.workspace = true
 
-[[bin]]
-name = "kaeso"
-path = "src/main.rs"
-
 [dependencies]
 kaeso-server.workspace = true
 kaeso-crypto.workspace = true
