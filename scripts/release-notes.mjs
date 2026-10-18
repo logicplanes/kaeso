@@ -159,10 +159,10 @@ The user message holds everything about the release as JSON between <release-dat
 Answer with the JSON the schema describes:
 - summary: two to four sentences of plain text on what the release means for people who run or integrate Kaeso.
 - sections: Keep a Changelog sections (Added, Changed, Deprecated, Removed, Fixed, Security). A pull request's type label (added, changed, deprecated, removed, fixed, security) chooses its section when it has one. Within a section, a topic groups entries: Gateway, KPP, Console, UI library, Documentation or Self-hosting, following a pull request's area label when it has exactly one, or "" for entries without a topic.
-- Each entry: one or more sentences in the style of earlier_notes and curated_notes: present tense, what changed and why it matters to someone who runs or integrates Kaeso, specific, no hype, no exclamation marks, no emojis. Group closely related pull requests into one entry when that reads better.
+- Each entry: one to three sentences in the style of earlier_notes and curated_notes, at most ${ENTRY_LIMIT} characters and usually under 400: present tense, what changed and why it matters to someone who runs or integrates Kaeso, specific, no hype, no exclamation marks, no emojis. Group closely related pull requests into one entry when that reads better.
 - prs: the numbers of the pull requests an entry describes. Every number in must_list appears in exactly one entry of sections, and no other number appears. Never write pull request or issue numbers in the text.
 - Text is plain: no Markdown links or images, no HTML, no addresses or URLs, no headings, no @mentions. Inline code in backticks is fine for settings, fields, endpoints, commands and file names.
-- curated_notes, when present, are the maintainer's own lines for this release: keep their meaning and prefer their wording, attach the pull requests they describe, and keep a line without a matching pull request with empty prs.
+- curated_notes, when present, are the maintainer's own lines for this release: keep their meaning and prefer their wording, shorten a line that is longer than an entry may be, attach the pull requests they describe, and keep a line without a matching pull request with empty prs. A curated line and the pull request it describes are one entry, never two.
 - prerelease_notes, when present, are the notes of this version's pre-releases, which this release replaces: carry their entries over, rewritten where that reads better.
 - breaking: only changes that make people who run or integrate Kaeso act when they upgrade, such as pull requests labelled breaking. Each one also stays an entry in its section.
 - contributors: exactly the people listed in contributors, with first_time as given.
@@ -171,6 +171,9 @@ Answer with the JSON the schema describes:
 const dataOf = (facts) => JSON.stringify(facts, null, 2).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
 
 export const prompt = (facts) => `<release-data>\n${dataOf(facts)}\n</release-data>`;
+
+export const correction = (problems) =>
+  `Your answer breaks these rules:\n${problems.map((problem) => `- ${problem}`).join("\n")}\n\nAnswer again with the whole corrected JSON.`;
 
 export function factsOf(collected, changelog, version = null) {
   const known = context(changelog, version ?? "next");
@@ -190,13 +193,15 @@ export function factsOf(collected, changelog, version = null) {
   };
 }
 
-export async function ask(client, facts, model = MODEL) {
+export async function ask(client, facts, model = MODEL, earlier = null) {
+  const messages = [{ role: "user", content: prompt(facts) }];
+  if (earlier) messages.push({ role: "assistant", content: JSON.stringify(earlier.output) }, { role: "user", content: correction(earlier.problems) });
   const stream = client.messages.stream(
     {
       model,
       max_tokens: MAX_TOKENS,
       system: SYSTEM,
-      messages: [{ role: "user", content: prompt(facts) }],
+      messages,
       output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
     },
     { signal: AbortSignal.timeout(DEADLINE) },
@@ -319,8 +324,12 @@ export async function write({ collected, changelog, version = null, client, mode
     return null;
   }
   try {
-    const output = await ask(client, facts, model);
-    const problems = check(output, facts);
+    let output = await ask(client, facts, model);
+    let problems = check(output, facts);
+    if (problems.length) {
+      output = await ask(client, facts, model, { output, problems });
+      problems = check(output, facts);
+    }
     if (problems.length) throw new Error(`the notes break the rules: ${problems.slice(0, 5).join("; ")}`);
     return render(output, facts);
   } catch (error) {
