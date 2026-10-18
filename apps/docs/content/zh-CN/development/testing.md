@@ -307,7 +307,7 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推
 | TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check`；端到端作业测试的就是这里构建出的库和站点 |
 | End-to-end console (1/3, 2/3, 3/3) | 针对网关镜像分三部分运行 `pnpm --filter kaeso-console e2e`，每部分使用自己的栈 |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
-| End-to-end showcase (1/6 至 6/6) | 针对 TypeScript build 构建的展示站点，分六个分片（`playwright test --shard`）运行 `pnpm --filter kaeso-showcase e2e` |
+| End-to-end showcase (chromium 1/8 至 8/8, webkit 1/1) | 针对 TypeScript build 构建的展示站点运行 `pnpm --filter kaeso-showcase e2e`：`chromium` 项目分成八个分片（`playwright test --shard`），`webkit` 项目在单独的作业中运行 |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 | CI | 必需检查 |
 
@@ -318,7 +318,7 @@ CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推
 - **TypeScript build** 只构建一次库和两个站点，并以制品的形式传给其他作业。只要 End-to-end console 运行，它就会运行，因此 Rust 和部署的变更也会触发它。
 - 三个镜像作业并行运行。Images (gateway) 和 TypeScript build 完成后，End-to-end console 立即开始；安装测试等待全部三个镜像。
 - 控制台的单元测试是所有 TypeScript 测试中耗时最长的，因此分成三个分片运行。每个分片在关闭阈值的情况下运行，因为三分之一的测试只覆盖部分代码；**TypeScript test (console coverage)** 合并各分片记录的覆盖率，并像 `pnpm test` 一样，把 `apps/console/vitest.config.ts` 中的阈值应用到整体上。
-- 展示站点的测试彼此独立，用 Playwright 的 `--shard` 分成六个分片运行。
+- 展示站点的测试彼此独立。`chromium` 项目用 Playwright 的 `--shard` 分成八个分片运行；`webkit` 项目只包含导航侧滑面板的测试，在单独的作业中运行，因此只有这个作业需要安装 WebKit 及其所需的系统软件包。
 - 控制台的用例相互依赖，因此无法用 `--shard` 拆分。每部分启动自己的栈，先运行 `01-public`，再运行那些数据只来自同一部分中前面用例的用例：第 1 部分是项目的页面（`02-models` 至 `08-palette`、`11-instance`、`13-keyboard`、`16-period`），第 2 部分是组织（`02-models`、`04-members`、`10-org`、`12-lifecycle`、`19-roles`），第 3 部分是其余所有用例。新用例只要没有被工作流中的 `PART_1` 或 `PART_2` 列出，就会在第 3 部分运行；那里列出的名称如果没有对应的用例，作业就会失败。
 - 某个分片或部分失败时，**End-to-end showcase report** 或 **End-to-end console report** 会把各分片的 blob 报告合并成一个 HTML 报告，即制品 `playwright-showcase` 或 `playwright-console`。这两个作业不属于必需检查。
 
