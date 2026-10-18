@@ -234,7 +234,7 @@ Every organization member has one organization role, and every project member an
 
 A grant is sent as `{"role": "developer", "rights_added": [], "rights_removed": []}`, where `role` is a built-in role's name or a custom role's id; `preset` is its deprecated name. It comes back with `role` (`{id, kind, name}`), the effective `rights` and, for organization grants, `project_rights`. Invitations take `role` and `project_roles: [{project_id, role}]`; the single sign-on setup takes `default_role`.
 
-Every change of rights, to a grant or a custom role, follows the [grant rules](../concepts/rights.md#grant-rules). A change that breaks one is refused with 400, and the message names the rights involved, such as "`logs.delete` needs `logs.storage.view`; remove `logs.delete` too."
+Every change of rights, to a grant or a custom role, follows the [grant rules](../concepts/rights.md#grant-rules). Giving a right the caller doesn't hold, or changing a member who holds a right the caller lacks, is refused with 403, such as "You can't grant `audit_log.view`: you don't hold it yourself." Giving a right without one it needs, or removing one that another right needs, is refused with 400, and the message names both, such as "`logs.delete` needs `logs.storage.view`; remove `logs.delete` too."
 
 The sources of an effective right are `owner`, `role` (the organization role, for organization rights), `project_role`, `added`, `org_role` (the organization role's rights in every project), `org_right` (an organization right that reaches into projects, such as `projects.view.all`) and `key` (an API key acting in the project).
 

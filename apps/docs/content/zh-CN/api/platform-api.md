@@ -234,7 +234,7 @@ ORG=$(curl -s -b "$JAR" "$KAESO/platform/v1/auth/session" | jq -r '.memberships[
 
 授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 的形式发送，其中 `role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的旧名称。返回时带有 `role`（`{id, kind, name}`）、有效的 `rights`，组织授权还带有 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`；单点登录设置接受 `default_role`。
 
-每次更改权限，无论针对授权还是自定义角色，都遵循[授权规则](../concepts/rights.md#授权规则)。违反规则的更改会以 400 被拒绝，消息会指出涉及的权限，例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
+每次更改权限，无论针对授权还是自定义角色，都遵循[授权规则](../concepts/rights.md#授权规则)。授予调用者自己没有的权限，或更改持有调用者所缺权限的成员，会以 403 被拒绝，例如 “You can't grant `audit_log.view`: you don't hold it yourself.” 授予权限时缺少它依赖的权限，或移除其他权限所依赖的权限，会以 400 被拒绝，消息会同时指出两项权限，例如 “`logs.delete` needs `logs.storage.view`; remove `logs.delete` too.”
 
 有效权限的来源包括 `owner`、`role`（组织角色，用于组织权限）、`project_role`、`added`、`org_role`（组织角色在所有项目中的权限）、`org_right`（延伸到项目中的组织权限，例如 `projects.view.all`）以及 `key`（在项目中行事的 API 密钥）。
 
