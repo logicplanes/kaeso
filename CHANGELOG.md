@@ -4,6 +4,41 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-18
+
+Kaeso 0.2.2 lets installs update themselves in a daily or weekly window, and it replaces the `updates.apply` setting with `updates.mode`, so remove `apply` from any TOML file before you upgrade. Installs now look for releases at Kaeso's own update service instead of GitHub's API, so they need outgoing access to it or a mirror set in `updates.releases_url`. Each install has one time zone that the console uses for every time it shows, and users see a What's new dialog once after an update. The release also splits the instance settings into General, Logging and System pages and fixes phone zoom and the sign-in method prompt.
+
+- **Breaking:** `updates.apply` and `KAESO_UPDATES_APPLY` are replaced by `updates.mode` and `KAESO_UPDATES_MODE`; remove `apply` from any TOML file before you upgrade. ([#160](https://github.com/logicplanes/kaeso/pull/160))
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.2.1...v0.2.2](https://github.com/logicplanes/kaeso/compare/v0.2.1...v0.2.2)
+
+### Added
+
+- Each install has one IANA time zone, set in `instance.timezone` (`KAESO_INSTANCE_TIMEZONE`, default `UTC`). The setup page takes the first user's browser zone, instance admins change it under General, and the console shows every time in it. Platform API responses carry it in the `Kaeso-Time-Zone` header, and API timestamps stay RFC 3339 in UTC. ([#159](https://github.com/logicplanes/kaeso/pull/159))
+- Updates install either manually or automatically, in a daily or weekly window in the install's time zone, set with `updates.mode` (`KAESO_UPDATES_MODE`, `manual` or `automatic`). Major releases and releases with manual steps always wait for an admin, and only `updates.check` turns off looking for releases. `updates.apply` is replaced by `updates.mode`, and a TOML configuration that still sets `apply` is refused at start. ([#160](https://github.com/logicplanes/kaeso/pull/160))
+- After an update, the console shows what changed once, in a What's new dialog with the release's artwork and an option to show its notes. It lists each release since the last version the user saw, up to 10, newest first, and records the version as seen when the dialog closes. The Platform API adds `GET /me/whats-new` and `POST /me/whats-new/seen` for this. ([#161](https://github.com/logicplanes/kaeso/pull/161))
+- Each release gets its own artwork, chosen once by Kaeso's update service and stored with the release, so installs keep the same picture for a version. The What's new dialog draws the stored artwork and falls back to the version's own artwork when a spec is missing or unreadable. The UI library's `ReleaseArt` draws eight geometric styles in twelve palettes from a spec. ([#169](https://github.com/logicplanes/kaeso/pull/169))
+
+#### UI library
+
+- The UI library adds `ReleaseArt` for abstract release artwork and `releaseArtSvg` for writing the same picture as a standalone SVG file. `StatusDot` takes an optional `icon`, and `setFormatTimeZone` makes `formatDate`, `formatRelative` and chart axes show times in one IANA zone, while calendar pickers keep local days. ([#157](https://github.com/logicplanes/kaeso/pull/157))
+
+### Changed
+
+- Instance settings are split into General, Logging and System pages, with General first in the sidebar. The System page holds the email transport and a Send test email button, and the old `/settings/instance/settings` address is removed without a redirect. ([#158](https://github.com/logicplanes/kaeso/pull/158))
+- Installs look for new releases at Kaeso's own update service instead of GitHub's API, and `updates.releases_url` now defaults to it. A mirror that answers in the same format or in GitHub's releases format still works, and installs need outgoing access to the service. ([#162](https://github.com/logicplanes/kaeso/pull/162))
+
+#### Console
+
+- The What's new dialog only moves forward now, with Next through missed releases and Continue on the last one, so the Back button is gone. ([#168](https://github.com/logicplanes/kaeso/pull/168))
+
+### Fixed
+
+- Phones no longer zoom in when a text field is tapped in the console, the documentation or the showcase. Text fields render at 16px on touch screens, quick second taps on buttons no longer zoom, and pinch zoom still works. ([#154](https://github.com/logicplanes/kaeso/pull/154))
+- The recent sign-in dialog waits for the profile and asks the gateway which methods apply to the account, then offers exactly one way first. People without a password, such as single sign-on accounts, no longer see a password field, and disabled methods are not offered. ([#156](https://github.com/logicplanes/kaeso/pull/156))
+
 ## [0.2.1] - 2026-10-18
 
 Kaeso 0.2.1 changes only how releases are published on GitHub. The release page now shows a short summary, while CHANGELOG.md and the documentation keep the full notes. The changes in this release touch only the release workflow, the release-notes script and the releasing guide, so there is nothing to act on when you upgrade a running install.
@@ -242,7 +277,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.2
 [0.2.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.1
 [0.2.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.0
 [0.1.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.1.0
