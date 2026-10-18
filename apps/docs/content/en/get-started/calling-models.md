@@ -32,43 +32,9 @@ const response = await client.responses.create({ model: "claude-haiku-4-5", inpu
 console.log(response.output_text);
 ```
 
-The examples read your key from `KAESO_API_KEY` and call `claude-haiku-4-5`. Create a key as in the [quick start](quick-start.md), and use a model from your project's catalogue. Kaeso translates the request and the reply between formats.
+The examples read your key from `KAESO_API_KEY` and call `claude-haiku-4-5`. Create a key as in the [quick start](quick-start.md), and use a model from your project's catalogue.
 
-## Use the OpenAI SDK
-
-Set the base URL to `https://kaeso.example.com/v1`. The SDK sends the key as `Authorization: Bearer`. The same client also calls Chat Completions:
-
-```bash tab="curl"
-curl https://kaeso.example.com/v1/chat/completions \
-  -H "Authorization: Bearer $KAESO_API_KEY" \
-  -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
-```
-
-```python tab="Python"
-import os
-from openai import OpenAI
-
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
-
-completion = client.chat.completions.create(
-    model="claude-haiku-4-5",
-    messages=[{"role": "user", "content": "Write a haiku about gateways."}],
-)
-print(completion.choices[0].message.content)
-```
-
-```ts tab="TypeScript"
-import OpenAI from "openai";
-
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
-
-const completion = await client.chat.completions.create({
-  model: "claude-haiku-4-5",
-  messages: [{ role: "user", content: "Write a haiku about gateways." }],
-});
-console.log(completion.choices[0].message.content);
-```
+The OpenAI SDK takes `https://kaeso.example.com/v1` as its base URL and sends the key as `Authorization: Bearer`. The same client calls Chat Completions too. The [Model API](../api/model-api.md) shows that request and lists every endpoint.
 
 ## Use the Anthropic SDK
 

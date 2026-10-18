@@ -32,43 +32,9 @@ const response = await client.responses.create({ model: "claude-haiku-4-5", inpu
 console.log(response.output_text);
 ```
 
-示例从 `KAESO_API_KEY` 读取密钥，并调用 `claude-haiku-4-5`。按[快速开始](quick-start.md)中的步骤创建密钥，并使用项目目录中的模型。Kaeso 会在格式之间转换请求和回复。
+示例从 `KAESO_API_KEY` 读取密钥，并调用 `claude-haiku-4-5`。按[快速开始](quick-start.md)中的步骤创建密钥，并使用项目目录中的模型。
 
-## 使用 OpenAI SDK
-
-把基础 URL 设为 `https://kaeso.example.com/v1`。SDK 以 `Authorization: Bearer` 发送密钥。同一个客户端也能调用 Chat Completions：
-
-```bash tab="curl"
-curl https://kaeso.example.com/v1/chat/completions \
-  -H "Authorization: Bearer $KAESO_API_KEY" \
-  -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
-```
-
-```python tab="Python"
-import os
-from openai import OpenAI
-
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
-
-completion = client.chat.completions.create(
-    model="claude-haiku-4-5",
-    messages=[{"role": "user", "content": "Write a haiku about gateways."}],
-)
-print(completion.choices[0].message.content)
-```
-
-```ts tab="TypeScript"
-import OpenAI from "openai";
-
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
-
-const completion = await client.chat.completions.create({
-  model: "claude-haiku-4-5",
-  messages: [{ role: "user", content: "Write a haiku about gateways." }],
-});
-console.log(completion.choices[0].message.content);
-```
+OpenAI SDK 以 `https://kaeso.example.com/v1` 为基础 URL，并以 `Authorization: Bearer` 发送密钥。同一个客户端也能调用 Chat Completions。[模型 API](../api/model-api.md) 展示了这个请求，并列出了所有端点。
 
 ## 使用 Anthropic SDK
 

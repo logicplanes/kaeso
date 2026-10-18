@@ -32,43 +32,9 @@ const response = await client.responses.create({ model: "claude-haiku-4-5", inpu
 console.log(response.output_text);
 ```
 
-Die Beispiele lesen Ihren Schlüssel aus `KAESO_API_KEY` und rufen `claude-haiku-4-5` auf. Erstellen Sie einen Schlüssel wie im [Schnellstart](quick-start.md), und verwenden Sie ein Modell aus dem Katalog Ihres Projekts. Kaeso übersetzt Anfrage und Antwort zwischen den Formaten.
+Die Beispiele lesen Ihren Schlüssel aus `KAESO_API_KEY` und rufen `claude-haiku-4-5` auf. Erstellen Sie einen Schlüssel wie im [Schnellstart](quick-start.md), und verwenden Sie ein Modell aus dem Katalog Ihres Projekts.
 
-## OpenAI SDK verwenden
-
-Setzen Sie die Basis-URL auf `https://kaeso.example.com/v1`. Das SDK sendet den Schlüssel als `Authorization: Bearer`. Derselbe Client ruft auch Chat Completions auf:
-
-```bash tab="curl"
-curl https://kaeso.example.com/v1/chat/completions \
-  -H "Authorization: Bearer $KAESO_API_KEY" \
-  -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
-```
-
-```python tab="Python"
-import os
-from openai import OpenAI
-
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
-
-completion = client.chat.completions.create(
-    model="claude-haiku-4-5",
-    messages=[{"role": "user", "content": "Write a haiku about gateways."}],
-)
-print(completion.choices[0].message.content)
-```
-
-```ts tab="TypeScript"
-import OpenAI from "openai";
-
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
-
-const completion = await client.chat.completions.create({
-  model: "claude-haiku-4-5",
-  messages: [{ role: "user", content: "Write a haiku about gateways." }],
-});
-console.log(completion.choices[0].message.content);
-```
+Das OpenAI SDK erhält `https://kaeso.example.com/v1` als Basis-URL und sendet den Schlüssel als `Authorization: Bearer`. Derselbe Client ruft auch Chat Completions auf. Die [Modell-API](../api/model-api.md) zeigt diese Anfrage und listet jeden Endpunkt.
 
 ## Anthropic SDK verwenden
 
