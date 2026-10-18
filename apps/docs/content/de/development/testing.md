@@ -301,10 +301,11 @@ Bei einem Pull Request entscheidet der erste Job, welche Bereiche sich geändert
 | Install test | `pytest -q e2e/install` mit diesen Images, die echte Konsole eingeschlossen |
 | TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` und `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
+| TypeScript libraries | `pnpm build:packages`, einmal; die TypeScript-Tests und die End-to-End-Jobs nutzen, was der Job baut |
 | TypeScript test (tokens, ui, docs, showcase, scripts) | `pnpm test`, nach Workspace aufgeteilt, ein Job je Workspace: die Tests von `packages/tokens`, `packages/ui`, `apps/docs` und `apps/showcase` sowie `node --test 'scripts/*.test.mjs'`, jeweils mit den Coverage-Schwellen des Pakets und seiner Coverage in der Zusammenfassung des Jobs |
 | TypeScript test (console 1/3, 2/3, 3/3) | Die Unit-Tests der Konsole in drei Shards (`vitest run --shard`), die jeweils ihre Coverage aufzeichnen |
 | TypeScript test (console coverage) | Führt die drei Shards zusammen (`vitest run --merge-reports --coverage`): schlägt fehl, wenn ein Test fehlgeschlagen ist oder die zusammengeführte Coverage unter den Schwellen der Konsole liegt |
-| TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check`; die gebauten Bibliotheken und Websites testen die End-to-End-Jobs |
+| TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check`; End-to-end showcase testet den Showcase, den der Job baut |
 | End-to-end console (1/3, 2/3, 3/3) | `pnpm --filter kaeso-console e2e` in drei Teilen gegen das Gateway-Image, jeder Teil auf einem eigenen Stack |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
 | End-to-end showcase (chromium 1/8 bis 8/8, webkit 1/1) | `pnpm --filter kaeso-showcase e2e` gegen den Showcase, den TypeScript build gebaut hat: das Projekt `chromium` in acht Shards (`playwright test --shard`), das Projekt `webkit` in einem eigenen Job |
@@ -315,8 +316,8 @@ Bei einem Pull Request entscheidet der erste Job, welche Bereiche sich geändert
 
 Jeder Job startet, sobald die Jobs fertig sind, deren Ergebnisse er nutzt, und keiner baut, was ein anderer Job schon gebaut hat:
 
-- **TypeScript build** baut die Bibliotheken und beide Websites einmal und gibt sie als Artefakte weiter. Der Job läuft immer, wenn End-to-end console läuft, also auch bei Änderungen an Rust und am Deployment.
-- Die drei Image-Jobs laufen nebeneinander. End-to-end console startet, sobald Images (gateway) und TypeScript build fertig sind; der Installationstest wartet auf alle drei Images.
+- **TypeScript libraries** baut `packages/` einmal und gibt den Build als Artefakt an die TypeScript-Tests und die End-to-End-Jobs weiter, die ihn nicht mehr selbst bauen. Der Job läuft, sobald einer von ihnen läuft, also auch bei Änderungen an Rust und am Deployment, die End-to-end console testet. **TypeScript build** gibt den Showcase, den der Job baut, auf dieselbe Weise weiter.
+- Die drei Image-Jobs laufen nebeneinander. End-to-end console startet, sobald Images (gateway) und TypeScript libraries fertig sind; der Installationstest wartet auf alle drei Images.
 - Die Unit-Tests der Konsole dauern von allen TypeScript-Tests am längsten und laufen deshalb in drei Shards. Jeder Shard läuft ohne Schwellen, weil ein Drittel der Tests nur einen Teil des Codes abdeckt; **TypeScript test (console coverage)** führt zusammen, was die Shards aufgezeichnet haben, und wendet die Schwellen aus `apps/console/vitest.config.ts` auf das Ganze an, wie `pnpm test` es tut.
 - Die Tests des Showcases hängen nicht voneinander ab. Das Projekt `chromium` läuft in acht Shards mit Playwrights `--shard`; das Projekt `webkit`, das nur die Tests des Navigations-Sheets enthält, läuft in einem eigenen Job, sodass nur dieser Job WebKit und die dafür nötigen Systempakete installiert.
 - Die Specs der Konsole bauen aufeinander auf, deshalb kann `--shard` sie nicht aufteilen. Jeder Teil startet einen eigenen Stack und führt zuerst `01-public` aus, dann die Specs, deren Daten nur aus den Specs vor ihnen im selben Teil stammen: Teil 1 die Seiten des Projekts (`02-models` bis `08-palette`, `11-instance`, `13-keyboard`, `16-period`), Teil 2 die Organisation (`02-models`, `04-members`, `10-org`, `12-lifecycle`, `19-roles`), Teil 3 jede andere Spec. Eine neue Spec läuft in Teil 3, solange `PART_1` oder `PART_2` im Workflow sie nicht nennt, und ein Name dort ohne Spec lässt den Job fehlschlagen.

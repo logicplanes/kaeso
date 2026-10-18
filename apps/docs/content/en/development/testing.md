@@ -301,10 +301,11 @@ On a pull request, the first job decides which areas changed, and the jobs of un
 | Install test | `pytest -q e2e/install` with those images, the real console included |
 | TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm knip` |
 | TypeScript typecheck | `pnpm typecheck` |
+| TypeScript libraries | `pnpm build:packages`, once; the TypeScript tests and the end-to-end jobs use what it builds |
 | TypeScript test (tokens, ui, docs, showcase, scripts) | `pnpm test` split by workspace, one job each: the tests of `packages/tokens`, `packages/ui`, `apps/docs` and `apps/showcase`, and `node --test 'scripts/*.test.mjs'`, each with its package's coverage thresholds and its coverage in the job's summary |
 | TypeScript test (console 1/3, 2/3, 3/3) | The console's unit tests in three shards (`vitest run --shard`), each recording its coverage |
 | TypeScript test (console coverage) | Merges the three shards (`vitest run --merge-reports --coverage`): fails if a test failed or the merged coverage is below the console's thresholds |
-| TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check`; the built libraries and sites are what the end-to-end jobs test |
+| TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check`; End-to-end showcase tests the showcase it builds |
 | End-to-end console (1/3, 2/3, 3/3) | `pnpm --filter kaeso-console e2e` in three parts against the gateway image, each part on a stack of its own |
 | End-to-end docs | `pnpm --filter kaeso-docs e2e` |
 | End-to-end showcase (chromium 1/8 to 8/8, webkit 1/1) | `pnpm --filter kaeso-showcase e2e` against the showcase built by TypeScript build: the `chromium` project in eight shards (`playwright test --shard`), the `webkit` project in a job of its own |
@@ -315,8 +316,8 @@ On a pull request, the first job decides which areas changed, and the jobs of un
 
 Each job starts as soon as the jobs it uses have finished, and none builds what another job has already built:
 
-- **TypeScript build** builds the libraries and both sites once and hands them on as artifacts. It runs whenever End-to-end console runs, so for Rust and deployment changes too.
-- The three image jobs run side by side. End-to-end console starts once Images (gateway) and TypeScript build have finished; the install test waits for all three images.
+- **TypeScript libraries** builds `packages/` once and hands the build on as an artifact to the TypeScript tests and the end-to-end jobs, which no longer build it themselves. It runs whenever one of them runs, so for Rust and deployment changes too, which End-to-end console tests. **TypeScript build** hands on the showcase it builds the same way.
+- The three image jobs run side by side. End-to-end console starts once Images (gateway) and TypeScript libraries have finished; the install test waits for all three images.
 - The console's unit tests take longest of all TypeScript tests, so they run in three shards. Each shard runs with its thresholds off, since a third of the tests covers only part of the code; **TypeScript test (console coverage)** merges what the shards recorded and applies the thresholds of `apps/console/vitest.config.ts` to the whole, as `pnpm test` does.
 - The showcase's tests are independent of each other. The `chromium` project runs in eight shards with Playwright's `--shard`; the `webkit` project, which has only the navigation sheet's tests, runs in a job of its own, so only that job installs WebKit and the system packages it needs.
 - The console's specs build on each other, so `--shard` can't split them. Each part starts its own stack and runs `01-public` first, then the specs whose data comes only from the specs before them in the same part: part 1 the project's pages (`02-models` to `08-palette`, `11-instance`, `13-keyboard`, `16-period`), part 2 the organization (`02-models`, `04-members`, `10-org`, `12-lifecycle`, `19-roles`), part 3 every other spec. A new spec runs in part 3 unless `PART_1` or `PART_2` in the workflow names it, and a name there without a spec fails the job.
