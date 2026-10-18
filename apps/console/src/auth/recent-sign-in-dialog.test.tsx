@@ -11,9 +11,12 @@ const PATH = "/settings/account/notifications";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const dialog = () => screen.findByRole("dialog", { name: "Sign in again to continue" });
 
-function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; hasPassword?: boolean } = {}) {
+type Methods = { password: boolean; magic_link: boolean; sso: boolean; sso_required: boolean; sign_up: boolean };
+
+function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; hasPassword?: boolean; methods?: Partial<Methods> } = {}) {
   signedIn(options.session ? { session: whoAmI(options.session) } : {});
   on("GET", "me", me({ has_password: options.hasPassword ?? true }));
+  on("POST", "auth/methods", { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, provider: null, ...options.methods });
   on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
   let calls = 0;
   on("PUT", "me/notifications", ({ body }: { body: unknown }) =>
@@ -38,7 +41,7 @@ describe("signing in again with a password", () => {
     const box = await toggle(user);
     expect(within(box).getByText("This action needs a sign-in from the last 15 minutes.")).toBeInTheDocument();
     expect(within(box).getByRole("button", { name: "Sign in" })).toBeDisabled();
-    await user.type(within(box).getByLabelText("Password"), "correct horse battery");
+    await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
     expect(requests("POST", "auth/password").map((r) => r.body)).toEqual([{ email: "owner@example.com", password: "correct horse battery" }]);
@@ -222,5 +225,42 @@ describe("signing in again without a password", () => {
     const box = await toggle(user);
     await user.click(await within(box).findByRole("button", { name: "Email me a sign-in link" }));
     expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("choosing how to sign in again", () => {
+  it("asks no password while password sign-in is off and emails a link instead", async () => {
+    needsRecentSignIn({ methods: { password: false } });
+    on("POST", "auth/magic-link", emailSent("A sign-in link is on its way to owner@example.com."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByText(/We send a sign-in link to owner@example.com/)).toBeInTheDocument();
+    expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
+  });
+
+  it("offers only single sign-on when the organization requires it", async () => {
+    needsRecentSignIn({ methods: { sso: true, sso_required: true } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
+    expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: "Email me a sign-in link instead" })).not.toBeInTheDocument();
+  });
+
+  it("offers a sign-in link next to the password", async () => {
+    needsRecentSignIn();
+    on("POST", "auth/magic-link", emailSent("A sign-in link is on its way to owner@example.com."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.click(await within(box).findByRole("button", { name: "Email me a sign-in link instead" }));
+    await waitFor(() => expect(requests("POST", "auth/magic-link")).toHaveLength(1));
+  });
+
+  it("says so when no method works for the account", async () => {
+    needsRecentSignIn({ hasPassword: false, methods: { magic_link: false } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByText("No sign-in method this install offers works for your account; ask an instance admin.")).toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
   });
 });

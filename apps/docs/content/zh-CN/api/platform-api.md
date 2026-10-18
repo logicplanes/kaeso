@@ -91,7 +91,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 近期登录
 
-在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录。密钥不受此限制。
+在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录：使用密码、单点登录或登录链接，取决于您的账户和实例允许哪种方式。密钥不受此限制。
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
