@@ -147,10 +147,42 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
         .route(&format!("{PREFIX}/{{*rest}}"), any(error::unknown_endpoint))
         .method_not_allowed_fallback(error::method_not_allowed)
         .layer(axum::extract::DefaultBodyLimit::max(limit))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            time_zone_header,
+        ))
         .layer(axum::middleware::from_fn(move |req, next| {
             security_headers(req, next, hsts)
         }));
     (router, doc)
+}
+
+pub const TIME_ZONE_HEADER: &str = "kaeso-time-zone";
+
+async fn time_zone_header(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut resp = next.run(req).await;
+    let zone = state
+        .caches
+        .time_zone
+        .try_get_with((), async {
+            kaeso_store::pg::instance::time_zone(&state.pg)
+                .await
+                .map(|z| std::sync::Arc::<str>::from(z.as_str()))
+        })
+        .await;
+    match zone {
+        Ok(zone) => {
+            if let Ok(value) = axum::http::HeaderValue::from_str(&zone) {
+                resp.headers_mut().insert(TIME_ZONE_HEADER, value);
+            }
+        }
+        Err(e) => tracing::debug!(error = %e, "the instance time zone is unknown for now"),
+    }
+    resp
 }
 
 async fn security_headers(

@@ -43,9 +43,36 @@ pub(crate) fn validate_email(param: &str, email: &str) -> ApiResult<String> {
     kaeso_core::email::normalize(email).map_err(|e| ApiError::invalid(param, format!("{e}.")))
 }
 
+pub(crate) fn validate_time_zone(param: &str, zone: &str) -> ApiResult<String> {
+    let zone = zone.trim();
+    crate::time_zone::parse(zone)
+        .map(|_| zone.to_owned())
+        .ok_or_else(|| {
+            ApiError::invalid(
+                param,
+                format!("`{param}` isn't a known time zone; choose one such as `Europe/Berlin`."),
+            )
+        })
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{display_name, validate_label, validate_name};
+    use super::{display_name, validate_label, validate_name, validate_time_zone};
+
+    #[test]
+    fn time_zones_are_iana_names() {
+        assert_eq!(
+            validate_time_zone("timezone", " Europe/Berlin ").unwrap(),
+            "Europe/Berlin"
+        );
+        assert_eq!(validate_time_zone("timezone", "UTC").unwrap(), "UTC");
+        assert_eq!(
+            validate_time_zone("timezone", "Berlin")
+                .unwrap_err()
+                .to_string(),
+            "`timezone` isn't a known time zone; choose one such as `Europe/Berlin`."
+        );
+    }
 
     #[test]
     fn names_are_one_visible_line() {

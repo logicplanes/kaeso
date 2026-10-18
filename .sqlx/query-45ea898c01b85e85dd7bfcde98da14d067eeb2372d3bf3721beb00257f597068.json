@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO instance_settings (org_creation, account_creation, allowed_domains, metadata_retention_days, content_retention_days, max_metadata_retention_days, max_content_retention_days, org_deletion, org_deletion_grace_days, timezone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "TextArray",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "45ea898c01b85e85dd7bfcde98da14d067eeb2372d3bf3721beb00257f597068"
+}

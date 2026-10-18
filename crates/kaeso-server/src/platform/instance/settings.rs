@@ -62,6 +62,10 @@ pub struct SettingsView {
     #[doc = "Days an org scheduled for deletion stays read-only and restorable, 1 to 90."]
     #[schema(example = 7, minimum = 1, maximum = 90)]
     pub org_deletion_grace_days: i32,
+    #[doc = "The install's IANA time zone: the console shows every time in it, and\n\
+        automatic updates follow it. The Platform API's times stay in UTC."]
+    #[schema(example = "Europe/Berlin")]
+    pub timezone: String,
     #[doc = "Sign-in methods (read-only)."]
     pub sign_in: SignInMethods,
     #[doc = "Mail (read-only)."]
@@ -85,6 +89,7 @@ fn view(state: &AppState, s: &InstanceSettings) -> SettingsView {
         max_content_retention_days: s.max_content_retention_days,
         org_deletion: s.org_deletion,
         org_deletion_grace_days: s.org_deletion_grace_days,
+        timezone: s.timezone.clone(),
         sign_in: SignInMethods {
             password: c.auth.password,
             magic_link: c.auth.magic_link,
@@ -137,6 +142,9 @@ pub struct SettingsUpdate {
     pub org_deletion: Option<bool>,
     #[doc = "Days a new deletion waits, 1 to 90. Dates already set don't move."]
     pub org_deletion_grace_days: Option<i32>,
+    #[doc = "The install's IANA time zone, such as `Europe/Berlin` or `UTC`."]
+    #[schema(example = "Europe/Berlin")]
+    pub timezone: Option<String>,
 }
 
 #[utoipa::path(
@@ -217,6 +225,9 @@ pub async fn update(
         }
         after.org_deletion_grace_days = days;
     }
+    if let Some(zone) = &req.timezone {
+        after.timezone = crate::platform::validate::validate_time_zone("timezone", zone)?;
+    }
     if after.content_retention_days > after.metadata_retention_days {
         return Err(ApiError::invalid(
             "content_retention_days",
@@ -237,6 +248,9 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    if after.timezone != before.timezone {
+        state.caches.time_zone.invalidate_all();
+    }
     Ok(Json(view(&state, &after)))
 }
 

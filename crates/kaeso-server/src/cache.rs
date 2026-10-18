@@ -268,6 +268,7 @@ pub struct Caches {
     pub touched: Cache<uuid::Uuid, ()>,
     pub unknown_keys: Cache<String, ()>,
     pub key_blocks: Cache<String, time::OffsetDateTime>,
+    pub time_zone: Cache<(), Arc<str>>,
     subscribed: Arc<AtomicBool>,
 }
 
@@ -295,6 +296,7 @@ impl Caches {
                 .max_capacity(100_000)
                 .time_to_live(KEY_BLOCK_TTL)
                 .build(),
+            time_zone: Cache::builder().max_capacity(1).time_to_live(TTL).build(),
             subscribed,
         }
     }

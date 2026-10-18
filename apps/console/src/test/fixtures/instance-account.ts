@@ -43,6 +43,7 @@ export function instanceSettings(overrides: Partial<SettingsView> = {}): Setting
     org_creation: "instance_admins",
     org_deletion: true,
     org_deletion_grace_days: 7,
+    timezone: "UTC",
     mail: { transport: "smtp", host: "mail.example.com", port: 587, from: "kaeso@example.com" },
     sign_in: { password: true, magic_link: true, sso: false },
     ...overrides,

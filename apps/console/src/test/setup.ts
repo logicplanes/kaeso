@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
+import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { afterEach, beforeEach } from "vitest";
 import { apply } from "~/i18n";
 import { queryClient } from "~/query";
@@ -21,5 +22,6 @@ afterEach(() => {
   queryClient.clear();
   window.localStorage.clear();
   window.sessionStorage.clear();
+  setFormatTimeZone(undefined);
   apply({ locale: "en", messages: {}, ui: {}, provider: undefined });
 });

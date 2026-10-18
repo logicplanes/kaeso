@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT org_creation, COALESCE(account_creation, 'invitation_only') AS \"account_creation!\",\n         allowed_domains, metadata_retention_days, content_retention_days,\n         max_metadata_retention_days, max_content_retention_days, org_deletion,\n         org_deletion_grace_days, setup_completed_at FROM instance_settings FOR NO KEY UPDATE",
+  "query": "SELECT org_creation, COALESCE(account_creation, 'invitation_only') AS \"account_creation!\",\n         allowed_domains, metadata_retention_days, content_retention_days,\n         max_metadata_retention_days, max_content_retention_days, org_deletion,\n         org_deletion_grace_days, timezone, setup_completed_at FROM instance_settings",
   "describe": {
     "columns": [
       {
@@ -99,6 +99,17 @@
       },
       {
         "ordinal": 9,
+        "name": "timezone",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "timezone"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "setup_completed_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -122,8 +133,9 @@
       false,
       false,
       false,
+      false,
       true
     ]
   },
-  "hash": "46fdf48187948ea8360d873d73543dcfae92de6f2ae63d961e148191312869aa"
+  "hash": "fca9105c42a9593c4329535a16867bcbd9a18b521e394cd80d985838eadf53ec"
 }

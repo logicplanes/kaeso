@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Avatar, Sidebar, Text } from "@logicplanes/kaeso-ui";
 import { useSession } from "~/auth/session";
 import { locale, t } from "~/i18n";
+import { inZone, yearOf } from "~/format/zone";
 import { preloadPictures } from "./pictures";
 import { OpensWhenReady, useSidebarMenus } from "./sidebar-menus-load";
 
@@ -9,7 +10,7 @@ export function deletionCaption(iso: string | null | undefined, now = new Date()
   if (!iso) return t("shell.deletion.scheduled", "Scheduled for deletion");
   const day = new Date(iso);
   const lang = locale() === "en" ? "en-GB" : locale();
-  const date = day.toLocaleDateString(lang, { day: "numeric", month: "short", ...(day.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) });
+  const date = day.toLocaleDateString(lang, { day: "numeric", month: "short", ...inZone(), ...(yearOf(day) === yearOf(now) ? {} : { year: "numeric" }) });
   return t("shell.deletion.on", "Deletion on {day}", { day: date });
 }
 

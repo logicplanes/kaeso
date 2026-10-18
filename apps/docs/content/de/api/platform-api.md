@@ -103,7 +103,7 @@ In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 
 | --- | --- |
 | Format | REST mit JSON: Pfade im Plural in Kebab-Case (`service-accounts`), Felder in `snake_case`. Senden Sie Bodys mit `content-type: application/json`; auf ein Feld, das der Endpunkt nicht kennt, antwortet Kaeso mit 400. |
 | IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`. |
-| Zeiten | RFC 3339, in UTC. |
+| Zeiten | RFC 3339, in UTC. Jede Antwort nennt die Zeitzone der Installation in `Kaeso-Time-Zone`, etwa `Europe/Berlin`, die Zone, in der die Konsole Zeiten zeigt. |
 | Geld | US-Dollar als Dezimal-Strings, etwa `"0.0001"`. Senden Sie Preise und Beträge als Dezimal-Strings oder ganze Zahlen; ein JSON-Bruch wie `0.5` erhält 400. |
 | Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget 1.000.000.000 USD. |
 | Erstellen | `POST` auf die Sammlung, beantwortet mit 201 und der neuen Ressource. |

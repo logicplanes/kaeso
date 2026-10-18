@@ -195,6 +195,7 @@ Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Da
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | Ganzzahl | `3650` | Längste Aufbewahrung von Inhalten, die eine Organisation wählen darf, höchstens 36500 Tage. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | Bool | `true` | Ob sich Organisationen löschen lassen. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | Ganzzahl | `7` | Tage, die eine gelöschte Organisation wiederherstellbar und schreibgeschützt bleibt, bevor sie endgültig entfernt wird, 1 bis 90. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | Text | `UTC` | Die IANA-Zeitzone einer neuen Installation, etwa `Europe/Berlin`: Die Konsole zeigt jede Zeit darin. Die Einrichtungsseite setzt sie auf die Zeitzone des ersten Benutzers; Instanz-Admins ändern sie später in den Instanzeinstellungen. |
 
 In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen außerdem auf bestimmte E-Mail-Domains beschränken.
 

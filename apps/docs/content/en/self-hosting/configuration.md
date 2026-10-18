@@ -195,6 +195,7 @@ These settings only seed a new install. After that, instance admins change them 
 | `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, at most 36500 days. |
 | `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | bool | `true` | Whether organizations can be deleted. |
 | `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
+| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
 
 In the console, instance admins can also allow account and organization creation for some email domains only.
 

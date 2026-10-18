@@ -10,6 +10,7 @@ import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
 import { AccountsSettings } from "./accounts-settings";
 import { InstancePage } from "./instance-page";
+import { TimeZoneSettings } from "./time-zone-settings";
 import { t } from "~/i18n";
 
 export function InstanceGeneralPage() {
@@ -18,7 +19,7 @@ export function InstanceGeneralPage() {
   return (
     <InstancePage
       title={t("shell.settings.general", "General")}
-      description={t("instance.generalHint", "Who can join this install, and what organizations may do.")}
+      description={t("instance.generalHint", "Who can join this install, its time zone, and what organizations may do.")}
     >
       {settings.isError ? (
         <LoadFailed title={t("instance.settingsFailed", "The instance settings couldn't load")} />
@@ -28,6 +29,7 @@ export function InstanceGeneralPage() {
         <>
           <AccountsSettings settings={s} />
           <SignIn settings={s} />
+          <TimeZoneSettings settings={s} />
           <OrgDeletion key={s.org_deletion_grace_days} settings={s} />
         </>
       )}

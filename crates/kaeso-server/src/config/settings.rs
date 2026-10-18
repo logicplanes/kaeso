@@ -129,6 +129,7 @@ const ROWS: &[Row] = &[
     s("instance.max_content_retention_days", "KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS", Integer, Some("3650"), false, "Longest content retention an organization may choose, in days; at most 36500."),
     s("instance.org_deletion", "KAESO_INSTANCE_ORG_DELETION", Bool, Some("true"), false, "Whether organizations can be deleted on a new install. Instance admins change it later in the instance settings."),
     s("instance.org_deletion_grace_days", "KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS", Integer, Some("7"), false, "Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90."),
+    s("instance.timezone", "KAESO_INSTANCE_TIMEZONE", Text, Some("UTC"), false, "The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings."),
     s("log.level", "KAESO_LOG_LEVEL", Text, Some("info,sqlx=warn"), false, "Log level or filter, e.g. `info` or `info,kaeso_server=debug`."),
     s("log.format", "KAESO_LOG_FORMAT", Text, Some("json"), false, "`json` for structured logs, `text` for development."),
 ];

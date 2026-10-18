@@ -15,3 +15,4 @@ pub mod services;
 pub mod setup;
 pub mod state;
 pub mod telemetry;
+pub mod time_zone;

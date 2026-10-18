@@ -388,5 +388,6 @@
   "errors.model.effortLevels": "模型 `{model}` 支持的推理强度为 {levels}，`{effort}` 不在其中。",
   "errors.edgeUnreachable": "暂时无法访问 Kaeso，请一分钟后重试。",
   "errors.edgeUpdating": "Kaeso 正在更新，请一分钟后重试。",
-  "errors.toolChoice.named": "`tool_choice` 中的指定函数"
+  "errors.toolChoice.named": "`tool_choice` 中的指定函数",
+  "errors.unknownTimeZone": "`{param}` 不是已知的时区，请选择例如 `Europe/Berlin` 的时区。"
 }

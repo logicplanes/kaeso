@@ -81,6 +81,7 @@ indexmap = { version = "2.14", features = ["serde"] }
 moka = { version = "0.12", features = ["future"] }
 toml = "0.9"
 semver = { version = "1.0", features = ["serde"] }
+jiff = { version = "0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
 sigstore = { version = "0.14", default-features = false, features = ["verify"] }
 rustls-pki-types = "1.15"
 aws-lc-rs = "1.18"

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE instance_settings SET timezone = $1, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a6ba9726ab9e0f7f350605136f6ce2fa58ba282305a264f1536c6f68e5c4c9f"
+}
