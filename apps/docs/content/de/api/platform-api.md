@@ -91,7 +91,7 @@ So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in
 
 ### Kürzliche Anmeldung
 
-In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden. Schlüssel brauchen das nie.
+In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden: mit Ihrem Passwort, über Single Sign-on oder mit einem Anmeldelink, je nachdem, was Ihr Konto und die Installation erlauben. Schlüssel brauchen das nie.
 
 - **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
 - **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
