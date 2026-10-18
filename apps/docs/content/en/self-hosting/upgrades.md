@@ -4,15 +4,15 @@ description: Learn about new releases, update by hand or in one click with the u
 order: 7
 ---
 
-Releases follow semantic versioning, and every part of Kaeso shares the release's version number. Each release's notes are on the [releases page](https://github.com/logicplanes/kaeso/releases) and, for instance admins, in the console under **Instance settings → Updates**. Each release's `compose.yaml` pins the gateway, console and updater images of that release.
+Releases follow semantic versioning, and every part of Kaeso shares the release's version number. Each release's notes are on the [releases page](https://github.com/logicplanes/kaeso/releases) and, for instance admins, in the console under **Settings** › **Instance** › **Updates**. Each release's `compose.yaml` pins the gateway, console and updater images of that release.
 
 There are two ways to update: [by hand](#update-by-hand), which always works, and [in one click](#one-click-updates) from the console, once you add the optional updater.
 
 ## New releases
 
-The gateway looks for new releases twice a day, at a random minute within the hour, on GitHub's releases API. It asks with the `ETag` of the last answer, so an unchanged list costs GitHub nothing; after a failure it waits at least an hour, longer when GitHub asks for it, and it never retries at once. While GitHub asks it to wait, **Check now** waits too. It fetches the manifests of at most a dozen new releases per check, four at a time, newest first, and only from the release downloads on github.com. The request carries nothing about your install but the gateway's version in its `User-Agent`.
+The gateway looks for new releases twice a day on GitHub's releases API, and waits at least an hour after a failure. The request carries nothing about your install but the gateway's version in its `User-Agent`; [updates](../development/architecture/updates.md#the-gateway) describes the check in detail.
 
-Under **Instance settings → Updates** instance admins see the version that runs, the newest release with the notes of every release since, when the gateway last looked and, when it failed, why. **Check now** looks at once, even when checks are off. A **New** mark beside **Updates** in the settings sidebar is the only reminder; Kaeso never sends emails or banners about releases.
+Under **Settings** › **Instance** › **Updates** instance admins see the version that runs, the newest release with the notes of every release since, when the gateway last looked and, when it failed, why. **Check now** looks at once, even when checks are off. A **New** mark beside **Updates** in the settings sidebar is the only reminder; Kaeso never sends emails or banners about releases.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ echo "COMPOSE_PROFILES=updater" >> .env
 docker compose up -d --wait
 ```
 
-Then turn on **One-click updates** under **Instance settings → Updates**. The page says when the updater isn't installed, doesn't answer or is too old for a release. Kaeso releases before the updater update by hand once.
+Then turn on **One-click updates** under **Settings** › **Instance** › **Updates**. The page says when the updater isn't installed, doesn't answer or is too old for a release. Kaeso releases before the updater update by hand once.
 
 To keep the token out of `.env`, put it in a file and hand it to both services as a [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/) in `compose.override.yaml`; both read `KAESO_UPDATER_TOKEN_FILE`:
 
@@ -96,7 +96,7 @@ The updater needs Docker Engine 25 or newer: it speaks Docker API 1.44, and the 
 
 **Update to …** asks for a confirmation that names the version and reminds you to back up first. The gateway records the update, writes `instance.update_start` to the instance audit log and hands the version, and nothing else, to the updater. The console then follows these steps:
 
-1. **Check the signatures.** The updater fetches `release.json` and verifies it before anything else; then it fetches `compose.yaml` and the index of every image by the digests `release.json` names, and verifies each image the same way, before it downloads any of them. For each it fetches the [build provenance attestations](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations) of the Release workflow and verifies them with Sigstore: a certificate the Sigstore certificate authority issued to `logicplanes/kaeso`'s Release workflow on `prod`, its certificate transparency proof, the transparency log's signed entry, the signature over the statement, the digest it names and the commit `release.json` names. Every key and certificate authority counts only within the validity the trust root gives it. The trust root ships inside the updater; nothing is installed when any check fails. Kaeso keeps running.
+1. **Check the signatures.** Before it downloads any image, the updater verifies `release.json` and the index of every image it names against the [build provenance attestations](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations) of Kaeso's Release workflow on `prod` with Sigstore, using a trust root built into the updater, and checks the release's `compose.yaml` against the SHA-256 that `release.json` names ([every check](../development/architecture/updates.md#the-updater)). When any check fails, nothing is installed and Kaeso keeps running.
 2. **Download.** The updater pulls the gateway, console and updater images by digest and checks that each image's own version label is the release's.
 3. **Switch.** Caddy answers with the [updating page](#while-kaeso-updates). The updater stops the console, starts it again from its own settings with the new image and waits for its health check; then it does the same with the gateway.
 4. **Migrate.** The new gateway migrates the databases when it starts; the updater gives its health check up to 10 minutes and doesn't count a failed check while the gateway runs without a restart, so a long migration is not mistaken for a broken start.

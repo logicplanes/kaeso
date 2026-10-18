@@ -4,15 +4,15 @@ description: Von neuen Releases erfahren, von Hand oder mit dem Updater per Klic
 order: 7
 ---
 
-Releases folgen der semantischen Versionierung, und alle Teile von Kaeso tragen die Versionsnummer des Releases. Die Release Notes jedes Releases stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und für Instanz-Admins in der Konsole unter **Instanz-Einstellungen → Updates**. Die `compose.yaml` jedes Releases legt die Gateway-, Konsolen- und Updater-Images dieses Releases fest.
+Releases folgen der semantischen Versionierung, und alle Teile von Kaeso tragen die Versionsnummer des Releases. Die Release Notes jedes Releases stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und für Instanz-Admins in der Konsole unter **Einstellungen** › **Instanz** › **Updates**. Die `compose.yaml` jedes Releases legt die Gateway-, Konsolen- und Updater-Images dieses Releases fest.
 
 Es gibt zwei Wege zu aktualisieren: [von Hand](#von-hand-aktualisieren), was immer funktioniert, und [mit einem Klick](#updates-mit-einem-klick) in der Konsole, sobald der optionale Updater eingerichtet ist.
 
 ## Neue Releases
 
-Das Gateway sucht zweimal täglich, zu einer zufälligen Minute innerhalb der Stunde, über die Releases-API von GitHub nach neuen Releases. Es fragt mit dem `ETag` der letzten Antwort, sodass eine unveränderte Liste GitHub nichts kostet; nach einem Fehler wartet es mindestens eine Stunde, länger, wenn GitHub darum bittet, und es versucht es nie sofort erneut. Solange GitHub um Geduld bittet, wartet auch **Jetzt prüfen**. Pro Prüfung lädt es die Manifeste von höchstens zwölf neuen Releases, vier gleichzeitig, die neuesten zuerst, und nur aus den Release-Downloads auf github.com. Die Anfrage enthält nichts über die Installation außer der Version des Gateways im `User-Agent`.
+Das Gateway sucht zweimal täglich über die Releases-API von GitHub nach neuen Releases und wartet nach einem Fehler mindestens eine Stunde. Die Anfrage enthält nichts über die Installation außer der Version des Gateways im `User-Agent`; [Updates](../development/architecture/updates.md#das-gateway) beschreibt die Prüfung im Einzelnen.
 
-Unter **Instanz-Einstellungen → Updates** sehen Instanz-Admins die laufende Version, das neueste Release mit den Notizen aller Releases seither, wann das Gateway zuletzt gesucht hat und, wenn es fehlschlug, warum. **Jetzt prüfen** sucht sofort, auch wenn die Prüfungen aus sind. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen ist der einzige Hinweis; Kaeso schickt keine E-Mails und zeigt keine Banner zu Releases.
+Unter **Einstellungen** › **Instanz** › **Updates** sehen Instanz-Admins die laufende Version, das neueste Release mit den Notizen aller Releases seither, wann das Gateway zuletzt gesucht hat und, wenn es fehlschlug, warum. **Jetzt prüfen** sucht sofort, auch wenn die Prüfungen aus sind. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen ist der einzige Hinweis; Kaeso schickt keine E-Mails und zeigt keine Banner zu Releases.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ echo "COMPOSE_PROFILES=updater" >> .env
 docker compose up -d --wait
 ```
 
-Dann unter **Instanz-Einstellungen → Updates** die **Updates mit einem Klick** einschalten. Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Kaeso-Releases vor dem Updater werden einmal von Hand aktualisiert.
+Dann unter **Einstellungen** › **Instanz** › **Updates** die **Updates mit einem Klick** einschalten. Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Kaeso-Releases vor dem Updater werden einmal von Hand aktualisiert.
 
 Um das Token aus `.env` herauszuhalten, es in eine Datei schreiben und beiden Services in `compose.override.yaml` als [Compose-Secret](https://docs.docker.com/compose/how-tos/use-secrets/) übergeben; beide lesen `KAESO_UPDATER_TOKEN_FILE`:
 
@@ -96,7 +96,7 @@ Der Updater braucht Docker Engine 25 oder neuer: Er spricht die Docker-API 1.44,
 
 **Auf … aktualisieren** fragt nach einer Bestätigung, die die Version nennt und an die Sicherung erinnert. Das Gateway hält das Update fest, schreibt `instance.update_start` ins Audit-Log der Instanz und übergibt dem Updater die Version und sonst nichts. Die Konsole folgt dann diesen Schritten:
 
-1. **Signaturen prüfen.** Der Updater lädt `release.json` und prüft sie vor allem anderen; dann lädt er `compose.yaml` und den Index jedes Images über die Digests, die `release.json` nennt, und prüft jedes Image genauso, bevor er eines davon herunterlädt. Für jedes lädt er die [Build-Provenance-Attestierungen](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations) des Release-Workflows und prüft sie mit Sigstore: ein Zertifikat, das die Zertifizierungsstelle von Sigstore dem Release-Workflow von `logicplanes/kaeso` auf `prod` ausgestellt hat, sein Nachweis im Certificate-Transparency-Log, der signierte Eintrag im Transparenzlog, die Signatur über die Aussage, der Digest, den sie nennt, und der Commit, den `release.json` nennt. Jeder Schlüssel und jede Zertifizierungsstelle zählt nur innerhalb der Gültigkeit, die die Vertrauensbasis ihr gibt. Die Vertrauensbasis ist in den Updater eingebaut; schlägt eine Prüfung fehl, wird nichts eingespielt. Kaeso läuft weiter.
+1. **Signaturen prüfen.** Bevor er ein Image herunterlädt, prüft der Updater `release.json` und den Index jedes darin genannten Images mit Sigstore gegen die [Build-Provenance-Attestierungen](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations) des Release-Workflows von Kaeso auf `prod`, mit einer Vertrauensbasis, die in den Updater eingebaut ist, und prüft die `compose.yaml` des Releases gegen den SHA-256, den `release.json` nennt ([jede Prüfung](../development/architecture/updates.md#der-updater)). Schlägt eine Prüfung fehl, wird nichts eingespielt, und Kaeso läuft weiter.
 2. **Herunterladen.** Der Updater lädt die Images von Gateway, Konsole und Updater über den Digest und prüft, dass das Versions-Label jedes Images die Version des Releases ist.
 3. **Umstellen.** Caddy antwortet mit der [Update-Seite](#während-kaeso-aktualisiert). Der Updater stoppt die Konsole, startet sie mit ihren eigenen Einstellungen und dem neuen Image wieder und wartet auf ihren Healthcheck; danach tut er dasselbe mit dem Gateway.
 4. **Migrieren.** Das neue Gateway migriert beim Start die Datenbanken; der Updater gibt seinem Healthcheck bis zu 10 Minuten und zählt einen fehlgeschlagenen Check nicht, solange das Gateway ohne Neustart läuft, damit eine lange Migration nicht als gescheiterter Start gilt.
