@@ -18,6 +18,8 @@ use uuid::Uuid;
 use crate::model_api::hooks::{Outcome, Sink};
 use crate::state::AppState;
 
+const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
+
 struct Entry {
     log: Option<LogRow>,
     content: Option<ContentRow>,
@@ -182,7 +184,7 @@ pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
                         tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs; keeping them in memory");
                         tokio::select! {
                             () = shutdown.cancelled() => return,
-                            () = tokio::time::sleep(Duration::from_secs(2)) => {}
+                            () = tokio::time::sleep(WRITE_RETRY_WAIT) => {}
                         }
                         break;
                     }
