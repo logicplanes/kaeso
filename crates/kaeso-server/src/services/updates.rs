@@ -13,7 +13,7 @@ use kaeso_update::protocol::{JobState, Reason, StartRequest};
 use kaeso_update::schedule::{self, Frequency, Mode, Schedule, Weekday};
 use reqwest::StatusCode;
 use reqwest::header::{ACCEPT, ETAG, IF_NONE_MATCH, LINK, RETRY_AFTER};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use time::OffsetDateTime;
 
@@ -196,6 +196,36 @@ struct GitHubRelease {
     html_url: String,
     #[serde(default)]
     assets: Vec<GitHubAsset>,
+    #[serde(default)]
+    art: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ReleaseArt {
+    version: u8,
+    seed: u32,
+    style: String,
+    palette: u8,
+}
+
+const ART_STYLES: [&str; 8] = [
+    "bauhaus",
+    "albers",
+    "stripes",
+    "waves",
+    "truchet",
+    "arcs",
+    "phyllotaxis",
+    "spiro",
+];
+const ART_PALETTES: u8 = 12;
+
+fn art_of(value: Option<serde_json::Value>) -> Option<serde_json::Value> {
+    let art: ReleaseArt = serde_json::from_value(value?).ok()?;
+    let drawable =
+        art.version == 1 && ART_STYLES.contains(&art.style.as_str()) && art.palette < ART_PALETTES;
+    drawable.then(|| serde_json::to_value(art).ok()).flatten()
 }
 
 #[derive(Debug, Deserialize)]
@@ -478,6 +508,11 @@ async fn rows_of(
                     ),
                 },
             };
+            let art = previous
+                .iter()
+                .find(|k| k.version == version)
+                .and_then(|k| k.row.art.clone())
+                .or_else(|| art_of(r.art));
             ReleaseRow {
                 version: version.to_string(),
                 published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
@@ -486,6 +521,7 @@ async fn rows_of(
                 url: r.html_url,
                 manifest,
                 manifest_error,
+                art,
             }
         })
         .collect()
@@ -925,6 +961,23 @@ pub async fn reconcile_running(state: &AppState) -> Result<Option<JobRow>, Store
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_artwork_the_console_can_draw_is_kept() {
+        let ok = json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 11 });
+        assert_eq!(art_of(Some(ok.clone())), Some(ok));
+        for bad in [
+            json!({ "version": 2, "seed": 7, "style": "spiro", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "future", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 12 }),
+            json!({ "version": 1, "seed": -1, "style": "spiro", "palette": 0 }),
+            json!({ "version": 1, "seed": 7, "style": "spiro", "palette": 0, "extra": true }),
+            json!("spiro"),
+        ] {
+            assert_eq!(art_of(Some(bad.clone())), None, "{bad}");
+        }
+        assert_eq!(art_of(None), None);
+    }
     use reqwest::header::{HeaderMap, HeaderValue};
 
     #[test]

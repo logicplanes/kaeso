@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Dialog, DialogScope, Link, ReleaseArt, Text, icons } from "@logicplanes/kaeso-ui";
+import { Button, Dialog, DialogScope, Link, ReleaseArt, Text, icons, isReleaseArtSpec } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { Markdown } from "@logicplanes/kaeso-ui/markdown";
 import { api } from "~/api/client";
@@ -72,6 +72,7 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
       <div className="flex flex-col gap-16">
         <ReleaseArt
           seed={release.version}
+          art={isReleaseArtSpec(release.art) ? release.art : undefined}
           label={t("shell.whatsNew.artLabel", "Kaeso {version}", { version: release.version })}
           eyebrow={release.prerelease ? t("shell.whatsNew.preEyebrow", "Kaeso pre-release") : t("shell.whatsNew.eyebrow", "Kaeso")}
           title={release.version}

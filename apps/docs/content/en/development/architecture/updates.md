@@ -24,7 +24,7 @@ flowchart TD
 
 ## The release feed
 
-`update.kaeso.app` is a service run apart from this repository that reads the releases on GitHub. `v1/releases.json` lists the newest releases, always with the newest stable one, in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin.
+`update.kaeso.app` is a service run apart from this repository that reads the releases on GitHub. `v1/releases.json` lists the newest releases, always with the newest stable one, in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin. Each entry also carries `art`, the release's artwork as update.kaeso.app chose it once and keeps for good: a style, a palette and a seed that the UI library's `ReleaseArt` draws. The gateway stores the first `art` it sees for a version in `update_releases.art` and never replaces it, `me/whats-new` returns it, and the console draws one from the version when a release has none.
 
 ## The gateway
 

@@ -69,7 +69,7 @@ Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuratio
 
 Der Verlauf listet jedes Update mit der Person, die es gestartet hat, oder **Automatisch**, und seinem Ausgang.
 
-Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**: die neue Version mit ihren Verbesserungen und, mit **Nächstes**, jedes verpasste Release. **Weiter zur Konsole**, Escape oder ein Klick daneben schließt den Dialog.
+Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**: die neue Version auf ihrem eigenen Artwork, das sich nie ändert, mit ihren Verbesserungen und, mit **Nächstes**, jedes verpasste Release. **Weiter zur Konsole**, Escape oder ein Klick daneben schließt den Dialog.
 
 ## Audit-Log lesen
 

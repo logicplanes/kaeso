@@ -24,7 +24,7 @@ flowchart TD
 
 ## 版本源
 
-`update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版，说明超过 64 KiB 的部分被截断，整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。
+`update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版，说明超过 64 KiB 的部分被截断，整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图：一种风格、一套调色板和一个种子，由 UI 库的 `ReleaseArt` 绘制。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换；`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
 
 ## 网关
 

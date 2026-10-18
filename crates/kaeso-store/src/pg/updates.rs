@@ -139,12 +139,13 @@ pub struct ReleaseRow {
     pub url: String,
     pub manifest: Option<serde_json::Value>,
     pub manifest_error: Option<String>,
+    pub art: Option<serde_json::Value>,
 }
 
 pub async fn releases(db: impl PgExecutor<'_>) -> Result<Vec<ReleaseRow>, StoreError> {
     Ok(sqlx::query_as!(
         ReleaseRow,
-        "SELECT version, published_at, prerelease, notes, url, manifest, manifest_error \
+        "SELECT version, published_at, prerelease, notes, url, manifest, manifest_error, art \
          FROM update_releases ORDER BY published_at DESC, version DESC"
     )
     .fetch_all(db)
@@ -161,8 +162,8 @@ pub async fn replace_releases(
         .await?;
     for r in rows {
         sqlx::query!(
-            "INSERT INTO update_releases (version, published_at, prerelease, notes, url, manifest, manifest_error) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO update_releases (version, published_at, prerelease, notes, url, manifest, manifest_error, art) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             r.version,
             r.published_at,
             r.prerelease,
@@ -170,6 +171,7 @@ pub async fn replace_releases(
             r.url,
             r.manifest,
             r.manifest_error,
+            r.art,
         )
         .execute(&mut *tx)
         .await?;
