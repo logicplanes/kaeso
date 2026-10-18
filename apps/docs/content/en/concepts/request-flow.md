@@ -1,122 +1,122 @@
 ---
 title: Request flow
-description: The steps a model request takes through the gateway.
+description: Follow a model request through the gateway, and learn which error it gets and what it is charged.
 order: 1
 ---
 
-Every model request takes the same path through the gateway. Each request is translated, never passed through as it came, and sent once, never retried. A refusal at any step reaches the app as an error in its own format.
+Every model request passes the same checks in the same order. Knowing them tells you which error a request gets, and when it is charged.
 
 ```mermaid
-sequenceDiagram
+flowchart TD
   accTitle: Request flow
-  accDescr: The app sends a request in its own format. The gateway checks the key, decodes the request, resolves the model, checks the limits and picks the provider key, then encodes the request and sends it to the provider. It decodes the provider's reply, encodes it in the app's format and returns it, and records usage, cost and the request log.
-  participant App
-  participant Gateway
-  participant Provider
-  App->>Gateway: Request in the app's format
-  Note over Gateway: Key, decode, model,<br>limits, provider key
-  Gateway->>Provider: Request in the provider's format
-  Provider-->>Gateway: Reply
-  Note over Gateway: Decode reply,<br>encode it for the app
-  Gateway-->>App: Reply in the app's format
-  Note over Gateway: Usage, cost and request log
+  accDescr: The gateway checks the key, reads the request, resolves the model, checks the limits and picks the provider key. It then sends the request to the provider, translates the reply into the app's format, and records usage and the request log.
+  key[Check the key] --> request[Read the request]
+  request --> model[Resolve the model]
+  model --> limits[Check the limits]
+  limits --> pkey[Pick the provider key]
+  pkey --> send[Send to the provider]
+  send --> reply[Translate the reply]
+  reply --> log[Record usage and the log]
 ```
 
-## Key
+Kaeso translates every request rather than passing it through, and sends it once, without retries. When a step refuses a request, the app gets the error in its own format.
 
-The gateway reads the API key from `x-api-key`, else from `Authorization: Bearer`. The key decides the project, and acts there with the rights of its member or service account. It needs inference access, and its owner the right `api.request`; organization platform keys never call models. A key looked up in the last 30 seconds is answered from memory.
+## The key
 
-## Decode
+The gateway reads the API key from `x-api-key`, or else from `Authorization: Bearer`. The key decides the project, and acts there with the rights of its member or service account.
 
-The body may be up to `KAESO_BODY_LIMITS_MODEL_API` (32 MiB); a larger one is refused with 413. KPP decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. A request that can't be read is refused here, and so is one that asks for what Kaeso never sends to a provider, such as more than one choice or stored Responses state.
+The key needs inference access, and its owner needs the right `api.request`. An organization's platform keys never call models.
 
-## Model
+## The request
 
-The model name is looked up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there is refused with 404, and an id that several providers serve in the project with 400. The model access of the member and of the key is checked next (403).
+A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. Kaeso answers a larger one with 413.
 
-The catalogue entry holds the model's limits, prices and capabilities, the format its provider is called in, whether it reasons, whether it has adaptive thinking, and its timeout. A request that needs what the model lacks is refused with 400:
+KPP then decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. Kaeso refuses a request it can't read here. It also refuses one that asks for something Kaeso never sends to a provider, such as more than one choice or stored Responses state.
+
+## The model
+
+Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`. If the member or the key may not use the model, the request gets 403.
+
+The catalogue entry says what the model can do. Kaeso answers 400 when a request needs something the model lacks:
 
 - images, PDFs, tools, a JSON schema or reasoning;
 - an effort level the model doesn't list, or adaptive thinking for a Claude model without it;
-- a forced tool choice (`required`, `any` or a named tool) for a model that takes none, such as Claude Fable 5.1, Opus 5.5 and Sonnet 5.5; the message names the field and value the app sent;
+- a forced tool choice (`required`, `any` or a named tool) for a model that takes none, such as Claude Fable 5.1, Opus 5.5 and Sonnet 5.5;
 - a temperature other than 1 for a model that accepts none, unless Kaeso turns Claude's thinking on and leaves the temperature out;
-- embeddings from a generation model, or text from an embedding model.
+- embeddings from a generation model, or text from an embeddings model.
 
-A request in an OpenAI format for a Claude model without a maximum number of output tokens gets the model's output limit. A Messages request without `max_tokens` is refused with 400, as Anthropic refuses it.
+A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic.
 
 ## Limits
 
-Every limit that applies is checked at once, in one step in Valkey: the rates and budgets of the key, of its member and of the project, for all models or for this one.
+Kaeso checks every limit that applies in one step: the rates and budgets of the key, its member and the project, for all models or for this one.
 
 | Situation | Result |
 | --- | --- |
 | Over a rate or a hard budget | 429 with `Retry-After` |
-| Over a soft budget | Passes; soft budgets only alert |
-| Valkey unreachable | 503 for a request under a hard budget; every other request passes unchecked |
-| The project's limits can't be loaded from PostgreSQL | 503 for every request, since Kaeso can't tell which limits apply |
+| Over a soft budget | The request passes. Soft budgets only alert |
+| Valkey unreachable | 503 for a request under a hard budget. Every other request passes unchecked |
+| The project's limits can't be loaded | 503 for every request, since Kaeso can't tell which limits apply |
 
-## Provider key
+Apps in the OpenAI formats get these 503 answers as 500, which their SDKs retry. [Limits and budgets](../console/limits-and-budgets.md) explains how to set limits.
 
-The gateway uses the provider key assigned to the project for the model's provider, else the organization's default for that provider. Without either, the request is refused with 400. The key is decrypted with the master key and kept only in the instance's memory, for at most 30 seconds.
+## The provider key
 
-## Encode and send
+Kaeso uses the provider key assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. Kaeso decrypts the key with the master key and keeps it in memory for at most 30 seconds.
 
-KPP checks the request against the provider's format and encodes it. What that format can't express is refused here, before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions app served through another format, the reasoning kept from earlier turns is put back first ([reasoning between turns](format-translation.md#reasoning-between-turns)).
+## Sending to the provider
 
-| Provider | API called |
+KPP checks the request against the provider's format and encodes it. Kaeso refuses what that format can't express before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions app served through another format, Kaeso first puts back the reasoning kept from earlier turns ([reasoning between turns](format-translation.md#reasoning-between-turns)).
+
+Kaeso calls each provider's own API:
+
+| Provider | API |
 | --- | --- |
-| OpenAI | Responses, or Chat Completions when the catalogue says so; Embeddings for embeddings |
+| OpenAI | Responses, or Chat Completions when the catalogue says so. Embeddings for embeddings models |
 | Anthropic | Messages |
 
-Token counts go to Anthropic's `/v1/messages/count_tokens` and OpenAI's `/v1/responses/input_tokens`. `KAESO_PROVIDERS_OPENAI_BASE_URL` and `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` set where the providers are.
+Four timeouts limit the call: connecting, a whole request, the first byte of a stream, and the silence between two chunks. A model's own timeout in the catalogue replaces the request and first-byte timeouts. A timeout gets 504, and a provider that can't be reached gets 502. [Configuration](../self-hosting/configuration.md) lists the settings and their defaults.
 
-| Timeout | Setting | Default | Limits |
-| --- | --- | --- | --- |
-| Connect | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | 10 s | Connecting to the provider, TCP and TLS |
-| Request | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | 600 s | A whole request that doesn't stream |
-| First byte | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | 60 s | A stream, until the provider answers |
-| Idle | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` | 300 s | A stream, the longest silence between two chunks |
+## The reply
 
-A model's own timeout in the catalogue replaces the request and first-byte timeouts. A timeout is answered with 504, and a provider that can't be reached with 502 ([provider calls](../self-hosting/configuration.md#provider-calls)).
+KPP decodes the reply into the canonical format and encodes it in the app's format, event by event for a stream. Kaeso never refuses a reply for what it holds. What the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
 
-## Reply
+A provider's error reaches an app in the same format exactly as the provider sent it. An app in another format gets the same meaning in its own format. [Errors](../api/errors.md) lists every error.
 
-The reply is decoded into the canonical format and encoded in the app's format, event by event for a stream. A reply is never refused for what it holds: what the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
+Replies carry the headers `kaeso-model` and `kaeso-provider`. A stream's headers go out as soon as the provider answers. While a stream is open and silent, Kaeso writes keepalives that the app's SDK ignores.
 
-A provider's error reaches an app that speaks the provider's format as the provider sent it, and any other app with the same meaning in its own format. A model the provider doesn't serve to the project's provider key gets Kaeso's own message instead ([provider errors](../api/errors.md#provider-errors)).
-
-Replies carry `kaeso-model` and `kaeso-provider`. A stream's headers go out as soon as the provider answers, and while the stream is open and silent, the gateway writes keepalives that the app's SDK ignores ([long streams](../self-hosting/domains-and-tls.md#long-streams)).
-
-## When a stream fails
+## Failed streams
 
 Once a stream's headers are sent, its status can't change. A stream that fails after that ends with an error event in the app's format, and the request log records the failure:
 
 | Cause | Status logged | Error kind |
 | --- | --- | --- |
-| The provider sends an error event | The error's status, else 502 | The error's kind |
-| The connection to the provider breaks, or the stream ends before the reply is complete | 502 | `stream_interrupted` |
-| The provider is silent for longer than `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` | 504 | `timeout` |
-| KPP can't encode an event for the app | The error's status, else 500 | The error's kind |
+| The provider sends an error event | The error's status, or else 502 | The error's kind |
+| The connection to the provider breaks, or the stream ends early | 502 | `stream_interrupted` |
+| The provider is silent for longer than the idle timeout | 504 | `timeout` |
+| KPP can't encode an event for the app | The error's status, or else 500 | The error's kind |
 
-Usage and `kaeso_stream_failures_total` count such a stream as an error, while `kaeso_requests_total` counts it as 200, the status that was sent ([monitoring](../self-hosting/monitoring.md)). Every streamed entry in the request log records in `stream_progress` how far it got: the provider's events, the bytes and keepalives written to the app, and the time to the first reply bytes.
+Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, and the time to the first bytes. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
 
-## When the app goes away
+## Disconnects
 
-When an app closes the connection, the gateway stops the provider request at once, so the provider stops generating. The request is logged as 499 `client_disconnected`.
+When an app closes the connection, Kaeso stops the provider request at once, so the provider stops generating. The request is logged as 499 with the error kind `client_disconnected`.
 
-Such a stream, and one that breaks off, is charged what the provider reported plus an estimate of the rest:
+Kaeso charges such a request, and a stream that broke off, what the provider reported plus an estimate of the rest:
 
-- the input from the provider's usage at the start of the stream, else from its token-counting endpoint, else from the size of the request;
+- the input from the provider's usage at the start of the stream, or else from its token-counting endpoint, or else from the size of the request;
 - the output from the content received.
 
-These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning the provider doesn't stream.
+These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning that the provider doesn't stream.
 
-## When the gateway shuts down
+## Shutdown
 
-On a shutdown signal, the gateway takes no new connections and gives open requests and streams `KAESO_SHUTDOWN_GRACE` (30 seconds) to finish. A request still open then gets the error "Kaeso is restarting" in the app's format: 503, or 500 for apps in an OpenAI format, which the SDKs retry. A stream that already started ends with an error event instead. Both are charged and logged with the error kind `shutdown`, a stream with estimated usage. The gateway then waits up to 10 seconds for these entries before it writes usage and logs for the last time.
+On a shutdown signal, the gateway takes no new connections. Open requests and streams get `KAESO_SHUTDOWN_GRACE`, 30 seconds by default, to finish.
+
+A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead. Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage.
 
 ## Usage and logs
 
-The request's tokens are charged at the model's prices at the time of the request, to the key, the member and the project, and count against their budgets. The request log records the metadata, and the request and reply when content logging is on for both the organization and the project.
+Kaeso charges the tokens at the model's prices at the time of the request, to the key, the member and the project, and counts them against their budgets. The request log keeps the metadata. It also keeps the request and the reply when content logging is on for both the organization and the project.
 
-Logging never holds a request up. Entries wait in memory and are written to ClickHouse in batches; when the buffer is full, the oldest entries are dropped.
+Logging never holds a request up. Entries wait in memory and go to ClickHouse in batches. When the buffer is full, Kaeso drops the oldest entries ([request logs](../console/request-logs.md)).
