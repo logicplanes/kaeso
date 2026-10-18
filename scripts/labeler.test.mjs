@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, matchesGlob } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -48,7 +48,15 @@ test("a pull request gets the area of every part it changes", () => {
   assert.deepEqual(labelsFor(["apps/console/src/routes/keys.tsx", "packages/ui/src/dialog.tsx"]), ["area: console", "area: ui library"]);
   assert.deepEqual(labelsFor(["apps/docs/content/en/index.md"]), ["area: documentation"]);
   assert.deepEqual(labelsFor(["deploy/compose.yaml"]), ["area: self-hosting"]);
+  assert.deepEqual(labelsFor(["crates/kaeso-update/src/policy.rs"]), ["area: gateway"]);
+  assert.deepEqual(labelsFor(["crates/kaeso-updater/src/engine.rs", "deploy/updater.Dockerfile"]), ["area: self-hosting"]);
   assert.deepEqual(labelsFor(["Cargo.lock", "pnpm-lock.yaml"]), []);
+});
+
+test("a change to the code of any crate gets a label", () => {
+  for (const crate of readdirSync(join(root, "crates"), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+    assert.notDeepEqual(labelsFor([`crates/${crate.name}/src/lib.rs`]), [], crate.name);
+  }
 });
 
 test("a pull request that changes only CI, tests, tooling or contributor guides is internal", () => {

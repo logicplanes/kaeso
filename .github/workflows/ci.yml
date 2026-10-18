@@ -70,6 +70,7 @@ jobs:
               - knip.json
               - openapi.json
               - CHANGELOG.md
+              - .github/labeler.yml
               - scripts/**
               - apps/**
               - packages/**
