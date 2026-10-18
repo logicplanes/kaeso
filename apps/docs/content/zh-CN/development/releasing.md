@@ -140,7 +140,7 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
-把 `apps/docs/dist` 和 `apps/showcase/dist` 原样上传。它们包含每种语言的每个页面、`robots.txt`、`sitemap.xml`，以及每种语言一个 `404.html`。托管服务需要用 `guides.html` 响应 `/guides`，并用对应语言的 `404.html` 响应未知地址。移动过的页面在旧地址上有一个跳转页面，`_redirects` 也为支持该文件的托管服务列出了相同的跳转。
+把 `apps/docs/dist` 和 `apps/showcase/dist` 原样上传。它们包含每种语言的每个页面、`robots.txt`、`sitemap.xml`，以及每种语言一个 `404.html`。托管服务需要用 `console.html` 响应 `/console`，并用对应语言的 `404.html` 响应未知地址。移动过的页面在旧地址上有一个跳转页面，`_redirects` 也为支持该文件的托管服务列出了相同的跳转。
 
 ### 内容安全策略
 

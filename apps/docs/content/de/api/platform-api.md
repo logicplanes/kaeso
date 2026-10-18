@@ -95,7 +95,7 @@ In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 
 
 - **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
 - **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
-- **Für Instanz-Admins:** Instanz- oder Update-Einstellungen ändern, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
+- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, Updates mit einem Klick einschalten, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
 
 ## Konventionen
 
