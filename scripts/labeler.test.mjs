@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, matchesGlob } from "node:path";
 import { test } from "node:test";
@@ -57,6 +58,14 @@ test("a change to the code of any crate gets a label", () => {
   for (const crate of readdirSync(join(root, "crates"), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
     assert.notDeepEqual(labelsFor([`crates/${crate.name}/src/lib.rs`]), [], crate.name);
   }
+});
+
+test("every file of the self-hosting package gets its area", () => {
+  const shipped = execFileSync("git", ["ls-files", "deploy"], { cwd: root, encoding: "utf8" })
+    .split("\n")
+    .filter((file) => file && file !== "deploy/compose.dev.yaml");
+  assert.ok(shipped.includes("deploy/.env.example"));
+  for (const file of shipped) assert.deepEqual(labelsFor([file]), ["area: self-hosting"], file);
 });
 
 test("a pull request that changes only CI, tests, tooling or contributor guides is internal", () => {
