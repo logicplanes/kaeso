@@ -2,10 +2,11 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { GROUPS, TOPICS, context, draft, escaped, linked } from "./changelog.mjs";
+import { GROUPS, TOPICS, context, draft, escaped, history, linked, release } from "./changelog.mjs";
 
 export const MODEL = "claude-opus-5-5";
 export const API_URL = "https://ai.logicplanes.com";
+export const DOCS_URL = "https://docs.kaeso.app";
 const MAX_TOKENS = 32000;
 const REQUEST_TIMEOUT = 600_000;
 const DEADLINE = 900_000;
@@ -13,6 +14,10 @@ const BODY_LIMIT = 4000;
 const FILE_LIMIT = 50;
 const SUMMARY_LIMIT = 1200;
 const ENTRY_LIMIT = 800;
+const TAGLINE_LIMIT = 160;
+const TITLE_LIMIT = 40;
+const POINT_LIMIT = 160;
+export const HIGHLIGHTS = 5;
 const INTERNAL = "internal";
 const NOT_PEOPLE = new Set([
   "chatgpt-codex-connector",
@@ -113,11 +118,28 @@ const entrySchema = {
   properties: { text: { type: "string" }, prs: { type: "array", items: { type: "integer" } } },
 };
 
+const highlightSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["title", "text", "prs"],
+  properties: { title: { type: "string" }, text: { type: "string" }, prs: { type: "array", items: { type: "integer" } } },
+};
+
 export const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["summary", "breaking", "sections", "contributors"],
+  required: ["summary", "breaking", "sections", "contributors", "release"],
   properties: {
+    release: {
+      type: "object",
+      additionalProperties: false,
+      required: ["tagline", "highlights", "breaking"],
+      properties: {
+        tagline: { type: "string" },
+        highlights: { type: "array", items: highlightSchema },
+        breaking: { type: "array", items: entrySchema },
+      },
+    },
     summary: { type: "string" },
     breaking: { type: "array", items: entrySchema },
     sections: {
@@ -166,6 +188,11 @@ Answer with the JSON the schema describes:
 - prerelease_notes, when present, are the notes of this version's pre-releases, which this release replaces: carry their entries over, rewritten where that reads better.
 - breaking: only changes that make people who run or integrate Kaeso act when they upgrade, such as pull requests labelled breaking. Each one also stays an entry in its section.
 - contributors: exactly the people listed in contributors, with first_time as given.
+- release: the short version for the GitHub release page, read in ten seconds by someone deciding whether to upgrade. The sections stay the full record; release only picks from it.
+  - tagline: one sentence of at most ${TAGLINE_LIMIT} characters on what the release brings.
+  - highlights: one to ${HIGHLIGHTS} changes that matter most to people who run or integrate Kaeso, the most important first. title: two to five words that name the change, sentence case, no full stop, at most ${TITLE_LIMIT} characters. text: one sentence of at most ${POINT_LIMIT} characters on what it does for them. prs: the pull requests behind it. Leave out small fixes, tests and documentation polish unless the release has nothing bigger.
+  - breaking: the changes in breaking, in the same order, each one sentence of at most ${POINT_LIMIT} characters that says what changed and what to do, with the same prs.
+  - The same rules for plain text apply to tagline, title and text.
 - Never say how these notes were written, and never name assistants, bots or tools as contributors.`;
 
 const dataOf = (facts) => JSON.stringify(facts, null, 2).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
@@ -241,7 +268,7 @@ export function plain(text, limit, logins) {
 
 export function check(output, facts) {
   const problems = [];
-  if (!hasKeys(output, ["summary", "breaking", "sections", "contributors"])) return ["the answer doesn't have the schema's shape"];
+  if (!hasKeys(output, ["summary", "breaking", "sections", "contributors", "release"])) return ["the answer doesn't have the schema's shape"];
   const logins = new Set(facts.contributors.map(({ login }) => login));
   const listed = new Set(facts.must_list);
   const seen = new Map();
@@ -249,10 +276,10 @@ export function check(output, facts) {
     const problem = plain(value, limit, logins);
     if (problem) problems.push(`${where} ${problem}`);
   };
-  const entry = (value, where, counted) => {
+  const entry = (value, where, counted, limit = ENTRY_LIMIT, bare = counted) => {
     if (!hasKeys(value, ["text", "prs"]) || !Array.isArray(value.prs)) return problems.push(`${where} isn't an entry`);
-    text(value.text, ENTRY_LIMIT, where);
-    if (!value.prs.length && !(counted && facts.curated_notes)) problems.push(`${where} names no pull request`);
+    text(value.text, limit, where);
+    if (!value.prs.length && !(bare && facts.curated_notes)) problems.push(`${where} names no pull request`);
     for (const number of value.prs) {
       if (!Number.isInteger(number) || !listed.has(number)) problems.push(`${where} names #${number}, which isn't in this release`);
       else if (counted) seen.set(number, (seen.get(number) ?? 0) + 1);
@@ -287,6 +314,32 @@ export function check(output, facts) {
   }
   if (new Set(given.map((person) => person?.login)).size !== given.length || given.length !== expected.size)
     problems.push("contributors don't match this release's people");
+  const short = output.release;
+  if (!hasKeys(short, ["tagline", "highlights", "breaking"])) return [...problems, "release doesn't have the schema's shape"];
+  text(short.tagline, TAGLINE_LIMIT, "the tagline");
+  if (!oneSentence(short.tagline)) problems.push("the tagline is more than one sentence");
+  if (!Array.isArray(short.highlights) || !short.highlights.length || short.highlights.length > HIGHLIGHTS)
+    problems.push(`release needs one to ${HIGHLIGHTS} highlights`);
+  else
+    short.highlights.forEach((value, i) => {
+      const where = `highlight ${i + 1}`;
+      if (!hasKeys(value, ["title", "text", "prs"])) return problems.push(`${where} isn't a highlight`);
+      text(value.title, TITLE_LIMIT, `${where}'s title`);
+      if (typeof value.title === "string" && /[.!?:]\s*$/.test(value.title)) problems.push(`${where}'s title ends with punctuation`);
+      if (typeof value.title === "string" && (words(value.title) < 2 || words(value.title) > 5)) problems.push(`${where}'s title isn't two to five words`);
+      entry({ text: value.text, prs: value.prs }, where, false, POINT_LIMIT, true);
+      if (!oneSentence(value.text)) problems.push(`${where} is more than one sentence`);
+    });
+  const breaking = Array.isArray(output.breaking) ? output.breaking : [];
+  if (!Array.isArray(short.breaking) || short.breaking.length !== breaking.length) problems.push("release's breaking changes don't match breaking");
+  else
+    short.breaking.forEach((value, i) => {
+      entry(value, `release's breaking change ${i + 1}`, false, POINT_LIMIT);
+      if (!oneSentence(value?.text)) problems.push(`release's breaking change ${i + 1} is more than one sentence`);
+      const same = (prs) => (Array.isArray(prs) ? [...new Set(prs)].sort(byNumber).join() : null);
+      if (same(value?.prs) !== same(breaking[i]?.prs))
+        problems.push(`release's breaking change ${i + 1} names other pull requests than breaking change ${i + 1}`);
+    });
   return problems;
 }
 
@@ -332,11 +385,118 @@ export async function write({ collected, changelog, version = null, client, mode
       problems = check(output, facts);
     }
     if (problems.length) throw new Error(`the notes break the rules: ${problems.slice(0, 5).join("; ")}`);
-    return render(output, facts);
+    return { notes: render(output, facts), brief: output.release };
   } catch (error) {
     notify("warning", `The release notes come from the pull request titles and labels, since writing them failed: ${error.message}`);
     return null;
   }
+}
+
+const REFS = /\s*\(((?:\[#\d+\]\(https:\/\/[^\s()]+\)(?:, )?)+)\)$/;
+const BREAKING_LINE = /^- \*\*Breaking:\*\* (.+)$/;
+const CONTRIBUTORS_LINE = /^\*\*Contributors:\*\* (.+)$/;
+
+const split = (line) => {
+  const match = REFS.exec(line);
+  return match ? { text: line.slice(0, match.index), refs: match[1].split(", ") } : { text: line, refs: [] };
+};
+
+const masked = (text) => text.replace(/`[^`]*`/g, (span) => `\`${"x".repeat(span.length - 2)}\``);
+const SENTENCE_END = /(?<!\b(?:e\.g|i\.e|etc|vs))[.!?](?=\s+\S)/u;
+
+export const oneSentence = (text) => typeof text !== "string" || !SENTENCE_END.test(masked(text.trim()));
+
+export const words = (text) => (typeof text === "string" ? text.trim().split(/\s+/).filter(Boolean).length : 0);
+
+export function firstSentence(text) {
+  const end = SENTENCE_END.exec(masked(text));
+  return end ? text.slice(0, end.index + 1) : text;
+}
+
+const items = (markdown) =>
+  markdown
+    .split("\n")
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2));
+
+export function briefFrom(value, people = new Set()) {
+  const problems = [];
+  const fine = (text, limit, where) => {
+    const problem = plain(text, limit, people);
+    if (problem) problems.push(`${where} ${problem}`);
+  };
+  const prs = (list, where) => {
+    if (!Array.isArray(list) || list.some((number) => !Number.isInteger(number) || number < 1)) problems.push(`${where} has no list of pull requests`);
+  };
+  if (!hasKeys(value, ["tagline", "highlights", "breaking"]) || !Array.isArray(value.highlights) || !Array.isArray(value.breaking))
+    return { brief: null, problems: ["it doesn't have the short version's shape"] };
+  fine(value.tagline, TAGLINE_LIMIT, "the tagline");
+  if (!oneSentence(value.tagline)) problems.push("the tagline is more than one sentence");
+  if (!value.highlights.length || value.highlights.length > HIGHLIGHTS) problems.push(`it needs one to ${HIGHLIGHTS} highlights`);
+  value.highlights.forEach((point, i) => {
+    if (!hasKeys(point, ["title", "text", "prs"])) return problems.push(`highlight ${i + 1} isn't a highlight`);
+    fine(point.title, TITLE_LIMIT, `highlight ${i + 1}'s title`);
+    fine(point.text, POINT_LIMIT, `highlight ${i + 1}`);
+    if (words(point.title) < 2 || words(point.title) > 5) problems.push(`highlight ${i + 1}'s title isn't two to five words`);
+    if (!oneSentence(point.text)) problems.push(`highlight ${i + 1} is more than one sentence`);
+    prs(point.prs, `highlight ${i + 1}`);
+  });
+  value.breaking.forEach((point, i) => {
+    if (!hasKeys(point, ["text", "prs"])) return problems.push(`breaking change ${i + 1} isn't an entry`);
+    fine(point.text, POINT_LIMIT, `breaking change ${i + 1}`);
+    if (!oneSentence(point.text)) problems.push(`breaking change ${i + 1} is more than one sentence`);
+    prs(point.prs, `breaking change ${i + 1}`);
+  });
+  return { brief: problems.length ? null : value, problems };
+}
+
+export function body({ changelog, version, brief = null, docs = DOCS_URL, notify = () => {} }) {
+  const { repository, releases } = history(changelog);
+  const found = releases.find((entry) => entry.version === version);
+  if (!found) throw new Error(`CHANGELOG.md has no section for ${version}`);
+  const intro = found.intro.split("\n");
+  const contributors = intro.map((line) => CONTRIBUTORS_LINE.exec(line)?.[1]).find(Boolean) ?? null;
+  const people = new Set([...(contributors ?? "").matchAll(/@([A-Za-z0-9-]+)/g)].map(([, login]) => login));
+  let short = null;
+  if (brief) {
+    const checked = briefFrom(brief, people);
+    if (checked.brief) short = checked.brief;
+    else
+      notify(
+        "warning",
+        `The GitHub release lists the changelog's first lines, since its short version is unusable: ${checked.problems.slice(0, 3).join("; ")}`,
+      );
+  }
+  const link = (number) => `[#${number}](${repository}/pull/${number})`;
+  const refs = (list) => (list.length ? ` ${list.join(", ")}` : "");
+  const numbered = (prs) => [...new Set(prs)].sort(byNumber).map(link);
+  const cut = (line) => {
+    const { text, refs: found } = split(line);
+    return `- ${firstSentence(text.trim())}${refs(found)}`;
+  };
+  const tagline = short ? [escaped(short.tagline.trim())] : [];
+  const entries = found.sections.flatMap((section) => [section.markdown, ...section.topics.map(({ markdown }) => markdown)]).flatMap(items);
+  const highlights = short
+    ? short.highlights.map(({ title, text, prs }) => `- **${escaped(title.trim().replace(/[.!?:]+$/, ""))}.** ${escaped(text.trim())}${refs(numbered(prs))}`)
+    : entries.slice(0, HIGHLIGHTS).map(cut);
+  const breaking = short
+    ? short.breaking.map(({ text, prs }) => `- ${escaped(text.trim())}${refs(numbered(prs))}`)
+    : intro
+        .map((line) => BREAKING_LINE.exec(line)?.[1])
+        .filter(Boolean)
+        .map(cut);
+  const more = short ? 0 : Math.max(0, entries.length - HIGHLIGHTS);
+  const footer = [
+    `[Full changelog](${docs}/changelog#v${version})`,
+    ...(found.compare && found.previous ? [`[v${found.previous}...v${version}](${found.compare})`] : []),
+  ].join(" · ");
+  return paragraphs([
+    tagline,
+    highlights.length ? ["### Highlights", "", ...highlights, ...(more ? ["", `And ${more} more in the full changelog.`] : [])] : [],
+    breaking.length ? ["### Breaking", "", ...breaking] : [],
+    contributors ? [`**Contributors:** ${contributors}`] : [],
+    [footer],
+  ]);
 }
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -361,7 +521,8 @@ const options = (args) => {
   for (let i = 0; i < args.length; i++) {
     const flag = args[i];
     if (flag === "--dry-run") parsed.dryRun = true;
-    else if (["--since", "--head", "--version", "--out", "--pulls"].includes(flag) && args[i + 1]) parsed[flag.slice(2)] = args[++i];
+    else if (["--since", "--head", "--version", "--out", "--pulls", "--brief", "--brief-out"].includes(flag) && args[i + 1])
+      parsed[flag.slice(2).replace(/-(\w)/g, (_, letter) => letter.toUpperCase())] = args[++i];
     else if (!flag.startsWith("--") && !parsed.command) parsed.command = flag;
     else throw new Error(`unknown argument ${flag}`);
   }
@@ -386,25 +547,39 @@ async function main(args) {
   }
   if (opts.command === "write" && opts.pulls && opts.out) {
     const collected = JSON.parse(readFileSync(opts.pulls, "utf8"));
-    const lines = await write({ collected, changelog, version: opts.version ?? null, client: await clientFromEnv(), model, notify: notifier });
-    rmSync(opts.out, { force: true });
-    if (lines) {
-      mkdirSync(dirname(opts.out), { recursive: true });
-      writeFileSync(opts.out, `${lines.join("\n")}\n`);
+    const written = await write({ collected, changelog, version: opts.version ?? null, client: await clientFromEnv(), model, notify: notifier });
+    for (const [file, content] of [
+      [opts.out, written && `${written.notes.join("\n")}\n`],
+      [opts.briefOut, written && `${JSON.stringify(written.brief, null, 2)}\n`],
+    ]) {
+      if (!file) continue;
+      rmSync(file, { force: true });
+      if (!content) continue;
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, content);
     }
+    return;
+  }
+  if (opts.command === "body" && opts.version) {
+    const brief = opts.brief ? JSON.parse(readFileSync(opts.brief, "utf8")) : null;
+    const lines = body({ changelog, version: opts.version, brief, notify: notifier });
+    process.stdout.write(`${lines.join("\n")}\n`);
     return;
   }
   if (opts.dryRun && !opts.command) {
     process.stderr.write("Collecting the merged pull requests…\n");
     const collected = gather();
-    const lines =
-      (await write({ collected, changelog, version: opts.version ?? null, client: await clientFromEnv(), model, notify: notifier })) ??
-      draft(changelog, opts.version ?? "next", collected.pulls);
+    const version = opts.version ?? "next";
+    const written = await write({ collected, changelog, version: opts.version ?? null, client: await clientFromEnv(), model, notify: notifier });
+    const lines = written?.notes ?? draft(changelog, version, collected.pulls);
+    const released = release(changelog, version, new Date().toISOString().slice(0, 10), collected.pulls, written?.notes ?? null);
     process.stdout.write(`${lines.join("\n")}\n`);
+    process.stderr.write("\nThe GitHub release:\n\n");
+    process.stdout.write(`${body({ changelog: released, version, brief: written?.brief ?? null, notify: notifier }).join("\n")}\n`);
     return;
   }
   throw new Error(
-    "usage: node scripts/release-notes.mjs collect --out <file> [--since <tag>] [--head <rev>] | write --pulls <file> --out <file> [--version <version>] | --dry-run [--since <tag>] [--head <rev>] [--version <version>]",
+    "usage: node scripts/release-notes.mjs collect --out <file> [--since <tag>] [--head <rev>] | write --pulls <file> --out <file> [--brief-out <file>] [--version <version>] | body --version <version> [--brief <file>] | --dry-run [--since <tag>] [--head <rev>] [--version <version>]",
   );
 }
 

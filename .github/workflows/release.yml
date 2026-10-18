@@ -148,7 +148,13 @@ jobs:
           LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}
           RELEASE_NOTES_API_URL: https://ai.logicplanes.com
           RELEASE_NOTES_MODEL: claude-opus-5-5
-        run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md"
+        run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md" --brief-out "$RUNNER_TEMP/notes/brief.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-brief
+          path: ${{ runner.temp }}/notes/brief.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Write the changelog
         run: |
           set -euo pipefail
@@ -763,10 +769,21 @@ jobs:
             gh attestation verify "oci://ghcr.io/logicplanes/kaeso-$image@$digest" "${trust[@]}"
           done
           echo "release.json and every image verify against this workflow on prod at \`${GITHUB_SHA:0:12}\`." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        continue-on-error: true
+        with:
+          name: release-brief
+          path: ${{ runner.temp }}/brief
       - name: Create the release
         run: |
           set -euo pipefail
-          node scripts/changelog.mjs notes "$VERSION" > "$RUNNER_TEMP/notes.md"
+          brief=()
+          if [[ -s "$RUNNER_TEMP/brief/brief.json" ]]; then
+            brief=(--brief "$RUNNER_TEMP/brief/brief.json")
+          else
+            echo "The release lists the changelog's first lines, since the run has no highlights." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          node scripts/release-notes.mjs body --version "$VERSION" "${brief[@]}" > "$RUNNER_TEMP/notes.md"
           flags=(--latest)
           if [[ "$PRERELEASE" == true ]]; then flags=(--prerelease --latest=false); fi
           gh release create "v$VERSION" "$RUNNER_TEMP"/assets/* --verify-tag --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
