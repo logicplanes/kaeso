@@ -4,7 +4,7 @@ description: Install Kaeso with Docker Compose, connect a provider and send your
 order: 1
 ---
 
-Install Kaeso on a server, connect OpenAI or Anthropic, and send your first request through it. One Compose file runs the whole install: the gateway, the console, PostgreSQL, ClickHouse, Valkey, and Caddy, which gets the TLS certificate for your domain.
+Install Kaeso on a server, connect OpenAI or Anthropic, and send your first request through it.
 
 ## Before you begin
 

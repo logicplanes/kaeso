@@ -4,7 +4,7 @@ description: 用 Docker Compose 安装 Kaeso，连接服务商并发送第一个
 order: 1
 ---
 
-在服务器上安装 Kaeso，连接 OpenAI 或 Anthropic，并通过它发送第一个请求。一个 Compose 文件即可运行整个安装：网关、控制台、PostgreSQL、ClickHouse、Valkey，以及为您的域名获取 TLS 证书的 Caddy。
+在服务器上安装 Kaeso，连接 OpenAI 或 Anthropic，并通过它发送第一个请求。
 
 ## 准备工作
 
