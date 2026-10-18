@@ -1,63 +1,80 @@
 ---
 title: Mitglieder und Rollen
-description: Personen einladen, ihnen Rollen und Rechte geben und Dienstkonten erstellen.
+description: Laden Sie Personen ein, geben Sie ihnen Rollen und Rechte, und erstellen Sie Dienstkonten für Software.
 order: 2
 ---
 
-Jede Person in einer Organisation hat eine **Organisationsrolle** und in jedem Projekt, dem sie angehört, eine **Projektrolle**. Eine Rolle ist eine Menge von Rechten; einem Mitglied lassen sich zusätzlich einzelne Rechte geben oder nehmen. [Rechte](../concepts/rights.md) listet jedes Recht und was jede Rolle enthält.
+Jede Person in einer Organisation hat eine Organisationsrolle und in jedem Projekt, dem sie angehört, eine Projektrolle. Eine Rolle ist eine Menge von Rechten, und Sie können einem Mitglied zusätzlich einzelne Rechte geben oder nehmen. [Rechte](../concepts/rights.md) listet jedes Recht und die Rollen, die es enthalten.
 
-## Rollen
-
-Organisationen haben sechs eingebaute Rollen, **Inhaber**, **Admin**, **Abrechnung**, **Entwickler**, **Prüfer** und **Mitglied**, Projekte drei: **Admin**, **Entwickler** und **Betrachter**. Die Konsole beschreibt jede Rolle dort, wo eine gewählt wird. Eingebaute Rollen lassen sich nicht ändern.
-
-- Inhaber haben jedes Recht, auch die künftiger Versionen. Nur Inhaber ernennen, ändern oder entfernen Inhaber, und eine Organisation behält immer mindestens einen.
-- Inhaber und Admins haben jedes Recht in jedem Projekt.
-- Im Standardprojekt beginnen Inhaber und Admins als Admin, Entwickler als Entwickler und alle anderen als Betrachter.
-
-Für jede Änderung gelten zwei Regeln: Vergeben lassen sich nur Rechte, die man selbst hat, und ändern lassen sich nur Mitglieder, die kein Recht haben, das einem selbst fehlt.
-
-### Eigene Rollen
-
-Unter **Organisationseinstellungen** › **Mitglieder** › **Rollen** legt **Rolle erstellen** eine Rolle für die Organisation oder für Projekte an, ausgehend von einer eingebauten Rolle oder von keinen Rechten. Eine Organisationsrolle kann zusätzlich Rechte in jedem Projekt geben. Um von einer eingebauten Rolle auszugehen, diese öffnen und **Duplizieren** wählen.
-
-- Eine Organisation hat höchstens 50 eigene Rollen.
-- Eine Änderung gilt sofort für alle, die die Rolle haben. Sie wird nicht gespeichert, wenn sie jemandem ein Recht ließe, ohne ein Recht, das dieses voraussetzt; die Meldung nennt beide Rechte und wie viele Personen betroffen sind.
-- Eine Rolle, die jemand hat, lässt sich nicht löschen; vorher eine andere Rolle vergeben.
+Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die Ihnen das Recht fehlt, erscheint nicht in der Seitenleiste. Eine Aktion, die Sie nicht ausführen dürfen, ist deaktiviert, und ihr Tooltip nennt das nötige Recht und wer es Ihnen geben kann.
 
 ## Personen einladen
 
-Unter **Organisationseinstellungen** › **Mitglieder** öffnet **Mitglied einladen** drei Schritte:
+Öffnen Sie **Organisationseinstellungen** › **Mitglieder** und wählen Sie **Mitglied einladen**. Beantworten Sie dann drei Schritte:
 
-1. **Wer wird eingeladen?** Eine Adresse eingeben und Enter drücken, oder mehrere einfügen.
-2. **Was dürfen sie in der Organisation?** Ihre Organisationsrolle.
-3. **Welche Projekte?** Projekte, denen sie beitreten, jeweils mit einer Rolle. Dem Standardprojekt treten sie immer bei.
+1. **Wer wird eingeladen?** Geben Sie eine Adresse ein und drücken Sie Enter, oder fügen Sie mehrere ein.
+2. **Was dürfen sie in der Organisation?** Wählen Sie ihre Organisationsrolle.
+3. **Welche Projekte?** Fügen Sie die Projekte hinzu, denen sie beitreten, jeweils mit einer Rolle. Dem Standardprojekt treten sie immer bei.
 
-**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet offene Einladungen, mit **Erneut senden** und **Widerrufen**; angenommene, widerrufene und abgelaufene stehen unter **Alle**.
+**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**.
 
-Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen ohne Kaeso-Konto; wer schon ein Konto hat, braucht eine Einladung.
+Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen, die neu bei Kaeso sind. Wer schon ein Konto hat, braucht eine Einladung.
 
-## Das Sheet eines Mitglieds
+## Rolle wählen
 
-Ein Mitglied wählen, um sein Sheet zu öffnen:
+Organisationen haben sechs eingebaute Rollen: **Inhaber**, **Admin**, **Abrechnung**, **Entwickler**, **Prüfer** und **Mitglied**. Projekte haben drei: **Admin**, **Entwickler** und **Betrachter**. Die Konsole beschreibt jede Rolle dort, wo Sie eine wählen, und eingebaute Rollen lassen sich nicht ändern.
 
-- **Rolle**, mit **Anpassen**, um einzelne Rechte zu geben oder zu nehmen. Ein Recht, das ein anderes seiner Rechte voraussetzt, kommt und geht zusammen mit diesem.
-- **Zugriff**: jedes Recht des Mitglieds und die Rolle oder das Recht, aus dem es stammt.
-- Seine Projekte, mit seiner Rolle in jedem.
-- **Inhaberschaft übertragen**, für Inhaber: Das Mitglied wird Inhaber, man selbst Admin.
-- **Aus der Organisation entfernen**: Das Mitglied verlässt jedes Projekt, und seine Schlüssel in der Organisation werden archiviert. Im eigenen Sheet heißt das **Organisation verlassen**.
+- Inhaber haben jedes Recht, auch die Rechte, die spätere Versionen hinzufügen. Nur Inhaber ernennen, ändern oder entfernen Inhaber, und eine Organisation behält immer mindestens einen.
+- Inhaber und Admins haben jedes Recht in jedem Projekt.
+- Im Standardprojekt beginnen Inhaber und Admins als Admin, Entwickler als Entwickler und alle anderen als Betrachter.
 
-## Projektmitglieder
+Für jede Ihrer Änderungen gelten zwei Regeln. Sie können nur Rechte vergeben, die Sie selbst haben. Und Sie können nur Mitglieder ändern, die kein Recht haben, das Ihnen fehlt.
 
-Auf der Seite **Mitglieder** eines Projekts fügt **Mitglied hinzufügen** jemanden aus der Organisation mit einer Projektrolle hinzu; andere Personen zuerst in die Organisation einladen. Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modellzugriff) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt; in der Organisation bleibt es.
+## Rolle oder Rechte eines Mitglieds ändern
 
-## Dienstkonten
+Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 
-Ein **Dienstkonto** ist ein Projektmitglied für Software, etwa ein Deployment, einen Job oder eine Pipeline. Seine Schlüssel funktionieren weiter, egal wer die Organisation verlässt.
+- **Rolle** zeigt seine Rolle. **Anpassen** gibt oder nimmt einzelne Rechte. Ein Recht, das ein anderes seiner Rechte voraussetzt, kommt und geht mit diesem.
+- **Zugriff** listet jedes Recht des Mitglieds und die Rolle oder das Recht, aus dem es stammt.
+- Seine Projekte zeigen seine Rolle in jedem.
+- **Inhaberschaft übertragen**, für Inhaber, macht das Mitglied zum Inhaber und Sie zum Admin.
+- **Aus der Organisation entfernen** nimmt es aus jedem Projekt und archiviert seine Schlüssel in der Organisation. In Ihrem eigenen Sheet heißt das **Organisation verlassen**.
 
-Auf der Seite **Dienstkonten** eines Projekts fragt **Dienstkonto erstellen**, wofür es verwendet wird, etwa `checkout-production`, und nach seiner Projektrolle, mit der seine Schlüssel handeln. Sein Sheet enthält seine Schlüssel mit **Schlüssel erstellen**, seinen Modellzugriff und seine Limits. **Dienstkonto archivieren** archiviert es samt Schlüsseln dauerhaft.
+## Eigene Rolle erstellen
+
+Öffnen Sie **Organisationseinstellungen** › **Mitglieder** › **Rollen** und wählen Sie **Rolle erstellen**. Eine Rolle gilt für die Organisation oder für Projekte und beginnt bei einer eingebauten Rolle oder ohne Rechte. Eine Organisationsrolle kann zusätzlich Rechte in jedem Projekt geben. Um bei einer eingebauten Rolle zu beginnen, öffnen Sie diese und wählen Sie **Duplizieren**.
+
+- Eine Organisation hat höchstens 50 eigene Rollen.
+- Eine Änderung an einer Rolle gilt sofort für alle, die sie haben.
+- Die Konsole lehnt eine Änderung ab, die jemandem ein Recht ließe, ohne ein Recht, das dieses voraussetzt. Die Meldung nennt beide Rechte und wie viele Personen betroffen sind.
+- Eine Rolle, die jemand hat, können Sie nicht löschen. Geben Sie den Personen zuerst eine andere Rolle.
+
+## Personen zu einem Projekt hinzufügen
+
+Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst dorthin ein.
+
+Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es.
+
+## Dienstkonto erstellen
+
+Ein Dienstkonto ist ein Projektmitglied für Software, etwa ein Deployment, einen Job oder eine Pipeline. Seine Schlüssel funktionieren weiter, wenn die Personen gehen, die sie erstellt haben.
+
+1. Wählen Sie auf der Seite **Dienstkonten** eines Projekts **Dienstkonto erstellen**.
+2. Geben Sie an, was es verwendet, etwa `checkout-production`.
+3. Wählen Sie seine Projektrolle. Seine Schlüssel handeln mit den Rechten dieser Rolle.
+
+Sein Sheet enthält seine Schlüssel mit **Schlüssel erstellen**, seinen Modellzugriff und seine Limits. **Dienstkonto archivieren** archiviert es samt Schlüsseln endgültig.
 
 Ein Dienstkonto zu erstellen erfordert das Recht **Dienstkonten erstellen**, seine Schlüssel zu erstellen **Dienstkonto-Schlüssel erstellen**.
 
-## Modellzugriff
+## Modelle einschränken, die jemand aufrufen darf
 
-Mitglieder und Dienstkonten dürfen jedes Modell im Katalog des Projekts aufrufen, Schlüssel jedes Modell, das ihr Inhaber darf. Unter **Modelle** im Sheet eines Mitglieds, Dienstkontos oder Schlüssels lassen sich stattdessen bestimmte Modelle wählen. Ein Schlüssel ruft nie ein Modell auf, das sein Inhaber nicht darf: Wer die Modelle eines Mitglieds einschränkt, schränkt die Modelllisten seiner Schlüssel mit ein. Den Modellzugriff zu ändern erfordert das Recht **Limits verwalten**.
+Mitglieder und Dienstkonten dürfen jedes Modell im Katalog des Projekts aufrufen, ein Schlüssel jedes Modell, das sein Inhaber aufrufen darf. Um das einzuschränken, öffnen Sie **Modelle** im Sheet eines Mitglieds, Dienstkontos oder Schlüssels und wählen Sie bestimmte Modelle.
+
+Ein Schlüssel ruft nie ein Modell auf, das sein Inhaber nicht darf. Wenn Sie die Modelle eines Mitglieds einschränken, schränken sich die Listen seiner Schlüssel mit ein. Den Modellzugriff zu ändern erfordert das Recht **Limits verwalten**.
+
+## Nächste Schritte
+
+- [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Mitglieder und Dienstkonten.
+- [Limits und Budgets](limits-and-budgets.md): Begrenzen Sie, was ein Mitglied, ein Dienstkonto oder ein Schlüssel ausgeben darf.
+- [Rechte](../concepts/rights.md): Schlagen Sie jedes Recht nach und die Rollen, die es enthalten.
