@@ -17,7 +17,7 @@ const LANGUAGES = [
     latest: "Aktuell",
     release: "Release auf GitHub",
     added: "Hinzugefügt",
-    note: "Die Änderungen sind auf Englisch geschrieben.",
+    note: "Die Einträge sind auf Englisch verfasst.",
   },
   {
     path: "/zh-CN/changelog",

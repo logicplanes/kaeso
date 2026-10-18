@@ -3,6 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
+import { translationProblem } from "./translation-problems.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const demosDir = join(root, "src/demos");
@@ -257,10 +258,13 @@ for (const page of Object.values(out)) {
 const untranslated = [];
 for (const lang of ["de", "zh-CN"]) {
   const dict = JSON.parse(readFileSync(join(root, `src/i18n/${lang}.json`), "utf8"));
-  for (const key of shown) if (key && !(key in dict)) untranslated.push(`${lang}: ${key}`);
+  for (const key of shown) {
+    const problem = key ? translationProblem(lang, key, dict[key]) : null;
+    if (problem) untranslated.push(`${lang}: ${problem}: ${key}`);
+  }
 }
 if (untranslated.length) {
-  writeSync(2, `docs: ${untranslated.length} texts missing from src/i18n:\n  ${untranslated.join("\n  ")}\n`);
+  writeSync(2, `docs: ${untranslated.length} texts without a proper translation in src/i18n:\n  ${untranslated.join("\n  ")}\n`);
   process.exit(1);
 }
 console.log(`docs: generated ${Object.keys(out).length} component pages`);

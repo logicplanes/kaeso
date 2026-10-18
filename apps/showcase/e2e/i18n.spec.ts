@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { open } from "./support";
 
 const SIDEBAR = { en: "Overview", de: "Übersicht", "zh-CN": "概览" } as const;
-const SOURCE = { en: "View source", de: "Quelltext", "zh-CN": "查看源码" } as const;
+const SOURCE = { en: "View source", de: "Quelltext ansehen", "zh-CN": "查看源码" } as const;
 const PRIMARY = {
   de: ["Primär", "Tinte mit einem feinen Licht oben. Für die eine Aktion, für die eine Ansicht da ist."],
   "zh-CN": ["主要", "墨色，顶部带一抹微光。用于视图存在意义所在的那一个操作。"],
@@ -67,7 +67,7 @@ test.describe("the visitor's language", () => {
     const page = await context.newPage();
     await page.goto("/components/button");
     await expect(page).toHaveURL(/\/de\/components\/button$/);
-    await expect(page.getByRole("link", { name: "Quelltext" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Quelltext ansehen" })).toBeVisible();
     await context.close();
   });
 
