@@ -156,7 +156,7 @@ jobs:
           if [[ -s "$RUNNER_TEMP/notes/notes.md" ]]; then
             notes=("$RUNNER_TEMP/notes/notes.md")
           else
-            echo "The changelog comes from the lines under [Unreleased] or the pull requests' titles and labels." >> "$GITHUB_STEP_SUMMARY"
+            echo "The changelog comes from the lines under [Unreleased] and the pull requests' titles and labels." >> "$GITHUB_STEP_SUMMARY"
           fi
           node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)" "$RUNNER_TEMP/pulls/pulls.json" "${notes[@]}"
       - name: Keep the changes

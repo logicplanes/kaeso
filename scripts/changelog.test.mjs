@@ -506,11 +506,114 @@ test("a release with nothing under [Unreleased] writes its section from the pull
   assert.equal(notes(after, "0.2.0"), generate(merged).join("\n"));
 });
 
-test("lines written under [Unreleased] make a curated release, which leaves the pull requests out", () => {
-  const before = changelog([withUnreleased("### Fixed\n\n- Streams end cleanly."), first], ["Unreleased", "0.1.0"]);
-  assert.equal(release(before, "0.2.0", "2026-11-15", merged), release(before, "0.2.0", "2026-11-15"));
-  const headings = changelog([withUnreleased("### Added\n\n### Fixed"), first], ["Unreleased", "0.1.0"]);
-  assert.match(release(headings, "0.2.0", "2026-11-15", merged), /## \[0\.2\.0\] - 2026-11-15\n\n### Added\n\n#### Gateway\n\n- Add batches/);
+const curatedLog = (lines) => changelog([withUnreleased(lines), first], ["Unreleased", "0.1.0"]);
+
+test("lines written under [Unreleased] alone make the release when no pull request was merged", () => {
+  const before = curatedLog("### Fixed\n\n- Streams end cleanly.");
+  assert.equal(notes(release(before, "0.2.0", "2026-11-15"), "0.2.0"), "### Fixed\n\n- Streams end cleanly.");
+  assert.equal(notes(release(before, "0.2.0", "2026-11-15", [pull(4, "Speed up CI", ["internal"])]), "0.2.0"), "### Fixed\n\n- Streams end cleanly.");
+  const headings = curatedLog("### Added\n\n### Fixed");
+  assert.equal(notes(release(headings, "0.2.0", "2026-11-15", merged), "0.2.0"), generate(merged).join("\n"));
+});
+
+test("lines written under [Unreleased] come first, and every pull request none of them links follows under its own section and topic", async () => {
+  const before = curatedLog(
+    `A release about batches.\n\n### Added\n\n#### Console\n\n- A page for batches, with their status. ([#5](${repo}/pull/5))\n\n### Fixed\n\n- Streams end cleanly.`,
+  );
+  const pulls = [
+    ...merged,
+    pull(5, "Add a batch page", ["area: console"]),
+    pull(6, "Rename the budget fields", ["breaking", "area: gateway"]),
+    pull(7, "Add batch exports", ["area: console"]),
+  ];
+  const expected = [
+    "A release about batches.",
+    "",
+    `- **Breaking:** Rename the budget fields (${ref(6)})`,
+    "",
+    "### Added",
+    "",
+    "#### Console",
+    "",
+    `- A page for batches, with their status. ([#5](${repo}/pull/5))`,
+    `- Add batch exports (${ref(7)})`,
+    "",
+    "#### Gateway",
+    "",
+    `- Add batches (${ref(2)})`,
+    "",
+    "### Changed",
+    "",
+    "#### Gateway",
+    "",
+    `- Rename the budget fields (${ref(6)})`,
+    "",
+    "### Fixed",
+    "",
+    "- Streams end cleanly.",
+    `- Fix quiet streams (${ref(3)})`,
+  ];
+  assert.deepEqual(draft(before, "0.2.0", pulls), expected);
+  const after = release(before, "0.2.0", "2026-11-15", pulls);
+  assert.equal(notes(after, "0.2.0"), expected.join("\n"));
+  assert.equal(await isPrettier(after), true);
+});
+
+test("with lines under [Unreleased], internal pull requests stay out and Dependabot's that no line links fold into one line under Changed", () => {
+  const before = curatedLog(`### Changed\n\n- Serde 1.0.2 parses large numbers exactly. ([#9](${repo}/pull/9))`);
+  const pulls = [
+    pull(4, "Speed up CI", ["internal"]),
+    pull(9, "Bump serde from 1.0.1 to 1.0.2", ["dependencies"], "dependabot[bot]"),
+    pull(10, "Bump vite from 8.0.1 to 8.0.2", ["dependencies"], "dependabot[bot]"),
+    pull(11, "Update ClickHouse to 26.9", ["dependencies"]),
+    pull(12, "Show costs in cents"),
+  ];
+  assert.deepEqual(draft(before, "0.2.0", pulls), [
+    "### Changed",
+    "",
+    `- Serde 1.0.2 parses large numbers exactly. ([#9](${repo}/pull/9))`,
+    `- Show costs in cents (${ref(12)})`,
+    `- Dependencies updated (${ref(10)}, ${ref(11)})`,
+  ]);
+  assert.deepEqual(draft(before, "0.2.0", [pull(4, "Speed up CI", ["internal"])]), [
+    "### Changed",
+    "",
+    `- Serde 1.0.2 parses large numbers exactly. ([#9](${repo}/pull/9))`,
+  ]);
+});
+
+test("only a link to the pull request itself covers it, not a link to an issue or another pull request with its number as text", () => {
+  const before = curatedLog(`### Fixed\n\n- Streams end cleanly. ([#3](${repo}/issues/3), [#2](${repo}/pull/20))`);
+  assert.deepEqual(draft(before, "0.2.0", merged), [
+    "### Added",
+    "",
+    "#### Gateway",
+    "",
+    `- Add batches (${ref(2)})`,
+    "",
+    "### Fixed",
+    "",
+    `- Streams end cleanly. ([#3](${repo}/issues/3), [#2](${repo}/pull/20))`,
+    `- Fix quiet streams (${ref(3)})`,
+  ]);
+});
+
+test("a stable release lists a pull request that a pre-release already names only once", () => {
+  let text = curatedLog("");
+  text = release(text, "0.2.0-rc.1", "2026-11-01", [pull(2, "Add batches", ["area: gateway"])]);
+  text = text.replace("## [Unreleased]\n", "## [Unreleased]\n\n### Fixed\n\n- Streams end cleanly.\n");
+  assert.deepEqual(draft(text, "0.2.0", [pull(2, "Add batches", ["area: gateway"]), pull(3, "Fix quiet streams")]), [
+    "### Added",
+    "",
+    "#### Gateway",
+    "",
+    `- Add batches (${ref(2)})`,
+    "",
+    "### Fixed",
+    "",
+    "- Streams end cleanly.",
+    `- Fix quiet streams (${ref(3)})`,
+  ]);
 });
 
 test("a release with only internal pull requests and nothing under [Unreleased] is refused", () => {
@@ -572,7 +675,7 @@ test("a draft is the section a release would write, without changing the changel
   const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
   assert.equal(draft(before, "0.2.0", merged).join("\n"), notes(release(before, "0.2.0", "2026-11-15", merged), "0.2.0"));
   const curated = changelog([withUnreleased("### Fixed\n\n- Streams end cleanly."), first], ["Unreleased", "0.1.0"]);
-  assert.deepEqual(draft(curated, "0.2.0", merged), ["### Fixed", "", "- Streams end cleanly."]);
+  assert.equal(draft(curated, "0.2.0", merged).join("\n"), notes(release(curated, "0.2.0", "2026-11-15", merged), "0.2.0"));
 });
 
 test("only the step that writes the release notes sees LOG_AI_KEY, in a job that can only read the repository, and a failure there never stops the release", () => {
