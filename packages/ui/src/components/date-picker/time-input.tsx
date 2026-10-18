@@ -97,7 +97,7 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
       const v = pending.current[part];
       if (v !== undefined) commit(part, v);
     },
-    className: "w-20 flex-none bg-transparent text-center tabular text-fg outline-none",
+    className: "w-20 flex-none bg-transparent text-center tabular text-fg outline-none coarse:w-24",
   });
   const control = (
     <InputGroup
