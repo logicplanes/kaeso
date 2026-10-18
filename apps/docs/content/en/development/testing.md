@@ -4,7 +4,7 @@ description: Every test suite in the repository, how to run it, and what must pa
 order: 5
 ---
 
-Every change comes with tests that assert on what a person or an app sees. Coverage thresholds are never lowered; when coverage rises, the threshold rises with it. Commands run from the repository root, with the [development stack](local-setup.md#3-start-the-development-stack) running for suites that need databases.
+Every change comes with tests that assert on what a person or an app sees. Coverage thresholds are never lowered; when coverage rises, the threshold rises with it. Commands run from the repository root, with the [development stack](stack.md) running for suites that need databases.
 
 ## Before a change is done
 
@@ -137,7 +137,7 @@ Every test creates its own databases on the development PostgreSQL, ClickHouse a
 | Name | Made by | Dropped |
 | --- | --- | --- |
 | `t_<uuid>` | `TestServices::start` in a test, or `kaeso-testkit fresh-services --temporary` | When the test ends, also on a panic; otherwise by the sweep |
-| `dev_<uuid>` | `kaeso-testkit fresh-services`, for a gateway you [run from source](local-setup.md#run-the-gateway-from-source) | Only by `kaeso-testkit drop-services dev_<uuid>` |
+| `dev_<uuid>` | `kaeso-testkit fresh-services`, for a gateway you [run from source](stack.md#run-the-gateway-from-source) | Only by `kaeso-testkit drop-services dev_<uuid>` |
 
 The first test in a process sweeps away `t_` databases that are older than six hours and no longer in use. `KAESO_TEST_KEEP_DATABASES=1 cargo test …` keeps a failed test's databases and prints their names. `KAESO_TEST_POSTGRES_URL`, `KAESO_TEST_CLICKHOUSE_URL` and `KAESO_TEST_VALKEY_URL` point the tests at other servers.
 
@@ -286,7 +286,7 @@ criterion prints the change against the previous run. CI only checks that the be
 
 The CI workflow (`.github/workflows/ci.yml`) runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. The Release workflow's own pushes, its release commit and the release brought into `dev`, don't start it again, since the release has already passed every job.
 
-On a pull request, the first job decides which areas changed, and the jobs of unchanged areas are skipped; in every other case every job runs. The one required check is **CI**: it passes when **Changes** and **No comments** passed and every other job passed or was skipped, and fails when one failed, timed out or was cancelled. A pull request into `dev` can't be merged until it is green ([how changes reach dev](contributing.md#how-changes-reach-dev)).
+On a pull request, the first job decides which areas changed, and the jobs of unchanged areas are skipped; in every other case every job runs. The one required check is **CI**: it passes when **Changes** and **No comments** passed and every other job passed or was skipped, and fails when one failed, timed out or was cancelled. A pull request into `dev` can't be merged until it is green ([how changes reach dev](contributing.md#get-it-merged)).
 
 | Job | Runs |
 | --- | --- |

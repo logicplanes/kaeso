@@ -1,7 +1,7 @@
 ---
 title: Dependencies and licenses
 description: Every direct dependency, why it is there, its license, and the checks that keep the policy.
-order: 8
+order: 10
 ---
 
 Kaeso is MIT licensed, and everything it ships depends only on permissively licensed code. A new dependency gets a row on this page in the same pull request, saying why it is needed and under which license.

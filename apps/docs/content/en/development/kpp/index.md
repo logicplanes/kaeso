@@ -1,7 +1,7 @@
 ---
 title: KPP internals
 description: How the KPP types and codecs are built, for contributors to kaeso-kpp and kaeso-codecs.
-order: 4
+order: 9
 nav: KPP internals
 ---
 

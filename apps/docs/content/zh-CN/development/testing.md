@@ -4,7 +4,7 @@ description: 仓库中的每个测试套件、如何运行，以及完成变更�
 order: 5
 ---
 
-每个变更都附带测试，测试断言用户或应用看到的内容。覆盖率阈值从不降低；覆盖率提高时，阈值随之提高。命令都在仓库根目录下运行；需要数据库的套件要求[开发环境栈](local-setup.md#3-启动开发环境栈)正在运行。
+每个变更都附带测试，测试断言用户或应用看到的内容。覆盖率阈值从不降低；覆盖率提高时，阈值随之提高。命令都在仓库根目录下运行；需要数据库的套件要求[开发环境栈](stack.md)正在运行。
 
 ## 完成变更之前
 
@@ -137,7 +137,7 @@ cargo install cargo-deny cargo-llvm-cov sqlx-cli --locked
 | 名称 | 创建者 | 删除时机 |
 | --- | --- | --- |
 | `t_<uuid>` | 测试中的 `TestServices::start`，或 `kaeso-testkit fresh-services --temporary` | 测试结束时，panic 时也会删除；否则由清理过程删除 |
-| `dev_<uuid>` | `kaeso-testkit fresh-services`，用于[从源代码运行](local-setup.md#从源代码运行网关)的网关 | 只能通过 `kaeso-testkit drop-services dev_<uuid>` 删除 |
+| `dev_<uuid>` | `kaeso-testkit fresh-services`，用于[从源代码运行](stack.md#从源码运行网关)的网关 | 只能通过 `kaeso-testkit drop-services dev_<uuid>` 删除 |
 
 进程中的第一个测试会清理超过六小时且不再使用的 `t_` 数据库。`KAESO_TEST_KEEP_DATABASES=1 cargo test …` 会保留失败测试的数据库并打印其名称。`KAESO_TEST_POSTGRES_URL`、`KAESO_TEST_CLICKHOUSE_URL` 和 `KAESO_TEST_VALKEY_URL` 可以让测试使用其他服务器。
 
@@ -286,7 +286,7 @@ criterion 会显示与上一次运行相比的变化。CI 只检查基准测试�
 
 CI 工作流（`.github/workflows/ci.yml`）在每个拉取请求上、每次推送到 `dev` 和 `prod` 时，以及在 Release 工作流内部运行。Release 工作流自己的推送（发布提交以及合入 `dev` 的版本）不会再次触发它，因为该版本已经通过了每个作业。
 
-在拉取请求上，第一个作业判断哪些领域发生了变化，未变化领域的作业会被跳过；其他情况下会运行所有作业。唯一的必需检查是 **CI**：当 **Changes** 和 **No comments** 通过、其他每个作业都通过或被跳过时，它才通过；只要有一个作业失败、超时或被取消，它就失败。合入 `dev` 的拉取请求必须等它通过后才能合并（[变更如何进入 dev](contributing.md#变更如何进入-dev)）。
+在拉取请求上，第一个作业判断哪些领域发生了变化，未变化领域的作业会被跳过；其他情况下会运行所有作业。唯一的必需检查是 **CI**：当 **Changes** 和 **No comments** 通过、其他每个作业都通过或被跳过时，它才通过；只要有一个作业失败、超时或被取消，它就失败。合入 `dev` 的拉取请求必须等它通过后才能合并（[变更如何进入 dev](contributing.md#合并)）。
 
 | 作业 | 运行内容 |
 | --- | --- |

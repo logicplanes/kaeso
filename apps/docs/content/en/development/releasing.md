@@ -1,7 +1,7 @@
 ---
 title: Releasing
 description: How versions are numbered, what a release publishes, and how the maintainer makes one.
-order: 10
+order: 11
 ---
 
 Kaeso is released as a whole: the gateway, the console, KPP's crates and the UI library's packages share one version, and one release publishes all of them. The maintainer makes every release from `prod` with the Release workflow, then deploys the documentation and the showcase from the release's tag. Contributors never create tags or releases.
@@ -29,7 +29,7 @@ History and examples may name versions: `CHANGELOG.md`, test fixtures, demo data
 
 | Branch | What it is | Who changes it |
 | --- | --- | --- |
-| `dev` | The default branch, where all work lands | Pull requests only, merged as one squashed commit once the **CI** check is green ([how changes reach dev](contributing.md#how-changes-reach-dev)) |
+| `dev` | The default branch, where all work lands | Pull requests only, merged as one squashed commit once the **CI** check is green ([how changes reach dev](contributing.md#get-it-merged)) |
 | `prod` | The latest release, or the commit about to become one; the Release workflow runs only here | The maintainer, always as a fast-forward |
 | `hotfix/X.Y.Z` | A fix for the latest release, branched from its tag | The maintainer, who pushes it to `prod` |
 

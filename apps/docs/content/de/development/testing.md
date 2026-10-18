@@ -4,7 +4,7 @@ description: Jede Testsuite im Repository, wie man sie ausführt und was bestehe
 order: 5
 ---
 
-Jede Änderung kommt mit Tests, die prüfen, was eine Person oder eine App sieht. Coverage-Schwellen werden nie gesenkt; steigt die Coverage, steigt die Schwelle mit. Befehle laufen vom Wurzelverzeichnis des Repositorys aus, für Suites mit Datenbanken bei laufendem [Entwicklungs-Stack](local-setup.md#3-entwicklungs-stack-starten).
+Jede Änderung kommt mit Tests, die prüfen, was eine Person oder eine App sieht. Coverage-Schwellen werden nie gesenkt; steigt die Coverage, steigt die Schwelle mit. Befehle laufen vom Wurzelverzeichnis des Repositorys aus, für Suites mit Datenbanken bei laufendem [Entwicklungs-Stack](stack.md).
 
 ## Bevor eine Änderung fertig ist
 
@@ -137,7 +137,7 @@ Jeder Test legt eigene Datenbanken auf PostgreSQL, ClickHouse und Valkey der Ent
 | Name | Angelegt von | Gelöscht |
 | --- | --- | --- |
 | `t_<uuid>` | `TestServices::start` in einem Test oder `kaeso-testkit fresh-services --temporary` | Wenn der Test endet, auch bei einer Panic; sonst beim Aufräumen |
-| `dev_<uuid>` | `kaeso-testkit fresh-services`, für ein [aus dem Quellcode ausgeführtes Gateway](local-setup.md#das-gateway-aus-dem-quellcode-ausführen) | Nur durch `kaeso-testkit drop-services dev_<uuid>` |
+| `dev_<uuid>` | `kaeso-testkit fresh-services`, für ein [aus dem Quellcode ausgeführtes Gateway](stack.md#gateway-aus-dem-quellcode-starten) | Nur durch `kaeso-testkit drop-services dev_<uuid>` |
 
 Der erste Test eines Prozesses räumt `t_`-Datenbanken auf, die älter als sechs Stunden sind und nicht mehr genutzt werden. `KAESO_TEST_KEEP_DATABASES=1 cargo test …` behält die Datenbanken eines fehlgeschlagenen Tests und gibt ihre Namen aus. `KAESO_TEST_POSTGRES_URL`, `KAESO_TEST_CLICKHOUSE_URL` und `KAESO_TEST_VALKEY_URL` lenken die Tests auf andere Server.
 
@@ -286,7 +286,7 @@ criterion zeigt die Veränderung gegenüber dem vorigen Lauf. CI prüft nur, das
 
 Der CI-Workflow (`.github/workflows/ci.yml`) läuft bei jedem Pull Request, bei jedem Push auf `dev` und `prod` und innerhalb des Release-Workflows. Die eigenen Pushes des Release-Workflows, sein Release-Commit und das nach `dev` gebrachte Release, starten ihn nicht erneut, denn das Release hat jeden Job bereits bestanden.
 
-Bei einem Pull Request entscheidet der erste Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen; in allen anderen Fällen läuft jeder Job. Die einzige Pflichtprüfung ist **CI**: Sie besteht, wenn **Changes** und **No comments** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde, und schlägt fehl, wenn einer fehlgeschlagen ist, sein Zeitlimit überschritten hat oder abgebrochen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([wie Änderungen nach dev gelangen](contributing.md#wie-änderungen-nach-dev-gelangen)).
+Bei einem Pull Request entscheidet der erste Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen; in allen anderen Fällen läuft jeder Job. Die einzige Pflichtprüfung ist **CI**: Sie besteht, wenn **Changes** und **No comments** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde, und schlägt fehl, wenn einer fehlgeschlagen ist, sein Zeitlimit überschritten hat oder abgebrochen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([wie Änderungen nach dev gelangen](contributing.md#merge-erreichen)).
 
 | Job | Führt aus |
 | --- | --- |

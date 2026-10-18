@@ -87,7 +87,7 @@ Kaeso 自己控制深色模式，而不是交给各个邮件应用自动反色�
 
 ## 预览
 
-[开发环境栈](../local-setup.md#3-启动开发环境栈)包含 Mailpit，其网页界面位于 [http://127.0.0.1:58025](http://127.0.0.1:58025)，提供 HTML 兼容性检查和深色预览。`cargo test -p kaeso-mail --test smtp` 会把每封邮件的每种语言版本发送到 Mailpit，并检查：
+[开发环境栈](../stack.md)包含 Mailpit，其网页界面位于 [http://127.0.0.1:58025](http://127.0.0.1:58025)，提供 HTML 兼容性检查和深色预览。`cargo test -p kaeso-mail --test smtp` 会把每封邮件的每种语言版本发送到 Mailpit，并检查：
 
 - 每封邮件都带着两个部分和两张内联图片送达；
 - Mailpit 的 HTML 检查（基于 caniemail 数据，并按各邮件应用的份额加权）报告至少 88% 的支持率。
