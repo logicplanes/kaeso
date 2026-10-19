@@ -1,7 +1,7 @@
 import { KAESO_BUTTON_VARIANTS } from "../button/button.js";
 
 const DIALOG_FIELD =
-  'input:not([type=hidden]):not([tabindex="-1"]):not([aria-hidden="true"]), textarea, select, [role=combobox]:not([tabindex="-1"]), [role=radio][tabindex="0"], [role=checkbox]:not([tabindex="-1"]), [role=switch]:not([tabindex="-1"]), [role=listbox]:not([tabindex="-1"]), [role=grid] [data-index][tabindex="0"]';
+  'input:not([type=hidden]):not([tabindex="-1"]):not([aria-hidden="true"]), textarea, select, [role=combobox]:not([tabindex="-1"]), [role=radio][tabindex="0"], [role=checkbox]:not([tabindex="-1"]), [role=switch]:not([tabindex="-1"]), [role=listbox]:not([tabindex="-1"]), [role=grid] [data-index][tabindex="0"], button[data-picker]';
 const FOCUSABLE = 'a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 const usable = (el: HTMLElement) => !el.closest("[hidden], [inert]") && !el.matches(":disabled, [aria-disabled=true]");

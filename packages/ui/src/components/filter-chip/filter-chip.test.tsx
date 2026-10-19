@@ -115,6 +115,55 @@ describe("FilterChip", () => {
     expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Search model values" }));
     expect(screen.getAllByRole("menu")).toHaveLength(1);
   });
+  it("toggles several values with rich labels in a long list", async () => {
+    const onSelectedChange = vi.fn();
+    const values = Array.from({ length: 60 }, (_, i) => ({ value: `m${i}`, label: <b>{`model-${i}`}</b>, textValue: `model-${i}` }));
+    render(
+      <FilterChip
+        property="Model"
+        operator="is"
+        value="any"
+        values={values}
+        selected={["m1"]}
+        multiple
+        onSelectedChange={onSelectedChange}
+        defaultValuesOpen
+      />,
+    );
+    await screen.findByRole("listbox", { name: "Model" });
+    fireEvent.click(screen.getByRole("option", { name: "model-2" }));
+    expect(onSelectedChange).toHaveBeenLastCalledWith(["m1", "m2"]);
+    fireEvent.click(screen.getByRole("option", { name: "model-1" }));
+    expect(onSelectedChange).toHaveBeenLastCalledWith([]);
+    expect(screen.getByRole("listbox", { name: "Model" })).toBeInTheDocument();
+  });
+
+  it("captions groups in a short list too", async () => {
+    const values = [
+      { value: "anthropic", label: "Anthropic", group: "Connected" },
+      { value: "deepseek", label: "DeepSeek", group: "Other providers" },
+      { value: "groq", label: "Groq", group: "Other providers" },
+    ];
+    render(<FilterChip property="Provider" operator="is" value="any" values={values} defaultValuesOpen />);
+    const other = await screen.findByRole("group", { name: "Other providers" });
+    expect(other).toContainElement(screen.getByRole("menuitemradio", { name: "Groq" }));
+    expect(screen.getByRole("group", { name: "Connected" })).toContainElement(screen.getByRole("menuitemradio", { name: "Anthropic" }));
+  });
+
+  it("opens a long list as a grouped, searchable list that renders only what is in view", async () => {
+    const onSelectedChange = vi.fn();
+    const values = Array.from({ length: 600 }, (_, i) => ({ value: `m${i}`, label: `model-${i}`, group: i % 2 ? "Anthropic" : "OpenAI" }));
+    render(<FilterChip property="Model" operator="is" value="any" values={values} selected={["m3"]} onSelectedChange={onSelectedChange} defaultValuesOpen />);
+    const list = await screen.findByRole("listbox", { name: "Model" });
+    expect(screen.getAllByRole("option").length).toBeLessThan(80);
+    expect(screen.getByRole("group", { name: "OpenAI" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "model-3" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.change(screen.getByRole("combobox", { name: "Search model values" }), { target: { value: "model-599" } });
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["model-599"]);
+    fireEvent.click(screen.getByRole("option", { name: "model-599" }));
+    expect(onSelectedChange).toHaveBeenCalledWith(["m599"]);
+    await waitFor(() => expect(list).not.toBeInTheDocument());
+  });
   it("doesn't open values it doesn't have, even when just added", () => {
     render(<FilterChip property="Key" operator="is" value="any" values={[]} defaultValuesOpen />);
     expect(screen.queryByRole("menu")).toBeNull();
