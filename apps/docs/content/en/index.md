@@ -3,7 +3,7 @@ title: Introduction
 description: Kaeso is an open-source AI gateway you run on your own servers.
 ---
 
-Kaeso is a gateway you run between your apps and the model providers, OpenAI and Anthropic. Your apps keep the official SDKs they already use and change two settings: the base URL and the key. Kaeso checks every request against your keys, models and limits, calls the provider with your provider key, and logs what each request cost.
+Kaeso is a gateway you run between your apps and the model providers: OpenAI, Anthropic and Together AI. Your apps keep the official SDKs they already use and change two settings: the base URL and the key. Kaeso checks every request against your keys, models and limits, calls the provider with your provider key, and logs what each request cost.
 
 Here is an app that uses the OpenAI SDK to call Claude through Kaeso:
 
@@ -37,7 +37,7 @@ This documentation describes Kaeso {{version}}.
 
 ## What Kaeso gives you
 
-- **One API for both providers.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. Each chat format can call every chat model in your catalogue, so an OpenAI SDK can talk to Claude.
+- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. Each chat format can call every chat model in your catalogue, so an OpenAI SDK can talk to Claude.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
 - **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue with aliases in each project.
 - **Limits and budgets.** Request and token rates, and token and spend budgets, for a project, a member or a single key.
@@ -49,10 +49,10 @@ This documentation describes Kaeso {{version}}.
 ```mermaid
 flowchart TD
   accTitle: How the parts fit
-  accDescr: Apps call the gateway on /v1 and the console calls it on /platform/v1; the gateway calls OpenAI or Anthropic.
+  accDescr: Apps call the gateway on /v1 and the console calls it on /platform/v1; the gateway calls OpenAI, Anthropic or Together AI.
   apps[Apps] -- /v1 --> gateway[Gateway]
   console[Console] -- /platform/v1 --> gateway
-  gateway --> providers[OpenAI or Anthropic]
+  gateway --> providers[OpenAI, Anthropic or Together AI]
 ```
 
 | Part | What it is |

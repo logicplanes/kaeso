@@ -4,13 +4,13 @@ description: Installieren Sie Kaeso mit Docker Compose, verbinden Sie einen Anbi
 order: 1
 ---
 
-Installieren Sie Kaeso auf einem Server, verbinden Sie OpenAI oder Anthropic, und senden Sie Ihre erste Anfrage darüber.
+Installieren Sie Kaeso auf einem Server, verbinden Sie OpenAI, Anthropic oder Together AI, und senden Sie Ihre erste Anfrage darüber.
 
 ## Bevor Sie beginnen
 
 - Ein Server mit Docker Engine und Docker Compose 2.24 oder neuer, 2 vCPUs, 4 GB Arbeitsspeicher und 20 GB Festplatte ([Anforderungen](../self-hosting/requirements.md)).
 - Eine Domain wie `kaeso.example.com`, deren DNS-Eintrag auf den Server zeigt. Die Ports 80 und 443 müssen zum Internet offen sein, damit Caddy ein Zertifikat erhält.
-- Ein API-Schlüssel von OpenAI oder Anthropic.
+- Ein API-Schlüssel von OpenAI, Anthropic oder Together AI.
 
 > [!TIP]
 > Um Kaeso auf Ihrem eigenen Rechner auszuprobieren, verwenden Sie `localhost` als Domain und öffnen `https://localhost`. Caddy signiert das Zertifikat dann selbst, und Ihr Browser fragt einmal, ob er es akzeptieren soll. [Auf dem eigenen Rechner ausprobieren](../self-hosting/installation.md#auf-dem-eigenen-rechner-ausprobieren) zeigt, wie curl und die SDKs ihm vertrauen.
@@ -96,7 +96,7 @@ Der Link funktioniert einmal, innerhalb von 24 Stunden. Rufen Sie den Befehl ern
 Anbieter-Schlüssel gehören zur Organisation, und jedes Projekt nutzt den Standardschlüssel des Anbieters.
 
 1. Öffnen Sie in der Seitenleiste **Anbieter**, und wählen Sie **Schlüssel hinzufügen**.
-2. Wählen Sie OpenAI oder Anthropic, und fügen Sie den Schlüssel des Anbieters ein.
+2. Wählen Sie OpenAI, Anthropic oder Together AI, und fügen Sie den Schlüssel des Anbieters ein.
 3. Benennen Sie ihn, etwa `Production`, und wählen Sie **Schlüssel hinzufügen**.
 
 Der erste Schlüssel eines Anbieters wird dessen Standard. Kaeso zeigt den Schlüssel nie wieder an; siehe [Anbieter-Schlüssel](../console/provider-keys.md).

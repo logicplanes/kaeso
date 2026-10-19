@@ -4,13 +4,13 @@ description: Install Kaeso with Docker Compose, connect a provider and send your
 order: 1
 ---
 
-Install Kaeso on a server, connect OpenAI or Anthropic, and send your first request through it.
+Install Kaeso on a server, connect OpenAI, Anthropic or Together AI, and send your first request through it.
 
 ## Before you begin
 
 - A server with Docker Engine and Docker Compose 2.24 or newer, 2 vCPUs, 4 GB of memory and 20 GB of disk ([requirements](../self-hosting/requirements.md)).
 - A domain, such as `kaeso.example.com`, whose DNS record points at the server. Ports 80 and 443 must be open to the internet, so Caddy can get a certificate.
-- An API key from OpenAI or Anthropic.
+- An API key from OpenAI, Anthropic or Together AI.
 
 > [!TIP]
 > To try Kaeso on your own computer, use `localhost` as the domain and open `https://localhost`. Caddy then signs the certificate itself, and your browser asks you to accept it once. [Trying it on your computer](../self-hosting/installation.md#trying-it-on-your-computer) shows how to make curl and the SDKs trust it.
@@ -96,7 +96,7 @@ Open the link and enter your name, your email, a password of 12 to 128 character
 Provider keys belong to the organization, and every project uses the provider's default key.
 
 1. Open **Providers** in the sidebar and choose **Add key**.
-2. Choose OpenAI or Anthropic and paste the provider's key.
+2. Choose OpenAI, Anthropic or Together AI and paste the provider's key.
 3. Name it, for example `Production`, and choose **Add key**.
 
 The first key of a provider becomes its default. Kaeso never shows the key again; see [provider keys](../console/provider-keys.md).
