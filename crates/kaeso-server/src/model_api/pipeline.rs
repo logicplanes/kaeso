@@ -34,6 +34,8 @@ use crate::state::AppState;
 
 const MAX_ERROR_BODY: usize = 1 << 20;
 
+pub const OFF_THREAD_BYTES: usize = 256 * 1024;
+
 #[derive(Debug)]
 pub struct Incoming {
     pub ingress: DialectId,
@@ -382,6 +384,24 @@ fn redacted(mut err: KppError) -> KppError {
     err
 }
 
+pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
+where
+    T: Send + 'static,
+    F: FnOnce() -> T + Send + 'static,
+{
+    if bytes < OFF_THREAD_BYTES {
+        return Ok(work());
+    }
+    tokio::task::spawn_blocking(work).await.map_err(|e| {
+        tracing::error!(error = %e, "a translation on a blocking thread did not finish");
+        error(
+            ErrorKind::ProviderError,
+            500,
+            "Kaeso cannot translate this request right now. Try again shortly.",
+        )
+    })
+}
+
 pub(crate) fn unserved(eff: &Effective) -> KppError {
     error(
         ErrorKind::NotFound,
@@ -434,9 +454,18 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Stage::Request,
         )
     })?;
-    rec.outcome().request_body = Some(body.clone());
-    let mut req = dispatch::decode_request(ingress, kind, &body, &header_list(&headers))
-        .map_err(at(Stage::Request))?;
+    let keep_content = crate::services::logs::keeps_content(state, caller.project_id).await;
+    if keep_content {
+        rec.outcome().request_body = Some(body.clone());
+    }
+    let request_bytes = body.len();
+    let listed = header_list(&headers);
+    let mut req = off_thread(request_bytes, move || {
+        dispatch::decode_request(ingress, kind, &body, &listed)
+    })
+    .await
+    .and_then(|r| r)
+    .map_err(at(Stage::Request))?;
     req.validate().map_err(at(Stage::Request))?;
     let stream = !req.stream_mode().is_off();
     rec.outcome().stream = stream;
@@ -513,7 +542,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.provider = Some(eff.provider.id);
         o.prices = Some(eff.fields.clone());
     }
-    let app_req = req.clone();
+    let app_req = Arc::new(req.clone());
     let plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
         let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
         if let Some(p) = u.param {
@@ -547,7 +576,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         kind,
         at: rec.outcome().started_at,
         timeout: timeouts.request,
-        worst: WorstCase::of(&req, body.len(), &eff.fields),
+        worst: WorstCase::of(&req, request_bytes, &eff.fields),
     };
     rec.reservation = state
         .limits
@@ -610,8 +639,14 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if let Some(r) = plan.reasoning {
         ectx = ectx.with_reasoning(r);
     }
-    let encoded =
-        dispatch::encode_request(plan.dialect, &req, &mut ectx).map_err(fail(Stage::Capability))?;
+    let dialect = plan.dialect;
+    let (req, ectx, encoded) = off_thread(request_bytes, move || {
+        let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
+        (req, ectx, encoded)
+    })
+    .await
+    .map_err(fail(Stage::Capability))?;
+    let encoded = encoded.map_err(fail(Stage::Capability))?;
     let base = base_url(state, eff.provider.id).ok_or_else(|| {
         fail(Stage::Setup)(error(
             ErrorKind::ProviderError,
@@ -647,7 +682,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .get("request-id")
         .or_else(|| resp.headers.get("x-request-id"))
         .map(str::to_owned);
-    let encode_ctx = EncodeCtx::for_request(app_req.clone())
+    let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req))
         .with_created_at(u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0));
     let status = resp.status;
     let success = (200..300).contains(&status);
@@ -686,9 +721,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 provider,
                 auth: eff.provider.auth,
                 dialect: plan.dialect,
-                count_tokens: eff.provider.count_tokens,
-                app_req,
-                req,
+                asked: (eff.provider.count_tokens == Some(plan.dialect)).then_some((app_req, req)),
                 adaptive_thinking: plan.adaptive_thinking,
                 reasoning: plan.reasoning,
                 timeouts,
@@ -702,6 +735,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 keepalive: stream::Keepalive::new(keepalive),
                 counter,
                 carry,
+                keep_reply: keep_content,
             };
             state.in_flight.spawn(stream::pump(parts, tx, task_rec));
             let body = Body::from_stream(futures::stream::unfold(rx, |mut rx| async move {
@@ -760,11 +794,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
                 return Err(fail(Stage::Provider)(err));
             }
-            let reply =
-                dispatch::decode_response(plan.dialect, status, &resp.headers, &bytes, &ectx)
-                    .map_err(fail(Stage::Reply))?;
-            let out = dispatch::encode_response(ingress, &reply, &encode_ctx)
-                .map_err(fail(Stage::Reply))?;
+            let headers = resp.headers;
+            let (reply, out) = off_thread(bytes.len(), move || {
+                let reply = dispatch::decode_response(dialect, status, &headers, &bytes, &ectx)?;
+                let out = dispatch::encode_response(ingress, &reply, &encode_ctx)?;
+                Ok::<_, KppError>((reply, out))
+            })
+            .await
+            .and_then(|r| r)
+            .map_err(fail(Stage::Reply))?;
             if let Some(key_id) = carry
                 && let Reply::Generate(r) = &reply
             {

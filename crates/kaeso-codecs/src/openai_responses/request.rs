@@ -463,11 +463,27 @@ fn reasoning_object(cfg: &ReasoningConfig) -> Option<Node> {
     Some(node)
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Input {
+    Encoded,
+    Left,
+}
+
 fn canonical_body(
     req: &GenerateRequest,
     kind: RequestKind,
     target: &Origin,
     names: &mut Names<'_>,
+) -> Node {
+    canonical_body_with(req, kind, target, names, Input::Encoded)
+}
+
+fn canonical_body_with(
+    req: &GenerateRequest,
+    kind: RequestKind,
+    target: &Origin,
+    names: &mut Names<'_>,
+    input: Input,
 ) -> Node {
     let count = kind == RequestKind::CountTokens;
     let mut node = Node::obj();
@@ -475,15 +491,17 @@ fn canonical_body(
         node.insert("model", Node::str(&req.model));
     }
     let (instructions, system_items) = encode_system(&req.system, &req.extras);
-    let as_string =
-        req.extras.form_str(DIALECT, INPUT) == Some("string") && system_items.is_empty();
-    match string_input(&req.messages).filter(|_| as_string) {
-        Some(s) => node.insert("input", Node::str(s)),
-        None => {
-            let mut items = system_items;
-            let stateless = !req.extras.form_flag(DIALECT, NATIVE);
-            items.extend(encode_messages(&req.messages, target, stateless, names));
-            node.insert("input", Node::Arr(items));
+    if input == Input::Encoded {
+        let as_string =
+            req.extras.form_str(DIALECT, INPUT) == Some("string") && system_items.is_empty();
+        match string_input(&req.messages).filter(|_| as_string) {
+            Some(s) => node.insert("input", Node::str(s)),
+            None => {
+                let mut items = system_items;
+                let stateless = !req.extras.form_flag(DIALECT, NATIVE);
+                items.extend(encode_messages(&req.messages, target, stateless, names));
+                node.insert("input", Node::Arr(items));
+            }
         }
     }
     if let Some(i) = instructions {
@@ -716,12 +734,17 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
 
 pub(super) fn echo_body(req: &Request) -> Option<Node> {
     match req {
-        Request::Generate(r) | Request::CountTokens(r) => Some(body_node(
-            r,
-            RequestKind::Generate,
-            &Origin::new(DIALECT),
-            &mut Names::none(),
-        )),
+        Request::Generate(r) | Request::CountTokens(r) => {
+            let mut node = canonical_body_with(
+                r,
+                RequestKind::Generate,
+                &Origin::new(DIALECT),
+                &mut Names::none(),
+                Input::Left,
+            );
+            apply(&r.extras, DIALECT, "", &[], &mut node);
+            Some(node)
+        }
         _ => None,
     }
 }

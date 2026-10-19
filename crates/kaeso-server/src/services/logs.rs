@@ -208,6 +208,14 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     Ok(found.map(|c| (*c).into()))
 }
 
+pub async fn keeps_content(state: &AppState, project: Uuid) -> bool {
+    match settings(state, project).await {
+        Ok(Some(cfg)) => cfg.org_content && cfg.project_content,
+        Ok(None) => false,
+        Err(_) => true,
+    }
+}
+
 pub async fn forget(state: &AppState, project: Uuid) {
     state
         .caches

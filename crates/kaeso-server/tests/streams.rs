@@ -411,3 +411,47 @@ async fn requests_open_at_shutdown_answer_and_are_recorded() {
         }
     }
 }
+
+async fn set_content_logging(env: &Env, on: bool) {
+    let r = env
+        .app
+        .call(
+            axum::http::Method::PATCH,
+            &format!(
+                "/orgs/{}/projects/{}/logs/settings",
+                env.owner.org_id, env.project
+            ),
+            Some(json!({ "content_logging": on })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.body["effective_content_logging"], on, "{:?}", r.body);
+}
+
+#[tokio::test]
+async fn without_content_logging_a_stream_keeps_only_what_usage_needs() {
+    let env = env(&[]).await;
+    for on in [false, true] {
+        set_content_logging(&env, on).await;
+        let before = env.capture.all().len();
+        let body = streaming(messages("claude-haiku-4-5", "kept or not"));
+        let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+        assert_eq!(r.status, 200, "{}", r.text());
+        assert!(r.text().contains("message_stop"));
+        let mut recorded = env.capture.all();
+        for _ in 0..300 {
+            if recorded.len() > before {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            recorded = env.capture.all();
+        }
+        let o = recorded.pop().unwrap();
+        assert!(o.stream);
+        let reply = o.reply.as_ref().unwrap();
+        assert!(o.usage.as_ref().unwrap().output_tokens > 0);
+        assert!(!reply.model.is_empty());
+        assert_eq!(o.request_body.is_some(), on);
+        assert_eq!(!reply.blocks.is_empty(), on);
+    }
+}
