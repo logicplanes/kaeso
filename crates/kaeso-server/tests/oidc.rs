@@ -1232,7 +1232,7 @@ async fn accounts_an_orgs_sso_created_before_links_existed_link_at_their_next_si
         .await
         .unwrap();
     let migration =
-        include_str!("../../kaeso-store/migrations/postgres/20261019120000_sso_identities.sql");
+        include_str!("../../kaeso-store/migrations/postgres/20261020120000_sso_identities.sql");
     let backfill = &migration[migration.find("INSERT INTO sso_identities").unwrap()..];
     sqlx::raw_sql(sqlx::AssertSqlSafe(backfill.to_owned()))
         .execute(&app.state.pg)
