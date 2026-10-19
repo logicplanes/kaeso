@@ -17,7 +17,10 @@ export function getHighlighter(): Promise<Highlighter> {
   instance ??= (async () => {
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] = await Promise.all([import("shiki/core"), import("shiki/engine/javascript")]);
     return (await createHighlighterCore({ themes: [kaesoShikiTheme as never], langs: [], engine: createJavaScriptRegexEngine() })) as unknown as Highlighter;
-  })();
+  })().catch((error: unknown) => {
+    instance = null;
+    throw error;
+  });
   return instance;
 }
 

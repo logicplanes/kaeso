@@ -88,7 +88,7 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
             </p>
           )}
           {error && (
-            <p id={errorId} className="sr-only">
+            <p id={errorId} className="text-small text-danger-text">
               {error}
             </p>
           )}
