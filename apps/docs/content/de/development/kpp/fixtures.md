@@ -23,7 +23,7 @@ Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpun
 | `requests/<name>.headers.json` | Weitergegebene Header von der Allowlist, die mit dieser Anfrage gesendet wurden |
 | `responses/<name>.json` | Der exakte Body einer 200-Antwort |
 | `streams/<name>.sse` | Die exakten SSE-Bytes |
-| `errors/<name>.json` und `errors/<name>.meta.json` | Ein Fehler-Body und `{"status": …, "headers": {…}}` |
+| `errors/<name>.json` und `errors/<name>.meta.json` | Ein Fehler-Body und `{"status": …, "headers": {…}}`. Antwortet der Codec Apps mit einem anderen Body, etwa der OpenAI-Fehlerform für den String-`error` von xAI, enthält `"encoded"` diesen Body, und der Round-Trip vergleicht mit ihm |
 
 Einige Endpunkte haben eigene Unterordner: `count_tokens/` für Anthropic und `input_tokens/` für OpenAI Responses, jeweils in `requests/` und `responses/`, und `models/` für Modelllisten (`anthropic_messages/models/` und `openai_chat/models/`, das alle drei OpenAI-Codecs nutzen).
 

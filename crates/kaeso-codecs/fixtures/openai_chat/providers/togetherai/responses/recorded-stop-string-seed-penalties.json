@@ -1,0 +1,29 @@
+{
+  "id": "482f4b03-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370457,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "1.  The user asks to list fruits, one per line, ending with \""
+      },
+      "finish_reason": "stop",
+      "matched_stop": "END"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 17,
+    "total_tokens": 32,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 17
+    }
+  },
+  "system_fingerprint": "default"
+}

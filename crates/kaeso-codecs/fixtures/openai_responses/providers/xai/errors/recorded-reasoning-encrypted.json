@@ -1,0 +1,4 @@
+{
+  "code": "invalid-argument",
+  "error": "Could not decrypt the provided encrypted_content. Ensure the value is the unmodified encrypted_content from a previous response."
+}

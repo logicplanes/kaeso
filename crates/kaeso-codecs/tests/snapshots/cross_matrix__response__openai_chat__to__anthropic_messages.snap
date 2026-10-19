@@ -275,15 +275,15 @@ expression: outcomes
       }
     }
   },
-  "providers/groq/recorded-include-reasoning-false": {
+  "providers/deepseek/recorded-json-object-system": {
     "content": [
       {
-        "text": "Yes, 17 is a prime number.",
+        "text": "{\"answer\": \"The capital of France is Paris.\", \"confidence\": 1.0}",
         "type": "text"
       }
     ],
-    "id": "chatcmpl-8136daa1-82d4-40fa-a64e-26b7b5ae55b3",
-    "model": "openai/gpt-oss-20b",
+    "id": "4a2059b8-58b4-4e4a-904f-9246e4b4572d",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -293,22 +293,88 @@ expression: outcomes
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 83,
-      "output_tokens": 27,
+      "input_tokens": 47,
+      "output_tokens": 19
+    }
+  },
+  "providers/deepseek/recorded-logprobs-top-logprobs-doc": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "2da350ca-5d24-40eb-8371-e7df3b6f96ae",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 6,
+      "output_tokens": 9
+    }
+  },
+  "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "The current weather in Paris is **14°C** with **light rain**.",
+        "type": "text"
+      }
+    ],
+    "id": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+    "model": "deepseek-v4-pro",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 423,
+      "output_tokens": 17,
       "output_tokens_details": {
-        "thinking_tokens": 9
+        "thinking_tokens": 0
       }
     }
   },
-  "providers/groq/recorded-json-schema": {
+  "providers/deepseek/recorded-prompt-cache-hit": {
     "content": [
       {
-        "text": "{\"date\":\"2026-10-16\",\"name\":\"science fair\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "text": "No — partial months are not refunded. You can cancel online at any time before your renewal date, and there’s no cancellation fee, but the current month’s charge isn’t prorated or returned (Policy 2, Policy 3, Policy 4).\n\nAlso note: if you have a device on an instalment plan, those payments continue after cancellation until the device is paid off (Policy 9).",
         "type": "text"
       }
     ],
-    "id": "chatcmpl-4ff67b7e-f3c2-4902-91d1-408c0c4d89bf",
-    "model": "openai/gpt-oss-20b",
+    "id": "30e154ae-2feb-4ee9-bc9d-4bcd6b69bc7d",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 154,
+      "output_tokens": 87
+    }
+  },
+  "providers/deepseek/recorded-reasoning-content-sent-back": {
+    "content": [
+      {
+        "text": "400",
+        "type": "text"
+      }
+    ],
+    "id": "75b4381d-fa69-474c-b21d-66f449915aae",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -318,22 +384,22 @@ expression: outcomes
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 174,
-      "output_tokens": 46,
+      "input_tokens": 62,
+      "output_tokens": 20,
       "output_tokens_details": {
-        "thinking_tokens": 11
+        "thinking_tokens": 18
       }
     }
   },
-  "providers/groq/recorded-plain-developer-string": {
+  "providers/deepseek/recorded-stop-array": {
     "content": [
       {
-        "text": "Hello! 👋 How can I assist you today?",
+        "text": "1, 2, 3, 4, 5, 6, ",
         "type": "text"
       }
     ],
-    "id": "chatcmpl-fcd59ef0-9dfd-429e-a929-a61891b4cdeb",
-    "model": "openai/gpt-oss-20b",
+    "id": "eecb47b4-c080-4903-b927-4d6d891d5519",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -343,22 +409,22 @@ expression: outcomes
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 82,
-      "output_tokens": 39,
+      "input_tokens": 41,
+      "output_tokens": 73,
       "output_tokens_details": {
-        "thinking_tokens": 19
+        "thinking_tokens": 53
       }
     }
   },
-  "providers/groq/recorded-reasoning-format-hidden": {
+  "providers/deepseek/recorded-thinking-reasoning-content": {
     "content": [
       {
-        "text": "Yes, 17 is a prime number because it is only divisible by 1 and itself.",
+        "text": "391",
         "type": "text"
       }
     ],
-    "id": "chatcmpl-2b36d10f-800d-4199-8ef3-2599edb10334",
-    "model": "qwen/qwen3.8-27b",
+    "id": "f4046fd9-e586-4279-ac2d-b84eebbc5f37",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -368,64 +434,21 @@ expression: outcomes
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 53,
-      "output_tokens": 62,
+      "input_tokens": 44,
+      "output_tokens": 20,
       "output_tokens_details": {
-        "thinking_tokens": 39
+        "thinking_tokens": 18
       }
     }
   },
-  "providers/groq/recorded-reasoning-format-parsed": {
+  "providers/deepseek/recorded-thinking-tools-auto": {
     "content": [
       {
-        "text": "Yes, 17 is a prime number because it has only two divisors: 1 and itself.",
+        "text": "",
         "type": "text"
-      }
-    ],
-    "id": "chatcmpl-8a475ec4-2917-4370-b98d-205e79d2cd07",
-    "model": "qwen/qwen3.8-27b",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-      "cache_creation": null,
-      "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 0,
-      "input_tokens": 53,
-      "output_tokens": 64,
-      "output_tokens_details": {
-        "thinking_tokens": 39
-      }
-    }
-  },
-  "providers/groq/recorded-reasoning-format-raw": {
-    "content": [
+      },
       {
-        "text": "\n<think>\nYes, 17 is a prime number. I need to answer in one sentence.\n</think>\n\nYes, 17 is a prime number because it is only divisible by 1 and itself.",
-        "type": "text"
-      }
-    ],
-    "id": "chatcmpl-b62b8553-e23d-415c-976c-6ce3525f6ee4",
-    "model": "qwen/qwen3.8-27b",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-      "cache_creation": null,
-      "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 0,
-      "input_tokens": 53,
-      "output_tokens": 42
-    }
-  },
-  "providers/groq/recorded-tools-system-role": {
-    "content": [
-      {
-        "id": "fc_64cfb53a-eb82-4cd9-b9c8-18177c53d0c2",
+        "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
         "input": {
           "location": "Paris, France",
           "unit": "celsius"
@@ -434,8 +457,8 @@ expression: outcomes
         "type": "tool_use"
       }
     ],
-    "id": "chatcmpl-17055776-9bcc-4256-8699-2f1abc20df34",
-    "model": "openai/gpt-oss-20b",
+    "id": "2a676b20-042f-4778-94b3-8eeebdaef0ea",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "tool_use",
@@ -445,10 +468,369 @@ expression: outcomes
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 180,
-      "output_tokens": 37,
+      "input_tokens": 339,
+      "output_tokens": 68,
       "output_tokens_details": {
-        "thinking_tokens": 7
+        "thinking_tokens": 10
+      }
+    }
+  },
+  "providers/deepseek/recorded-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔",
+        "type": "text"
+      }
+    ],
+    "id": "01196219-0832-4870-a63d-cb61ba063bb5",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 256,
+      "input_tokens": 176,
+      "output_tokens": 30,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/togetherai/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{  \"name\": \"Alice and Bob are going to a science fair on 2026-10-16.\", \"date\": \"2026-10-16\", \"participants\": [\"Alice\", \"Bob\"] }",
+        "type": "text"
+      }
+    ],
+    "id": "0fe3f371-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 47
+    }
+  },
+  "providers/togetherai/recorded-reasoning-reply": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      }
+    ],
+    "id": "p5ndpX6-3pDw3Z-a4cbbaa92dc664b2",
+    "model": "Qwen/Qwen3.5-9B",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 14,
+      "output_tokens": 60
+    }
+  },
+  "providers/togetherai/recorded-safety-model": {
+    "content": [
+      {
+        "text": "Jupiter",
+        "type": "text"
+      }
+    ],
+    "id": "d60012fe-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 8,
+      "output_tokens": 194,
+      "output_tokens_details": {
+        "thinking_tokens": 190
+      }
+    }
+  },
+  "providers/togetherai/recorded-sampling-extras": {
+    "content": [
+      {
+        "text": "Earth.",
+        "type": "text"
+      }
+    ],
+    "id": "56f82fc9-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 14,
+      "output_tokens": 55,
+      "output_tokens_details": {
+        "thinking_tokens": 51
+      }
+    }
+  },
+  "providers/togetherai/recorded-stop-string-seed-penalties": {
+    "content": [],
+    "id": "482f4b03-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 17
+      }
+    }
+  },
+  "providers/togetherai/recorded-tool-call-auto": {
+    "content": [
+      {
+        "id": "call_01a1519aa64e7700b3e9eccc",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "d695273f-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 336,
+      "output_tokens": 84,
+      "output_tokens_details": {
+        "thinking_tokens": 19
+      }
+    }
+  },
+  "providers/togetherai/recorded-tools-parallel": {
+    "content": [
+      {
+        "text": "I'll get both of those for you.",
+        "type": "text"
+      },
+      {
+        "id": "call_01a1519ac48d7780a12d174f",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_01a1519ac48d7780a12d1758",
+        "input": {
+          "timezone": "Asia/Tokyo"
+        },
+        "name": "get_local_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "6c9d7be6-aws_ec1",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 445,
+      "output_tokens": 107
+    }
+  },
+  "providers/xai/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{\n  \"name\": \"science fair\",\n  \"date\": \"2026-10-16\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "type": "text"
+      }
+    ],
+    "id": "93c7eef6-8cff-9dfa-9b2d-d8b59bf44807",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 164,
+      "output_tokens": 32,
+      "output_tokens_details": {
+        "thinking_tokens": 301
+      }
+    }
+  },
+  "providers/xai/recorded-plain-developer-string": {
+    "content": [
+      {
+        "text": "Hello! 👋 Nice to see you! How's it going?",
+        "type": "text"
+      }
+    ],
+    "id": "e34069c1-b99d-9b5c-9bd0-31ba872ac79a",
+    "model": "grok-4.20-0309-non-reasoning",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 67,
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/xai/recorded-reasoning-content": {
+    "content": [
+      {
+        "text": "408",
+        "type": "text"
+      }
+    ],
+    "id": "7d66a40f-51d4-93df-81a4-2399cb277169",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 78,
+      "output_tokens": 1,
+      "output_tokens_details": {
+        "thinking_tokens": 178
+      }
+    }
+  },
+  "providers/xai/recorded-tools-parallel": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
+        "input": {
+          "timezone": "Asia/Tokyo"
+        },
+        "name": "get_local_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "7b4647dd-256f-96ec-bae7-2f264ac87131",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 294,
+      "output_tokens": 29,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/xai/recorded-tools-single": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "a590f19d-ffce-94c0-a90c-1d5c897dd3cd",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 221,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
       }
     }
   },

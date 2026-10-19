@@ -69,7 +69,7 @@ Kaeso 按以下顺序查找请求指定的模型：
 2. 服务商和模型：`anthropic/claude-haiku-4-5`。
 3. 模型 ID：`claude-haiku-4-5`。
 
-如果两个服务商有相同 ID 的模型，请使用 `provider/model` 形式。
+如果两个服务商有相同 ID 的模型，请使用 `provider/model` 形式。Kaeso 在第一个 `/` 处拆分，因此包含 `/` 的模型 ID 保持不变：`togetherai/Qwen/Qwen3.5-9B` 指 Together AI 的 `Qwen/Qwen3.5-9B`。
 
 ## 后续步骤
 

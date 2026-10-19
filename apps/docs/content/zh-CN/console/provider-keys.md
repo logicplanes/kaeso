@@ -17,6 +17,9 @@ order: 3
 | --- | --- | --- |
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
+| xAI | console.x.ai | `xai-` |
+| Together AI | api.together.ai | `tgp_v1_` |
 | Groq | console.groq.com | `gsk_` |
 
 对服务商密钥的每种操作都需要相应的权限：

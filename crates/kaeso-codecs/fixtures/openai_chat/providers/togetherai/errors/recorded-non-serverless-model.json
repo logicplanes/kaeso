@@ -1,0 +1,9 @@
+{
+  "id": "p5ndxv3-2kFHot-a4cbbb59b8f0dcd1",
+  "error": {
+    "message": "Unable to access non-serverless model meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo. Please visit https://api.together.ai/models/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo to create and start a new dedicated endpoint for the model.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}

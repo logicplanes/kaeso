@@ -5,7 +5,7 @@ use kaeso_kpp::{
 use serde_json::Value;
 
 use super::*;
-use crate::test_support::{assert_json_eq, assert_sse_eq, fixtures, sidecar};
+use crate::test_support::{assert_json_eq, assert_sse_eq, encoded_error, fixtures, sidecar};
 
 const DIR: &str = "openai_responses";
 const R: DialectId = DialectId::OpenAiResponses;

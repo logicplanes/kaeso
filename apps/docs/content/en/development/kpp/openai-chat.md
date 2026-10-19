@@ -195,6 +195,7 @@ The error body is `{error: {message, type, param, code}}`.
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` or `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, code `content_policy_violation` |
 | 400, 409, 422 | `InvalidRequest` (and `Unsupported` when encoding) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -206,9 +207,11 @@ The error body is `{error: {message, type, param, code}}`.
 
 A code named in the table, in `code` or `type`, wins over the status. Codes of the status-based kinds (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes, `server_error`) decide only for a stream error, which has no status.
 
+HTTP 402 is how OpenAI-compatible providers such as DeepSeek report an exhausted balance ([DeepSeek error codes](https://api-docs.deepseek.com/quick_start/error_codes)), so it is `Billing` whatever its `code` says.
+
 The Responses and Embeddings codecs use the same code table (`openai_responses::error`), so an error in the OpenAI shape has the same kind, `type` and `code` in every OpenAI API. The OpenAI SDKs choose their exception class by status, so `type` only adds information.
 
-`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message; otherwise the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
+`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message. One that starts with `Incorrect API key provided`, xAI's answer to a wrong key with HTTP 400, is `Authentication`. Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
 
 ## Models
 

@@ -69,7 +69,7 @@ Kaeso looks up the model a request names in this order:
 2. A provider and a model: `anthropic/claude-haiku-4-5`.
 3. A model id: `claude-haiku-4-5`.
 
-If two providers have a model with the same id, use the `provider/model` form.
+If two providers have a model with the same id, use the `provider/model` form. Kaeso splits it at the first `/`, so a model id that contains `/` keeps it: `togetherai/Qwen/Qwen3.5-9B` names Together AI's `Qwen/Qwen3.5-9B`.
 
 ## Next steps
 

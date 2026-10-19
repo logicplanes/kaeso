@@ -308,12 +308,7 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
-  "providers/groq/include-reasoning-false": {
-    "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "include_reasoning"
-  },
-  "providers/groq/model-not-found": {
+  "providers/deepseek/authentication-fails": {
     "body": {
       "max_tokens": 4096,
       "messages": [
@@ -327,41 +322,170 @@ expression: outcomes
           "role": "user"
         }
       ],
-      "model": "llama-3.3-70b-versatile"
+      "model": "deepseek-flash"
     },
     "path": "/v1/messages"
   },
-  "providers/groq/n-above-one": {
-    "rejected_by_source": "n"
-  },
-  "providers/groq/reasoning-format-hidden": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+  "providers/deepseek/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "reasoning_format"
+    "unsupported": "thinking"
   },
-  "providers/groq/reasoning-format-parsed": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/reasoning-format-raw": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/reasoning-format-with-include-reasoning": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/stream-reasoning-parsed": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/stream-tools-system-role": {
+  "providers/deepseek/missing-model": {
     "body": {
       "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-nonexistent"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/deepseek/pro-tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/prompt-cache-hit": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/reasoning-content-sent-back": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tool-choice-required": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-auto": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/togetherai/context-length-error": {
+    "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "context_length_exceeded_behavior"
+  },
+  "providers/togetherai/non-serverless-model": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/reasoning-reply": {
+    "body": {
+      "max_tokens": 60,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3.5-9B"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/reasoning-stream": {
+    "body": {
+      "max_tokens": 60,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3.5-9B",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/safety-model": {
+    "message": "`safety_model` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safety_model"
+  },
+  "providers/togetherai/sampling-extras": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/togetherai/stream-usage-short": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/tool-call-auto": {
+    "body": {
+      "max_tokens": 400,
       "messages": [
         {
           "content": [
@@ -373,122 +497,101 @@ expression: outcomes
           "role": "user"
         }
       ],
-      "model": "openai/gpt-oss-20b",
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "system": [
+        {
+          "text": "Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/live-search-deprecated": {
+    "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_parameters"
+  },
+  "providers/xai/presence-penalty-reasoning-model": {
+    "message": "`presence_penalty` is not supported by Anthropic Messages. Remove `presence_penalty` or route the request to an OpenAI model.",
+    "param": "presence_penalty",
+    "unsupported": "presence_penalty"
+  },
+  "providers/xai/reasoning-content": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is 17 * 24? Answer with the number only.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/reasoning-content-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is 17 * 24? Answer with the number only.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
       "output_config": {
         "effort": "low"
       },
       "stream": true,
-      "system": [
-        {
-          "text": "You are a concise travel assistant. Use the tools for live data.",
-          "type": "text"
-        }
-      ],
       "thinking": {
         "type": "adaptive"
-      },
-      "tool_choice": {
-        "disable_parallel_tool_use": true,
-        "type": "any"
-      },
-      "tools": [
-        {
-          "description": "Get the current weather for a location.",
-          "input_schema": {
-            "additionalProperties": false,
-            "properties": {
-              "location": {
-                "description": "City and country, e.g. Paris, France",
-                "type": "string"
-              },
-              "unit": {
-                "enum": [
-                  "celsius",
-                  "fahrenheit",
-                  null
-                ],
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "location",
-              "unit"
-            ],
-            "type": "object"
-          },
-          "name": "get_weather",
-          "strict": true
-        }
-      ]
-    },
-    "path": "/v1/messages"
-  },
-  "providers/groq/tools-system-role": {
-    "body": {
-      "max_tokens": 4096,
-      "messages": [
-        {
-          "content": [
-            {
-              "text": "What's the weather in Paris right now? Use Celsius.",
-              "type": "text"
-            }
-          ],
-          "role": "user"
-        }
-      ],
-      "model": "openai/gpt-oss-20b",
-      "output_config": {
-        "effort": "low"
-      },
-      "system": [
-        {
-          "text": "You are a concise travel assistant. Use the tools for live data.",
-          "type": "text"
-        }
-      ],
-      "thinking": {
-        "type": "adaptive"
-      },
-      "tool_choice": {
-        "disable_parallel_tool_use": true,
-        "type": "any"
-      },
-      "tools": [
-        {
-          "description": "Get the current weather for a location.",
-          "input_schema": {
-            "additionalProperties": false,
-            "properties": {
-              "location": {
-                "description": "City and country, e.g. Paris, France",
-                "type": "string"
-              },
-              "unit": {
-                "enum": [
-                  "celsius",
-                  "fahrenheit",
-                  null
-                ],
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "location",
-              "unit"
-            ],
-            "type": "object"
-          },
-          "name": "get_weather",
-          "strict": true
-        }
-      ]
+      }
     },
     "path": "/v1/messages"
   },

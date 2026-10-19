@@ -1,0 +1,29 @@
+{
+  "id": "56f82fc9-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370438,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Earth.",
+        "reasoning_content": "1.  The user asks to \"Name one planet.\" and specifies \"Answer in one short sentence.\"\n2.  The answer should be a single planet name.\n3.  I'll choose Earth, as it's the most obvious and universally known."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 55,
+    "total_tokens": 69,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 51
+    }
+  },
+  "system_fingerprint": "default"
+}

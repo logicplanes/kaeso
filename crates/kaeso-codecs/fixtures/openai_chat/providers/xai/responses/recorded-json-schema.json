@@ -1,0 +1,39 @@
+{
+  "id": "93c7eef6-8cff-9dfa-9b2d-d8b59bf44807",
+  "object": "chat.completion",
+  "created": 1792370250,
+  "model": "grok-4.3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"name\": \"science fair\",\n  \"date\": \"2026-10-16\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "reasoning_content": "Extracting the event details from the message. Alice and Bob are attending a science fair on 2026-10-16.\n\nFormatting the response as JSON with the event name, ISO date, and participants.",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 292,
+    "completion_tokens": 32,
+    "total_tokens": 625,
+    "prompt_tokens_details": {
+      "text_tokens": 292,
+      "audio_tokens": 0,
+      "image_tokens": 0,
+      "cached_tokens": 128
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 301,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "num_sources_used": 0,
+    "cost_in_usd_ticks": 10631000
+  },
+  "system_fingerprint": "fp_eb3c003fc66c14ed",
+  "service_tier": "default"
+}

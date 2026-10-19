@@ -1,0 +1,135 @@
+{
+  "created_at": 1792370373,
+  "completed_at": 1792370375,
+  "id": "078df29c-62b4-9f74-9aec-24ae2cb25924",
+  "max_output_tokens": null,
+  "model": "grok-4.3",
+  "object": "response",
+  "output": [
+    {
+      "id": "rs_078df29c-62b4-9f74-9aec-24ae2cb25924",
+      "summary": [
+        {
+          "text": "Checking current weather in Paris and Tokyo in Celsius.",
+          "type": "summary_text"
+        }
+      ],
+      "type": "reasoning",
+      "status": "completed"
+    },
+    {
+      "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+      "call_id": "call-d82aac74-51da-4a34-9f01-441131452d11-0",
+      "name": "get_weather",
+      "type": "function_call",
+      "id": "fc_078df29c-62b4-9f74-9aec-24ae2cb25924_0",
+      "status": "completed"
+    },
+    {
+      "arguments": "{\"city\":\"Tokyo\",\"unit\":\"celsius\"}",
+      "call_id": "call-d82aac74-51da-4a34-9f01-441131452d11-1",
+      "name": "get_weather",
+      "type": "function_call",
+      "id": "fc_078df29c-62b4-9f74-9aec-24ae2cb25924_1",
+      "status": "completed"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "reasoning": {
+    "effort": "low",
+    "summary": "detailed"
+  },
+  "temperature": 0.7,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "tool_choice": "required",
+  "tools": [
+    {
+      "type": "function",
+      "description": "Get the current weather for a city.",
+      "name": "get_weather",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name, e.g. Paris"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ]
+          }
+        },
+        "required": [
+          "city",
+          "unit"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Get the current local time in an IANA time zone.",
+      "name": "get_local_time",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone, e.g. Europe/Paris"
+          }
+        },
+        "required": [
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  ],
+  "top_p": 0.95,
+  "usage": {
+    "input_tokens": 410,
+    "input_tokens_details": {
+      "cached_tokens": 128
+    },
+    "output_tokens": 173,
+    "output_tokens_details": {
+      "reasoning_tokens": 144
+    },
+    "total_tokens": 583,
+    "num_sources_used": 0,
+    "num_server_side_tools_used": 0,
+    "cost_in_usd_ticks": 8106000,
+    "context_details": {
+      "input_tokens": 410,
+      "output_tokens": 177
+    }
+  },
+  "user": null,
+  "incomplete_details": null,
+  "status": "completed",
+  "store": true,
+  "metadata": {
+    "system_fingerprint": "fp_eb3c003fc66c14ed"
+  },
+  "background": false,
+  "service_tier": "default",
+  "truncation": "disabled",
+  "top_logprobs": 0,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "prompt_cache_key": null,
+  "max_tool_calls": null,
+  "safety_identifier": null,
+  "error": null,
+  "instructions": null
+}

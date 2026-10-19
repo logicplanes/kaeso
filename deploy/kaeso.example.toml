@@ -59,6 +59,15 @@ base_url = "https://api.openai.com"
 [providers.anthropic]
 base_url = "https://api.anthropic.com"
 
+[providers.deepseek]
+base_url = "https://api.deepseek.com"
+
+[providers.xai]
+base_url = "https://api.x.ai"
+
+[providers.togetherai]
+base_url = "https://api.together.ai"
+
 [providers.groq]
 base_url = "https://api.groq.com/openai"
 

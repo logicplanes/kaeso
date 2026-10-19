@@ -69,7 +69,7 @@ Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 2. Ein Anbieter und ein Modell: `anthropic/claude-haiku-4-5`.
 3. Eine Modell-ID: `claude-haiku-4-5`.
 
-Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`.
+Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`. Kaeso trennt sie am ersten `/`, eine Modell-ID mit `/` bleibt also erhalten: `togetherai/Qwen/Qwen3.5-9B` meint `Qwen/Qwen3.5-9B` von Together AI.
 
 ## Nächste Schritte
 

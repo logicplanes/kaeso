@@ -1,0 +1,44 @@
+{
+  "id": "6c9d7be6-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370458,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'll get both of those for you.",
+        "tool_calls": [
+          {
+            "id": "call_01a1519ac48d7780a12d174f",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            }
+          },
+          {
+            "id": "call_01a1519ac48d7780a12d1758",
+            "type": "function",
+            "function": {
+              "name": "get_local_time",
+              "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+            }
+          }
+        ],
+        "reasoning_content": null
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 445,
+    "completion_tokens": 107,
+    "total_tokens": 552,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "system_fingerprint": "default"
+}

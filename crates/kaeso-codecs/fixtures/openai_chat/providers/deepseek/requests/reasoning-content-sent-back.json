@@ -1,0 +1,22 @@
+{
+  "model": "deepseek-flash",
+  "thinking": {
+    "type": "enabled"
+  },
+  "reasoning_effort": "low",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 * 23? Answer with the number only."
+    },
+    {
+      "role": "assistant",
+      "content": "391",
+      "reasoning_content": "We need answer only number. 17*23=391. Need final only number."
+    },
+    {
+      "role": "user",
+      "content": "And 391 + 9? Answer with the number only."
+    }
+  ]
+}

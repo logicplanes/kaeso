@@ -378,12 +378,7 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
-  "providers/groq/include-reasoning-false": {
-    "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "include_reasoning"
-  },
-  "providers/groq/model-not-found": {
+  "providers/deepseek/authentication-fails": {
     "body": {
       "input": [
         {
@@ -391,65 +386,165 @@ expression: outcomes
           "role": "user"
         }
       ],
-      "model": "llama-3.3-70b-versatile",
+      "model": "deepseek-flash",
       "store": false
     },
     "path": "/v1/responses"
   },
-  "providers/groq/n-above-one": {
-    "rejected_by_source": "n"
-  },
-  "providers/groq/reasoning-format-hidden": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+  "providers/deepseek/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "reasoning_format"
+    "unsupported": "thinking"
   },
-  "providers/groq/reasoning-format-parsed": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/reasoning-format-raw": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/reasoning-format-with-include-reasoning": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/stream-reasoning-parsed": {
-    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning_format"
-  },
-  "providers/groq/stream-tools-system-role": {
+  "providers/deepseek/missing-model": {
     "body": {
-      "include": [
-        "reasoning.encrypted_content"
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
       ],
+      "model": "deepseek-nonexistent",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepseek/pro-tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/prompt-cache-hit": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/reasoning-content-sent-back": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tool-choice-required": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-auto": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/togetherai/context-length-error": {
+    "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "context_length_exceeded_behavior"
+  },
+  "providers/togetherai/non-serverless-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/reasoning-reply": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 60,
+      "model": "Qwen/Qwen3.5-9B",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 60,
+      "model": "Qwen/Qwen3.5-9B",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/safety-model": {
+    "message": "`safety_model` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safety_model"
+  },
+  "providers/togetherai/sampling-extras": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/togetherai/stream-usage-short": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/tool-call-auto": {
+    "body": {
       "input": [
         {
           "content": "What's the weather in Paris right now? Use Celsius.",
           "role": "user"
         }
       ],
-      "instructions": "You are a concise travel assistant. Use the tools for live data.",
-      "model": "openai/gpt-oss-20b",
-      "parallel_tool_calls": false,
-      "reasoning": {
-        "effort": "low"
-      },
+      "instructions": "Use the tools for live data.",
+      "max_output_tokens": 400,
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
       "store": false,
-      "stream": true,
-      "tool_choice": "required",
+      "tool_choice": "auto",
       "tools": [
         {
           "description": "Get the current weather for a location.",
           "name": "get_weather",
           "parameters": {
-            "additionalProperties": false,
             "properties": {
               "location": {
                 "description": "City and country, e.g. Paris, France",
@@ -458,13 +553,9 @@ expression: outcomes
               "unit": {
                 "enum": [
                   "celsius",
-                  "fahrenheit",
-                  null
+                  "fahrenheit"
                 ],
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": "string"
               }
             },
             "required": [
@@ -473,65 +564,58 @@ expression: outcomes
             ],
             "type": "object"
           },
-          "strict": true,
           "type": "function"
         }
       ]
     },
     "path": "/v1/responses"
   },
-  "providers/groq/tools-system-role": {
+  "providers/xai/live-search-deprecated": {
+    "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_parameters"
+  },
+  "providers/xai/presence-penalty-reasoning-model": {
+    "message": "`presence_penalty` is not supported by OpenAI Responses. The Responses API has no `presence_penalty`. Remove it or use the Chat Completions format.",
+    "param": "presence_penalty",
+    "unsupported": "presence_penalty"
+  },
+  "providers/xai/reasoning-content": {
     "body": {
       "include": [
         "reasoning.encrypted_content"
       ],
       "input": [
         {
-          "content": "What's the weather in Paris right now? Use Celsius.",
+          "content": "What is 17 * 24? Answer with the number only.",
           "role": "user"
         }
       ],
-      "instructions": "You are a concise travel assistant. Use the tools for live data.",
-      "model": "openai/gpt-oss-20b",
-      "parallel_tool_calls": false,
+      "model": "grok-4.3",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/xai/reasoning-content-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 * 24? Answer with the number only.",
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
       "reasoning": {
         "effort": "low"
       },
       "store": false,
-      "tool_choice": "required",
-      "tools": [
-        {
-          "description": "Get the current weather for a location.",
-          "name": "get_weather",
-          "parameters": {
-            "additionalProperties": false,
-            "properties": {
-              "location": {
-                "description": "City and country, e.g. Paris, France",
-                "type": "string"
-              },
-              "unit": {
-                "enum": [
-                  "celsius",
-                  "fahrenheit",
-                  null
-                ],
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "location",
-              "unit"
-            ],
-            "type": "object"
-          },
-          "strict": true,
-          "type": "function"
-        }
-      ]
+      "stream": true
     },
     "path": "/v1/responses"
   },

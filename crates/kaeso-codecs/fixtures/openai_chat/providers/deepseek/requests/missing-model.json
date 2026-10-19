@@ -1,0 +1,9 @@
+{
+  "model": "deepseek-nonexistent",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ]
+}
