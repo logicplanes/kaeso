@@ -156,7 +156,7 @@ Schema `Message`。
 
 - **停止原因。** `ContentFilter` 变为 `refusal`，因为 Anthropic 没有内容过滤类的停止原因。若 `Other(s)` 是 Anthropic 文档中的值，则写为 `s`；否则 `length`、`max_output_tokens` 和 `max_completion_tokens` 变为 `max_tokens`，`function_call` 和 `tool_calls` 变为 `tool_use`，`content_filter` 变为 `refusal`，其余一律变为 `end_turn`。自有的 `Other` 值按收到时的原样写出。
 - **拒绝回复。** `Refusal` 块变为 `text` 块。
-- **有损的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。这样的调用会以 `input: {}` 写出，因为 `tool_use.input` 必须是对象，所以应用会丢失这段不完整的文本；网关日志中的 KPP 回复仍保留着它。带有此类参数的请求会被 `check()` 拒绝。
+- **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串，其他 JSON 值则原样保存。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具，因此来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）；网关仍会记录该回复及其用量。带有此类参数的请求会被 `check()` 拒绝。
 - **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：先是其摘要，然后是推理文本，作为 `thinking`（段落之间以空行分隔），并以原始块的推理数据块作为 `signature`。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
 - **省略的内容**（[回复](cross-format.md#回复)）：并非从 Anthropic Messages 读取、没有签名的 Anthropic 推理（自有的未签名思考按收到时的原样写出）；图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。
 
@@ -207,7 +207,7 @@ Schema `MessageStreamEvent`。
 - **一次一个块。** 交错的块按开始顺序缓冲，带停止原因的 `ResponseDelta` 或 `ResponseStop` 会关闭所有打开的块。来自其他方言、不带停止原因的 `ResponseDelta`（例如某些 OpenAI 兼容提供商在每个 chunk 上发送的运行中用量）只更新最后 `message_delta` 的用量。因此，一个直到结束才关闭文本块的 OpenAI 流，会在最后才送出它的工具调用。多个外来的 `ResponseDelta` 会合并为一个 `message_delta`。
 - **缺少 `ResponseStart`** 时，会生成一个 ID 为空、模型为请求中模型的 `message_start`。
 - **拒绝回复**变为文本块。
-- **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，但前提是它们构成一个 JSON 对象；否则不写出，输入保持为 `{}`。这与回复一样是有损的。Anthropic 自己的流按收到时的原样回放。
+- **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，只要参数不为空。不构成 JSON 对象的参数（例如被输出上限截断）按收到时的原样发送，就像 Anthropic 自己流式发送被 `max_tokens` 截断的调用一样，因此应用能看到模型写了什么。Anthropic 自己的流按收到时的原样回放。
 - **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
 - **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：每个外来的额外事件一帧，每 1,024 字节隐藏文本一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。

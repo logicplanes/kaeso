@@ -23,6 +23,7 @@ pub(crate) const FORM_NO_DONE: &str = "no_done";
 pub(crate) const FORM_OBJECT: &str = "object";
 pub(crate) const FORM_SSE: &str = "sse";
 pub(crate) const FORM_RUNNING_USAGE: &str = "u";
+const FINISH_ERROR: &str = "error";
 
 pub(crate) const ENVELOPE_KEYS: &[&str] = &[
     "id",
@@ -93,6 +94,7 @@ pub(crate) fn value_obj(value: Option<&Value>) -> Obj {
 
 struct ToolState {
     block: u32,
+    id: String,
     unknown: bool,
     complete: bool,
 }
@@ -414,6 +416,13 @@ impl ChatStreamDecoder {
             }
             Some([choice]) => {
                 let finish = self.choice(choice, &mut form, &mut fields, &mut events)?;
+                if finish.as_deref() == Some(FINISH_ERROR) {
+                    let raw = serde_json::from_str::<Value>(raw.get()).unwrap_or(Value::Null);
+                    return Err(KppError::provider(
+                        "The provider ended the stream with `finish_reason: \"error\"` and no details.",
+                    )
+                    .with_raw(raw));
+                }
                 if let Some(finish) = finish {
                     self.close_blocks(&mut events);
                     self.finished = true;
@@ -602,6 +611,16 @@ impl ChatStreamDecoder {
             tc.insert(key.to_owned(), Value::Bool(true));
         };
 
+        let new_id = known.id.as_deref().filter(|id| !id.is_empty());
+        let replaced = self
+            .tools
+            .get(&known.index)
+            .is_some_and(|t| !t.unknown && !t.id.is_empty() && new_id.is_some_and(|id| id != t.id));
+        if replaced && let Some(old) = self.tools.shift_remove(&known.index) {
+            let mut stop = BlockStop::new(old.block);
+            stop.extras = self.extras();
+            events.push(StreamEvent::BlockStop(stop));
+        }
         let known_call = self.tools.get(&known.index).map(|t| (t.block, t.unknown));
         match known_call {
             None => {
@@ -615,6 +634,7 @@ impl ChatStreamDecoder {
                     known.index,
                     ToolState {
                         block,
+                        id: known.id.clone().unwrap_or_default(),
                         unknown,
                         complete,
                     },
@@ -627,7 +647,7 @@ impl ChatStreamDecoder {
                     events.push(StreamEvent::BlockStart(start));
                     return Ok(());
                 }
-                if known.index != expected {
+                if known.index != expected || replaced {
                     tc.insert("index".to_owned(), Value::from(known.index));
                 }
                 if known.id.is_none() {
@@ -756,8 +776,13 @@ impl ChatStreamDecoder {
             }
             complete = !header.id.is_empty() && !header.name.is_empty();
         }
-        if complete && let Some(tool) = self.tools.get_mut(&index) {
-            tool.complete = true;
+        if let Some(tool) = self.tools.get_mut(&index) {
+            if let Some(id) = id
+                && tool.id.is_empty()
+            {
+                id.clone_into(&mut tool.id);
+            }
+            tool.complete |= complete;
         }
     }
 }
@@ -767,10 +792,8 @@ fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {
     struct Probe {
         #[serde(default)]
         error: Option<serde::de::IgnoredAny>,
-        #[serde(default)]
-        choices: Option<serde::de::IgnoredAny>,
     }
-    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| p.error.is_some() && p.choices.is_none())
+    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| p.error.is_some())
 }
 
 pub(crate) fn event_extras_mut(event: &mut StreamEvent) -> Option<&mut Extras> {

@@ -561,20 +561,19 @@ fn write_block_stop(slot: &mut Slot, extras: &Extras, out: &mut Vec<u8>) -> Resu
         };
         write(out, "content_block_delta", &ev, &Extras::default())?;
     }
-    if let Some(args) = slot.tool_args.take() {
-        let is_object = matches!(serde_json::from_str::<Value>(&args), Ok(Value::Object(_)));
-        if is_object {
-            let delta = to_raw(&InputJsonDeltaW {
-                ty: "input_json_delta".into(),
-                partial_json: args,
-            })?;
-            let ev = BlockDeltaW {
-                ty: "content_block_delta".into(),
-                index: slot.wire,
-                delta,
-            };
-            write(out, "content_block_delta", &ev, &Extras::default())?;
-        }
+    if let Some(args) = slot.tool_args.take()
+        && !args.trim().is_empty()
+    {
+        let delta = to_raw(&InputJsonDeltaW {
+            ty: "input_json_delta".into(),
+            partial_json: args,
+        })?;
+        let ev = BlockDeltaW {
+            ty: "content_block_delta".into(),
+            index: slot.wire,
+            delta,
+        };
+        write(out, "content_block_delta", &ev, &Extras::default())?;
     }
     let ev = own_ext(
         BlockStopW {
