@@ -69,3 +69,11 @@ Errors use the OpenAI error shape `{"error": {message, type, param, code, misali
 ## Models
 
 `GET /v1/models` and `GET /v1/models/{model}` use the same shape in every OpenAI API. This codec encodes and decodes it with the shared implementation described under [models](openai-chat.md#models) on the OpenAI Chat Completions page, with the fixtures in `fixtures/openai_chat/models/`. Decoded extras carry the origin `openai_embeddings`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Embeddings record into `fixtures/openai_embeddings/providers/<id>/` ([fixtures](fixtures.md)).
+
+### Together AI
+
+Sources: Together AI's [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility) (`embeddings.create` is `POST /v1/embeddings`) and [serverless models](https://docs.together.ai/docs/serverless-models), read 2026-10-19, and `fixtures/openai_embeddings/providers/togetherai/`. Together AI serves embedding models only on dedicated endpoints; a key without one gets a 400 `model_not_available`. Its reply has no `usage`, which this codec reads already.

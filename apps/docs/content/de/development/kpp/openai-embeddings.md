@@ -69,3 +69,11 @@ Fehler haben die Fehlergestalt von OpenAI, `{"error": {message, type, param, cod
 ## Modelle
 
 `GET /v1/models` und `GET /v1/models/{model}` haben in jeder OpenAI-API dieselbe Gestalt. Dieser Codec kodiert und dekodiert sie mit der gemeinsamen Umsetzung, die unter [Modelle](openai-chat.md#modelle) auf der Seite zu OpenAI Chat Completions beschrieben ist, mit den Fixtures in `fixtures/openai_chat/models/`. Dekodierte Extras tragen den Ursprung `openai_embeddings`.
+
+## Anbieter mit diesem Format
+
+Andere Anbieter als OpenAI, die Embeddings bereitstellen, zeichnen in `fixtures/openai_embeddings/providers/<id>/` auf ([Fixtures](fixtures.md)).
+
+### Together AI
+
+Quellen: die [OpenAI-Kompatibilität](https://docs.together.ai/docs/inference/openai-compatibility) (`embeddings.create` ist `POST /v1/embeddings`) und die [Serverless-Modelle](https://docs.together.ai/docs/serverless-models) von Together AI, gelesen am 2026-10-19, und `fixtures/openai_embeddings/providers/togetherai/`. Together AI stellt Embedding-Modelle nur auf dedizierten Endpunkten bereit; ein Schlüssel ohne einen solchen erhält einen 400 `model_not_available`. Seine Antwort hat kein `usage`, was dieser Codec bereits liest.

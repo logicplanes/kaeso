@@ -243,6 +243,7 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | `object` (`"list"`) | form `object`, only when it differs |
 | `data` | `models` |
 | unknown keys | extras fields |
+| a bare array of models instead of the object, as Together AI sends it | `models`, form `bare_list` |
 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`.
 
@@ -277,3 +278,16 @@ Sources: xAI's [Chat Completions reference](https://docs.x.ai/developers/rest-ap
 | `presence_penalty` for a reasoning model, `reasoning_effort` for a model without reasoning | | SpaceX answers 400, which reaches the app as its error. |
 | `search_parameters` (request) | extras | SpaceX answers 410 because live search is deprecated; the app gets the 410. |
 | extra model fields (`aliases`, prices in USD cents per 100 million tokens, `capabilities.reasoning_effort`, image `pricing`) | model extras | |
+
+### Together AI
+
+Sources: Together AI's [chat completions reference](https://docs.together.ai/reference/chat-completions-1) and [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility), read 2026-10-19, the SDK types in `togethercomputer/together-py`, and the live recordings in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together AI field | KPP | Notes |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning_content` or `message.reasoning`, and the same in deltas, by model | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `matched_stop` and `seed` on a choice, `text` on a stream choice, `token_id` in a delta, top-level `prompt`, `metadata` and `warnings` | extras | Left out towards other dialects. |
+| `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens` | `raw` usage | The token counts are typed as above. |
+| errors in OpenAI's envelope with Together AI's own `type` and `code` (`start_generation_failed`, `model_not_available`), sometimes with a top-level `id` | `KppError` | The kind follows the status; a wrong key is a 401 `invalid_api_key`, so `Authentication`. |
+| `GET /v1/models`: a bare array of models with `type`, `display_name`, `organization`, `context_length`, `config` and `pricing` | `ModelList`, model extras | `GET /v1/models/{model}` answers 404 for ids with `/`, so a model check relies on the listing. |
