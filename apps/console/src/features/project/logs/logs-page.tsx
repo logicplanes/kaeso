@@ -10,6 +10,7 @@ import {
   Empty,
   FilterChip,
   type FilterChipChoice,
+  IconButton,
   Menu,
   SearchInput,
   Select,
@@ -27,6 +28,7 @@ import { utcDay } from "~/format/period";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
+import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import { COLUMNS, columnLabel, logColumns, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
@@ -128,7 +130,8 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
 
   const keyName = (id: string) => keys.data?.find((k) => k.id === id)?.name ?? id;
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
-  const all = logColumns({ spansDays, keyName, partyName });
+  const phone = usePhone();
+  const all = logColumns({ spansDays, phone, keyName, partyName });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c)).map((c) => all[c]);
 
   const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));
@@ -283,9 +286,13 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         })}
         <Menu>
           <Menu.Trigger>
-            <Button variant="ghost" size="sm" leadingIcon={icons.add}>
-              {t("logs.addFilter", "Add filter")}
-            </Button>
+            {phone ? (
+              <IconButton icon={icons.add} size="sm" aria-label={t("logs.addFilter", "Add filter")} />
+            ) : (
+              <Button variant="ghost" size="sm" leadingIcon={icons.add}>
+                {t("logs.addFilter", "Add filter")}
+              </Button>
+            )}
           </Menu.Trigger>
           <Menu.Content>
             {FILTER_IDS.filter((id) => !active.includes(id)).map((id) => (

@@ -45,6 +45,12 @@ export const columnLabel = (id: ColumnId): string =>
     agent: t("logs.column.userAgent", "User agent"),
   })[id];
 const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
+const PHONE_DAY_TIME_WIDTH: Record<Locale, number> = { en: 120, de: 136, "zh-CN": 128 };
+
+function timeWidth(spansDays: boolean, phone: boolean): number {
+  if (!spansDays) return phone ? 96 : 100;
+  return (phone ? PHONE_DAY_TIME_WIDTH : DAY_TIME_WIDTH)[locale()];
+}
 const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => c !== "request" && c !== "agent");
 
 const COLUMNS_KEY = "kaeso:logs-columns";
@@ -58,19 +64,29 @@ export function storeColumns(next: ColumnId[]): void {
   writeStored(COLUMNS_KEY, JSON.stringify(next));
 }
 
-export function logColumns({ spansDays, keyName, partyName }: { spansDays: boolean; keyName: (id: string) => string; partyName: (p: Party) => string }) {
+export function logColumns({
+  spansDays,
+  phone = false,
+  keyName,
+  partyName,
+}: {
+  spansDays: boolean;
+  phone?: boolean | undefined;
+  keyName: (id: string) => string;
+  partyName: (p: Party) => string;
+}) {
   const time = (iso: string) =>
     new Date(iso).toLocaleString(dateLocale(), {
       ...(spansDays ? { day: "numeric", month: "short" } : {}),
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
+      ...(phone && spansDays ? {} : { second: "2-digit" }),
       hourCycle: "h23",
       ...inZone(),
     });
   return {
     time: col.custom(
-      { id: "time", header: columnLabel("time"), size: spansDays ? DAY_TIME_WIDTH[locale()] : 100, priority: 1 },
+      { id: "time", header: columnLabel("time"), size: timeWidth(spansDays, phone), priority: 1 },
       (r: LogView) => r.started_at,
       (v) => (
         <Text tabular>
@@ -79,7 +95,7 @@ export function logColumns({ spansDays, keyName, partyName }: { spansDays: boole
       ),
     ),
     status: col.custom(
-      { id: "status", header: columnLabel("status"), size: 72, priority: 1 },
+      { id: "status", header: columnLabel("status"), size: 80, priority: 1 },
       (r: LogView) => r.status,
       (v) => <StatusCode code={v} />,
     ),
