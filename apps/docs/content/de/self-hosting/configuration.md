@@ -31,8 +31,30 @@ services:
 | `KAESO_MAIL_TRANSPORT` | nein | `log`, um E-Mails nur zu protokollieren statt sie zu senden. |
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Der Updater](upgrades.md#der-updater)). |
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
+| `CADDY_MEMORY`, `GATEWAY_MEMORY`, … und `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | nein | Die Speicher- und Prozessgrenzen der Dienste und der Speicher, in dem Valkey seine Daten hält ([Container-Grenzen](#container-grenzen)). |
 
 Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand -hex` sie schreibt, denn sie stehen in Verbindungs-URLs. PostgreSQL behält die Passwörter, die es beim Anlegen seines Volumes hatte; ändern Sie `POSTGRES_PASSWORD` später, sperrt das das Gateway aus. ClickHouse und Valkey übernehmen ihr Passwort bei jedem Start aus der `.env`.
+
+## Container-Grenzen
+
+Jeder Dienst in `compose.yaml` hat eine Speicher- und eine Prozessgrenze. Die Standardwerte passen zum [kleinsten Server](requirements.md#server); erhöhen Sie einen Wert in der `.env`, wenn ein Dienst mehr braucht:
+
+| Dienst | Speicher | Prozesse |
+| --- | --- | --- |
+| `caddy` | `CADDY_MEMORY`, `512m` | `CADDY_PIDS`, `256` |
+| `gateway` | `GATEWAY_MEMORY`, `2g` | `GATEWAY_PIDS`, `1024` |
+| `console` | `CONSOLE_MEMORY`, `256m` | `CONSOLE_PIDS`, `128` |
+| `postgres` | `POSTGRES_MEMORY`, `2g` | `POSTGRES_PIDS`, `512` |
+| `clickhouse` | `CLICKHOUSE_MEMORY`, `4g` | `CLICKHOUSE_PIDS`, `4096` |
+| `valkey` | `VALKEY_MEMORY`, `1g` | `VALKEY_PIDS`, `128` |
+| `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
+| `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
+
+Speicher nimmt die Einheiten von Docker, etwa `768m` oder `3g`. Ein Dienst, der seine Speichergrenze erreicht, wird beendet und neu gestartet. ClickHouse richtet seinen Speicherverbrauch selbst an der Grenze aus.
+
+Valkey hält seine Daten innerhalb von `VALKEY_MAXMEMORY`, standardmäßig `512mb`, was unter `VALKEY_MEMORY` bleibt, damit Valkey nie wegen Speicher beendet wird. Es verdrängt nie einen Schlüssel, um Platz zu schaffen, sodass kein Raten- oder Budgetzähler unbemerkt verschwindet. Ist Valkey voll, lehnt es neue Schlüssel ab: Das Gateway liest dann aus PostgreSQL statt aus seinem Cache, lässt Anfragen unter Ratenlimits und weichen Budgets durch und antwortet unter harten Budgets mit `503`, bis wieder Platz ist. Den meisten Speicher von Valkey belegt die [Kontinuität des Reasonings](#kontinuität-des-reasonings), die `continuity.reasoning_ttl` begrenzt.
+
+Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 
 ## Wie das Gateway Einstellungen liest
 
@@ -56,7 +78,7 @@ Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand 
 | `KAESO_LISTEN` | `listen` | Text | `0.0.0.0:8080` | Adresse der Modell-API, der Platform API und der Health-Checks. |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | Text | `0.0.0.0:9100` | Adresse der Prometheus-Metriken. Nie öffentlich weiterleiten. |
 | `KAESO_PUBLIC_URL` | `public_url` | Text | erforderlich | Die Adresse, die Personen und Apps verwenden, etwa `https://kaeso.example.com`, ohne Pfad. Sie muss `https` sein, außer `http` auf einer Loopback-Adresse für die Entwicklung. |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
+| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
 

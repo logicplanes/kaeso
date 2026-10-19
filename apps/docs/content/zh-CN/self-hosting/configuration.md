@@ -31,8 +31,30 @@ services:
 | `KAESO_MAIL_TRANSPORT` | 否 | 设为 `log` 时只记录邮件，不发送。 |
 | `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
+| `CADDY_MEMORY`、`GATEWAY_MEMORY` 等，`CADDY_PIDS`、`GATEWAY_PIDS` 等，以及 `VALKEY_MAXMEMORY` | 否 | 各服务的内存和进程数上限，以及 Valkey 存放数据的内存（[容器限制](#容器限制)）。 |
 
 密码中只用字母和数字，就像 `openssl rand -hex` 生成的那样，因为它们会写进连接 URL。PostgreSQL 保留卷创建时的密码，之后修改 `POSTGRES_PASSWORD` 会让网关无法登录。ClickHouse 和 Valkey 每次启动时都从 `.env` 读取密码。
+
+## 容器限制
+
+`compose.yaml` 中的每个服务都有内存上限和进程数上限。默认值适合[最低配置的服务器](requirements.md#服务器)；某个服务需要更多资源时，在 `.env` 中调高对应的值：
+
+| 服务 | 内存 | 进程数 |
+| --- | --- | --- |
+| `caddy` | `CADDY_MEMORY`，`512m` | `CADDY_PIDS`，`256` |
+| `gateway` | `GATEWAY_MEMORY`，`2g` | `GATEWAY_PIDS`，`1024` |
+| `console` | `CONSOLE_MEMORY`，`256m` | `CONSOLE_PIDS`，`128` |
+| `postgres` | `POSTGRES_MEMORY`，`2g` | `POSTGRES_PIDS`，`512` |
+| `clickhouse` | `CLICKHOUSE_MEMORY`，`4g` | `CLICKHOUSE_PIDS`，`4096` |
+| `valkey` | `VALKEY_MEMORY`，`1g` | `VALKEY_PIDS`，`128` |
+| `updater` | `UPDATER_MEMORY`，`256m` | `UPDATER_PIDS`，`128` |
+| `docker-proxy` | `DOCKER_PROXY_MEMORY`，`128m` | `DOCKER_PROXY_PIDS`，`64` |
+
+内存使用 Docker 的单位，例如 `768m` 或 `3g`。达到内存上限的服务会被停止并重新启动。ClickHouse 会按上限自行调整内存用量。
+
+Valkey 把数据保持在 `VALKEY_MAXMEMORY` 之内，默认 `512mb`，低于 `VALKEY_MEMORY`，因此 Valkey 不会因内存不足被停止。它从不为腾出空间而驱逐键，因此速率或预算计数器不会在无提示的情况下丢失。Valkey 满时会拒绝新键：网关改为从 PostgreSQL 而不是缓存读取，放行受速率限制和软预算约束的请求，并对受硬预算约束的请求返回 `503`，直到重新有空间。Valkey 的大部分内存用于[推理连续性](#推理连续性)，其上限由 `continuity.reasoning_ttl` 决定。
+
+Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件。
 
 ## 网关读取设置的方式
 
@@ -56,7 +78,7 @@ services:
 | `KAESO_LISTEN` | `listen` | 文本 | `0.0.0.0:8080` | 模型 API、Platform API 和健康检查的地址。 |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | 文本 | `0.0.0.0:9100` | Prometheus 指标的地址。切勿公开转发。 |
 | `KAESO_PUBLIC_URL` | `public_url` | 文本 | 必填 | 用户和应用使用的地址，例如 `https://kaeso.example.com`，不带路径。必须是 `https`，开发时可在回环地址上使用 `http`。 |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | 文本 | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
+| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
 

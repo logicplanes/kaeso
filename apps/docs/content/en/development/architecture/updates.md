@@ -68,7 +68,7 @@ The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater`
 
 | Field | Meaning |
 | --- | --- |
-| `commit` | The commit the Release workflow ran on, which the attestations name, not the release commit on top of it |
+| `commit` | The commit the Release workflow ran on, which the attestations name, not the release commit on top of it ([commits and attestations](../releasing.md#commits-and-attestations)) |
 | `manual` | True when the workflow's **manual** input says so, or when `compose.yaml` differs from the previous release's in anything but the image versions and digests |
 | `manual_since` | The newest release up to this one with `manual: true`, carried over from the previous release's `release.json` |
 | `migrations` | The latest PostgreSQL and ClickHouse migration of the release |
@@ -89,7 +89,7 @@ A failure before the switch changes nothing (`failed`). A failure after it start
 
 On start, the updater waits up to two minutes for Docker. It then finishes an update that was `online`, finishes one whose new gateway turns healthy, and rolls back any other.
 
-The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses. The proxy filters by method and path only, and the body of `containers/create` is the updater's to choose. That is why the updater is host-root equivalent and opt-in.
+The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses. The proxy filters by method and path only, and the body of `containers/create` is the updater's to choose. That is why the updater is host-root equivalent and opt-in. `guard.rs` checks every body before it goes out. A new container must take the name and every `HostConfig` field that widens a container, such as `Privileged`, `CapAdd`, `Devices`, `PidMode`, `NetworkMode`, `Binds` and `Mounts`, from the one it replaces. A pull must name a Kaeso image by digest. These checks catch a mistake in the updater, not someone who controls it.
 
 ### What the updater checks
 
@@ -116,6 +116,7 @@ Caddy reads the maintenance flag from the `maintenance` volume. While it exists,
 | `crates/kaeso-update` | Version tags, channels, the plan with majors, manual steps and pre-releases, the manifest and the protocol |
 | `crates/kaeso-server/tests/updates.rs` | The gateway against a mock GitHub and a mock updater: conditional requests, backoff, manifests, rights, the audit log, the one-update lock and every ending |
 | `crates/kaeso-updater/tests/verify.rs` | The real attestations of Kaeso 0.1.0 verify; another image, commit, workflow, signature or log entry doesn't |
+| `crates/kaeso-updater/src/guard.rs` | Containers that differ from the replaced one in a widening `HostConfig` field, other names and other images are refused |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | The updater against a fake Docker API: a full update, every refusal, rollbacks, restarts at every step, the state file and the API |
 | `scripts/release-manifest.test.mjs` | The manifest, the pinned `compose.yaml`, `manual_since`, the latest migrations and the commit |
 | `e2e/install` | The install with the updater profile, the proxy, and Caddy's answers in every format while Kaeso is away |

@@ -35,6 +35,7 @@ jobs:
       pull-requests: read
     outputs:
       rust: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.rust == 'true' || steps.filter.outputs.workflows == 'true' }}
+      kpp: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.kpp == 'true' || steps.filter.outputs.workflows == 'true' }}
       node: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.node == 'true' || steps.filter.outputs.workflows == 'true' }}
       deploy: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.deploy == 'true' || steps.filter.outputs.workflows == 'true' }}
       repository: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.repository == 'true' || steps.filter.outputs.workflows == 'true' }}
@@ -60,6 +61,12 @@ jobs:
               - e2e/**
               - deploy/compose.dev.yaml
               - deploy/compose.yaml
+            kpp:
+              - Cargo.lock
+              - rust-toolchain.toml
+              - crates/kaeso-kpp/**
+              - crates/kaeso-codecs/**
+              - fuzz/**
             node:
               - package.json
               - pnpm-lock.yaml
@@ -91,6 +98,7 @@ jobs:
       - name: Areas
         env:
           RUST: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.rust == 'true' }}
+          KPP: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.kpp == 'true' }}
           NODE: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.node == 'true' }}
           DEPLOY: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.deploy == 'true' }}
           REPOSITORY: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.repository == 'true' }}
@@ -100,6 +108,7 @@ jobs:
             echo "| Area | Changed |"
             echo "| --- | --- |"
             echo "| Rust | $RUST |"
+            echo "| KPP | $KPP |"
             echo "| TypeScript | $NODE |"
             echo "| Deployment | $DEPLOY |"
             echo "| Repository | $REPOSITORY |"
@@ -275,6 +284,66 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
       - run: cargo check --locked -p "$CRATE" --all-features
       - run: cargo test --locked -p "$CRATE" --all-features
+
+  published-crates:
+    name: Published crates
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CRATES: -p kaeso-kpp -p kaeso-codecs
+      BASE: ${{ github.event.pull_request.base.sha }}
+      BREAKING: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          key: published-crates
+          save-if: ${{ github.ref == 'refs/heads/dev' }}
+      - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
+        with:
+          tool: cargo-semver-checks
+      - name: Both crates package and would publish
+        run: |
+          read -ra crates <<< "$CRATES"
+          cargo publish --dry-run --locked "${crates[@]}"
+      - name: Their documentation builds without warnings
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          read -ra crates <<< "$CRATES"
+          cargo doc --no-deps --locked --all-features "${crates[@]}"
+      - name: Their API changes fit a minor release after the last published version
+        run: |
+          read -ra crates <<< "$CRATES"
+          cargo semver-checks "${crates[@]}" --release-type minor
+      - name: A pull request changes their API only in ways a patch release allows, unless it is labelled breaking
+        if: github.event_name == 'pull_request'
+        run: |
+          read -ra crates <<< "$CRATES"
+          if [[ "$BREAKING" == true ]]; then
+            echo "Labelled \`breaking\`, so the published crates' API may break." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if ! cargo semver-checks "${crates[@]}" --baseline-rev "$BASE" --release-type patch; then
+            echo "::error::This pull request breaks the API of kaeso-kpp or kaeso-codecs. Make the change additive, or label the pull request breaking so the changelog names it."
+            exit 1
+          fi
+
+  fuzz-runs:
+    name: Fuzz runs
+    needs: changes
+    if: needs.changes.outputs.kpp == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/fuzz.yml
+    with:
+      seconds: 60
 
   test-gateway:
     name: Test gateway
@@ -1196,6 +1265,8 @@ jobs:
       - openapi
       - rust-dependencies
       - fuzz
+      - published-crates
+      - fuzz-runs
       - sdk-conformance
       - sdk-e2e
       - compose

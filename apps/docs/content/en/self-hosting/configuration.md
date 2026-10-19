@@ -31,8 +31,30 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_MAIL_TRANSPORT` | no | `log` to only log emails instead of sending them. |
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
+| `CADDY_MEMORY`, `GATEWAY_MEMORY`, … and `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | no | The services' memory and process limits, and the memory Valkey keeps its data in ([container limits](#container-limits)). |
 
 Use only letters and digits in the passwords, as `openssl rand -hex` writes them, because they go into connection URLs. PostgreSQL keeps the passwords it had when its volume was created, so changing `POSTGRES_PASSWORD` later locks the gateway out. ClickHouse and Valkey take their password from `.env` at every start.
+
+## Container limits
+
+Every service in `compose.yaml` has a memory limit and a process limit. The defaults suit the [minimum server](requirements.md#server); raise one in `.env` when a service needs more:
+
+| Service | Memory | Processes |
+| --- | --- | --- |
+| `caddy` | `CADDY_MEMORY`, `512m` | `CADDY_PIDS`, `256` |
+| `gateway` | `GATEWAY_MEMORY`, `2g` | `GATEWAY_PIDS`, `1024` |
+| `console` | `CONSOLE_MEMORY`, `256m` | `CONSOLE_PIDS`, `128` |
+| `postgres` | `POSTGRES_MEMORY`, `2g` | `POSTGRES_PIDS`, `512` |
+| `clickhouse` | `CLICKHOUSE_MEMORY`, `4g` | `CLICKHOUSE_PIDS`, `4096` |
+| `valkey` | `VALKEY_MEMORY`, `1g` | `VALKEY_PIDS`, `128` |
+| `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
+| `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
+
+Memory takes Docker's units, such as `768m` or `3g`. A service that reaches its memory limit is stopped and restarted. ClickHouse sizes its own memory use to the limit.
+
+Valkey keeps its data within `VALKEY_MAXMEMORY`, `512mb` by default, which stays below `VALKEY_MEMORY` so Valkey is never stopped for memory. It never evicts a key to make room, so a rate or budget counter is never dropped without notice. When Valkey is full, it refuses new keys: the gateway then serves from PostgreSQL instead of its cache, lets requests under rate limits and soft budgets through, and answers `503` under hard budgets until there is room again. Most of Valkey's memory holds [reasoning continuity](#reasoning-continuity), which `continuity.reasoning_ttl` bounds.
+
+Docker rotates each service's log at 10 MB and keeps five files.
 
 ## How the gateway reads settings
 
@@ -56,7 +78,7 @@ Use only letters and digits in the passwords, as `openssl rand -hex` writes them
 | `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
 | `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `0.0.0.0:9100` | Address of the Prometheus metrics. Never route it publicly. |
 | `KAESO_PUBLIC_URL` | `public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
+| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
 

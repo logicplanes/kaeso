@@ -648,6 +648,25 @@ impl Engine {
 
     async fn switch(&self, t: &Target) -> Result<(), Failure> {
         let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+        let mut spec = clone::spec(
+            &t.container,
+            &t.old_image,
+            &t.new_image,
+            &t.image.reference(),
+        )
+        .map_err(|e| fail(Reason::ServicesNotFound, e))?;
+        if t.service == Service::Gateway {
+            clone::start_period(&mut spec, self.settings.gateway_timeout);
+        }
+        crate::guard::container(&t.name, &spec, &t.container).map_err(|why| {
+            fail(
+                Reason::DockerUnavailable,
+                crate::docker::DockerError::Forbidden {
+                    what: format!("create {}", t.name),
+                    why,
+                },
+            )
+        })?;
         self.record(|s| {
             s.switched.push(Switched {
                 service: t.service,
@@ -665,18 +684,12 @@ impl Engine {
             .rename(&t.id, &format!("{}{PREVIOUS_SUFFIX}", t.name))
             .await
             .map_err(docker)?;
-        let mut spec = clone::spec(
-            &t.container,
-            &t.old_image,
-            &t.new_image,
-            &t.image.reference(),
-        )
-        .map_err(|e| fail(Reason::ServicesNotFound, e))?;
-        if t.service == Service::Gateway {
-            clone::start_period(&mut spec, self.settings.gateway_timeout);
-        }
         self.set_phase(t.service, Phase::Creating, None)?;
-        let new_id = self.docker.create(&t.name, &spec).await.map_err(docker)?;
+        let new_id = self
+            .docker
+            .create(&t.name, &spec, &t.container)
+            .await
+            .map_err(docker)?;
         self.set_phase(t.service, Phase::Created, Some(new_id.clone()))?;
         self.docker.start(&new_id).await.map_err(docker)?;
         self.set_phase(t.service, Phase::Started, None)

@@ -55,6 +55,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Collect the pull requests merged since the latest release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -90,7 +92,11 @@ jobs:
             exit 1
           fi
           latest="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname | head -n 1)"
-          if [[ -n "$latest" ]] && ! pnpm dlx semver@7.8.5 --include-prerelease --range ">${latest#v}" "$version" >/dev/null; then
+          if [[ -n "$latest" ]] && ! git merge-base --is-ancestor "$latest" HEAD; then
+            echo "::error::prod doesn't have $latest yet. Merge the tag into dev, push dev to prod, then run Release again."
+            exit 1
+          fi
+          if [[ -n "$latest" ]] && ! pnpm exec semver --include-prerelease --range ">${latest#v}" "$version" >/dev/null; then
             echo "::error::$version is not newer than $latest."
             exit 1
           fi
@@ -107,9 +113,55 @@ jobs:
           if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
           echo "Releasing **$version** from \`prod\` at \`${GITHUB_SHA:0:12}\`${latest:+ after $latest}." >> "$GITHUB_STEP_SUMMARY"
 
+  notes:
+    name: Release notes
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: release
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: release-pulls
+          path: ${{ runner.temp }}/pulls
+      - name: Write the release notes
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}
+          RELEASE_NOTES_API_URL: https://ai.logicplanes.com
+          RELEASE_NOTES_MODEL: claude-haiku-5-5
+        run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md" --brief-out "$RUNNER_TEMP/notes/brief.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes/notes.md
+          if-no-files-found: ignore
+          retention-days: 7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-brief
+          path: ${{ runner.temp }}/notes/brief.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   prepare:
     name: Prepare
-    needs: validate
+    needs: [validate, notes]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -141,20 +193,11 @@ jobs:
         with:
           name: release-pulls
           path: ${{ runner.temp }}/pulls
-      - name: Write the release notes
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         continue-on-error: true
-        timeout-minutes: 20
-        env:
-          LOG_AI_KEY: ${{ secrets.LOG_AI_KEY }}
-          RELEASE_NOTES_API_URL: https://ai.logicplanes.com
-          RELEASE_NOTES_MODEL: claude-haiku-5-5
-        run: node scripts/release-notes.mjs write --pulls "$RUNNER_TEMP/pulls/pulls.json" --version "$VERSION" --out "$RUNNER_TEMP/notes/notes.md" --brief-out "$RUNNER_TEMP/notes/brief.json"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: release-brief
-          path: ${{ runner.temp }}/notes/brief.json
-          if-no-files-found: ignore
-          retention-days: 7
+          name: release-notes
+          path: ${{ runner.temp }}/notes
       - name: Write the changelog
         run: |
           set -euo pipefail
@@ -187,6 +230,44 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  versions:
+    name: Check the version changes
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          shared-key: openapi
+          save-if: false
+      - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
+        with:
+          tool: cargo-edit
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - name: Set the version apart from Prepare
+        run: |
+          set -euo pipefail
+          node scripts/version.mjs set "$VERSION"
+          mkdir -p "$RUNNER_TEMP/versions"
+          git diff -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/versions/versions.patch"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-versions
+          path: ${{ runner.temp }}/versions/versions.patch
+          if-no-files-found: error
+          retention-days: 1
+
   checks:
     name: Checks
     needs: [validate, prepare]
@@ -199,7 +280,7 @@ jobs:
 
   tag:
     name: Tag
-    needs: [validate, prepare, checks]
+    needs: [validate, prepare, versions, checks]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
@@ -224,6 +305,10 @@ jobs:
         with:
           name: release-changes
           path: ${{ runner.temp }}/release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: release-versions
+          path: ${{ runner.temp }}/versions
       - name: Commit, tag and push
         run: |
           set -euo pipefail
@@ -243,6 +328,12 @@ jobs:
             fi
             git apply --index "$patch"
           fi
+          git diff --cached -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/release/versions.patch"
+          if ! cmp -s "$RUNNER_TEMP/versions/versions.patch" "$RUNNER_TEMP/release/versions.patch"; then
+            echo "::error::Beyond CHANGELOG.md, the release changes differ from what node scripts/version.mjs set $VERSION writes on its own, so nothing was committed."
+            diff "$RUNNER_TEMP/versions/versions.patch" "$RUNNER_TEMP/release/versions.patch" || true
+            exit 1
+          fi
           git status --short
           git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod
           if [[ "$(git rev-parse origin/prod)" != "$GITHUB_SHA" ]]; then
@@ -253,10 +344,10 @@ jobs:
             made="Tagged prod's commit, which needed no release commit"
           else
             git commit --message "Release $VERSION"
-            made="Committed \"Release $VERSION\" to prod and tagged it"
+            made="Committed \"Release $VERSION\" on top of prod's commit and tagged it; prod gets it with the next push from dev"
           fi
           git tag --annotate "v$VERSION" --message "Kaeso $VERSION"
-          git push --atomic origin HEAD:refs/heads/prod "refs/tags/v$VERSION"
+          git push origin "refs/tags/v$VERSION"
           echo "$made: [v$VERSION](https://github.com/$GITHUB_REPOSITORY/tree/v$VERSION) at \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
 
   sync:
@@ -285,19 +376,19 @@ jobs:
           release="$(git rev-parse "refs/tags/v$VERSION^{commit}")"
           dev="$(git rev-parse HEAD)"
           refuse() {
-            echo "::error::$1 The release of $VERSION is complete; only dev is behind. Merge prod into dev by hand."
+            echo "::error::$1 The release of $VERSION is complete; only dev is behind. Merge v$VERSION into dev by hand."
             {
               echo "### dev does not have the release yet"
               echo
               echo "The release of $VERSION is complete: the tag, the images, the packages and the GitHub release don't depend on this job. $1"
               echo
-              echo "Merge prod into dev by hand and push dev. When the merge stops at a conflict, resolve it and finish the merge with \`git commit --no-edit\` before pushing."
+              echo "Merge the release's tag into dev by hand and push dev. When the merge stops at a conflict, resolve it and finish the merge with \`git commit --no-edit\` before pushing."
               echo
               echo '```sh'
-              echo "git fetch origin"
+              echo "git fetch origin --tags"
               echo "git switch dev"
               echo "git pull --ff-only"
-              echo "git merge --no-ff -m \"Merge release $VERSION into dev\" origin/prod"
+              echo "git merge --no-ff -m \"Merge release $VERSION into dev\" v$VERSION"
               echo "git push origin dev"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -323,7 +414,7 @@ jobs:
               echo "The release of $VERSION is complete. \`dev\` only takes changes through pull requests and its CI check, which the workflow's token can't bypass, so a repository admin brings the release in:"
               echo
               echo '```sh'
-              echo "git fetch origin"
+              echo "git fetch origin --tags"
               echo "$1"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -336,7 +427,7 @@ jobs:
             if push "$release"; then
               echo "Fast-forwarded dev to the release of $VERSION." >> "$GITHUB_STEP_SUMMARY"
             elif [[ "$pushed" == rules ]]; then
-              hand_over "git push origin origin/prod:dev"
+              hand_over "git push origin v$VERSION^{commit}:refs/heads/dev"
             else
               refuse "dev moved while this job ran, so it could not be fast-forwarded."
             fi
@@ -344,7 +435,7 @@ jobs:
             if push HEAD; then
               echo "Merged the release of $VERSION into dev as \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
             elif [[ "$pushed" == rules ]]; then
-              hand_over "git switch dev && git pull --ff-only && git merge --no-ff -m \"Merge release $VERSION into dev\" origin/prod && git push origin dev"
+              hand_over "git switch dev && git pull --ff-only && git merge --no-ff -m \"Merge release $VERSION into dev\" v$VERSION && git push origin dev"
             else
               refuse "dev moved while this job ran, so the merge could not be pushed."
             fi
@@ -808,5 +899,11 @@ jobs:
           node scripts/release-notes.mjs body --version "$VERSION" "${brief[@]}" > "$RUNNER_TEMP/notes.md"
           flags=(--latest)
           if [[ "$PRERELEASE" == true ]]; then flags=(--prerelease --latest=false); fi
-          gh release create "v$VERSION" "$RUNNER_TEMP"/assets/* --verify-tag --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
-          echo "Released [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION)." >> "$GITHUB_STEP_SUMMARY"
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json tagName >/dev/null 2>&1; then
+            gh release upload "v$VERSION" "$RUNNER_TEMP"/assets/* --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+            echo "Updated the existing [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION) with this run's assets and notes." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh release create "v$VERSION" "$RUNNER_TEMP"/assets/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+            echo "Released [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION)." >> "$GITHUB_STEP_SUMMARY"
+          fi

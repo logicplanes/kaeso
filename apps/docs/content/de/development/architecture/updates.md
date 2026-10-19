@@ -68,7 +68,7 @@ Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` u
 
 | Feld | Bedeutung |
 | --- | --- |
-| `commit` | Der Commit, auf dem der Release-Workflow lief und den die Attestierungen nennen, nicht der Release-Commit darüber |
+| `commit` | Der Commit, auf dem der Release-Workflow lief und den die Attestierungen nennen, nicht der Release-Commit darüber ([Commits und Attestierungen](../releasing.md#commits-und-attestierungen)) |
 | `manual` | Wahr, wenn die Eingabe **manual** des Workflows es sagt oder wenn sich `compose.yaml` von der des vorigen Releases in mehr als den Image-Versionen und Digests unterscheidet |
 | `manual_since` | Das neueste Release bis zu diesem mit `manual: true`, übernommen aus der `release.json` des vorigen Releases |
 | `migrations` | Die neueste PostgreSQL- und ClickHouse-Migration des Releases |
@@ -89,7 +89,7 @@ Ein Fehler vor dem Austausch ändert nichts (`failed`). Ein Fehler danach starte
 
 Beim Start wartet der Updater bis zu zwei Minuten auf Docker. Dann schließt er ein Update ab, das `online` war, schließt eines ab, dessen neues Gateway gesund wird, und rollt jedes andere zurück.
 
-Der Updater erreicht Docker nur unter `http://docker-proxy:2375/v1.44/`, dessen Allow-List in `compose.yaml` jeden Pfad nennt, den er nutzt. Der Proxy filtert nur nach Methode und Pfad, und den Body von `containers/create` wählt der Updater. Deshalb kommt der Updater Root-Rechten auf dem Host gleich und muss ausdrücklich aktiviert werden.
+Der Updater erreicht Docker nur unter `http://docker-proxy:2375/v1.44/`, dessen Allow-List in `compose.yaml` jeden Pfad nennt, den er nutzt. Der Proxy filtert nur nach Methode und Pfad, und den Body von `containers/create` wählt der Updater. Deshalb kommt der Updater Root-Rechten auf dem Host gleich und muss ausdrücklich aktiviert werden. `guard.rs` prüft jeden Body, bevor er hinausgeht. Ein neuer Container muss den Namen und jedes `HostConfig`-Feld, das einen Container erweitert, etwa `Privileged`, `CapAdd`, `Devices`, `PidMode`, `NetworkMode`, `Binds` und `Mounts`, vom ersetzten übernehmen. Ein Pull muss ein Kaeso-Image per Digest nennen. Diese Prüfungen fangen einen Fehler im Updater ab, nicht jemanden, der ihn kontrolliert.
 
 ### Was der Updater prüft
 
@@ -116,6 +116,7 @@ Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert
 | `crates/kaeso-update` | Versions-Tags, Kanäle, der Plan mit Major-Versionen, Schritten von Hand und Vorabversionen, das Manifest und das Protokoll |
 | `crates/kaeso-server/tests/updates.rs` | Das Gateway gegen ein Mock-GitHub und einen Mock-Updater: bedingte Anfragen, Backoff, Manifeste, Rechte, das Audit-Log, die Sperre für ein Update und jedes Ende |
 | `crates/kaeso-updater/tests/verify.rs` | Die echten Attestierungen von Kaeso 0.1.0 bestehen; ein anderes Image, ein anderer Commit, Workflow, eine andere Signatur oder ein anderer Logeintrag nicht |
+| `crates/kaeso-updater/src/guard.rs` | Container, die in einem erweiternden `HostConfig`-Feld vom ersetzten abweichen, andere Namen und andere Images werden abgelehnt |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | Der Updater gegen eine nachgebildete Docker-API: ein vollständiges Update, jede Ablehnung, Rollbacks, Neustarts bei jedem Schritt, die Zustandsdatei und die API |
 | `scripts/release-manifest.test.mjs` | Das Manifest, die festgelegte `compose.yaml`, `manual_since`, die neuesten Migrationen und der Commit |
 | `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und die Antworten von Caddy in jedem Format, solange Kaeso nicht erreichbar ist |
