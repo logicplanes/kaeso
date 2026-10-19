@@ -33,7 +33,7 @@ flowchart TD
 | `clickhouse` | 保存请求日志和用量汇总 | 卷 `clickhouse` |
 | `valkey` | 保存速率和预算计数器以及共享缓存 | 卷 `valkey` |
 
-可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。
+可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy 运行时使用的用户。同样，`updater-init` 会把更新器的卷交给更新器，并让更新器所在的组可以写入 `compose.yaml`。
 
 ## 文件
 
@@ -65,8 +65,10 @@ flowchart TD
 各项服务尽可能少地共享资源：
 
 - PostgreSQL、ClickHouse 和 Valkey 位于没有对外路由的内部网络中，只有网关能访问它们。
-- 任何容器都无法提升权限。网关和控制台不带 Linux capabilities 运行，网关的文件系统为只读。Caddy 只保留绑定端口 80 和 443 的权限。
-- 网关以 `kaeso` 身份登录 PostgreSQL，该用户拥有 Kaeso 数据库，但不是超级用户。ClickHouse 的 `kaeso` 用户无法管理用户和授权，Valkey 要求每个连接都提供密码。
+- 任何容器都无法提升权限，并且每个容器启动时都不带 Linux capabilities。Caddy、网关、控制台和更新器以无特权用户运行，除 Caddy 外都使用只读文件系统。Caddy 只保留绑定端口 80 和 443 的权限。
+- PostgreSQL、ClickHouse 和 Valkey 只取回其镜像启动时所需的 capabilities。借助这些权限，它们各自把数据目录交给自己的用户，之后不再以 root 运行。`caddy-init` 只获得更改所有者的权限，`updater-init` 另外还获得更改文件权限位的权限。
+- 每个服务都有内存上限和进程数上限，Docker 会在日志达到 10 MB 时轮转，并保留五个文件（[容器限制](configuration.md#容器限制)）。
+- 网关以 `kaeso` 身份登录 PostgreSQL，该用户拥有 Kaeso 数据库，但不是超级用户。ClickHouse 的 `kaeso` 用户无法管理用户和授权，Valkey 要求每个连接都提供密码，并从文件而不是命令行读取该密码。
 - Caddy 发送 `Strict-Transport-Security`，并且从不转发网关的指标端口 9100。
 
 ## 多个网关
@@ -82,7 +84,7 @@ flowchart TD
 
 每个版本都保留以下名称，因此新的 `compose.yaml` 能找到您的数据：
 
-- Compose 项目 `kaeso` 及其服务 `caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`，以及 `updater` profile（配置集）中的 `updater` 和 `docker-proxy`。
+- Compose 项目 `kaeso` 及其服务 `caddy-init`、`caddy`、`gateway`、`console`、`postgres`、`clickhouse` 和 `valkey`，以及 `updater` profile（配置集）中的 `updater-init`、`updater` 和 `docker-proxy`。
 - 存放数据的卷 `kaeso_postgres`、`kaeso_clickhouse` 和 `kaeso_valkey`，存放证书的 `kaeso_caddy_data` 和 `kaeso_caddy_config`，以及供更新器使用的 `kaeso_maintenance` 和 `kaeso_updater`。
 - 镜像 `ghcr.io/logicplanes/kaeso-gateway`、`ghcr.io/logicplanes/kaeso-console` 和 `ghcr.io/logicplanes/kaeso-updater`，以版本号作为标签。
 

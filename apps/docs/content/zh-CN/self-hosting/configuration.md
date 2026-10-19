@@ -31,8 +31,30 @@ services:
 | `KAESO_MAIL_TRANSPORT` | 否 | 设为 `log` 时只记录邮件，不发送。 |
 | `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
+| `CADDY_MEMORY`、`GATEWAY_MEMORY` 等，`CADDY_PIDS`、`GATEWAY_PIDS` 等，以及 `VALKEY_MAXMEMORY` | 否 | 各服务的内存和进程数上限，以及 Valkey 存放数据的内存（[容器限制](#容器限制)）。 |
 
 密码中只用字母和数字，就像 `openssl rand -hex` 生成的那样，因为它们会写进连接 URL。PostgreSQL 保留卷创建时的密码，之后修改 `POSTGRES_PASSWORD` 会让网关无法登录。ClickHouse 和 Valkey 每次启动时都从 `.env` 读取密码。
+
+## 容器限制
+
+`compose.yaml` 中的每个服务都有内存上限和进程数上限。默认值适合[最低配置的服务器](requirements.md#服务器)；某个服务需要更多资源时，在 `.env` 中调高对应的值：
+
+| 服务 | 内存 | 进程数 |
+| --- | --- | --- |
+| `caddy` | `CADDY_MEMORY`，`512m` | `CADDY_PIDS`，`256` |
+| `gateway` | `GATEWAY_MEMORY`，`2g` | `GATEWAY_PIDS`，`1024` |
+| `console` | `CONSOLE_MEMORY`，`256m` | `CONSOLE_PIDS`，`128` |
+| `postgres` | `POSTGRES_MEMORY`，`2g` | `POSTGRES_PIDS`，`512` |
+| `clickhouse` | `CLICKHOUSE_MEMORY`，`4g` | `CLICKHOUSE_PIDS`，`4096` |
+| `valkey` | `VALKEY_MEMORY`，`1g` | `VALKEY_PIDS`，`128` |
+| `updater` | `UPDATER_MEMORY`，`256m` | `UPDATER_PIDS`，`128` |
+| `docker-proxy` | `DOCKER_PROXY_MEMORY`，`128m` | `DOCKER_PROXY_PIDS`，`64` |
+
+内存使用 Docker 的单位，例如 `768m` 或 `3g`。达到内存上限的服务会被停止并重新启动。ClickHouse 会按上限自行调整内存用量。
+
+Valkey 把数据保持在 `VALKEY_MAXMEMORY` 之内，默认 `512mb`，低于 `VALKEY_MEMORY`，因此 Valkey 不会因内存不足被停止。它从不为腾出空间而驱逐键，因此速率或预算计数器不会在无提示的情况下丢失。Valkey 满时会拒绝新键：网关改为从 PostgreSQL 而不是缓存读取，放行受速率限制和软预算约束的请求，并对受硬预算约束的请求返回 `503`，直到重新有空间。Valkey 的大部分内存用于[推理连续性](#推理连续性)，其上限由 `continuity.reasoning_ttl` 决定。
+
+Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件。
 
 ## 网关读取设置的方式
 

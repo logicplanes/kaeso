@@ -4,6 +4,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Callable, NamedTuple
@@ -27,6 +28,7 @@ class Install(NamedTuple):
     env: dict[str, str]
     run: Callable[..., subprocess.CompletedProcess]
     health: dict[str, str]
+    work: Path
 
 
 def free_port() -> int:
@@ -110,7 +112,7 @@ def install(tmp_path_factory):
         logs = run("logs", "gateway", capture_output=True).stdout
         assert "kaeso setup-link" in logs, "the gateway's log points to the setup link command"
         assert token not in logs, "the setup token reached the gateway's log"
-        yield Install(url, token, env, run, health)
+        yield Install(url, token, env, run, health, work)
     finally:
         subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
@@ -210,6 +212,34 @@ def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
         text=True,
     )
     assert stranger.returncode != 0, stranger.stdout
+
+
+def test_the_updater_writes_its_files_without_root(install):
+    inspected = subprocess.run(
+        ["docker", "inspect", "--format", "{{.Config.User}}", f"{PROJECT}-updater-1"], capture_output=True, text=True, check=True
+    )
+    assert inspected.stdout.strip() == "65532:65532"
+
+    def as_updater(script: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["docker", "run", "--rm", "--user", "65532:65532", "--network", "none",
+             "-v", f"{install.work / 'compose.yaml'}:/kaeso/compose.yaml",
+             "-v", f"{PROJECT}_maintenance:/maintenance", "-v", f"{PROJECT}_updater:/state",
+             "--entrypoint", "sh", CADDY, "-c", script],
+            capture_output=True,
+            text=True,
+        )
+
+    volumes = as_updater("touch /maintenance/probe /state/probe && rm /maintenance/probe /state/probe")
+    assert volumes.returncode == 0, volumes.stderr
+    group, mode = as_updater("stat -c '%g %A' /kaeso/compose.yaml").stdout.split()
+    assert mode[4:6] == "rw", mode
+    docker_runs_in_a_vm_that_shares_this_folder = sys.platform == "darwin"
+    if docker_runs_in_a_vm_that_shares_this_folder:
+        return
+    assert group == "65532"
+    written = as_updater("test -w /kaeso/compose.yaml")
+    assert written.returncode == 0, written.stderr
 
 
 def flag(state: str | None) -> None:
