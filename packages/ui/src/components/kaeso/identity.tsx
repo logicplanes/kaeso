@@ -26,11 +26,13 @@ const PROVIDER_LETTERS: Record<string, string> = {
   mistral: "M",
   groq: "Gq",
   deepseek: "D",
-  xai: "X",
+  xai: "S",
   cohere: "C",
   bedrock: "B",
   azure: "Az",
   ollama: "Ol",
+  togetherai: "T",
+  openrouter: "Or",
 };
 const PROVIDER_NAMES: Record<string, string> = {
   openai: "OpenAI",
@@ -39,11 +41,13 @@ const PROVIDER_NAMES: Record<string, string> = {
   mistral: "Mistral",
   groq: "Groq",
   deepseek: "DeepSeek",
-  xai: "xAI",
+  xai: "SpaceX",
   cohere: "Cohere",
   bedrock: "Amazon Bedrock",
   azure: "Azure OpenAI",
   ollama: "Ollama",
+  togetherai: "Together AI",
+  openrouter: "OpenRouter",
 };
 export const providerName = (id: string) => PROVIDER_NAMES[id] ?? id;
 
@@ -65,7 +69,7 @@ export const ProviderBadge = forwardRef<
       )}
     >
       {path ? (
-        <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden className={MARK_SIZE[size]}>
+        <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={MARK_SIZE[size]}>
           <path d={path} />
         </svg>
       ) : (

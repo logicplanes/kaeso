@@ -11,6 +11,18 @@ Kaeso includes no code adapted from other projects. If code is ever adapted from
 - [Inter](https://rsms.me/inter/), SIL Open Font License 1.1, and [Geist Mono](https://vercel.com/font), SIL Open Font License 1.1: unmodified subsets of their Fontsource builds, self-hosted by `@logicplanes/kaeso-ui` and shipped with their license files (`packages/ui/src/styles/fonts/`).
 - [Hugeicons](https://hugeicons.com) free, Stroke Rounded, MIT licensed: the icon set of every Kaeso interface.
 
+## Provider marks
+
+The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` identify each built-in provider in the console. Each is the provider's trademark, redrawn in one colour on a 24px grid:
+
+- OpenAI and Anthropic: the monochrome marks of [LobeHub Icons](https://github.com/lobehub/lobe-icons) (`@lobehub/icons-static-svg`), MIT licensed, © 2023 LobeHub.
+- DeepSeek: the whale from the logo on [deepseek.com](https://www.deepseek.com).
+- SpaceX: the mark of [console.x.ai](https://console.x.ai) and [x.ai](https://x.ai), cropped to a square as in the console's own app icon.
+- Together AI: the black logo from the [Together AI brand assets](https://www.together.ai/brand).
+- Groq: the bolt from the logo on [groq.com](https://groq.com).
+- OpenRouter: the Ink glyph from the [OpenRouter brand assets](https://openrouter.ai/brand), shown as the Cloud glyph in dark mode.
+- Mistral: the black icon from the [Mistral AI brand assets](https://mistral.ai/brand).
+
 ## Wire formats
 
 KPP implements the OpenAI and Anthropic wire formats from the vendors' public documentation and specifications:
