@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CODE_LANGS, highlight, type CodeLang } from "./highlighter.js";
+import { CODE_LANGS, HIGHLIGHT_MAX_CHARS, highlight, type CodeLang } from "./highlighter.js";
 
 describe("highlight", () => {
   it("leaves plain text alone and refuses an unknown language", async () => {
@@ -28,5 +28,12 @@ describe("highlight", () => {
         { content: "}", className: "text-fg-tertiary" },
       ],
     ]);
+  }, 20_000);
+
+  it("leaves code beyond the size cap plain, and keeps long lines whole", async () => {
+    expect(await highlight("1".repeat(HIGHLIGHT_MAX_CHARS + 1), "json")).toBeNull();
+    const line = `[${"1,".repeat(3_000)}1]`;
+    const tokens = await highlight(line, "json");
+    expect(tokens?.[0]?.map((t) => t.content).join("")).toBe(line);
   }, 20_000);
 });

@@ -61,6 +61,7 @@ const en: Readonly<Record<string, string>> = {
   "conversationView.encrypted": "The provider returned this reasoning in encrypted form.",
   "conversationView.error": "Error",
   "conversationView.image": "Image",
+  "conversationView.imageFrom": "Image from {host}",
   "conversationView.imageInput": "Image input",
   "conversationView.reasoning": "Reasoning",
   "conversationView.redacted": "Redacted by the provider",
