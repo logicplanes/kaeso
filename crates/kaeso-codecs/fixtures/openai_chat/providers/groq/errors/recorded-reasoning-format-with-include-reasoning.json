@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "cannot specify both `include_reasoning` and `reasoning_format`",
+    "type": "invalid_request_error"
+  }
+}

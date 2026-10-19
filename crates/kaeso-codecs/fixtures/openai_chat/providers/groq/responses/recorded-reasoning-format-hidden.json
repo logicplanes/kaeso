@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-2b36d10f-800d-4199-8ef3-2599edb10334",
+  "object": "chat.completion",
+  "created": 1792370392,
+  "model": "qwen/qwen3.8-27b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Yes, 17 is a prime number because it is only divisible by 1 and itself."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.018347451,
+    "prompt_tokens": 53,
+    "prompt_time": 0.00404919,
+    "completion_tokens": 62,
+    "completion_time": 0.122150625,
+    "total_tokens": 115,
+    "total_time": 0.126199815,
+    "completion_tokens_details": {
+      "reasoning_tokens": 39
+    }
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_43dd1ea4ee",
+  "x_groq": {
+    "id": "req_01m58skf34eertsk9psz2nfxm6",
+    "seed": 2115366456
+  },
+  "service_tier": "on_demand"
+}

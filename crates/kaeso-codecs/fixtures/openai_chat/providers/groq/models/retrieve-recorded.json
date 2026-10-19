@@ -1,0 +1,41 @@
+{
+  "model_card": "https://openai.com/index/gpt-oss-model-card",
+  "id": "openai/gpt-oss-20b",
+  "object": "model",
+  "created": 1754407957,
+  "owned_by": "OpenAI",
+  "active": true,
+  "context_window": 131072,
+  "public_apps": null,
+  "max_completion_tokens": 65536,
+  "hugging_face_id": "openai/gpt-oss-20b",
+  "name": "GPT OSS 20B",
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "context_length": 131072,
+  "max_output_length": 65536,
+  "pricing": {
+    "prompt": "0.000000075",
+    "completion": "0.0000003",
+    "image": "0",
+    "request": "0",
+    "input_cache_read": "0.0000000375"
+  },
+  "supported_sampling_parameters": [
+    "temperature",
+    "top_p",
+    "stop",
+    "seed",
+    "max_tokens"
+  ],
+  "supported_features": [
+    "tools",
+    "json_mode",
+    "structured_outputs",
+    "reasoning"
+  ]
+}

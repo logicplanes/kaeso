@@ -308,6 +308,190 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/groq/include-reasoning-false": {
+    "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "include_reasoning"
+  },
+  "providers/groq/model-not-found": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "llama-3.3-70b-versatile"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/groq/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/groq/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-with-include-reasoning": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-reasoning-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-tools-system-role": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-20b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": true,
+        "type": "any"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/groq/tools-system-role": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-20b",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": true,
+        "type": "any"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": true
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

@@ -1,0 +1,16 @@
+{
+  "model": "qwen/qwen3.8-27b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 17 a prime number? Answer in one sentence."
+    }
+  ],
+  "reasoning_format": "parsed",
+  "reasoning_effort": "low",
+  "max_completion_tokens": 1024,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

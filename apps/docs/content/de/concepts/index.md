@@ -19,7 +19,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Recht, Rolle | Ein Recht erlaubt eine Art von Aktion, etwa `keys.all.view`. Eine Rolle ist eine benannte Menge von Rechten ([Rechte](rights.md)) |
 | API-Schlüssel | `sk-kso-…`, der Schlüssel eines Mitglieds oder Dienstkontos in einem Projekt. Mit Inferenzzugriff ruft er Modelle auf, mit Plattformzugriff verwaltet er das Projekt ([API-Schlüssel](../console/api-keys.md)) |
 | Plattform-Schlüssel | `sk-kso-org-…`, ein Schlüssel, der eine ganze Organisation über die Platform API verwaltet. Er ruft nie Modelle auf |
-| Anbieter-Schlüssel | Der OpenAI- oder Anthropic-Schlüssel der Organisation, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
+| Anbieter-Schlüssel | Der Schlüssel der Organisation für einen Modellanbieter wie OpenAI oder Anthropic, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Secrets verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
 | Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus models.dev, und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast` |

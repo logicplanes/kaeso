@@ -378,6 +378,163 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/groq/include-reasoning-false": {
+    "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "include_reasoning"
+  },
+  "providers/groq/model-not-found": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "llama-3.3-70b-versatile",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/groq/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/groq/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-with-include-reasoning": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-reasoning-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-tools-system-role": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "openai/gpt-oss-20b",
+      "parallel_tool_calls": false,
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/groq/tools-system-role": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "openai/gpt-oss-20b",
+      "parallel_tool_calls": false,
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

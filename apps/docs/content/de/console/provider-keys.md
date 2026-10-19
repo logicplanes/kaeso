@@ -1,17 +1,23 @@
 ---
 title: Anbieter-Schlüssel
-description: Verbinden Sie die OpenAI- und Anthropic-Schlüssel Ihrer Organisation und wählen Sie, welche Projekte welchen nutzen.
+description: Verbinden Sie die Schlüssel Ihrer Organisation für Modellanbieter und wählen Sie, welche Projekte welchen nutzen.
 order: 3
 ---
 
-Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für OpenAI und Anthropic, die beiden Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
+Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
 
 ## Schlüssel hinzufügen
 
 1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**, oder **Verbinden** neben einem Anbieter, der noch keinen Schlüssel hat.
-2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie OpenAI oder Anthropic.
-3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`. Ein Anthropic-Schlüssel von console.anthropic.com beginnt mit `sk-ant-`.
+2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie den Anbieter.
+3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Die Tabelle unten nennt, woher die Schlüssel jedes Anbieters kommen.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
+
+| Anbieter | Schlüssel erstellen unter | Der Schlüssel beginnt mit |
+| --- | --- | --- |
+| OpenAI | platform.openai.com | `sk-` |
+| Anthropic | console.anthropic.com | `sk-ant-` |
+| Groq | console.groq.com | `gsk_` |
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

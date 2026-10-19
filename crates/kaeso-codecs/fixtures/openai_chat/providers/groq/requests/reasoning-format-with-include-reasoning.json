@@ -1,0 +1,11 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ],
+  "reasoning_format": "parsed",
+  "include_reasoning": true
+}
