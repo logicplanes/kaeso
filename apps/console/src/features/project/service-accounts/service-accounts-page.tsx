@@ -21,6 +21,8 @@ import { useProjectRights } from "~/auth/rights";
 import { useProjectGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
+import { compareNames } from "~/format/collate";
+import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
@@ -47,7 +49,7 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
     });
   };
 
-  const list = useMemo(() => [...(accounts.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)), [accounts.data]);
+  const list = useMemo(() => [...(accounts.data ?? [])].sort((a, b) => compareNames(a.name, b.name)), [accounts.data]);
   const keyCount = (id: string) => (keys.data ?? []).filter((k) => k.principal.kind === "service_account" && k.principal.id === id).length;
   const items = list.map((a) => {
     const n = keyCount(a.id);
@@ -102,6 +104,8 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
       <AppFrame.Body padding="list">
         {accounts.isPending ? (
           <List aria-label={t("project.serviceAccounts.title", "Service accounts")} items={[]} loading />
+        ) : accounts.isError ? (
+          <LoadFailed title={t("project.serviceAccounts.listFailed", "The service accounts couldn't load")} size="md" />
         ) : list.length === 0 ? (
           <Empty
             size="lg"

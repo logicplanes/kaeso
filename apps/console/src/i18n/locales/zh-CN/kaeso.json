@@ -184,6 +184,7 @@
   "kaeso.usage.errors": "错误",
   "kaeso.usage.inPeriod": "时段内用量",
   "kaeso.usage.input": "输入",
+  "kaeso.usage.lessThan": "低于 {amount}",
   "kaeso.usage.noCost": "此时段内无费用。",
   "kaeso.usage.noRequests": "此时段内无请求。",
   "kaeso.usage.noTokens": "此时段内无 Token。",

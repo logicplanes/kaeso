@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -55,32 +55,35 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   const setSearch = (patch: SearchPatch<UsersSearch>) => {
     void navigate({ to: "/settings/instance/users", search: patchSearch(search, patch, ["invite"]), replace: true });
   };
-  const rows = users.data?.pages.flatMap((p) => p.data) ?? [];
+  const rows = useMemo(() => users.data?.pages.flatMap((p) => p.data) ?? [], [users.data]);
 
-  const columns = [
-    col.custom(
-      { id: "name", header: t("common.name", "Name"), size: 232, priority: 1, grow: true },
-      (u: InstanceUserView) => u.name,
-      (_v, u) => (
-        <span className="flex min-w-0 items-center gap-8">
-          <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
-          <span className="truncate">{u.name}</span>
-          {u.is_instance_admin && <Badge>{t("instance.admin", "Admin")}</Badge>}
-        </span>
+  const columns = useMemo(
+    () => [
+      col.custom(
+        { id: "name", header: t("common.name", "Name"), size: 232, priority: 1, grow: true },
+        (u: InstanceUserView) => u.name,
+        (_v, u) => (
+          <span className="flex min-w-0 items-center gap-8">
+            <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
+            <span className="truncate">{u.name}</span>
+            {u.is_instance_admin && <Badge>{t("instance.admin", "Admin")}</Badge>}
+          </span>
+        ),
       ),
-    ),
-    col.text({ id: "email", header: t("common.email", "Email"), size: 192, priority: 2 }, (u: InstanceUserView) => u.email ?? ""),
-    col.custom(
-      { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
-      (u: InstanceUserView) => u.state,
-      (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
-    ),
-    col.custom(
-      { id: "created", header: t("common.created", "Created"), size: 136, priority: 3 },
-      (u: InstanceUserView) => u.created_at,
-      (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
-    ),
-  ];
+      col.text({ id: "email", header: t("common.email", "Email"), size: 192, priority: 2 }, (u: InstanceUserView) => u.email ?? ""),
+      col.custom(
+        { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
+        (u: InstanceUserView) => u.state,
+        (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
+      ),
+      col.custom(
+        { id: "created", header: t("common.created", "Created"), size: 136, priority: 3 },
+        (u: InstanceUserView) => u.created_at,
+        (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
+      ),
+    ],
+    [],
+  );
 
   return (
     <InstancePage

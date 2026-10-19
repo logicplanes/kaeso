@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppFrame } from "@logicplanes/kaeso-ui";
@@ -15,6 +16,11 @@ export function ProjectAuditLogPage({ org, project, search }: { org: string; pro
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const partyLabel = usePartyLabel(org, project);
   const base = `/orgs/${org}/projects/${project}`;
+  const targetHref = useCallback((kind: string, id: string) => (kind === "user" ? `${base}/members?member=${id}` : undefined), [base]);
+  const targetName = useCallback(
+    (kind: string, id: string) => (kind === "user" ? members.data?.find((m) => m.user.id === id)?.user.name : undefined),
+    [members.data],
+  );
   return (
     <>
       <ProjectHeader org={org} project={project} page={t("project.auditLog.title", "Audit log")} path="audit-log" />
@@ -25,8 +31,8 @@ export function ProjectAuditLogPage({ org, project, search }: { org: string; pro
           onSearch={(next) => void navigate({ to: "/orgs/$org/projects/$project/audit-log", params: { org, project }, search: next, replace: true })}
           partyLabel={partyLabel}
           actors={(members.data ?? []).map((m) => m.user)}
-          targetHref={(kind, id) => (kind === "user" ? `${base}/members?member=${id}` : undefined)}
-          targetName={(kind, id) => (kind === "user" ? members.data?.find((m) => m.user.id === id)?.user.name : undefined)}
+          targetHref={targetHref}
+          targetName={targetName}
         />
       </AppFrame.Body>
     </>

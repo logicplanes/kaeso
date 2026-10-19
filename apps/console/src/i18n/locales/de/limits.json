@@ -13,6 +13,7 @@
   "limits.keys": "Schlüssel",
   "limits.lastMinute": "Letzte Minute",
   "limits.level": "Ebene",
+  "limits.loadFailed": "Die Limits konnten nicht geladen werden",
   "limits.member": "Mitglied",
   "limits.memberOrAccount": "Mitglied oder Dienstkonto",
   "limits.membersAndAccounts": "Mitglieder und Dienstkonten",
