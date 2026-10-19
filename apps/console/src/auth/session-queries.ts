@@ -10,7 +10,7 @@ export const sessionQuery = queryOptions({
     setFormatTimeZone(who.timezone);
     return who;
   },
-  staleTime: 0,
+  staleTime: 5_000,
 });
 
 export const membershipsQuery = queryOptions({

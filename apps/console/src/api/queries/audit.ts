@@ -3,7 +3,7 @@ import { api, data } from "../client";
 import type { AuditEventView } from "../generated/types";
 import { endOfDay } from "~/format/period";
 import type { AuditFilters } from "./audit-search";
-import { nextPageParam } from "../paging";
+import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
 export type { AuditFilters, AuditSearch } from "./audit-search";
 
@@ -39,6 +39,7 @@ export const auditLogQuery = (scope: AuditScope, filters: AuditFilters) =>
         : data(await api.GET("/platform/v1/instance/audit-log", { params: { query }, signal }));
     },
     getNextPageParam: nextPageParam,
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
 export const auditEventQuery = (scope: AuditScope, event: string) =>

@@ -2,7 +2,7 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { endOfDay } from "~/format/period";
 import { api, data } from "../client";
 import type { LogEntryView, LogView } from "../generated/types";
-import { nextPageParam } from "../paging";
+import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
 const RANGE_MS: Record<LogRange, number> = { "1h": 3_600_000, "24h": 86_400_000, "7d": 7 * 86_400_000, "30d": 30 * 86_400_000 };
@@ -57,6 +57,7 @@ export const logsInfiniteQuery = (org: string, project: string, filters: LogFilt
       const after = nextPageParam(page);
       return after ? { after, from: page.from } : undefined;
     },
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
 export const newestLogsQuery = (org: string, project: string, filters: LogFilters) =>
@@ -76,4 +77,5 @@ export const logEntryQuery = (org: string, project: string, log: string) =>
     queryKey: ["orgs", org, "projects", project, "logs", "one", log],
     queryFn: async (): Promise<LogEntryView> =>
       data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/{log}", { params: { path: { org, project, log } } })),
+    staleTime: 5 * 60_000,
   });

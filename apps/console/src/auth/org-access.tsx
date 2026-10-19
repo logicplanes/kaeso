@@ -6,7 +6,7 @@ import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { toastApiError } from "~/api/toast-error";
 import { t } from "~/i18n";
-import { orgMembersQuery } from "~/api/queries/orgs";
+import { orgMembersQuery, orgViewKey } from "~/api/queries/orgs";
 import { useApiMutation } from "./mutation";
 import { eitherOf } from "./people";
 import { membershipsQuery, PROJECT_RIGHTS_KEY, sessionQuery, useMembership, useOrgRights } from "./session";
@@ -92,7 +92,7 @@ export function ScheduledForDeletion({ org, layout = "full" }: { org: string; la
   const members = useQuery({ ...orgMembersQuery(org), enabled: !canRestore && rights.has("members.view") });
   const restore = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/restore", { params: { path: { org } } })),
-    invalidates: [sessionQuery.queryKey, membershipsQuery.queryKey, ["orgs", org], PROJECT_RIGHTS_KEY],
+    invalidates: [sessionQuery.queryKey, membershipsQuery.queryKey, orgViewKey(org), PROJECT_RIGHTS_KEY],
     onSuccess: (o) => toast.success(t("auth.deletion.restored", "{org} restored", { org: o.name })),
   });
   const due = membership?.org_deletion_due_at ?? null;

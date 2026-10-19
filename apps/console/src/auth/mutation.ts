@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient, type QueryKey, type UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type InvalidateQueryFilters, type UseMutationOptions } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "~/shell/toast";
 import { toastApiError } from "~/api/toast-error";
 import { ApiError, isApiError } from "~/api/errors";
+import { invalidationFilters, type Invalidation } from "~/api/queries/invalidation";
 import { t } from "~/i18n";
 import { requestRecentSignIn } from "./recent-sign-in-store";
 import { forgetUserData } from "~/auth/user-data";
@@ -10,14 +11,15 @@ import { sessionQuery } from "./session";
 
 export interface ApiMutationOptions<TData, TVars> extends Omit<UseMutationOptions<TData, ApiError, TVars>, "mutationFn" | "onError"> {
   mutationFn: (vars: TVars) => Promise<TData>;
-  invalidates?: QueryKey[] | undefined;
+  invalidates?: Invalidation[] | ((vars: TVars) => Invalidation[]) | undefined;
   onError?: ((error: ApiError, vars: TVars) => void) | undefined;
 }
 
 export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, onSuccess, onError, ...rest }: ApiMutationOptions<TData, TVars>) {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const keys = invalidates ?? [];
+  const filtersFor = (vars: TVars): InvalidateQueryFilters[] =>
+    (typeof invalidates === "function" ? invalidates(vars) : (invalidates ?? [])).map(invalidationFilters);
   return useMutation<TData, ApiError, TVars>({
     ...rest,
     mutationFn: async (vars) => {
@@ -31,7 +33,7 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
       }
     },
     onSuccess: async (data, vars, ctx, mctx) => {
-      for (const queryKey of [...keys, ["audit-log"]]) void queryClient.invalidateQueries({ queryKey });
+      for (const filters of [...filtersFor(vars), { queryKey: ["audit-log"] }]) void queryClient.invalidateQueries(filters);
       await onSuccess?.(data, vars, ctx, mctx);
     },
     onError: async (error, vars) => {
@@ -48,7 +50,7 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
       }
       if (error.type === "recent_sign_in_required") return;
       if (error.status === 412) {
-        for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey });
+        for (const filters of filtersFor(vars)) void queryClient.invalidateQueries(filters);
         toastApiError(error, { description: t("auth.reloaded", "The latest version is loaded now.") });
         onError?.(error, vars);
         return;
