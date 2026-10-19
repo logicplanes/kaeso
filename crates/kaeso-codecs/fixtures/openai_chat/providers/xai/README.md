@@ -1,6 +1,6 @@
 # `fixtures/openai_chat/providers/xai`
 
-xAI, provider id `xai`, over its OpenAI-compatible Chat Completions API at `https://api.x.ai/v1/chat/completions`, with `authorization: Bearer`. xAI calls this API the predecessor of Responses, which is the provider's `generation` dialect; Chat is reached through a model's `egress_dialect`.
+SpaceX, provider id `xai`, over the xAI OpenAI-compatible Chat Completions API at `https://api.x.ai/v1/chat/completions`, with `authorization: Bearer`. xAI calls this API the predecessor of Responses, which is the provider's `generation` dialect; Chat is reached through a model's `egress_dialect`.
 
 Sources, read 2026-10-19:
 
