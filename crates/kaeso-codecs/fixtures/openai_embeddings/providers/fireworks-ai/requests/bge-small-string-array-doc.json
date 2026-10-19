@@ -1,0 +1,7 @@
+{
+  "model": "BAAI/bge-small-en-v1.5",
+  "input": [
+    "first sentence",
+    "second sentence"
+  ]
+}

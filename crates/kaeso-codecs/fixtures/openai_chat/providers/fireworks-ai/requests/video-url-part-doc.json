@@ -1,0 +1,20 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What happens in this video?"
+        },
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+          }
+        }
+      ]
+    }
+  ]
+}

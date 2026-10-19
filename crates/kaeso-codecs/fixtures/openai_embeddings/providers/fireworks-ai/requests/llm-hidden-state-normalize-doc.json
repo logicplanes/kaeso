@@ -1,0 +1,8 @@
+{
+  "model": "fireworks/gpt-oss-120b",
+  "input": [
+    "First chunk to embed",
+    "Second chunk to embed"
+  ],
+  "normalize": true
+}

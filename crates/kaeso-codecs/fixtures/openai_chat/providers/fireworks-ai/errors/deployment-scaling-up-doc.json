@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Deployment is currently scaled to zero and is scaling up. Please retry your request in a few minutes.",
+    "code": "DEPLOYMENT_SCALING_UP",
+    "type": "error"
+  }
+}

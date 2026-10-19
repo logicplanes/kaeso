@@ -1,0 +1,11 @@
+{
+  "model": "accounts/<account_id>/models/<model_id>",
+  "messages": [
+    {
+      "role": "user",
+      "content": "..."
+    }
+  ],
+  "include_routing_matrix": true,
+  "logprobs": true
+}

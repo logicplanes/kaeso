@@ -1,0 +1,33 @@
+{
+  "model": "accounts/fireworks/models/kimi-k3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Call the say tool with x=hi."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "say",
+        "description": "Echo text",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "required",
+  "chat_template_kwargs": {
+    "enable_thinking": false
+  }
+}

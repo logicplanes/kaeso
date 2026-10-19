@@ -1,0 +1,10 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3",
+  "service_tier": "priority",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ]
+}

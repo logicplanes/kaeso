@@ -1,0 +1,10 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 25 * 37? Show your work."
+    }
+  ],
+  "reasoning_effort": "medium"
+}
