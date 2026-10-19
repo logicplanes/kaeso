@@ -34,7 +34,10 @@ fn every_route_declares_exactly_one_access() {
         } else if rest == "me" || rest.starts_with("me/") {
             let public_ok =
                 matches!(rest, "me/email/confirm" | "me/email/cancel") && access == "public";
-            assert!(access == "session" || public_ok, "{route}: {access}");
+            assert!(
+                access == "session" || access == "account" || public_ok,
+                "{route}: {access}"
+            );
         } else if rest.starts_with("instance/") {
             assert_eq!(access, "instance_admin", "{route}");
         } else {

@@ -8,7 +8,11 @@ const ORG = "org_1";
 
 function client(rights: string[], instanceAdmin = false) {
   const c = new QueryClient();
-  c.setQueryData(sessionQuery.queryKey, { user: { is_instance_admin: instanceAdmin }, memberships: [{ org_id: ORG, rights }] } as unknown as WhoAmI);
+  c.setQueryData(sessionQuery.queryKey, {
+    user: { is_instance_admin: instanceAdmin },
+    can_administer_instance: instanceAdmin,
+    memberships: [{ org_id: ORG, rights }],
+  } as unknown as WhoAmI);
   const asked: unknown[] = [];
   vi.spyOn(c, "prefetchQuery").mockImplementation(async (o) => void asked.push(o.queryKey));
   vi.spyOn(c, "prefetchInfiniteQuery").mockImplementation(async (o) => void asked.push(o.queryKey));

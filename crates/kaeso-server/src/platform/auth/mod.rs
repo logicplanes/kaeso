@@ -11,7 +11,7 @@ pub mod signup;
 
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
-use kaeso_core::id::UserId;
+use kaeso_core::id::{OrgId, UserId};
 use kaeso_store::pg::users;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -125,6 +125,7 @@ fn signed_in_response(
             id: session,
             method: sign_in.method.as_str().to_owned(),
             second_factor: sign_in.second_factor,
+            sso_org: sign_in.oidc_org.map(OrgId::from_uuid),
             signed_in_at: sign_in.signed_in_at.min(ctx.now),
             last_used_at: ctx.now,
             expires_at: created.expires_at,

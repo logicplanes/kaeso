@@ -7,6 +7,8 @@ use utoipa::ToSchema;
 use crate::http::request_id;
 
 const RECENT_SIGN_IN: &str = "This action needs a sign-in from the last 15 minutes; sign in again.";
+const OTHER_SIGN_IN: &str =
+    "You signed in with SSO; sign in with your password or a sign-in link to do this.";
 const ORG_READ_ONLY: &str =
     "This organization is scheduled for deletion; nothing in it can be changed.";
 
@@ -28,6 +30,8 @@ pub enum ApiError {
     },
     #[error("{RECENT_SIGN_IN}")]
     RecentSignInRequired,
+    #[error("{OTHER_SIGN_IN}")]
+    OtherSignInRequired,
     #[error("{0}")]
     NotFound(String),
     #[error("{0}")]
@@ -91,6 +95,7 @@ impl ApiError {
             ApiError::Authentication(_) => "authentication",
             ApiError::PermissionDenied(_) | ApiError::MissingRight { .. } => "permission_denied",
             ApiError::RecentSignInRequired => "recent_sign_in_required",
+            ApiError::OtherSignInRequired => "other_sign_in_required",
             ApiError::NotFound(_) => "not_found",
             ApiError::Conflict(_) | ApiError::Stale(_) => "conflict",
             ApiError::OrgScheduledForDeletion => "org_scheduled_for_deletion",
@@ -108,7 +113,8 @@ impl ApiError {
             ApiError::Authentication(_) => StatusCode::UNAUTHORIZED,
             ApiError::PermissionDenied(_)
             | ApiError::MissingRight { .. }
-            | ApiError::RecentSignInRequired => StatusCode::FORBIDDEN,
+            | ApiError::RecentSignInRequired
+            | ApiError::OtherSignInRequired => StatusCode::FORBIDDEN,
             ApiError::NotFound(_) => StatusCode::NOT_FOUND,
             ApiError::MethodNotAllowed(_) => StatusCode::METHOD_NOT_ALLOWED,
             ApiError::Conflict(_) | ApiError::OrgScheduledForDeletion => StatusCode::CONFLICT,
@@ -133,7 +139,9 @@ pub struct ErrorEnvelope {
 #[schema(description = "An error.")]
 pub struct ErrorBody {
     #[doc = "One of `invalid_request`, `authentication`, `permission_denied`,\n\
-        `recent_sign_in_required`, `not_found`, `conflict`,\n\
+        `recent_sign_in_required`, `other_sign_in_required` (a session from an\n\
+        organization's SSO can't do this; sign in another way), `not_found`,\n\
+        `conflict`,\n\
         `org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n\
         `unavailable`, `provider_error` (only the Playground's model\n\
         requests), `internal`."]
@@ -178,6 +186,7 @@ impl IntoResponse for ApiError {
                 ..
             } => (message, None, retry_after),
             ApiError::RecentSignInRequired => (RECENT_SIGN_IN.to_owned(), None, None),
+            ApiError::OtherSignInRequired => (OTHER_SIGN_IN.to_owned(), None, None),
             ApiError::OrgScheduledForDeletion => (ORG_READ_ONLY.to_owned(), None, None),
             ApiError::Internal(cause) => {
                 tracing::error!(error = %cause, "internal error");

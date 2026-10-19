@@ -314,7 +314,7 @@ async fn without_an_invite_or_default_role_there_is_no_access() {
 }
 
 #[tokio::test]
-async fn sso_signs_in_existing_accounts_only_where_they_are_members() {
+async fn sso_signs_in_existing_accounts_once_linked_and_only_where_they_are_members() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -342,8 +342,7 @@ async fn sso_signs_in_existing_accounts_only_where_they_are_members() {
     };
 
     let r = sign_in().await;
-    assert!(location(&r).contains("sso_error="), "{}", location(&r));
-    assert!(r.cookie().is_none());
+    refused_with(&r, LINK_REQUIRED);
 
     let token_hash = kaeso_core::secret::hash("eve-invite");
     kaeso_store::pg::invites::insert(
@@ -359,6 +358,17 @@ async fn sso_signs_in_existing_accounts_only_where_they_are_members() {
             invited_by: None,
             expires_at: app.clock.now() + time::Duration::days(21),
         },
+    )
+    .await
+    .unwrap();
+    refused_with(&sign_in().await, LINK_REQUIRED);
+    kaeso_store::pg::sso_identities::link(
+        &app.state.pg,
+        org.uuid(),
+        eve.uuid(),
+        idp.issuer(),
+        "sub-eve@acme.example",
+        app.clock.now(),
     )
     .await
     .unwrap();
@@ -906,5 +916,340 @@ async fn a_refusal_after_the_provider_keeps_the_org_of_its_sign_in_link() {
         to.starts_with(&format!("{ORIGIN}/sign-in?next=%2Forgs#sso_error=")),
         "a link without an org sends none back: {to}"
     );
+    s.cleanup().await;
+}
+
+async fn sso_as(app: &App, idp: &MockIdp, org: &str, subject: &str, email: &str) -> common::Resp {
+    let flow = start(app, json!({ "org": org })).await;
+    let auth = idp.authorize_as(&flow.url, subject, email, "Someone");
+    callback(app, &auth.code, &auth.state, Some(&flow.binding)).await
+}
+
+async fn link_account(
+    app: &App,
+    idp: &MockIdp,
+    cookie: &str,
+    org: &str,
+    subject: &str,
+    email: &str,
+) -> common::Resp {
+    let r = app
+        .post(
+            "/me/sso-links",
+            json!({ "org": org, "next": "/settings/account/security" }),
+            Some(cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let binding = r.set_cookie("__Host-kaeso_oidc").unwrap();
+    let auth = idp.authorize_as(
+        r.body["authorization_url"].as_str().unwrap(),
+        subject,
+        email,
+        "Someone",
+    );
+    callback(app, &auth.code, &auth.state, Some(&binding)).await
+}
+
+async fn set_default_role(app: &App, org: &str, preset: &str) {
+    sqlx::query("UPDATE organizations SET sso_default_preset = $1 WHERE id = $2")
+        .bind(preset)
+        .bind(common::uuid(org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+}
+
+async fn links(app: &App) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM sso_identities")
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap()
+}
+
+fn refused_with(r: &common::Resp, reason: &str) {
+    let to = location(r);
+    let wanted = urlencode(reason).replace('+', "%20");
+    assert!(to.contains(&format!("sso_error={wanted}")), "{to}");
+    assert!(r.cookie().is_none(), "{to}");
+}
+
+const LINK_REQUIRED: &str =
+    "Your account isn't linked to this SSO; sign in another way and link it under Account.";
+
+#[tokio::test]
+async fn an_orgs_sso_never_signs_in_an_account_by_its_address_alone() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let evil = another_org(&app, "Evil").await;
+    connect_org(&app, &evil, &idp, "example.com", None, false).await;
+    set_default_role(&app, &evil, "admin").await;
+
+    let r = sso_as(&app, &idp, &evil, "sub-anyone", "owner@example.com").await;
+    refused_with(&r, LINK_REQUIRED);
+    let joined: i64 = sqlx::query_scalar("SELECT count(*) FROM org_memberships WHERE org_id = $1")
+        .bind(common::uuid(&evil))
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(joined, 0);
+
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    sqlx::query("UPDATE users SET email = 'owner@acme.example'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let r = sso_as(
+        &app,
+        &idp,
+        &owner.org_id,
+        "sub-anyone",
+        "owner@acme.example",
+    )
+    .await;
+    refused_with(&r, LINK_REQUIRED);
+    assert_eq!(links(&app).await, 0);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_linked_account_signs_in_through_its_identity_and_only_its_own_org() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+
+    let r = link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    assert_eq!(location(&r), format!("{ORIGIN}/settings/account/security"));
+    assert!(
+        r.cookie().is_none(),
+        "linking keeps the session it began in"
+    );
+    let listed = app.get("/me/sso-links", &owner.cookie).await;
+    assert_eq!(listed.body["data"][0]["org_name"], "Acme");
+    assert_eq!(listed.body["data"][0]["linked"], true);
+
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example").await;
+    let sso = r.cookie().expect("signed in through the link");
+    let who = app.get("/auth/session", &sso).await;
+    assert_eq!(who.body["user"]["email"], "owner@example.com");
+    assert_eq!(who.body["session"]["sso_org"], owner.org_id.as_str());
+    assert_eq!(who.body["user"]["is_instance_admin"], true);
+    assert_eq!(who.body["can_administer_instance"], false);
+    assert_eq!(who.body["can_create_orgs"], false);
+    let r = app.get("/instance/users", &sso).await;
+    assert_eq!(
+        (r.status, r.error_type()),
+        (StatusCode::FORBIDDEN, "other_sign_in_required")
+    );
+    let r = app.get(&format!("/orgs/{}", owner.org_id), &sso).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let who = app.get("/auth/session", &owner.cookie).await;
+    assert_eq!(who.body["can_administer_instance"], true);
+    assert_eq!(who.body["session"]["sso_org"], serde_json::Value::Null);
+
+    let r = sso_as(
+        &app,
+        &idp,
+        &owner.org_id,
+        "sub-impostor",
+        "owner@example.com",
+    )
+    .await;
+    assert!(location(&r).contains("sso_error="), "{}", location(&r));
+    assert!(r.cookie().is_none());
+
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@example.com", "role": "member" }),
+        "Eve",
+    )
+    .await;
+    let r = link_account(
+        &app,
+        &idp,
+        &eve,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    assert!(
+        location(&r).starts_with(&format!(
+            "{ORIGIN}/settings/account/security#sso_error=This%20SSO%20identity%20is%20already%20linked"
+        )),
+        "{}",
+        location(&r)
+    );
+    let r = app
+        .post("/me/sso-links", json!({ "org": owner.org_id }), Some(&sso))
+        .await;
+    assert_eq!(r.error_type(), "other_sign_in_required");
+    app.clock.advance(time::Duration::minutes(16));
+    let r = app
+        .post("/me/sso-links", json!({ "org": owner.org_id }), Some(&eve))
+        .await;
+    assert_eq!(r.error_type(), "recent_sign_in_required");
+
+    let r = app
+        .call(
+            axum::http::Method::DELETE,
+            &format!("/me/sso-links/{}", owner.org_id),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example").await;
+    assert!(r.cookie().is_none(), "{}", location(&r));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+    let beta = another_org(&app, "Beta").await;
+
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
+    let ada = r.cookie().expect("a new account");
+    let who = app.get("/auth/session", &ada).await;
+    let ada_id: kaeso_core::id::UserId = who.body["user"]["id"].as_str().unwrap().parse().unwrap();
+    let mut tx = app.state.pg.begin().await.unwrap();
+    kaeso_server::services::orgs::add_member(
+        &mut tx,
+        beta.parse().unwrap(),
+        ada_id,
+        &kaeso_store::pg::members::Grant {
+            preset: "member".into(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    let who = app.get("/auth/session", &ada).await;
+    let access: std::collections::HashMap<String, String> = who.body["memberships"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| {
+            (
+                m["org_id"].as_str().unwrap().to_owned(),
+                m["access"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    assert_eq!(access[&owner.org_id], "ok");
+    assert_eq!(access[&beta], "needs_other_sign_in");
+    assert_eq!(
+        app.get(&format!("/orgs/{}", owner.org_id), &ada)
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let r = app.get(&format!("/orgs/{beta}"), &ada).await;
+    assert_eq!(
+        (r.status, r.error_type()),
+        (StatusCode::FORBIDDEN, "other_sign_in_required")
+    );
+    for path in ["/me", "/me/sso-links", "/me/keys", "/auth/sessions"] {
+        assert_eq!(app.get(path, &ada).await.status, StatusCode::OK, "{path}");
+    }
+    for (method, path, body) in [
+        (
+            axum::http::Method::POST,
+            "/me/email".to_owned(),
+            Some(json!({ "email": "ada@else.example" })),
+        ),
+        (
+            axum::http::Method::POST,
+            "/me/password".to_owned(),
+            Some(json!({ "new_password": "another long password" })),
+        ),
+        (axum::http::Method::POST, "/me/totp".to_owned(), None),
+        (
+            axum::http::Method::POST,
+            "/me/orgs".to_owned(),
+            Some(json!({ "name": "Mine" })),
+        ),
+        (
+            axum::http::Method::DELETE,
+            format!("/me/memberships/{beta}"),
+            None,
+        ),
+        (axum::http::Method::DELETE, "/me".to_owned(), None),
+    ] {
+        let r = app.call(method.clone(), &path, body, Some(&ada)).await;
+        assert_eq!(
+            (r.status, r.error_type()),
+            (StatusCode::FORBIDDEN, "other_sign_in_required"),
+            "{method} {path}"
+        );
+    }
+    let r = app
+        .call(
+            axum::http::Method::PATCH,
+            "/me",
+            Some(json!({ "name": "Ada L." })),
+            Some(&ada),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn accounts_an_orgs_sso_created_before_links_existed_link_at_their_next_sign_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-lin", "lin@acme.example").await;
+    assert!(r.cookie().is_some());
+    sqlx::query("DELETE FROM sso_identities")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let migration =
+        include_str!("../../kaeso-store/migrations/postgres/20261019120000_sso_identities.sql");
+    let backfill = &migration[migration.find("INSERT INTO sso_identities").unwrap()..];
+    sqlx::raw_sql(sqlx::AssertSqlSafe(backfill.to_owned()))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let pending: (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT issuer, subject FROM sso_identities")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(pending, (None, None));
+
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-lin", "lin@acme.example").await;
+    assert!(r.cookie().is_some(), "the first sign-in completes the link");
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-other", "lin@acme.example").await;
+    refused_with(&r, LINK_REQUIRED);
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-lin", "lin@acme.example").await;
+    assert!(r.cookie().is_some());
     s.cleanup().await;
 }

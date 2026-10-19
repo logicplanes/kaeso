@@ -9,7 +9,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::auth::sessions::{self, IDLE_LIFETIME};
-use crate::platform::access::{Ctx, PolicyGap, policy_gap};
+use crate::platform::access::{Ctx, PolicyGap, from_sso, policy_gap};
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{RoleRef, org_from_store};
@@ -48,8 +48,9 @@ pub struct Membership {
         `orgs/{org}/projects/{project}/my-rights`."]
     pub project_rights: Vec<&'static str>,
     #[doc = "Whether this session may use the org: `ok`, `needs_2fa` (set up TOTP\n\
-        and sign in with it) or `needs_sso` (sign in through the org's\n\
-        identity provider)."]
+        and sign in with it), `needs_sso` (sign in through the org's\n\
+        identity provider) or `needs_other_sign_in` (this session came from\n\
+        another org's SSO; sign in with a password or a sign-in link)."]
     #[schema(example = "ok")]
     pub access: &'static str,
 }
@@ -68,8 +69,11 @@ pub struct WhoAmI {
     #[doc = "Whether the user may create organizations (`POST me/orgs`): always\n\
         for instance admins; for everyone else as the instance setting\n\
         `org_creation` says, by their email domain when it is\n\
-        `allowed_domains`."]
+        `allowed_domains`. Never from a session that came from an org's SSO."]
     pub can_create_orgs: bool,
+    #[doc = "Whether this session may use `instance/*`: the user is an instance\n\
+        admin and didn't sign in through an org's SSO."]
+    pub can_administer_instance: bool,
     #[doc = "Whether orgs can be deleted on this instance, and how long a deletion\n\
         waits."]
     pub org_deletion: OrgDeletionPolicy,
@@ -112,6 +116,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
             let grant = org_from_store(&stored)?;
             let access = match policy_gap(session, m.org_id, m.require_sso, m.require_2fa) {
                 Some(PolicyGap::NeedsSso) => "needs_sso",
+                Some(PolicyGap::NeedsOtherSignIn) => "needs_other_sign_in",
                 Some(PolicyGap::Needs2fa) => "needs_2fa",
                 None => "ok",
             };
@@ -149,13 +154,16 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
             id: SessionId::from_uuid(session.id),
             method: session.method.clone(),
             second_factor: session.second_factor,
+            sso_org: session.oidc_org_id.map(OrgId::from_uuid),
             signed_in_at: session.signed_in_at,
             last_used_at: session.last_used_at,
             expires_at: session.expires_at,
         },
         memberships,
-        can_create_orgs: crate::services::accounts::policy(&instance)
-            .may_create_orgs(session.is_instance_admin, user.email.as_deref()),
+        can_create_orgs: !from_sso(session)
+            && crate::services::accounts::policy(&instance)
+                .may_create_orgs(session.is_instance_admin, user.email.as_deref()),
+        can_administer_instance: session.is_instance_admin && !from_sso(session),
         locale: crate::platform::me::profile::UserLocale::from_stored(
             users::get_locale(&state.pg, user.id).await?.as_deref(),
         ),
@@ -230,6 +238,7 @@ pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Ses
                     id: SessionId::from_uuid(r.id),
                     method: r.method,
                     second_factor: r.second_factor,
+                    sso_org: r.oidc_org_id.map(OrgId::from_uuid),
                     signed_in_at: r.signed_in_at,
                     last_used_at: r.last_used_at,
                     expires_at: r.expires_at,

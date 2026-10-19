@@ -90,7 +90,7 @@ impl Modify for Components {
             ),
             (
                 "Forbidden",
-                "The caller lacks the right, the org requires 2FA or SSO, or a recent sign-in is needed (`permission_denied`, `recent_sign_in_required`).",
+                "The caller lacks the right, the org requires 2FA or SSO, a recent sign-in is needed, or a session from an organization's SSO can't do this (`permission_denied`, `recent_sign_in_required`, `other_sign_in_required`).",
             ),
             (
                 "NotFound",

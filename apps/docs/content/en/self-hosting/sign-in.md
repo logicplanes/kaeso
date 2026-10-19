@@ -33,9 +33,12 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 - Only addresses at the connection's email domains. Each domain belongs to one organization on an install.
 - Only addresses the provider doesn't mark as unverified.
-- Someone new to Kaeso joins the organization with an invitation to their address, or with the connection's role for people without one. Without either, they get no access.
-- An existing account signs in through single sign-on only where it already is a member. To accept an invitation, it signs in another way first.
+- Someone new to Kaeso joins the organization with an invitation to their address, or with the connection's role for people without one. Without either, they get no access. Kaeso creates their account even where the [account creation setting](../console/instance-administration.md#change-install-settings) allows no sign-ups, because the organization's provider vouches for them.
+- Kaeso links each account to its identity at the provider, the provider's issuer and subject. Later sign-ins follow that link, not the email address.
+- An existing account signs in through single sign-on only once its owner links it, from **Account** › **Security** after signing in another way ([link single sign-on](../console/account.md#link-single-sign-on)), and only where it is a member. To accept an invitation, it signs in another way first.
 - An address at another domain, such as a public mail provider's, can't sign in through the organization's provider, not even with an invitation.
+
+A sign-in through an organization's provider opens only that organization, and reads the person's own account. Other organizations, instance administration and changes to the account's email, password and two-factor authentication need another sign-in ([after signing in through single sign-on](../console/account.md#after-signing-in-through-single-sign-on)).
 
 Don't add a public mail provider's domain to a connection to let such people in. Every address at that domain would then sign in through your provider, and no other organization could use the domain.
 
@@ -53,7 +56,10 @@ services:
 
 1. Give the first admin an address at a domain the identity provider will cover, so they can sign in through it later.
 2. Open the setup link. The setup page asks for no password, and then opens the organization's **Security** page.
-3. Connect the identity provider in the same session, and sign in through it once to check it works.
+3. Connect the identity provider in the same session.
+4. Under **Account** › **Security**, choose **Link** next to the organization, and sign in at the provider. That links your account and checks the connection works.
+
+A sign-in through single sign-on doesn't administer the instance. For instance administration, sign in with a [one-time sign-in link](#get-back-in) from the server.
 
 > [!IMPORTANT]
 > Leave **Require single sign-on** off until the connection works. On an install without passwords it adds nothing, and it refuses every other session, including one from an operator's sign-in link.

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, method, second_factor, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2 AND last_used_at > $3 ORDER BY id DESC",
+  "query": "SELECT id, method, second_factor, oidc_org_id, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2 AND last_used_at > $3 ORDER BY id DESC",
   "describe": {
     "columns": [
       {
@@ -38,6 +38,17 @@
       },
       {
         "ordinal": 3,
+        "name": "oidc_org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sessions",
+            "name": "oidc_org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -48,7 +59,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "signed_in_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "last_used_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "ip",
         "type_info": "Inet",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "user_agent",
         "type_info": "Text",
         "origin": {
@@ -114,6 +125,7 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       false,
@@ -122,5 +134,5 @@
       true
     ]
   },
-  "hash": "37ca6b1e6fdbd4e092d18dc2d598a67963bae86ab6db53172a871cb4c6d70f4f"
+  "hash": "b82b0d19a7c6664d98c35c12ff4a01e7f7e2abfbd3a3c30d39d0bc3ef2fa1ae5"
 }

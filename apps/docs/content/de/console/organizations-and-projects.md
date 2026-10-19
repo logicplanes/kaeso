@@ -50,7 +50,7 @@ Nach dem Verbinden zeigt die Seite zwei Adressen:
 
 **Single Sign-on bearbeiten** ändert die Verbindung, und ein leeres Client-Secret behält das gespeicherte. **Trennen** entfernt sie, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 
-Ein bestehendes Kaeso-Konto kommt über Single Sign-on nur in Organisationen, denen es schon angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
+Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)), und nur, wenn das Konto der Organisation angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
 
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
@@ -59,7 +59,7 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 | Einstellung | Wirkung |
 | --- | --- |
 | Single Sign-on verlangen | Mitglieder gelangen nur über den Identitätsanbieter in die Organisation. Ihre anderen Sitzungen gelten weiter für ihre übrigen Organisationen. Setzt einen verbundenen Anbieter voraus |
-| Zwei-Faktor-Authentifizierung verlangen | Wer sich mit Passwort anmeldet, braucht Zwei-Faktor-Authentifizierung. Anmeldelinks und Single Sign-on brauchen sie nicht |
+| Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit Passwort und einem Code aus ihrer Authenticator-App. Ein Anmeldelink reicht nicht; eine Anmeldung über den eigenen Identitätsanbieter der Organisation schon |
 | Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und ein Projekt kann ein kürzeres Limit setzen |
 
 Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole warnt Sie vor dem Speichern. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.

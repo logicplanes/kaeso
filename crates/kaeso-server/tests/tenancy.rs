@@ -1160,14 +1160,13 @@ async fn orgs_requiring_two_factor_close_their_routes_to_password_sessions_witho
         StatusCode::OK
     );
     let r = app
-        .call(
-            Method::PUT,
-            &format!("/orgs/{}/security/require-sso", owner.org_id),
-            Some(json!({ "enabled": true })),
-            Some(&owner.cookie),
-        )
+        .get(&format!("/orgs/{}", owner.org_id), &owner.cookie)
         .await;
-    assert_eq!(r.status, StatusCode::CONFLICT);
+    assert_eq!(
+        r.status,
+        StatusCode::FORBIDDEN,
+        "the setup session has no second factor either"
+    );
     s.cleanup().await;
 }
 

@@ -24,6 +24,7 @@ pub mod projects;
 pub mod roles;
 pub mod service_accounts;
 pub mod sessions;
+pub mod sso_identities;
 pub mod tokens;
 pub mod totp;
 pub mod updates;

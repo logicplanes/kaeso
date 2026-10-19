@@ -10,6 +10,7 @@ import { orgOwnersQuery, orgViewKey } from "~/api/queries/orgs";
 import { useApiMutation } from "./mutation";
 import { eitherOf } from "./people";
 import { membershipsQuery, PROJECT_RIGHTS_KEY, sessionQuery, useMembership, useOrgRights } from "./session";
+import { requestRecentSignIn } from "./recent-sign-in-store";
 import { here, startSso } from "./sign-in-api";
 
 export function NeedsTwoFactor({ orgName }: { orgName: string }) {
@@ -51,6 +52,30 @@ export function NeedsSso({ org, orgName }: { org: string; orgName: string }) {
           actions={
             <Button variant="primary" loading={start.isPending} onClick={() => start.mutate()}>
               {t("auth.continueWithSso", "Continue with SSO")}
+            </Button>
+          }
+        />
+      </AppFrame.Body>
+    </>
+  );
+}
+
+export function NeedsOtherSignIn({ orgName }: { orgName: string }) {
+  const queryClient = useQueryClient();
+  const signIn = async () => {
+    if (await requestRecentSignIn("without-sso")) await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
+  };
+  return (
+    <>
+      <PageHeader start={<AppFrame.MenuButton />} title={orgName} />
+      <AppFrame.Body>
+        <Empty
+          size="lg"
+          title={t("auth.otherSignIn.title", "Sign in another way to open {org}", { org: orgName })}
+          description={t("auth.otherSignIn.description", "Your SSO sign-in opens only its own organization; sign in with your password or an email link.")}
+          actions={
+            <Button variant="primary" onClick={() => void signIn()}>
+              {t("auth.otherSignIn.action", "Sign in another way")}
             </Button>
           }
         />
