@@ -48,7 +48,9 @@ async fn visible(
             continue;
         }
         if let Some(eff) = crate::services::catalogue::effective(state, entry) {
-            out.push(info(state, &entry.model_id, entry, &eff));
+            let name =
+                crate::services::catalogue::request_name(entry, &models.entries, &models.aliases);
+            out.push(info(state, &name, entry, &eff));
             listed.push((entry, eff));
         }
     }
