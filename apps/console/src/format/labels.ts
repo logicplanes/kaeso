@@ -39,7 +39,7 @@ const PROVIDERS: Record<string, string> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   deepseek: "DeepSeek",
-  xai: "xAI",
+  xai: "SpaceX",
   togetherai: "Together AI",
   groq: "Groq",
   openrouter: "OpenRouter",

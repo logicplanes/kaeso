@@ -145,7 +145,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | Text | `https://api.openai.com` | Basis-URL der OpenAI-API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | Text | `https://api.anthropic.com` | Basis-URL der Anthropic-API. |
 | `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | Text | `https://api.deepseek.com` | Basis-URL der API von DeepSeek. |
-| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | Text | `https://api.x.ai` | Basis-URL der API von xAI. |
+| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | Text | `https://api.x.ai` | Basis-URL der API von SpaceX. |
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | Text | `https://api.together.ai` | Basis-URL der Together-AI-API. |
 | `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | Text | `https://api.groq.com/openai` | Basis-URL der API von Groq. |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | Text | `https://openrouter.ai/api` | Basis-URL der API von OpenRouter. |

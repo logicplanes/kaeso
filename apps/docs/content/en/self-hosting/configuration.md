@@ -145,7 +145,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | text | `https://api.anthropic.com` | Base URL of the Anthropic API. |
 | `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | text | `https://api.deepseek.com` | Base URL of the DeepSeek API. |
-| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | text | `https://api.x.ai` | Base URL of the xAI API. |
+| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | text | `https://api.x.ai` | Base URL of the SpaceX API. |
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | text | `https://api.together.ai` | Base URL of the Together AI API. |
 | `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | text | `https://api.groq.com/openai` | Base URL of the Groq API. |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | text | `https://openrouter.ai/api` | Base URL of the OpenRouter API. |
