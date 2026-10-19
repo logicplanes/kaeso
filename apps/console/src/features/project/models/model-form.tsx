@@ -29,7 +29,9 @@ const PROVIDER_DIALECTS: Record<string, string[]> = {
   anthropic: ["anthropic_messages"],
   deepseek: ["openai_chat"],
   xai: ["openai_responses", "openai_chat"],
+  togetherai: ["openai_chat", "openai_embeddings"],
 };
+export const providerDialects = (provider: string) => PROVIDER_DIALECTS[provider] ?? DIALECT_IDS;
 
 const INPUTS = ["text", "image", "pdf", "audio", "video"];
 const OUTPUTS = ["text", "image", "audio", "embedding"];
@@ -200,7 +202,7 @@ export function ModelForm({ value, onChange, provider }: { value: FieldDraft; on
         placeholder={t("models.chooseFormat", "Choose a format")}
         value={value.egress_dialect || null}
         onValueChange={(v) => set({ egress_dialect: v })}
-        options={(PROVIDER_DIALECTS[provider] ?? DIALECT_IDS).map((d) => ({ value: d, label: dialectLabel(d) }))}
+        options={providerDialects(provider).map((d) => ({ value: d, label: dialectLabel(d) }))}
       />
       <div className="flex flex-col gap-12">
         <Switch label={t("models.cap.tools", "Tool calling")} checked={value.tool_call} onCheckedChange={(tool_call) => set({ tool_call })} />
