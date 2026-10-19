@@ -272,12 +272,14 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                 Some(Ok(bytes)) => {
                     let events = decoder.feed(&bytes);
                     app.progress.count(&events);
+                    let mut failed = false;
                     for e in &events {
                         if let StreamEvent::Error(err) = e {
                             broken.get_or_insert_with(|| Broken::event(err));
+                            failed = true;
                         }
                     }
-                    (events, false)
+                    (events, failed)
                 }
                 Some(Err(e)) => {
                     count_upstream_error(

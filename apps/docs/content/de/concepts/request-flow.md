@@ -96,6 +96,8 @@ Sind die Header eines Streams gesendet, kann sich sein Status nicht mehr ändern
 | Der Anbieter schweigt länger als das Leerlauf-Zeitlimit | 504 | `timeout` |
 | KPP kann ein Event nicht für die App codieren | Der Status des Fehlers, sonst 500 | Die Art des Fehlers |
 
+Nach einem Fehler-Event des Anbieters hört Kaeso auf zu lesen und schließt die Anfrage beim Anbieter, sodass der Anbieter aufhört zu generieren.
+
 Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives und die Zeit bis zu den ersten Bytes. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
 ## Verbindungsabbrüche
