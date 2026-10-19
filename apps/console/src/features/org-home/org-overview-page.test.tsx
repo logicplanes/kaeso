@@ -143,7 +143,7 @@ describe("organization overview", () => {
     signedIn({ projects: many });
     on("GET", "orgs/:org/members", page([member()]));
     on("GET", "orgs/:org/projects/:project/service-accounts", ({ params }: { params: Record<string, string> }) =>
-      page(params.project === "proj_2" ? [serviceAccount()] : []),
+      page(params.project === "proj_2" ? [serviceAccount()] : [serviceAccount({ id: `sa_${params.project}`, name: "Unused" })]),
     );
     usage({ member: wrap([usageRow("user:usr_ada", { requests: 5 }), usageRow("service_account:sa_bot", { requests: 2 })]) });
     await renderApp(`/orgs/${ORG}?${PERIOD}&by=member`);
