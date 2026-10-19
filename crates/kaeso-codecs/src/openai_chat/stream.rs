@@ -222,6 +222,14 @@ impl ChatStreamDecoder {
             {
                 self.base = Some(start_envelope(start));
             }
+            let response_id = self
+                .base
+                .as_ref()
+                .map(|b| env_text(b, "id"))
+                .unwrap_or_default();
+            for event in &mut events {
+                give_call_an_id(event, &response_id);
+            }
             if let (Some(env), Some(base)) = (&held.env, &self.base)
                 && let Some(Value::Object(form)) = events
                     .iter_mut()
@@ -275,6 +283,15 @@ impl ChatStreamDecoder {
         let plain = event.event.is_none() && !(framing.is_some() && event.data == "[DONE]");
         if !plain || self.done || event.data.is_empty() {
             self.extra(crate::sse::frame_extra(&event), out);
+            return;
+        }
+        if event.data == "[DONE]" && !self.finished {
+            self.fail(
+                out,
+                KppError::provider(
+                    "The provider's OpenAI Chat Completions stream ended before the response was complete.",
+                ),
+            );
             return;
         }
         if event.data == "[DONE]" {
@@ -506,6 +523,13 @@ impl ChatStreamDecoder {
             ));
         }
         nulls_to_verbatim(&mut extra, &mut verbatim);
+        let mut finish_reason = known.finish_reason;
+        if finish_reason.as_deref() == Some("") {
+            finish_reason = None;
+            if let Ok(empty) = RawJson::from_string("\"\"".to_owned()) {
+                verbatim.insert("finish_reason".to_owned(), empty);
+            }
+        }
         if !verbatim.is_empty() {
             form.insert("cv".to_owned(), obj_value(&verbatim));
         }
@@ -563,7 +587,7 @@ impl ChatStreamDecoder {
         for entry in &delta.tool_calls {
             self.tool_entry(entry, events)?;
         }
-        Ok(known.finish_reason)
+        Ok(finish_reason)
     }
 
     fn tool_entry(&mut self, raw: &RawJson, events: &mut Vec<StreamEvent>) -> Result<(), KppError> {
@@ -784,6 +808,39 @@ impl ChatStreamDecoder {
             }
             tool.complete |= complete;
         }
+    }
+}
+
+fn give_call_an_id(event: &mut StreamEvent, response_id: &str) {
+    let StreamEvent::BlockStart(start) = event else {
+        return;
+    };
+    let BlockHeader::ToolCall(header) = &mut start.block else {
+        return;
+    };
+    if !header.id.is_empty() {
+        return;
+    }
+    header.id = generated_call_id(response_id, start.index);
+    let mut tc = match start.extras.form.shift_remove(FORM_TOOL_CALL) {
+        Some(Value::Object(tc)) => tc,
+        _ => Map::new(),
+    };
+    if tc.get("no_id") != Some(&Value::Bool(true)) {
+        tc.entry("id").or_insert(Value::String(String::new()));
+    }
+    start
+        .extras
+        .form
+        .insert(FORM_TOOL_CALL.to_owned(), Value::Object(tc));
+}
+
+pub(crate) fn generated_call_id(scope: &str, index: impl std::fmt::Display) -> String {
+    let scope: String = scope.chars().filter(char::is_ascii_alphanumeric).collect();
+    if scope.is_empty() {
+        format!("call_kaeso_{index}")
+    } else {
+        format!("call_kaeso_{scope}_{index}")
     }
 }
 
