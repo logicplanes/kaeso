@@ -189,6 +189,7 @@ writeFileSync(
       semantic: t.semantic,
       dangerFill: t.dangerFill,
       viz: t.viz,
+      providerMark: resolve(t.providerMark),
       tokenKindSeries: t.tokenKindSeries,
       tokenKindTint: t.tokenKindTint,
       type: t.type,
