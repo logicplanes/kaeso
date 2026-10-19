@@ -129,7 +129,7 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
             ("/v1/models", Some("after_id=claude-haiku-4-5-20251001"))
         ]
     );
-    let o = env.capture.all().pop().unwrap();
+    let o = env.outcomes().await.pop().unwrap();
     assert_eq!(o.status, 404);
     assert_eq!(o.error_kind.as_deref(), Some("not_found"));
     assert_eq!(
@@ -155,7 +155,7 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
         body["error"]["message"],
         unserved_message("OpenAI", UNSERVED_GPT)
     );
-    let o = env.capture.all().pop().unwrap();
+    let o = env.outcomes().await.pop().unwrap();
     assert_eq!(o.error_message.as_deref(), Some(OPENAI_NOT_FOUND));
 
     let mut streamed = messages(UNSERVED_GPT, "Hi");

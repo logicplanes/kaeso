@@ -44,6 +44,7 @@ struct Shared {
     streams_started: AtomicUsize,
     streams_finished: AtomicUsize,
     streams_dropped: AtomicUsize,
+    abandoned: AtomicUsize,
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
 }
@@ -63,6 +64,7 @@ impl Shared {
 struct GateState {
     arrived: watch::Sender<usize>,
     open: watch::Sender<bool>,
+    steps: watch::Sender<usize>,
 }
 
 impl Default for GateState {
@@ -70,11 +72,17 @@ impl Default for GateState {
         GateState {
             arrived: watch::Sender::new(0),
             open: watch::Sender::new(false),
+            steps: watch::Sender::new(0),
         }
     }
 }
 
 impl GateState {
+    async fn step(&self, n: usize) {
+        let mut steps = self.steps.subscribe();
+        let _ = steps.wait_for(|s| *s >= n).await;
+    }
+
     async fn pass(&self) {
         let mut open = self.open.subscribe();
         self.arrived.send_modify(|n| *n += 1);
@@ -108,6 +116,18 @@ impl Gate {
 
     pub fn open(&self) {
         self.state.open.send_replace(true);
+    }
+
+    pub fn steps_marker(&self) -> String {
+        format!("[mock:steps={}]", self.name)
+    }
+
+    pub fn step(&self) {
+        self.state.steps.send_modify(|n| *n += 1);
+    }
+
+    pub fn finish(&self) {
+        self.state.steps.send_replace(usize::MAX);
     }
 }
 
@@ -191,6 +211,10 @@ impl MockProvider {
         }
     }
 
+    pub fn abandoned(&self) -> usize {
+        self.shared.abandoned.load(Ordering::SeqCst)
+    }
+
     pub fn stream_counts(&self) -> (usize, usize, usize) {
         (
             self.shared.streams_started.load(Ordering::SeqCst),
@@ -255,6 +279,19 @@ fn error_response(dir: &Path, name: &str) -> Response {
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 
+struct Answering {
+    shared: Arc<Shared>,
+    answered: bool,
+}
+
+impl Drop for Answering {
+    fn drop(&mut self) {
+        if !self.answered {
+            self.shared.abandoned.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+}
+
 async fn handle(
     State(ctx): State<Ctx>,
     method: Method,
@@ -262,6 +299,16 @@ async fn handle(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
+    let mut answering = Answering {
+        shared: ctx.shared.clone(),
+        answered: false,
+    };
+    let response = answer(ctx, method, uri, headers, body).await;
+    answering.answered = true;
+    response
+}
+
+async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: Bytes) -> Response {
     let path = uri.path().to_owned();
     let text = String::from_utf8_lossy(&body).into_owned();
     {
@@ -399,7 +446,8 @@ async fn handle(
         } else {
             StreamMode::Normal
         };
-        return sse(ctx.shared.clone(), bytes, mode);
+        let steps = marker(&text, "steps").map(|name| ctx.shared.gate(name));
+        return sse(ctx.shared.clone(), bytes, mode, steps);
     }
     let file = match (dialect, path.as_str()) {
         ("anthropic_messages", "/v1/messages/count_tokens") => counting_fixture(
@@ -521,7 +569,12 @@ impl Drop for Guard {
     }
 }
 
-fn sse(shared: Arc<Shared>, bytes: Vec<u8>, mode: StreamMode) -> Response {
+fn sse(
+    shared: Arc<Shared>,
+    bytes: Vec<u8>,
+    mode: StreamMode,
+    steps: Option<Arc<GateState>>,
+) -> Response {
     shared.streams_started.fetch_add(1, Ordering::SeqCst);
     let text = String::from_utf8_lossy(&bytes).replace("\r\n", "\n");
     let mut events: Vec<Bytes> = text
@@ -537,30 +590,36 @@ fn sse(shared: Arc<Shared>, bytes: Vec<u8>, mode: StreamMode) -> Response {
         finished: false,
     };
     let state = (events.into_iter(), guard, 0usize);
-    let stream = futures::stream::unfold(state, move |(mut it, mut guard, n)| async move {
-        if guard.finished {
-            return None;
-        }
-        if n > 0 {
-            match mode {
-                StreamMode::Slow(every) => tokio::time::sleep(every).await,
-                StreamMode::Cut => tokio::time::sleep(Duration::from_millis(20)).await,
-                StreamMode::Stall => std::future::pending::<()>().await,
-                StreamMode::Silence(quiet) if n == 1 => tokio::time::sleep(quiet).await,
-                _ => {}
+    let stream = futures::stream::unfold(state, move |(mut it, mut guard, n)| {
+        let steps = steps.clone();
+        async move {
+            if guard.finished {
+                return None;
             }
-        }
-        match it.next() {
-            Some(chunk) => Some((Ok::<_, std::io::Error>(chunk), (it, guard, n + 1))),
-            None => {
-                if mode == StreamMode::Cut {
+            if let Some(gate) = steps.filter(|_| n > 0) {
+                gate.step(n).await;
+            }
+            if n > 0 {
+                match mode {
+                    StreamMode::Slow(every) => tokio::time::sleep(every).await,
+                    StreamMode::Cut => tokio::time::sleep(Duration::from_millis(20)).await,
+                    StreamMode::Stall => std::future::pending::<()>().await,
+                    StreamMode::Silence(quiet) if n == 1 => tokio::time::sleep(quiet).await,
+                    _ => {}
+                }
+            }
+            match it.next() {
+                Some(chunk) => Some((Ok::<_, std::io::Error>(chunk), (it, guard, n + 1))),
+                None => {
+                    if mode == StreamMode::Cut {
+                        guard.finished = true;
+                        guard.shared.streams_finished.fetch_add(1, Ordering::SeqCst);
+                        return Some((Err(std::io::Error::other("cut")), (it, guard, n + 1)));
+                    }
                     guard.finished = true;
                     guard.shared.streams_finished.fetch_add(1, Ordering::SeqCst);
-                    return Some((Err(std::io::Error::other("cut")), (it, guard, n + 1)));
+                    None
                 }
-                guard.finished = true;
-                guard.shared.streams_finished.fetch_add(1, Ordering::SeqCst);
-                None
             }
         }
     });

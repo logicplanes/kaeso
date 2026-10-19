@@ -30,6 +30,7 @@ fn base(env: &Env) -> String {
 }
 
 async fn flush(env: &Env) {
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
     assert_eq!(env.app.state.logs.len(), 0, "the buffer drained");
 }
@@ -864,6 +865,7 @@ async fn requests_never_wait_for_clickhouse_and_drops_are_counted() {
         );
     }
     let state = &env.app.state;
+    state.in_flight.settled().await;
     assert!(!state.logs.is_empty());
     assert!(
         state.logs.dropped() > 0,
@@ -913,6 +915,7 @@ async fn long_metadata_counts_toward_the_log_buffer() {
         assert_eq!(r.status, StatusCode::NOT_FOUND);
     }
     let state = &env.app.state;
+    state.in_flight.settled().await;
     assert_eq!(
         state.logs.len(),
         0,

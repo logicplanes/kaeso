@@ -107,6 +107,8 @@ Eine solche Anfrage, und ebenso einen abgebrochenen Stream, berechnet Kaeso mit 
 - die Eingabe aus der Nutzung, die der Anbieter zu Beginn des Streams meldet, sonst aus seinem Endpunkt zum Zählen von Token, sonst aus der Größe der Anfrage;
 - die Ausgabe aus dem empfangenen Inhalt.
 
+Eine nicht gestreamte Anfrage wird mit ihrer Eingabe berechnet, aus ihrer Größe geschätzt, sobald Kaeso sie an den Anbieter gesendet hat.
+
 Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limits verwenden dieselben Zahlen. Schätzungen der Ausgabe fallen bei Reasoning, das der Anbieter nicht streamt, zu niedrig aus.
 
 ## Herunterfahren
@@ -119,4 +121,4 @@ Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and en
 
 Kaeso berechnet die Token zu den Preisen des Modells zum Zeitpunkt der Anfrage, dem Schlüssel, dem Mitglied und dem Projekt, und rechnet sie auf ihre Budgets an. Das Anfrageprotokoll hält die Metadaten fest. Anfrage und Antwort hält es fest, wenn die Inhaltsprotokollierung für Organisation und Projekt eingeschaltet ist.
 
-Die Protokollierung hält nie eine Anfrage auf. Einträge warten im Speicher und gehen stapelweise an ClickHouse. Ist der Puffer voll, verwirft Kaeso die ältesten Einträge ([Anfrageprotokolle](../console/request-logs.md)).
+Die Protokollierung hält nie eine Anfrage auf: Die Antwort geht zuerst hinaus. Unter einem harten Budget oder einer Token-Rate berechnet Kaeso die Anfrage, bevor ihre Antwort endet, sodass die nächste Anfrage der App sie bereits mitzählt. Einträge warten im Speicher und gehen stapelweise an ClickHouse. Ist der Puffer voll, verwirft Kaeso die ältesten Einträge ([Anfrageprotokolle](../console/request-logs.md)).

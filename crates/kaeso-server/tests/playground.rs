@@ -304,7 +304,7 @@ async fn models_and_aliases_resolve_in_this_project_only() {
         r.body["error"]["message"],
         "The model `gpt-4.1` is not in this project's catalogue."
     );
-    let o = env.capture.all();
+    let o = env.outcomes().await;
     let refused = o.last().unwrap();
     assert_eq!((refused.status, refused.source), (400, Source::Playground));
     assert_eq!(refused.error_kind.as_deref(), Some("not_found"));
@@ -711,7 +711,9 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     )
     .await;
     assert_eq!(v1.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
