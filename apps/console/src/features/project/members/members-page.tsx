@@ -18,10 +18,12 @@ import { rolesOfScope, useRoles } from "~/kaeso/roles";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { MemberSheet } from "./member-sheet";
+import { LoadFailed } from "~/features/org/load-failed";
 import { useProjectRights } from "~/auth/rights";
 import { useProjectGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
+import { compareNames } from "~/format/collate";
 import { common } from "~/i18n/common";
 import { partyText } from "~/kaeso/party";
 import { patchSearch, type SearchPatch } from "~/search";
@@ -43,7 +45,7 @@ export function MembersPage({ org, project, search }: { org: string; project: st
     void navigate({ to: "/orgs/$org/projects/$project/members", params: { org, project }, search: patchSearch(search, patch, ["add"]), replace: true });
   };
 
-  const list = useMemo(() => [...(members.data ?? [])].sort((a, b) => a.user.name.localeCompare(b.user.name)), [members.data]);
+  const list = useMemo(() => [...(members.data ?? [])].sort((a, b) => compareNames(a.user.name, b.user.name)), [members.data]);
   const items = list.map((m: ProjectMemberView) => ({
     id: m.user.id,
     textValue: m.user.name,
@@ -82,6 +84,8 @@ export function MembersPage({ org, project, search }: { org: string; project: st
       <AppFrame.Body padding="list">
         {members.isPending ? (
           <List aria-label={common.members()} items={[]} loading />
+        ) : members.isError ? (
+          <LoadFailed title={t("project.members.listFailed", "The members couldn't load")} size="md" />
         ) : list.length === 0 ? (
           <Empty
             size="lg"

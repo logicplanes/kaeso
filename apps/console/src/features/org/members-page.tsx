@@ -6,6 +6,7 @@ import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
+import { compareNames } from "~/format/collate";
 import { common } from "~/i18n/common";
 import { userStateLabel } from "~/format/labels";
 import { grantLabel } from "~/kaeso/grant";
@@ -122,7 +123,7 @@ function MembersPanel({
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const roles = rolesOfScope(useRoles(org), "org");
   const list = useMemo(
-    () => [...(members.data ?? [])].filter((m) => !role || m.grant.role.id === role).sort((a, b) => a.user.name.localeCompare(b.user.name)),
+    () => [...(members.data ?? [])].filter((m) => !role || m.grant.role.id === role).sort((a, b) => compareNames(a.user.name, b.user.name)),
     [members.data, role],
   );
   const items = list.map((m) => ({

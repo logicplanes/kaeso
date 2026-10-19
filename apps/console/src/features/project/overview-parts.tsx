@@ -200,8 +200,13 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
       {rights.has("limits.view") && (
         <Section title={t("project.overview.limits", "Limits")} spacing="none">
           <div className="flex flex-col gap-16">
-            {(limits.data ?? []).length === 0 && !limits.isPending && (
-              <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
+            {limits.isError ? (
+              <Text tone="secondary">{t("project.overview.limitsFailed", "The limits couldn't load; the notification says why.")}</Text>
+            ) : (
+              (limits.data ?? []).length === 0 &&
+              !limits.isPending && (
+                <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
+              )
             )}
             {(limits.data ?? []).map((l) => (
               <ProjectLimit key={l.id} limit={l} />
@@ -211,7 +216,9 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
       )}
       {rights.has("logs.metadata.view") && (
         <Section title={t("project.overview.recentErrors", "Recent errors")} spacing="none">
-          {recent.length === 0 && !errors.isPending ? (
+          {errors.isError ? (
+            <Text tone="secondary">{t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}</Text>
+          ) : recent.length === 0 && !errors.isPending ? (
             <Text tone="secondary">{t("project.overview.noErrors", "No failed requests.")}</Text>
           ) : (
             <List

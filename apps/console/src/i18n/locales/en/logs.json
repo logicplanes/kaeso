@@ -114,7 +114,6 @@
   "logs.inspector.usage": "Usage",
   "logs.live": "Live",
   "logs.loadFailed": "Requests couldn't load",
-  "logs.markdown.showAll": "{count, plural, one {Show all # character} other {Show all # characters}}",
   "logs.noMatch": "No requests match these filters",
   "logs.noMatchHint": "Remove a filter or widen the time range.",
   "logs.openById": "Open a request by id",
