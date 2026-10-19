@@ -68,7 +68,7 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 
 | 字段 | 含义 |
 | --- | --- |
-| `commit` | Release 工作流运行所在的提交，也是证明中指明的提交，而不是其上的版本提交 |
+| `commit` | Release 工作流运行所在的提交，也是证明中指明的提交，而不是其上的版本提交（[提交与证明](../releasing.md#提交与证明)） |
 | `manual` | 工作流的 **manual** 输入为真，或者 `compose.yaml` 与上一个版本相比除镜像版本和摘要外还有其他差异时为真 |
 | `manual_since` | 截至本版本最新的 `manual: true` 版本，从上一个版本的 `release.json` 继承 |
 | `migrations` | 该版本最新的 PostgreSQL 和 ClickHouse 迁移 |

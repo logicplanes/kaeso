@@ -68,7 +68,7 @@ Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` u
 
 | Feld | Bedeutung |
 | --- | --- |
-| `commit` | Der Commit, auf dem der Release-Workflow lief und den die Attestierungen nennen, nicht der Release-Commit darüber |
+| `commit` | Der Commit, auf dem der Release-Workflow lief und den die Attestierungen nennen, nicht der Release-Commit darüber ([Commits und Attestierungen](../releasing.md#commits-und-attestierungen)) |
 | `manual` | Wahr, wenn die Eingabe **manual** des Workflows es sagt oder wenn sich `compose.yaml` von der des vorigen Releases in mehr als den Image-Versionen und Digests unterscheidet |
 | `manual_since` | Das neueste Release bis zu diesem mit `manual: true`, übernommen aus der `release.json` des vorigen Releases |
 | `migrations` | Die neueste PostgreSQL- und ClickHouse-Migration des Releases |

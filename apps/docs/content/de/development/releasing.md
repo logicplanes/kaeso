@@ -23,10 +23,10 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 | Branch | Was er ist | Wer ihn ändert |
 | --- | --- | --- |
 | `dev` | Der Standard-Branch, auf dem alle Arbeit landet | Nur Pull Requests ([Pull Request mergen lassen](contributing.md#pull-request-mergen-lassen)) |
-| `prod` | Das neueste Release oder der Commit, der gleich eines wird | Der Maintainer, immer als Fast-Forward |
+| `prod` | Der Commit, auf dem das neueste Release lief, oder der Commit, der gleich ein Release wird | Der Maintainer, immer als Fast-Forward |
 | `hotfix/X.Y.Z` | Eine Korrektur für das neueste Release, von dessen Tag abgezweigt | Der Maintainer, der ihn nach `prod` pusht |
 
-`dev` und `prod` lassen sich weder löschen noch per Force-Push überschreiben, und ein `v*`-Tag lässt sich weder verschieben noch löschen.
+`dev` und `prod` lassen sich weder löschen noch per Force-Push überschreiben, nur der Maintainer kann nach `prod` pushen, und ein `v*`-Tag lässt sich weder verschieben noch löschen.
 
 ## Das Changelog
 
@@ -36,7 +36,7 @@ Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Depen
 
 Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
 
-Hat das Repository das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
+Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -83,16 +83,16 @@ Der Workflow **Labels** setzt die Bereichs-Labels und `internal` bei jedem Push 
 5. Bringen Sie das Release nach `dev`. Der Job **Sync dev** des Laufs versucht es, aber `dev` nimmt nur Pull Requests an. Er endet deshalb meist mit einer Warnung und zeigt den Befehl, den Sie ausführen. Mergen Sie von Hand, was Ihre Ausnahme von den Regeln für `dev` erlaubt:
 
    ```bash
-   git fetch origin
+   git fetch origin --tags
    git switch dev
    git pull --ff-only
-   git merge --no-ff -m "Merge release 0.2.0 into dev" origin/prod
+   git merge --no-ff -m "Merge release 0.2.0 into dev" v0.2.0
    git push origin dev
    ```
 
 6. Verteilen Sie die Websites vom Tag des Releases ([Websites verteilen](#websites-verteilen)).
 
-Wird der Push in Schritt 3 abgelehnt, hat `dev` das letzte Release noch nicht: Mergen Sie zuerst `prod` nach `dev`, wie in Schritt 5. Schlägt ein Veröffentlichungs-Job fehl, starten Sie die fehlgeschlagenen Jobs des Laufs neu. Jeder überspringt, was schon veröffentlicht ist.
+Bricht der Lauf ab, weil `prod` das letzte Release noch nicht hat, mergen Sie dessen Tag wie in Schritt 5 nach `dev` und wiederholen Sie Schritt 3. Schlägt ein Veröffentlichungs-Job fehl, starten Sie die fehlgeschlagenen Jobs des Laufs neu. Jeder überspringt, was schon veröffentlicht ist, und der Job für das GitHub-Release ersetzt Assets und Notizen eines Releases, das er schon angelegt hat.
 
 Ein Release veröffentlicht:
 
@@ -105,13 +105,21 @@ Ein Release veröffentlicht:
 
 Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.MINOR`, `latest` und ab 1.0.0 `MAJOR`.
 
+### Commits und Attestierungen
+
+Der Lauf beginnt auf dem Commit von `prod`. Ändert sich die Version, committet der Job Tag darauf `Release X.Y.Z` und taggt diesen Commit als `vX.Y.Z`. Der Release-Commit ändert nur `CHANGELOG.md` und die Dateien, die `node scripts/version.mjs files` auflistet. Vor dem Commit prüft der Job Tag, dass diese Änderungen außer `CHANGELOG.md` dem entsprechen, was `node scripts/version.mjs set` in einem eigenen Job schreibt.
+
+Der Job Tag pusht nur den Tag: `prod` bekommt den Release-Commit mit dem nächsten Push von `dev`, das ihn aus Schritt 5 hat. Jedes Image, jedes Paket und jedes Asset wird aus dem Tag gebaut.
+
+`gh attestation verify` und der Updater prüfen die Attestierungen der Images und von `release.json`. Sie nennen den Commit, auf dem der Lauf begann, denn GitHub signiert sie für den Lauf, und `release.json` nennt denselben Commit. Die Build-Provenienz in jedem Image, die BuildKit schreibt, nennt den Commit des Tags als Quelle. Der Commit des Tags ist also der attestierte Commit oder ein Release-Commit direkt darauf, der nur Version und Changelog ändert.
+
 ## Vorabversion erstellen
 
 Starten Sie den Release-Workflow auf `prod` mit einer Version wie `0.2.0-rc.1`. Eine Vorabversion bekommt auf npm den Tag `next` und als Image-Tag nur ihre Version, und GitHub markiert sie nie als neuestes Release. Die Websites danach zu verteilen ist optional.
 
 ## Hotfix erstellen
 
-Ein Hotfix korrigiert das neueste Release ohne das, was sich seitdem auf `dev` gesammelt hat. Er funktioniert, solange `prod` noch auf diesem Release steht.
+Ein Hotfix korrigiert das neueste Release ohne das, was sich seitdem auf `dev` gesammelt hat. Er funktioniert, solange `prod` noch auf dem Commit steht, auf dem dieses Release lief.
 
 1. Zweigen Sie vom Tag des Releases ab:
 
