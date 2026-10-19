@@ -384,6 +384,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             [
                 "anthropic https://api.anthropic.com/",
+                "deepseek https://api.deepseek.com/",
                 "openai https://api.openai.com/"
             ]
         );
@@ -453,7 +454,7 @@ mod tests {
         for (name, reason) in [
             (
                 "KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL",
-                "names the provider `azure-openai`, which Kaeso does not know; the providers are openai, anthropic",
+                "names the provider `azure-openai`, which Kaeso does not know; the providers are openai, anthropic, deepseek",
             ),
             (
                 "KAESO_PROVIDERS_AZURE__OPENAI_BASE_URL",
@@ -483,7 +484,7 @@ mod tests {
         for (toml, message) in [
             (
                 "[providers.together-ai]\nbase_url = \"https://api.together.example.com\"\n",
-                "`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are openai, anthropic",
+                "`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, deepseek",
             ),
             (
                 "[providers.azure_openai]\nbase_url = \"https://azure.example.com\"\n",

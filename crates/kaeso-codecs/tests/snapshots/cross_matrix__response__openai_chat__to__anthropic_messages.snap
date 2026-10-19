@@ -275,6 +275,231 @@ expression: outcomes
       }
     }
   },
+  "providers/deepseek/recorded-json-object-system": {
+    "content": [
+      {
+        "text": "{\"answer\": \"The capital of France is Paris.\", \"confidence\": 1.0}",
+        "type": "text"
+      }
+    ],
+    "id": "4a2059b8-58b4-4e4a-904f-9246e4b4572d",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 47,
+      "output_tokens": 19
+    }
+  },
+  "providers/deepseek/recorded-logprobs-top-logprobs-doc": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "2da350ca-5d24-40eb-8371-e7df3b6f96ae",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 6,
+      "output_tokens": 9
+    }
+  },
+  "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "The current weather in Paris is **14°C** with **light rain**.",
+        "type": "text"
+      }
+    ],
+    "id": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+    "model": "deepseek-v4-pro",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 423,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/deepseek/recorded-prompt-cache-hit": {
+    "content": [
+      {
+        "text": "No — partial months are not refunded. You can cancel online at any time before your renewal date, and there’s no cancellation fee, but the current month’s charge isn’t prorated or returned (Policy 2, Policy 3, Policy 4).\n\nAlso note: if you have a device on an instalment plan, those payments continue after cancellation until the device is paid off (Policy 9).",
+        "type": "text"
+      }
+    ],
+    "id": "30e154ae-2feb-4ee9-bc9d-4bcd6b69bc7d",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 154,
+      "output_tokens": 87
+    }
+  },
+  "providers/deepseek/recorded-reasoning-content-sent-back": {
+    "content": [
+      {
+        "text": "400",
+        "type": "text"
+      }
+    ],
+    "id": "75b4381d-fa69-474c-b21d-66f449915aae",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 62,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 18
+      }
+    }
+  },
+  "providers/deepseek/recorded-stop-array": {
+    "content": [
+      {
+        "text": "1, 2, 3, 4, 5, 6, ",
+        "type": "text"
+      }
+    ],
+    "id": "eecb47b4-c080-4903-b927-4d6d891d5519",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 41,
+      "output_tokens": 73,
+      "output_tokens_details": {
+        "thinking_tokens": 53
+      }
+    }
+  },
+  "providers/deepseek/recorded-thinking-reasoning-content": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "f4046fd9-e586-4279-ac2d-b84eebbc5f37",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 44,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 18
+      }
+    }
+  },
+  "providers/deepseek/recorded-thinking-tools-auto": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "2a676b20-042f-4778-94b3-8eeebdaef0ea",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 339,
+      "output_tokens": 68,
+      "output_tokens_details": {
+        "thinking_tokens": 10
+      }
+    }
+  },
+  "providers/deepseek/recorded-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔",
+        "type": "text"
+      }
+    ],
+    "id": "01196219-0832-4870-a63d-cb61ba063bb5",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 256,
+      "input_tokens": 176,
+      "output_tokens": 30,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "reasoning-cached-usage": {
     "content": [
       {

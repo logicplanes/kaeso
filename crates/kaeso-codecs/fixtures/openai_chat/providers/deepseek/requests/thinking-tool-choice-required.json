@@ -1,0 +1,33 @@
+{
+  "model": "deepseek-flash",
+  "thinking": {
+    "type": "enabled"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "What's the weather in Paris right now?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "required"
+}
