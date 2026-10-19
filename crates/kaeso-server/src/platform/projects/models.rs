@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -104,6 +106,19 @@ pub(super) fn view(
     row: &EntryRow,
     aliases: &[catalogue::AliasRow],
 ) -> ApiResult<CatalogueModelView> {
+    let names = aliases
+        .iter()
+        .filter(|a| a.catalogue_model_id == row.id)
+        .map(|a| a.name.clone())
+        .collect();
+    named_view(state, row, names)
+}
+
+fn named_view(
+    state: &AppState,
+    row: &EntryRow,
+    aliases: Vec<String>,
+) -> ApiResult<CatalogueModelView> {
     let entry = row.entry()?;
     let eff = service::effective(state, &entry)
         .ok_or_else(|| ApiError::internal(format!("unknown provider `{}`", row.provider)))?;
@@ -120,11 +135,7 @@ pub(super) fn view(
         overrides: entry.overrides,
         effective: eff.fields,
         egress_dialect: eff.dialect.as_str().to_owned(),
-        aliases: aliases
-            .iter()
-            .filter(|a| a.catalogue_model_id == row.id)
-            .map(|a| a.name.clone())
-            .collect(),
+        aliases,
         created_by: creator(&row.created_by_kind, row.created_by_id),
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -238,6 +249,12 @@ pub async fn search(
     }
     let q = p.q.as_deref().map(str::to_lowercase);
     let rows = catalogue::list(&state.pg, ctx.project()?.project.id).await?;
+    let mut in_catalogue: HashMap<(&str, &str), uuid::Uuid> = HashMap::with_capacity(rows.len());
+    for r in &rows {
+        in_catalogue
+            .entry((r.provider.as_str(), r.model_id.as_str()))
+            .or_insert(r.id);
+    }
     let loaded = state.models_dev.current();
     let mut hits: Vec<SearchHit> = Vec::new();
     for (pid, prov) in &loaded.snapshot.providers {
@@ -266,10 +283,9 @@ pub async fn search(
                 family: m.family.clone(),
                 release_date: m.release_date.clone(),
                 deprecated: m.is_deprecated(),
-                catalogue_model_id: rows
-                    .iter()
-                    .find(|r| r.provider == *pid && r.model_id == *mid)
-                    .map(|r| CatalogueModelId::from_uuid(r.id)),
+                catalogue_model_id: in_catalogue
+                    .get(&(pid.as_str(), mid.as_str()))
+                    .map(|id| CatalogueModelId::from_uuid(*id)),
             });
         }
     }
@@ -600,10 +616,16 @@ pub async fn list(
 ) -> ApiResult<Json<List<CatalogueModelView>>> {
     let project = ctx.project()?.project.id;
     let rows = catalogue::list(&state.pg, project).await?;
-    let aliases = catalogue::list_aliases(&state.pg, project).await?;
+    let mut aliases: HashMap<uuid::Uuid, Vec<String>> = HashMap::new();
+    for a in catalogue::list_aliases(&state.pg, project).await? {
+        aliases
+            .entry(a.catalogue_model_id)
+            .or_default()
+            .push(a.name);
+    }
     Ok(Json(List::complete(
         rows.iter()
-            .map(|r| view(&state, r, &aliases))
+            .map(|r| named_view(&state, r, aliases.remove(&r.id).unwrap_or_default()))
             .collect::<ApiResult<Vec<_>>>()?,
     )))
 }

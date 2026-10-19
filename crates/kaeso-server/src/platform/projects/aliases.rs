@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::catalogue::resolve::{shadows, validate_alias_name};
+use kaeso_core::catalogue::resolve::{Catalogue, validate_alias_name};
 use kaeso_core::id::{AliasId, CatalogueModelId, OrgId, ProjectId};
 use kaeso_store::pg::catalogue::{self, AliasRow};
 use serde::{Deserialize, Serialize};
@@ -47,10 +47,13 @@ async fn views(
     rows: &[AliasRow],
 ) -> ApiResult<Vec<AliasView>> {
     let entries = catalogue::list(&state.pg, project).await?;
-    let domain: Vec<_> = entries
-        .iter()
-        .map(catalogue::EntryRow::entry)
-        .collect::<Result<_, _>>()?;
+    let domain = Catalogue::new(
+        entries
+            .iter()
+            .map(catalogue::EntryRow::entry)
+            .collect::<Result<_, _>>()?,
+        Vec::new(),
+    );
     let loaded = state.models_dev.current();
     Ok(rows
         .iter()
@@ -58,12 +61,11 @@ async fn views(
             id: AliasId::from_uuid(a.id),
             name: a.name.clone(),
             catalogue_model_id: CatalogueModelId::from_uuid(a.catalogue_model_id),
-            target: entries
-                .iter()
-                .find(|e| e.id == a.catalogue_model_id)
+            target: domain
+                .entry(a.catalogue_model_id)
                 .map(|e| format!("{}/{}", e.provider, e.model_id))
                 .unwrap_or_default(),
-            shadows_model: shadows(&a.name, &domain, &loaded.snapshot),
+            shadows_model: domain.shadows(&a.name, &loaded.snapshot),
             created_at: a.created_at,
             updated_at: a.updated_at,
         })

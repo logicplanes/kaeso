@@ -298,10 +298,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let models = kaeso_server::services::catalogue::project_models(&app.state, project_id.uuid())
         .await
         .unwrap();
-    let resolve = |n: &str| {
-        kaeso_core::catalogue::resolve::resolve(n, &models.entries, &models.aliases)
-            .map(|(e, _)| e.model_id.clone())
-    };
+    let resolve = |n: &str| models.catalogue.resolve(n).map(|(e, _)| e.model_id.clone());
     assert_eq!(resolve("chat-default").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("gpt-5").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("openai/gpt-4o").unwrap(), "gpt-4o");
@@ -320,10 +317,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
         .await
         .unwrap();
     assert_eq!(
-        kaeso_core::catalogue::resolve::resolve("chat-default", &models.entries, &models.aliases)
-            .unwrap()
-            .0
-            .model_id,
+        models.catalogue.resolve("chat-default").unwrap().0.model_id,
         "gpt-4o"
     );
     let gone = app
