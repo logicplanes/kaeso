@@ -127,6 +127,12 @@ nav: OpenAI Chat
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
 
+Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`）：
+
+| 设置 | 解码器的行为 | 为何允许 |
+|---|---|---|
+| `thinking_parts()` | 把 `content` 数组中的 `thinking` 部分（`{type: "thinking", thinking: [文本部分], closed}`，不含其他内容）读作 `Block::Reasoning`，其 `text` 包含每个文本部分；流式发送的则读作 `BlockStart(Reasoning)` 和 `BlockDelta(ReasoningText)`。回答、拒绝或工具调用开始时，推理块结束；流中第一个真正的文本片段之前的空文本片段不会打开文本块（形式标记 `et`）。带有其他键或其他内部部分的 `thinking` 部分保持与没有此设置时相同。 | 不丢弃任何内容：Chat 应用收回同样的部分，其他格式以各自的推理形式得到思考内容，原始块保存在[推理数据块](reasoning.md#推理数据块)中。 |
+
 `refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段：Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。拒绝发生在编码请求时，针对编码器构建好的请求、在写出请求体之前进行，因此不会发送任何内容，并以应用自己的格式返回给应用。
 
 下面列出配置与 OpenAI 不同的每个内置服务商，以及每项设置的来源：服务商的文档、它的 OpenAPI 文档，或 `fixtures/openai_chat/providers/<id>/` 中的实时录制。
@@ -135,7 +141,7 @@ nav: OpenAI Chat
 |---|---|---|
 | DeepSeek（`deepseek`） | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
 | Groq（`groq`） | `system_role()`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色） |
-| Mistral（`mistral`） | `max_tokens()`、`system_role()`、`random_seed()`、`without_end_user()`、`without_prefill()`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`moderation`、`prompt_cache_options`、`prompt_cache_retention`、`store`、`verbosity` 和 `web_search_options`，以及消息中的 `name` 和 `refusal` | Mistral 的 OpenAPI 文档（https://docs.mistral.ai/openapi.yaml，2026-10-19 查阅），其中 `ChatCompletionRequest` 禁止未声明的字段，并规定 `random_seed` 的 `minimum: 0`；`fixtures/openai_chat/providers/mistral/errors/` 中的 `422 extra_forbidden` 录制文件，每个被拒绝或改名的字段一个；`responses/recorded-audio-field`，其中 Mistral 接受 `audio` 却只以文本回答；另有 `recorded-assistant-prefill`（400 `invalid_request_message_order`）和 `responses/recorded-assistant-prefix`，其回复重复了预填内容 |
+| Mistral（`mistral`） | `max_tokens()`、`system_role()`、`random_seed()`、`without_end_user()`、`without_prefill()`、`thinking_parts()`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`moderation`、`prompt_cache_options`、`prompt_cache_retention`、`store`、`verbosity` 和 `web_search_options`，以及消息中的 `name` 和 `refusal` | Mistral 的 OpenAPI 文档（https://docs.mistral.ai/openapi.yaml，2026-10-19 查阅），其中 `ChatCompletionRequest` 禁止未声明的字段，并规定 `random_seed` 的 `minimum: 0`；`fixtures/openai_chat/providers/mistral/errors/` 中的 `422 extra_forbidden` 录制文件，每个被拒绝或改名的字段一个；`responses/recorded-audio-field`，其中 Mistral 接受 `audio` 却只以文本回答；另有 `recorded-assistant-prefill`（400 `invalid_request_message_order`）和 `responses/recorded-assistant-prefix`，其回复重复了预填内容；`thinking_parts()` 依据 `responses/recorded-reasoning-effort-high` 和 `streams/recorded-reasoning-effort-high-stream` |
 
 ## 回复：`CreateChatCompletionResponse`
 
@@ -148,7 +154,7 @@ nav: OpenAI Chat
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`：verbatim。 |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。其他方言自有的值会变为最接近的 Chat 值：`max_tokens`、`max_output_tokens` 和 `model_context_window_exceeded` 变为 `length`，`tool_use` 变为 `tool_calls`，`refusal` 变为 `content_filter`，规范枚举之外的其他值变为 `stop`。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
-| 以部分数组形式出现的 `message.content`（Mistral，不在 OpenAI 规范中） | 恰好是 `{type: "text", text}` 的部分为 `Block::Text`，其他部分（例如 Mistral 的 `thinking` 块）为 `Block::Unknown`；形式标记 `content_parts` | 对 Chat 应用写回为同样的数组。其他方言得到文本；未知部分只到达 Chat 应用（[回复](cross-format.md#回复)）。来源：Mistral 的 `AssistantMessage.content`（`ContentChunk[]`，https://docs.mistral.ai/openapi.yaml）以及录制文件 `fixtures/openai_chat/providers/mistral/responses/recorded-reasoning-effort-high.json`。 |
+| 以部分数组形式出现的 `message.content`（Mistral，不在 OpenAI 规范中） | 恰好是 `{type: "text", text}` 的部分为 `Block::Text`，配置使用 `thinking_parts()` 时 `thinking` 部分为 `Block::Reasoning`，其他部分为 `Block::Unknown`；形式标记 `content_parts`，形式标记 `thinking` 保留 `thinking` 部分的其余键 | 对 Chat 应用写回为同样的数组。其他方言得到文本和推理内容；未知部分只到达 Chat 应用（[回复](cross-format.md#回复)）。来源：Mistral 的 `AssistantMessage.content`（`ContentChunk[]`，https://docs.mistral.ai/openapi.yaml）以及录制文件 `fixtures/openai_chat/providers/mistral/responses/recorded-reasoning-effort-high.json`。 |
 | `message.annotations` | `TextBlock.citations`（原始，绑定到 Chat） | 没有内容时：extras `choice.message.annotations`。其他方言的引用会被省略（[回复](cross-format.md#回复)）。 |
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
@@ -184,7 +190,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | 每个 chunk 中的 `id`、`object`、`created`、`model`、`service_tier`、`system_fingerprint` | 无 | 外层字段会重复出现。某个 chunk 的外层字段与编码器根据 `ResponseStart` 重建的不同时，形式标记 `chunk.env` 保留该 chunk 的值，`chunk.env_absent` 保留它缺少的键，因此每个 chunk（包括第一个）都按收到时的样子写回。一致的 chunk 跟随 `ResponseStart`，因此在那里改写 `id` 或 `model` 的网关会一并改写它们。 |
 | `choices[0].delta.role` | 形式标记 `chunk.role` | 来自其他方言时，回复一开始流就以一个角色 chunk 开头：`delta: {"role": "assistant", "content": "", "refusal": null}`，即 OpenAI 自己在文本回复中发送的第一个 chunk，这样模型思考时应用也能收到流的消息（[保活消息](cross-format.md#保活消息)）。 |
 | `choices[0].delta.content` | 一次 `BlockStart(Text)`，然后是 `BlockDelta(Text)` | 每一片都保留，包括 `""`。 |
-| 以部分数组形式出现的 `choices[0].delta.content`（Mistral） | 恰好是 `{type: "text", text}` 的每个部分为 `BlockDelta(Text)`；其余部分为块的 extras `delta.content`，形式标记 `cs` 记录每个部分的位置 | Chat 应用收回同样的数组；其他方言得到文本并省略其余部分。Mistral 以这种方式流式发送思考内容，回答的第一个 token 可能与之在同一数组中（`fixtures/openai_chat/providers/mistral/streams/recorded-reasoning-effort-high-stream.sse`）。 |
+| 以部分数组形式出现的 `choices[0].delta.content`（Mistral） | 恰好是 `{type: "text", text}` 的每个部分为 `BlockDelta(Text)`，配置使用 `thinking_parts()` 时 `thinking` 部分的每段文本为 `BlockDelta(ReasoningText)`；其余部分为块的 extras `delta.content`，形式标记 `cs` 记录每个部分的位置 | Chat 应用收回同样的数组；其他方言得到文本和推理内容并省略其余部分。Mistral 以这种方式流式发送思考内容，回答的第一个 token 可能与之在同一数组中（`fixtures/openai_chat/providers/mistral/streams/recorded-reasoning-effort-high-stream.sse`）。 |
 | `choices[0].delta.refusal` | 一次 `BlockStart(Refusal)`，然后是 `BlockDelta(Refusal)` | |
 | `choices[0].delta.tool_calls[]`，新的 `index` | `BlockStart(ToolCall { id, name })` + 针对 `arguments` 的 `BlockDelta(ToolArguments)` | KPP 块索引按块开始的顺序排列；Chat 的 `index` 映射到 KPP 索引。改写过的名称会映射回原名。结构差异（缺少 `id`、`type`、`function`、`name` 或 `arguments`，或出现意外的 `index`）：形式标记 `tc`。未知键：extras `tool_call.<key>` 和 `tool_call.function.<key>`。`type` 不是 `function`：`BlockStart(Unknown)`，其后续条目为 `BlockDelta(Unknown)`。条目没有非空的 `id` 或 `name`（一些兼容 OpenAI 的服务商在后面的 chunk 中才发送）：`BlockStart` 及其后的每个事件都会被暂缓输出，直到两者都已到达、该块结束，或流结束或中断；之后头部带有后到的 `id` 和 `name`，名称映射回原名。第一个条目中为 `""` 的 `id` 或 `name` 由形式标记 `tc` 保留。 |
 | `choices[0].delta.tool_calls[]`，已知的 `index` | `BlockDelta(ToolArguments)` | 重复或后到的 `id`、`type` 或 `name`：形式标记 `tc`。调用已有 `id` 时出现另一个非空 `id`，表示复用该索引的新调用：先前的块结束，新的 `BlockStart` 开始，带形式标记 `tc.index`。 |

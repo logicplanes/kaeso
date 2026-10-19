@@ -253,6 +253,7 @@ pub const PROVIDERS: &[Provider] = &[
             .random_seed()
             .without_end_user()
             .without_prefill()
+            .thinking_parts()
             .refusing(&[
                 "audio",
                 "function_call",

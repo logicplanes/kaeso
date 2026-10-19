@@ -9,11 +9,11 @@ use serde_json::{Map, Value};
 use super::DIALECT;
 use super::convert::to_raw;
 use super::error::error_body;
-use super::response::{encode_finish, encode_usage};
+use super::response::{encode_finish, encode_thinking_part, encode_usage};
 use super::stream::{
-    CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_ENV,
-    FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL,
-    Obj, event_extras, start_envelope, value_obj,
+    CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
+    FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_REASONING_SLOT,
+    FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras, start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
@@ -37,6 +37,7 @@ struct Chunk {
     delta_fields: Obj,
     has_choice: bool,
     content: Option<String>,
+    reasoning: Option<String>,
     refusal: Option<String>,
     tool_calls: Vec<Entry>,
     finish: Option<String>,
@@ -156,6 +157,13 @@ impl ChatStreamEncoder {
                 }
                 Delta::Refusal(text) => {
                     chunk.refusal.get_or_insert_with(String::new).push_str(text);
+                    chunk.has_choice = true;
+                }
+                Delta::ReasoningText(text) if own && delta.extras.is_from(DIALECT) => {
+                    chunk
+                        .reasoning
+                        .get_or_insert_with(String::new)
+                        .push_str(text);
                     chunk.has_choice = true;
                 }
                 Delta::ToolArguments(arguments) => {
@@ -410,6 +418,8 @@ impl ChatStreamEncoder {
             delta.insert("content".to_owned(), parts);
         } else if let Some(content) = &chunk.content {
             delta.insert("content".to_owned(), to_raw(content)?);
+        } else if own && chunk.form.get(FORM_EMPTY_TEXT) == Some(&Value::Bool(true)) {
+            delta.insert("content".to_owned(), to_raw("")?);
         }
         if let Some(refusal) = &chunk.refusal {
             delta.insert("refusal".to_owned(), to_raw(refusal)?);
@@ -678,26 +688,63 @@ fn content_parts(chunk: &Chunk) -> Result<Option<RawJson>, KppError> {
             .into_iter(),
         None => Vec::new().into_iter(),
     };
-    let text = chunk.content.as_deref().unwrap_or("");
-    let mut at = 0;
+    let mut text = Pieces::new(chunk.content.as_deref());
+    let mut thoughts = Pieces::new(chunk.reasoning.as_deref());
     let mut parts = Vec::new();
     for slot in slots {
-        match slot.as_u64().and_then(|n| usize::try_from(n).ok()) {
-            Some(len) => {
-                let Some(piece) = text.get(at..at + len) else {
+        match slot {
+            Value::Object(slot) => {
+                let Some(Value::Array(lens)) = slot.get(FORM_REASONING_SLOT) else {
                     return Ok(None);
                 };
-                at += len;
-                parts.push(to_raw(&serde_json::json!({"type": "text", "text": piece}))?);
+                let Some(pieces) = lens
+                    .iter()
+                    .map(|len| thoughts.next(len))
+                    .collect::<Option<Vec<String>>>()
+                else {
+                    return Ok(None);
+                };
+                let mut rest = slot.clone();
+                rest.remove(FORM_REASONING_SLOT);
+                parts.push(encode_thinking_part(&pieces, &rest)?);
             }
-            None => match others.next() {
+            Value::Null => match others.next() {
                 Some(raw) => parts.push(raw),
                 None => return Ok(None),
             },
+            len => {
+                let Some(piece) = text.next(len) else {
+                    return Ok(None);
+                };
+                parts.push(to_raw(&serde_json::json!({"type": "text", "text": piece}))?);
+            }
         }
     }
-    if at != text.len() {
+    if !text.done() || !thoughts.done() {
         return Ok(None);
     }
     Ok(Some(to_raw(&parts)?))
+}
+
+struct Pieces<'a> {
+    rest: &'a str,
+}
+
+impl<'a> Pieces<'a> {
+    fn new(text: Option<&'a str>) -> Self {
+        Pieces {
+            rest: text.unwrap_or(""),
+        }
+    }
+
+    fn next(&mut self, len: &Value) -> Option<String> {
+        let len = usize::try_from(len.as_u64()?).ok()?;
+        let piece = self.rest.get(..len)?;
+        self.rest = self.rest.get(len..)?;
+        Some(piece.to_owned())
+    }
+
+    fn done(&self) -> bool {
+        self.rest.is_empty()
+    }
 }

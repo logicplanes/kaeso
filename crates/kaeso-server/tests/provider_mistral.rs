@@ -113,7 +113,7 @@ async fn chat_apps_reach_mistral_in_its_own_spellings() {
 }
 
 #[tokio::test]
-async fn anthropic_apps_reach_mistral_and_get_the_answer_without_its_thinking() {
+async fn anthropic_apps_reach_mistral_and_get_its_thinking_and_its_answer() {
     let env = env().await;
     let mut body = messages(
         SMALL,
@@ -128,9 +128,23 @@ async fn anthropic_apps_reach_mistral_and_get_the_answer_without_its_thinking() 
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let reply = r.json();
     assert_eq!(reply["type"], "message");
+    assert_eq!(reply["content"][0]["type"], "thinking");
+    assert!(
+        reply["content"][0]["thinking"]
+            .as_str()
+            .unwrap()
+            .starts_with("I need to determine if 91 is a prime number."),
+        "{reply}"
+    );
+    assert!(
+        reply["content"][0]["signature"]
+            .as_str()
+            .unwrap()
+            .starts_with("kpp:reasoning:v1:")
+    );
     assert_eq!(
-        reply["content"],
-        json!([{ "type": "text", "text": ANSWER }])
+        reply["content"][1],
+        json!({ "type": "text", "text": ANSWER })
     );
     assert_eq!(reply["stop_reason"], "end_turn");
     let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
@@ -172,7 +186,7 @@ async fn anthropic_apps_reach_mistral_and_get_the_answer_without_its_thinking() 
 }
 
 #[tokio::test]
-async fn streamed_thinking_replies_reach_anthropic_apps_with_the_whole_answer() {
+async fn streamed_thinking_reaches_anthropic_apps_before_the_whole_answer() {
     let env = env().await;
     let mut body = messages(
         SMALL,
@@ -184,16 +198,27 @@ async fn streamed_thinking_replies_reach_anthropic_apps_with_the_whole_answer() 
     body["stream"] = json!(true);
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
-    let text: String = r
+    let events: Vec<Value> = r
         .text()
         .lines()
         .filter_map(|line| line.strip_prefix("data: "))
         .filter_map(|data| serde_json::from_str::<Value>(data).ok())
-        .filter(|event| event["delta"]["type"] == "text_delta")
-        .map(|event| event["delta"]["text"].as_str().unwrap().to_owned())
         .collect();
-    assert_eq!(text, ANSWER);
-    assert!(!r.text().contains(r#""type":"thinking""#), "{}", r.text());
+    let deltas = |kind: &str, key: &str| -> String {
+        events
+            .iter()
+            .filter(|event| event["delta"]["type"] == kind)
+            .map(|event| event["delta"][key].as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert_eq!(deltas("text_delta", "text"), ANSWER);
+    assert!(deltas("thinking_delta", "thinking").starts_with("I need to determine if 91 is"));
+    let blocks: Vec<&Value> = events
+        .iter()
+        .filter(|event| event["type"] == "content_block_start")
+        .map(|event| &event["content_block"]["type"])
+        .collect();
+    assert_eq!(blocks, [&json!("thinking"), &json!("text")]);
 }
 
 #[tokio::test]
