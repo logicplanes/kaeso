@@ -129,7 +129,11 @@ Other providers speak this format with differences of their own. Each provider i
 
 `refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it: a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`). Refusals happen while the request is encoded, on the request the encoder built and before it is written out, so nothing is sent, and they reach the app in its own format.
 
-Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`. No built-in provider has such a profile yet.
+Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`.
+
+| Provider | Settings | Sources |
+|---|---|---|
+| DeepSeek (`deepseek`) | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`: DeepSeek answers the `developer` role with 422 `unknown variant` |
 
 ## Response: `CreateChatCompletionResponse`
 

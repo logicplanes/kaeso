@@ -129,7 +129,11 @@ Andere Anbieter sprechen dieses Format mit eigenen Abweichungen. Jeder Anbieter 
 
 `refusing` und `refusing_in_messages` nehmen jeweils die ganze Liste; ein zweiter Aufruf ersetzt den ersten. Eine Ablehnung nennt das Feld so, wie die App es geschrieben hat: den Schlüssel einer Chat-App mit eigenem Namen und Pfad (`logit_bias`, `messages[1].name`) und einen Ablehnungsblock aus einem anderen Format mit seinem KPP-Pfad (`messages[1].blocks[0]`). Die Ablehnung geschieht beim Kodieren der Anfrage, an der Anfrage, die der Encoder gebaut hat, und bevor sie geschrieben wird, sodass nichts gesendet wird; sie erreicht die App in ihrem eigenen Format.
 
-Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unten mit der Quelle jeder Einstellung: der Dokumentation des Anbieters, seinem OpenAPI-Dokument oder einer Live-Aufnahme in `fixtures/openai_chat/providers/<id>/`. Noch hat kein eingebauter Anbieter ein solches Profil.
+Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unten mit der Quelle jeder Einstellung: der Dokumentation des Anbieters, seinem OpenAPI-Dokument oder einer Live-Aufnahme in `fixtures/openai_chat/providers/<id>/`.
+
+| Anbieter | Einstellungen | Quellen |
+|---|---|---|
+| DeepSeek (`deepseek`) | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`: DeepSeek beantwortet die Rolle `developer` mit 422 `unknown variant` |
 
 ## Antwort: `CreateChatCompletionResponse`
 

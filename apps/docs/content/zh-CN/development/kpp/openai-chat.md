@@ -129,7 +129,11 @@ nav: OpenAI Chat
 
 `refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段：Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。拒绝发生在编码请求时，针对编码器构建好的请求、在写出请求体之前进行，因此不会发送任何内容，并以应用自己的格式返回给应用。
 
-下面列出配置与 OpenAI 不同的每个内置服务商，以及每项设置的来源：服务商的文档、它的 OpenAPI 文档，或 `fixtures/openai_chat/providers/<id>/` 中的实时录制。目前还没有内置服务商使用这样的配置。
+下面列出配置与 OpenAI 不同的每个内置服务商，以及每项设置的来源：服务商的文档、它的 OpenAPI 文档，或 `fixtures/openai_chat/providers/<id>/` 中的实时录制。
+
+| 服务商 | 设置 | 来源 |
+|---|---|---|
+| DeepSeek（`deepseek`） | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
 
 ## 回复：`CreateChatCompletionResponse`
 

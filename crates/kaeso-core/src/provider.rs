@@ -184,7 +184,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
-        chat: ChatProfile::compatible("DeepSeek"),
+        chat: ChatProfile::compatible("DeepSeek").system_role(),
     },
     Provider {
         id: "xai",

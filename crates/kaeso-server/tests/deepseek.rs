@@ -89,6 +89,34 @@ async fn an_openai_chat_app_gets_deepseeks_tool_call_and_reasoning_content() {
 }
 
 #[tokio::test]
+async fn a_chat_apps_developer_message_reaches_deepseek_as_a_system_message() {
+    let (env, deepseek) = env_with_deepseek().await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": FLASH,
+            "messages": [
+                { "role": "developer", "content": "Answer in one word." },
+                { "role": "user", "content": "Hi [mock:fixture=providers/deepseek/recorded-stop-array]" }
+            ]
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = deepseek
+        .last()
+        .expect("the request reached DeepSeek")
+        .json();
+    assert_eq!(
+        sent["messages"][0],
+        json!({ "role": "system", "content": "Answer in one word." })
+    );
+}
+
+#[tokio::test]
 async fn an_anthropic_messages_app_pays_deepseeks_cache_hits_at_the_cache_read_price() {
     let (env, _deepseek) = env_with_deepseek().await;
     let r = call(
