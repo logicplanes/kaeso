@@ -40,6 +40,12 @@ describe("explaining a missing right", () => {
     expect(await explainMissingRight(queryClient, ORG, PROJECT, "keys.all.view")).toBe("You need View all keys; ask Grace Hopper or Linus Torvalds for it.");
   });
 
+  it("asks an owner or admin for a project right without seeing the project's members", async () => {
+    signedIn({ projectRights: ["project.view", "keys.own.create"] });
+    expect(await explainMissingRight(queryClient, ORG, PROJECT, "keys.all.view")).toBe("You need View all keys; ask an owner or admin for it.");
+    expect(requests("GET", PROJECT_GRANTORS)).toHaveLength(0);
+  });
+
   it("asks an owner or admin when nobody can be looked up", async () => {
     signedIn({ session: whoAmI({ memberships: [membership({ rights: ["org.view"] })] }) });
     expect(await explainMissingRight(queryClient, ORG, undefined, "org.delete")).toBe("You need Delete organization; ask an owner or admin for it.");
@@ -71,6 +77,13 @@ describe("the reason on a disabled action", () => {
     await renderUi(<Reason right="keys.all.view" project={PROJECT} />);
     expect(await screen.findByText("You need View all keys; ask Grace Hopper for it.")).toBeInTheDocument();
     expect(requests("GET", PROJECT_GRANTORS)).toHaveLength(1);
+  });
+
+  it("skips asking for project grantors without the right to see the project's members", async () => {
+    signedIn({ projectRights: ["project.view"] });
+    await renderUi(<Reason right="keys.all.view" project={PROJECT} />);
+    expect(await screen.findByText("You need View all keys; ask an owner or admin for it.")).toBeInTheDocument();
+    expect(requests("GET", PROJECT_GRANTORS)).toHaveLength(0);
   });
 
   it("skips asking for project grantors outside a project", async () => {

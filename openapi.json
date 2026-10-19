@@ -6722,7 +6722,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Sends a pending invitation again, with a new link valid 21 days.",
+        "summary": "Sends a pending invitation again, with a new link valid 21 days. Only a\ncaller who could send the invitation now can resend it.",
         "description": "**Right:** `members.invite` on the organization in the path.",
         "operationId": "postOrgsOrgInvitesInviteResend",
         "parameters": [
@@ -7531,7 +7531,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Makes another member an owner; the caller, if an owner, becomes an admin.",
+        "summary": "Makes another member an owner; the caller, an owner, becomes an admin.",
         "description": "**Right:** `org.ownership.transfer` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgOwnershipTransfer",
         "parameters": [
@@ -10900,7 +10900,7 @@
           "logs"
         ],
         "summary": "Switches content logging for the project. It cannot be switched on while\nthe org has it off.",
-        "description": "**Right:** `logs.content.disable` on the project in the path.",
+        "description": "**Right:** `logs.content.manage` on the project in the path.",
         "operationId": "patchOrgsOrgProjectsProjectLogsSettings",
         "parameters": [
           {
@@ -10976,7 +10976,7 @@
             "api_key": []
           }
         ],
-        "x-kaeso-access": "right:logs.content.disable"
+        "x-kaeso-access": "right:logs.content.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/logs/{log}": {
@@ -11655,7 +11655,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "A member's effective rights in this project, each with its sources:\ntheir project role, individual changes, their org role's rights in\nevery project and org rights that reach into every project.",
+        "summary": "A project member's effective rights in this project, each with its\nsources: their project role, individual changes, their org role's rights\nin every project and org rights that reach into every project.",
         "description": "**Right:** `project.members.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectMembersUserRights",
         "parameters": [
@@ -12793,7 +12793,7 @@
           "projects"
         ],
         "summary": "Who can grant a project right here: active members holding it and\n`project.members.rights.update` in this project.",
-        "description": "**Right:** `project.view` on the project in the path.",
+        "description": "**Right:** `project.members.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectRightsRightGrantors",
         "parameters": [
           {
@@ -12865,7 +12865,7 @@
             "api_key": []
           }
         ],
-        "x-kaeso-access": "right:project.view"
+        "x-kaeso-access": "right:project.members.view"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/service-accounts": {
@@ -13137,7 +13137,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Renames a service account or changes its rights.",
+        "summary": "Renames a service account or changes its rights. Only a caller who\nholds every right of the account can change it.",
         "description": "**Right:** `service_accounts.rights.update` on the project in the path.",
         "operationId": "patchOrgsOrgProjectsProjectServiceAccountsAccount",
         "parameters": [
@@ -13230,7 +13230,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Archives a service account and its keys. Permanent.",
+        "summary": "Archives a service account and its keys. Permanent. Only a caller who\nholds every right of the account can archive it.",
         "description": "**Right:** `service_accounts.archive` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectServiceAccountsAccountArchive",
         "parameters": [
@@ -21584,6 +21584,7 @@
           "sensitive",
           "recent_sign_in",
           "cloud_only",
+          "owner_only",
           "needs"
         ],
         "properties": {
@@ -21616,6 +21617,10 @@
               "project.view",
               "logs.metadata.view"
             ]
+          },
+          "owner_only": {
+            "type": "boolean",
+            "description": "Whether only owners hold it; no role or individual change can give it."
           },
           "recent_sign_in": {
             "type": "boolean",

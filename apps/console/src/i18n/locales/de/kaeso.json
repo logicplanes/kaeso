@@ -169,6 +169,7 @@
   "kaeso.rights.orgRoleSource": "{role} · Organisation",
   "kaeso.rights.orgRoleSourceHint": "Die Rolle in der Organisation gibt dies in jedem Projekt",
   "kaeso.rights.ownerLocked": "Inhaber haben alle Rechte; für weniger eine andere Rolle vergeben",
+  "kaeso.rights.ownerOnly": "Nur Inhaber haben dieses Recht; übertragen Sie die Inhaberschaft, um es zu vergeben",
   "kaeso.rights.ownerSource": "Inhaber haben alle Rechte",
   "kaeso.rights.projectRole": "Projektrolle",
   "kaeso.rights.projectRoleSource": "Die Rolle in diesem Projekt",

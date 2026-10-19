@@ -82,7 +82,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::LimitsView), routes!(access::key_get)))
         .routes(s.route(Access::Project(R::LimitsManage), routes!(access::key_set)))
         .routes(s.route(Access::Project(R::ProjectView), routes!(crate::platform::logs::get_project_settings)))
-        .routes(s.route(Access::Project(R::LogsContentDisable), routes!(crate::platform::logs::update_project_settings)))
+        .routes(s.route(Access::Project(R::LogsContentManage), routes!(crate::platform::logs::update_project_settings)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::list)))
         .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::logs::export)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::get)))
@@ -95,6 +95,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::LimitsManage), routes!(limits::delete)))
         .routes(s.route(Access::Project(R::ProjectMembersView), routes!(crate::platform::rights::project_member)))
         .routes(s.route(Access::Project(R::ProjectView), routes!(crate::platform::rights::mine)))
-        .routes(s.route(Access::Project(R::ProjectView), routes!(crate::platform::rights::project_grantors)))
+        .routes(s.route(Access::Project(R::ProjectMembersView), routes!(crate::platform::rights::project_grantors)))
         .routes(s.route(Access::Project(R::ProjectAuditLogView), routes!(audit::list)))
 }
