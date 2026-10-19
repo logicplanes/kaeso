@@ -13,15 +13,16 @@ Kaeso includes no code adapted from other projects. If code is ever adapted from
 
 ## Provider marks
 
-The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` identify each built-in provider in the console. Each is the provider's trademark, redrawn in one colour on a 24px grid:
+The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` identify each built-in provider in the console. Each is its owner's trademark, drawn from the owner's own vector unchanged except for uniform scaling onto a 24px grid, in the owner's one-colour version for each theme (`providerMark` in `packages/tokens/src/tokens.ts`):
 
-- OpenAI and Anthropic: the monochrome marks of [LobeHub Icons](https://github.com/lobehub/lobe-icons) (`@lobehub/icons-static-svg`), MIT licensed, © 2023 LobeHub.
-- DeepSeek: the whale from the logo on [deepseek.com](https://www.deepseek.com).
-- SpaceX: the mark of [console.x.ai](https://console.x.ai) and [x.ai](https://x.ai), cropped to a square as in the console's own app icon.
-- Together AI: the black logo from the [Together AI brand assets](https://www.together.ai/brand).
-- Groq: the bolt from the logo on [groq.com](https://groq.com).
-- OpenRouter: the Ink glyph from the [OpenRouter brand assets](https://openrouter.ai/brand), shown as the Cloud glyph in dark mode.
-- Mistral: the black icon from the [Mistral AI brand assets](https://mistral.ai/brand).
+- OpenAI: the Blossom from [openai.com](https://openai.com)'s icon, black on light and white on dark, following the [OpenAI design guidelines](https://openai.com/brand).
+- DeepSeek: the whale from the logo on [deepseek.com](https://www.deepseek.com), in the text colour as on DeepSeek's own site; DeepSeek publishes no logo guidelines.
+- SpaceX: the mark of [x.ai](https://x.ai) and [console.x.ai](https://console.x.ai), uncropped, black on light and white on dark as in the console's icons, following the [brand guidelines](https://x.ai/legal/brand-guidelines).
+- Together AI: the black and white logos from the [Together AI brand assets](https://www.together.ai/brand).
+- OpenRouter: the Ink glyph (`#03080A`) on light and the Cloud glyph (`#FCFCFE`) on dark from the [OpenRouter brand assets](https://openrouter.ai/brand).
+- Mistral: the black (`#161525`) and white icons from the [Mistral AI brand assets](https://mistral.ai/brand).
+
+Anthropic's [trademark guidelines](https://www.anthropic.com/legal/trademark-guidelines) allow its logo only in approved materials, and Groq's [trademark policy](https://groq.com/trademark-policy) allows its logo in an interface only under a licence, so both show a letter.
 
 ## Wire formats
 

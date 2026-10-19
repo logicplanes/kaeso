@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
+import { providerMark } from "@logicplanes/kaeso-tokens";
 import { PROVIDER_MARKS } from "./provider-marks.js";
 import { Slider } from "../slider/slider.js";
 import { LocaleProvider } from "../../i18n/index.js";
@@ -114,16 +115,15 @@ describe("Slider", () => {
   });
 });
 
-const BUILT_IN_PROVIDERS = {
+const MARKED_PROVIDERS = {
   openai: "OpenAI",
-  anthropic: "Anthropic",
   deepseek: "DeepSeek",
   xai: "SpaceX",
   togetherai: "Together AI",
-  groq: "Groq",
   openrouter: "OpenRouter",
   mistral: "Mistral",
 };
+const LETTERED_PROVIDERS = { anthropic: ["Anthropic", "A"], groq: ["Groq", "Gq"] } as const;
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 
 function pathEndpoints(d: string) {
@@ -174,27 +174,47 @@ function pathEndpoints(d: string) {
 }
 
 describe("provider marks", () => {
-  it.each(Object.entries(BUILT_IN_PROVIDERS))("draws %s's own mark, named %s", (id, name) => {
+  it.each(Object.entries(MARKED_PROVIDERS))("draws %s's own mark, named %s", (id, name) => {
     render(<ProviderBadge provider={id} />);
     const badge = screen.getByRole("img", { name });
     const svg = badge.querySelector("svg");
     expect(providerName(id)).toBe(name);
     expect(badge).toHaveTextContent(/^$/);
+    expect(badge).toHaveClass(PROVIDER_MARKS[id]!.color);
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
     expect(svg).toHaveAttribute("fill", "currentColor");
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
     const paths = svg!.querySelectorAll("path");
     expect(paths).toHaveLength(1);
-    expect(paths[0]).toHaveAttribute("d", PROVIDER_MARKS[id]);
+    expect(paths[0]).toHaveAttribute("d", PROVIDER_MARKS[id]!.d);
     expect(paths[0]!.getAttributeNames()).toEqual(["d"]);
   });
 
-  it("has a mark for every built-in provider and for nothing else", () => {
-    expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(BUILT_IN_PROVIDERS).sort());
+  it.each(Object.entries(LETTERED_PROVIDERS))("writes a letter for %s, whose guidelines don't allow its logo here", (id, [name, letter]) => {
+    render(<ProviderBadge provider={id} />);
+    const badge = screen.getByRole("img", { name });
+    expect(badge).toHaveTextContent(new RegExp(`^${letter}$`));
+    expect(badge.querySelector("svg")).toBeNull();
+    expect(PROVIDER_MARKS[id]).toBeUndefined();
   });
 
-  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, d) => {
+  it("has a mark for every provider whose guidelines allow one, and for nothing else", () => {
+    expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
+  });
+
+  it("draws each mark in its owner's one-colour version for each theme, or in the text colour where no colour is set", () => {
+    for (const [id, mark] of Object.entries(PROVIDER_MARKS)) {
+      if (mark.color === "text-fg") expect(providerMark, id).not.toHaveProperty(id);
+      else {
+        expect(mark.color, id).toBe(`text-mark-${id}`);
+        expect(providerMark, id).toHaveProperty(id);
+      }
+    }
+    expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
+  });
+
+  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, { d }) => {
     expect(d).toMatch(/^M/);
     expect(d).not.toMatch(/\d\.\d{4}/);
     const points = pathEndpoints(d);
@@ -211,7 +231,7 @@ describe("provider marks", () => {
   it.each(Object.keys(KAESO_IDENTITY_VARIANTS.provider))("draws every mark at the %s size", (size) => {
     render(
       <>
-        {Object.keys(BUILT_IN_PROVIDERS).map((id) => (
+        {Object.keys(MARKED_PROVIDERS).map((id) => (
           <ProviderBadge key={id} provider={id} size={size as keyof typeof KAESO_IDENTITY_VARIANTS.provider} />
         ))}
       </>,
