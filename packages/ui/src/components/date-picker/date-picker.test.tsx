@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DatePicker, DateRangePicker, type DateRange } from "./date-picker.js";
 import { describeInTimeZone, TIME_ZONES } from "../../../test/time-zone.js";
@@ -65,6 +65,22 @@ describe("DateRangePicker's popover", () => {
     screen.getByRole("listbox", { name: "Presets" });
   };
 
+  it("makes the presets one tab stop that the arrow keys, Home and End move through", async () => {
+    render(<DateRangePicker aria-label="Period" />);
+    await open();
+    const options = within(screen.getByRole("listbox", { name: "Presets" })).getAllByRole("option");
+    expect(options.filter((o) => o.tabIndex === 0)).toHaveLength(1);
+    const start = options.find((o) => o.tabIndex === 0)!;
+    start.focus();
+    await userEvent.keyboard("{Home}");
+    expect(options[0]).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    expect(options.at(-1)).toHaveFocus();
+    await userEvent.keyboard("{Home}{ArrowDown}");
+    expect(options.indexOf(document.activeElement as HTMLElement)).toBeGreaterThan(0);
+    await userEvent.keyboard("{ArrowUp}");
+    expect(options[0]).toHaveFocus();
+  });
   it("opens on the range's months, its last on the right", async () => {
     render(
       <DateRangePicker

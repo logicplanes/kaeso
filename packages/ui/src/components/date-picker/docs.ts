@@ -20,10 +20,7 @@ export const docs = {
       size: "The height of the field.",
       value: "The chosen day, when you control it.",
       weekStartsOn: "The first day of the week, from 0 (Sunday) to 6 (Saturday); the language decides by default.",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   DateRangePicker: {
@@ -49,10 +46,7 @@ export const docs = {
       size: "The height of the field.",
       value: "The chosen range, when you control it.",
       weekStartsOn: "The first day of the week, from 0 (Sunday) to 6 (Saturday); the language decides by default.",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   TimeInput: {
@@ -71,10 +65,7 @@ export const docs = {
       size: "The height of the field.",
       utc: 'Shows "UTC" after the time.',
       value: '"HH:MM" in 24 hours.',
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
 } satisfies ComponentDocs;

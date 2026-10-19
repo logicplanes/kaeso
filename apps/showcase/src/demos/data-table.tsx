@@ -145,14 +145,19 @@ export const meta = {
   entry: "data-table",
   import: "DataTable, col",
   keyboard: [
-    ["Tab", "Moves to the next row"],
+    ["Tab", "Moves into the table, to the row last in focus, and out again"],
+    ["Up Down", "Move between rows"],
+    ["Home End", "First and last row"],
+    ["Page Up Page Down", "A screen of rows up or down"],
     ["Enter", "Opens the row"],
+    ["Space", "Selects the row, in a selectable table"],
+    ["Left Right", "Resize a column, on its handle"],
     ["shift F10", "Opens the row menu"],
   ],
   a11y: [
     "role=table with column headers; sorted columns carry aria-sort.",
     "Columns declare a priority; low-priority columns hide first when space is short. A growing column then shrinks to its readable minimum (minWidth, 136px by default) and truncates. On a screen narrower still, the other priority 1 columns give way from the row's end backwards, keeping its last column (the actions) and the selection boxes; only a row with nothing left to give way scrolls sideways, its last column pinned at the end.",
-    "Over 100 rows render virtually; the row count is in aria-rowcount.",
+    "Over 100 rows render virtually; the row count is in aria-rowcount and each row's place in aria-rowindex.",
   ],
 };
 export const examples = [

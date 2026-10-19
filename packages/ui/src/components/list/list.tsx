@@ -288,6 +288,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
       }}
       role="grid"
       aria-label={ariaLabel}
+      aria-rowcount={flat.length || undefined}
       aria-multiselectable={selectable || undefined}
       aria-busy={loading || undefined}
       onKeyDown={(e) => {
@@ -415,7 +416,11 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
   const lines = narrow && !!(item.meta || item.date);
   const stacked = (card || lines) && !!item.subtitle;
   return (
-    <div role="row" className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : padded ? "px-0" : "px-24"}>
+    <div
+      role="row"
+      aria-rowindex={index !== undefined ? index + 1 : undefined}
+      className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : padded ? "px-0" : "px-24"}
+    >
       <div
         ref={ref}
         role="gridcell"
@@ -463,7 +468,11 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         )}
         {item.glyph && <span className="flex size-16 shrink-0 items-center justify-center">{item.glyph}</span>}
         {item.leading && <span className="-mr-4 flex shrink-0">{item.leading}</span>}
-        {item.displayId && <span className={cn("shrink-0 truncate mono text-small text-fg-tertiary tabular", idWidth && ID_W[idWidth])}>{item.displayId}</span>}
+        {item.displayId && (
+          <span className={cn("shrink-0 truncate mono text-small text-fg-tertiary tabular", selected && "text-fg-secondary", idWidth && ID_W[idWidth])}>
+            {item.displayId}
+          </span>
+        )}
         <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-start gap-4" : "contents")}>
           <span className={cn("flex min-w-0", lines ? "w-full" : "flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8")}>
             {typeof item.title === "string" ? (
@@ -536,6 +545,7 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
     <div
       ref={ref}
       role="row"
+      aria-rowindex={index !== undefined ? index + 1 : undefined}
       onFocus={onFocus}
       className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : cn("group/gh pt-16 first:pt-0", padded ? "px-0" : "px-24")}
     >
