@@ -28,7 +28,7 @@ pub enum Probe {
 enum Listing {
     Complete(HashSet<String>),
     Unfinished,
-    Failed,
+    Failed(KppError),
 }
 
 type ListingKey = (&'static str, DialectId, KeyInUse);
@@ -125,7 +125,7 @@ impl Asked<'_> {
             }
             Err(e) => {
                 tracing::info!(provider, kind = e.kind.as_str(), error = %e.message, "the provider's model listing cannot confirm a model not found");
-                Listing::Failed
+                Listing::Failed(e)
             }
         }
     }
@@ -160,7 +160,8 @@ pub async fn probe(
     match cell.get_or_init(|| asked.listing()).await {
         Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
         Listing::Complete(_) => Probe::Unserved,
-        Listing::Unfinished | Listing::Failed => Probe::Inconclusive(not_found),
+        Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
+        Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }
 }
 

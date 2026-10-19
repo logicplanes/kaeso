@@ -828,6 +828,34 @@ async fn a_model_listing_answers_when_the_model_endpoint_is_missing() {
 }
 
 #[tokio::test]
+async fn a_model_listing_that_refuses_the_key_reports_the_key_refused() {
+    let env = env().await;
+    replace_key(&env, "openai", "sk-[mock:models=list-refuses-key]-0004").await;
+    let body = check(&env).await;
+    let refused = "OpenAI refused the project's provider key; an org admin can replace it.";
+    let models = [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "text-embedding-3-small",
+        UNSERVED_GPT,
+    ];
+    assert_eq!(
+        failures(&body),
+        models
+            .iter()
+            .map(|m| (
+                (*m).to_owned(),
+                "key_refused".to_owned(),
+                refused.to_owned()
+            ))
+            .collect::<Vec<_>>()
+    );
+    for model in models {
+        assert_eq!(entry(&env, model).await["availability"], "unchecked");
+    }
+}
+
+#[tokio::test]
 async fn a_model_listing_that_never_ends_decides_nothing() {
     let env = env().await;
     replace_key(&env, "anthropic", "sk-ant-[mock:models=endless]-0003").await;
