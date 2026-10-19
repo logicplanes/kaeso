@@ -107,7 +107,7 @@ Images are tagged with the version and, for stable releases, with `MAJOR.MINOR`,
 
 ### Commits and attestations
 
-The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it, changing only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists, and tags that commit `vX.Y.Z`. Before it commits, it checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own.
+The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it and tags that commit `vX.Y.Z`. The release commit changes only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists. Before it commits, the Tag job checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own.
 
 The Tag job pushes only the tag: `prod` gets the release commit with the next push from `dev`, which has it from step 5. Every image, package and asset is built from the tag.
 

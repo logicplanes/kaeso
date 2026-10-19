@@ -107,7 +107,7 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
 
 ### 提交与证明
 
-运行从 `prod` 的提交开始。版本需要变化时，Tag 作业会在其上提交 `Release X.Y.Z`，只修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 列出的文件，并把这个提交标记为 `vX.Y.Z`。提交之前，它会检查除 `CHANGELOG.md` 外的这些修改，与 `node scripts/version.mjs set` 在单独作业中写出的内容完全相同。
+运行从 `prod` 的提交开始。版本需要变化时，Tag 作业会在其上提交 `Release X.Y.Z`，并把这个提交标记为 `vX.Y.Z`。这个版本提交只修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 列出的文件。提交之前，Tag 作业会检查除 `CHANGELOG.md` 外的这些修改，与 `node scripts/version.mjs set` 在单独作业中写出的内容完全相同。
 
 Tag 作业只推送标签：`prod` 会在下一次从 `dev` 推送时得到这个版本提交，因为 `dev` 在第 5 步中已经合并了它。每个镜像、软件包和资产都从该标签构建。
 

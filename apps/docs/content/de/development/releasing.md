@@ -107,7 +107,7 @@ Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.M
 
 ### Commits und Attestierungen
 
-Der Lauf beginnt auf dem Commit von `prod`. Ändert sich die Version, committet der Job Tag darauf `Release X.Y.Z`, der nur `CHANGELOG.md` und die Dateien ändert, die `node scripts/version.mjs files` auflistet, und taggt diesen Commit als `vX.Y.Z`. Vor dem Commit prüft er, dass diese Änderungen außer `CHANGELOG.md` dem entsprechen, was `node scripts/version.mjs set` in einem eigenen Job schreibt.
+Der Lauf beginnt auf dem Commit von `prod`. Ändert sich die Version, committet der Job Tag darauf `Release X.Y.Z` und taggt diesen Commit als `vX.Y.Z`. Der Release-Commit ändert nur `CHANGELOG.md` und die Dateien, die `node scripts/version.mjs files` auflistet. Vor dem Commit prüft der Job Tag, dass diese Änderungen außer `CHANGELOG.md` dem entsprechen, was `node scripts/version.mjs set` in einem eigenen Job schreibt.
 
 Der Job Tag pusht nur den Tag: `prod` bekommt den Release-Commit mit dem nächsten Push von `dev`, das ihn aus Schritt 5 hat. Jedes Image, jedes Paket und jedes Asset wird aus dem Tag gebaut.
 

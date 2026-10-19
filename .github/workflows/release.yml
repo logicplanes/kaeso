@@ -901,7 +901,7 @@ jobs:
           if [[ "$PRERELEASE" == true ]]; then flags=(--prerelease --latest=false); fi
           if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json tagName >/dev/null 2>&1; then
             gh release upload "v$VERSION" "$RUNNER_TEMP"/assets/* --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+            gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
             echo "Updated the existing [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION) with this run's assets and notes." >> "$GITHUB_STEP_SUMMARY"
           else
             gh release create "v$VERSION" "$RUNNER_TEMP"/assets/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "Kaeso $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"

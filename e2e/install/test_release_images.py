@@ -110,6 +110,7 @@ def test_the_github_release_job_can_run_again_on_an_existing_release():
     assert 'gh release view "v$VERSION"' in release
     assert "--clobber" in release
     assert 'gh release edit "v$VERSION"' in release
+    assert "--draft=false" in release
     assert release.index('gh release view "v$VERSION"') < release.index('gh release create "v$VERSION"')
 
 
