@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isVersion } from "./version.mjs";
@@ -9,13 +9,26 @@ export const SCHEMA = 1;
 export const UPDATER_PROTOCOL = 1;
 export const SERVICES = ["gateway", "console", "updater"];
 
-const IMAGE = /(ghcr\.io\/logicplanes\/kaeso-(?:gateway|console|updater):)([0-9A-Za-z.+-]+)/g;
+const IMAGE = /(ghcr\.io\/logicplanes\/kaeso-(gateway|console|updater):)([0-9A-Za-z.+-]+)(@sha256:[0-9a-f]{64})?(?![0-9A-Za-z.+_-])/g;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export const retag = (text, version) => text.replace(IMAGE, (_, image) => `${image}${version}`);
+
+export function pin(text, version, digests) {
+  const pinned = new Set();
+  const out = text.replace(IMAGE, (match, image, service, tag) => {
+    if (tag !== version) return match;
+    pinned.add(service);
+    return `${image}${version}@${digests[service]}`;
+  });
+  for (const service of SERVICES) {
+    if (!pinned.has(service)) throw new Error(`compose.yaml has no ghcr.io/logicplanes/kaeso-${service}:${version} to pin`);
+  }
+  return out;
+}
 
 export function composeChanged(previous, current, version) {
   return previous !== null && retag(previous, version) !== current;
@@ -79,6 +92,7 @@ export function manifest({ version, commit, digests, compose, migrations, previo
     images[service] = { name: `ghcr.io/logicplanes/kaeso-${service}`, digest };
   }
   const text = compose.toString("utf8");
+  const published = pin(text, version, digests);
   const needsSteps = manual || composeChanged(previousCompose, text, version);
   return {
     schema: SCHEMA,
@@ -88,7 +102,7 @@ export function manifest({ version, commit, digests, compose, migrations, previo
     manual_since: manualSince({ version, manual: needsSteps, previous }),
     updater_protocol: UPDATER_PROTOCOL,
     images,
-    compose: { name: "compose.yaml", sha256: sha256(compose) },
+    compose: { name: "compose.yaml", sha256: sha256(published) },
     migrations,
   };
 }
@@ -102,15 +116,17 @@ function options(argv) {
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const o = options(process.argv.slice(2));
   const digests = Object.fromEntries(SERVICES.map((s) => [s, readFileSync(`${o.digests}/${s}`, "utf8").trim()]));
+  const compose = readFileSync(o.compose);
   const result = manifest({
     version: o.version,
     commit: sourceCommit({ cwd: process.cwd(), version: o.version, commit: o.commit }),
     digests,
-    compose: readFileSync(o.compose),
+    compose,
     migrations: latestMigrations(o.migrations),
     previousCompose: o.previous ? readFileSync(o.previous, "utf8") : null,
     previous: previousManifest({ cwd: process.cwd(), tag: o["previous-tag"], path: o["previous-manifest"] }),
     manual: o.manual === "true",
   });
+  if (o["compose-out"]) writeFileSync(o["compose-out"], pin(compose.toString("utf8"), o.version, digests));
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

@@ -46,7 +46,7 @@ flowchart TD
 
 ## Was ein Release mitbringt
 
-Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` und attestiert ihre Build-Provenienz. Danach schreibt er `release.json` (`scripts/release-manifest.mjs`), und ein Job, der nur diese Datei sieht, attestiert sie. Das Release entsteht nur, wenn `release.json` und jedes Image mit `gh attestation verify` gegen diesen Workflow auf `refs/heads/prod` und den Commit bestehen, den `release.json` nennt:
+Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` und attestiert ihre Build-Provenienz. Danach schreibt er `release.json` (`scripts/release-manifest.mjs`), und ein Job, der nur diese Datei sieht, attestiert sie. Derselbe Schritt schreibt die `compose.yaml` des Releases: `deploy/compose.yaml`, in der jedes Kaeso-Image auf die Version und den Digest seines Index festgelegt ist, etwa `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`. `release.json` nennt den Hash dieser Datei. Das Release entsteht nur, wenn `release.json` und jedes Image mit `gh attestation verify` gegen diesen Workflow auf `refs/heads/prod` und den Commit bestehen, den `release.json` nennt:
 
 ```json
 {
@@ -69,7 +69,7 @@ Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` u
 | Feld | Bedeutung |
 | --- | --- |
 | `commit` | Der Commit, auf dem der Release-Workflow lief und den die Attestierungen nennen, nicht der Release-Commit darüber |
-| `manual` | Wahr, wenn die Eingabe **manual** des Workflows es sagt oder wenn sich `compose.yaml` von der des vorigen Releases in mehr als den Image-Versionen unterscheidet |
+| `manual` | Wahr, wenn die Eingabe **manual** des Workflows es sagt oder wenn sich `compose.yaml` von der des vorigen Releases in mehr als den Image-Versionen und Digests unterscheidet |
 | `manual_since` | Das neueste Release bis zu diesem mit `manual: true`, übernommen aus der `release.json` des vorigen Releases |
 | `migrations` | Die neueste PostgreSQL- und ClickHouse-Migration des Releases |
 
@@ -79,11 +79,11 @@ Der Release-Workflow baut `kaeso-gateway`, `kaeso-console` und `kaeso-updater` u
 
 `crates/kaeso-updater` ist ein kleiner Server auf Port 8081. `GET /healthz` braucht kein Token; `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) und `GET /v1/updates/{id}` brauchen `Authorization: Bearer` mit dem gemeinsamen Token. Er führt jeweils nur ein Update aus und hält es in `/state/job.json`, das nach jeder Änderung atomar geschrieben wird. Ein Update durchläuft diese Schritte (`engine.rs`):
 
-1. **Prüfen.** Er lädt `release.json` herunter und prüft sie vor allem anderen, dann prüft er die laufende Installation dagegen ([die Prüfungen](#was-der-updater-prüft)). Außerdem prüft er, dass die lokale `compose.yaml` mit den neuen Image-Versionen Byte für Byte der des Releases gleicht, und legt eine Kopie in `/state` ab.
+1. **Prüfen.** Er lädt `release.json` herunter und prüft sie vor allem anderen, dann prüft er die laufende Installation dagegen ([die Prüfungen](#was-der-updater-prüft)). Außerdem prüft er, dass die lokale `compose.yaml` mit den neuen Image-Versionen und Digests Byte für Byte der des Releases gleicht, und legt eine Kopie in `/state` ab.
 2. **Herunterladen.** Er zieht die drei Images per Digest, und das Versions-Label jedes Images muss dem Release entsprechen. Die `release.json` des laufenden Releases prüft er genauso und vergleicht die Migrationen. Unterscheiden sie sich oder lässt sich dieses Manifest nicht beschaffen, gilt das Update als Migration der Datenbank.
 3. **Austauschen.** Er schreibt das Wartungs-Flag. Dann stoppt er für die Konsole und danach für das Gateway den Container, benennt ihn in `…-previous` um und legt den neuen mit den Einstellungen des alten an (`clone.rs`). Alles, was das alte Image mitbrachte, fällt weg, sodass Umgebung, Befehl und Healthcheck des neuen Images gelten.
 4. **Migrieren.** Er wartet auf jeden Healthcheck: 2 Minuten für die Konsole und 10 für die Migrationen des Gateways. Ein Absturz, ein Neustart oder ein gestoppter Container schlägt sofort fehl.
-5. **Online.** Er schreibt die neuen Versionen in `compose.yaml`, wenn die Datei noch die geprüfte ist, taggt die Images, entfernt die vorigen Container und löscht das Flag.
+5. **Online.** Er schreibt die neuen Versionen und Digests in `compose.yaml`, wenn die Datei noch die geprüfte ist, taggt die Images, entfernt die vorigen Container und löscht das Flag.
 
 Ein Fehler vor dem Austausch ändert nichts (`failed`). Ein Fehler danach startet die vorigen Container wieder und wartet auf sie (`rolled_back` oder `rollback_failed`). Kann das neue Gateway die Datenbank schon migriert haben, wird nichts wiederhergestellt: Das neue Gateway und die neue Konsole bleiben, und das Update endet mit `needs_attention`. Dasselbe gilt, wenn sich das Wartungs-Flag oder ein Container `…-previous` nicht entfernen lässt. Lässt sich `compose.yaml` nicht schreiben oder hat sich die Datei während des Updates geändert, endet das Update trotzdem mit `succeeded`, mit `compose_unwritable` oder `compose_changed` als Grund.
 
@@ -117,6 +117,6 @@ Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert
 | `crates/kaeso-server/tests/updates.rs` | Das Gateway gegen ein Mock-GitHub und einen Mock-Updater: bedingte Anfragen, Backoff, Manifeste, Rechte, das Audit-Log, die Sperre für ein Update und jedes Ende |
 | `crates/kaeso-updater/tests/verify.rs` | Die echten Attestierungen von Kaeso 0.1.0 bestehen; ein anderes Image, ein anderer Commit, Workflow, eine andere Signatur oder ein anderer Logeintrag nicht |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | Der Updater gegen eine nachgebildete Docker-API: ein vollständiges Update, jede Ablehnung, Rollbacks, Neustarts bei jedem Schritt, die Zustandsdatei und die API |
-| `scripts/release-manifest.test.mjs` | Das Manifest, `manual_since`, die neuesten Migrationen und der Commit |
+| `scripts/release-manifest.test.mjs` | Das Manifest, die festgelegte `compose.yaml`, `manual_since`, die neuesten Migrationen und der Commit |
 | `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und die Antworten von Caddy in jedem Format, solange Kaeso nicht erreichbar ist |
 | `apps/console` | Die Seite Updates in jedem Zustand und die Update-Seite in drei Sprachen |

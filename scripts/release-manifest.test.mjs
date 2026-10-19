@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { composeChanged, latestMigrations, manifest, manualSince, previousManifest, retag, sha256, sourceCommit } from "./release-manifest.mjs";
+import { composeChanged, latestMigrations, manifest, manualSince, pin, previousManifest, retag, sha256, sourceCommit } from "./release-manifest.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const digest = (c) => `sha256:${c.repeat(64)}`;
@@ -13,9 +13,19 @@ const digests = { gateway: digest("a"), console: digest("b"), updater: digest("c
 const commit = "5388ad0b98aa3d957fea99e200259842bf746680";
 const migrations = { postgres: "20261017140001_updates", clickhouse: "0002_usage_rollups" };
 const compose = (v, extra = "") =>
-  `services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:${v}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:${v}\n  caddy:\n    image: caddy:2${extra}\n`;
+  `services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:${v}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:${v}\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:${v}\n  caddy:\n    image: caddy:2${extra}\n`;
+const pinned = (v) =>
+  `services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:${v}@${digest("a")}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:${v}@${digest("b")}\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:${v}@${digest("c")}\n  caddy:\n    image: caddy:2\n`;
 
-test("the manifest names every image by digest, the compose file by hash and the latest migrations", () => {
+test("the published compose file pins every Kaeso image to its version and digest", () => {
+  assert.equal(pin(compose("3.4.6"), "3.4.6", digests), pinned("3.4.6"));
+  assert.throws(() => pin(compose("3.4.5"), "3.4.6", digests), /no ghcr\.io\/logicplanes\/kaeso-gateway:3\.4\.6 to pin/);
+  assert.throws(() => pin(compose("3.4.6").replace(/  updater:\n.*\n/, ""), "3.4.6", digests), /kaeso-updater:3\.4\.6/);
+  assert.equal(retag(pinned("3.4.6"), "3.4.7"), compose("3.4.7"));
+  assert.equal(composeChanged(pinned("3.4.5"), compose("3.4.6"), "3.4.6"), false);
+});
+
+test("the manifest names every image by digest, the published compose file by hash and the latest migrations", () => {
   const file = Buffer.from(compose("3.4.6"));
   const m = manifest({ version: "3.4.6", commit, digests, compose: file, migrations, previousCompose: compose("3.4.5") });
   assert.deepEqual(m, {
@@ -30,7 +40,7 @@ test("the manifest names every image by digest, the compose file by hash and the
       console: { name: "ghcr.io/logicplanes/kaeso-console", digest: digest("b") },
       updater: { name: "ghcr.io/logicplanes/kaeso-updater", digest: digest("c") },
     },
-    compose: { name: "compose.yaml", sha256: sha256(file) },
+    compose: { name: "compose.yaml", sha256: sha256(pinned("3.4.6")) },
     migrations,
   });
 });
@@ -177,9 +187,14 @@ test("the command line writes the manifest from the digest files, the migrations
       join(dir, "previous.json"),
       "--manual",
       "false",
+      "--compose-out",
+      join(dir, "published.yaml"),
     ];
     const m = JSON.parse(execFileSync(process.execPath, args(prod), { cwd: dir, encoding: "utf8" }));
     assert.equal(m.commit, prod);
+    const published = readFileSync(join(dir, "published.yaml"), "utf8");
+    assert.equal(published, pinned("3.4.6"));
+    assert.equal(m.compose.sha256, sha256(published));
     assert.equal(m.images.console.digest, digest("b"));
     assert.equal(m.manual, false);
     assert.equal(m.manual_since, "3.4.4");

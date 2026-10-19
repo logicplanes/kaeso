@@ -4,19 +4,29 @@ description: Aktualisieren Sie Kaeso von Hand, aus der Konsole oder automatisch,
 order: 8
 ---
 
-Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic Versioning. Seine `compose.yaml` legt die Images des Releases fest. Aktualisieren Sie von Hand, was immer funktioniert, oder über den Updater: aus der Konsole oder automatisch in einem Fenster, das Sie festlegen.
+Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic Versioning. Seine `compose.yaml` legt jedes Image auf eine Version und einen Digest fest. Aktualisieren Sie von Hand, was immer funktioniert, oder über den Updater: aus der Konsole oder automatisch in einem Fenster, das Sie festlegen.
 
 ## Von Hand aktualisieren
 
 1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Einstellungen** › **Instanz** › **Updates**.
 2. [Sichern](backups.md) Sie PostgreSQL und ClickHouse, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
-3. Laden Sie im Ordner der Installation die neue `compose.yaml` über die alte. `.env`, `master-keys` und `compose.override.yaml` bleiben, wie sie sind.
+3. Laden Sie im Ordner der Installation die neue `compose.yaml` über die alte und die `release.json` des Releases daneben. `.env`, `master-keys` und `compose.override.yaml` bleiben, wie sie sind.
 
 ```bash
 curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/release.json
 ```
 
-4. Laden Sie die neuen Images und starten Sie sie:
+4. Prüfen Sie, dass der Release-Workflow von Kaeso das Release gebaut hat. `release.json` trägt die Signatur des Workflows und nennt den Hash der `compose.yaml`, die jedes Kaeso-Image mit seinem Digest nennt. Prüfen Sie mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq` die Signatur, dann den Hash:
+
+```bash
+gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
+echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -
+```
+
+Beide Befehle scheitern, wenn etwas abweicht. Docker prüft danach jedes geladene Image gegen den Digest in der `compose.yaml`.
+
+5. Laden Sie die neuen Images und starten Sie sie:
 
 ```bash
 docker compose pull
@@ -25,7 +35,7 @@ docker compose up -d --wait
 
 Der Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
-Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Befehle mit der genauen Version.
+Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole die Befehle der Schritte 3 und 5 mit der genauen Version.
 
 ## Neue Releases
 
@@ -125,7 +135,7 @@ Der Verlauf der Seite zeigt, wie jedes Update ausgegangen ist:
 
 | Ergebnis | Bedeutung |
 | --- | --- |
-| **Aktualisiert** | Die neue Version läuft. Meldet das Ergebnis, dass der Updater die `compose.yaml` nicht schreiben konnte, setzen Sie die Image-Tags von Kaeso darin selbst auf die neue Version. |
+| **Aktualisiert** | Die neue Version läuft. Meldet das Ergebnis, dass der Updater die `compose.yaml` nicht schreiben konnte, laden Sie die `compose.yaml` des neuen Releases darüber, wie unter [von Hand aktualisieren](#von-hand-aktualisieren). |
 | **Nicht eingespielt** | Nichts hat sich geändert. |
 | **Zurückgesetzt** | Die neue Version startete nicht, und die vorherige läuft wieder. |
 | **Zurücksetzen fehlgeschlagen** | Die neue Version startete nicht, die vorherige auch nicht. |
@@ -133,7 +143,7 @@ Der Verlauf der Seite zeigt, wie jedes Update ausgegangen ist:
 
 Der Updater setzt selbst zurück, wann immer das sicher geht. Das geht nicht, wenn das neue Gateway scheitert, nachdem es die Datenbanken womöglich migriert hat, denn das vorherige Gateway kann nicht mit ihnen laufen. Dann endet das Update mit **Prüfung nötig**, das neue Gateway und die neue Konsole bleiben, und die vorherigen bleiben angehalten als `kaeso-gateway-1-previous` und `kaeso-console-1-previous`. Wählen Sie einen Weg:
 
-- Finden Sie mit `docker compose logs gateway` heraus, warum das neue Gateway nicht startet, beheben Sie es und setzen Sie die Image-Tags in der `compose.yaml` auf die neue Version.
+- Finden Sie mit `docker compose logs gateway` heraus, warum das neue Gateway nicht startet, beheben Sie es und laden Sie die `compose.yaml` des neuen Releases, wie unter [von Hand aktualisieren](#von-hand-aktualisieren).
 - Oder stellen Sie das Backup wieder her und führen Sie die alte Version aus, wie unter [Downgrade](#downgrade) beschrieben.
 
 Entfernen Sie danach beide `…-previous`-Container mit `docker rm`. Solange einer existiert, startet der Updater kein weiteres Update.
@@ -145,7 +155,7 @@ Der Updater kann Container anlegen; wer ihn kontrolliert, kontrolliert also den 
 - Er antwortet nur dem Gateway, in einem internen Netzwerk und nur mit dem gemeinsamen Token. Das Gateway übergibt ihm eine Versionsnummer und sonst nichts.
 - Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht.
 - Er ersetzt nur die Gateway- und Konsolen-Container seines eigenen Compose-Projekts, mit Images, die er geprüft hat.
-- Er ändert in der `compose.yaml` nur die Image-Versionen und lässt eine Datei unangetastet, die von der des Releases abweicht.
+- Er ändert in der `compose.yaml` nur die Image-Versionen und Digests und lässt eine Datei unangetastet, die von der des Releases abweicht.
 
 Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
 

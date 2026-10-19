@@ -414,7 +414,7 @@ pub struct Releases {
 
 impl Releases {
     pub fn add(&mut self, version: &str, shape: &Shape<'_>) {
-        let compose = compose_text(version);
+        let compose = release_compose(version);
         self.by_version.insert(
             version.to_owned(),
             Release {
@@ -500,6 +500,17 @@ impl Verify for Verifier {
 pub fn compose_text(version: &str) -> Vec<u8> {
     format!(
         "name: kaeso\nservices:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:{version}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:{version}\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:{version}\n    profiles: [updater]\n"
+    )
+    .into_bytes()
+}
+
+pub fn release_compose(version: &str) -> Vec<u8> {
+    let image = |s: Service| format!("{}:{version}@{}", s.image(), digest_of(s));
+    format!(
+        "name: kaeso\nservices:\n  gateway:\n    image: {}\n  console:\n    image: {}\n  updater:\n    image: {}\n    profiles: [updater]\n",
+        image(Service::Gateway),
+        image(Service::Console),
+        image(Service::Updater),
     )
     .into_bytes()
 }

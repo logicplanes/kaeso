@@ -675,16 +675,25 @@ jobs:
               since+=(--previous-manifest "$RUNNER_TEMP/previous-release.json")
             fi
           fi
+          mkdir -p "$RUNNER_TEMP/compose"
           node scripts/release-manifest.mjs --version "$VERSION" --commit "$GITHUB_SHA" --digests "$RUNNER_TEMP/published" \
-            --compose deploy/compose.yaml --migrations crates/kaeso-store/migrations --manual "$MANUAL" "${since[@]}" > "$out/release.json"
+            --compose deploy/compose.yaml --compose-out "$RUNNER_TEMP/compose/compose.yaml" \
+            --migrations crates/kaeso-store/migrations --manual "$MANUAL" "${since[@]}" > "$out/release.json"
           if [[ "$(jq -r .manual "$out/release.json")" == true ]]; then
             echo "Installs update to $VERSION by hand: it was marked so, or it changes compose.yaml beyond the image versions." >> "$GITHUB_STEP_SUMMARY"
           fi
           cat "$out/release.json"
+          grep -E 'image: ghcr\.io/logicplanes/kaeso-' "$RUNNER_TEMP/compose/compose.yaml"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-manifest
           path: ${{ runner.temp }}/manifest/release.json
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-compose
+          path: ${{ runner.temp }}/compose/compose.yaml
           if-no-files-found: error
           retention-days: 7
 
@@ -733,6 +742,10 @@ jobs:
           path: ${{ runner.temp }}/assets
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
+          name: release-compose
+          path: ${{ runner.temp }}/assets
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
           pattern: published-*
           merge-multiple: true
           path: ${{ runner.temp }}/published
@@ -740,7 +753,7 @@ jobs:
         run: |
           set -euo pipefail
           assets="$RUNNER_TEMP/assets"
-          cp deploy/compose.yaml deploy/kaeso.example.toml "$assets/"
+          cp deploy/kaeso.example.toml "$assets/"
           cp deploy/.env.example "$assets/env.example"
           for package in tokens ui; do
             curl -fsSL --retry 5 --retry-all-errors -o "$assets/logicplanes-kaeso-$package-$VERSION.tgz" "https://registry.npmjs.org/@logicplanes/kaeso-$package/-/kaeso-$package-$VERSION.tgz"
@@ -760,10 +773,19 @@ jobs:
           fi
           trust=(--repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" --source-ref refs/heads/prod --source-digest "$commit")
           gh attestation verify "$manifest" "${trust[@]}"
+          compose="$RUNNER_TEMP/assets/compose.yaml"
+          if [[ "$(sha256sum "$compose" | cut -d' ' -f1)" != "$(jq -r .compose.sha256 "$manifest")" ]]; then
+            echo "::error::compose.yaml doesn't match the hash release.json names; the updater would refuse the release."
+            exit 1
+          fi
           for image in gateway console updater; do
             digest="$(cat "$RUNNER_TEMP/published/$image")"
             if [[ "$(jq -r ".images.$image.digest" "$manifest")" != "$digest" ]]; then
               echo "::error::release.json names another digest for kaeso-$image than the one published."
+              exit 1
+            fi
+            if ! grep -qxF "    image: ghcr.io/logicplanes/kaeso-$image:$VERSION@$digest" "$compose"; then
+              echo "::error::compose.yaml doesn't pin kaeso-$image to $VERSION@$digest."
               exit 1
             fi
             gh attestation verify "oci://ghcr.io/logicplanes/kaeso-$image@$digest" "${trust[@]}"
