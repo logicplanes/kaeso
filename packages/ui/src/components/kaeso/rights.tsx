@@ -169,7 +169,7 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
         const someOn = changeable.some((r) => r.granted);
         return (
           <section key={g.label} aria-labelledby={headingId} className="flex min-w-0 flex-col">
-            <div className="flex items-start gap-12 pb-4">
+            <div className="flex items-start gap-12 px-12 pb-4">
               {!readOnly && (
                 <span className="flex h-20 items-center">
                   <CheckboxBox
@@ -315,7 +315,7 @@ function RightRow({
 
   if (readOnly) {
     return (
-      <div className="-mx-8 flex min-h-52 items-start gap-12 px-8 py-8">
+      <div className="flex min-h-52 items-start gap-12 px-12 py-8">
         <span className="flex h-20 w-18 shrink-0 items-center justify-center">
           <Icon
             icon={r.granted ? icons.check : icons.minus}
@@ -332,7 +332,7 @@ function RightRow({
   const row = (
     <label
       className={cn(
-        "-mx-8 flex min-h-52 cursor-pointer items-start gap-12 rounded-item px-8 py-8 transition-control hover:bg-fill-1",
+        "flex min-h-52 cursor-pointer items-start gap-12 rounded-item px-12 py-8 transition-control hover:bg-fill-1",
         flashed && "bg-fill-2 hover:bg-fill-2",
         r.disabled && "cursor-not-allowed",
       )}

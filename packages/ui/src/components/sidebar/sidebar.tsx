@@ -269,7 +269,7 @@ const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBran
     );
   }
   return (
-    <Header ref={ref} className={cn("justify-between pr-8 pl-28", className)}>
+    <Header ref={ref} className={cn("justify-between pr-16 pl-28", className)}>
       <BrandWordmark href={href} label={label} />
       {children && <span className="flex items-center">{children}</span>}
     </Header>

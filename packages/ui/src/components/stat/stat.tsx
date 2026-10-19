@@ -15,6 +15,7 @@ import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { Badge } from "../badge/badge.js";
 import { Sparkline } from "../charts/sparkline.js";
+import { Skeleton } from "../skeleton/skeleton.js";
 import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_STAT_VARIANTS = {
@@ -64,6 +65,7 @@ export interface StatTileProps {
   detail?: ReactNode | undefined;
   trend?: number[] | undefined;
   trendColor?: string | undefined;
+  loading?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -86,30 +88,51 @@ export const STAT_VALUE_STEPS = [
 
 const StatStepContext = createContext(0);
 
-export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatTile({ label, value, change, detail, trend, trendColor, className }, ref) {
+export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatTile(
+  { label, value, change, detail, trend, trendColor, loading, className },
+  ref,
+) {
   const t = useUiText();
   const locale = useLocale();
   const good = change && change.value !== 0 ? change.value > 0 === ((change.better ?? "up") === "up") : undefined;
   const step = STAT_VALUE_STEPS[useContext(StatStepContext)] ?? STAT_VALUE_STEPS[0];
   return (
-    <div ref={ref} role="listitem" className={cn("flex min-w-0 flex-col bg-raised px-20 pt-16", trend ? "pb-12" : "pb-16", className)}>
+    <div
+      ref={ref}
+      role="listitem"
+      aria-busy={loading || undefined}
+      className={cn("flex min-w-0 flex-col bg-raised px-20 pt-16", trend ? "pb-12" : "pb-16", className)}
+    >
       <span className="text-small font-medium text-fg-secondary">{label}</span>
       <span className="mt-6 flex h-34 min-w-0 items-center">
-        <span data-stat-value={step.px} className={cn("max-w-full truncate font-semibold text-fg tabular", step.classes)}>
-          {value}
+        <span data-stat-value={step.px} className={cn("max-w-full truncate font-semibold text-fg tabular", step.classes, loading && "flex")}>
+          {loading ? <Skeleton shape="line" className="h-20 w-96" /> : value}
         </span>
       </span>
-      <span className="mt-2 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary">
-        {change && Number.isFinite(change.value) && (
-          <span className="flex h-20 shrink-0 items-center">
-            <Badge tone={good === undefined ? "neutral" : good ? "success" : "danger"} className="shrink-0 tabular">
-              {changeLabel(change.value, t, locale)}
-            </Badge>
+      {loading ? (
+        <>
+          <span className="mt-2 flex h-20 items-center">
+            <Skeleton shape="line" className="w-120" />
           </span>
-        )}
-        {detail && <span className="min-w-0">{detail}</span>}
-      </span>
-      {trend && (
+          {trend && (
+            <span className="mt-auto h-40 shrink-0 pt-8">
+              <Skeleton className="h-full w-full" />
+            </span>
+          )}
+        </>
+      ) : (
+        <span className="mt-2 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary">
+          {change && Number.isFinite(change.value) && (
+            <span className="flex h-20 shrink-0 items-center">
+              <Badge tone={good === undefined ? "neutral" : good ? "success" : "danger"} className="shrink-0 tabular">
+                {changeLabel(change.value, t, locale)}
+              </Badge>
+            </span>
+          )}
+          {detail && <span className="min-w-0">{detail}</span>}
+        </span>
+      )}
+      {trend && !loading && (
         <span className="mt-auto h-40 shrink-0 pt-8">
           {trend.length > 1 && (
             <Sparkline

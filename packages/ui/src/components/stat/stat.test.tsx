@@ -19,6 +19,39 @@ describe("StatTile", () => {
   });
 });
 
+describe("StatTile loading", () => {
+  it("shows the tile's shape at its final height instead of a number, and says it is busy", () => {
+    render(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Requests" value="334" detail="vs. the previous 30 days" change={{ value: 0.29 }} trend={[]} loading />
+      </StatGrid>,
+    );
+    const tile = screen.getByRole("listitem");
+    expect(tile).toHaveAttribute("aria-busy", "true");
+    expect(tile).toHaveTextContent(/^Requests$/);
+    expect(tile.children).toHaveLength(4);
+    expect(tile.querySelectorAll("[aria-hidden]")).toHaveLength(3);
+    expect(tile.querySelectorAll("[data-stat-value]")).toHaveLength(1);
+  });
+  it("keeps a plain tile's height and padding while loading: no trend row it won't have", () => {
+    const { rerender } = render(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Projects" value="5" loading />
+      </StatGrid>,
+    );
+    const tile = screen.getByRole("listitem");
+    expect(tile.children).toHaveLength(3);
+    expect(tile).toHaveClass("pb-16");
+    rerender(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Projects" value="5" />
+      </StatGrid>,
+    );
+    expect(screen.getByRole("listitem").children).toHaveLength(3);
+    expect(screen.getByRole("listitem")).toHaveClass("pb-16");
+  });
+});
+
 describe("StatGrid", () => {
   it("gives three tiles three columns and never an empty fourth cell", () => {
     render(

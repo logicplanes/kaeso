@@ -145,7 +145,7 @@ export function StepDialog({
   };
   if (result)
     return (
-      <Dialog {...frame} size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
+      <Dialog {...frame} anchor="top" size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
         <p className="sr-only" aria-live="polite">
           {result.title}
         </p>
@@ -159,6 +159,7 @@ export function StepDialog({
   return (
     <Dialog
       {...frame}
+      anchor="top"
       busy={!!submitting}
       size={size}
       title={title}
