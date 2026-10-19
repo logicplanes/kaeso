@@ -349,6 +349,11 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/deepseek/pro-tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
   "providers/deepseek/prompt-cache-hit": {
     "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -380,6 +385,11 @@ expression: outcomes
     "unsupported": "thinking"
   },
   "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/tool-turn-without-reasoning-content": {
     "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "thinking"

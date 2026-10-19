@@ -319,6 +319,31 @@ expression: outcomes
       "output_tokens": 9
     }
   },
+  "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "The current weather in Paris is **14°C** with **light rain**.",
+        "type": "text"
+      }
+    ],
+    "id": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+    "model": "deepseek-v4-pro",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 423,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "providers/deepseek/recorded-prompt-cache-hit": {
     "content": [
       {
@@ -447,6 +472,31 @@ expression: outcomes
       "output_tokens": 68,
       "output_tokens_details": {
         "thinking_tokens": 10
+      }
+    }
+  },
+  "providers/deepseek/recorded-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔",
+        "type": "text"
+      }
+    ],
+    "id": "01196219-0832-4870-a63d-cb61ba063bb5",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 256,
+      "input_tokens": 176,
+      "output_tokens": 30,
+      "output_tokens_details": {
+        "thinking_tokens": 0
       }
     }
   },

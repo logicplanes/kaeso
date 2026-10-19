@@ -1,0 +1,32 @@
+{
+  "id": "01196219-0832-4870-a63d-cb61ba063bb5",
+  "object": "chat.completion",
+  "created": 1792374056,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔",
+        "reasoning_content": ""
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 432,
+    "completion_tokens": 30,
+    "total_tokens": 462,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 176
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}
