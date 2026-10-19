@@ -1,0 +1,15 @@
+{
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Summarize why GPU acceleration matters for deep learning in three concise bullet points."
+        }
+      ],
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 8192,
+      "seed": 42,
+      "stream": true,
+      "chat_template_kwargs": {"enable_thinking": true, "low_effort": true}
+}

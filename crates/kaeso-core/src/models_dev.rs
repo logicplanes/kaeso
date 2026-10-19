@@ -12,7 +12,7 @@ use crate::provider::{ProviderId, known_ids};
 
 pub const EMBEDDED: &str = include_str!("../data/models-dev.json");
 
-pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-18 02:35:05 UTC);
+pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-19 00:37:24 UTC);
 
 pub const DEFAULT_URL: &str = "https://models.dev/api.json";
 
@@ -314,7 +314,7 @@ mod tests {
         let none = parse(br#"{"x": {"models": {}}}"#, &known_ids()).unwrap_err();
         assert_eq!(
             none.to_string(),
-            "models.dev data has none of the providers openai, anthropic"
+            "models.dev data has none of the providers openai, anthropic, nvidia"
         );
     }
 

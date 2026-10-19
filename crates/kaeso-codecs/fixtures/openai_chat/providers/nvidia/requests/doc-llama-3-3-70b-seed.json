@@ -1,0 +1,13 @@
+{
+      "model": "meta/llama-3.3-70b-instruct",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Write a limerick about the wonders of GPU computing."
+        }
+      ],
+      "top_p": 0.7,
+      "max_tokens": 1024,
+      "seed": 42,
+      "stream": true
+}

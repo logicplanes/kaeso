@@ -8,7 +8,7 @@ The console runs at your install's domain, such as `https://kaeso.example.com`. 
 
 - [Organizations and projects](organizations-and-projects.md): Create organizations and projects, connect single sign-on, and manage their settings.
 - [Members and roles](members-and-roles.md): Invite people, give them roles and rights, and create service accounts.
-- [Provider keys](provider-keys.md): Connect your OpenAI and Anthropic keys, and choose which projects use each one.
+- [Provider keys](provider-keys.md): Connect your OpenAI, Anthropic and NVIDIA NIM keys, and choose which projects use each one.
 - [Models and aliases](models-and-aliases.md): Choose the models a project may call, and give them names of your own.
 - [API keys](api-keys.md): Create keys for apps and scripts, limit them, and turn them off.
 - [Limits and budgets](limits-and-budgets.md): Cap the requests, tokens and spending of a project, a member or a key.

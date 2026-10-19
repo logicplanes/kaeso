@@ -24,7 +24,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Richtung | Ports oder Hosts | Wofür |
 | --- | --- | --- |
 | Eingehend | TCP-Ports 80 und 443, dazu UDP-Port 443 für HTTP/3 | Das Zertifikat und HTTPS |
-| Ausgehend | `api.openai.com`, `api.anthropic.com` | Die Anbieter, die Sie nutzen |
+| Ausgehend | `api.openai.com`, `api.anthropic.com`, `integrate.api.nvidia.com` | Die Anbieter, die Sie nutzen |
 | Ausgehend | `models.dev` | Modelldaten, einmal am Tag aktualisiert |
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, zweimal am Tag |
 | Ausgehend | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | Der Updater |

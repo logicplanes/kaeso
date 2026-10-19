@@ -18,6 +18,21 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] =
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
+const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
+    (
+        "providers/nvidia/doc-nim-missing-messages-400",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/nvidia/doc-nvcf-internal-server-error",
+        ErrorKind::ProviderError,
+    ),
+    (
+        "providers/nvidia/doc-nvcf-unprocessable-entity",
+        ErrorKind::InvalidRequest,
+    ),
+];
+
 pub(super) fn raw(s: &str) -> RawJson {
     RawJson::from_string(s.to_owned()).unwrap()
 }
@@ -135,8 +150,48 @@ fn meta_headers(meta: &Value) -> HeaderList {
 }
 
 #[test]
+fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
+    for (name, kind) in FOREIGN_ERROR_BODIES {
+        let (_, body) = fixtures(D, "errors", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"));
+        let status = u16::try_from(
+            sidecar(D, "errors", name, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!((&err.kind, err.status), (kind, Some(status)), "{name}");
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
+        let quoted: String = String::from_utf8_lossy(&body)
+            .trim()
+            .chars()
+            .take(400)
+            .collect();
+        let prefix = format!(
+            "The provider returned an error (HTTP {status}) that is not in the OpenAI error format: "
+        );
+        assert!(
+            err.message.starts_with(&prefix) && err.message.contains(&quoted),
+            "{name}: {}",
+            err.message
+        );
+        let out = OpenAiChat::encode_error(&err);
+        assert_eq!(out.status, status, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+}
+
+#[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(D, "errors", "json") {
+        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name) {
+            continue;
+        }
         let meta = sidecar(D, "errors", &name, "meta").unwrap();
         let status = u16::try_from(meta["status"].as_u64().unwrap()).unwrap();
         let headers = meta_headers(&meta);
