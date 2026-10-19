@@ -9,7 +9,7 @@ use common::v1::{Capture, Env, call};
 use serde_json::{Value, json};
 
 const SECRET: &str = "tgp_v1_test-credential-0003";
-const MODEL: &str = "deepseek-ai/DeepSeek-V4-Flash-0731";
+const MODEL: &str = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
 const RECORDED: &str = "../providers/togetherai";
 
 async fn env() -> Env {
@@ -31,8 +31,8 @@ async fn env() -> Env {
                 "provider": "togetherai", "model_id": MODEL, "custom": true,
                 "overrides": {
                     "input_modalities": ["text"], "output_modalities": ["text"],
-                    "context_limit": 1048576, "output_limit": 384000,
-                    "input_price": "0.14", "output_price": "0.28", "egress_dialect": "openai_chat"
+                    "context_limit": 131072, "output_limit": 131072,
+                    "input_price": "0.18", "output_price": "0.18", "egress_dialect": "openai_chat"
                 }
             }),
             Some(&env.owner.cookie),
@@ -81,7 +81,10 @@ async fn a_chat_app_reaches_together_and_keeps_its_extra_fields() {
         message["reasoning_content"],
         "The user wants the weather in Paris in Celsius. I'll call the get_weather tool."
     );
-    assert_eq!(reply["usage"]["completion_tokens_details"]["reasoning_tokens"], 19);
+    assert_eq!(
+        reply["usage"]["completion_tokens_details"]["reasoning_tokens"],
+        19
+    );
     let sent = sent_to_together(&env);
     assert_eq!(sent["model"], MODEL);
     assert_eq!(
@@ -147,7 +150,7 @@ async fn an_anthropic_app_streams_a_together_reply() {
 }
 
 #[tokio::test]
-async fn an_anthropic_app_gets_together_only_sampling_refused_before_the_call() {
+async fn an_anthropic_field_chat_cannot_carry_is_refused_before_together_is_called() {
     let env = env().await;
     let before = env.mock.received().len();
     let r = call(
@@ -194,4 +197,29 @@ async fn a_together_error_reaches_the_app_in_its_own_format() {
             .contains("non-serverless model"),
         "{body}"
     );
+}
+
+#[tokio::test]
+async fn token_counting_is_refused_in_the_apps_format_without_calling_together() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": MODEL,
+            "messages": [{ "role": "user", "content": "Name one planet." }],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["type"], "error");
+    assert_eq!(
+        body["error"]["message"],
+        format!("The model `{MODEL}` cannot count tokens.")
+    );
+    assert_eq!(env.mock.received().len(), before);
 }

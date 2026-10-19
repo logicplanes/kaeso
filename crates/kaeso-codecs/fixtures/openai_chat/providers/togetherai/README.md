@@ -19,7 +19,7 @@ What Together adds to the dialect, as seen in these files and the SDK types:
 
 | file | what it covers |
 |---|---|
-| `context-length-truncate.json` | `context_length_exceeded_behavior: error` with a `max_tokens` above the context window |
+| `context-length-error.json` | `context_length_exceeded_behavior: error` with a `max_tokens` above the context window |
 | `non-serverless-model.json` | a model Together serves only on a dedicated endpoint |
 | `reasoning-reply.json` | a reasoning model that answers in `reasoning` |
 | `reasoning-stream.json` | the same, streamed with `stream_options.include_usage` |
@@ -51,7 +51,7 @@ What Together adds to the dialect, as seen in these files and the SDK types:
 
 | file | status | what it covers |
 |---|---|---|
-| `recorded-context-length-truncate.json` | 400 | `type: Bad Request`, `code: start_generation_failed` |
+| `recorded-context-length-error.json` | 400 | `type: Bad Request`, `code: start_generation_failed` |
 | `recorded-non-serverless-model.json` | 400 | top-level `id`, `code: model_not_available` |
 
 Each subfolder's `RECORDED.md` lists the model and time of every recording.

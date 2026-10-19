@@ -378,7 +378,7 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
-  "providers/togetherai/context-length-truncate": {
+  "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "context_length_exceeded_behavior"
