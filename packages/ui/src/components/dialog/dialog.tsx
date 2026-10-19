@@ -1,4 +1,4 @@
-import { InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import {
   cloneElement,
@@ -34,11 +34,15 @@ export const KAESO_DIALOG_VARIANTS = {
     md: { classes: "w-560", description: "560px: forms (default)" },
     lg: { classes: "w-720", description: "720px: two columns, previews" },
   },
+  anchor: {
+    center: { classes: "items-center", description: "Centered on the screen (default)" },
+    top: { classes: "items-start pt-dialog-top", description: "A fixed top edge, for content that changes height, such as the steps of a StepDialog" },
+  },
 } as const;
-export const KAESO_DIALOG_DEFAULT_VARIANTS = { size: "md" } as const;
+export const KAESO_DIALOG_DEFAULT_VARIANTS = { size: "md", anchor: "center" } as const;
 
 const BACKDROP = "fixed inset-0 z-50 bg-overlay backdrop-motion";
-const DIALOG_VIEWPORT = "fixed inset-0 z-50 flex items-center justify-center p-16";
+const DIALOG_VIEWPORT = "fixed inset-0 z-50 flex justify-center p-16";
 const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden rounded-dialog bg-raised text-fg shadow-dialog outline-none dialog-motion";
 
 const DialogBusy = createContext(false);
@@ -91,6 +95,7 @@ export interface DialogProps {
   description?: ReactNode | undefined;
   busy?: boolean | undefined;
   size?: keyof typeof KAESO_DIALOG_VARIANTS.size | undefined;
+  anchor?: keyof typeof KAESO_DIALOG_VARIANTS.anchor | undefined;
   children?: ReactNode | undefined;
   footer?: ReactNode | undefined;
   onSubmit?: (() => void) | undefined;
@@ -100,7 +105,20 @@ export interface DialogProps {
   inline?: boolean | undefined;
 }
 
-function DialogFrame({ title, description, children, footer, onSubmit, hideClose, headerStart, size = "md", className, inline, busy }: DialogProps) {
+function DialogFrame({
+  title,
+  description,
+  children,
+  footer,
+  onSubmit,
+  hideClose,
+  headerStart,
+  size = "md",
+  anchor = "center",
+  className,
+  inline,
+  busy,
+}: DialogProps) {
   const { ref, under, check } = useScrolledUnder<HTMLDivElement>();
   const [box, boxRef] = useBox(inline);
   useResizeMotion(box, check);
@@ -117,7 +135,7 @@ function DialogFrame({ title, description, children, footer, onSubmit, hideClose
         data-dialog-frame=""
         className={cn(
           "flex min-h-0 flex-col",
-          inline ? "rounded-dialog bg-raised shadow-dialog" : "flex-1 self-center dialog-limits",
+          inline ? "rounded-dialog bg-raised shadow-dialog" : cn("flex-1 self-center", anchor === "top" ? "dialog-limits-top" : "dialog-limits"),
           KAESO_DIALOG_VARIANTS.size[size].classes,
           className,
         )}
@@ -130,7 +148,7 @@ function DialogFrame({ title, description, children, footer, onSubmit, hideClose
       >
         {headerStart !== undefined ? (
           <>
-            <div className="flex h-32 items-center justify-between px-16 pt-16 box-content">
+            <div className="flex h-32 items-center justify-between px-24 pt-16 box-content">
               <span className="flex items-center">{headerStart}</span>
               {close}
             </div>
@@ -145,12 +163,12 @@ function DialogFrame({ title, description, children, footer, onSubmit, hideClose
               <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
               {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
             </div>
-            {close && <span className="-mr-8 flex">{close}</span>}
+            {close && <span className="flex">{close}</span>}
           </div>
         )}
         {children && (
           <div ref={ref} data-dialog-body="" className={cn("min-h-0 flex-1 overflow-y-auto px-24 pt-16 scrollbar-quiet", footer ? "pb-8" : "pb-24")}>
-            {children}
+            <GutterContent>{children}</GutterContent>
           </div>
         )}
         {footer && (
@@ -173,7 +191,7 @@ function focusFirstControl(): HTMLElement | true {
 }
 
 const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref) {
-  const { open, defaultOpen, onOpenChange, trigger, size = "md", inline, busy } = props;
+  const { open, defaultOpen, onOpenChange, trigger, size = "md", anchor = "center", inline, busy } = props;
   const focus = useRestoreFocus(open, focusFirstControl);
   const container = usePortalContainer();
   const settled = useScopedDialog(inline ? false : open);
@@ -191,12 +209,12 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
       {trigger && <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
         <BaseDialog.Backdrop className={BACKDROP} />
-        <BaseDialog.Viewport className={DIALOG_VIEWPORT}>
+        <BaseDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor[anchor].classes)}>
           <BaseDialog.Popup
             ref={ref}
             initialFocus={focus.initialFocus}
             finalFocus={focus.finalFocus}
-            className={cn(DIALOG_POPUP, KAESO_DIALOG_VARIANTS.size[size].classes)}
+            className={cn(DIALOG_POPUP, KAESO_DIALOG_VARIANTS.size[size].classes, anchor === "top" && "dialog-limits-top")}
           >
             <InsetContent inset={false}>
               <DialogFrame {...props} />
@@ -337,7 +355,7 @@ export function AlertDialog(props: AlertDialogProps) {
       {trigger && <BaseAlertDialog.Trigger render={trigger} />}
       <BaseAlertDialog.Portal container={container}>
         <BaseAlertDialog.Backdrop className={BACKDROP} />
-        <BaseAlertDialog.Viewport className={DIALOG_VIEWPORT}>
+        <BaseAlertDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor.center.classes)}>
           <BaseAlertDialog.Popup initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
             <InsetContent inset={false}>
               <AlertFrame {...props} close={() => setOpen(false)} busy={busy} setBusy={setBusy} />

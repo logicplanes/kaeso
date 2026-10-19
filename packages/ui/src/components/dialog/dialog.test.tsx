@@ -699,11 +699,13 @@ describe("StepDialog", () => {
       expect(shownStep(dialog)).toHaveAttribute("data-enter", "back");
       expect(screen.getByRole("textbox", { name: "Field 1" })).toHaveFocus();
     });
-    it("stays centered: the popup sits in a centring viewport, its frame fills it and nothing pins its top", async () => {
+    it("keeps its top edge between steps: the popup hangs from a fixed top offset, its frame fills it and nothing else pins it", async () => {
       render(<Heights heights={[40, 300]} />);
       await frames();
       const dialog = screen.getByRole("dialog");
-      expect(dialog.parentElement).toHaveClass("fixed", "inset-0", "flex", "items-center", "justify-center");
+      expect(dialog.parentElement).toHaveClass("fixed", "inset-0", "flex", "items-start", "pt-dialog-top", "justify-center");
+      expect(dialog.parentElement).not.toHaveClass("items-center");
+      expect(dialog).toHaveClass("dialog-limits-top");
       expect(dialog.querySelector("[data-dialog-frame]")).toHaveClass("flex-1", "min-h-0");
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
       expect(dialog.getAttributeNames().filter((n) => n.startsWith("data-step"))).toEqual([]);
@@ -776,5 +778,23 @@ describe("StepDialog", () => {
       expect(dialog.querySelector("[aria-live]")).toHaveTextContent("Key created");
       expect(dialog.querySelector("section")).toHaveAttribute("data-enter", "forward");
     });
+  });
+});
+
+describe("Dialog anchor", () => {
+  it("centers by default and hangs from a fixed top edge with anchor top", () => {
+    const { rerender } = render(
+      <Dialog open title="Rename key">
+        <p>Body</p>
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog").parentElement).toHaveClass("items-center");
+    rerender(
+      <Dialog open anchor="top" title="Rename key">
+        <p>Body</p>
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog").parentElement).toHaveClass("items-start", "pt-dialog-top");
+    expect(screen.getByRole("dialog")).toHaveClass("dialog-limits-top");
   });
 });

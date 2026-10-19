@@ -114,7 +114,6 @@
   "logs.inspector.usage": "用量",
   "logs.live": "实时",
   "logs.loadFailed": "无法加载请求",
-  "logs.markdown.showAll": "{count, plural, other {显示全部 # 个字符}}",
   "logs.noMatch": "没有符合这些筛选条件的请求",
   "logs.noMatchHint": "移除筛选条件或扩大时间范围。",
   "logs.openById": "按 ID 打开请求",

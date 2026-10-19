@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Empty, InsetContent, LimitMeter, List, ModelLabel, Section, Segmented, StatusCode, Table, Text } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { LimitView, UsageRow } from "~/api/generated/types";
-import { allKeysQuery, keysPageQuery } from "~/api/queries/keys";
+import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
 import { recentErrorsQuery } from "~/api/queries/recent-errors";
 import { errorKindLabel, limitKindLabel, periodLabel } from "~/format/labels";
@@ -189,8 +189,8 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
   const limits = useQuery({ ...limitsQuery(org, project, { level: "project" }), enabled: rights.has("limits.view") });
   const errors = useQuery({ ...recentErrorsQuery(org, project), enabled: rights.has("logs.metadata.view") });
   const recent = errors.data ?? [];
-  const keys = useQuery({ ...keysPageQuery(org, project), enabled: rights.has("keys.all.view") });
-  const keyCount = keys.data ? `${formatNumber(keys.data.data.filter((k) => k.state !== "archived").length)}${keys.data.has_more ? "+" : ""}` : undefined;
+  const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
+  const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
   const go = (href: string) => void navigate({ href });
   const settled = (q: { isPending: boolean }, on: boolean) => !on || !q.isPending;
   if (!settled(limits, rights.has("limits.view")) || !settled(errors, rights.has("logs.metadata.view")) || !settled(keys, rights.has("keys.all.view")))
@@ -200,8 +200,13 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
       {rights.has("limits.view") && (
         <Section title={t("project.overview.limits", "Limits")} spacing="none">
           <div className="flex flex-col gap-16">
-            {(limits.data ?? []).length === 0 && !limits.isPending && (
-              <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
+            {limits.isError ? (
+              <Text tone="secondary">{t("project.overview.limitsFailed", "The limits couldn't load; the notification says why.")}</Text>
+            ) : (
+              (limits.data ?? []).length === 0 &&
+              !limits.isPending && (
+                <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
+              )
             )}
             {(limits.data ?? []).map((l) => (
               <ProjectLimit key={l.id} limit={l} />
@@ -211,7 +216,9 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
       )}
       {rights.has("logs.metadata.view") && (
         <Section title={t("project.overview.recentErrors", "Recent errors")} spacing="none">
-          {recent.length === 0 && !errors.isPending ? (
+          {errors.isError ? (
+            <Text tone="secondary">{t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}</Text>
+          ) : recent.length === 0 && !errors.isPending ? (
             <Text tone="secondary">{t("project.overview.noErrors", "No failed requests.")}</Text>
           ) : (
             <List

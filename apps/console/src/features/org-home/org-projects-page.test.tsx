@@ -22,7 +22,7 @@ describe("organization projects", () => {
     const { user, router } = await renderApp(PATH);
     await within(await list()).findByRole("gridcell", { name: /Zeta/ });
     expect(await titles()).toEqual(["CCheckout assistantDefaultCreated 15 Oct 2026", "AAlphaCreated 15 Oct 2026", "ZZetaCreated 15 Oct 2026"]);
-    expect(requests("GET", PROJECTS)[0]?.query.get("include_archived")).toBe("false");
+    expect(requests("GET", PROJECTS)[0]?.query.get("include_archived")).toBe("true");
     await user.click(within(await list()).getByRole("gridcell", { name: /Alpha/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });

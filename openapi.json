@@ -20949,7 +20949,6 @@
         ],
         "properties": {
           "input": {
-            "type": "object",
             "description": "The conversation: a string, or Responses input items (messages, and\nthe reasoning items of earlier replies, sent back as received)."
           },
           "instructions": {
@@ -20974,10 +20973,6 @@
             "example": "claude-sonnet-4-5"
           },
           "reasoning": {
-            "type": [
-              "object",
-              "null"
-            ],
             "description": "Reasoning: `effort` (`none`, `minimal`, `low`, `medium`, `high`,\n`xhigh`, `max`) and `summary` (`auto`, `concise`, `detailed`)."
           },
           "stream": {

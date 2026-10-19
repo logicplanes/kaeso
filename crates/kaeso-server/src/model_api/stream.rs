@@ -164,6 +164,7 @@ pub(super) struct Parts {
     pub(super) keepalive: Keepalive,
     pub(super) counter: InputCounter,
     pub(super) carry: Option<StreamCarry>,
+    pub(super) keep_reply: bool,
 }
 
 const RESERVATION_REFRESH: time::Duration = time::Duration::seconds(60);
@@ -212,8 +213,13 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         keepalive,
         counter,
         mut carry,
+        keep_reply,
     } = parts;
-    let mut asm = Assembler::new(counter.dialect);
+    let mut asm = if keep_reply {
+        Assembler::new(counter.dialect)
+    } else {
+        Assembler::without_blocks(counter.dialect)
+    };
     let mut tally = Tally::new();
     let mut app = ToApp {
         tx,

@@ -29,6 +29,26 @@ describe("Conversation", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
+  it("keeps a message's raw HTML as text and links only to http, https and mailto", () => {
+    const { container } = render(
+      <Conversation
+        messages={[
+          {
+            role: "user",
+            content:
+              '<img src=x onerror="alert(1)"> <script>alert(2)</script> [docs](https://kaeso.example.com/docs) [bad](javascript:alert(1)) ![chart](https://kaeso.example.com/chart.png)',
+          },
+        ]}
+      />,
+    );
+    const user = screen.getByRole("region", { name: "User" });
+    expect(container.querySelector("img, script, [onerror]")).toBeNull();
+    expect(user).toHaveTextContent('<img src=x onerror="alert(1)">');
+    expect(screen.getByRole("link", { name: /^docs/ })).toHaveAttribute("href", "https://kaeso.example.com/docs");
+    expect(screen.queryByRole("link", { name: /^bad/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^chart/ })).toHaveAttribute("rel", "noopener noreferrer nofollow");
+  });
+
   it("says whether reasoning without text was hidden or redacted", () => {
     render(
       <Conversation

@@ -42,7 +42,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: mode
 | Display name | The name the console shows |
 | Inputs, outputs | Text, images, audio, video, embeddings |
 | Context, output limit | The model's token limits |
-| Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made |
+| Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one, as models.dev lists it; writes to Anthropic's one-hour cache cost twice the input price, [Anthropic's rule](https://platform.claude.com/docs/en/about-claude/pricing), or the cache write price when the model has no input price |
 | Sends as | The API format Kaeso calls the model with: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
 | Accepts temperature | Whether the model takes `temperature` |

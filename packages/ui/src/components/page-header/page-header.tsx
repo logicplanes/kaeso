@@ -33,7 +33,7 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(function Page
           <span className="truncate">{title}</span>
         </Heading>
       )}
-      {tabs && <div className="order-last -ml-12 min-w-0 basis-full sm:order-none sm:ml-8 sm:basis-auto">{tabs}</div>}
+      {tabs && <div className="order-last min-w-0 basis-full sm:order-none sm:ml-8 sm:basis-auto">{tabs}</div>}
       <div className="ml-auto flex shrink-0 items-center gap-8">{actions}</div>
     </header>
   );

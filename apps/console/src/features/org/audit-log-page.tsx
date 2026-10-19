@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
@@ -23,23 +24,30 @@ export function OrgAuditLogPage({ org, search }: { org: string; search: AuditSea
   const membership = useMembership(org);
   const partyLabel = useOrgPartyLabel(org);
   const base = `/settings/orgs/${org}`;
-  const targetHref = (kind: string, id: string): string | undefined => {
-    if (kind === "project") return projectPath(org, id);
-    if (kind === "user") return `${base}/members?member=${id}`;
-    if (kind === "invite") return `${base}/members?tab=invites`;
-    if (kind === "credential") return `/orgs/${org}/providers`;
-    if (kind === "platform_key") return `${base}/platform-keys`;
-    if (kind === "org") return `${base}/general`;
-    return undefined;
-  };
-  const targetName = (kind: string, id: string): string | undefined => {
-    if (kind === "project") return projects.data?.find((p) => p.id === id)?.name;
-    if (kind === "user") return members.data?.find((m) => m.user.id === id)?.user.name;
-    if (kind === "credential") return credentials.data?.find((c) => c.id === id)?.name;
-    if (kind === "platform_key") return keys.data?.find((k) => k.id === id)?.name;
-    if (kind === "org" && id === org) return membership?.org_name;
-    return undefined;
-  };
+  const targetHref = useCallback(
+    (kind: string, id: string): string | undefined => {
+      if (kind === "project") return projectPath(org, id);
+      if (kind === "user") return `${base}/members?member=${id}`;
+      if (kind === "invite") return `${base}/members?tab=invites`;
+      if (kind === "credential") return `/orgs/${org}/providers`;
+      if (kind === "platform_key") return `${base}/platform-keys`;
+      if (kind === "org") return `${base}/general`;
+      return undefined;
+    },
+    [org, base],
+  );
+  const orgName = membership?.org_name;
+  const targetName = useCallback(
+    (kind: string, id: string): string | undefined => {
+      if (kind === "project") return projects.data?.find((p) => p.id === id)?.name;
+      if (kind === "user") return members.data?.find((m) => m.user.id === id)?.user.name;
+      if (kind === "credential") return credentials.data?.find((c) => c.id === id)?.name;
+      if (kind === "platform_key") return keys.data?.find((k) => k.id === id)?.name;
+      if (kind === "org" && id === org) return orgName;
+      return undefined;
+    },
+    [org, orgName, projects.data, members.data, credentials.data, keys.data],
+  );
   return (
     <OrgPage
       org={org}

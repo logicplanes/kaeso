@@ -80,6 +80,25 @@ describe("instance audit log", () => {
     expect(within(self).getByRole("link", { name: "Grace Hopper" })).toHaveAttribute("href", "/settings/instance/users?user=usr_grace");
   });
 
+  it("looks up only the people and organizations the user list doesn't already name", async () => {
+    signedIn();
+    instanceAudit();
+    await renderApp(PATH);
+    await waitFor(() => expect(within(row("198.51.100.4")).getByText("Grace Hopper")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        requests("GET", "instance/orgs/:org")
+          .map((r) => r.params.org)
+          .sort(),
+      ).toEqual(["org_contoso", "org_unknown"]),
+    );
+    expect(
+      requests("GET", "instance/users/:user")
+        .map((r) => r.params.user)
+        .sort(),
+    ).toEqual(["usr_gone", "usr_unknown"]);
+  });
+
   it("filters by actor through the URL", async () => {
     signedIn();
     instanceAudit();

@@ -1,5 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
+import { apply, load } from "~/i18n";
 import { usage } from "~/test/fixtures/shell";
 import { renderUi } from "~/test/render";
 import { CostShare } from "./cost-share";
@@ -29,6 +31,16 @@ describe("usage sums", () => {
     expect(periodUSD("0.000")).toBe("$0.00");
     expect(periodUSD("0.001")).toBe("<$0.01");
     expect(periodUSD("12.345")).toBe("$12.35");
+  });
+
+  it("says under a cent in a whole phrase in German and Chinese", async () => {
+    apply(await load("de"));
+    setFormatLocale("de");
+    expect(periodUSD("0.001")).toBe("unter 0,01\u00a0$");
+    apply(await load("zh-CN"));
+    setFormatLocale("zh-CN");
+    expect(periodUSD("0.001")).toBe("低于 $0.01");
+    setFormatLocale("en");
   });
 
   it("keeps two significant digits of a tile's sub-cent cost", () => {

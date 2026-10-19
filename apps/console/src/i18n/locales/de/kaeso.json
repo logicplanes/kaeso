@@ -184,6 +184,7 @@
   "kaeso.usage.errors": "Fehler",
   "kaeso.usage.inPeriod": "Nutzung im Zeitraum",
   "kaeso.usage.input": "Eingabe",
+  "kaeso.usage.lessThan": "unter {amount}",
   "kaeso.usage.noCost": "Keine Kosten in diesem Zeitraum.",
   "kaeso.usage.noRequests": "Keine Anfragen in diesem Zeitraum.",
   "kaeso.usage.noTokens": "Keine Token in diesem Zeitraum.",

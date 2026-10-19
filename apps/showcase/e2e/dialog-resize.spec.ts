@@ -29,6 +29,7 @@ interface Sample {
   h: number;
   cx: number;
   cy: number;
+  top: number;
 }
 
 const popup = (page: Page) => page.locator("[role=dialog]").filter({ has: page.locator("[data-dialog-frame]") });
@@ -67,7 +68,7 @@ async function record(page: Page, act: () => Promise<void>): Promise<Sample[]> {
     const sample = () => {
       if (!box || !w.recording) return;
       const r = box.getBoundingClientRect();
-      w.samples.push({ t: Number(document.timeline.currentTime), w: r.width, h: r.height, cx: r.left + r.width / 2 - innerWidth / 2, cy: r.top + r.height / 2 - innerHeight / 2 });
+      w.samples.push({ t: Number(document.timeline.currentTime), w: r.width, h: r.height, cx: r.left + r.width / 2 - innerWidth / 2, cy: r.top + r.height / 2 - innerHeight / 2, top: r.top });
       requestAnimationFrame(() => painted.port2.postMessage(null));
     };
     painted.port1.onmessage = sample;
@@ -113,6 +114,28 @@ async function centredAtNaturalSize(dialog: Locator) {
   return g;
 }
 
+const anchorTop = (page: Page) => page.evaluate(() => Math.max(16, innerHeight * 0.12));
+
+async function anchoredAtNaturalSize(page: Page, dialog: Locator) {
+  const g = await geometry(dialog);
+  expect(Math.abs(g.top - (await anchorTop(page)))).toBeLessThanOrEqual(1);
+  expect(Math.abs(g.cx)).toBeLessThanOrEqual(1);
+  expect(g.bottom).toBeGreaterThanOrEqual(15);
+  expect(Math.abs(g.height - g.natural)).toBeLessThanOrEqual(1);
+  expect(g.inline).toBe("");
+  await expect(dialog).not.toHaveAttribute("data-resizing");
+  return g;
+}
+
+async function expectAnchoredThroughout(page: Page, samples: Sample[]) {
+  const top = await anchorTop(page);
+  expect(samples.length).toBeGreaterThan(3);
+  for (const s of samples) {
+    expect(Math.abs(s.top - top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.cx)).toBeLessThanOrEqual(1);
+  }
+}
+
 function expectCentredThroughout(samples: Sample[]) {
   expect(samples.length).toBeGreaterThan(3);
   for (const s of samples) {
@@ -147,26 +170,26 @@ for (const viewport of [
     test.describe(`${viewport.name}, ${colorScheme}`, () => {
       test.use({ viewport: { width: viewport.width, height: viewport.height }, colorScheme });
 
-      test("a step dialog stays centered while it grows to a taller step and shrinks back to a shorter one", async ({ page }) => {
+      test("a step dialog keeps its top edge while it grows to a taller step and shrinks back to a shorter one", async ({ page }) => {
         const dialog = await openExample(page, "step-heights");
-        const first = await centredAtNaturalSize(dialog);
+        const first = await anchoredAtNaturalSize(page, dialog);
         const grow = await record(page, () => press(dialog, "Continue"));
-        expectCentredThroughout(grow);
+        await expectAnchoredThroughout(page, grow);
         expectSmooth(grow, "h");
-        const second = await centredAtNaturalSize(dialog);
+        const second = await anchoredAtNaturalSize(page, dialog);
         expect(second.height).toBeGreaterThan(first.height + 40);
         const shrink = await record(page, () => press(dialog, "Back"));
-        expectCentredThroughout(shrink);
+        await expectAnchoredThroughout(page, shrink);
         expectSmooth(shrink, "h");
-        const back = await centredAtNaturalSize(dialog);
+        const back = await anchoredAtNaturalSize(page, dialog);
         expect(Math.abs(back.height - first.height)).toBeLessThanOrEqual(1);
       });
 
       test("a grow interrupted by a shrink turns around from the size it reached, without a jump", async ({ page }) => {
         const dialog = await openExample(page, "step-heights");
-        const first = await centredAtNaturalSize(dialog);
+        const first = await anchoredAtNaturalSize(page, dialog);
         await record(page, () => press(dialog, "Continue"));
-        const second = await centredAtNaturalSize(dialog);
+        const second = await anchoredAtNaturalSize(page, dialog);
         await record(page, () => press(dialog, "Back"));
         const samples = await record(page, () =>
           dialog.evaluate(async (box) => {
@@ -181,9 +204,9 @@ for (const viewport of [
             button("Back").click();
           }),
         );
-        expectCentredThroughout(samples);
+        await expectAnchoredThroughout(page, samples);
         expectSmooth(samples, "h", second.height - first.height);
-        const end = await centredAtNaturalSize(dialog);
+        const end = await anchoredAtNaturalSize(page, dialog);
         expect(Math.abs(end.height - first.height)).toBeLessThanOrEqual(1);
       });
 
@@ -191,9 +214,8 @@ for (const viewport of [
         const dialog = await openExample(page, "step-heights");
         await record(page, () => press(dialog, "Continue"));
         await record(page, () => press(dialog, "Continue"));
-        const tall = await centredAtNaturalSize(dialog);
-        expect(tall.top).toBeGreaterThanOrEqual(23);
-        expect(tall.bottom).toBeGreaterThanOrEqual(23);
+        const tall = await anchoredAtNaturalSize(page, dialog);
+        expect(tall.bottom).toBeGreaterThanOrEqual(15);
         await expect(dialog.getByRole("heading", { name: "Add limit" })).toBeInViewport();
         await expect(dialog.locator("[data-dialog-footer]")).toBeInViewport();
         const body = dialog.locator("[data-dialog-body]");
@@ -203,8 +225,8 @@ for (const viewport of [
         await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
         expect(await page.evaluate(() => scrollY)).toBe(tall.scrolled);
         const shrink = await record(page, () => press(dialog, "Back"));
-        expectCentredThroughout(shrink);
-        await centredAtNaturalSize(dialog);
+        await expectAnchoredThroughout(page, shrink);
+        await anchoredAtNaturalSize(page, dialog);
       });
 
       test("the result arriving while a step change still animates widens the dialog from where it is, without errors", async ({ page }) => {
@@ -219,23 +241,23 @@ for (const viewport of [
             button("Create key")?.click();
           }),
         );
-        expectCentredThroughout(samples);
+        await expectAnchoredThroughout(page, samples);
         await expect(dialog).toHaveAccessibleName("Key created");
-        const after = await centredAtNaturalSize(dialog);
+        const after = await anchoredAtNaturalSize(page, dialog);
         if (viewport.width > 760) expect(after.width).toBe(720);
       });
 
-      test("the result of the last step takes the steps' place in the same dialog, wider, still centered", async ({ page }) => {
+      test("the result of the last step takes the steps' place in the same dialog, wider, from the same top edge", async ({ page }) => {
         const dialog = await openExample(page, "result");
         await dialog.getByRole("textbox", { name: "Name" }).fill("checkout-web");
         await record(page, () => press(dialog, "Continue"));
-        const before = await centredAtNaturalSize(dialog);
+        const before = await anchoredAtNaturalSize(page, dialog);
         const morph = await record(page, () => press(dialog, "Create key"));
-        expectCentredThroughout(morph);
+        await expectAnchoredThroughout(page, morph);
         expectSmooth(morph, "h");
         if (viewport.width > 760) expectSmooth(morph, "w");
         await expect(dialog).toHaveAccessibleName("Key created");
-        const after = await centredAtNaturalSize(dialog);
+        const after = await anchoredAtNaturalSize(page, dialog);
         expect(after.height).toBeGreaterThan(before.height);
         if (viewport.width > 760) expect(after.width).toBe(720);
         await expect(dialog.getByRole("button", { name: "Done" })).toBeFocused();
@@ -288,7 +310,7 @@ test("the command palette keeps its top while its results shrink and grow smooth
   expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
 });
 
-test("a step left while its select is still closing comes back with the choice, centered and without a browser error", async ({ page }) => {
+test("a step left while its select is still closing comes back with the choice, at the same top edge and without a browser error", async ({ page }) => {
   const dialog = await openExample(page, "steps");
   await dialog.getByRole("textbox", { name: "Name" }).fill("checkout-web");
   await press(dialog, "Continue");
@@ -301,17 +323,17 @@ test("a step left while its select is still closing comes back with the choice, 
     await expect(expires).toHaveText(choice);
   }
   await still(page);
-  await centredAtNaturalSize(dialog);
+  await anchoredAtNaturalSize(page, dialog);
 });
 
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
-  test("a step dialog takes the new step's height at once and stays centered", async ({ page }) => {
+  test("a step dialog takes the new step's height at once and keeps its top edge", async ({ page }) => {
     const dialog = await openExample(page, "step-heights");
     const samples = await record(page, () => press(dialog, "Continue"));
-    expectCentredThroughout(samples);
+    await expectAnchoredThroughout(page, samples);
     expect(new Set(samples.map((s) => Math.round(s.h))).size).toBeLessThanOrEqual(2);
-    await centredAtNaturalSize(dialog);
+    await anchoredAtNaturalSize(page, dialog);
   });
 });
 
