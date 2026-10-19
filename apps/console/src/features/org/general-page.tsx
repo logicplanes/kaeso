@@ -19,7 +19,7 @@ import {
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { MemberView } from "~/api/generated/types";
-import { orgMembersQuery, orgQuery } from "~/api/queries/orgs";
+import { orgMembersQuery, orgQuery, orgViewKey } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
 import { common } from "~/i18n/common";
@@ -68,12 +68,12 @@ function PictureRow({ org, name, src, canUpdate }: { org: string; name: string; 
   const path = { params: { path: { org } } };
   const set = useApiMutation({
     mutationFn: async (file: File) => data(await api.PUT("/platform/v1/orgs/{org}/avatar", { ...path, body: await toPictureUpload(file) })),
-    invalidates: [["orgs", org], ["session"], ["me", "memberships"]],
+    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
     onSuccess: () => toast.success(t("org.general.pictureSaved", "Picture saved")),
   });
   const remove = useApiMutation({
     mutationFn: async () => data(await api.DELETE("/platform/v1/orgs/{org}/avatar", path)),
-    invalidates: [["orgs", org], ["session"], ["me", "memberships"]],
+    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
     onSuccess: () => toast(t("org.general.pictureRemoved", "Picture removed")),
   });
   return (
@@ -100,7 +100,7 @@ function NameRow({ org, name, canUpdate }: { org: string; name: string; canUpdat
   const [draft, setDraft] = useState(name);
   const save = useApiMutation({
     mutationFn: async (next: string) => data(await api.PATCH("/platform/v1/orgs/{org}", { params: { path: { org } }, body: { name: next } })),
-    invalidates: [["orgs", org], ["session"], ["me", "memberships"]],
+    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
     onSuccess: () => toast.success(t("org.general.nameSaved", "Name saved")),
   });
   const next = draft.trim();
@@ -245,7 +245,7 @@ function DeleteOrg({ org, name }: { org: string; name: string }) {
   const grace = t("org.days", "{count, plural, one {# day} other {# days}}", { count: session.org_deletion.grace_days });
   const remove = useApiMutation({
     mutationFn: async () => data(await api.DELETE("/platform/v1/orgs/{org}", { params: { path: { org } } })),
-    invalidates: [["orgs", org], ["session"], ["me", "memberships"]],
+    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
     onSuccess: (o) => {
       close();
       toast(t("org.delete.scheduled", "{name} is scheduled for deletion", { name: o.name }));

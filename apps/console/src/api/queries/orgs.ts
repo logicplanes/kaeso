@@ -3,9 +3,11 @@ import { api, data } from "../client";
 import type { InviteView, LogJobView, MemberView, OrgKeyView, OrgLogSettings, OrgView, SecurityView, StorageView } from "../generated/types";
 import { allPages } from "../paging";
 
+export const orgViewKey = (org: string) => ["orgs", org, "view"] as const;
+
 export const orgQuery = (org: string) =>
   queryOptions({
-    queryKey: ["orgs", org],
+    queryKey: orgViewKey(org),
     queryFn: async (): Promise<OrgView> => data(await api.GET("/platform/v1/orgs/{org}", { params: { path: { org } } })),
     staleTime: 60_000,
   });

@@ -20,7 +20,7 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SecurityView, SsoView } from "~/api/generated/types";
-import { securityQuery } from "~/api/queries/orgs";
+import { orgViewKey, securityQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
@@ -74,10 +74,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
     mutationFn: async () => {
       await api.DELETE("/platform/v1/orgs/{org}/security/sso", { params: { path: { org } } });
     },
-    invalidates: [
-      ["orgs", org, "security"],
-      ["orgs", org],
-    ],
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
     onSuccess: () => {
       setDisconnecting(false);
       setRegistered(null);
@@ -262,10 +259,7 @@ function SsoDialog({
           },
         }),
       ),
-    invalidates: [
-      ["orgs", org, "security"],
-      ["orgs", org],
-    ],
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
     onSuccess: (s) => {
       toast.success(current ? t("org.sso.saved", "Single sign-on saved") : t("org.sso.connected", "Identity provider connected"));
       if (s.sso) onSaved(s.sso);
@@ -426,7 +420,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
   const requireSso = useApiMutation({
     mutationFn: async (on: boolean) =>
       data(await api.PUT("/platform/v1/orgs/{org}/security/require-sso", { params: { path: { org } }, body: { enabled: on } })),
-    invalidates: [["orgs", org, "security"], ["orgs", org], ["session"]],
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
     onSuccess: (s) => {
       setConfirming(null);
       toast.success(s.require_sso ? t("org.sso.requiredOn", "Single sign-on is required") : t("org.sso.requiredOff", "Single sign-on is no longer required"));
@@ -436,7 +430,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
   const require2fa = useApiMutation({
     mutationFn: async (on: boolean) =>
       data(await api.PUT("/platform/v1/orgs/{org}/security/require-2fa", { params: { path: { org } }, body: { enabled: on } })),
-    invalidates: [["orgs", org, "security"], ["orgs", org], ["session"]],
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
     onSuccess: (s) => {
       setConfirming(null);
       toast.success(
@@ -523,10 +517,7 @@ function KeyPolicy({ org, days }: { org: string; days: number | null }) {
   const save = useApiMutation({
     mutationFn: async (next: number | null) =>
       data(await api.PUT("/platform/v1/orgs/{org}/security/key-policy", { params: { path: { org } }, body: { max_key_lifetime_days: next } })),
-    invalidates: [
-      ["orgs", org, "security"],
-      ["orgs", org],
-    ],
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
     onSuccess: (s) => {
       setDraft(s.max_key_lifetime_days == null ? "" : String(s.max_key_lifetime_days));
       toast.success(t("org.keyLifetime.saved", "Key lifetime saved"));

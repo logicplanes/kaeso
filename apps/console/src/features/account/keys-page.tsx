@@ -46,7 +46,10 @@ export function AccountKeysPage() {
       if (action === "enable") return data(await api.POST("/platform/v1/me/keys/{key}/enable", params));
       return data(await api.POST("/platform/v1/me/keys/{key}/archive", params));
     },
-    invalidates: [["me", "keys"], ["orgs"]],
+    invalidates: ({ key }) => {
+      const org = where.get(key.project_id)?.org;
+      return [["me", "keys"], ...(org ? [["orgs", org, "projects", key.project_id, "keys"]] : [])];
+    },
     onSuccess: (k, { action }) => {
       if (action === "archive") setArchiving(null);
       toast(
