@@ -3,7 +3,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
 import { ssoStart } from "~/test/fixtures/public";
-import { noContent, on, requests } from "~/test/network";
+import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const PATH = "/settings/account/security";
@@ -42,6 +42,19 @@ describe("single sign-on links", () => {
     await user.click(within(confirm).getByRole("button", { name: "Unlink" }));
     expect(await (await notifications()).findByText("Unlinked from single sign-on")).toBeInTheDocument();
     expect(requests("DELETE", "me/sso-links/:org").map((r) => r.params.org)).toEqual(["org_contoso"]);
+  });
+
+  it("says why an unlink was refused", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("GET", "me/sso-links", links(true));
+    on("DELETE", "me/sso-links/:org", apiError(404, "not_found", "No such link, or you cannot see it."));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Unlink" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Unlink from Contoso's single sign-on?" });
+    await user.click(within(confirm).getByRole("button", { name: "Unlink" }));
+    expect((await (await notifications()).findAllByText("No such link, or you cannot see it.")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
   it("says why linking failed when the provider sends the browser back", async () => {

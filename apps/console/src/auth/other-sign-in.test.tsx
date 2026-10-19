@@ -31,6 +31,20 @@ describe("a session from another organization's single sign-on", () => {
     await user.click(within(box).getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(requests("POST", "auth/password")).toHaveLength(1));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in another way" })).not.toBeInTheDocument());
+    await waitFor(() => expect(requests("GET", "auth/session").length).toBeGreaterThan(1));
+  });
+
+  it("stays on the page when the person cancels", async () => {
+    signedIn({ session: whoAmI({ session: ssoSession, memberships: [membership({ access: "needs_other_sign_in" })] }) });
+    on("GET", "me", me({ has_password: true }));
+    on("POST", "auth/methods", methods);
+    const { user } = await renderApp(`/orgs/${ORG}`);
+    await user.click(await screen.findByRole("button", { name: "Sign in another way" }));
+    const box = await dialog();
+    await user.click(within(box).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in another way" })).not.toBeInTheDocument());
+    expect(screen.getByText("Sign in another way to open Northwind Labs")).toBeInTheDocument();
+    expect(requests("GET", "auth/session")).toHaveLength(1);
   });
 });
 
@@ -75,6 +89,11 @@ describe("instance administration from a single sign-on session", () => {
     const { user } = await renderApp("/settings/instance/system");
     expect(await screen.findByText("Sign in another way to manage the instance")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Sign in another way" }));
-    expect(await dialog()).toBeInTheDocument();
+    const box = await dialog();
+    on("POST", "auth/password", signedInReply());
+    on("GET", "auth/session", whoAmI());
+    await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(box).getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(screen.queryByText("Sign in another way to manage the instance")).not.toBeInTheDocument());
   });
 });
