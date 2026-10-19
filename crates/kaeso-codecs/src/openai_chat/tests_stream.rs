@@ -743,3 +743,126 @@ fn a_held_tool_call_is_released_when_the_stream_breaks() {
         ["start", "block_start 0", "delta 0", "error"]
     );
 }
+
+fn running_usage_stream(final_usage: bool) -> String {
+    let chunk = |delta: Value, finish: Value, completion: Option<u64>| {
+        let mut c = json!({"id":"c","object":"chat.completion.chunk","created":1,"model":"m",
+            "choices":[{"index":0,"delta":delta,"finish_reason":finish}]});
+        if let Some(n) = completion {
+            c["usage"] = json!({"prompt_tokens":5,"completion_tokens":n,"total_tokens":5 + n});
+        }
+        format!("data: {c}\n\n")
+    };
+    [
+        chunk(
+            json!({"role":"assistant","content":"Hel"}),
+            Value::Null,
+            Some(1),
+        ),
+        chunk(json!({"content":"lo"}), Value::Null, Some(2)),
+        chunk(json!({}), json!("stop"), final_usage.then_some(3)),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat()
+}
+
+fn usage_deltas(events: &[StreamEvent]) -> Vec<(Option<StopReason>, u64)> {
+    events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => {
+                Some((d.stop.clone(), d.usage.as_ref()?.output_tokens))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn running_usage_is_reported_once_after_the_last_block_stops() {
+    let sse = running_usage_stream(true);
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        [
+            "start",
+            "block_start 0",
+            "delta 0",
+            "delta 0",
+            "block_stop 0",
+            "response_delta",
+            "stop"
+        ]
+    );
+    assert_eq!(usage_deltas(&events), [(Some(StopReason::EndTurn), 3)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+}
+
+#[test]
+fn running_usage_without_a_final_report_goes_out_before_the_stream_stops() {
+    let sse = running_usage_stream(false);
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        [
+            "start",
+            "block_start 0",
+            "delta 0",
+            "delta 0",
+            "block_stop 0",
+            "response_delta",
+            "response_delta",
+            "stop"
+        ]
+    );
+    let stops: Vec<_> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => Some(d.stop.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(stops, [Some(StopReason::EndTurn), None]);
+    assert_eq!(usage_deltas(&events), [(None, 2)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+}
+
+#[test]
+fn a_stream_with_running_usage_replays_byte_for_byte() {
+    let bytes = fixture("usage-every-chunk");
+    let events = decode_whole(&bytes);
+    let last_block_stop = events
+        .iter()
+        .rposition(|e| matches!(e, StreamEvent::BlockStop(_)))
+        .unwrap();
+    let with_usage: Vec<usize> = events
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| matches!(e, StreamEvent::ResponseDelta(d) if d.usage.is_some()))
+        .map(|(i, _)| i)
+        .collect();
+    assert!(
+        with_usage.iter().all(|i| *i > last_block_stop),
+        "{events:?}"
+    );
+    assert_sse_eq("usage-every-chunk", &bytes, &encode(&events, true));
+    let hidden = String::from_utf8(encode(&events, false)).unwrap();
+    assert!(!hidden.contains("usage"), "{hidden}");
+    assert!(hidden.contains("help?"), "{hidden}");
+}
+
+#[test]
+fn running_usage_on_a_chunk_without_content_is_held_and_hidden_from_apps_that_did_not_ask() {
+    let sse = [
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":1,\"total_tokens\":5}}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: [DONE]\n\n",
+    ]
+    .concat();
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(usage_deltas(&events), [(None, 1)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    let hidden = String::from_utf8(encode(&events, false)).unwrap();
+    assert!(!hidden.contains("usage"), "{hidden}");
+}

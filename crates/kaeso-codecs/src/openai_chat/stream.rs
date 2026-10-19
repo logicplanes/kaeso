@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
     BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras, KppError, Origin, RawItem,
-    RawJson, ResponseDelta, ResponseStart, ResponseStop, StreamEvent, ToolCallHeader,
+    RawJson, ResponseDelta, ResponseStart, ResponseStop, StreamEvent, ToolCallHeader, Usage,
 };
 use serde_json::{Map, Value};
 
@@ -22,6 +22,7 @@ pub(crate) const FORM_TOOL_CALL: &str = "tc";
 pub(crate) const FORM_NO_DONE: &str = "no_done";
 pub(crate) const FORM_OBJECT: &str = "object";
 pub(crate) const FORM_SSE: &str = "sse";
+pub(crate) const FORM_RUNNING_USAGE: &str = "u";
 
 pub(crate) const ENVELOPE_KEYS: &[&str] = &[
     "id",
@@ -141,6 +142,7 @@ pub(crate) struct ChatStreamDecoder {
     text: Option<u32>,
     refusal: Option<u32>,
     tools: IndexMap<u32, ToolState>,
+    running_usage: Option<Usage>,
     finished: bool,
     done: bool,
     inert: bool,
@@ -161,6 +163,7 @@ impl ChatStreamDecoder {
             text: None,
             refusal: None,
             tools: IndexMap::new(),
+            running_usage: None,
             finished: false,
             done: false,
             inert: false,
@@ -274,6 +277,7 @@ impl ChatStreamDecoder {
         }
         if event.data == "[DONE]" {
             self.close_blocks(out);
+            self.report_running_usage(out);
             let mut stop = ResponseStop::new();
             stop.extras = self.extras();
             out.push(StreamEvent::ResponseStop(stop));
@@ -322,6 +326,14 @@ impl ChatStreamDecoder {
         self.text = None;
         self.refusal = None;
         self.tools.clear();
+    }
+
+    fn report_running_usage(&mut self, out: &mut Vec<StreamEvent>) {
+        if let Some(usage) = self.running_usage.take() {
+            let mut delta = ResponseDelta::new(None, Some(usage));
+            delta.extras = self.extras();
+            out.push(StreamEvent::ResponseDelta(delta));
+        }
     }
 
     fn new_block(&mut self) -> u32 {
@@ -416,10 +428,20 @@ impl ChatStreamDecoder {
                 ));
             }
         }
-        let usage = known
-            .usage
-            .map(|u| decode_usage(&u, &self.origin))
-            .transpose()?;
+        let mut usage = None;
+        if let Some(raw) = known.usage {
+            let decoded = decode_usage(&raw, &self.origin)?;
+            if self.finished {
+                self.running_usage = None;
+                usage = Some(decoded);
+            } else {
+                form.insert(
+                    FORM_RUNNING_USAGE.to_owned(),
+                    raw.to_value().unwrap_or(Value::Null),
+                );
+                self.running_usage = Some(decoded);
+            }
+        }
         if stop_usage.is_some() || usage.is_some() {
             let mut delta = ResponseDelta::new(stop_usage.flatten(), usage);
             delta.extras = self.extras();
@@ -818,6 +840,7 @@ impl StreamDecoder for ChatStreamDecoder {
             return out;
         }
         if self.finished {
+            self.report_running_usage(&mut out);
             let mut stop = ResponseStop::new();
             stop.extras = self.extras();
             stop.extras
