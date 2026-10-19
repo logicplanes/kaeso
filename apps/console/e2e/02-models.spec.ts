@@ -80,9 +80,11 @@ test("models are picked from the keyboard: Space selects, Enter opens a model's 
   await page.keyboard.type("gpt-4.1");
   const hits = dialog.getByRole("grid", { name: "Models on models.dev" }).getByRole("gridcell");
   await expect(hits).toHaveCount(2);
+  await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
     dialog.getByRole("switch", { name: "Include deprecated" }),
+    dialog.getByRole("link", { name: "Open Providers" }),
     hit(page, "gpt-4.1"),
   ]) {
     await page.keyboard.press("Tab");
@@ -105,9 +107,7 @@ test("models are picked from the keyboard: Space selects, Enter opens a model's 
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("gpt-4.1-mini");
   await expect(hits).toHaveCount(1);
-  await page.keyboard.press("Tab");
-  await page.keyboard.press("Tab");
-  await page.keyboard.press("Tab");
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Tab");
   await expect(hit(page, "gpt-4.1-mini")).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Review gpt-4.1-mini" })).toBeVisible();

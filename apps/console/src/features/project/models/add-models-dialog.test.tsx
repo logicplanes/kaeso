@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn } from "~/test/fixtures";
-import { fill, hoverReason, notifications } from "~/test/fixtures/org";
+import { signedIn, withRights } from "~/test/fixtures";
+import { credential, fill, hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, preview, projectData, projectPath, searchHit } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -340,11 +340,63 @@ describe("AddModelsDialog", () => {
     const all = await screen.findByRole("dialog", { name: /Add every current OpenAI model/ });
     expect(within(all).getByText("Adds each current OpenAI text or embedding model from models.dev and skips ones already here.")).toBeInTheDocument();
     expect(within(all).getByText("Models that models.dev adds later aren't added here on their own.")).toBeInTheDocument();
+    expect(within(all).queryByText(/models at once/)).not.toBeInTheDocument();
     await user.click(within(all).getByRole("button", { name: "Add every current OpenAI model" }));
 
     expect(await notifications().findByText("Added 1 model")).toBeInTheDocument();
     expect(notifications().queryByText(/already in the catalogue/)).not.toBeInTheDocument();
     expect(requests("POST", BATCH).map((r) => r.body)).toEqual([{ provider: "openai", all_current: true }]);
+  });
+
+  it("warns before adding a provider's models in bulk when there are many", async () => {
+    signedIn();
+    projectData();
+    const many = (n: number) => Array.from({ length: n }, (_, i) => searchHit({ provider: "deepseek", model_id: `vendor/model-${i}`, name: `Model ${i}` }));
+    modelsApi({ hits: many(120) });
+    const { user, dialog } = await open();
+    await pickProvider(user, dialog, "DeepSeek");
+    await user.click(await within(dialog).findByRole("button", { name: "Add every current DeepSeek model" }));
+    const all = await screen.findByRole("dialog", { name: /Add every current DeepSeek model/ });
+    expect(await within(all).findByText("This adds up to 120 models at once; adding the ones you need keeps the catalogue short.")).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/models/search").map((r) => Object.fromEntries(r.query))).toContainEqual({
+      provider: "deepseek",
+      include_deprecated: "false",
+      limit: "200",
+    });
+  });
+
+  it("says when a provider has 200 or more models to add", async () => {
+    signedIn();
+    projectData();
+    modelsApi({ hits: Array.from({ length: 200 }, (_, i) => searchHit({ provider: "deepseek", model_id: `m-${i}` })) });
+    const { user, dialog } = await open();
+    await pickProvider(user, dialog, "DeepSeek");
+    await user.click(await within(dialog).findByRole("button", { name: "Add every current DeepSeek model" }));
+    const all = await screen.findByRole("dialog", { name: /Add every current DeepSeek model/ });
+    expect(await within(all).findByText("This can add 200 or more models at once; adding the ones you need keeps the catalogue short.")).toBeInTheDocument();
+  });
+
+  it("says when the organization has no key for the chosen provider", async () => {
+    setUp();
+    on("GET", "orgs/:org/credentials", { data: [credential({ provider: "openai" })] });
+    const { user, dialog } = await open();
+    await within(dialog).findByText("gpt-5-mini");
+    expect(within(dialog).queryByText(/fail until someone adds/)).not.toBeInTheDocument();
+    await pickProvider(user, dialog, "Anthropic");
+    const notice = await within(dialog).findByText("Requests to these models fail until someone adds a key for Anthropic on the Providers page.");
+    expect(notice).toBeInTheDocument();
+    expect(within(dialog).getByRole("link", { name: "Open Providers" })).toHaveAttribute("href", expect.stringMatching(/\/orgs\/[^/]+\/providers$/));
+  });
+
+  it("says nothing about provider keys to people who can't see them", async () => {
+    withRights(["org.view"]);
+    projectData();
+    modelsApi({ models: [catalogueModel()], hits: hits() });
+    on("GET", "orgs/:org/credentials", { data: [] });
+    const { dialog } = await open();
+    await within(dialog).findByText("gpt-5-mini");
+    expect(within(dialog).queryByText(/fail until someone adds/)).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/credentials")).toHaveLength(0);
   });
 
   it("keeps the dialog open with the API's message when adding fails", async () => {
