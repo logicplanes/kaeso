@@ -507,7 +507,7 @@ describe("ModelPicker", () => {
         ]}
       />,
     );
-    const trigger = screen.getByRole("combobox", { name: "Model" });
+    const trigger = screen.getByRole("button", { name: "Model" });
     expect(trigger).toHaveTextContent("GPT-5");
     expect(trigger).toHaveTextContent("gpt-5");
   });
@@ -516,7 +516,7 @@ describe("ModelPicker", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
       render(<ModelPicker value="gpt-5" options={[{ value: "gpt-5", provider: "openai", name: "GPT-5" }]} />);
-      expect(screen.getByRole("combobox", { name: "Model" })).toHaveClass(...KAESO_SELECT_VARIANTS.appearance.header.classes.split(" "));
+      expect(screen.getByRole("button", { name: "Model" })).toHaveClass(...KAESO_SELECT_VARIANTS.appearance.header.classes.split(" "));
       expect(warn).not.toHaveBeenCalled();
     } finally {
       warn.mockRestore();
