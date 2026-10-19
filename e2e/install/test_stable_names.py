@@ -18,6 +18,7 @@ VOLUMES = {
 }
 UPDATER_VOLUMES = VOLUMES | {"updater": "kaeso_updater"}
 MOUNTS = {
+    "caddy-init": [("caddy_data", "/data"), ("caddy_config", "/config")],
     "caddy": [("caddy_data", "/data"), ("caddy_config", "/config"), ("maintenance", "/srv/maintenance")],
     "gateway": [],
     "console": [],
@@ -26,6 +27,7 @@ MOUNTS = {
     "valkey": [("valkey", "/data")],
 }
 UPDATER_MOUNTS = {
+    "updater-init": [("maintenance", "/maintenance"), ("updater", "/state")],
     "updater": [("maintenance", "/maintenance"), ("updater", "/state")],
     "docker-proxy": [],
 }

@@ -33,7 +33,7 @@ flowchart TD
 | `clickhouse` | Speichert Anfrageprotokolle und Nutzungsaggregate | Das Volume `clickhouse` |
 | `valkey` | Hält Raten- und Budgetzähler und gemeinsame Caches | Das Volume `valkey` |
 
-Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)).
+Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)). Bevor Caddy startet, läuft `caddy-init` einmal und übergibt die Volumes von Caddy dem Benutzer, als der Caddy läuft. Ebenso übergibt `updater-init` dem Updater seine Volumes und gibt der Gruppe des Updaters Schreibrecht auf die `compose.yaml`.
 
 ## Dateien
 
@@ -65,8 +65,10 @@ Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Back
 Die Dienste teilen so wenig wie möglich:
 
 - PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk ohne Weg nach außen, und nur das Gateway erreicht sie.
-- Kein Container kann Rechte hinzugewinnen. Gateway und Konsole laufen ohne Linux-Capabilities, und das Dateisystem des Gateways ist schreibgeschützt. Caddy behält nur das Recht, die Ports 80 und 443 zu belegen.
-- Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort.
+- Kein Container kann Rechte hinzugewinnen, und jeder startet ohne Linux-Capabilities. Caddy, Gateway, Konsole und Updater laufen als Benutzer ohne Sonderrechte, alle außer Caddy auf schreibgeschützten Dateisystemen. Caddy behält nur das Recht, die Ports 80 und 443 zu belegen.
+- PostgreSQL, ClickHouse und Valkey bekommen nur die Capabilities zurück, die ihre Images beim Start brauchen. Damit übergibt jeder sein Datenverzeichnis dem eigenen Benutzer und läuft danach nicht mehr als root. `caddy-init` bekommt nur die Rechte, jedes Verzeichnis zu lesen und Eigentümer zu ändern, und `updater-init` zusätzlich das Recht, die Rechte einer Datei zu ändern.
+- Jeder Dienst hat eine Speicher- und eine Prozessgrenze, und Docker rotiert sein Log bei 10 MB und behält fünf Dateien ([Container-Grenzen](configuration.md#container-grenzen)).
+- Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort, das es aus einer Datei liest statt von seiner Befehlszeile.
 - Caddy sendet `Strict-Transport-Security` und leitet den Metrik-Port des Gateways, 9100, nie weiter.
 
 ## Mehrere Gateways
@@ -82,7 +84,7 @@ Das Gateway hält keinen eigenen Zustand. Für mehrere Instanzen stellen Sie sie
 
 Jedes Release behält diese Namen, damit eine neue `compose.yaml` Ihre Daten findet:
 
-- Das Compose-Projekt `kaeso` mit seinen Diensten `caddy`, `gateway`, `console`, `postgres`, `clickhouse` und `valkey`, dazu `updater` und `docker-proxy` im Profil `updater`.
+- Das Compose-Projekt `kaeso` mit seinen Diensten `caddy-init`, `caddy`, `gateway`, `console`, `postgres`, `clickhouse` und `valkey`, dazu `updater-init`, `updater` und `docker-proxy` im Profil `updater`.
 - Die Volumes `kaeso_postgres`, `kaeso_clickhouse` und `kaeso_valkey` für Daten, `kaeso_caddy_data` und `kaeso_caddy_config` für Zertifikate sowie `kaeso_maintenance` und `kaeso_updater` für den Updater.
 - Die Images `ghcr.io/logicplanes/kaeso-gateway`, `ghcr.io/logicplanes/kaeso-console` und `ghcr.io/logicplanes/kaeso-updater`, getaggt mit der Version des Releases.
 

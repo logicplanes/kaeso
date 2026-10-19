@@ -42,6 +42,12 @@ def test_every_compose_up_in_the_docs_waits_for_the_services():
 
 def test_every_service_has_a_health_check_for_wait_to_wait_for():
     services = config()["services"]
+    once = {name for name, service in services.items() if service.get("restart") == "no"}
+    for name in once:
+        waiting = [s for s in services.values() if s.get("depends_on", {}).get(name)]
+        assert waiting, f"{name} runs once, so a service waits for it"
+        assert all(s["depends_on"][name]["condition"] == "service_completed_successfully" for s in waiting), name
+    services = {name: service for name, service in services.items() if name not in once}
     own = {name for name, service in services.items() if service.get("healthcheck", {}).get("test")}
     images = {
         name
