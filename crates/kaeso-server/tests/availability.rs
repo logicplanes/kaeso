@@ -313,7 +313,7 @@ async fn an_unavailable_model_is_refused_without_calling_the_provider_until_a_re
         (sent, asked),
         "refused without calling the provider"
     );
-    let o = env.capture.all().pop().unwrap();
+    let o = env.outcomes().await.pop().unwrap();
     assert_eq!(o.status, 404);
     assert_eq!(o.error_kind.as_deref(), Some("not_found"));
     assert_eq!(
