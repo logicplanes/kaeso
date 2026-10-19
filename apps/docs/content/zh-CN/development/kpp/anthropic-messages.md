@@ -204,7 +204,7 @@ Schema `MessageStreamEvent`。
 
 编码来自其他方言的事件：
 
-- **一次一个块。** 交错的块按开始顺序缓冲，`ResponseDelta` 或 `ResponseStop` 会关闭所有打开的块。因此，一个直到结束才关闭文本块的 OpenAI 流，会在最后才送出它的工具调用。多个外来的 `ResponseDelta` 会合并为一个 `message_delta`。
+- **一次一个块。** 交错的块按开始顺序缓冲，带停止原因的 `ResponseDelta` 或 `ResponseStop` 会关闭所有打开的块。来自其他方言、不带停止原因的 `ResponseDelta`（例如某些 OpenAI 兼容提供商在每个 chunk 上发送的运行中用量）只更新最后 `message_delta` 的用量。因此，一个直到结束才关闭文本块的 OpenAI 流，会在最后才送出它的工具调用。多个外来的 `ResponseDelta` 会合并为一个 `message_delta`。
 - **缺少 `ResponseStart`** 时，会生成一个 ID 为空、模型为请求中模型的 `message_start`。
 - **拒绝回复**变为文本块。
 - **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，但前提是它们构成一个 JSON 对象；否则不写出，输入保持为 `{}`。这与回复一样是有损的。Anthropic 自己的流按收到时的原样回放。

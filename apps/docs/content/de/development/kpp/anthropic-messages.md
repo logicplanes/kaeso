@@ -204,7 +204,7 @@ Schema `MessageStreamEvent`.
 
 Kodieren von Events aus anderen Dialekten:
 
-- **Ein Block nach dem anderen.** Sich überlappende Blöcke werden in Startreihenfolge gepuffert, und `ResponseDelta` oder `ResponseStop` schließt offene Blöcke. Ein OpenAI-Stream, der seinen Textblock bis zum Ende offen hält, liefert seine Tool-Aufrufe daher erst am Ende. Mehrere fremde `ResponseDelta`s werden zu einem `message_delta` zusammengeführt.
+- **Ein Block nach dem anderen.** Sich überlappende Blöcke werden in Startreihenfolge gepuffert, und ein `ResponseDelta` mit Stoppgrund oder `ResponseStop` schließt offene Blöcke. Ein fremdes `ResponseDelta` ohne Stoppgrund, etwa die laufende Nutzung, die manche OpenAI-kompatiblen Anbieter in jedem Chunk senden, aktualisiert nur die Nutzung des abschließenden `message_delta`. Ein OpenAI-Stream, der seinen Textblock bis zum Ende offen hält, liefert seine Tool-Aufrufe daher erst am Ende. Mehrere fremde `ResponseDelta`s werden zu einem `message_delta` zusammengeführt.
 - **Ein fehlendes `ResponseStart`** wird zu einem `message_start` mit leerer ID und dem Modell der Anfrage.
 - **Verweigerungen** werden zu Textblöcken.
 - **Argumente von Tool-Aufrufen** aus anderen Dialekten werden gesammelt und beim Ende des Blocks als ein `input_json_delta` geschrieben, aber nur, wenn sie ein JSON-Objekt bilden; sonst wird keines geschrieben und die Eingabe bleibt `{}`. Das ist verlustbehaftet, wie bei Antworten. Die eigenen Streams von Anthropic werden so zurückgespielt, wie sie ankamen.
