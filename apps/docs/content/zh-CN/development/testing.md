@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | `cargo test --workspace --all-features` | 所有测试 |
 | `cargo coverage-kpp` | 在 `cargo llvm-cov` 下运行 `kaeso-kpp` 和 `kaeso-codecs` 的测试，并检查其覆盖率阈值 |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | 两个 crate 的 README 中的示例，即它们在 docs.rs 上的文档，`cargo llvm-cov` 不会运行这些示例 |
-| `cargo coverage-gateway` | 在 `cargo llvm-cov nextest` 下运行除 `kpp-conformance` 和 `xtask` 外所有其他 crate 的测试，每个测试在独立进程中且全部同时运行，并检查其覆盖率阈值 |
+| `cargo coverage-gateway` | 在 `cargo llvm-cov nextest` 下运行除 `kpp-conformance` 和 `xtask` 外所有其他 crate 的测试，每个测试在独立进程中且全部同时运行，并检查其覆盖率阈值。运行超过 5 分钟的测试会被停止并判为失败 |
 | `cargo test -p xtask -p kpp-conformance` | 覆盖率命令不包含的仓库任务和一致性服务器 |
 | `cargo deny check` | 每个依赖的许可证、安全公告、禁用项和来源（`deny.toml`） |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | KPP 更严格的政策：库中不允许运行时或 HTTP crate |
@@ -243,7 +243,7 @@ mkdir -p fuzz/corpus/decode_openai_chat
 cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
+**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
 
 ## 持续集成
 
@@ -265,6 +265,8 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | OpenAPI document | `openapi.json` 是最新的 |
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
 | Fuzz targets | 模糊测试目标能够构建 |
+| Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
+| Fuzz runs | KPP 或 `fuzz/` 有变化时，以每个目标 60 秒运行 **Fuzz** 工作流 |
 | SDK conformance、SDK end-to-end | `pytest -q e2e/conformance` 和 `pytest -q e2e/sdk` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |
@@ -278,3 +280,5 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。
+
+有两个工作流按计划运行。**Fuzz** 每晚运行，见[模糊测试](#模糊测试)。**Audits** 每周一运行：对工作区和 KPP 运行 `cargo deny check`，并对所有依赖（包括开发依赖）运行 `pnpm audit --audit-level high`，这样即使没有任何改动，新的安全公告也会被发现。
