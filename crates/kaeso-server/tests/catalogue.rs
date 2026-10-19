@@ -687,6 +687,25 @@ async fn a_stored_snapshot_from_before_a_provider_was_added_still_offers_its_mod
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["source"], url);
+    let p = project(&app, &owner).await;
+    let synced = app
+        .get(
+            &format!(
+                "{}/models/search?q=llama&provider=huggingface",
+                base(&owner, &p)
+            ),
+            &owner.cookie,
+        )
+        .await;
+    assert!(
+        synced.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["model_id"] == "meta-llama/Llama-3.1-8B-Instruct"),
+        "{:?}",
+        synced.body
+    );
 
     let restarted = App::start_with(&s, &[("KAESO_MODELS_DEV_URL", url.as_str())]).await;
     let p = project(&restarted, &owner).await;

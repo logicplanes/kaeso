@@ -26,6 +26,7 @@ pub struct Loaded {
 #[derive(Debug)]
 pub struct ModelsDev {
     current: RwLock<Arc<Loaded>>,
+    builtin: Snapshot,
     supplement: Supplement,
 }
 
@@ -41,10 +42,11 @@ impl ModelsDev {
         });
         ModelsDev {
             current: RwLock::new(Arc::new(Loaded {
-                snapshot,
+                snapshot: snapshot.clone(),
                 fetched_at: models_dev::EMBEDDED_FETCHED_AT,
                 source: EMBEDDED_SOURCE.into(),
             })),
+            builtin: snapshot,
             supplement,
         }
     }
@@ -61,6 +63,10 @@ impl ModelsDev {
     }
 
     fn replace(&self, loaded: Loaded) {
+        let loaded = Loaded {
+            snapshot: loaded.snapshot.with_providers_from(&self.builtin),
+            ..loaded
+        };
         *self.current.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(loaded);
     }
 }
@@ -90,11 +96,8 @@ pub async fn init(state: &AppState) -> Result<(), StoreError> {
 
 fn load_row(state: &AppState, row: catalogue::SnapshotRow) {
     match serde_json::from_value::<Snapshot>(row.data) {
-        Ok(stored) => state.models_dev.replace(Loaded {
-            snapshot: match models_dev::embedded() {
-                Ok(embedded) => stored.with_providers_from(&embedded),
-                Err(_) => stored,
-            },
+        Ok(snapshot) => state.models_dev.replace(Loaded {
+            snapshot,
             fetched_at: row.fetched_at,
             source: row.source_url,
         }),
