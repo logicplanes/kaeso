@@ -117,7 +117,7 @@ where
     }
 
     async fn valkey_get(&self, key: &str) -> Option<V> {
-        let mut conn = self.valkey.conn();
+        let mut conn = self.valkey.bulk();
         let raw: Option<Vec<u8>> = redis::cmd("GET")
             .arg(self.valkey_key(key))
             .query_async(&mut conn)
@@ -142,7 +142,7 @@ where
         let Ok(bytes) = serde_json::to_vec(value) else {
             return;
         };
-        let mut conn = self.valkey.conn();
+        let mut conn = self.valkey.bulk();
         let set: Result<(), _> = redis::cmd("SET")
             .arg(self.valkey_key(key))
             .arg(bytes)
