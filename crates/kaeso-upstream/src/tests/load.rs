@@ -20,15 +20,34 @@ const STREAMS: usize = 400;
 const MAX_CONCURRENT_STREAMS: u32 = 100;
 const CHUNKS: usize = 20;
 const CHUNK_GAP: Duration = Duration::from_millis(25);
+const WARM_UP: &str = "/v1/warm-up";
 
 type Chunks = Pin<Box<dyn Stream<Item = Result<Frame<Bytes>, Infallible>> + Send>>;
 
-#[derive(Default)]
+#[derive(Clone, Copy)]
+enum Pace {
+    Gap(Duration),
+    AllOpen,
+}
+
 struct Counters {
     accepted: AtomicUsize,
     served: AtomicUsize,
     open: AtomicUsize,
     peak: AtomicUsize,
+    all_open: tokio::sync::watch::Sender<bool>,
+}
+
+impl Counters {
+    fn new() -> Arc<Counters> {
+        Arc::new(Counters {
+            accepted: AtomicUsize::new(0),
+            served: AtomicUsize::new(0),
+            open: AtomicUsize::new(0),
+            peak: AtomicUsize::new(0),
+            all_open: tokio::sync::watch::Sender::new(false),
+        })
+    }
 }
 
 struct Open(Arc<Counters>);
@@ -37,6 +56,9 @@ impl Open {
     fn new(c: &Arc<Counters>) -> Open {
         let now = c.open.fetch_add(1, Ordering::SeqCst) + 1;
         c.peak.fetch_max(now, Ordering::SeqCst);
+        if now >= STREAMS {
+            c.all_open.send_replace(true);
+        }
         Open(c.clone())
     }
 }
@@ -47,20 +69,28 @@ impl Drop for Open {
     }
 }
 
-fn sse(open: Open) -> Chunks {
-    Box::pin(futures::stream::unfold((0, open), |(i, open)| async move {
-        if i == CHUNKS {
-            return None;
-        }
-        if i > 0 {
-            tokio::time::sleep(CHUNK_GAP).await;
-        }
-        let event = format!("event: delta\ndata: {{\"index\":{i},\"text\":\"token\"}}\n\n");
-        Some((Ok(Frame::data(Bytes::from(event))), (i + 1, open)))
-    }))
+fn sse(open: Open, pace: Pace) -> Chunks {
+    Box::pin(futures::stream::unfold(
+        (0, open),
+        move |(i, open)| async move {
+            if i == CHUNKS {
+                return None;
+            }
+            match pace {
+                Pace::Gap(gap) if i > 0 => tokio::time::sleep(gap).await,
+                Pace::AllOpen if i == 1 => {
+                    let mut all_open = open.0.all_open.subscribe();
+                    let _ = all_open.wait_for(|all| *all).await;
+                }
+                _ => {}
+            }
+            let event = format!("event: delta\ndata: {{\"index\":{i},\"text\":\"token\"}}\n\n");
+            Some((Ok(Frame::data(Bytes::from(event))), (i + 1, open)))
+        },
+    ))
 }
 
-async fn provider(counters: Arc<Counters>) -> (Url, reqwest::Certificate) {
+async fn provider(counters: Arc<Counters>, pace: Pace) -> (Url, reqwest::Certificate) {
     let issued = rcgen::generate_simple_self_signed(vec!["127.0.0.1".to_owned()]).unwrap();
     let cert = issued.cert.der().clone();
     let key = rustls::pki_types::PrivateKeyDer::Pkcs8(issued.signing_key.serialize_der().into());
@@ -89,11 +119,16 @@ async fn provider(counters: Arc<Counters>) -> (Url, reqwest::Certificate) {
                     return;
                 };
                 let served = AtomicUsize::new(0);
-                let service = hyper::service::service_fn(|_req| {
+                let service = hyper::service::service_fn(|req: hyper::Request<_>| {
                     if served.fetch_add(1, Ordering::SeqCst) == 0 {
                         counters.served.fetch_add(1, Ordering::SeqCst);
                     }
-                    let body = StreamBody::new(sse(Open::new(&counters)));
+                    let pace = if req.uri().path() == WARM_UP {
+                        Pace::Gap(Duration::ZERO)
+                    } else {
+                        pace
+                    };
+                    let body = StreamBody::new(sse(Open::new(&counters), pace));
                     async move {
                         Ok::<_, Infallible>(
                             hyper::Response::builder()
@@ -114,10 +149,17 @@ async fn provider(counters: Arc<Counters>) -> (Url, reqwest::Certificate) {
     (base, reqwest::Certificate::from_der(&cert).unwrap())
 }
 
-async fn one(upstream: &Upstream, base: &Url, started: Instant) -> (Duration, Duration, usize) {
+struct Run {
+    ttfb: Duration,
+    done: Duration,
+    events: usize,
+}
+
+async fn one(upstream: &Upstream, base: &Url, path: &str) -> Run {
+    let started = Instant::now();
     let credential = SecretString::from("sk-test");
     let request = EncodedRequest::post_json(
-        "/v1/chat/completions",
+        path,
         HeaderList::new(),
         br#"{"model":"m","stream":true}"#.to_vec(),
     );
@@ -141,14 +183,56 @@ async fn one(upstream: &Upstream, base: &Url, started: Instant) -> (Duration, Du
     let ResponseBody::Stream(mut body) = resp.body else {
         unreachable!()
     };
-    let mut first = None;
-    let mut bytes = 0;
+    let mut ttfb = None;
+    let mut text = Vec::new();
     while let Some(chunk) = body.next().await {
-        let chunk = chunk.unwrap();
-        first.get_or_insert_with(|| started.elapsed());
-        bytes += chunk.len();
+        ttfb.get_or_insert_with(|| started.elapsed());
+        text.extend_from_slice(&chunk.unwrap());
     }
-    (first.unwrap(), started.elapsed(), bytes)
+    Run {
+        ttfb: ttfb.unwrap(),
+        done: started.elapsed(),
+        events: text.windows(2).filter(|w| w == b"\n\n").count(),
+    }
+}
+
+struct Outcome {
+    wall: Duration,
+    runs: Vec<Run>,
+    counters: Arc<Counters>,
+}
+
+async fn burst(pace: Pace) -> Outcome {
+    let counters = Counters::new();
+    let (base, root) = provider(counters.clone(), pace).await;
+    let upstream = Arc::new(Upstream::new(Duration::from_secs(5), "kaeso-load").trusting(root));
+    assert_eq!(one(&upstream, &base, WARM_UP).await.events, CHUNKS);
+    let started = Instant::now();
+    let calls = (0..STREAMS).map(|_| {
+        let upstream = upstream.clone();
+        let base = base.clone();
+        tokio::spawn(async move { one(&upstream, &base, "/v1/chat/completions").await })
+    });
+    let runs = tokio::time::timeout(Duration::from_secs(20), futures::future::join_all(calls))
+        .await
+        .unwrap_or_else(|_| {
+            panic!(
+                "the streams never were all open at once: open {} peak {} connections {}/{}",
+                counters.open.load(Ordering::SeqCst),
+                counters.peak.load(Ordering::SeqCst),
+                counters.served.load(Ordering::SeqCst),
+                counters.accepted.load(Ordering::SeqCst),
+            )
+        })
+        .into_iter()
+        .map(Result::unwrap)
+        .collect::<Vec<_>>();
+    assert!(runs.iter().all(|r| r.events == CHUNKS));
+    Outcome {
+        wall: started.elapsed(),
+        runs,
+        counters,
+    }
 }
 
 fn percentile(sorted: &[Duration], p: usize) -> Duration {
@@ -156,37 +240,34 @@ fn percentile(sorted: &[Duration], p: usize) -> Duration {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn more_streams_than_one_connection_allows_are_all_open_at_once() {
+    let out = burst(Pace::AllOpen).await;
+    let c = &out.counters;
+    assert_eq!(c.peak.load(Ordering::SeqCst), STREAMS);
+    let needed = STREAMS.div_ceil(MAX_CONCURRENT_STREAMS as usize);
+    assert!(c.served.load(Ordering::SeqCst) > needed);
+    assert_eq!(
+        c.accepted.load(Ordering::SeqCst),
+        c.served.load(Ordering::SeqCst)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "load test: cargo test -p kaeso-upstream --release -- --ignored --nocapture"]
 async fn many_concurrent_streams_to_one_provider() {
-    let counters = Arc::new(Counters::default());
-    let (base, root) = provider(counters.clone()).await;
-    let upstream = Arc::new(Upstream::new(Duration::from_secs(5), "kaeso-load").trusting(root));
-    one(&upstream, &base, Instant::now()).await;
-    let warm = counters.accepted.load(Ordering::SeqCst);
-    let started = Instant::now();
-    let calls = (0..STREAMS).map(|_| {
-        let upstream = upstream.clone();
-        let base = base.clone();
-        tokio::spawn(async move { one(&upstream, &base, Instant::now()).await })
-    });
-    let mut ttfb = Vec::with_capacity(STREAMS);
-    let mut total = Vec::with_capacity(STREAMS);
-    let mut bytes = 0;
-    for call in futures::future::join_all(calls).await {
-        let (first, done, n) = call.unwrap();
-        ttfb.push(first);
-        total.push(done);
-        bytes += n;
-    }
-    let wall = started.elapsed();
+    let out = burst(Pace::Gap(CHUNK_GAP)).await;
+    let mut ttfb: Vec<_> = out.runs.iter().map(|r| r.ttfb).collect();
+    let mut total: Vec<_> = out.runs.iter().map(|r| r.done).collect();
     ttfb.sort();
     total.sort();
-    let ideal = CHUNK_GAP * u32::try_from(CHUNKS - 1).unwrap();
+    let c = &out.counters;
+    let stream_length = CHUNK_GAP * u32::try_from(CHUNKS - 1).unwrap();
     println!(
-        "streams={STREAMS} server_max_concurrent_streams={MAX_CONCURRENT_STREAMS} stream_length={ideal:?}"
+        "streams={STREAMS} server_max_concurrent_streams={MAX_CONCURRENT_STREAMS} stream_length={stream_length:?}"
     );
     println!(
-        "wall={wall:?} ttfb_p50={:?} ttfb_p99={:?} ttfb_max={:?} total_p50={:?} total_p99={:?}",
+        "wall={:?} ttfb_p50={:?} ttfb_p99={:?} ttfb_max={:?} total_p50={:?} total_p99={:?}",
+        out.wall,
         percentile(&ttfb, 50),
         percentile(&ttfb, 99),
         ttfb[ttfb.len() - 1],
@@ -194,9 +275,11 @@ async fn many_concurrent_streams_to_one_provider() {
         percentile(&total, 99),
     );
     println!(
-        "tcp_connections_opened={} (warm-up {warm}) connections_serving={} peak_open_streams={} bytes={bytes}",
-        counters.accepted.load(Ordering::SeqCst),
-        counters.served.load(Ordering::SeqCst),
-        counters.peak.load(Ordering::SeqCst),
+        "tcp_connections_opened={} connections_serving={} peak_open_streams={}",
+        c.accepted.load(Ordering::SeqCst),
+        c.served.load(Ordering::SeqCst),
+        c.peak.load(Ordering::SeqCst),
     );
+    assert_eq!(c.peak.load(Ordering::SeqCst), STREAMS);
+    assert!(percentile(&ttfb, 99) < stream_length);
 }

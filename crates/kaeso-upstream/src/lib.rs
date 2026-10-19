@@ -100,8 +100,8 @@ pub struct Call<'a> {
     pub max_body: usize,
 }
 
-const STREAMS_PER_CONNECTION: usize = 50;
-const CONNECTIONS_PER_PROVIDER: usize = 16;
+const STREAMS_PER_CONNECTION: usize = 25;
+const CONNECTIONS_PER_PROVIDER: usize = 32;
 
 #[derive(Debug)]
 pub struct Upstream {
