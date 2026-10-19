@@ -3,7 +3,7 @@ title: Introduction
 description: Kaeso is an open-source AI gateway you run on your own servers.
 ---
 
-Kaeso is a gateway you run between your apps and model providers such as OpenAI and Anthropic. Your apps keep the official SDKs they already use and change two settings: the base URL and the key. Kaeso checks every request against your keys, models and limits, calls the provider with your provider key, and logs what each request cost.
+Kaeso is a gateway you run between your apps and model providers such as OpenAI, Anthropic and Groq. Your apps keep the official SDKs they already use and change two settings: the base URL and the key. Kaeso checks every request against your keys, models and limits, calls the provider with your provider key, and logs what each request cost.
 
 Here is an app that uses the OpenAI SDK to call Claude through Kaeso:
 
@@ -37,7 +37,7 @@ This documentation describes Kaeso {{version}}.
 
 ## What Kaeso gives you
 
-- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. Each chat format can call every chat model in your catalogue, so an OpenAI SDK can talk to Claude.
+- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
 - **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue with aliases in each project.
 - **Limits and budgets.** Request and token rates, and token and spend budgets, for a project, a member or a single key.
@@ -68,7 +68,7 @@ flowchart TD
 - [Quick start](get-started/quick-start.md): Install Kaeso on a server and send your first request.
 - [Calling models](get-started/calling-models.md): Call models from your code with the OpenAI and Anthropic SDKs.
 - [Coding tools](get-started/coding-tools.md): Point Claude Code or Codex at your install.
-- [Concepts](concepts/index.md): Learn how Kaeso handles requests, formats and rights.
+- [Concepts](concepts/index.md): Learn how Kaeso handles providers, requests, formats and rights.
 - [Using the console](console/index.md): Find your way around the console.
 - [API](api/index.md): Look up the model API and the Platform API.
 - [Self-hosting](self-hosting/index.md): Plan, run and upgrade an install.

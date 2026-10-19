@@ -10,7 +10,7 @@ order: 1
 
 - 一台装有 Docker Engine 和 Docker Compose 2.24 或更高版本的服务器，2 个 vCPU、4 GB 内存和 20 GB 磁盘（[系统要求](../self-hosting/requirements.md)）。
 - 一个域名，例如 `kaeso.example.com`，其 DNS 记录指向该服务器。80 和 443 端口必须向互联网开放，以便 Caddy 获取证书。
-- 一个 Kaeso 所调用的模型服务商（如 OpenAI 或 Anthropic）的 API 密钥（[服务商密钥](../console/provider-keys.md)）。
+- 一个 [Kaeso 所调用的模型服务商](../concepts/supported-providers.md)（如 OpenAI 或 Anthropic）的 API 密钥。
 
 > [!TIP]
 > 想在自己的电脑上试用，把域名设为 `localhost`，然后打开 `https://localhost`。此时 Caddy 自行签发证书，浏览器会要求您确认接受一次。[在自己的电脑上试用](../self-hosting/installation.md#在自己的电脑上试用)介绍如何让 curl 和 SDK 信任它。

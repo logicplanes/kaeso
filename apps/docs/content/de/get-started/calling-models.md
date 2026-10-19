@@ -4,7 +4,7 @@ description: Jedes Modell Ihres Projekts mit dem OpenAI oder Anthropic SDK oder 
 order: 2
 ---
 
-Richten Sie das offizielle OpenAI oder Anthropic SDK auf Ihre Installation, und geben Sie ihm einen API-Schlüssel von Kaeso. Jedes SDK kann jedes Chat-Modell Ihres Projekts aufrufen, das OpenAI SDK also auch Claude.
+Richten Sie das offizielle OpenAI oder Anthropic SDK auf Ihre Installation, und geben Sie ihm einen API-Schlüssel von Kaeso. Jedes SDK kann jedes Chat-Modell Ihres Projekts aufrufen, gleich welcher [Anbieter](../concepts/providers.md) es bedient, das OpenAI SDK also auch Claude.
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \

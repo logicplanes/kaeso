@@ -10,7 +10,7 @@ Install Kaeso on a server, connect a model provider such as OpenAI or Anthropic,
 
 - A server with Docker Engine and Docker Compose 2.24 or newer, 2 vCPUs, 4 GB of memory and 20 GB of disk ([requirements](../self-hosting/requirements.md)).
 - A domain, such as `kaeso.example.com`, whose DNS record points at the server. Ports 80 and 443 must be open to the internet, so Caddy can get a certificate.
-- An API key from a model provider Kaeso calls, such as OpenAI or Anthropic ([provider keys](../console/provider-keys.md)).
+- An API key from a [model provider Kaeso calls](../concepts/supported-providers.md), such as OpenAI or Anthropic.
 
 > [!TIP]
 > To try Kaeso on your own computer, use `localhost` as the domain and open `https://localhost`. Caddy then signs the certificate itself, and your browser asks you to accept it once. [Trying it on your computer](../self-hosting/installation.md#trying-it-on-your-computer) shows how to make curl and the SDKs trust it.

@@ -4,7 +4,7 @@ description: Connect your organization's keys for model providers, and choose wh
 order: 3
 ---
 
-Provider keys are your organization's keys for the model providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
+Provider keys are your organization's keys for the [model providers Kaeso calls](../concepts/supported-providers.md). Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
 
 ## Add a key
 
@@ -12,21 +12,8 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 
 1. On **Providers**, choose **Add key**.
 2. **Which provider is the key for?** Search for the provider and choose it. Providers that already have keys come first, with their key counts.
-3. Paste the key and give it a name, such as `Production`. The dialog links the provider's page for creating keys, and the table below lists them too.
+3. Paste the key and give it a name, such as `Production`. The dialog links the provider's page for creating keys, and [supported providers](../concepts/supported-providers.md) lists them too.
 4. If the provider already has a default key, choose whether the new key becomes the default.
-
-| Provider | Create a key at | The key starts with |
-| --- | --- | --- |
-| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
-| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
-| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
-| SpaceX | [console.x.ai](https://console.x.ai/team/default/api-keys), the xAI console, under **API Keys** | `xai-` |
-| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), under **API Keys** | `tgp_v1_` |
-| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
-| OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |
-| Mistral | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) | no fixed prefix |
-
-OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`. Call one as `openrouter/anthropic/claude-sonnet-4.5` so it never goes to the maker's own provider; see [how a request names a model](models-and-aliases.md#how-a-request-names-a-model). Kaeso records the cost of OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports. OpenRouter lists its models without looking at the key, so **Check availability** can't tell a wrong OpenRouter key; the first request with it reports the refused key.
 
 Each action on provider keys needs its own right:
 

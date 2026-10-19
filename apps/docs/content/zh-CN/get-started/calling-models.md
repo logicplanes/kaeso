@@ -4,7 +4,7 @@ description: 使用 OpenAI 或 Anthropic SDK，或者用 curl，调用项目中�
 order: 2
 ---
 
-把官方 OpenAI 或 Anthropic SDK 指向您的实例，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，因此 OpenAI SDK 也能调用 Claude。
+把官方 OpenAI 或 Anthropic SDK 指向您的实例，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，无论由哪个[服务商](../concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \

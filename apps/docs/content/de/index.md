@@ -3,7 +3,7 @@ title: Einführung
 description: Kaeso ist ein Open-Source-KI-Gateway, das Sie auf Ihren eigenen Servern betreiben.
 ---
 
-Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und Modellanbietern wie OpenAI und Anthropic betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
+Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und Modellanbietern wie OpenAI, Anthropic und Groq betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
 
 So ruft eine App mit dem OpenAI SDK über Kaeso Claude auf:
 
@@ -37,7 +37,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 
 ## Was Kaeso Ihnen bietet
 
-- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen; ein OpenAI SDK spricht also auch mit Claude.
+- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen, gleich welcher [Anbieter](concepts/providers.md) es bedient; ein OpenAI SDK spricht also auch mit Claude.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
 - **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog mit Aliassen in jedem Projekt.
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.
@@ -68,7 +68,7 @@ Der [Ablauf einer Anfrage](concepts/request-flow.md) verfolgt eine Anfrage durch
 - [Schnellstart](get-started/quick-start.md): Installieren Sie Kaeso auf einem Server, und senden Sie Ihre erste Anfrage.
 - [Modelle aufrufen](get-started/calling-models.md): Rufen Sie Modelle aus Ihrem Code mit den SDKs von OpenAI und Anthropic auf.
 - [Coding-Tools](get-started/coding-tools.md): Richten Sie Claude Code oder Codex auf Ihre Installation aus.
-- [Konzepte](concepts/index.md): Erfahren Sie, wie Kaeso Anfragen, Formate und Rechte behandelt.
+- [Konzepte](concepts/index.md): Erfahren Sie, wie Kaeso Anbieter, Anfragen, Formate und Rechte behandelt.
 - [Die Konsole verwenden](console/index.md): Finden Sie sich in der Konsole zurecht.
 - [API](api/index.md): Schlagen Sie die Modell-API und die Platform API nach.
 - [Selbst hosten](self-hosting/index.md): Planen, betreiben und aktualisieren Sie eine Installation.
