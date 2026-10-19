@@ -178,6 +178,7 @@ fn blank_outcome() -> Outcome {
         cancelled: false,
         stream_progress: None,
         usage_estimated: false,
+        content_kept: false,
     }
 }
 
@@ -456,7 +457,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     })?;
     let keep_content = crate::services::logs::keeps_content(state, caller.project_id).await;
     if keep_content {
-        rec.outcome().request_body = Some(body.clone());
+        let o = rec.outcome();
+        o.content_kept = true;
+        o.request_body = Some(body.clone());
     }
     let request_bytes = body.len();
     let listed = header_list(&headers);

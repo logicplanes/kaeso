@@ -301,7 +301,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
     let usage = o.usage.clone().unwrap_or_default();
     let (_, cost) = crate::services::usage::costed(o);
     let progress = o.stream_progress.unwrap_or_default();
-    let content = cfg.org_content && cfg.project_content;
+    let content = o.content_kept && cfg.org_content && cfg.project_content;
     let request_body = o
         .request_body
         .as_ref()

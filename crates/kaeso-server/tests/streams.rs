@@ -438,15 +438,12 @@ async fn without_content_logging_a_stream_keeps_only_what_usage_needs() {
         let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
         assert_eq!(r.status, 200, "{}", r.text());
         assert!(r.text().contains("message_stop"));
-        let mut recorded = env.capture.all();
-        for _ in 0..300 {
-            if recorded.len() > before {
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-            recorded = env.capture.all();
-        }
-        let o = recorded.pop().unwrap();
+        common::eventually("the stream is recorded", || {
+            let recorded = env.capture.all().len();
+            async move { recorded > before }
+        })
+        .await;
+        let o = env.capture.all().pop().unwrap();
         assert!(o.stream);
         let reply = o.reply.as_ref().unwrap();
         assert!(o.usage.as_ref().unwrap().output_tokens > 0);
