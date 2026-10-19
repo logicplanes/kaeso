@@ -60,7 +60,7 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert. Erzeugen Sie einen in die Datei `master-keys`, die Compose dem Gateway als Docker-Secret übergibt:
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
 chmod 644 master-keys
 ```
 

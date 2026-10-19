@@ -35,7 +35,7 @@ POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
 CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
 VALKEY_PASSWORD=$(openssl rand -hex 24)
 EOF
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker compose run --rm --no-deps gateway master-key generate > master-keys
 chmod 644 master-keys
 docker compose up -d --wait
 docker compose exec gateway kaeso setup-link
