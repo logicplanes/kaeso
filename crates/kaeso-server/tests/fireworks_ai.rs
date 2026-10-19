@@ -2,6 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 use common::v1::{Env, call, chat, messages};
+use kaeso_testkit::mock_provider::Received;
 use serde_json::json;
 
 const SECRET: &str = "fw-test-credential-0003";
@@ -44,8 +45,10 @@ async fn env() -> Env {
     Env { mock, ..env }
 }
 
-fn sent_to_fireworks(env: &Env, path: &str) -> serde_json::Value {
-    let sent = env.mock.last().unwrap();
+fn sent_to_fireworks(sent: Option<Received>, path: &str) -> serde_json::Value {
+    let Some(sent) = sent else {
+        return serde_json::Value::Null;
+    };
     assert_eq!(sent.path, path);
     assert_eq!(
         sent.header("authorization"),
@@ -71,7 +74,7 @@ async fn chat_apps_reach_fireworks_models_by_their_slashed_ids() {
         assert_eq!(r.json()["object"], "chat.completion");
         assert_eq!(r.header("kaeso-provider"), Some("fireworks-ai"));
         assert_eq!(r.header("kaeso-model"), Some(MODEL));
-        let body = sent_to_fireworks(&env, "/inference/v1/chat/completions");
+        let body = sent_to_fireworks(env.mock.last(), "/inference/v1/chat/completions");
         assert_eq!(body["model"], MODEL);
         assert_eq!(body["messages"][0]["content"], "Hello");
     }
@@ -92,7 +95,7 @@ async fn chat_apps_reach_fireworks_models_by_their_slashed_ids() {
         "{}",
         r.text()
     );
-    let body = sent_to_fireworks(&env, "/inference/v1/chat/completions");
+    let body = sent_to_fireworks(env.mock.last(), "/inference/v1/chat/completions");
     assert_eq!(body["stream"], true);
     assert_eq!(body["stream_options"]["include_usage"], true);
 }
@@ -112,7 +115,7 @@ async fn anthropic_apps_reach_fireworks_models_through_kpp() {
     assert_eq!(r.json()["type"], "message");
     assert_eq!(r.json()["role"], "assistant");
     assert_eq!(r.header("kaeso-provider"), Some("fireworks-ai"));
-    let body = sent_to_fireworks(&env, "/inference/v1/chat/completions");
+    let body = sent_to_fireworks(env.mock.last(), "/inference/v1/chat/completions");
     assert_eq!(body["model"], MODEL);
     assert_eq!(body["max_completion_tokens"], 256);
 
@@ -125,7 +128,8 @@ async fn anthropic_apps_reach_fireworks_models_through_kpp() {
         text.contains("event: message_start") && text.contains("event: message_stop"),
         "{text}"
     );
-    sent_to_fireworks(&env, "/inference/v1/chat/completions");
+    let body = sent_to_fireworks(env.mock.last(), "/inference/v1/chat/completions");
+    assert_eq!(body["stream"], true);
 
     let count = json!({ "model": MODEL, "messages": [{ "role": "user", "content": "Hi" }] });
     let r = call(
@@ -161,7 +165,7 @@ async fn embeddings_go_to_the_fireworks_embeddings_endpoint() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.json()["object"], "list");
-    let body = sent_to_fireworks(&env, "/inference/v1/embeddings");
+    let body = sent_to_fireworks(env.mock.last(), "/inference/v1/embeddings");
     assert_eq!(body, json!({ "model": EMBEDDER, "input": "hello" }));
 
     let r = call(
