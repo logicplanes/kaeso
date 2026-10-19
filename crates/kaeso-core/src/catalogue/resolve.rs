@@ -45,23 +45,20 @@ pub fn resolve<'a>(
     {
         return Ok((entry, Via::Alias));
     }
-    let native: Vec<&Entry> = entries.iter().filter(|e| e.model_id == name).collect();
-    let prefixed = name.split_once('/').and_then(|(provider, model)| {
-        entries
+    if let Some((provider, model)) = name.split_once('/')
+        && let Some(entry) = entries
             .iter()
             .find(|e| e.provider == provider && e.model_id == model)
-    });
-    match (prefixed, native.as_slice()) {
-        (None, []) => Err(ResolveError::NotInCatalogue(name.to_owned())),
-        (Some(entry), []) => Ok((entry, Via::Prefixed)),
-        (None, [one]) => Ok((one, Via::Native)),
-        (prefixed, many) => Err(ResolveError::Ambiguous {
+    {
+        return Ok((entry, Via::Prefixed));
+    }
+    let native: Vec<&Entry> = entries.iter().filter(|e| e.model_id == name).collect();
+    match native.as_slice() {
+        [] => Err(ResolveError::NotInCatalogue(name.to_owned())),
+        [one] => Ok((one, Via::Native)),
+        many => Err(ResolveError::Ambiguous {
             name: name.to_owned(),
-            providers: many
-                .iter()
-                .chain(prefixed.as_ref())
-                .map(|e| e.provider.clone())
-                .collect(),
+            providers: many.iter().map(|e| e.provider.clone()).collect(),
         }),
     }
 }

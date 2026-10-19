@@ -23,7 +23,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | Groq | console.groq.com | `gsk_` |
 | OpenRouter | openrouter.ai, unter **Settings**, **API Keys** | `sk-or-v1-` |
 
-OpenRouter leitet an Modelle vieler Anbieter weiter. Seine Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`; [Wie eine Anfrage ein Modell nennt](models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt) zeigt, wie Sie sie aufrufen. Kaeso berechnet Anfragen an OpenRouter zu den Preisen des Katalogs, nicht zu den Kosten, die OpenRouter in `usage.cost` meldet.
+OpenRouter leitet an Modelle vieler Anbieter weiter. Seine Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`. Rufen Sie eines als `openrouter/anthropic/claude-sonnet-4.5` auf, damit es nie an den eigenen Anbieter des Herstellers geht; [Wie eine Anfrage ein Modell nennt](models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt) zeigt, wie Sie sie aufrufen. Kaeso berechnet Anfragen an OpenRouter zu den Preisen des Katalogs, nicht zu den Kosten, die OpenRouter in `usage.cost` meldet.
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

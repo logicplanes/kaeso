@@ -23,7 +23,7 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | Groq | console.groq.com | `gsk_` |
 | OpenRouter | openrouter.ai, under **Settings**, **API Keys** | `sk-or-v1-` |
 
-OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`; [how a request names a model](models-and-aliases.md#how-a-request-names-a-model) shows how to call them. Kaeso charges OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports.
+OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`. Call one as `openrouter/anthropic/claude-sonnet-4.5` so it never goes to the maker's own provider; [how a request names a model](models-and-aliases.md#how-a-request-names-a-model) shows how to call them. Kaeso charges OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports.
 
 Each action on provider keys needs its own right:
 

@@ -353,29 +353,20 @@ fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_pre
 }
 
 #[test]
-fn a_native_id_that_reads_as_another_providers_prefixed_name_is_ambiguous() {
+fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
     let routed = entry("openrouter", "openai/gpt-4o");
     let direct = entry("openai", "gpt-4o");
-    let entries = vec![routed.clone(), direct.clone()];
-    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
-    let err = r("openai/gpt-4o").unwrap_err();
-    assert_eq!(
-        err,
-        ResolveError::Ambiguous {
-            name: "openai/gpt-4o".into(),
-            providers: vec!["openrouter".into(), "openai".into()],
-        }
-    );
-    assert!(
-        err.to_string()
-            .contains("such as `openrouter/openai/gpt-4o`"),
-        "{err}"
-    );
+    let both = vec![routed.clone(), direct.clone()];
+    let r = |n: &str| resolve(n, &both, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-4o"), Ok((direct.id, Via::Prefixed)));
     assert_eq!(
         r("openrouter/openai/gpt-4o"),
         Ok((routed.id, Via::Prefixed))
     );
     assert_eq!(r("gpt-4o"), Ok((direct.id, Via::Native)));
+    let only = vec![routed.clone()];
+    let r = |n: &str| resolve(n, &only, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-4o"), Ok((routed.id, Via::Native)));
 }
 
 #[test]
