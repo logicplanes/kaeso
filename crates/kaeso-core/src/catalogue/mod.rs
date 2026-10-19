@@ -483,6 +483,8 @@ pub struct Entry {
     pub last_known: Option<models_dev::Model>,
     #[serde(default)]
     pub availability: Option<Availability>,
+    #[serde(default)]
+    pub availability_checked_at: Option<time::OffsetDateTime>,
 }
 
 impl Entry {

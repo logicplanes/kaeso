@@ -31,7 +31,7 @@ Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem An
 
 Auch Anfragen ändern die Verfügbarkeit. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md). Gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Jede Antwort zählt nur für den Anbieter-Schlüssel, der sie erhalten hat.
 
-Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso schickt Anfragen danach weiter an seinen Anbieter, nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Das Audit-Log verzeichnet jede Prüfung.
+Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso beantwortet Anfragen danach mit diesem Fehler, ohne den Anbieter aufzurufen. Alle fünf Minuten lässt es eine Anfrage zum Anbieter durch, um erneut zu fragen; so wird ein Modell, auf das der Schlüssel Zugriff erhalten hat, von selbst wieder verfügbar. **Verfügbarkeit prüfen** aktualisiert es sofort. Anfragen gehen nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Das Audit-Log verzeichnet jede Prüfung.
 
 ## Werte eines Modells ändern
 

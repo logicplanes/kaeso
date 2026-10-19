@@ -31,7 +31,7 @@ Choose **Check availability** to ask each model's provider, with the project's p
 
 Requests update availability too. When the provider answers a request with "not found" and its listing confirms it, the model becomes unavailable, and the app gets an [error that says so](../api/errors.md). When a request for an unavailable model succeeds, the model becomes available again. Each answer counts only for the provider key that got it.
 
-An unavailable model stays in the catalogue, and Kaeso still sends requests for it to its provider, never to another model. The model API's list of models (`GET /v1/models`) leaves it out. To fix it, give the provider key access to the model, or remove the model from the catalogue. The audit log records every check.
+An unavailable model stays in the catalogue, and Kaeso answers requests for it with that error without calling the provider. Every five minutes, it lets one request through to the provider to ask again, so a model the key gained access to becomes available again by itself; **Check availability** updates it at once. Requests never go to another model. The model API's list of models (`GET /v1/models`) leaves it out. To fix it, give the provider key access to the model, or remove the model from the catalogue. The audit log records every check.
 
 ## Change a model's values
 
