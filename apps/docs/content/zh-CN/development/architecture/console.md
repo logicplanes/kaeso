@@ -38,7 +38,7 @@ order: 2
 - **客户端**：`src/api/client.ts` 是 `openapi-fetch`，使用 `pnpm --filter kaeso-console generate` 根据 `openapi.json` 写入 `src/api/generated` 的类型。控制台的 `dev`、`build`、`typecheck`、`test` 和 `e2e` 脚本会先运行生成器，生成的内容从不提交。客户端会发送会话 Cookie，并把每次失败转换成带有 API 的 `type`、`message`、`param` 以及 `kaeso-request-id` 的 `ApiError`（`src/api/errors.ts`）。
 - **列表**使用游标分页（`src/api/paging.ts`），**导出**是流式下载（`src/api/download.ts`）。
 - **搜索参数**：每个路由在同一个函数中校验自己的搜索参数，由 `validateSearch` 和页面的 `Route.useSearch({ select })` 共用。页面不认识的值会回退到默认值。
-- **数据新鲜度**（`src/query.ts`）：缓存的数据会立即显示，并在后台重新获取。查询在 10 秒内视为新鲜，少数很少变化的查询保持更久。会话总是重新验证。修改操作和客户端错误从不重试，其他失败的读取重试两次。
+- **数据新鲜度**（`src/query.ts`）：缓存的数据会立即显示，并在后台重新获取。查询在 10 秒内视为新鲜，少数很少变化的查询保持更久，例如请求详情保持五分钟。会话在五秒内视为新鲜，因此同一页面的各部分共用它，并在窗口获得焦点时和每分钟重新检查。长列表只在仅加载了一页时才在获得焦点时刷新，因此回到窗口时不会重新加载已滚动浏览过的每一页。修改只重新加载它涉及的数据：组织本身的键是 `["orgs", org, "view"]`，因此重新加载组织不会影响组织内的列表。修改操作和客户端错误从不重试，其他失败的读取重试两次。
 
 ## 样式
 

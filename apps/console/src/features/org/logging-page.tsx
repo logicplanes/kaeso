@@ -26,8 +26,9 @@ import {
 import { formatBytes, formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { OrgLogSettings } from "~/api/generated/types";
-import { logDeletionsQuery, logSettingsQuery, logStorageQuery } from "~/api/queries/orgs";
-import { orgProjectsQuery } from "~/api/queries/projects";
+import { projectLogSettings, projectViews } from "~/api/queries/invalidation";
+import { logDeletionsQuery, logSettingsQuery, logStorageQuery, orgViewKey } from "~/api/queries/orgs";
+import { orgProjectsQuery, projectListKey } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
@@ -107,10 +108,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
   const save = useApiMutation({
     mutationFn: async (body: { content_logging?: boolean; metadata_retention_days?: number; content_retention_days?: number }) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/logs/settings", { params: { path: { org } }, body })),
-    invalidates: [
-      ["orgs", org, "logs"],
-      ["orgs", org],
-    ],
+    invalidates: [["orgs", org, "logs"], orgViewKey(org), projectListKey(org), projectViews(org), projectLogSettings(org)],
     onSuccess: (_s, body) =>
       toast.success(
         body.content_logging === undefined
