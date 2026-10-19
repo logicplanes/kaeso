@@ -308,6 +308,68 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/nvidia/doc-deepseek-v4-flash-chat-template-kwargs": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/doc-deepseek-v4-flash-reasoning-effort-none": {
+    "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/nvidia/doc-kimi-k3-image-reasoning-effort": {
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is in this image?",
+              "type": "text"
+            },
+            {
+              "source": {
+                "type": "url",
+                "url": "https://assets.ngc.nvidia.com/products/api-catalog/phi-3-5-vision/example1b.jpg"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "moonshotai/kimi-k3",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/nvidia/doc-llama-3-3-70b-seed": {
+    "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/nvidia/doc-nemotron-3-super-low-effort": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/doc-nemotron-3-super-reasoning-budget": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/doc-nemotron-super-49b-system-stop-null": {
+    "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

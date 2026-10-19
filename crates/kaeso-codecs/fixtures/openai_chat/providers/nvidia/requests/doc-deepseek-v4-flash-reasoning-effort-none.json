@@ -1,0 +1,15 @@
+{
+      "model": "deepseek-ai/deepseek-v4-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Write a limerick about the wonders of GPU computing."
+        }
+      ],
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 8192,
+      "seed": 42,
+      "stream": true,
+      "reasoning_effort": "none"
+}

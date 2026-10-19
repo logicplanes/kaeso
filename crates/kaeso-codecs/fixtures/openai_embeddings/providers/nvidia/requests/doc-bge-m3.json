@@ -1,0 +1,6 @@
+{
+  "input": "What is the capital of France?",
+  "model": "baai/bge-m3",
+  "encoding_format": "float",
+  "truncate": "NONE"
+}

@@ -24,7 +24,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 方向 | 端口或主机 | 用途 |
 | --- | --- | --- |
 | 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
-| 出站 | `api.openai.com`、`api.anthropic.com` | 您使用的服务商 |
+| 出站 | `api.openai.com`、`api.anthropic.com`、`integrate.api.nvidia.com` | 您使用的服务商 |
 | 出站 | `models.dev` | 模型数据，每天刷新一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每天两次 |
 | 出站 | `github.com`、`objects.githubusercontent.com`、`ghcr.io` | 更新器 |

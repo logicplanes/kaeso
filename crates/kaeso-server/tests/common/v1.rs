@@ -55,10 +55,14 @@ pub async fn env_hooked(
 ) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
-    let mut settings = vec![
-        ("KAESO_PROVIDERS_OPENAI_BASE_URL", mock.base_url.as_str()),
-        ("KAESO_PROVIDERS_ANTHROPIC_BASE_URL", mock.base_url.as_str()),
-    ];
+    let base_urls: Vec<String> = kaeso_core::provider::known_ids()
+        .iter()
+        .map(|id| format!("KAESO_PROVIDERS_{}_BASE_URL", id.env_segment()))
+        .collect();
+    let mut settings: Vec<(&str, &str)> = base_urls
+        .iter()
+        .map(|name| (name.as_str(), mock.base_url.as_str()))
+        .collect();
     settings.extend_from_slice(extra.unwrap_or(&[]));
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
     let app = App::start_hooked(&s, &settings, limits, sink).await;
