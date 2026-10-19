@@ -205,7 +205,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | andere | `ProviderError` | sein 5xx-Status (außer 503) oder 500, `server_error` |
 | `error.misalignment` (`MisalignmentErrorDetailsResource` im Schema `Error`), unbekannte Schlüssel in `error` | in `KppError.raw` erhalten (der ganze Body) | Wird nur erneut gesendet, wenn der Fehler aus Chat kam. |
 
-Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Stream-Fehler, der keinen Status hat. Ein solcher Fehler nimmt seinen Status aus einem numerischen `code` zwischen 400 und 599, den OpenRouter als HTTP-Status sendet.
+Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Fehler ohne HTTP-Status: einem Stream-Fehler oder einem Fehler im Body einer Antwort mit 200. Bei einem solchen Fehler bestimmt ein numerischer `code` zwischen 400 und 599, den OpenRouter als HTTP-Status sendet, die Art wie ein Status; einen Status hat der Fehler trotzdem nicht.
 
 Mit HTTP 402 melden OpenAI-kompatible Anbieter wie DeepSeek ein aufgebrauchtes Guthaben ([Fehlercodes von DeepSeek](https://api-docs.deepseek.com/quick_start/error_codes)), deshalb ist es `Billing`, was auch immer sein `code` sagt.
 
