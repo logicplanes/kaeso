@@ -378,6 +378,122 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/togetherai/context-length-truncate": {
+    "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "context_length_exceeded_behavior"
+  },
+  "providers/togetherai/non-serverless-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/reasoning-reply": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 60,
+      "model": "Qwen/Qwen3.5-9B",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 60,
+      "model": "Qwen/Qwen3.5-9B",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/safety-model": {
+    "message": "`safety_model` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safety_model"
+  },
+  "providers/togetherai/sampling-extras": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/togetherai/stream-usage-short": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one planet.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/togetherai/tool-call-auto": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Use the tools for live data.",
+      "max_output_tokens": 400,
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

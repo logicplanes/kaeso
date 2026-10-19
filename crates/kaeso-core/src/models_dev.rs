@@ -12,7 +12,7 @@ use crate::provider::{ProviderId, known_ids};
 
 pub const EMBEDDED: &str = include_str!("../data/models-dev.json");
 
-pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-18 02:35:05 UTC);
+pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-19 00:52:52 UTC);
 
 pub const DEFAULT_URL: &str = "https://models.dev/api.json";
 
@@ -264,6 +264,13 @@ mod tests {
         );
         let gpt = parsed.snapshot.model("openai", "gpt-5").unwrap();
         assert_eq!(gpt.efforts().unwrap(), ["minimal", "low", "medium", "high"]);
+        let together = &parsed.snapshot.providers["togetherai"].models;
+        assert!(together.keys().any(|id| id.contains('/')));
+        for (id, model) in together {
+            let priced = model.cost.as_ref().and_then(|c| c.input).is_some();
+            let limited = model.limit.as_ref().and_then(|l| l.context).is_some();
+            assert!(priced && limited, "{id} lacks a price or a limit");
+        }
     }
 
     #[test]
@@ -314,7 +321,10 @@ mod tests {
         let none = parse(br#"{"x": {"models": {}}}"#, &known_ids()).unwrap_err();
         assert_eq!(
             none.to_string(),
-            "models.dev data has none of the providers openai, anthropic"
+            format!(
+                "models.dev data has none of the providers {}",
+                crate::provider::ids()
+            )
         );
     }
 

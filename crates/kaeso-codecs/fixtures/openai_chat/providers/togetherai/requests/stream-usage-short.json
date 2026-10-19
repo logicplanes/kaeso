@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name one planet."
+    }
+  ],
+  "max_tokens": 300,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

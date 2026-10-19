@@ -1,0 +1,26 @@
+{
+  "id": "0fe3f371-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370452,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{  \"name\": \"Alice and Bob are going to a science fair on 2026-10-16.\", \"date\": \"2026-10-16\", \"participants\": [\"Alice\", \"Bob\"] }",
+        "reasoning_content": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 22,
+    "completion_tokens": 47,
+    "total_tokens": 69,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "system_fingerprint": "default"
+}

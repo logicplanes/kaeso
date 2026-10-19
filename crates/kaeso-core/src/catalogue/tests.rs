@@ -287,6 +287,28 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn model_ids_with_slashes_resolve_natively_and_with_their_provider_prefix() {
+    let qwen = entry("togetherai", "Qwen/Qwen3.5-9B");
+    let oss = entry("togetherai", "openai/gpt-oss-120b");
+    let entries = vec![qwen.clone(), oss.clone(), entry("openai", "gpt-4o")];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("Qwen/Qwen3.5-9B"), Ok((qwen.id, Via::Native)));
+    assert_eq!(
+        r("togetherai/Qwen/Qwen3.5-9B"),
+        Ok((qwen.id, Via::Prefixed))
+    );
+    assert_eq!(r("openai/gpt-oss-120b"), Ok((oss.id, Via::Native)));
+    assert_eq!(
+        r("togetherai/openai/gpt-oss-120b"),
+        Ok((oss.id, Via::Prefixed))
+    );
+    assert!(matches!(
+        r("togetherai/Qwen3.5-9B"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

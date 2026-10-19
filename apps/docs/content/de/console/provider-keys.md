@@ -1,16 +1,16 @@
 ---
 title: Anbieter-Schlüssel
-description: Verbinden Sie die OpenAI- und Anthropic-Schlüssel Ihrer Organisation und wählen Sie, welche Projekte welchen nutzen.
+description: Verbinden Sie die OpenAI-, Anthropic- und Together-AI-Schlüssel Ihrer Organisation und wählen Sie, welche Projekte welchen nutzen.
 order: 3
 ---
 
-Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für OpenAI und Anthropic, die beiden Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
+Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für OpenAI, Anthropic und Together AI, die Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
 
 ## Schlüssel hinzufügen
 
 1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**, oder **Verbinden** neben einem Anbieter, der noch keinen Schlüssel hat.
-2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie OpenAI oder Anthropic.
-3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`. Ein Anthropic-Schlüssel von console.anthropic.com beginnt mit `sk-ant-`.
+2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie OpenAI, Anthropic oder Together AI.
+3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`. Ein Anthropic-Schlüssel von console.anthropic.com beginnt mit `sk-ant-`. Ein Together-AI-Schlüssel von api.together.ai beginnt mit `tgp_v1_`.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:

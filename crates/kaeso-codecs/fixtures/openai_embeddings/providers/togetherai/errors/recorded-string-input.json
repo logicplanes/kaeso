@@ -1,0 +1,9 @@
+{
+  "id": "p5neBCH-2kFHot-a4cbbc5ad8a93650",
+  "error": {
+    "message": "Unable to access non-serverless model BAAI/bge-base-en-v1.5. Please visit https://api.together.ai/models/BAAI/bge-base-en-v1.5 to create and start a new dedicated endpoint for the model.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}

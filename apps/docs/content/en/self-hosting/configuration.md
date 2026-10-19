@@ -144,6 +144,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | --- | --- | --- | --- | --- |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | text | `https://api.anthropic.com` | Base URL of the Anthropic API. |
+| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | text | `https://api.together.ai` | Base URL of the Together AI API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
@@ -208,7 +209,7 @@ In the console, instance admins can also allow account and organization creation
 
 ## Provider settings
 
-Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Kaeso calls two providers, `openai` and `anthropic`, and each has one field, `base_url` ([provider calls](#provider-calls)).
+Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Kaeso calls three providers, `openai`, `anthropic` and `togetherai`, and each has one field, `base_url` ([provider calls](#provider-calls)).
 
 A provider id is lowercase letters and digits with single hyphens between them. A provider variable or table with any other id, or with the id of a provider Kaeso doesn't call, stops the gateway at startup. The message names it and lists the providers.
 

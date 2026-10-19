@@ -50,6 +50,27 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("adds a Together AI key", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "togetherai", name: "Open models", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /Together AI/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Together AI API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at api.together.ai under API keys; it starts with tgp_v1_.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Together AI API key");
+    expect(secret).toHaveAttribute("placeholder", "tgp_v1_…");
+    await user.type(secret, "tgp_v1_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Open models");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Open models is the Together AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "togetherai", name: "Open models", secret: "tgp_v1_123", make_default: false },
+    ]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open({ provider: "anthropic" });
     const secret = within(dialog).getByLabelText("Anthropic API key");

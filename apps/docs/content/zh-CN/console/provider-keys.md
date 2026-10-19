@@ -1,16 +1,16 @@
 ---
 title: 服务商密钥
-description: 连接组织的 OpenAI 和 Anthropic 密钥，并选择各项目使用哪个密钥。
+description: 连接组织的 OpenAI、Anthropic 和 Together AI 密钥，并选择各项目使用哪个密钥。
 order: 3
 ---
 
-服务商密钥是组织用于 OpenAI 和 Anthropic 的密钥，这是 Kaeso 调用的两个服务商。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
+服务商密钥是组织用于 OpenAI、Anthropic 和 Together AI 的密钥，这些是 Kaeso 调用的服务商。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
 
 ## 添加密钥
 
 1. 在**服务商**页面上选择**添加密钥**，或在尚无密钥的服务商旁选择**连接**。
-2. **此密钥属于哪个服务商？** 选择 OpenAI 或 Anthropic。
-3. 粘贴密钥并为其命名，例如 `Production`。OpenAI 密钥来自 platform.openai.com，以 `sk-` 开头。Anthropic 密钥来自 console.anthropic.com，以 `sk-ant-` 开头。
+2. **此密钥属于哪个服务商？** 选择 OpenAI、Anthropic 或 Together AI。
+3. 粘贴密钥并为其命名，例如 `Production`。OpenAI 密钥来自 platform.openai.com，以 `sk-` 开头。Anthropic 密钥来自 console.anthropic.com，以 `sk-ant-` 开头。Together AI 密钥来自 api.together.ai，以 `tgp_v1_` 开头。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
 
 对服务商密钥的每种操作都需要相应的权限：

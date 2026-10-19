@@ -1,0 +1,8 @@
+{
+  "error": {
+    "type": "Bad Request",
+    "code": "start_generation_failed",
+    "message": "Failed to start generation: The input token count (8) plus the requested output count (100000000) exceeds the model's maximum context length (1048576)",
+    "param": null
+  }
+}

@@ -58,6 +58,7 @@ pub async fn env_hooked(
     let mut settings = vec![
         ("KAESO_PROVIDERS_OPENAI_BASE_URL", mock.base_url.as_str()),
         ("KAESO_PROVIDERS_ANTHROPIC_BASE_URL", mock.base_url.as_str()),
+        ("KAESO_PROVIDERS_TOGETHERAI_BASE_URL", mock.base_url.as_str()),
     ];
     settings.extend_from_slice(extra.unwrap_or(&[]));
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);

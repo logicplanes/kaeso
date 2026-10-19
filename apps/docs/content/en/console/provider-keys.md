@@ -1,16 +1,16 @@
 ---
 title: Provider keys
-description: Connect your organization's OpenAI and Anthropic keys, and choose which projects use each one.
+description: Connect your organization's OpenAI, Anthropic and Together AI keys, and choose which projects use each one.
 order: 3
 ---
 
-Provider keys are your organization's keys for OpenAI and Anthropic, the two providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
+Provider keys are your organization's keys for OpenAI, Anthropic and Together AI, the providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
 
 ## Add a key
 
 1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose OpenAI or Anthropic.
-3. Paste the key and give it a name, such as `Production`. An OpenAI key, from platform.openai.com, starts with `sk-`. An Anthropic key, from console.anthropic.com, starts with `sk-ant-`.
+2. **Which provider is the key for?** Choose OpenAI, Anthropic or Together AI.
+3. Paste the key and give it a name, such as `Production`. An OpenAI key, from platform.openai.com, starts with `sk-`. An Anthropic key, from console.anthropic.com, starts with `sk-ant-`. A Together AI key, from api.together.ai, starts with `tgp_v1_`.
 4. If the provider already has a default key, choose whether the new key becomes the default.
 
 Each action on provider keys needs its own right:
