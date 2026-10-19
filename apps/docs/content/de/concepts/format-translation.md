@@ -1,7 +1,7 @@
 ---
 title: Formatübersetzung
 description: Erfahren, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft, und was Kaeso ablehnt.
-order: 2
+order: 3
 ---
 
 Ihre App kann jedes Chat-Modell in ihrem eigenen Format aufrufen: Das OpenAI SDK kann Claude aufrufen und das Anthropic SDK ein OpenAI-Modell. Diese Seite zeigt Ihnen, was dabei erhalten bleibt, was Kaeso ablehnt und wie sich Reasoning-Einstellungen zwischen den Anbietern übertragen.
@@ -14,7 +14,7 @@ flowchart TD
   kpp -- codieren --> provider[Anfrage im Format des Anbieters]
 ```
 
-KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Die Antwort nimmt denselben Weg zurück, bei einem Stream Event für Event. Embeddings gehen nur an die Embeddings-Modelle von OpenAI. Die [Modell-API](../api/model-api.md) listet die Endpunkte jedes Formats.
+KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Die Antwort nimmt denselben Weg zurück, bei einem Stream Event für Event. Embeddings gehen nur an Embeddings-Modelle, die nur manche [Anbieter](supported-providers.md) haben. Die [Modell-API](../api/model-api.md) listet die Endpunkte jedes Formats.
 
 ## Drei Regeln
 
@@ -35,7 +35,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Was Kaeso ablehnt
 
-Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der das Feld nennt.
+Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der das Feld nennt. Jede Liste gilt für jeden Anbieter, den Kaeso in diesem Format aufruft, und manche Anbieter lehnen weitere Felder ab ([Worin sich Anbieter unterscheiden](providers.md#worin-sich-anbieter-unterscheiden)).
 
 ### Anfragen an Anthropic
 

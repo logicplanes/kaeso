@@ -1,7 +1,7 @@
 ---
 title: Ablauf einer Anfrage
 description: Eine Modellanfrage durch das Gateway verfolgen und erfahren, welchen Fehler sie erhält und was sie kostet.
-order: 1
+order: 2
 ---
 
 Jede Modellanfrage durchläuft dieselben Prüfungen in derselben Reihenfolge. Wenn Sie sie kennen, wissen Sie, welchen Fehler eine Anfrage erhält und wann sie berechnet wird.
@@ -68,12 +68,7 @@ Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Model
 
 KPP prüft die Anfrage am Format des Anbieters und codiert sie. Was dieses Format nicht ausdrücken kann, lehnt Kaeso ab, bevor etwas den Anbieter erreicht ([Formatübersetzung](format-translation.md)). Für eine Chat-Completions-App, die über ein anderes Format bedient wird, fügt Kaeso zuerst das Reasoning aus früheren Zügen wieder ein ([Reasoning zwischen Zügen](format-translation.md#reasoning-zwischen-zügen)).
 
-Kaeso ruft die eigene API jedes Anbieters auf:
-
-| Anbieter | API |
-| --- | --- |
-| OpenAI | Responses, oder Chat Completions, wenn der Katalog das vorgibt. Embeddings für Embeddings-Modelle |
-| Anthropic | Messages |
+Kaeso ruft jeden Anbieter in seinem eigenen API-Format auf, etwa Anthropic mit Messages und Groq mit Chat Completions. [Unterstützte Anbieter](supported-providers.md) listet die Formate jedes Anbieters.
 
 Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage, das erste Byte eines Streams und die Stille zwischen zwei Chunks. Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage und erstes Byte. Eine Zeitüberschreitung erhält 504, ein nicht erreichbarer Anbieter 502. Die [Konfiguration](../self-hosting/configuration.md) listet die Einstellungen und ihre Standardwerte.
 

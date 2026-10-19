@@ -6,6 +6,12 @@ order: 2
 
 Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, bevor Sie sich darauf verlassen. Jede Seite dieser Dokumentation verwendet die Begriffe unten im selben Sinn.
 
+- [Anbieter](providers.md): Sehen Sie, welche Anbieter Kaeso aufruft, wie Sie einen nutzen und worin sie sich unterscheiden.
+- [Unterstützte Anbieter](supported-providers.md): Schlagen Sie ID, Formate und Schlüssel jedes Anbieters nach.
+- [Ablauf einer Anfrage](request-flow.md): Verfolgen Sie eine Modellanfrage durch das Gateway, und erfahren Sie, welchen Fehler sie erhält und was sie kostet.
+- [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
+- [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.
+
 ## Begriffe
 
 | Begriff | Bedeutung |
@@ -19,6 +25,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Recht, Rolle | Ein Recht erlaubt eine Art von Aktion, etwa `keys.all.view`. Eine Rolle ist eine benannte Menge von Rechten ([Rechte](rights.md)) |
 | API-Schlüssel | `sk-kso-…`, der Schlüssel eines Mitglieds oder Dienstkontos in einem Projekt. Mit Inferenzzugriff ruft er Modelle auf, mit Plattformzugriff verwaltet er das Projekt ([API-Schlüssel](../console/api-keys.md)) |
 | Plattform-Schlüssel | `sk-kso-org-…`, ein Schlüssel, der eine ganze Organisation über die Platform API verwaltet. Er ruft nie Modelle auf |
+| Anbieter | Ein Unternehmen, dessen Modelle Kaeso aufruft, etwa OpenAI, Anthropic oder Groq. Seine ID, etwa `groq`, bezeichnet es in Modellnamen und Einstellungen ([Anbieter](providers.md)) |
 | Anbieter-Schlüssel | Der Schlüssel der Organisation für einen Modellanbieter wie OpenAI oder Anthropic, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Secrets verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
 | Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus models.dev, und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
@@ -28,9 +35,3 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | API-Format | Die Form einer Anfrage und ihrer Antwort: OpenAI Chat Completions, Responses oder Embeddings oder Anthropic Messages |
 | KPP | Das Kaeso Provider Protocol, das eine Format, in das und aus dem das Gateway jedes API-Format übersetzt ([Formatübersetzung](format-translation.md)) |
 | Modell-API, Platform API | Die beiden APIs einer Installation. Apps rufen Modelle über `/v1` auf, Konsole und Skripte verwalten die Installation über `/platform/v1` ([API](../api/index.md)) |
-
-## Nächste Schritte
-
-- [Ablauf einer Anfrage](request-flow.md): Verfolgen Sie eine Modellanfrage durch das Gateway, und erfahren Sie, welchen Fehler sie erhält und was sie kostet.
-- [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
-- [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.

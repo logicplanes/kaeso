@@ -1,7 +1,7 @@
 ---
 title: 格式转换
 description: 了解应用调用其他服务商的模型时哪些内容能够保留，以及 Kaeso 会拒绝什么。
-order: 2
+order: 3
 ---
 
 应用可以用自己的格式调用任意聊天模型：OpenAI SDK 可以调用 Claude，Anthropic SDK 也可以调用 OpenAI 模型。本页说明哪些内容能够保留、Kaeso 会拒绝什么，以及推理设置如何在服务商之间转换。
@@ -14,7 +14,7 @@ flowchart TD
   kpp -- 编码 --> provider[服务商格式的请求]
 ```
 
-KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，以及 Anthropic Messages。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往 OpenAI 的嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。
+KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，以及 Anthropic Messages。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。
 
 ## 三条规则
 
@@ -35,7 +35,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## Kaeso 拒绝的内容
 
-请求跨格式转换时，Kaeso 会拒绝以下内容，并在错误中注明该字段。
+请求跨格式转换时，Kaeso 会拒绝以下内容，并在错误中注明该字段。每个列表都适用于 Kaeso 以该格式调用的所有服务商，有些服务商还会拒绝更多字段（[服务商之间的差异](providers.md#服务商之间的差异)）。
 
 ### 发往 Anthropic 的请求
 

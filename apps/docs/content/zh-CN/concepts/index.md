@@ -6,6 +6,12 @@ order: 2
 
 这些页面说明 Kaeso 的工作方式，让您在依赖它之前就知道会发生什么。本文档的所有页面都按同一含义使用下面这些术语。
 
+- [服务商](providers.md)：了解 Kaeso 调用哪些服务商、如何使用其中一个，以及它们之间的差异。
+- [支持的服务商](supported-providers.md)：查阅每个服务商的 ID、格式和密钥。
+- [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
+- [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
+- [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。
+
 ## 术语
 
 | 术语 | 含义 |
@@ -19,6 +25,7 @@ order: 2
 | 权限、角色 | 一项权限允许一类操作，例如 `keys.all.view`。角色是一组有名称的权限（[权限](rights.md)） |
 | API 密钥 | `sk-kso-…`，属于某个项目中一名成员或一个服务账号的密钥。有模型调用访问权限时它调用模型，有平台访问权限时它管理该项目（[API 密钥](../console/api-keys.md)） |
 | 平台密钥 | `sk-kso-org-…`，通过 Platform API 管理整个组织的密钥。它从不调用模型 |
+| 服务商 | Kaeso 调用其模型的公司，例如 OpenAI、Anthropic 或 Groq。它的 ID（如 `groq`）在模型名称和设置中指代该服务商（[服务商](providers.md)） |
 | 服务商密钥 | 组织用于某个模型服务商（如 OpenAI 或 Anthropic）的密钥，Kaeso 用它调用服务商。应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
 | 主密钥 | 实例自己的密钥，用于加密它存储的机密信息，例如服务商密钥（[备份和主密钥](../self-hosting/backups.md)） |
 | 目录 | 项目可以调用的模型及其价格、限制和能力。它们来自 models.dev，项目也可以添加自定义模型或覆盖字段（[模型和别名](../console/models-and-aliases.md)） |
@@ -28,9 +35,3 @@ order: 2
 | API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，或 Anthropic Messages |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
 | 模型 API、Platform API | 实例的两个 API。应用在 `/v1` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
-
-## 后续步骤
-
-- [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
-- [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
-- [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。

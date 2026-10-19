@@ -1,7 +1,7 @@
 ---
 title: Rechte
 description: Jedes Recht in einer Organisation und einem Projekt nachschlagen, welche Rollen es haben und nach welchen Regeln es vergeben wird.
-order: 3
+order: 4
 ---
 
 Ein Recht erlaubt eine Art von Aktion und wird als `resource.action` geschrieben, etwa `keys.all.view`. Jede Operation der Platform API unter `orgs/{org}` prüft genau ein Recht, auf der Organisation oder dem Projekt in ihrem Pfad. [Mitglieder und Rollen](../console/members-and-roles.md) zeigt, wie Sie Rollen und Rechte in der Konsole vergeben.
