@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
+use std::sync::LazyLock;
 
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -60,7 +61,7 @@ impl ProviderId {
     }
 
     pub fn provider(&self) -> Option<&'static Provider> {
-        PROVIDERS.iter().find(|p| p.id == self.0)
+        known(&self.0)
     }
 }
 
@@ -219,10 +220,21 @@ pub fn lookup(id: &str) -> Result<&'static Provider, ProviderIdError> {
     if !ProviderId::is_valid(id) {
         return Err(ProviderIdError::Malformed(id.to_owned()));
     }
-    PROVIDERS
-        .iter()
-        .find(|p| p.id == id)
-        .ok_or_else(|| ProviderIdError::Unknown(id.to_owned()))
+    known(id).ok_or_else(|| ProviderIdError::Unknown(id.to_owned()))
+}
+
+static BY_ID: LazyLock<Vec<&'static Provider>> = LazyLock::new(|| {
+    let mut by_id: Vec<&'static Provider> = PROVIDERS.iter().collect();
+    by_id.sort_by_key(|p| p.id);
+    by_id.dedup_by_key(|p| p.id);
+    by_id
+});
+
+fn known(id: &str) -> Option<&'static Provider> {
+    BY_ID
+        .binary_search_by(|p| p.id.cmp(id))
+        .ok()
+        .and_then(|i| BY_ID.get(i).copied())
 }
 
 pub fn provider(id: &str) -> Option<&'static Provider> {
@@ -271,6 +283,14 @@ mod tests {
         );
         assert!(provider("gemini").is_none());
         assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai");
+    }
+
+    #[test]
+    fn every_provider_is_found_by_its_own_id_and_no_other() {
+        for p in PROVIDERS {
+            assert_eq!(provider(p.id), Some(p));
+        }
+        assert_eq!(BY_ID.len(), PROVIDERS.len());
     }
 
     #[test]

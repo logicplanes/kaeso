@@ -285,7 +285,7 @@
   "instance.updates.checkUnreachable": "{host} can't be reached: {cause}",
   "instance.updates.checkUnreadable": "The release list from {host} can't be read",
   "instance.updates.checkedHint": "Checked {when}; Kaeso looks twice a day.",
-  "instance.updates.composeByHand": "Set the Kaeso images in compose.yaml to {version} by hand.",
+  "instance.updates.composeByHand": "Download the compose.yaml of Kaeso {version} over the install's.",
   "instance.updates.confirmHint": "Kaeso is unavailable for about a minute; apps get an error that asks them to try again.",
   "instance.updates.confirmTitle": "Update to Kaeso {version}?",
   "instance.updates.daily": "Daily",

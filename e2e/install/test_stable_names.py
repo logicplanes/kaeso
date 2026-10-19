@@ -18,6 +18,7 @@ VOLUMES = {
 }
 UPDATER_VOLUMES = VOLUMES | {"updater": "kaeso_updater"}
 MOUNTS = {
+    "caddy-init": [("caddy_data", "/data"), ("caddy_config", "/config")],
     "caddy": [("caddy_data", "/data"), ("caddy_config", "/config"), ("maintenance", "/srv/maintenance")],
     "gateway": [],
     "console": [],
@@ -26,6 +27,7 @@ MOUNTS = {
     "valkey": [("valkey", "/data")],
 }
 UPDATER_MOUNTS = {
+    "updater-init": [("maintenance", "/maintenance"), ("updater", "/state")],
     "updater": [("maintenance", "/maintenance"), ("updater", "/state")],
     "docker-proxy": [],
 }
@@ -101,8 +103,9 @@ def test_every_release_attaches_the_compose_file_under_its_name():
         for line in workflow.splitlines()
         if re.fullmatch(r'\s*cp\s+.+\s+"\$assets/"\s*', line)
     ]
-    assert any("deploy/compose.yaml" in sources for sources in copied), copied
     assert any("deploy/kaeso.example.toml" in sources for sources in copied), copied
+    assert '--compose-out "$RUNNER_TEMP/compose/compose.yaml"' in workflow
+    assert re.search(r"name: release-compose\n\s+path: \$\{\{ runner.temp \}\}/assets\n", workflow)
     assert re.search(r'gh release create .*"\$RUNNER_TEMP"/assets/\*', workflow)
 
 

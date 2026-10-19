@@ -334,8 +334,8 @@ async fn fetch_and_apply(state: &AppState, now: OffsetDateTime) -> Result<Synced
     let url = state.config.models_dev.url.clone();
     let body = fetch(url.as_str()).await.map_err(SyncError::Fetch)?;
     let hash = Sha256::digest(&body).to_vec();
-    if let Some(row) = catalogue::snapshot(&state.pg).await?
-        && row.content_hash == hash
+    if let Some(stored) = catalogue::sync_state(&state.pg).await?
+        && stored.content_hash == hash
     {
         return Ok(Synced::Unchanged);
     }
@@ -374,7 +374,7 @@ pub async fn due(state: &AppState) -> Result<bool, StoreError> {
     }
     let mut interval =
         time::Duration::try_from(state.config.models_dev.interval).unwrap_or(time::Duration::DAY);
-    let Some(row) = catalogue::snapshot(&state.pg).await? else {
+    let Some(row) = catalogue::sync_state(&state.pg).await? else {
         return Ok(true);
     };
     if row.last_error.is_some() {

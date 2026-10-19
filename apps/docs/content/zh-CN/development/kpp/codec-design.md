@@ -42,7 +42,7 @@ stateDiagram-v2
 - **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2 等。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
 - **每个生命周期事件都携带 `Extras`**，因此同一方言内的回放能精确重现原始事件，包括各事件自己的字段，例如 OpenAI 的 `obfuscation`。
 - **失败在带内报告**：先给出到目前为止解码出的事件，最后是一个 `StreamEvent::Error`，因此同一 chunk 中先前解码的内容不会丢失。
-- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓，直到它的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。
+- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓，直到它的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。服务商在块仍打开时发送的用量会被暂缓到这些块结束，因此 `ResponseDelta` 总是在最后一个 `BlockStop` 之后。
 
 ### 流编码器
 
@@ -53,7 +53,8 @@ stateDiagram-v2
 - 第一个开始的块是活动块，到达时立即写出；
 - 在另一个块活动期间开始的块处于等待状态，按开始顺序缓冲；
 - 活动块结束时，写出下一个等待中的块，包括它的开始事件、缓冲的 delta，以及已经到达的结束事件；
-- `ResponseDelta` 或 `ResponseStop` 会先关闭所有打开的块，多个 `ResponseDelta` 会合并为一个 `message_delta`，因为 SDK 每收到一个都会覆盖 `stop_reason`。
+- 带停止原因的 `ResponseDelta` 或 `ResponseStop` 会先关闭所有打开的块，多个 `ResponseDelta` 会合并为一个 `message_delta`，因为 SDK 每收到一个都会覆盖 `stop_reason`；
+- 来自其他方言、不带停止原因的 `ResponseDelta` 只更新最后的 `message_delta` 所报告的用量，块保持打开。
 
 Anthropic 的索引按块写出的顺序分配。不以 `ResponseStart` 开头的流会得到一个 ID 为空的 `message_start`。
 

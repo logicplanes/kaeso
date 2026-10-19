@@ -204,7 +204,7 @@ Schema `MessageStreamEvent`.
 
 Encoding events from other dialects:
 
-- **One block at a time.** Interleaved blocks are buffered in start order, and `ResponseDelta` or `ResponseStop` closes open blocks. An OpenAI stream that keeps its text block open until the end therefore delivers its tool calls only at the end. Several foreign `ResponseDelta`s merge into one `message_delta`.
+- **One block at a time.** Interleaved blocks are buffered in start order, and a `ResponseDelta` with a stop reason, or `ResponseStop`, closes open blocks. A foreign `ResponseDelta` without a stop reason, such as the running usage some OpenAI-compatible providers send on every chunk, only updates the usage of the final `message_delta`. An OpenAI stream that keeps its text block open until the end therefore delivers its tool calls only at the end. Several foreign `ResponseDelta`s merge into one `message_delta`.
 - **A missing `ResponseStart`** becomes a `message_start` with an empty id and the request's model.
 - **Refusals** become text blocks.
 - **Tool call arguments** from other dialects are collected and written as one `input_json_delta` when the block stops, but only if they form a JSON object; otherwise none is written and the input stays `{}`. This is lossy, as for replies. Anthropic's own streams are replayed as received.

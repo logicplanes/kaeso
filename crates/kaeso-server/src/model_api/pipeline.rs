@@ -9,9 +9,11 @@ use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_core::catalogue::resolve::{ResolveError, access_message, resolve};
+use kaeso_core::catalogue::resolve::{ResolveError, access_message};
 use kaeso_core::catalogue::{Availability, Effective, capability};
+use kaeso_core::estimate;
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
+use kaeso_core::limits::WorstCase;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
 use kaeso_store::pg::catalogue::Answer;
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
@@ -19,7 +21,9 @@ use url::Url;
 
 use super::auth;
 use super::errors::{Served, error, respond, stamp};
-use super::hooks::{Admission, CLIENT_DISCONNECTED, Caller, Outcome, SHUT_DOWN, Sink, Source};
+use super::hooks::{
+    Admission, CLIENT_DISCONNECTED, Caller, Outcome, Reservation, SHUT_DOWN, Sink, Source,
+};
 use super::input_count::InputCounter;
 use super::listing::project_models;
 use super::stream;
@@ -48,6 +52,8 @@ pub(super) struct Recording {
     sink: Arc<dyn Sink>,
     outcome: Option<Outcome>,
     started: Instant,
+    reservation: Reservation,
+    sent_input: Option<u64>,
 }
 
 impl Recording {
@@ -63,6 +69,10 @@ impl Recording {
         self.started
     }
 
+    pub(super) fn reservation(&self) -> &Reservation {
+        &self.reservation
+    }
+
     pub(super) async fn finish(mut self, status: u16) {
         let elapsed = self.started.elapsed();
         if let Some(mut o) = self.outcome.take() {
@@ -70,8 +80,21 @@ impl Recording {
             if o.duration.is_zero() {
                 o.duration = elapsed;
             }
-            self.sink.finish(&self.state, o).await;
+            let charged = self.hand_over(o);
+            if self.reservation.is_held() {
+                let _ = charged.await;
+            }
         }
+    }
+
+    fn hand_over(&self, o: Outcome) -> tokio::sync::oneshot::Receiver<()> {
+        let (done, charged) = tokio::sync::oneshot::channel();
+        let (sink, state) = (self.sink.clone(), self.state.clone());
+        self.state.in_flight.finish(async move {
+            sink.finish(&state, o).await;
+            let _ = done.send(());
+        });
+        charged
     }
 
     pub(super) async fn finish_cancelled(mut self) {
@@ -97,10 +120,13 @@ impl Drop for Recording {
             mark_cancelled(&mut o);
             o.status = 499;
             o.duration = self.started.elapsed();
-            let (sink, state) = (self.sink.clone(), self.state.clone());
-            self.state
-                .in_flight
-                .spawn(async move { sink.finish(&state, o).await });
+            if let Some(input) = self.sent_input
+                && o.usage.is_none()
+            {
+                o.usage = Some(kaeso_kpp::Usage::new(input, 0));
+                o.usage_estimated = true;
+            }
+            drop(self.hand_over(o));
         }
     }
 }
@@ -168,6 +194,7 @@ pub enum Stage {
     Credential,
     Upstream,
     Provider,
+    KeyRefused,
     Unserved(String),
     Reply,
     Shutdown,
@@ -229,6 +256,8 @@ pub async fn serve_with(
         sink: state.sink.clone(),
         outcome: Some(outcome),
         started: Instant::now(),
+        reservation: Reservation::default(),
+        sent_input: None,
     };
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
@@ -334,6 +363,25 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
     }
 }
 
+const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
+
+const ACCOUNT_REFUSED: &str = "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.";
+
+pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
+    let message = match err.kind {
+        ErrorKind::Authentication | ErrorKind::PermissionDenied => KEY_REFUSED,
+        ErrorKind::Billing => ACCOUNT_REFUSED,
+        _ => return None,
+    };
+    Some(error(ErrorKind::ProviderError, 502, message))
+}
+
+fn redacted(mut err: KppError) -> KppError {
+    err.message = kaeso_core::secret::redact_tokens(&err.message);
+    err.raw = None;
+    err
+}
+
 pub(crate) fn unserved(eff: &Effective) -> KppError {
     error(
         ErrorKind::NotFound,
@@ -408,8 +456,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let models = project_models(state, caller.project_id)
         .await
         .map_err(|e| Failure::new(e, Stage::Catalogue))?;
-    let (entry, _) =
-        resolve(req.model(), &models.entries, &models.aliases).map_err(|e| match &e {
+    let (entry, _) = models
+        .catalogue
+        .resolve(req.model())
+        .map_err(|e| match &e {
             ResolveError::NotInCatalogue(name) => Failure::new(
                 error(ErrorKind::NotFound, 404, e.to_string()).with_param("model"),
                 Stage::UnknownModel(name.clone()),
@@ -497,19 +547,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         kind,
         at: rec.outcome().started_at,
         timeout: timeouts.request,
+        worst: WorstCase::of(&req, body.len(), &eff.fields),
     };
-    if let Err(refusal) = state.limits.admit(state, &admission).await {
-        let kind = if refusal.status == 503 {
-            ErrorKind::ProviderError
-        } else {
-            ErrorKind::RateLimited
-        };
-        let mut e = error(kind, refusal.status, refusal.message);
-        if let Some(r) = refusal.retry_after {
-            e = e.with_retry_after(r);
-        }
-        return Err(fail(Stage::Limits)(e));
-    }
+    rec.reservation = state
+        .limits
+        .admit(state, &admission)
+        .await
+        .map_err(|refusal| {
+            let kind = if refusal.status == 503 {
+                ErrorKind::ProviderError
+            } else {
+                ErrorKind::RateLimited
+            };
+            let mut e = error(kind, refusal.status, refusal.message);
+            if let Some(r) = refusal.retry_after {
+                e = e.with_retry_after(r);
+            }
+            fail(Stage::Limits)(e)
+        })?;
 
     let credential = credentials::resolve(
         state,
@@ -566,6 +621,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     })?;
     let sent_bytes = encoded.body.len();
     let provider = eff.provider.id;
+    rec.sent_input = Some(estimate::tokens_of_bytes(
+        u64::try_from(sent_bytes).unwrap_or(u64::MAX),
+    ));
     let sent_at = Instant::now();
     let resp = state
         .upstream
@@ -618,6 +676,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 sink: rec.sink.clone(),
                 outcome: rec.outcome.take(),
                 started: rec.started,
+                reservation: std::mem::take(&mut rec.reservation),
+                sent_input: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
             let counter = InputCounter {
@@ -679,7 +739,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
             };
             if !success {
-                let err = refused_key(
+                let err = declared_key_refusal(
                     eff.provider,
                     dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes),
                 );
@@ -692,6 +752,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                     availability::record(state, &learnt(Availability::Unavailable)).await;
                     let mut failure = fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff));
                     failure.provider_said = Some(err);
+                    return Err(failure);
+                }
+                if let Some(refused) = refused_key(&err) {
+                    let said = redacted(err);
+                    tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
+                    let mut failure = fail(Stage::KeyRefused)(refused);
+                    failure.provider_said = Some(said);
                     return Err(failure);
                 }
                 return Err(fail(Stage::Provider)(err));
@@ -732,7 +799,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     }
 }
 
-pub(crate) fn refused_key(
+pub(crate) fn declared_key_refusal(
     provider: &kaeso_core::provider::Provider,
     mut err: KppError,
 ) -> KppError {

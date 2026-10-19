@@ -46,7 +46,7 @@ flowchart TD
 
 ## What a release carries
 
-The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater` and attests their build provenance. It then writes `release.json` (`scripts/release-manifest.mjs`), and a job that sees nothing but that file attests it. The release is created only when `release.json` and every image verify with `gh attestation verify` against this workflow on `refs/heads/prod` and the commit `release.json` names:
+The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater` and attests their build provenance. It then writes `release.json` (`scripts/release-manifest.mjs`), and a job that sees nothing but that file attests it. The same step writes the release's `compose.yaml`: `deploy/compose.yaml` with each Kaeso image pinned to the version and the digest of its index, such as `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`. `release.json` names that file's hash. The release is created only when `release.json` and every image verify with `gh attestation verify` against this workflow on `refs/heads/prod` and the commit `release.json` names:
 
 ```json
 {
@@ -68,8 +68,8 @@ The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater`
 
 | Field | Meaning |
 | --- | --- |
-| `commit` | The commit the Release workflow ran on, which the attestations name, not the release commit on top of it |
-| `manual` | True when the workflow's **manual** input says so, or when `compose.yaml` differs from the previous release's in anything but the image versions |
+| `commit` | The commit the Release workflow ran on, which the attestations name, not the release commit on top of it ([commits and attestations](../releasing.md#commits-and-attestations)) |
+| `manual` | True when the workflow's **manual** input says so, or when `compose.yaml` differs from the previous release's in anything but the image versions and digests |
 | `manual_since` | The newest release up to this one with `manual: true`, carried over from the previous release's `release.json` |
 | `migrations` | The latest PostgreSQL and ClickHouse migration of the release |
 
@@ -79,17 +79,17 @@ The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater`
 
 `crates/kaeso-updater` is a small server on port 8081. `GET /healthz` needs no token; `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) and `GET /v1/updates/{id}` need `Authorization: Bearer` with the shared token. It runs one update at a time and keeps it in `/state/job.json`, written atomically after every change. An update runs these steps (`engine.rs`):
 
-1. **Verifying.** It downloads `release.json` and verifies it before anything else, then checks the running install against it ([the checks](#what-the-updater-checks)). It also checks that the local `compose.yaml` with the new image versions equals the release's byte for byte, and keeps a copy in `/state`.
+1. **Verifying.** It downloads `release.json` and verifies it before anything else, then checks the running install against it ([the checks](#what-the-updater-checks)). It also checks that the local `compose.yaml` with the new image versions and digests equals the release's byte for byte, and keeps a copy in `/state`.
 2. **Downloading.** It pulls the three images by digest, and each image's version label must equal the release. It verifies the running release's `release.json` the same way and compares the migrations. When they differ, or that manifest can't be had, the update counts as migrating the database.
 3. **Switching.** It writes the maintenance flag. Then, for the console and then the gateway, it stops the container, renames it `…-previous`, and creates the new one from the old one's settings (`clone.rs`). Everything the old image brought is dropped, so the new image's environment, command and health check apply.
 4. **Migrating.** It waits for each health check: 2 minutes for the console and 10 for the gateway's migrations. A crash, a restart or a stopped container fails at once.
-5. **Online.** It writes the new versions into `compose.yaml` when the file is still the one it checked, tags the images, removes the previous containers and clears the flag.
+5. **Online.** It writes the new versions and digests into `compose.yaml` when the file is still the one it checked, tags the images, removes the previous containers and clears the flag.
 
 A failure before the switch changes nothing (`failed`). A failure after it starts the previous containers again and waits for them (`rolled_back`, or `rollback_failed`). When the new gateway may already have migrated the database, nothing is restored: the new gateway and console stay, and the update ends `needs_attention`. The same holds when the maintenance flag or a `…-previous` container can't be removed. When `compose.yaml` can't be written, or changed during the update, the update still ends `succeeded`, with `compose_unwritable` or `compose_changed` as its reason.
 
 On start, the updater waits up to two minutes for Docker. It then finishes an update that was `online`, finishes one whose new gateway turns healthy, and rolls back any other.
 
-The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses. The proxy filters by method and path only, and the body of `containers/create` is the updater's to choose. That is why the updater is host-root equivalent and opt-in.
+The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses. The proxy filters by method and path only, and the body of `containers/create` is the updater's to choose. That is why the updater is host-root equivalent and opt-in. `guard.rs` checks every body before it goes out. A new container must take the name and every `HostConfig` field that widens a container, such as `Privileged`, `CapAdd`, `Devices`, `PidMode`, `NetworkMode`, `Binds` and `Mounts`, from the one it replaces. A pull must name a Kaeso image by digest. These checks catch a mistake in the updater, not someone who controls it.
 
 ### What the updater checks
 
@@ -116,7 +116,8 @@ Caddy reads the maintenance flag from the `maintenance` volume. While it exists,
 | `crates/kaeso-update` | Version tags, channels, the plan with majors, manual steps and pre-releases, the manifest and the protocol |
 | `crates/kaeso-server/tests/updates.rs` | The gateway against a mock GitHub and a mock updater: conditional requests, backoff, manifests, rights, the audit log, the one-update lock and every ending |
 | `crates/kaeso-updater/tests/verify.rs` | The real attestations of Kaeso 0.1.0 verify; another image, commit, workflow, signature or log entry doesn't |
+| `crates/kaeso-updater/src/guard.rs` | Containers that differ from the replaced one in a widening `HostConfig` field, other names and other images are refused |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | The updater against a fake Docker API: a full update, every refusal, rollbacks, restarts at every step, the state file and the API |
-| `scripts/release-manifest.test.mjs` | The manifest, `manual_since`, the latest migrations and the commit |
+| `scripts/release-manifest.test.mjs` | The manifest, the pinned `compose.yaml`, `manual_since`, the latest migrations and the commit |
 | `e2e/install` | The install with the updater profile, the proxy, and Caddy's answers in every format while Kaeso is away |
 | `apps/console` | The Updates page in every state, and the updating page in three languages |

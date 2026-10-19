@@ -229,6 +229,7 @@ fn refusal(f: &Failure) -> ApiError {
             e,
         ),
         Stage::Provider => from_provider(e),
+        Stage::KeyRefused => from_provider(f.logged()),
         Stage::Unserved(m) => ApiError::invalid(
             "model",
             format!(
@@ -381,7 +382,12 @@ pub async fn models(
     let access = models.access(None, Some(session.user_id), None);
     let mut keys: Vec<(&str, bool)> = Vec::new();
     let mut out = Vec::new();
-    for entry in models.entries.iter().filter(|e| access.allows(e.id)) {
+    for entry in models
+        .catalogue
+        .entries()
+        .iter()
+        .filter(|e| access.allows(e.id))
+    {
         let Some(eff) = crate::services::catalogue::effective(&state, entry) else {
             continue;
         };
@@ -403,18 +409,13 @@ pub async fn models(
         let price = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
         out.push(PlaygroundModel {
             id: CatalogueModelId::from_uuid(entry.id),
-            model: crate::services::catalogue::request_name(
-                entry,
-                &models.entries,
-                &models.aliases,
-            ),
+            model: crate::services::catalogue::request_name(entry, &models.catalogue),
             provider: entry.provider.clone(),
             model_id: entry.model_id.clone(),
             display_name: eff.display_name().to_owned(),
             aliases: models
-                .aliases
-                .iter()
-                .filter(|a| a.target == entry.id)
+                .catalogue
+                .aliases_of(entry.id)
                 .map(|a| a.name.clone())
                 .collect(),
             reasoning: f.reasoning.unwrap_or(false),

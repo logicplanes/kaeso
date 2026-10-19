@@ -24,11 +24,16 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Richtung | Ports oder Hosts | Wofür |
 | --- | --- | --- |
 | Eingehend | TCP-Ports 80 und 443, dazu UDP-Port 443 für HTTP/3 | Das Zertifikat und HTTPS |
-| Ausgehend | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai` | Die Anbieter, die Sie nutzen; eine geänderte Basis-URL ([Aufrufe an Anbieter](configuration.md#aufrufe-an-anbieter)) ersetzt ihren Host |
+| Ausgehend | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai` oder die Basis-URL, die Sie für einen Anbieter festlegen ([Anbietereinstellungen](configuration.md#anbietereinstellungen)) | Die Anbieter, die Sie nutzen |
 | Ausgehend | `models.dev` | Modelldaten, einmal am Tag aktualisiert |
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, zweimal am Tag |
-| Ausgehend | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | Der Updater |
+| Ausgehend | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy, um das Zertifikat zu holen und zu erneuern |
+| Ausgehend | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker, um die Images von Kaeso zu laden, wenn Sie installieren oder aktualisieren |
+| Ausgehend | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker, um die Images von Caddy, PostgreSQL, ClickHouse, Valkey und dem Socket-Proxy des Updaters zu laden |
+| Ausgehend | `github.com`, `release-assets.githubusercontent.com` | Der Download von `compose.yaml` und `release.json` eines Releases, von Hand oder durch den Updater |
+| Ausgehend | `api.github.com` | Der Updater und `gh attestation verify`, um die Attestierungen eines Releases zu holen |
 | Ausgehend | Ihr SMTP-Server | Anmeldelinks, Einladungen, Warnungen und Sicherheitshinweise ([E-Mail](email.md)) |
+| Ausgehend | Die Identitätsanbieter Ihrer Organisationen | Single Sign-on, wenn eine Organisation einen verbindet ([Anmeldung](sign-in.md)) |
 
 Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten sind, und Sie aktualisieren von Hand. Schalten Sie die ausgehenden Abfragen ab, wie [Installationen ohne Internetzugang](upgrades.md#installationen-ohne-internetzugang) zeigt.
 

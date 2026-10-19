@@ -352,6 +352,14 @@ impl Encoder {
             }
             StreamEvent::BlockDelta(d) => self.block_delta(d, &mut out)?,
             StreamEvent::BlockStop(s) => self.block_stop(s.index, &s.extras, &mut out)?,
+            StreamEvent::ResponseDelta(d) if d.stop.is_none() && !d.extras.is_from(D) => {
+                self.ensure_started(&mut out)?;
+                if d.usage.is_some() {
+                    self.last_usage.clone_from(&d.usage);
+                    let merged = self.merged.get_or_insert_with(ResponseDelta::default);
+                    merged.usage.clone_from(&d.usage);
+                }
+            }
             StreamEvent::ResponseDelta(d) => {
                 self.ensure_started(&mut out)?;
                 self.close_all(&mut out)?;

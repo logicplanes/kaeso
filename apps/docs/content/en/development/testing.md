@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | `cargo test --workspace --all-features` | Every test |
 | `cargo coverage-kpp` | The tests of `kaeso-kpp` and `kaeso-codecs` under `cargo llvm-cov`, with their coverage threshold |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | The examples in both crates' READMEs, their documentation on docs.rs, which `cargo llvm-cov` doesn't run |
-| `cargo coverage-gateway` | The tests of every other crate except `kpp-conformance` and `xtask` under `cargo llvm-cov nextest`, each test in a process of its own and all of them at once, with their coverage threshold |
+| `cargo coverage-gateway` | The tests of every other crate except `kpp-conformance` and `xtask` under `cargo llvm-cov nextest`, each test in a process of its own and all of them at once, with their coverage threshold. A test still running after 5 minutes is stopped and fails |
 | `cargo test -p xtask -p kpp-conformance` | The repository tasks and the conformance server, which the coverage commands leave out |
 | `cargo deny check` | Licenses, advisories, bans and sources of every dependency (`deny.toml`) |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | KPP's stricter policy: no runtime or HTTP crates in the library |
@@ -200,6 +200,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | --- | --- |
 | `[mock:fixture=NAME]` in the prompt | Replies with that fixture of the provider's format; `providers/<id>/<name>` picks a provider's recording |
 | `[mock:gate=NAME]` in the prompt | Holds the request until the test opens the gate |
+| `[mock:steps=NAME]` in the prompt | Sends a stream's first event, then one more each time the test steps the gate |
 | A model id starting with `unserved-` | The format's model not found |
 | `[mock:gate=NAME]` in the provider key | Holds `GET /v1/models` and `GET /v1/models/{id}` |
 | `[mock:models=absent]` in the provider key | Answers both models endpoints with a bare 404 |
@@ -243,7 +244,7 @@ mkdir -p fuzz/corpus/decode_openai_chat
 cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
+The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
 
 ## Continuous integration
 
@@ -265,6 +266,8 @@ The one required check is **CI**. It passes when **Changes** and **No comments**
 | OpenAPI document | `openapi.json` is current |
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |
 | Fuzz targets | The fuzz targets build |
+| Published crates | `cargo publish --dry-run` and `cargo doc` with warnings as errors for `kaeso-kpp` and `kaeso-codecs`, and `cargo semver-checks`: against the last published version for a minor release, and on a pull request against its base for a patch release, unless it is labelled `breaking` |
+| Fuzz runs | The **Fuzz** workflow for 60 seconds per target, when KPP or `fuzz/` changed |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` and `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` for both Compose files |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |
@@ -278,3 +281,5 @@ The one required check is **CI**. It passes when **Changes** and **No comments**
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 When an end-to-end shard fails, the job **End-to-end console report** or **End-to-end showcase report** merges the shards' results into one HTML report, the artifact `playwright-console` or `playwright-showcase`.
+
+Two workflows run on a schedule. **Fuzz** runs each night, as described in [fuzzing](#fuzzing). **Audits** runs every Monday: `cargo deny check` for the workspace and KPP, and `pnpm audit --audit-level high` for every dependency, development ones included, so a new advisory shows up even when nothing changes.

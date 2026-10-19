@@ -1,0 +1,77 @@
+name: Fuzz
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds to run each target
+        type: number
+        default: 600
+  workflow_call:
+    inputs:
+      seconds:
+        description: Seconds to run each target
+        type: number
+        default: 60
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [decode_anthropic_messages, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, sse]
+    env:
+      FUZZ_TARGET: ${{ matrix.target }}
+      SECONDS_PER_TARGET: ${{ inputs.seconds || 600 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Every target in fuzz/Cargo.toml runs
+        run: |
+          set -euo pipefail
+          listed="$(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | paste -sd ' ' -)"
+          if [[ "$listed" != "decode_anthropic_messages decode_openai_chat decode_openai_embeddings decode_openai_responses sse" ]]; then
+            echo "::error::fuzz/Cargo.toml has the targets $listed; list each one in the matrix of .github/workflows/fuzz.yml."
+            exit 1
+          fi
+      - run: rustup toolchain install nightly --profile minimal
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          workspaces: fuzz
+          shared-key: fuzz-nightly
+          save-if: ${{ github.ref == 'refs/heads/dev' }}
+      - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
+        with:
+          tool: cargo-fuzz
+      - name: Run the target with the fixtures as its seed corpus
+        run: |
+          set -euo pipefail
+          seed=crates/kaeso-codecs/fixtures
+          if [[ "$FUZZ_TARGET" == decode_* ]]; then seed="$seed/${FUZZ_TARGET#decode_}"; fi
+          mkdir -p "fuzz/corpus/$FUZZ_TARGET"
+          host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
+          cargo +nightly fuzz run --target "$host" "$FUZZ_TARGET" "fuzz/corpus/$FUZZ_TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
+          echo "\`$FUZZ_TARGET\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: failure()
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore
+          retention-days: 30

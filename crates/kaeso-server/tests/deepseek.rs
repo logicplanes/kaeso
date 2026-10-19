@@ -109,7 +109,7 @@ async fn an_anthropic_messages_app_pays_deepseeks_cache_hits_at_the_cache_read_p
     assert_eq!(body["usage"]["cache_read_input_tokens"], 128);
     assert_eq!(body["usage"]["input_tokens"], 154);
     assert_eq!(body["usage"]["output_tokens"], 87);
-    let outcomes = env.capture.all();
+    let outcomes = env.outcomes().await;
     let o = outcomes.last().unwrap();
     assert_eq!(o.provider, Some("deepseek"));
     assert_eq!(o.usage.as_ref().unwrap().cache_read_tokens, 128);

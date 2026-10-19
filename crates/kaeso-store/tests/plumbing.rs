@@ -228,6 +228,74 @@ async fn invalidations_reach_every_subscriber() {
     s.cleanup().await;
 }
 
+async fn client_id(mut conn: redis::aio::ConnectionManager) -> redis::RedisResult<i64> {
+    redis::cmd("CLIENT").arg("ID").query_async(&mut conn).await
+}
+
+#[tokio::test]
+async fn bulk_traffic_takes_turns_on_its_own_connections() {
+    let s = TestServices::start().await;
+    let latency = client_id(s.valkey.conn()).await.unwrap();
+    assert_eq!(client_id(s.valkey.conn()).await.unwrap(), latency);
+    let first = client_id(s.valkey.bulk()).await.unwrap();
+    let second = client_id(s.valkey.bulk()).await.unwrap();
+    assert_ne!(first, second);
+    assert!(![first, second].contains(&latency));
+    assert_eq!(client_id(s.valkey.bulk()).await.unwrap(), first);
+    assert_eq!(client_id(s.valkey.bulk()).await.unwrap(), second);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_command_is_answered_while_a_bulk_connection_is_busy() {
+    let s = TestServices::start().await;
+    let list = s.valkey.key("busy");
+    let mut bulk = s.valkey.bulk();
+    let busy_id = client_id(bulk.clone()).await.unwrap();
+    let waiting = {
+        let list = list.clone();
+        tokio::spawn(async move {
+            redis::cmd("BLPOP")
+                .arg(&list)
+                .arg(0.9)
+                .query_async::<Option<(String, String)>>(&mut bulk)
+                .await
+        })
+    };
+    let mut conn = s.valkey.conn();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let clients: String = redis::cmd("CLIENT")
+            .arg("LIST")
+            .arg("ID")
+            .arg(busy_id)
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        if clients.contains("cmd=blpop") {
+            break;
+        }
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "BLPOP never started"
+        );
+        tokio::task::yield_now().await;
+    }
+    let _: i64 = redis::cmd("RPUSH")
+        .arg(&list)
+        .arg("done")
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert!(waiting.await.unwrap().is_ok());
+    let _: i64 = redis::cmd("DEL")
+        .arg(&list)
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn an_sso_domain_signs_in_through_one_organization() {
     use kaeso_store::pg::oidc::{self, Connected, Upserted};

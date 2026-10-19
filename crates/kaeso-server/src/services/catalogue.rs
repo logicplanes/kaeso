@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use kaeso_core::catalogue::resolve::{Alias, resolve};
+use kaeso_core::catalogue::resolve::Catalogue;
 use kaeso_core::catalogue::{self as core, Effective};
 use kaeso_store::StoreError;
 use kaeso_store::pg::catalogue::{self, ProjectModels};
@@ -39,8 +39,8 @@ pub fn effective(state: &AppState, entry: &core::Entry) -> Option<Effective> {
     core::effective(entry, &loaded.snapshot, state.models_dev.supplement())
 }
 
-pub fn request_name(entry: &core::Entry, entries: &[core::Entry], aliases: &[Alias]) -> String {
-    match resolve(&entry.model_id, entries, aliases) {
+pub fn request_name(entry: &core::Entry, catalogue: &Catalogue) -> String {
+    match catalogue.resolve(&entry.model_id) {
         Ok((found, _)) if found.id == entry.id => entry.model_id.clone(),
         _ => format!("{}/{}", entry.provider, entry.model_id),
     }
@@ -48,6 +48,8 @@ pub fn request_name(entry: &core::Entry, entries: &[core::Entry], aliases: &[Ali
 
 #[cfg(test)]
 mod tests {
+    use kaeso_core::catalogue::resolve::Alias;
+
     use super::*;
 
     fn entry(provider: &str, model: &str) -> core::Entry {
@@ -60,6 +62,7 @@ mod tests {
             delisted: false,
             last_known: None,
             availability: None,
+            availability_checked_at: None,
         }
     }
 
@@ -75,18 +78,18 @@ mod tests {
                 entry("deepseek", "deepseek-chat"),
             ),
         ] {
-            let both = vec![routed.clone(), direct.clone()];
-            let routed_name = request_name(&routed, &both, &[]);
+            let both = Catalogue::new(vec![routed.clone(), direct.clone()], vec![]);
+            let routed_name = request_name(&routed, &both);
             assert_eq!(
                 routed_name,
                 format!("{}/{}", routed.provider, routed.model_id)
             );
-            assert_eq!(request_name(&direct, &both, &[]), direct.model_id);
+            assert_eq!(request_name(&direct, &both), direct.model_id);
             for (e, name) in [(&routed, routed_name), (&direct, direct.model_id.clone())] {
-                assert_eq!(resolve(&name, &both, &[]).unwrap().0.id, e.id);
+                assert_eq!(both.resolve(&name).unwrap().0.id, e.id);
             }
-            let only = vec![routed.clone()];
-            assert_eq!(request_name(&routed, &only, &[]), routed.model_id);
+            let only = Catalogue::new(vec![routed.clone()], vec![]);
+            assert_eq!(request_name(&routed, &only), routed.model_id);
         }
     }
 
@@ -95,15 +98,16 @@ mod tests {
         let a = entry("openai", "gpt-4o");
         let b = entry("azure", "gpt-4o");
         let c = entry("anthropic", "claude-haiku-4-5");
-        let all = vec![a.clone(), b.clone(), c.clone()];
-        assert_eq!(request_name(&a, &all, &[]), "openai/gpt-4o");
-        assert_eq!(request_name(&b, &all, &[]), "azure/gpt-4o");
+        let entries = vec![a.clone(), b.clone(), c.clone()];
+        let all = Catalogue::new(entries.clone(), vec![]);
+        assert_eq!(request_name(&a, &all), "openai/gpt-4o");
+        assert_eq!(request_name(&b, &all), "azure/gpt-4o");
         let alias = Alias {
             name: "claude-haiku-4-5".into(),
             target: a.id,
         };
         assert_eq!(
-            request_name(&c, &all, std::slice::from_ref(&alias)),
+            request_name(&c, &Catalogue::new(entries, vec![alias])),
             "anthropic/claude-haiku-4-5"
         );
     }

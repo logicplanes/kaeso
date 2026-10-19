@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use kaeso_kpp::{
@@ -193,6 +195,12 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
     if kept.is_empty() {
         return 0;
     }
+    let mut by_call: HashMap<&str, &[ReasoningBlock]> = HashMap::with_capacity(kept.len());
+    for entry in kept {
+        by_call
+            .entry(entry.tool_call_id.as_str())
+            .or_insert(&entry.blocks);
+    }
     let mut inserted = 0;
     for message in &mut req.messages {
         if message.role != Role::Assistant
@@ -204,22 +212,20 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
             continue;
         }
         let mut blocks = Vec::with_capacity(message.blocks.len());
-        let mut insert_at = 0;
+        let mut since_call = Vec::new();
         for block in std::mem::take(&mut message.blocks) {
             if let Block::ToolCall(call) = &block {
-                if let Some(entry) = kept.iter().find(|k| k.tool_call_id == call.id) {
-                    let restored = entry.blocks.iter().cloned().map(Block::Reasoning);
-                    let at = insert_at.min(blocks.len());
-                    let before = blocks.len();
-                    blocks.splice(at..at, restored);
-                    inserted += blocks.len() - before;
+                if let Some(restored) = by_call.get(call.id.as_str()) {
+                    blocks.extend(restored.iter().cloned().map(Block::Reasoning));
+                    inserted += restored.len();
                 }
+                blocks.append(&mut since_call);
                 blocks.push(block);
-                insert_at = blocks.len();
             } else {
-                blocks.push(block);
+                since_call.push(block);
             }
         }
+        blocks.append(&mut since_call);
         message.blocks = blocks;
     }
     inserted
@@ -343,6 +349,84 @@ mod tests {
         assert_eq!(req.messages[3].blocks.len(), 2);
         assert!(tool_calls_missing_reasoning(&req).is_empty());
         assert_eq!(restore_reasoning(&mut req, &kept), 0);
+    }
+
+    #[test]
+    fn restoring_follows_each_call_through_long_turns() {
+        let kept = [
+            CarriedReasoning::new("c2", vec![signed("b"), signed("b2")]),
+            CarriedReasoning::new("c4", vec![signed("d")]),
+            CarriedReasoning::new("c2", vec![signed("duplicate")]),
+            CarriedReasoning::new("gone", vec![signed("unused")]),
+        ];
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![
+            Message::new(
+                Role::Assistant,
+                vec![
+                    call("c1"),
+                    Block::text("Then."),
+                    Block::text("And."),
+                    call("c2"),
+                    call("c3"),
+                    Block::text("Last."),
+                ],
+            ),
+            Message::new(Role::User, vec![Block::tool_result("c1", vec![], false)]),
+            Message::new(Role::Assistant, vec![Block::text("More."), call("c4")]),
+        ];
+        assert_eq!(restore_reasoning(&mut req, &kept), 3);
+        assert_eq!(
+            req.messages[0].blocks,
+            [
+                call("c1"),
+                Block::Reasoning(signed("b")),
+                Block::Reasoning(signed("b2")),
+                Block::text("Then."),
+                Block::text("And."),
+                call("c2"),
+                call("c3"),
+                Block::text("Last."),
+            ]
+        );
+        assert_eq!(
+            req.messages[2].blocks,
+            [
+                Block::Reasoning(signed("d")),
+                Block::text("More."),
+                call("c4"),
+            ]
+        );
+    }
+
+    #[test]
+    fn restoring_many_tool_calls_keeps_every_one_in_place() {
+        let n = 2000;
+        let kept: Vec<_> = (0..n)
+            .map(|i| CarriedReasoning::new(format!("c{i}"), vec![signed(&format!("r{i}"))]))
+            .collect();
+        let mut req = GenerateRequest::new("m");
+        req.messages = (0..n / 4)
+            .map(|t| {
+                Message::new(
+                    Role::Assistant,
+                    (0..4).map(|j| call(&format!("c{}", t * 4 + j))).collect(),
+                )
+            })
+            .collect();
+        assert_eq!(restore_reasoning(&mut req, &kept), n);
+        for (t, m) in req.messages.iter().enumerate() {
+            let want: Vec<Block> = (0..4)
+                .flat_map(|j| {
+                    let i = t * 4 + j;
+                    [
+                        Block::Reasoning(signed(&format!("r{i}"))),
+                        call(&format!("c{i}")),
+                    ]
+                })
+                .collect();
+            assert_eq!(m.blocks, want);
+        }
     }
 
     #[test]

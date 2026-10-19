@@ -17,7 +17,7 @@ Install Kaeso on a server, connect a model provider such as OpenAI or Anthropic,
 
 ## Download the Compose file
 
-Each release publishes a `compose.yaml` that pins its gateway and console images. Download it into a new folder that only you can read:
+Each release publishes a `compose.yaml` that pins its images by version and digest. Download it into a new folder that only you can read:
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
@@ -60,7 +60,7 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 The master key encrypts the provider keys that Kaeso stores. Generate one into `master-keys`, which Compose hands to the gateway as a Docker secret:
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
 chmod 644 master-keys
 ```
 

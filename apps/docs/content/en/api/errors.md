@@ -66,7 +66,6 @@ Chat Completions, Responses and Embeddings share one error body:
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
-| 429 | `insufficient_quota` | `insufficient_quota`, when the provider refuses for billing reasons |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
@@ -137,7 +136,6 @@ The error body carries the request's id in `request_id`, also when the error com
 | --- | --- |
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
-| 402 | `billing_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
 | 405 | `invalid_request_error` |
@@ -172,6 +170,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |
 | 502 | Kaeso can't reach the provider, or the transfer failed. |
+| 502 | The provider refused the project's provider key, or refused it for billing or quota reasons. |
 | 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
 | 503 | The provider is overloaded, in the OpenAI formats. |
 | 504 | The provider didn't answer in time. |
@@ -181,19 +180,21 @@ Once a stream has started, its status can't change. If the provider fails or end
 
 ## Provider errors
 
-When your app and the provider use the same format, Kaeso passes the provider's error on with its status. An Anthropic error also gets Kaeso's id in `request_id`.
+When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`.
 
 Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 
 | The provider | Your app gets |
 | --- | --- |
-| Refuses the provider key | 401 or 403 |
+| Refuses the provider key | 502, in every format |
 | Rate-limits the request | 429 |
-| Refuses for billing reasons | 402 in the Anthropic format, 429 `insufficient_quota` in the OpenAI formats |
+| Refuses for billing or quota reasons | 502, in every format |
 | Is overloaded | 529 in the Anthropic format, 503 in the OpenAI formats |
 | Fails with another server error | Its own 5xx status |
 
-The request log keeps the provider's own message. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
+A refused provider key is the install's problem, not your app's: the provider's 401, 402 or 403 would make an SDK report a wrong Kaeso key, and its message can hold a fragment of the provider key or the provider's organization id. So your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". An organization admin checks the key under **Providers**.
+
+The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
 
 ### Models the provider doesn't serve
 

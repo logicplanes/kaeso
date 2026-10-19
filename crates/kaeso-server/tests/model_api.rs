@@ -41,7 +41,7 @@ async fn same_provider_calls_send_the_credential_and_only_kpp_output() {
     );
     assert_eq!(sent.header("anthropic-version"), Some("2023-06-01"));
 
-    let outcomes = env.capture.all();
+    let outcomes = env.outcomes().await;
     let o = outcomes.last().unwrap();
     assert_eq!(o.status, 200);
     assert_eq!(o.provider, Some("anthropic"));
@@ -889,4 +889,41 @@ async fn a_provider_response_beyond_the_limit_fails_in_the_apps_format() {
         streamed.text().contains("message_stop"),
         "streams are not capped by it"
     );
+}
+
+#[tokio::test]
+async fn a_request_cancelled_while_the_provider_works_is_charged_its_input() {
+    let env = env().await;
+    let mut gate = env.mock.gate();
+    let held = messages("claude-haiku-4-5", &format!("Hi {}", gate.marker()));
+    let mut sent = Box::pin(call(&env, "/v1/messages", Some(&env.key), true, Some(held)));
+    tokio::select! {
+        r = &mut sent => panic!("the held request answered: {}", r.text()),
+        () = gate.wait_for(1) => {}
+    }
+    drop(sent);
+    common::eventually("the provider request is cancelled", || async {
+        env.mock.abandoned() == 1
+    })
+    .await;
+    let o = env
+        .outcomes()
+        .await
+        .into_iter()
+        .find(|o| o.cancelled)
+        .expect("a cancelled outcome");
+    assert!(!o.stream);
+    assert_eq!(o.status, 499);
+    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
+    assert!(o.usage_estimated);
+    let upstream = env.mock.last().unwrap();
+    let usage = o.usage.unwrap();
+    assert_eq!(
+        (usage.input_tokens, usage.output_tokens),
+        (
+            kaeso_core::estimate::tokens_of_bytes(upstream.body.len() as u64),
+            0
+        )
+    );
+    gate.open();
 }

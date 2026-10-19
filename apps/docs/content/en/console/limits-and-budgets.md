@@ -48,7 +48,9 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 - Over a rate, the message says when to retry, and the `Retry-After` header gives the seconds.
 - With a budget used up, the message says when the budget resets.
 
-While requests still running have nearly used up a budget, Kaeso refuses the next request with `Retry-After: 1` until they finish. A hard budget with no finished request in its period, or in the 30 days before, runs one request at a time until the first one finishes. Until then, Kaeso doesn't know what a request costs.
+While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most: its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own) at the model's prices. Under a budget, it holds at least what an average request cost in the period, or in the 30 days before. A stream holds it for as long as it runs.
+
+A request with nothing else running always passes, so requests side by side never overrun a limit by more than one request. To run more requests side by side under a small budget, send a lower output limit. A request to a model without an output limit runs alone under a hard budget with no finished request in its period or the 30 days before.
 
 > [!NOTE]
 > Kaeso counts limits in Valkey. While Valkey can't be reached, rates and soft budgets let requests through, and hard budgets refuse them with status 503.

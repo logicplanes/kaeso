@@ -279,15 +279,21 @@ impl Engine {
             .unwrap_or_default()
     }
 
-    fn write_compose(&self, from: &Version, to: &Version, recovering: bool) -> Option<Failure> {
-        let by_hand = format!("set the Kaeso image tags in compose.yaml to {to} by hand");
+    fn write_compose(
+        &self,
+        from: &Version,
+        to: &Version,
+        images: &[Image],
+        recovering: bool,
+    ) -> Option<Failure> {
+        let by_hand = format!("download the compose.yaml of {to} over the install's by hand");
         let Some(kept) = self.settings.state.kept_compose() else {
             return Some(fail(
                 Reason::ComposeUnwritable,
                 format!("{to} runs, but the updater lost its copy of compose.yaml; {by_hand}"),
             ));
         };
-        let prepared = compose::retag(&kept, from, to);
+        let prepared = compose::retag(&kept, from, to, images);
         let now = match self.settings.compose.read() {
             Ok(now) => now,
             Err(e) => {
@@ -302,7 +308,7 @@ impl Engine {
         }
         let torn =
             recovering && (now.is_empty() || prepared.starts_with(&now) || kept.starts_with(&now));
-        if compose::retag(&now, from, to) != prepared && !torn {
+        if compose::retag(&now, from, to, images) != prepared && !torn {
             return Some(fail(
                 Reason::ComposeChanged,
                 format!("{to} runs, but compose.yaml changed during the update; {by_hand}"),
@@ -317,9 +323,9 @@ impl Engine {
     }
 
     async fn finish(&self, from: &Version, to: &Version, recovering: bool) {
-        let warning = self.write_compose(from, to, recovering);
         let saved = self.snapshot();
         let images = saved.as_ref().map(|s| s.images.clone()).unwrap_or_default();
+        let warning = self.write_compose(from, to, &images, recovering);
         for image in &images {
             if let Err(e) = self
                 .docker
@@ -605,7 +611,8 @@ impl Engine {
             .compose
             .read()
             .map_err(|e| fail(Reason::ComposeUnwritable, e))?;
-        if compose::retag(&local, from, to) != asset {
+        let images: Vec<Image> = PULLED.iter().map(|s| manifest.image(*s).clone()).collect();
+        if compose::retag(&local, from, to, &images) != asset {
             return Err(fail(
                 Reason::ComposeChanged,
                 "compose.yaml differs from the release's beyond the image versions",
@@ -641,6 +648,25 @@ impl Engine {
 
     async fn switch(&self, t: &Target) -> Result<(), Failure> {
         let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+        let mut spec = clone::spec(
+            &t.container,
+            &t.old_image,
+            &t.new_image,
+            &t.image.reference(),
+        )
+        .map_err(|e| fail(Reason::ServicesNotFound, e))?;
+        if t.service == Service::Gateway {
+            clone::start_period(&mut spec, self.settings.gateway_timeout);
+        }
+        crate::guard::container(&t.name, &spec, &t.container).map_err(|why| {
+            fail(
+                Reason::DockerUnavailable,
+                crate::docker::DockerError::Forbidden {
+                    what: format!("create {}", t.name),
+                    why,
+                },
+            )
+        })?;
         self.record(|s| {
             s.switched.push(Switched {
                 service: t.service,
@@ -658,18 +684,12 @@ impl Engine {
             .rename(&t.id, &format!("{}{PREVIOUS_SUFFIX}", t.name))
             .await
             .map_err(docker)?;
-        let mut spec = clone::spec(
-            &t.container,
-            &t.old_image,
-            &t.new_image,
-            &t.image.reference(),
-        )
-        .map_err(|e| fail(Reason::ServicesNotFound, e))?;
-        if t.service == Service::Gateway {
-            clone::start_period(&mut spec, self.settings.gateway_timeout);
-        }
         self.set_phase(t.service, Phase::Creating, None)?;
-        let new_id = self.docker.create(&t.name, &spec).await.map_err(docker)?;
+        let new_id = self
+            .docker
+            .create(&t.name, &spec, &t.container)
+            .await
+            .map_err(docker)?;
         self.set_phase(t.service, Phase::Created, Some(new_id.clone()))?;
         self.docker.start(&new_id).await.map_err(docker)?;
         self.set_phase(t.service, Phase::Started, None)
