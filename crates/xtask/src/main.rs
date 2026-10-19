@@ -32,7 +32,7 @@ enum Command {
     },
     #[command(
         about = "Record real provider responses for the request fixtures of one dialect",
-        after_help = "API keys come from ANTHROPIC_API_KEY or OPENAI_API_KEY and are never written; ANTHROPIC_BASE_URL and OPENAI_BASE_URL override the API base URLs. Review every recorded file before committing it."
+        after_help = "--provider names a provider in crates/kaeso-core/src/provider.rs that speaks the dialect. Its key comes from <ID>_API_KEY, the id in capitals with underscores for hyphens (OPENAI_API_KEY, FIREWORKS_AI_API_KEY), and is never written; <ID>_BASE_URL overrides its default base URL. openai and anthropic record into the dialect's folders, every other provider into <dialect>/providers/<id>/. Review every recorded file before committing it."
     )]
     Record(record::Args),
 }
@@ -52,10 +52,13 @@ async fn main() -> ExitCode {
         Command::ModelsDev { url } => {
             models_dev::refresh(&models_dev::Paths::in_repository(&root), &url, &mut out).await
         }
-        Command::Record(args) => {
-            let endpoint = record::Endpoint::from_env(args.dialect());
-            record::run(&root, &args, &endpoint, &mut out).await
-        }
+        Command::Record(args) => match args.provider() {
+            Ok(provider) => {
+                let endpoint = record::Endpoint::from_env(provider);
+                record::run(&root, &args, &endpoint, &mut out).await
+            }
+            Err(e) => Err(e),
+        },
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

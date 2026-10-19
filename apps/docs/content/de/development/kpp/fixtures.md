@@ -27,6 +27,10 @@ Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpun
 
 Einige Endpunkte haben eigene Unterordner: `count_tokens/` für Anthropic und `input_tokens/` für OpenAI Responses, jeweils in `requests/` und `responses/`, und `models/` für Modelllisten (`anthropic_messages/models/` und `openai_chat/models/`, das alle drei OpenAI-Codecs nutzen).
 
+Aufzeichnungen anderer Anbieter, die einen Dialekt sprechen, etwa einer OpenAI-kompatiblen API, kommen nach `<dialect>/providers/<id>/`, benannt nach der ID des Anbieters in `crates/kaeso-core/src/provider.rs`. Dieser Ordner hat dieselben Unterordner `requests/`, `responses/`, `streams/` und `errors/`, jeweils nur, wenn der Anbieter dort Dateien hat. `requests/` enthält Anfragen, die nur dieser Anbieter annimmt; jeder Name darin muss sich von den Anfrage-Fixtures des Dialekts unterscheiden.
+
+Die Round-Trip-Tests, die Decoder-Tests und die Cross-Dialekt-Matrix lesen jeden Anbieterordner zusammen mit den Fixtures des Dialekts und benennen seine Dateien `providers/<id>/<name>`. Eine neue Aufzeichnung eines Anbieters ergänzt deshalb die Snapshots der Matrix; prüfen Sie sie und übernehmen Sie sie mit `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. Die SDK-Konformität und der Mock-Anbieter des Gateways liefern weiterhin nur die Fixtures des Dialekts selbst aus.
+
 - `unknown-*`-Fixtures tragen absichtlich erfundene Felder, Blöcke oder Events, um die Behandlung von `Extras` und `Unknown` zu testen.
 - Fixtures, die ein Codec ablehnen muss (`stateful-*`, `n-2*`, `input-audio*`), werden statt auf einen Round Trip auf ihren `Unsupported`-Fehler getestet.
 
@@ -42,6 +46,8 @@ Jeder Dialektordner und seine Ordner `requests/`, `responses/`, `streams/`, `err
 | `RECORDED.md` | Eine Live-Aufzeichnung mit `cargo xtask record`, mit Modell und Zeitpunkt |
 
 Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen, und die Konventionen, die sie teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
+
+Ein Anbieterordner hat eine eigene `README.md`: Name und ID des Anbieters, seine API-Referenz mit dem Datum, an dem Sie sie gelesen haben, die Basis-URL und die Modelle der Aufzeichnung und eine Zeile für jede Datei in seinen Unterordnern. Die `RECORDED.md` jedes Unterordners nennt den Anbieter in ihren ersten Zeilen.
 
 ## Live-Antworten aufzeichnen
 
@@ -59,17 +65,27 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
+Jeder andere Anbieter in `crates/kaeso-core/src/provider.rs` wird genauso mit `--provider` aufgezeichnet, meist mit `--model`, weil die Anfrage-Fixtures Modelle von OpenAI und Anthropic nennen:
+
+```bash
+export <ID>_API_KEY=…
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+```
+
 | Option | Wirkung |
 | --- | --- |
 | `<dialect>` | `anthropic_messages`, `openai_chat`, `openai_responses` oder `openai_embeddings` |
 | `<names>` | Die zu sendenden Anfrage-Fixtures, ohne `.json` |
 | `--all` | Jede Anfrage-Fixture des Dialekts außer `stateful-*`, `unknown-*`, `n-2*` und `input-audio*`, die ein Anbieter ablehnen würde oder die erfundene Felder tragen |
-| `--count` | Der Endpunkt zur Token-Zählung und seine Fixtures in `requests/count_tokens/` oder `requests/input_tokens/`; nur `anthropic_messages` und `openai_responses` |
+| `--count` | Der Endpunkt zur Token-Zählung und seine Fixtures in `requests/count_tokens/` oder `requests/input_tokens/`; nur `anthropic_messages` und `openai_responses` und nur für einen Anbieter, dessen `count_tokens` dieser Dialekt ist |
 | `--dry-run` | Gibt aus, was gesendet würde, und sendet nichts |
+| `--provider <id>` | Der aufzuzeichnende Anbieter, nach seiner ID; er muss den Dialekt in seinen `dialects` führen. Standardmäßig `anthropic` für `anthropic_messages` und `openai` für die übrigen |
+| `--model <id>` | Sendet dieses Modell statt des Modells, das die jeweilige Anfrage-Fixture nennt, und trägt es in `RECORDED.md` ein |
 
-- Es liest `requests/<name>.json` und, falls vorhanden, `<name>.headers.json`, dessen Header von der Allowlist (`anthropic-beta`, `anthropic-version`, `openai-beta`) mitgesendet werden. Anthropic-Anfragen tragen `anthropic-version: 2023-06-01`, außer diese Datei nennt eine andere Version.
-- Es schreibt eine 2xx-Antwort nach `responses/recorded-<name>.json`, mit `--count` nach `responses/count_tokens/` oder `responses/input_tokens/`. Eine Anfrage mit `"stream": true` ergibt `streams/recorded-<name>.sse`, die rohen Bytes, wie empfangen. Ein Fehler ergibt `errors/recorded-<name>.json` (`.txt`, wenn der Body kein JSON ist) und `recorded-<name>.meta.json` mit dem Status und einem etwaigen `retry-after`. Jede Aufzeichnung fügt in `RECORDED.md` dieses Ordners eine Zeile mit dem Modell und der UTC-Zeit hinzu. JSON-Bodies werden mit zwei Leerzeichen eingerückt und behalten die Schlüsselreihenfolge des Anbieters.
-- `ANTHROPIC_BASE_URL` und `OPENAI_BASE_URL` ändern die API-Adressen.
+- Es liest `requests/<name>.json`, für einen anderen Anbieter auch `providers/<id>/requests/<name>.json`, und, falls vorhanden, `<name>.headers.json`, dessen Header von der Allowlist (`anthropic-beta`, `anthropic-version`, `openai-beta`) mitgesendet werden. Anthropic-Anfragen tragen `anthropic-version: 2023-06-01`, außer diese Datei nennt eine andere Version.
+- Es schreibt eine 2xx-Antwort nach `responses/recorded-<name>.json`, mit `--count` nach `responses/count_tokens/` oder `responses/input_tokens/`. Eine Anfrage mit `"stream": true` ergibt `streams/recorded-<name>.sse`, die rohen Bytes, wie empfangen. Ein Fehler ergibt `errors/recorded-<name>.json` (`.txt`, wenn der Body kein JSON ist) und `recorded-<name>.meta.json` mit dem Status und einem etwaigen `retry-after`. Jede Aufzeichnung fügt in `RECORDED.md` dieses Ordners eine Zeile mit dem Modell und der UTC-Zeit hinzu. `openai` und `anthropic` zeichnen in die Ordner des Dialekts auf, jeder andere Anbieter nach `providers/<id>/`. JSON-Bodies werden mit zwei Leerzeichen eingerückt und behalten die Schlüsselreihenfolge des Anbieters.
+- Der Schlüssel kommt aus `<ID>_API_KEY`, der ID des Anbieters in Großbuchstaben mit Unterstrichen statt Bindestrichen: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` und `FIREWORKS_AI_API_KEY` für einen Anbieter `fireworks-ai`. `<ID>_BASE_URL` ersetzt die Standard-Basis-URL des Anbieters, die auch das Gateway verwendet. Der Schlüssel kommt in den Auth-Header des Anbieters: `authorization: Bearer` oder `x-api-key`.
 - API-Schlüssel werden aus der Umgebung gelesen und nie geschrieben, und Anfrage-Header werden nie gespeichert.
 - Bevor etwas geschrieben wird, entfernt es den Query-String jeder URL, die Zugangsdaten einer Cloud-Signatur trägt: AWS Signature Version 4, signierte URLs von Google Cloud und Shared Access Signatures von Azure. Solche vorsignierten Links kann eine Websuche liefern. Alles andere bleibt Byte für Byte erhalten.
 
