@@ -132,6 +132,7 @@ pub struct Outcome {
     pub cancelled: bool,
     pub stream_progress: Option<StreamProgress>,
     pub usage_estimated: bool,
+    pub content_kept: bool,
 }
 
 impl Outcome {

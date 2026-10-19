@@ -28,8 +28,11 @@ fn ctx(d: DialectId, stream: bool) -> EgressCtx {
 }
 
 fn assemble(d: DialectId, sse: &[u8]) -> kaeso_core::assembler::Assembled {
+    assemble_with(Assembler::new(d), d, sse)
+}
+
+fn assemble_with(mut asm: Assembler, d: DialectId, sse: &[u8]) -> kaeso_core::assembler::Assembled {
     let mut decoder = dispatch::stream_decoder(d, &ctx(d, true)).unwrap();
-    let mut asm = Assembler::new(d);
     let mut events: Vec<StreamEvent> = Vec::new();
     for chunk in sse.chunks(97) {
         events.extend(decoder.feed(chunk));
@@ -122,6 +125,40 @@ fn streams_assemble_to_their_paired_responses() {
     eprintln!("{streams} streams, {compared} compared with their responses");
     assert!(streams >= 30, "only {streams} stream fixtures found");
     assert!(compared >= 10, "only {compared} paired fixtures compared");
+}
+
+#[test]
+fn an_outline_keeps_everything_but_the_blocks() {
+    let root = fixtures();
+    let mut seen = 0;
+    for d in [
+        DialectId::AnthropicMessages,
+        DialectId::OpenAiChat,
+        DialectId::OpenAiResponses,
+    ] {
+        let Ok(entries) = std::fs::read_dir(root.join(d.as_str()).join("streams")) else {
+            continue;
+        };
+        for path in entries.flatten().map(|e| e.path()) {
+            if path.extension().and_then(|e| e.to_str()) != Some("sse") {
+                continue;
+            }
+            let sse = std::fs::read(&path).unwrap();
+            for cut in [sse.len(), sse.len() / 2] {
+                let full = assemble(d, &sse[..cut]);
+                let outline = assemble_with(Assembler::without_blocks(d), d, &sse[..cut]);
+                let expected = full.response.map(|mut r| {
+                    r.blocks.clear();
+                    r
+                });
+                assert_eq!(outline.response, expected, "{}", path.display());
+                assert_eq!(outline.complete, full.complete, "{}", path.display());
+                assert_eq!(outline.error, full.error, "{}", path.display());
+                seen += 1;
+            }
+        }
+    }
+    assert!(seen >= 60, "only {seen} streams compared");
 }
 
 #[test]
