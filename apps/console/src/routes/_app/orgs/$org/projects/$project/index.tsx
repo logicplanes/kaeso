@@ -9,7 +9,14 @@ function overviewSearch(search: Record<string, unknown>): OverviewSearch {
   return { ...periodSearch(search), ...(by ? { by } : {}) };
 }
 
-export const Route = createFileRoute("/_app/orgs/$org/projects/$project/")({ validateSearch: overviewSearch, component: Overview });
+export const Route = createFileRoute("/_app/orgs/$org/projects/$project/")({
+  validateSearch: overviewSearch,
+  loaderDeps: ({ search }) => periodSearch(search),
+  loader: ({ context, params, deps }) => {
+    void import("~/api/queries/route-prefetch").then((m) => m.prefetchProjectOverview(context.queryClient, params.org, params.project, deps));
+  },
+  component: Overview,
+});
 
 function Overview() {
   const { org, project } = Route.useParams();

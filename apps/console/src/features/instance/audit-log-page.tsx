@@ -21,10 +21,11 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
   const log = useInfiniteQuery(auditLogQuery({ instance: true }, filters));
   const events = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const matches = useMemo(() => found.data?.pages.flatMap((p) => p.data) ?? [], [found.data]);
+  const listed = useMemo(() => new Set(matches.map((u) => u.id)), [matches]);
   const userIds = unique([
     filters.actor,
     ...events.flatMap((e) => [e.actor.kind === "user" ? e.actor.id : null, e.target_kind === "user" ? e.target_id : null]),
-  ]);
+  ]).filter((id) => !listed.has(id));
   const orgIds = unique(events.map((e) => (e.target_kind === "org" ? e.target_id : null)));
   const users = useQueries({ queries: userIds.map((id) => ({ ...instanceUserQuery(id), meta: { quiet: true } })), combine: loaded });
   const orgs = useQueries({ queries: orgIds.map((id) => ({ ...instanceOrgQuery(id), meta: { quiet: true } })), combine: loaded });

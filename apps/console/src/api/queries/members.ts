@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import type { ModelAccess, ProjectMemberView, ServiceAccountView } from "../generated/types";
-import { allPages } from "../paging";
+import { allPages, unarchived } from "../paging";
 
 export const projectMembersQuery = (org: string, project: string) =>
   queryOptions({
@@ -18,15 +18,16 @@ export const projectMembersQuery = (org: string, project: string) =>
 
 export const serviceAccountsQuery = (org: string, project: string, includeArchived = false) =>
   queryOptions({
-    queryKey: ["orgs", org, "projects", project, "service-accounts", { includeArchived }],
+    queryKey: ["orgs", org, "projects", project, "service-accounts", "list"],
     queryFn: (): Promise<ServiceAccountView[]> =>
       allPages(async (after) =>
         data(
           await api.GET("/platform/v1/orgs/{org}/projects/{project}/service-accounts", {
-            params: { path: { org, project }, query: { limit: 100, include_archived: includeArchived, ...(after ? { after } : {}) } },
+            params: { path: { org, project }, query: { limit: 100, include_archived: true, ...(after ? { after } : {}) } },
           }),
         ),
       ),
+    ...(includeArchived ? {} : { select: unarchived<ServiceAccountView> }),
   });
 
 export type Principal = { kind: "user"; id: string } | { kind: "service_account"; id: string };
@@ -43,5 +44,32 @@ export const modelAccessQuery = (org: string, project: string, subject: Principa
           await api.GET("/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/models", { params: { path: { ...path, account: subject.id } } }),
         );
       return data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/keys/{key}/models", { params: { path: { ...path, key: subject.id } } }));
+    },
+  });
+
+const LOOKUP_BATCH = 4;
+
+export interface FoundServiceAccount {
+  account: ServiceAccountView;
+  project: string;
+}
+
+export const serviceAccountLookupQuery = (org: string, projects: readonly string[], ids: readonly string[]) =>
+  queryOptions({
+    queryKey: ["orgs", org, "service-account-lookup", { projects, ids }],
+    queryFn: async ({ client }): Promise<FoundServiceAccount[]> => {
+      const wanted = new Set(ids);
+      const found: FoundServiceAccount[] = [];
+      for (let i = 0; i < projects.length && found.length < wanted.size; i += LOOKUP_BATCH) {
+        const batch = projects.slice(i, i + LOOKUP_BATCH);
+        const lists = await Promise.allSettled(
+          batch.map(async (project) => ({ project, accounts: await client.fetchQuery(serviceAccountsQuery(org, project, true)) })),
+        );
+        for (const list of lists) {
+          if (list.status === "rejected") continue;
+          for (const account of list.value.accounts) if (wanted.has(account.id)) found.push({ account, project: list.value.project });
+        }
+      }
+      return found;
     },
   });

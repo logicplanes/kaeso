@@ -138,6 +138,34 @@ describe("organization overview", () => {
     ).toEqual([PROJECT, OTHER_PROJECT]);
   });
 
+  it("looks for service accounts only until each one in the breakdown is found", async () => {
+    const many = ["proj_1", "proj_2", "proj_3", "proj_4", "proj_5", "proj_6"].map((id) => project({ id, name: id }));
+    signedIn({ projects: many });
+    on("GET", "orgs/:org/members", page([member()]));
+    on("GET", "orgs/:org/projects/:project/service-accounts", ({ params }: { params: Record<string, string> }) =>
+      page(params.project === "proj_2" ? [serviceAccount()] : []),
+    );
+    usage({ member: wrap([usageRow("user:usr_ada", { requests: 5 }), usageRow("service_account:sa_bot", { requests: 2 })]) });
+    await renderApp(`/orgs/${ORG}?${PERIOD}&by=member`);
+    const table = await breakdown();
+    expect(await within(table).findByText("Service account in proj_2")).toBeInTheDocument();
+    expect(
+      requests("GET", "orgs/:org/projects/:project/service-accounts")
+        .map((r) => r.params.project)
+        .sort(),
+    ).toEqual(["proj_1", "proj_2", "proj_3", "proj_4"]);
+  });
+
+  it("asks for no service accounts when only people made requests", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", page([member()]));
+    usage({ member: wrap([usageRow("user:usr_ada", { requests: 5 })]) });
+    await renderApp(`/orgs/${ORG}?${PERIOD}&by=member`);
+    const table = await breakdown();
+    expect(await within(table).findByText("Ada Okafor (you)")).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/service-accounts")).toHaveLength(0);
+  });
+
   it("names a service account by id when its project's accounts couldn't load", async () => {
     signedIn();
     on("GET", "orgs/:org/members", page([member()]));

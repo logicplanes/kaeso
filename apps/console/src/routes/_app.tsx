@@ -10,8 +10,10 @@ export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ context, location }) => {
     loadRouteGates().catch(() => undefined);
     try {
+      const memberships = context.queryClient.ensureQueryData(membershipsQuery);
+      memberships.catch(() => undefined);
       await context.queryClient.ensureQueryData(sessionQuery);
-      await context.queryClient.ensureQueryData(membershipsQuery);
+      await memberships;
     } catch (error) {
       if (isApiError(error) && error.type === "authentication") {
         void import("~/auth/user-data").then((m) => m.forgetUserData());
