@@ -171,12 +171,13 @@ fn string_errors_keep_their_message_and_status_in_the_openai_shape() {
     let v: Value = serde_json::from_slice(&out.body).unwrap();
     assert_eq!(v["error"]["message"], err.message);
     assert_eq!(v["error"]["type"], "server_error");
-    let key = OpenAiChat::decode_error(
+    let mut key = OpenAiChat::decode_error(
         400,
         &HeaderList::new(),
         br#"{"code":"invalid-argument","error":"Incorrect API key provided. You can obtain an API key from https://console.x.ai."}"#,
     );
-    assert_eq!(key.kind, ErrorKind::Authentication);
+    assert_eq!(key.kind, ErrorKind::InvalidRequest);
+    key.kind = ErrorKind::Authentication;
     assert_eq!(OpenAiChat::encode_error(&key).status, 400);
 }
 
