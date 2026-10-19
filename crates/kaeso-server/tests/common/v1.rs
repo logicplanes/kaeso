@@ -15,7 +15,7 @@ pub const OPENAI_SECRET: &str = "sk-test-openai-credential-0001";
 pub const ANTHROPIC_SECRET: &str = "sk-ant-test-credential-0002";
 
 #[derive(Debug, Default)]
-pub struct Capture(pub Mutex<Vec<Outcome>>);
+pub struct Capture(pub Mutex<Vec<Outcome>>, tokio::sync::Notify);
 
 impl Sink for Capture {
     fn finish<'a>(
@@ -24,6 +24,7 @@ impl Sink for Capture {
         outcome: Outcome,
     ) -> futures::future::BoxFuture<'a, ()> {
         self.0.lock().unwrap().push(outcome);
+        self.1.notify_waiters();
         Box::pin(async {})
     }
 }
@@ -31,6 +32,22 @@ impl Sink for Capture {
 impl Capture {
     pub fn all(&self) -> Vec<Outcome> {
         self.0.lock().unwrap().clone()
+    }
+
+    pub async fn recorded(&self, request_id: &str) -> Outcome {
+        loop {
+            let recorded = self.1.notified();
+            tokio::pin!(recorded);
+            recorded.as_mut().enable();
+            if let Some(o) = self
+                .all()
+                .into_iter()
+                .find(|o| o.request_id.to_string() == request_id)
+            {
+                return o;
+            }
+            recorded.await;
+        }
     }
 }
 

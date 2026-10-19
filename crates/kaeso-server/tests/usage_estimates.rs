@@ -44,12 +44,8 @@ async fn env_with_chat_provider() -> (Env, MockProvider) {
     (env, provider)
 }
 
-fn outcome(env: &Env, id: &str) -> Outcome {
-    env.capture
-        .all()
-        .into_iter()
-        .find(|o| o.request_id.to_string() == id)
-        .unwrap_or_else(|| panic!("no outcome for {id} in {:#?}", env.capture.all()))
+async fn outcome(env: &Env, id: &str) -> Outcome {
+    env.capture.recorded(id).await
 }
 
 #[tokio::test]
@@ -74,7 +70,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
         "Hello! How can I assist you today?"
     );
     assert!(r.json().get("usage").is_none(), "{}", r.text());
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
     assert_eq!(o.status, 200);
     assert!(o.usage_estimated);
     let u = o.usage.unwrap();
@@ -86,7 +82,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert!(r.text().contains("message_stop"), "{}", r.text());
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
     assert_eq!(o.status, 200);
     assert!(o.error_kind.is_none(), "{:?}", o.error_kind);
     assert!(o.usage_estimated);
@@ -105,7 +101,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
         )),
     )
     .await;
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
     assert!(!o.usage_estimated);
     let u = o.usage.unwrap();
     assert_eq!((u.input_tokens, u.output_tokens), (19, 10));
@@ -120,7 +116,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert!(r.json().get("usage").is_none(), "{}", r.text());
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
     assert!(o.usage_estimated);
     let u = o.usage.unwrap();
     assert!(u.input_tokens > 0, "{u:?}");
