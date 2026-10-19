@@ -23,6 +23,10 @@ const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
+        "providers/mistral/recorded-assistant-prefill",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-function-call-field",
         ErrorKind::InvalidRequest,
     ),

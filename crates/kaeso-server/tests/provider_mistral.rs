@@ -262,6 +262,50 @@ async fn fields_mistral_refuses_are_refused_before_anything_is_sent() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "messages[0].name");
+
+    let mut body = chat(SMALL, "Say hello.");
+    body["modalities"] = json!(["text", "audio"]);
+    body["audio"] = json!({ "voice": "alloy", "format": "mp3" });
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "`audio` is not supported by Mistral; remove it from the request."
+    );
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": SMALL,
+            "max_tokens": 64,
+            "messages": [
+                { "role": "user", "content": "Name a colour." },
+                { "role": "assistant", "content": "The colour is" }
+            ],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let body = r.json();
+    assert_eq!(
+        (&body["type"], &body["error"]["message"]),
+        (
+            &json!("error"),
+            &json!(
+                "Mistral cannot continue a prefilled assistant message; end the conversation with a user message."
+            )
+        )
+    );
     assert!(env.mock.received().is_empty());
 }
 

@@ -677,6 +677,56 @@ expression: outcomes
       }
     }
   },
+  "providers/mistral/recorded-assistant-prefix": {
+    "content": [
+      {
+        "text": "The colour is **cerulean**.",
+        "type": "text"
+      }
+    ],
+    "id": "0eca016673b94106980cb573ae599c73",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 9,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-audio-field": {
+    "content": [
+      {
+        "text": "Hello! 😊 How can I assist you",
+        "type": "text"
+      }
+    ],
+    "id": "a5bfce19c23f4a5aae42d778a8b811bb",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 18,
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "providers/mistral/recorded-magistral-medium": {
     "content": [
       {
@@ -722,6 +772,31 @@ expression: outcomes
       "cache_read_input_tokens": 0,
       "input_tokens": 30,
       "output_tokens": 16,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-modalities-field": {
+    "content": [
+      {
+        "text": "Hello! 😊 How can I assist you",
+        "type": "text"
+      }
+    ],
+    "id": "8c983da2fd814d91b78475e7f78d38d6",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 18,
+      "output_tokens": 10,
       "output_tokens_details": {
         "thinking_tokens": 0
       }

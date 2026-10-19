@@ -13,3 +13,6 @@ Written by `cargo xtask record`. Provenance: live API of Mistral (`mistral`).
 | `recorded-system-tool-choice-any.json` | `openai_chat/providers/mistral/requests/system-tool-choice-any.json` | `mistral-small-latest` | 2026-10-19 00:37 |
 | `recorded-tool-result-named.json` | `openai_chat/providers/mistral/requests/tool-result-named.json` | `mistral-small-latest` | 2026-10-19 00:37 |
 | `recorded-magistral-medium.json` | `openai_chat/providers/mistral/requests/magistral-medium.json` | `magistral-medium-latest` | 2026-10-19 00:37 |
+| `recorded-audio-field.json` | `openai_chat/providers/mistral/requests/audio-field.json` | `mistral-small-latest` | 2026-10-19 03:26 |
+| `recorded-modalities-field.json` | `openai_chat/providers/mistral/requests/modalities-field.json` | `mistral-small-latest` | 2026-10-19 03:26 |
+| `recorded-assistant-prefix.json` | `openai_chat/providers/mistral/requests/assistant-prefix.json` | `mistral-small-latest` | 2026-10-19 03:29 |

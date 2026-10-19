@@ -1,0 +1,29 @@
+{
+  "id": "8c983da2fd814d91b78475e7f78d38d6",
+  "created": 1792380398,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 18,
+    "total_tokens": 28,
+    "completion_tokens": 10,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "length",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "Hello! 😊 How can I assist you"
+      }
+    }
+  ]
+}

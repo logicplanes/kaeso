@@ -578,10 +578,47 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/mistral/assistant-prefill": {
+    "body": {
+      "max_tokens": 30,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name a colour.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "The colour is",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/assistant-prefix": {
+    "message": "`messages[1].prefix` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].prefix"
+  },
   "providers/mistral/assistant-refusal-field": {
     "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
     "param": "messages[1].blocks[0]",
     "unsupported": "refusal block"
+  },
+  "providers/mistral/audio-field": {
+    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "audio"
   },
   "providers/mistral/function-call-field": {
     "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -628,6 +665,11 @@ expression: outcomes
       "model": "magistral-medium-latest"
     },
     "path": "/v1/messages"
+  },
+  "providers/mistral/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
   },
   "providers/mistral/model-not-found": {
     "body": {

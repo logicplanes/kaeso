@@ -1,0 +1,8 @@
+{
+  "object": "error",
+  "message": "Expected last role User or Tool (or Assistant with prefix True) for serving but got assistant",
+  "type": "invalid_request_message_order",
+  "param": null,
+  "code": "3230",
+  "raw_status_code": 400
+}

@@ -252,7 +252,9 @@ pub const PROVIDERS: &[Provider] = &[
             .system_role()
             .random_seed()
             .without_end_user()
+            .without_prefill()
             .refusing(&[
+                "audio",
                 "function_call",
                 "functions",
                 "logit_bias",

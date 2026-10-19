@@ -24,3 +24,4 @@ Written by `cargo xtask record`. Provenance: live API of Mistral (`mistral`).
 | `recorded-prompt-cache-options-field.json` | `openai_chat/providers/mistral/requests/prompt-cache-options-field.json` | `mistral-small-latest` | 2026-10-19 03:08 |
 | `recorded-prompt-cache-retention-field.json` | `openai_chat/providers/mistral/requests/prompt-cache-retention-field.json` | `mistral-small-latest` | 2026-10-19 03:08 |
 | `recorded-verbosity-field.json` | `openai_chat/providers/mistral/requests/verbosity-field.json` | `mistral-small-latest` | 2026-10-19 03:08 |
+| `recorded-assistant-prefill.json` | `openai_chat/providers/mistral/requests/assistant-prefill.json` | `mistral-small-latest` | 2026-10-19 03:29 |

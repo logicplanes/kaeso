@@ -611,10 +611,38 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/mistral/assistant-prefill": {
+    "body": {
+      "input": [
+        {
+          "content": "Name a colour.",
+          "role": "user"
+        },
+        {
+          "content": "The colour is",
+          "role": "assistant"
+        }
+      ],
+      "max_output_tokens": 30,
+      "model": "mistral-small-latest",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/mistral/assistant-prefix": {
+    "message": "`messages[1].prefix` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].prefix"
+  },
   "providers/mistral/assistant-refusal-field": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",
     "unsupported": "max_tokens 10"
+  },
+  "providers/mistral/audio-field": {
+    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "audio"
   },
   "providers/mistral/function-call-field": {
     "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
@@ -644,6 +672,11 @@ expression: outcomes
       "store": false
     },
     "path": "/v1/responses"
+  },
+  "providers/mistral/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
   },
   "providers/mistral/model-not-found": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
