@@ -65,7 +65,8 @@ jobs:
           seed=crates/kaeso-codecs/fixtures
           if [[ "$FUZZ_TARGET" == decode_* ]]; then seed="$seed/${FUZZ_TARGET#decode_}"; fi
           mkdir -p "fuzz/corpus/$FUZZ_TARGET"
-          cargo +nightly fuzz run "$FUZZ_TARGET" "fuzz/corpus/$FUZZ_TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
+          host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
+          cargo +nightly fuzz run --target "$host" "$FUZZ_TARGET" "fuzz/corpus/$FUZZ_TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
           echo "\`$FUZZ_TARGET\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: failure()
