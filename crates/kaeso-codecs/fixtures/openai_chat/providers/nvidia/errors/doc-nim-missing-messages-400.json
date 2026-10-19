@@ -1,7 +1,0 @@
-{
-  "object": "error",
-  "message": "[{'type': 'missing', 'loc': ('body', 'messages'), 'msg': 'Field required', ...",
-  "type": "BadRequestError",
-  "param": null,
-  "code": 400
-}

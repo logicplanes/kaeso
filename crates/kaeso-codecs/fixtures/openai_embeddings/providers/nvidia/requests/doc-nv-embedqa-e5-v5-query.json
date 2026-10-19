@@ -1,7 +1,0 @@
-{
-  "input": "What is the capital of France?",
-  "model": "nvidia/nv-embedqa-e5-v5",
-  "input_type": "query",
-  "encoding_format": "float",
-  "truncate": "NONE"
-}

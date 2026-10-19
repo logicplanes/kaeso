@@ -378,67 +378,6 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
-  "providers/nvidia/doc-deepseek-v4-flash-chat-template-kwargs": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
-  "providers/nvidia/doc-deepseek-v4-flash-reasoning-effort-none": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
-  "providers/nvidia/doc-kimi-k3-image-reasoning-effort": {
-    "body": {
-      "include": [
-        "reasoning.encrypted_content"
-      ],
-      "input": [
-        {
-          "content": [
-            {
-              "text": "What is in this image?",
-              "type": "input_text"
-            },
-            {
-              "image_url": "https://assets.ngc.nvidia.com/products/api-catalog/phi-3-5-vision/example1b.jpg",
-              "type": "input_image"
-            }
-          ],
-          "role": "user"
-        }
-      ],
-      "max_output_tokens": 1024,
-      "model": "moonshotai/kimi-k3",
-      "reasoning": {
-        "effort": "low"
-      },
-      "store": false,
-      "stream": true,
-      "temperature": 1.0
-    },
-    "path": "/v1/responses"
-  },
-  "providers/nvidia/doc-llama-3-3-70b-seed": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
-  "providers/nvidia/doc-nemotron-3-super-low-effort": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
-  "providers/nvidia/doc-nemotron-3-super-reasoning-budget": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
-  "providers/nvidia/doc-nemotron-super-49b-system-stop-null": {
-    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
-    "param": "seed",
-    "unsupported": "seed"
-  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

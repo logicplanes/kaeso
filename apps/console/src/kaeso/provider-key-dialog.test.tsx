@@ -83,24 +83,6 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "openai", name: "Backup", secret: "sk-new", make_default: true }]);
   });
 
-  it("offers NVIDIA NIM and takes its key", async () => {
-    on("POST", CREDENTIALS, credential({ provider: "nvidia", name: "NIM", is_default: true }));
-    const { user, dialog } = await open();
-
-    await user.click(within(dialog).getByRole("radio", { name: /NVIDIA NIM/ }));
-    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(await within(dialog).findByRole("heading", { name: "Paste your NVIDIA NIM API key" })).toBeVisible();
-    expect(within(dialog).getByText("Create one at build.nvidia.com under API keys; it starts with nvapi-.")).toBeInTheDocument();
-    const secret = within(dialog).getByLabelText("NVIDIA NIM API key");
-    expect(secret).toHaveAttribute("placeholder", "nvapi-…");
-    await user.type(secret, "nvapi-123");
-    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "NIM");
-    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
-
-    expect(await notifications().findByText("NIM is the NVIDIA NIM default")).toBeInTheDocument();
-    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "nvidia", name: "NIM", secret: "nvapi-123", make_default: false }]);
-  });
-
   it("asks only for the provider's key for a provider it has no hint for", async () => {
     const { dialog } = await open({ provider: "mistral" });
     expect(within(dialog).getByRole("heading", { name: "Connect Mistral" })).toBeInTheDocument();

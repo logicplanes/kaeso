@@ -1,6 +1,0 @@
-data: {"id":"cmpl-call_ID0","object":"chat.completion.chunk","created":1721155320,"model":"magic-model","choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"finish_reason":null}]}
-
-data: {"id":"cmpl-call_ID0","object":"chat.completion.chunk","created":1721155320,"model":"magic-model","choices":[{"index":0,"delta":{"role":null,"content":null,"tool_calls":[{"index":0,"id":"chatcmpl-tool-IDA","type":"function","function":{"name":"xxyyzz","arguments":"{\"a\": 11, \"b\": 3}"}},{"index":1,"id":"chatcmpl-tool-IDB","type":"function","function":{"name":"zzyyxx","arguments":"{\"a\": 11, \"b\": 5}"}}]},"logprobs":null,"finish_reason":"tool_calls","stop_reason":null}]}
-
-data: [DONE]
-

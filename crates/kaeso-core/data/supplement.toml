@@ -86,18 +86,3 @@ egress_dialect = "openai_responses"
 
 [openai."gpt-5.6-terra"]
 egress_dialect = "openai_responses"
-
-[nvidia."baai/bge-m3"]
-egress_dialect = "openai_embeddings"
-
-[nvidia."nvidia/llama-3_2-nemoretriever-300m-embed-v1"]
-egress_dialect = "openai_embeddings"
-
-[nvidia."nvidia/llama-nemotron-embed-vl-1b-v2"]
-egress_dialect = "openai_embeddings"
-
-[nvidia."nvidia/nv-embed-v1"]
-egress_dialect = "openai_embeddings"
-
-[nvidia."nvidia/nv-embedcode-7b-v1"]
-egress_dialect = "openai_embeddings"

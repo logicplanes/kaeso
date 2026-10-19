@@ -1,9 +1,0 @@
-{
-  "input": "What is the civil caseload in South Dakota courts?",
-  "model": "nvidia/llama-nemotron-embed-vl-1b-v2",
-  "input_type": "query",
-  "image": "https://assets.ngc.nvidia.com/products/api-catalog/nemo-retriever/embedding/court-sizing-metrics.png",
-  "image_name": "court-sizing-metrics.png",
-  "encoding_format": "float",
-  "truncate": "NONE"
-}
