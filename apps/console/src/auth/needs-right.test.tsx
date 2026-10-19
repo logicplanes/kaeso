@@ -46,6 +46,13 @@ describe("explaining a missing right", () => {
     expect(requests("GET", PROJECT_GRANTORS)).toHaveLength(0);
   });
 
+  it("still names a project right when the person's project rights can't load", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project/my-rights", apiError(500, "internal", "Something went wrong."));
+    expect(await explainMissingRight(queryClient, ORG, PROJECT, "keys.all.view")).toBe("You need View all keys; ask an owner or admin for it.");
+    expect(requests("GET", PROJECT_GRANTORS)).toHaveLength(0);
+  });
+
   it("asks an owner or admin when nobody can be looked up", async () => {
     signedIn({ session: whoAmI({ memberships: [membership({ rights: ["org.view"] })] }) });
     expect(await explainMissingRight(queryClient, ORG, undefined, "org.delete")).toBe("You need Delete organization; ask an owner or admin for it.");
