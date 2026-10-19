@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use kaeso_kpp::{
     Block, DialectId, DocumentBlock, EmbedInput, EmbedRequest, FunctionTool, GenerateRequest,
-    JsonSchemaSpec, Message, OutputSpec, RawJson, ReasoningConfig, ReasoningEffort, Request, Role,
-    Source, ToolChoice, ToolDef,
+    JsonSchemaSpec, Message, OutputSpec, RawJson, ReasoningConfig, ReasoningEffort, ReasoningMode,
+    Request, Role, Source, ToolChoice, ToolDef,
 };
 use rust_decimal_macros::dec;
 use uuid::Uuid;
@@ -553,6 +553,68 @@ fn efforts_are_refused_not_replaced() {
     kept("max", DialectId::OpenAiResponses, &sonnet46);
     kept("none", DialectId::OpenAiResponses, &sonnet46);
     refused("turbo", DialectId::OpenAiResponses, &sonnet46);
+}
+
+fn with_budget(budget: u32, mode: ReasoningMode) -> GenerateRequest {
+    let mut g = user(vec![Block::text("hi")]);
+    let mut r = ReasoningConfig::default();
+    r.mode = Some(mode);
+    r.budget_tokens = Some(budget);
+    g.reasoning = Some(r);
+    g
+}
+
+#[test]
+fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
+    let small = eff(&entry("mistral", "mistral-small-latest"));
+    let a = DialectId::AnthropicMessages;
+    assert_eq!(
+        check(with_budget(2_048, ReasoningMode::Enabled), a, &small).unwrap_err(),
+        "The model `mistral-small-latest` supports the effort levels `none`, `high`; a thinking budget of 2048 tokens becomes `low`, so send a `budget_tokens` of at least 16384."
+    );
+    let mut req = Request::Generate(with_budget(2_048, ReasoningMode::Enabled));
+    assert_eq!(
+        prepare(&mut req, a, &small).unwrap_err().param,
+        Some("thinking.budget_tokens")
+    );
+    assert!(check(with_budget(16_384, ReasoningMode::Enabled), a, &small).is_ok());
+    assert!(check(with_budget(2_048, ReasoningMode::Disabled), a, &small).is_ok());
+    let gpt5 = eff(&entry("openai", "gpt-5"));
+    assert!(check(with_budget(2_048, ReasoningMode::Enabled), a, &gpt5).is_ok());
+    let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
+    assert!(check(with_budget(2_048, ReasoningMode::Enabled), a, &haiku).is_ok());
+    let with_efforts = |efforts: &[&str]| {
+        let mut e = entry("openai", "gpt-5");
+        e.overrides.efforts = Some(efforts.iter().map(|&l| l.to_owned()).collect());
+        eff(&e)
+    };
+    assert_eq!(
+        check(
+            with_budget(20_000, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["low"])
+        )
+        .unwrap_err(),
+        "The model `gpt-5` supports the effort levels `low`; a thinking budget of 20000 tokens becomes `high`, so send a `budget_tokens` below 4096."
+    );
+    assert_eq!(
+        check(
+            with_budget(2_048, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["none"])
+        )
+        .unwrap_err(),
+        "The model `gpt-5` supports the effort levels `none`; a thinking budget of 2048 tokens becomes `low`, so turn `thinking` off."
+    );
+    assert!(
+        check(
+            with_budget(8_000, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["low", "high"])
+        )
+        .unwrap_err()
+        .ends_with("so send a `budget_tokens` of at least 16384.")
+    );
 }
 
 #[test]

@@ -35,7 +35,7 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 | 4,096 到 16,383 | `medium` |
 | 16,384 及以上 | `high` |
 
-同一请求中显式的推理强度优先于预算。
+同一请求中显式的推理强度优先于预算。如果预算换算出的推理强度不在模型支持的推理强度级别中，网关会在发送前拒绝该请求，指明 `thinking.budget_tokens`，并给出最接近的、能换算为该模型所支持级别的预算；若没有这样的预算，则要求关闭思考：`mistral-small-latest` 只支持 `none` 和 `high`，因此需要 16,384 或更多的 `budget_tokens`。
 
 | OpenAI 推理强度 | Anthropic `budget_tokens` |
 | --- | --- |

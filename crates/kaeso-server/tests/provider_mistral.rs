@@ -306,6 +306,16 @@ async fn fields_mistral_refuses_are_refused_before_anything_is_sent() {
             )
         )
     );
+
+    let mut body = messages(SMALL, "Is 91 prime?");
+    body["max_tokens"] = json!(4096);
+    body["thinking"] = json!({ "type": "enabled", "budget_tokens": 2048 });
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The model `mistral-small-latest` supports the effort levels `none`, `high`; a thinking budget of 2048 tokens becomes `low`, so send a `budget_tokens` of at least 16384."
+    );
     assert!(env.mock.received().is_empty());
 }
 
