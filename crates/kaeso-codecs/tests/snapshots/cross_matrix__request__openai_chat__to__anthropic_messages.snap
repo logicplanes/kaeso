@@ -308,6 +308,125 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/fireworks-ai/include-routing-matrix-doc": {
+    "message": "`include_routing_matrix` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "include_routing_matrix"
+  },
+  "providers/fireworks-ai/json-schema-quickstart-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Extract the name and age from: John is 30 years old",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "output_config": {
+        "format": {
+          "schema": {
+            "properties": {
+              "age": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "age"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/nim-chat-template-kwargs-tools-doc": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/fireworks-ai/reasoning-effort-medium-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is 25 * 37? Show your work.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3",
+      "output_config": {
+        "effort": "medium"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/router-model-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/routers/kimi-k3-fast"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/service-tier-priority-doc": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/fireworks-ai/stream-without-stream-options-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Tell me a short story",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/video-url-part-doc": {
+    "message": "`video_url content block` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video_url content block"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
