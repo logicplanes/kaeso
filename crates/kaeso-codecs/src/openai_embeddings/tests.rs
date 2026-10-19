@@ -91,6 +91,23 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
 }
 
 #[test]
+fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_without_its_newline() {
+    let err = OpenAiEmbeddings::decode_error(
+        401,
+        &HeaderList::new(),
+        b"{\"detail\":\"Invalid API Key\"}\n",
+    );
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (
+            &ErrorKind::Authentication,
+            "The provider returned HTTP 401 with a body Kaeso could not read: {\"detail\":\"Invalid API Key\"}"
+        )
+    );
+    assert_eq!(OpenAiEmbeddings::encode_error(&err).status, 401);
+}
+
+#[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
         if FOREIGN_ERROR_BODIES.contains(&name.as_str()) {

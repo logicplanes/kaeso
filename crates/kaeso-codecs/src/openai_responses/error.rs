@@ -120,7 +120,7 @@ pub(crate) fn decode(
                     kind_for(Some(status), None, None),
                     format!(
                         "The provider returned HTTP {status} with a body Kaeso could not read: {}",
-                        Short(&text, 300)
+                        Short(text.trim(), 300)
                     ),
                 )
             }
