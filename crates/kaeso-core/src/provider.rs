@@ -278,7 +278,10 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai, groq, openrouter");
+        assert_eq!(
+            ids(),
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter"
+        );
     }
 
     #[test]
