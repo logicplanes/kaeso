@@ -111,3 +111,14 @@ def test_the_github_release_job_can_run_again_on_an_existing_release():
     assert "--clobber" in release
     assert 'gh release edit "v$VERSION"' in release
     assert release.index('gh release view "v$VERSION"') < release.index('gh release create "v$VERSION"')
+
+
+def test_the_tag_job_pushes_only_the_tag_so_prod_can_take_updates_from_the_maintainer_alone():
+    tag = job("tag")
+    assert 'git push origin "refs/tags/v$VERSION"' in tag
+    assert "refs/heads/prod" not in tag.split("git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod", 1)[1]
+    validate = job("validate")
+    assert 'git merge-base --is-ancestor "$latest" HEAD' in validate
+    sync = job("sync")
+    assert "origin/prod" not in sync
+    assert 'v$VERSION^{commit}:refs/heads/dev' in sync

@@ -92,6 +92,10 @@ jobs:
             exit 1
           fi
           latest="$(git -c versionsort.suffix=- tag --list 'v*' --sort=-v:refname | head -n 1)"
+          if [[ -n "$latest" ]] && ! git merge-base --is-ancestor "$latest" HEAD; then
+            echo "::error::prod doesn't have $latest yet. Merge the tag into dev, push dev to prod, then run Release again."
+            exit 1
+          fi
           if [[ -n "$latest" ]] && ! pnpm exec semver --include-prerelease --range ">${latest#v}" "$version" >/dev/null; then
             echo "::error::$version is not newer than $latest."
             exit 1
@@ -340,10 +344,10 @@ jobs:
             made="Tagged prod's commit, which needed no release commit"
           else
             git commit --message "Release $VERSION"
-            made="Committed \"Release $VERSION\" to prod and tagged it"
+            made="Committed \"Release $VERSION\" on top of prod's commit and tagged it; prod gets it with the next push from dev"
           fi
           git tag --annotate "v$VERSION" --message "Kaeso $VERSION"
-          git push --atomic origin HEAD:refs/heads/prod "refs/tags/v$VERSION"
+          git push origin "refs/tags/v$VERSION"
           echo "$made: [v$VERSION](https://github.com/$GITHUB_REPOSITORY/tree/v$VERSION) at \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
 
   sync:
@@ -372,19 +376,19 @@ jobs:
           release="$(git rev-parse "refs/tags/v$VERSION^{commit}")"
           dev="$(git rev-parse HEAD)"
           refuse() {
-            echo "::error::$1 The release of $VERSION is complete; only dev is behind. Merge prod into dev by hand."
+            echo "::error::$1 The release of $VERSION is complete; only dev is behind. Merge v$VERSION into dev by hand."
             {
               echo "### dev does not have the release yet"
               echo
               echo "The release of $VERSION is complete: the tag, the images, the packages and the GitHub release don't depend on this job. $1"
               echo
-              echo "Merge prod into dev by hand and push dev. When the merge stops at a conflict, resolve it and finish the merge with \`git commit --no-edit\` before pushing."
+              echo "Merge the release's tag into dev by hand and push dev. When the merge stops at a conflict, resolve it and finish the merge with \`git commit --no-edit\` before pushing."
               echo
               echo '```sh'
-              echo "git fetch origin"
+              echo "git fetch origin --tags"
               echo "git switch dev"
               echo "git pull --ff-only"
-              echo "git merge --no-ff -m \"Merge release $VERSION into dev\" origin/prod"
+              echo "git merge --no-ff -m \"Merge release $VERSION into dev\" v$VERSION"
               echo "git push origin dev"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -410,7 +414,7 @@ jobs:
               echo "The release of $VERSION is complete. \`dev\` only takes changes through pull requests and its CI check, which the workflow's token can't bypass, so a repository admin brings the release in:"
               echo
               echo '```sh'
-              echo "git fetch origin"
+              echo "git fetch origin --tags"
               echo "$1"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -423,7 +427,7 @@ jobs:
             if push "$release"; then
               echo "Fast-forwarded dev to the release of $VERSION." >> "$GITHUB_STEP_SUMMARY"
             elif [[ "$pushed" == rules ]]; then
-              hand_over "git push origin origin/prod:dev"
+              hand_over "git push origin v$VERSION^{commit}:refs/heads/dev"
             else
               refuse "dev moved while this job ran, so it could not be fast-forwarded."
             fi
@@ -431,7 +435,7 @@ jobs:
             if push HEAD; then
               echo "Merged the release of $VERSION into dev as \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
             elif [[ "$pushed" == rules ]]; then
-              hand_over "git switch dev && git pull --ff-only && git merge --no-ff -m \"Merge release $VERSION into dev\" origin/prod && git push origin dev"
+              hand_over "git switch dev && git pull --ff-only && git merge --no-ff -m \"Merge release $VERSION into dev\" v$VERSION && git push origin dev"
             else
               refuse "dev moved while this job ran, so the merge could not be pushed."
             fi
