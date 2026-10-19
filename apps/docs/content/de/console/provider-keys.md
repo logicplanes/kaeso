@@ -13,16 +13,6 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Anbieter, di
 3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
 
-### Anbieter
-
-| Anbieter | ID | Wo Sie einen Schlüssel erstellen | Beginnt mit |
-| --- | --- | --- | --- |
-| OpenAI | `openai` | platform.openai.com, unter API keys | `sk-` |
-| Anthropic | `anthropic` | console.anthropic.com, unter API keys | `sk-ant-` |
-| Hugging Face | `huggingface` | huggingface.co/settings/tokens: ein Fine-grained-Token, das Inference Providers aufrufen darf | `hf_` |
-
-Hugging Face leitet jede Anfrage an einen seiner Inferenz-Anbieter weiter. Eine Modell-ID kann einen davon mit einem Suffix nennen, etwa `meta-llama/Llama-3.1-8B-Instruct:cerebras`, oder mit `:fastest` oder `:cheapest` wählen lassen; in Kaeso lautet der Name mit Präfix `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. Hat das Hugging-Face-Konto kein Guthaben mehr, scheitern seine Anfragen mit einem Abrechnungsfehler.
-
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 
 | Aktion | Recht |
@@ -32,6 +22,16 @@ Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 | Schlüssel löschen | **Anbieter-Schlüssel löschen** |
 
 Jede Aktion außer dem Löschen erfordert zusätzlich eine kürzliche Anmeldung.
+
+## Anbieter
+
+| Anbieter | ID | Wo Sie einen Schlüssel erstellen | Beginnt mit |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com, unter API keys | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com, unter API keys | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens: ein Fine-grained-Token, das Inference Providers aufrufen darf | `hf_` |
+
+Hugging Face leitet jede Anfrage an einen seiner Inferenz-Anbieter weiter. Eine Modell-ID kann einen davon mit einem Suffix nennen, etwa `meta-llama/Llama-3.1-8B-Instruct:cerebras`, oder mit `:fastest` oder `:cheapest` wählen lassen; in Kaeso lautet der Name mit Präfix `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. Trägt die Organisation eines Modells den Namen eines Anbieters, wie bei `openai/gpt-oss-120b`, und hat das Projekt auch dessen `gpt-oss-120b`, meint der Name das Modell von OpenAI; für das von Hugging Face schreiben Sie `huggingface/openai/gpt-oss-120b`. Hat das Hugging-Face-Konto kein Guthaben mehr, scheitern seine Anfragen mit einem Abrechnungsfehler.
 
 ## Schlüssel eines Projekts wählen
 

@@ -79,23 +79,29 @@ fn filter(api: &[u8]) -> Result<(String, usize), Error> {
     Ok((snapshot, models))
 }
 
+fn content_row(models: usize) -> String {
+    let mut ids: Vec<&str> = PROVIDERS.iter().map(|p| p.id).collect();
+    ids.sort_unstable();
+    let named: Vec<String> = ids.iter().map(|id| format!("`{id}`")).collect();
+    format!(
+        "| Content | the providers Kaeso calls ({}), unchanged otherwise; {models} models |",
+        named.join(", ")
+    )
+}
+
 fn readme(text: &str, stamp: &str, models: usize, digest: &str) -> Result<String, Error> {
     let (mut fetched, mut content, mut sha) = (false, false, false);
     let mut lines = Vec::new();
     for line in text.split('\n') {
-        let counted = line
-            .strip_prefix("| Content |")
-            .and_then(|_| line.rsplit_once("; "))
-            .filter(|(_, tail)| tail.ends_with(" models |"));
         if line.starts_with("| Fetched |") {
             fetched = true;
             lines.push(format!("| Fetched | {stamp} |"));
         } else if line.starts_with("| SHA-256 |") {
             sha = true;
             lines.push(format!("| SHA-256 | `{digest}` |"));
-        } else if let Some((head, _)) = counted {
+        } else if line.starts_with("| Content |") {
             content = true;
-            lines.push(format!("{head}; {models} models |"));
+            lines.push(content_row(models));
         } else {
             lines.push(line.to_owned());
         }
@@ -159,7 +165,7 @@ mod tests {
         let readme = include_str!("../../kaeso-core/data/README.md");
         let digest = hex(&Sha256::digest(shipped.as_bytes()));
         assert!(readme.contains(&format!("| SHA-256 | `{digest}` |")));
-        assert!(readme.contains(&format!("; {models} models |")));
+        assert!(readme.contains(&content_row(models)));
     }
 
     #[test]
@@ -180,7 +186,10 @@ mod tests {
     fn readme_rows_are_rewritten_and_required() {
         let text = readme(README, "2026-10-16T08:00:00Z", 70, "abc").unwrap();
         assert!(text.contains("| Fetched | 2026-10-16T08:00:00Z |\n"));
-        assert!(text.contains("unchanged otherwise; 70 models |\n"));
+        assert!(text.contains(&format!("{}\n", content_row(70))));
+        assert!(text.contains(
+            "(`anthropic`, `huggingface`, `openai`), unchanged otherwise; 70 models |\n"
+        ));
         assert!(text.contains("| SHA-256 | `abc` |\n"));
         assert!(text.contains("| Source | `x` |\n"));
         assert!(readme("# Model data\n", "x", 1, "y").is_err());

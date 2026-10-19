@@ -13,16 +13,6 @@ Provider keys are your organization's keys for the providers Kaeso calls. Kaeso 
 3. Paste the key and give it a name, such as `Production`.
 4. If the provider already has a default key, choose whether the new key becomes the default.
 
-### Providers
-
-| Provider | Id | Where to create a key | Starts with |
-| --- | --- | --- | --- |
-| OpenAI | `openai` | platform.openai.com, under API keys | `sk-` |
-| Anthropic | `anthropic` | console.anthropic.com, under API keys | `sk-ant-` |
-| Hugging Face | `huggingface` | huggingface.co/settings/tokens: a fine-grained token that may make calls to Inference Providers | `hf_` |
-
-Hugging Face routes each request to one of its inference providers. A model id can name one with a suffix, such as `meta-llama/Llama-3.1-8B-Instruct:cerebras`, or pick by `:fastest` or `:cheapest`; in Kaeso, the prefixed name is `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. When the Hugging Face account has no credits left, its requests fail with a billing error.
-
 Each action on provider keys needs its own right:
 
 | Action | Right |
@@ -32,6 +22,16 @@ Each action on provider keys needs its own right:
 | Delete a key | **Delete provider keys** |
 
 Every action except deleting also needs a recent sign-in.
+
+## Providers
+
+| Provider | Id | Where to create a key | Starts with |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com, under API keys | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com, under API keys | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens: a fine-grained token that may make calls to Inference Providers | `hf_` |
+
+Hugging Face routes each request to one of its inference providers. A model id can name one with a suffix, such as `meta-llama/Llama-3.1-8B-Instruct:cerebras`, or pick by `:fastest` or `:cheapest`; in Kaeso, the prefixed name is `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. When a model's organization has the name of a provider, as in `openai/gpt-oss-120b`, and the project also has that provider's `gpt-oss-120b`, the name means OpenAI's model; write `huggingface/openai/gpt-oss-120b` for Hugging Face's. When the Hugging Face account has no credits left, its requests fail with a billing error.
 
 ## Choose which key a project uses
 

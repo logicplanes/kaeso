@@ -985,4 +985,35 @@ async fn hugging_face_models_answer_apps_of_either_format() {
     assert_eq!(r.status, StatusCode::PAYMENT_REQUIRED, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "billing_error");
     assert_eq!(r.json()["error"]["message"], credits);
+
+    let sent = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": model, "messages": [{ "role": "user", "content": "Hi" }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "invalid_request_error");
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("cannot count tokens"),
+        "{}",
+        r.text()
+    );
+    let r = call(
+        &env,
+        "/v1/responses/input_tokens",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": model, "input": "Hi" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "model");
+    assert_eq!(env.mock.received().len(), sent);
 }

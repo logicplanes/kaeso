@@ -58,9 +58,7 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Hugging Face API key" })).toBeVisible();
-    expect(
-      within(dialog).getByText("Create a fine-grained token at huggingface.co/settings/tokens that may call Inference Providers; it starts with hf_."),
-    ).toBeInTheDocument();
+    expect(within(dialog).getByText("Create a token at hf.co/settings/tokens that may call Inference Providers; it starts with hf_.")).toBeInTheDocument();
     const secret = within(dialog).getByLabelText("Hugging Face API key");
     expect(secret).toHaveAttribute("placeholder", "hf_…");
     await user.type(secret, "hf_123");
@@ -68,9 +66,7 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
     expect(await notifications().findByText("Router is the Hugging Face default")).toBeInTheDocument();
-    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
-      { provider: "huggingface", name: "Router", secret: "hf_123", make_default: false },
-    ]);
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "huggingface", name: "Router", secret: "hf_123", make_default: false }]);
   });
 
   it("says what the key step still needs", async () => {

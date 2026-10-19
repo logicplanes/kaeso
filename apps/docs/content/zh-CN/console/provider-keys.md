@@ -13,16 +13,6 @@ order: 3
 3. 粘贴密钥并为其命名，例如 `Production`。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
 
-### 服务商
-
-| 服务商 | ID | 在哪里创建密钥 | 开头 |
-| --- | --- | --- | --- |
-| OpenAI | `openai` | platform.openai.com 的 API keys 页面 | `sk-` |
-| Anthropic | `anthropic` | console.anthropic.com 的 API keys 页面 | `sk-ant-` |
-| Hugging Face | `huggingface` | huggingface.co/settings/tokens：可调用 Inference Providers 的细粒度令牌 | `hf_` |
-
-Hugging Face 会把每个请求转发给其某个推理服务商。模型 ID 可以用后缀指定服务商，例如 `meta-llama/Llama-3.1-8B-Instruct:cerebras`，也可以用 `:fastest` 或 `:cheapest` 让其选择；在 Kaeso 中，带前缀的名称为 `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`。Hugging Face 账户的额度用完后，其请求会以计费错误失败。
-
 对服务商密钥的每种操作都需要相应的权限：
 
 | 操作 | 权限 |
@@ -32,6 +22,16 @@ Hugging Face 会把每个请求转发给其某个推理服务商。模型 ID 可
 | 删除密钥 | **删除服务商密钥** |
 
 除删除外，每项操作还需要近期登录。
+
+## 服务商
+
+| 服务商 | ID | 在哪里创建密钥 | 开头 |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com 的 API keys 页面 | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com 的 API keys 页面 | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens：可调用 Inference Providers 的细粒度令牌 | `hf_` |
+
+Hugging Face 会把每个请求转发给其某个推理服务商。模型 ID 可以用后缀指定服务商，例如 `meta-llama/Llama-3.1-8B-Instruct:cerebras`，也可以用 `:fastest` 或 `:cheapest` 让其选择；在 Kaeso 中，带前缀的名称为 `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`。如果模型所属组织的名称与某个服务商相同，例如 `openai/gpt-oss-120b`，而项目中也有该服务商的 `gpt-oss-120b`，则该名称指 OpenAI 的模型；要使用 Hugging Face 的模型，请写 `huggingface/openai/gpt-oss-120b`。Hugging Face 账户的额度用完后，其请求会以计费错误失败。
 
 ## 选择项目使用的密钥
 
