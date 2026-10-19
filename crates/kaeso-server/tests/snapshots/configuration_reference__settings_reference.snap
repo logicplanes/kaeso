@@ -16,7 +16,7 @@ expression: settings_reference()
 | `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | text, secret | required | ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Required. |
 | `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | text | `kaeso` | ClickHouse database for request logs; created when missing. |
 | `KAESO_VALKEY_URL` | `valkey.url` | text, secret | required | Valkey (or Redis) URL, e.g. `redis://valkey:6379`. Required. |
-| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, for sharing one Valkey between installs. |
+| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, for sharing one Valkey between installs that trust each other. |
 | `KAESO_MASTER_KEYS` | `master_keys` | text, secret | required | Master keys as `id:base64,...`, active key first. Required. Generate one with `kaeso master-key generate`. |
 | `KAESO_SMTP_HOST` | `smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
 | `KAESO_SMTP_PORT` | `smtp.port` | integer | `587` | SMTP port. |
