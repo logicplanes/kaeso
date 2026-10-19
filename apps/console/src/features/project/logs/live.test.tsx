@@ -95,5 +95,9 @@ describe("live updates", () => {
     await tick();
     expect(view.result.current.rows.map((r) => r.id)).toEqual(["req_10", "req_11", "req_12", "req_13", "req_14"]);
     expect(view.result.current.cut).toBe(true);
+
+    await tick();
+    expect(requests("GET", LOGS)).toHaveLength(10);
+    expect(view.result.current.rows.map((r) => r.id)).toEqual(["req_10", "req_11", "req_12", "req_13", "req_14"]);
   });
 });

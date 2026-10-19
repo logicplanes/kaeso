@@ -85,7 +85,7 @@ export function useLiveLogs({
       if (!polling) return;
       const { ids } = shown();
       const incoming = newest.rows.filter((r) => !ids.has(r.id));
-      if (!incoming.length && newest.complete) return;
+      if (!incoming.length) return;
       const scrolled = !!scrollParentOf(scroller.current)?.scrollTop;
       setState((s) => {
         const prev = s.key === filterKey ? s : { key: filterKey, ...EMPTY };
