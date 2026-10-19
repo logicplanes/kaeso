@@ -140,7 +140,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens`（包括推理） |
+| `completion_tokens` | `output_tokens`（包括推理；若 `total_tokens` 等于 `prompt_tokens + completion_tokens + reasoning_tokens`，即 SpaceX 的计法，则再加上推理 Token） |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | 推导得出（`prompt_tokens + completion_tokens`）；不单独存储，保留在 `raw` 中 |
 | `prompt_tokens_details.audio_tokens`、`text_tokens`、`image_tokens`，`completion_tokens_details.audio_tokens`、`text_tokens`、`accepted_prediction_tokens`、`rejected_prediction_tokens` | 只在 `raw` 中（类型化总数的细分） |
@@ -272,7 +272,7 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 |---|---|---|
 | `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
 | `citations`、`system_fingerprint`、`service_tier` | extras | 发往其他方言时省略。 |
-| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。 |
+| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。SpaceX 的 `completion_tokens` 不含推理，推理计入 `total_tokens`，因此输出为 `completion_tokens` 加 `reasoning_tokens`。 |
 | `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头：`Authentication`。 |
 | 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。 |
 | `search_parameters`（请求） | extras | 实时搜索已弃用，SpaceX 返回 410；应用会收到这个 410。 |

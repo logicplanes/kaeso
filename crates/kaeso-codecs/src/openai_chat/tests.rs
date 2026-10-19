@@ -648,6 +648,32 @@ fn usage_splits_cached_and_reasoning_tokens() {
 }
 
 #[test]
+fn reasoning_counted_beside_completion_tokens_is_output() {
+    let r = decode_response_fixture("providers/xai/recorded-reasoning-content");
+    assert_eq!(
+        (r.usage.total_input_tokens(), r.usage.output_tokens),
+        (206, 179)
+    );
+    assert_eq!(r.usage.reasoning_tokens, Some(178));
+    let (_, body) = fixtures(D, "responses", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/xai/recorded-reasoning-content")
+        .unwrap();
+    let recorded: Value = serde_json::from_slice(&body).unwrap();
+    let out: Value = serde_json::from_slice(
+        &OpenAiChat::encode_response(
+            &Reply::Generate(r),
+            &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(out["usage"], recorded["usage"]);
+    let within = decode_response_fixture("reasoning-cached-usage");
+    assert_eq!(within.usage.output_tokens, 1186);
+}
+
+#[test]
 fn response_blocks_and_stop_reasons_are_typed() {
     let r = decode_response_fixture("tools-parallel");
     assert_eq!(r.stop, StopReason::ToolUse);

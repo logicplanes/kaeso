@@ -140,7 +140,7 @@ Die KPP-Felder folgen der Konvention unter [Nutzung](cross-format.md#nutzung).
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens` (einschließlich Reasoning) |
+| `completion_tokens` | `output_tokens` (einschließlich Reasoning; ist `total_tokens` gleich `prompt_tokens + completion_tokens + reasoning_tokens`, wie SpaceX zählt, kommen die Reasoning-Token hinzu) |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | abgeleitet (`prompt_tokens + completion_tokens`); nicht eigens gespeichert, in `raw` erhalten |
 | `prompt_tokens_details.audio_tokens`, `text_tokens`, `image_tokens`, `completion_tokens_details.audio_tokens`, `text_tokens`, `accepted_prediction_tokens`, `rejected_prediction_tokens` | nur `raw` (Aufschlüsselungen der typisierten Summen) |
@@ -272,7 +272,7 @@ Quellen: die [Chat-Completions-Referenz](https://docs.x.ai/developers/rest-api-r
 |---|---|---|
 | `message.reasoning_content`, `delta.reasoning_content` | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
 | `citations`, `system_fingerprint`, `service_tier` | Extras | Gegenüber anderen Dialekten weggelassen. |
-| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` und `image_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie oben typisiert. |
+| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` und `image_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie oben typisiert. SpaceX lässt das Reasoning aus `completion_tokens` heraus und zählt es in `total_tokens`, daher ist die Ausgabe `completion_tokens` plus `reasoning_tokens`. |
 | `{"error": "<message>"}`, bei einem 400 mit `"code": "invalid-argument"` | `KppError` | Der String ist die Meldung, und Apps erhalten sie in der OpenAI-Fehlerform mit dem Status von SpaceX. Ein falscher Schlüssel ist ein 400, dessen Meldung mit `Incorrect API key provided` beginnt: `Authentication`. |
 | `presence_penalty` für ein Reasoning-Modell, `reasoning_effort` für ein Modell ohne Reasoning | | SpaceX antwortet mit 400, und dieser Fehler erreicht die App. |
 | `search_parameters` (Anfrage) | Extras | SpaceX antwortet mit 410, weil die Live-Suche abgekündigt ist; die App erhält den 410. |

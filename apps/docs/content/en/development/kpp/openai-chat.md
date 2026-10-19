@@ -140,7 +140,7 @@ The KPP fields follow the [usage](cross-format.md#usage) convention.
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens` (includes reasoning) |
+| `completion_tokens` | `output_tokens` (includes reasoning; when `total_tokens` is `prompt_tokens + completion_tokens + reasoning_tokens`, as SpaceX counts, the reasoning tokens are added to it) |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | derived (`prompt_tokens + completion_tokens`); not stored separately, kept in `raw` |
 | `prompt_tokens_details.audio_tokens`, `text_tokens`, `image_tokens`, `completion_tokens_details.audio_tokens`, `text_tokens`, `accepted_prediction_tokens`, `rejected_prediction_tokens` | `raw` only (breakdowns of the typed totals) |
@@ -272,7 +272,7 @@ Sources: xAI's [Chat Completions reference](https://docs.x.ai/developers/rest-ap
 |---|---|---|
 | `message.reasoning_content`, `delta.reasoning_content` | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
 | `citations`, `system_fingerprint`, `service_tier` | extras | Left out towards other dialects. |
-| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | `raw` usage | The token counts are typed as above. |
+| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | `raw` usage | The token counts are typed as above. SpaceX leaves reasoning out of `completion_tokens` and counts it in `total_tokens`, so the output is `completion_tokens` plus `reasoning_tokens`. |
 | `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400 | `KppError` | The string is the message, and apps get it in the OpenAI error shape with SpaceX's status. A wrong key is a 400 whose message starts with `Incorrect API key provided`: `Authentication`. |
 | `presence_penalty` for a reasoning model, `reasoning_effort` for a model without reasoning | | SpaceX answers 400, which reaches the app as its error. |
 | `search_parameters` (request) | extras | SpaceX answers 410 because live search is deprecated; the app gets the 410. |
