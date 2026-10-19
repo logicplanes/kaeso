@@ -229,3 +229,42 @@ async fn xai_errors_reach_each_app_in_its_own_error_format() {
         "Could not decrypt the provided encrypted_content. Ensure the value is the unmodified encrypted_content from a previous response."
     );
 }
+
+#[tokio::test]
+async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
+    let env = env().await;
+    env.mock.clear();
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": "grok-4.3",
+            "messages": [{ "role": "user", "content": "Hello" }],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["type"], "error");
+    assert_eq!(body["error"]["type"], "invalid_request_error");
+    assert_eq!(
+        body["error"]["message"],
+        "The model `grok-4.3` cannot count tokens."
+    );
+
+    let r = call(
+        &env,
+        "/v1/responses/input_tokens",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "grok-4.3", "input": "Hello" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let error = &r.json()["error"];
+    assert_eq!(error["type"], "invalid_request_error");
+    assert_eq!(error["message"], "The model `grok-4.3` cannot count tokens.");
+    assert!(env.mock.received().is_empty());
+}

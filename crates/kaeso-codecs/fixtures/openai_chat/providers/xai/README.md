@@ -11,7 +11,7 @@ Sources, read 2026-10-19:
 
 Every reply, stream and error below is a live recording made with `cargo xtask record` on 2026-10-19 (see `RECORDED.md` in each folder), with `grok-4.3` and `grok-4.20-0309-non-reasoning`. The model listing, the retrieved model and `errors/recorded-invalid-api-key.json` were recorded the same day with a plain `GET`/`POST`; the invalid key was a placeholder. xAI has no embeddings endpoint and no token-count endpoint in either dialect's shape (`/v1/tokenize-text` takes `{model, text}`; `/v1/responses/input_tokens` answers 405), so there are no embedding or count fixtures.
 
-xAI sends errors as `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400. The OpenAI codecs read the string as the message and answer apps in the OpenAI error shape, so each error's `.meta.json` has an `encoded` body that the round trip compares against. A wrong key is a 400 `invalid-argument`, not a 401, so it decodes as `InvalidRequest`.
+xAI sends errors as `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400. The OpenAI codecs read the string as the message and answer apps in the OpenAI error shape, so each error's `.meta.json` has an `encoded` body that the round trip compares against. A wrong key is a 400 `invalid-argument`, not a 401. Its message starts with `Incorrect API key provided`, which both OpenAI codecs decode as `Authentication`, and apps still get the 400.
 
 | file | what it covers | provenance |
 |---|---|---|

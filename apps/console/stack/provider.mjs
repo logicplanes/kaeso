@@ -77,6 +77,7 @@ const ERRORS = {
 const MODELS = {
   openai: ["gpt-6-sol", "gpt-6-luna", "gpt-5.6", "gpt-5.4-mini", "gpt-5.4-nano", "text-embedding-3-small", "text-embedding-3-large"],
   anthropic: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-haiku-4-5"],
+  xai: ["grok-4.7", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -384,13 +385,14 @@ function embeddings(res, body) {
   });
 }
 
-function models(res, dialect, path) {
+function models(res, dialect, path, headers) {
   const anthropic = dialect === "anthropic_messages";
-  const list = anthropic ? MODELS.anthropic : MODELS.openai;
+  const xai = !anthropic && /^Bearer xai-/.test(headers.authorization ?? "");
+  const list = anthropic ? MODELS.anthropic : xai ? MODELS.xai : MODELS.openai;
   const describe = (model) =>
     anthropic
       ? { type: "model", id: model, display_name: model, created_at: "2026-01-01T00:00:00Z" }
-      : { id: model, object: "model", created: 1767225600, owned_by: "openai" };
+      : { id: model, object: "model", created: 1767225600, owned_by: xai ? "xai" : "openai" };
   const one = path.slice("/v1/models/".length);
   if (one) return list.includes(one) ? sendJson(res, 200, describe(one)) : sendError(res, dialect, "invalid-request");
   const data = list.map(describe);
@@ -413,7 +415,7 @@ async function handle(req, res) {
   if (delay) await sleep(delay);
   const failure = marker(raw, "error");
   if (failure !== undefined) return sendError(res, dialect, failure);
-  if (req.method === "GET" && path.startsWith("/v1/models")) return models(res, dialect, path);
+  if (req.method === "GET" && path.startsWith("/v1/models")) return models(res, dialect, path, req.headers);
   let body;
   try {
     body = JSON.parse(raw || "{}");
