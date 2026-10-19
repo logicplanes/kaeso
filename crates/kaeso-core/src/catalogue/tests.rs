@@ -287,6 +287,40 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn model_ids_with_slashes_resolve_natively_and_prefixed() {
+    let model = entry("fireworks-ai", "accounts/fireworks/models/gpt-oss-120b");
+    let router = entry("fireworks-ai", "accounts/fireworks/routers/kimi-latest");
+    let gpt = entry("openai", "gpt-4o");
+    let entries = vec![gpt.clone(), model.clone(), router.clone()];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(
+        r("accounts/fireworks/models/gpt-oss-120b"),
+        Ok((model.id, Via::Native))
+    );
+    assert_eq!(
+        r("fireworks-ai/accounts/fireworks/models/gpt-oss-120b"),
+        Ok((model.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r("fireworks-ai/accounts/fireworks/routers/kimi-latest"),
+        Ok((router.id, Via::Prefixed))
+    );
+    assert!(matches!(
+        r("accounts/fireworks/models/unknown"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+    assert!(matches!(
+        r("openai/accounts/fireworks/models/gpt-oss-120b"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+    assert!(shadows(
+        "fireworks-ai/accounts/fireworks/models/gpt-oss-120b",
+        &entries,
+        &snapshot()
+    ));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

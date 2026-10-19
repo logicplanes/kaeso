@@ -50,6 +50,28 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("adds a Fireworks AI key from the provider picker", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "fireworks-ai", name: "Inference", is_default: true }));
+    const { user, dialog, onClose } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /Fireworks AI/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Fireworks AI API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at app.fireworks.ai under API keys.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Fireworks AI API key");
+    expect(secret).toHaveAttribute("placeholder", "…");
+    await user.type(secret, "fw-test-key");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Inference");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Inference is the Fireworks AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "fireworks-ai", name: "Inference", secret: "fw-test-key", make_default: false },
+    ]);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open({ provider: "anthropic" });
     const secret = within(dialog).getByLabelText("Anthropic API key");

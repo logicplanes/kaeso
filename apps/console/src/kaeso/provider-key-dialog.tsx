@@ -9,16 +9,20 @@ import { toast } from "~/shell/toast";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
-const KEY_SITES: Record<string, { site: string; prefix: string }> = {
+const KEY_SITES: Record<string, { site: string; prefix?: string }> = {
   openai: { site: "platform.openai.com", prefix: "sk-" },
   anthropic: { site: "console.anthropic.com", prefix: "sk-ant-" },
+  "fireworks-ai": { site: "app.fireworks.ai" },
 };
 function keyHelp(provider: string): string {
   const where = KEY_SITES[provider];
-  return where
-    ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", where)
-    : t("kaeso.providerKey.help", "Paste the provider's API key.");
+  if (!where) return t("kaeso.providerKey.help", "Paste the provider's API key.");
+  const { site, prefix } = where;
+  return prefix
+    ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", { site, prefix })
+    : t("kaeso.providerKey.whereSite", "Create one at {site} under API keys.", { site });
 }
+const keyPlaceholder = (provider: string) => `${KEY_SITES[provider] ? (KEY_SITES[provider].prefix ?? "") : "sk-"}…`;
 
 export function ProviderKeyDialog({
   org,
@@ -86,7 +90,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={`${KEY_SITES[provider]?.prefix ?? "sk-"}…`}
+          placeholder={keyPlaceholder(provider)}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"

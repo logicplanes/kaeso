@@ -215,11 +215,33 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
     Some(rest.get(..end)?.trim_start_matches('='))
 }
 
+fn route(path: &str) -> &str {
+    path.match_indices("/v1")
+        .map(|(i, _)| i)
+        .find(|&i| {
+            path.get(i + 3..)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+        })
+        .and_then(|i| path.get(i..))
+        .unwrap_or(path)
+}
+
+fn fixture_file(dir: &Path, folder: &str, name: &str, extension: &str) -> PathBuf {
+    let file = |dir: PathBuf, stem: &str| dir.join(folder).join(format!("{stem}.{extension}"));
+    match name
+        .strip_prefix("providers/")
+        .and_then(|rest| rest.split_once('/'))
+    {
+        Some((id, stem)) => file(dir.join("providers").join(id), stem),
+        None => file(dir.to_path_buf(), name),
+    }
+}
+
 fn error_response(dir: &Path, name: &str) -> Response {
-    let body = std::fs::read(dir.join("errors").join(format!("{name}.json")))
+    let body = std::fs::read(fixture_file(dir, "errors", name, "json"))
         .unwrap_or_else(|e| panic!("mock: no error fixture {name}: {e}"));
     let meta: serde_json::Value =
-        std::fs::read(dir.join("errors").join(format!("{name}.meta.json")))
+        std::fs::read(fixture_file(dir, "errors", name, "meta.json"))
             .ok()
             .and_then(|m| serde_json::from_slice(&m).ok())
             .unwrap_or_default();
@@ -275,6 +297,7 @@ async fn handle(
             body: body.clone(),
         });
     }
+    let path = route(&path).to_owned();
     let anthropic = path.starts_with("/v1/messages")
         || (path.starts_with("/v1/models") && headers.contains_key("x-api-key"));
     let dialect = if anthropic {
@@ -373,7 +396,7 @@ async fn handle(
             "openai_responses" => "text-basic-stream".into(),
             _ => "stream-include-usage".into(),
         });
-        let bytes = std::fs::read(dir.join("streams").join(format!("{name}.sse")))
+        let bytes = std::fs::read(fixture_file(&dir, "streams", &name, "sse"))
             .unwrap_or_else(|e| panic!("mock: no stream fixture {dialect}/{name}: {e}"));
         let mode = if marker(&text, "stall").is_some() {
             StreamMode::Stall
@@ -405,8 +428,12 @@ async fn handle(
             } else {
                 "string-input"
             };
-            dir.join("responses")
-                .join(format!("{}.json", fixture.as_deref().unwrap_or(default)))
+            fixture_file(
+                &dir,
+                "responses",
+                fixture.as_deref().unwrap_or(default),
+                "json",
+            )
         }
         _ => {
             let default = match dialect {
@@ -414,8 +441,12 @@ async fn handle(
                 "openai_responses" => "text-input-string",
                 _ => "plain-developer-string",
             };
-            dir.join("responses")
-                .join(format!("{}.json", fixture.as_deref().unwrap_or(default)))
+            fixture_file(
+                &dir,
+                "responses",
+                fixture.as_deref().unwrap_or(default),
+                "json",
+            )
         }
     };
     json_file(&file)

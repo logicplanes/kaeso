@@ -166,6 +166,16 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
     },
+    Provider {
+        id: "fireworks-ai",
+        name: "Fireworks AI",
+        default_base_url: "https://api.fireworks.ai/inference",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+    },
 ];
 
 const _: () = {
@@ -228,7 +238,27 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic");
+        assert_eq!(ids(), "openai, anthropic, fireworks-ai");
+    }
+
+    #[test]
+    fn fireworks_ai_speaks_openai_chat_and_embeddings_under_inference() {
+        let fireworks = provider("fireworks-ai").unwrap();
+        assert_eq!(fireworks.name, "Fireworks AI");
+        assert_eq!(
+            fireworks.default_base_url,
+            "https://api.fireworks.ai/inference"
+        );
+        assert_eq!(
+            (fireworks.auth, fireworks.generation, fireworks.count_tokens),
+            (AuthStyle::Bearer, DialectId::OpenAiChat, None)
+        );
+        assert_eq!(fireworks.embeddings, Some(DialectId::OpenAiEmbeddings));
+        assert_eq!(
+            fireworks.dialects,
+            [DialectId::OpenAiChat, DialectId::OpenAiEmbeddings]
+        );
+        assert_eq!(fireworks.provider_id().env_segment(), "FIREWORKS_AI");
     }
 
     #[test]
@@ -291,7 +321,7 @@ mod tests {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic"
+            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, fireworks-ai"
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),
@@ -302,7 +332,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic"]
+            ["openai", "anthropic", "fireworks-ai"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),
