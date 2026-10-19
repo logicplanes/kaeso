@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Empty, InsetContent, LimitMeter, List, ModelLabel, Section, Segmented, StatusCode, Table, Text } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { LimitView, UsageRow } from "~/api/generated/types";
-import { allKeysQuery, keysPageQuery } from "~/api/queries/keys";
+import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
 import { recentErrorsQuery } from "~/api/queries/recent-errors";
 import { errorKindLabel, limitKindLabel, periodLabel } from "~/format/labels";
@@ -189,8 +189,8 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
   const limits = useQuery({ ...limitsQuery(org, project, { level: "project" }), enabled: rights.has("limits.view") });
   const errors = useQuery({ ...recentErrorsQuery(org, project), enabled: rights.has("logs.metadata.view") });
   const recent = errors.data ?? [];
-  const keys = useQuery({ ...keysPageQuery(org, project), enabled: rights.has("keys.all.view") });
-  const keyCount = keys.data ? `${formatNumber(keys.data.data.filter((k) => k.state !== "archived").length)}${keys.data.has_more ? "+" : ""}` : undefined;
+  const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
+  const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
   const go = (href: string) => void navigate({ href });
   const settled = (q: { isPending: boolean }, on: boolean) => !on || !q.isPending;
   if (!settled(limits, rights.has("limits.view")) || !settled(errors, rights.has("logs.metadata.view")) || !settled(keys, rights.has("keys.all.view")))

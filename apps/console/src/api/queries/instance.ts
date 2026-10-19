@@ -14,40 +14,26 @@ import type {
 } from "../generated/types";
 import { allPages, nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
-export const instanceUsersQuery = (search: string, state: string | undefined) =>
-  infiniteQueryOptions({
-    queryKey: ["instance", "users", { search, state }],
-    initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam, signal }) =>
-      data(
-        await api.GET("/platform/v1/instance/users", {
-          params: { query: { limit: 100, ...(search ? { search } : {}), ...(state ? { state } : {}), ...(pageParam ? { after: pageParam } : {}) } },
-          signal,
-        }),
-      ),
-    getNextPageParam: nextPageParam,
-    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
-  });
-
 export const instanceUserQuery = (user: string) =>
   queryOptions({
     queryKey: ["instance", "users", "one", user],
     queryFn: async (): Promise<InstanceUserView> => data(await api.GET("/platform/v1/instance/users/{user}", { params: { path: { user } } })),
   });
 
-export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created") =>
+export const instanceUsersQuery = (search: string, state: string | undefined) =>
   infiniteQueryOptions({
-    queryKey: ["instance", "orgs", { search, sort }],
+    queryKey: ["instance", "users", { search, state }],
     initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam, signal }) =>
-      data(
-        await api.GET("/platform/v1/instance/orgs", {
-          params: {
-            query: { limit: 100, ...(search ? { search } : {}), ...(sort === "deletion" ? { sort } : {}), ...(pageParam ? { after: pageParam } : {}) },
-          },
+    queryFn: async ({ pageParam, signal, client }) => {
+      const page = data(
+        await api.GET("/platform/v1/instance/users", {
+          params: { query: { limit: 100, ...(search ? { search } : {}), ...(state ? { state } : {}), ...(pageParam ? { after: pageParam } : {}) } },
           signal,
         }),
-      ),
+      );
+      for (const user of page.data) client.setQueryData(instanceUserQuery(user.id).queryKey, user);
+      return page;
+    },
     getNextPageParam: nextPageParam,
     refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
@@ -56,6 +42,26 @@ export const instanceOrgQuery = (org: string) =>
   queryOptions({
     queryKey: ["instance", "orgs", "one", org],
     queryFn: async (): Promise<InstanceOrgView> => data(await api.GET("/platform/v1/instance/orgs/{org}", { params: { path: { org } } })),
+  });
+
+export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created") =>
+  infiniteQueryOptions({
+    queryKey: ["instance", "orgs", { search, sort }],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam, signal, client }) => {
+      const page = data(
+        await api.GET("/platform/v1/instance/orgs", {
+          params: {
+            query: { limit: 100, ...(search ? { search } : {}), ...(sort === "deletion" ? { sort } : {}), ...(pageParam ? { after: pageParam } : {}) },
+          },
+          signal,
+        }),
+      );
+      for (const org of page.data) client.setQueryData(instanceOrgQuery(org.id).queryKey, org);
+      return page;
+    },
+    getNextPageParam: nextPageParam,
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
 export const instanceOrgUsageQuery = (org: string) =>

@@ -76,4 +76,23 @@ describe("readSse", () => {
     }
     expect(out).toEqual([{ event: "message", data: "first" }]);
   });
+
+  it("closes the stream when the reader stops before it ends, even when closing fails", async () => {
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode("data: first\n\ndata: second\n\n"));
+      },
+      cancel() {
+        cancelled = true;
+        throw new Error("can't cancel");
+      },
+    });
+    for await (const e of readSse(body)) {
+      expect(e.data).toBe("first");
+      break;
+    }
+    expect(cancelled).toBe(true);
+    expect(body.locked).toBe(false);
+  });
 });
