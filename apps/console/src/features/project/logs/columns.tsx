@@ -44,7 +44,7 @@ export const columnLabel = (id: ColumnId): string =>
     request: t("logs.column.requestId", "Request id"),
     agent: t("logs.column.userAgent", "User agent"),
   })[id];
-const DAY_TIME_WIDTH: Record<Locale, number> = { en: 160, de: 168, "zh-CN": 176 };
+const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
 const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => c !== "request" && c !== "agent");
 
 const COLUMNS_KEY = "kaeso:logs-columns";
@@ -70,7 +70,7 @@ export function logColumns({ spansDays, keyName, partyName }: { spansDays: boole
     });
   return {
     time: col.custom(
-      { id: "time", header: columnLabel("time"), size: spansDays ? DAY_TIME_WIDTH[locale()] : 112, priority: 1 },
+      { id: "time", header: columnLabel("time"), size: spansDays ? DAY_TIME_WIDTH[locale()] : 100, priority: 1 },
       (r: LogView) => r.started_at,
       (v) => (
         <Text tabular>
