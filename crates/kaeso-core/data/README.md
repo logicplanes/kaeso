@@ -10,7 +10,7 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 |---|---|
 | Source | `https://models.dev/api.json` |
 | Fetched | 2026-10-19T02:15:51Z |
-| Content | the providers Kaeso calls (`anthropic`, `openai`), unchanged otherwise; 87 models |
+| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `openai`, `xai`), unchanged otherwise; 87 models |
 | SHA-256 | `3f9b9a275aa74e80514e84658c72eaa0e5041b108397e09a673b3a366d26ecc7` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
@@ -33,7 +33,7 @@ Fields models.dev does not have. A catalogue entry's effective value is its over
 | `adaptive_thinking` | Anthropic models: whether `thinking: {type: "adaptive"}` is accepted. `false` makes kpp turn an effort from another format into a thinking budget. |
 | `forced_tool_choice` | `false` for models that refuse a forced tool choice (Anthropic `tool_choice` `any` or `tool`); the gateway then refuses `required`, `any` or a named tool before calling the provider. Absent means the model takes one. |
 | `efforts` | Supported effort levels, used when models.dev lists none. |
-| `egress_dialect` | The format Kaeso sends: for OpenAI models `openai_responses` (the default), `openai_chat` or `openai_embeddings`. |
+| `egress_dialect` | The format Kaeso sends: one of the provider's `dialects`, by default its `generation` dialect (`openai_responses` for OpenAI). |
 
 Every entry comes from one of these sources, checked on 2026-10-11:
 
