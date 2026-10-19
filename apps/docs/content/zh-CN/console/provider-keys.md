@@ -21,9 +21,9 @@ order: 3
 | SpaceX | console.x.ai（xAI 控制台） | `xai-` |
 | Together AI | api.together.ai | `tgp_v1_` |
 | Groq | console.groq.com | `gsk_` |
-| OpenRouter | openrouter.ai 的 **Settings** 中的 **API Keys** 页面 | `sk-or-v1-` |
+| OpenRouter | openrouter.ai 的 **Settings** › **API Keys** | `sk-or-v1-` |
 
-OpenRouter 将请求转发给众多服务商的模型。它的模型 ID 包含模型的开发者，例如 `anthropic/claude-sonnet-4.5`。请以 `openrouter/anthropic/claude-sonnet-4.5` 的形式调用，这样请求不会发往该开发者自己的服务商；调用方法见[请求如何指定模型](models-and-aliases.md#请求如何指定模型)。Kaeso 按目录中的价格计算 OpenRouter 请求的费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。
+OpenRouter 将请求转发给众多服务商的模型。它的模型 ID 包含模型厂商，例如 `anthropic/claude-sonnet-4.5`。请以 `openrouter/anthropic/claude-sonnet-4.5` 的形式调用，这样请求不会发往该厂商自己的服务商；参见[请求如何指定模型](models-and-aliases.md#请求如何指定模型)。Kaeso 按目录中的价格计算 OpenRouter 请求的费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。OpenRouter 列出模型时不检查密钥，因此**检查可用性**无法发现错误的 OpenRouter 密钥；使用该密钥的第一个请求会报告密钥被拒绝。
 
 对服务商密钥的每种操作都需要相应的权限：
 

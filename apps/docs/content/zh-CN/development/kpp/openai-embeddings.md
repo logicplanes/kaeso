@@ -77,3 +77,7 @@ order: 7
 ### Together AI
 
 来源：Together AI 的 [OpenAI 兼容性说明](https://docs.together.ai/docs/inference/openai-compatibility)（`embeddings.create` 对应 `POST /v1/embeddings`）和 [Serverless 模型](https://docs.together.ai/docs/serverless-models)（2026-10-19 阅读），以及 `fixtures/openai_embeddings/providers/togetherai/`。Together AI 只在专用端点上提供嵌入模型；没有专用端点的密钥会收到 400 `model_not_available`。其回复没有 `usage`，本编解码器本来就能读取这种回复。
+
+### OpenRouter
+
+来源：OpenRouter 的 [Embeddings 参考](https://openrouter.ai/docs/api_reference/embeddings)（2026-10-19 阅读），以及 `fixtures/openai_embeddings/providers/openrouter/` 中使用 `nvidia/nemotron-3-embed-1b:free` 的实时录制。回复中的 `model` 是实际提供服务的模型，而不是请求的 ID；`usage.cost`、`usage.is_byok`、`usage.cost_details` 以及顶层的 `provider` 和 `id` 保留在 extras 中，原样往返。上游服务商的错误以 400 返回，其 `message` 以文本形式包含该服务商的错误体。

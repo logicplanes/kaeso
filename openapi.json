@@ -15803,7 +15803,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`, `togetherai` or `groq`."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`, `togetherai`, `groq` or `openrouter`."
           },
           "secret": {
             "type": "string",

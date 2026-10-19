@@ -306,3 +306,18 @@ Quellen: die [API-Referenz](https://console.groq.com/docs/api-reference) und der
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` der Nutzung | Die Token-Zahlen, `reasoning_tokens` eingeschlossen, sind wie oben typisiert. |
 | `usage` im Chunk mit `finish_reason`, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
 | zusätzliche Modellfelder (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` und weitere) | Modell-Extras | |
+
+### OpenRouter
+
+Quellen: die [API-Referenz](https://openrouter.ai/docs/api_reference/overview), [Streaming](https://openrouter.ai/docs/api_reference/streaming), [Fehler und Debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging) und [Reasoning-Token](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens) von OpenRouter, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/openrouter/`, alle mit `:free`-Modellen.
+
+| OpenRouter-Feld | KPP | Hinweise |
+|---|---|---|
+| `provider`, `models`, `transforms`, `usage`, `reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning`, `message.reasoning_details` und dasselbe in Deltas | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `provider`, `native_finish_reason` an einer Antwort | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.cost`, `is_byok`, `cost_details`, die zusätzlichen Token-Angaben | `raw` der Nutzung | Kaeso berechnet Kosten mit den Preisen des Katalogs, nicht mit `usage.cost`. |
+| der letzte Stream-Chunk, der die Choice mit `finish_reason` neben `usage` wiederholt | `Usage` | Gelesen wie ein Nutzungs-Chunk mit `choices: []`. |
+| `: OPENROUTER PROCESSING`-Kommentare | `Extra` | Nur im selben Dialekt, wie andere SSE-Kommentare. |
+| ein `error`-Objekt nach der 200, im Body oder in einem Chunk neben `choices` | `KppError` | Siehe die [Zeilen oben](#streams-createchatcompletionstreamresponse); ein numerischer `code` bestimmt die Art wie ein Status. |
+| `GET /api/v1/models`: kein `object`, Modelle ohne `object` und `owned_by`, mit `total_count` und `links` | `ModelList`, Extras | `GET /api/v1/models/{model}` antwortet für jedes Modell mit 404, daher stützt sich eine Modellprüfung auf die Modellliste, die OpenRouter ohne Blick auf den Schlüssel ausliefert. |

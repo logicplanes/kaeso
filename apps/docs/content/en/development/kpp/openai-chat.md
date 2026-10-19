@@ -304,3 +304,18 @@ Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as above. |
 | `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
 | extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |
+
+### OpenRouter
+
+Sources: OpenRouter's [API reference](https://openrouter.ai/docs/api_reference/overview), [streaming](https://openrouter.ai/docs/api_reference/streaming), [errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging) and [reasoning tokens](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/openrouter/`, all with `:free` models.
+
+| OpenRouter field | KPP | Notes |
+|---|---|---|
+| `provider`, `models`, `transforms`, `usage`, `reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning`, `message.reasoning_details`, and the same in deltas | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `provider`, `native_finish_reason` on a reply | extras | Left out towards other dialects. |
+| `usage.cost`, `is_byok`, `cost_details`, the extra token details | `raw` usage | Kaeso records costs at the catalogue's prices, not at `usage.cost`. |
+| the last stream chunk, which repeats the finish choice beside `usage` | `Usage` | Read like a usage chunk with `choices: []`. |
+| `: OPENROUTER PROCESSING` comments | `Extra` | Same dialect only, like other SSE comments. |
+| an `error` object after the 200, in the body or in a chunk beside `choices` | `KppError` | See the [rows above](#streams-createchatcompletionstreamresponse); a numeric `code` decides the kind as a status would. |
+| `GET /api/v1/models`: no `object`, models without `object` and `owned_by`, with `total_count` and `links` | `ModelList`, extras | `GET /api/v1/models/{model}` answers 404 for every model, so a model check relies on the listing, which OpenRouter serves without looking at the key. |

@@ -71,7 +71,7 @@ Kaeso 按以下顺序查找请求指定的模型：
 
 如果两个服务商有相同 ID 的模型，请使用 `provider/model` 形式。Kaeso 在第一个 `/` 处拆分，因此包含 `/` 的模型 ID 保持不变：`togetherai/Qwen/Qwen3.5-9B` 指 Together AI 的 `Qwen/Qwen3.5-9B`。
 
-模型 ID 可以包含 `/`，例如 OpenRouter 的 `anthropic/claude-sonnet-4.5` 或 Groq 的 `openai/gpt-oss-20b`。由于服务商加模型的形式先于模型 ID 查找，以另一个服务商 ID 开头的名称会发往该服务商：项目中同时有 OpenRouter 的 `openai/gpt-4o` 和 OpenAI 的 `gpt-4o` 时，`openai/gpt-4o` 调用 OpenAI。要确保调用正确的模型，请在前面加上服务商：`openrouter/openai/gpt-4o` 始终调用 OpenRouter 的模型，`groq/openai/gpt-oss-20b` 始终调用 Groq 的模型。
+模型 ID 可以包含 `/`，例如 OpenRouter 的 `anthropic/claude-sonnet-4.5` 或 Groq 的 `openai/gpt-oss-20b`。由于 Kaeso 先按“服务商/模型”查找，再按模型 ID 查找，以另一个服务商 ID 开头的名称会发往该服务商：项目中同时有 OpenRouter 的 `openai/gpt-4o` 和 OpenAI 的 `gpt-4o` 时，`openai/gpt-4o` 调用 OpenAI。要确保调用正确的模型，请在前面加上服务商：`openrouter/openai/gpt-4o` 始终调用 OpenRouter 的模型，`groq/openai/gpt-oss-20b` 始终调用 Groq 的模型。
 
 ## 后续步骤
 

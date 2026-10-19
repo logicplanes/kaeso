@@ -205,7 +205,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |
 | `error.misalignment`（`Error` schema 中的 `MisalignmentErrorDetailsResource`）、`error` 中的未知键 | 保留在 `KppError.raw` 中（整个错误体） | 只有错误来自 Chat 时才会再次发送。 |
 
-表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有 HTTP 状态码的错误中起决定作用：流错误，或 200 回复体中的错误。对这类错误，400 到 599 之间的数字 `code`（OpenRouter 以它发送 HTTP 状态码）像状态码一样决定类别，但错误本身仍然没有状态码。
+表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有 HTTP 状态码的错误中起决定作用：流错误，或 200 回复体中的错误。对这类错误，400 到 599 之间的数字 `code`（OpenRouter 在这个 `code` 中发送 HTTP 状态码）像状态码一样决定类别，但错误本身仍然没有状态码。
 
 兼容 OpenAI 的服务商（例如 DeepSeek）用 HTTP 402 表示余额不足（[DeepSeek 错误码](https://api-docs.deepseek.com/quick_start/error_codes)），因此无论其 `code` 为何，它都是 `Billing`。
 
@@ -304,3 +304,18 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | Token 数（包括 `reasoning_tokens`）按上文的类型化字段处理。 |
 | 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
 | 额外的模型字段（`active`、`context_window`、`max_completion_tokens`、`pricing`、`supported_features` 等） | 模型 extras | |
+
+### OpenRouter
+
+来源：OpenRouter 的 [API 参考](https://openrouter.ai/docs/api_reference/overview)、[流式传输](https://openrouter.ai/docs/api_reference/streaming)、[错误与调试](https://openrouter.ai/docs/api_reference/errors-and-debugging)和[推理 Token](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/openrouter/` 中的实时录制（均使用 `:free` 模型）。
+
+| OpenRouter 字段 | KPP | 说明 |
+|---|---|---|
+| `provider`、`models`、`transforms`、`usage`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning`、`message.reasoning_details`，以及增量中的同名字段 | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| 回复中的 `provider`、`native_finish_reason` | extras | 发往其他方言时省略。 |
+| `usage.cost`、`is_byok`、`cost_details` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用，而不是按 `usage.cost`。 |
+| 最后一个流式数据块，它在 `usage` 旁重复带 `finish_reason` 的 choice | `Usage` | 按 `choices: []` 的用量数据块读取。 |
+| `: OPENROUTER PROCESSING` 注释 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
+| 200 之后出现的 `error` 对象，位于回复体中或与 `choices` 并列的数据块中 | `KppError` | 见[上方各行](#流createchatcompletionstreamresponse)；数字 `code` 像状态码一样决定类别。 |
+| `GET /api/v1/models`：没有 `object`，模型也没有 `object` 和 `owned_by`，带 `total_count` 和 `links` | `ModelList`、extras | `GET /api/v1/models/{model}` 对每个模型都返回 404，因此模型检查依赖模型列表，而 OpenRouter 提供该列表时不检查密钥。 |

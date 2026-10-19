@@ -77,3 +77,7 @@ Providers other than OpenAI that serve Embeddings record into `fixtures/openai_e
 ### Together AI
 
 Sources: Together AI's [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility) (`embeddings.create` is `POST /v1/embeddings`) and [serverless models](https://docs.together.ai/docs/serverless-models), read 2026-10-19, and `fixtures/openai_embeddings/providers/togetherai/`. Together AI serves embedding models only on dedicated endpoints; a key without one gets a 400 `model_not_available`. Its reply has no `usage`, which this codec reads already.
+
+### OpenRouter
+
+Source: OpenRouter's [embeddings reference](https://openrouter.ai/docs/api_reference/embeddings), read 2026-10-19, and the live recordings in `fixtures/openai_embeddings/providers/openrouter/`, with `nvidia/nemotron-3-embed-1b:free`. The reply's `model` names the served model, not the requested id; `usage.cost`, `usage.is_byok`, `usage.cost_details` and the top-level `provider` and `id` stay in extras and round-trip unchanged. An error from the upstream provider comes as a 400 whose `message` holds that provider's error body as text.
