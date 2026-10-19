@@ -83,6 +83,27 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "openai", name: "Backup", secret: "sk-new", make_default: true }]);
   });
 
+  it("adds an Ollama Cloud key and says where to create one", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "ollama-cloud", name: "Cloud", is_default: false }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /Ollama Cloud/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Ollama Cloud API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at ollama.com/settings/keys.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Ollama Cloud API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "ollama-test-key");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cloud");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Cloud added")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "ollama-cloud", name: "Cloud", secret: "ollama-test-key", make_default: false },
+    ]);
+  });
+
   it("asks only for the provider's key for a provider it has no hint for", async () => {
     const { dialog } = await open({ provider: "mistral" });
     expect(within(dialog).getByRole("heading", { name: "Connect Mistral" })).toBeInTheDocument();

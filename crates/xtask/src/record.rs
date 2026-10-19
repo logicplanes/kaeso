@@ -641,7 +641,7 @@ mod tests {
             id(&["openai_chat", "--provider", "example-cloud", "--all"])
                 .unwrap_err()
                 .to_string(),
-            "`example-cloud` is not a provider Kaeso knows; the providers are openai, anthropic"
+            "`example-cloud` is not a provider Kaeso knows; the providers are openai, anthropic, ollama-cloud"
         );
         assert_eq!(
             id(&["openai_chat", "--provider", "Example_Cloud", "--all"])

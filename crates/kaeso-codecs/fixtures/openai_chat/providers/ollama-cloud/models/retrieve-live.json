@@ -1,0 +1,6 @@
+{
+  "id": "gpt-oss:20b",
+  "object": "model",
+  "created": 1754352000,
+  "owned_by": "ollama"
+}

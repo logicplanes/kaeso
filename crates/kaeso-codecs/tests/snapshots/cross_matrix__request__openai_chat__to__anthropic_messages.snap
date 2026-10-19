@@ -308,6 +308,34 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/ollama-cloud/assistant-reasoning-tool-call": {
+    "message": "`messages[1].reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].reasoning"
+  },
+  "providers/ollama-cloud/quickstart-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemma4:31b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/ollama-cloud/reasoning-object-effort": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

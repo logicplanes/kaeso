@@ -16,10 +16,12 @@ describe("identity parts", () => {
       <>
         <ProviderBadge provider="openai" withName />
         <ProviderBadge provider="acme" size="xl" />
+        <ProviderBadge provider="ollama-cloud" />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
     expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Ollama Cloud" })).toHaveTextContent("Ol");
   });
 
   it("names a model's capabilities", () => {

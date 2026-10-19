@@ -287,6 +287,26 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn ollama_cloud_names_with_a_colon_tag_resolve_and_go_out_through_chat_completions() {
+    let gpt_oss = entry("ollama-cloud", "gpt-oss:120b");
+    let gemma = entry("ollama-cloud", "gemma4:31b");
+    let entries = vec![gpt_oss.clone(), gemma.clone()];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("gpt-oss:120b"), Ok((gpt_oss.id, Via::Native)));
+    assert_eq!(r("ollama-cloud/gemma4:31b"), Ok((gemma.id, Via::Prefixed)));
+    assert!(matches!(r("gpt-oss"), Err(ResolveError::NotInCatalogue(_))));
+    let e = eff(&gpt_oss);
+    assert_eq!(e.dialect, DialectId::OpenAiChat);
+    assert_eq!(e.fields.input_price, Some(dec!(0.15)));
+    assert_eq!(e.fields.output_price, Some(dec!(0.6)));
+    assert_eq!(
+        (e.fields.context_limit, e.fields.output_limit),
+        (Some(131_072), Some(32_768))
+    );
+    assert_eq!(e.fields.reasoning, Some(true));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

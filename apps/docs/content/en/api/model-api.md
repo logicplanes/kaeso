@@ -135,6 +135,8 @@ A request names a model in one of three forms. Kaeso looks in the project's cata
 | The provider and the model | `anthropic/claude-haiku-4-5` |
 | The model's own id | `claude-haiku-4-5` |
 
+A model id may contain `:`, as Ollama Cloud's tagged ids do: `gpt-oss:120b` and `ollama-cloud/gpt-oss:120b` both work.
+
 Kaeso answers 404 for a model outside the catalogue, and 403 for one the key or its member may not use. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
 
 ## Streaming

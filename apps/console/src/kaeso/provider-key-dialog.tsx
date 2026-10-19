@@ -9,15 +9,22 @@ import { toast } from "~/shell/toast";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
-const KEY_SITES: Record<string, { site: string; prefix: string }> = {
+const KEY_SITES: Record<string, { site: string; prefix?: string }> = {
   openai: { site: "platform.openai.com", prefix: "sk-" },
   anthropic: { site: "console.anthropic.com", prefix: "sk-ant-" },
+  "ollama-cloud": { site: "ollama.com/settings/keys" },
 };
 function keyHelp(provider: string): string {
   const where = KEY_SITES[provider];
-  return where
-    ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", where)
-    : t("kaeso.providerKey.help", "Paste the provider's API key.");
+  if (!where) return t("kaeso.providerKey.help", "Paste the provider's API key.");
+  return where.prefix
+    ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", { site: where.site, prefix: where.prefix })
+    : t("kaeso.providerKey.whereAt", "Create one at {site}.", { site: where.site });
+}
+function keyPlaceholder(provider: string): string | undefined {
+  const where = KEY_SITES[provider];
+  if (!where) return "sk-…";
+  return where.prefix ? `${where.prefix}…` : undefined;
 }
 
 export function ProviderKeyDialog({
@@ -86,7 +93,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={`${KEY_SITES[provider]?.prefix ?? "sk-"}…`}
+          placeholder={keyPlaceholder(provider)}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"

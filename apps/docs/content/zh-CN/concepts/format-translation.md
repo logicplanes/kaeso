@@ -128,4 +128,4 @@ Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenA
 
 - 设置了 `reasoning.summary` 的 Responses 应用会以推理摘要的形式收到 Claude 的思考，并以 `response.reasoning_summary_text.delta` 事件流式传输。网关会向 Claude 请求摘要形式的思考，否则 Claude Opus 4.7 及更高版本会隐藏它。
 - 开启了思考的 Anthropic 应用会以思考文本的形式收到 OpenAI 模型的推理摘要。除非应用把 `thinking.display` 设为 `omitted`，网关都会向 OpenAI 请求这些摘要。OpenAI 可能拒绝向未经其验证的组织提供摘要，Kaeso 会把它的错误原样传回。
-- Chat Completions 应用看不到推理内容。
+- Chat Completions 应用看不到推理内容，但 Ollama Cloud 例外：它在 Chat Completions 中以 `reasoning` 发送模型的思考内容，Kaeso 会原样传回。其他格式的应用暂时收不到 Ollama Cloud 的思考内容。

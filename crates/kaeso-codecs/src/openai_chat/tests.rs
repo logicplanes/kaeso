@@ -175,6 +175,14 @@ fn error_kinds_follow_the_error_codes_guide() {
         ("unknown-error-field", ErrorKind::InvalidRequest),
         ("unsupported-country", ErrorKind::PermissionDenied),
         ("unsupported-parameter", ErrorKind::InvalidRequest),
+        (
+            "providers/ollama-cloud/model-not-found-live",
+            ErrorKind::NotFound,
+        ),
+        (
+            "providers/ollama-cloud/unauthorized-live",
+            ErrorKind::Authentication,
+        ),
     ];
     for (name, kind) in expect {
         let (_, body) = fixtures(D, "errors", "json")
@@ -540,6 +548,32 @@ fn unknown_fields_and_parts_are_kept_bound_to_chat() {
         panic!()
     };
     assert!(item.origin.is(DialectId::OpenAiChat));
+}
+
+#[test]
+fn ollama_cloud_reasoning_fields_stay_chat_extras() {
+    let extra = |e: &kaeso_kpp::Extras, key: &str| -> Value {
+        serde_json::from_str(e.fields[key].get()).unwrap()
+    };
+    let history = decode_fixture("providers/ollama-cloud/assistant-reasoning-tool-call");
+    assert!(history.messages[1].extras.is_from(DialectId::OpenAiChat));
+    assert_eq!(
+        extra(&history.messages[1].extras, "reasoning"),
+        json!("Let's see what the weather is like in Paris")
+    );
+    assert_eq!(
+        encode(&history).0["messages"][1]["reasoning"],
+        json!("Let's see what the weather is like in Paris")
+    );
+    let effort = decode_fixture("providers/ollama-cloud/reasoning-object-effort");
+    assert_eq!(
+        extra(&effort.extras, "reasoning"),
+        json!({"effort": "xhigh"})
+    );
+    assert_eq!(
+        effort.reasoning.and_then(|r| r.effort),
+        Some(ReasoningEffort::Low)
+    );
 }
 
 #[test]

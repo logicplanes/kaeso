@@ -135,6 +135,8 @@ x-api-key: sk-kso-…
 | 服务商加模型 | `anthropic/claude-haiku-4-5` |
 | 模型自身的 ID | `claude-haiku-4-5` |
 
+模型 ID 可以包含 `:`，例如 Ollama Cloud 带标签的 ID：`gpt-oss:120b` 和 `ollama-cloud/gpt-oss:120b` 都可以使用。
+
 目录之外的模型，Kaeso 返回 404；密钥或其成员无权使用的模型，返回 403。如果项目中有多个服务商提供同一模型 ID，单独的 ID 会得到 400，消息会列出这些服务商；此时请改用 `provider/model`。目录的说明见[模型和别名](../console/models-and-aliases.md)。
 
 ## 流式传输

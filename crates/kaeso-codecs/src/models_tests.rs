@@ -48,7 +48,11 @@ fn query_err(dialect: DialectId, q: &str) -> kaeso_kpp::KppError {
 }
 
 fn round_trip(dialect: DialectId, name: &str, body: &[u8]) {
-    let out = if name.starts_with("retrieve") {
+    let out = if name
+        .rsplit('/')
+        .next()
+        .is_some_and(|stem| stem.starts_with("retrieve"))
+    {
         dispatch::encode_model(dialect, &model(dialect, body)).unwrap()
     } else {
         dispatch::encode_models(dialect, &list(dialect, body)).unwrap()
@@ -72,6 +76,30 @@ fn every_openai_models_fixture_round_trips_in_all_three_openai_codecs() {
             round_trip(d, &name, &body);
         }
     }
+}
+
+#[test]
+fn ollama_cloud_lists_tagged_model_ids_owned_by_ollama() {
+    let l = list(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/ollama-cloud/list-live"),
+    );
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert!(ids.contains(&"gpt-oss:20b"), "{ids:?}");
+    assert!(ids.contains(&"glm-5.2"), "{ids:?}");
+    assert!(
+        l.models
+            .iter()
+            .all(|m| m.owned_by.as_deref() == Some("ollama"))
+    );
+    let m = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/ollama-cloud/retrieve-live"),
+    );
+    assert_eq!(
+        (m.id.as_str(), m.created_at),
+        ("gpt-oss:20b", Some(1_754_352_000))
+    );
 }
 
 #[test]

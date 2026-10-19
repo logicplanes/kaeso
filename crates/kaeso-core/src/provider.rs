@@ -166,6 +166,16 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
     },
+    Provider {
+        id: "ollama-cloud",
+        name: "Ollama Cloud",
+        default_base_url: "https://ollama.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+    },
 ];
 
 const _: () = {
@@ -228,7 +238,22 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic");
+        assert_eq!(ids(), "openai, anthropic, ollama-cloud");
+    }
+
+    #[test]
+    fn ollama_cloud_speaks_chat_completions_with_a_bearer_key_and_counts_no_tokens() {
+        let ollama = provider("ollama-cloud").unwrap();
+        assert_eq!(
+            (ollama.name, ollama.default_base_url, ollama.auth),
+            ("Ollama Cloud", "https://ollama.com", AuthStyle::Bearer)
+        );
+        assert_eq!(
+            (ollama.generation, ollama.count_tokens, ollama.embeddings),
+            (DialectId::OpenAiChat, None, None)
+        );
+        assert_eq!(ollama.dialects, [DialectId::OpenAiChat]);
+        assert_eq!(ollama.provider_id().env_segment(), "OLLAMA_CLOUD");
     }
 
     #[test]
@@ -291,7 +316,7 @@ mod tests {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic"
+            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, ollama-cloud"
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),
@@ -302,7 +327,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic"]
+            ["openai", "anthropic", "ollama-cloud"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

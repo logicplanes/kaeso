@@ -128,4 +128,4 @@ Was eine App vom Reasoning sieht, folgt dem, was sie in ihrem eigenen Format anf
 
 - Eine Responses-App, die `reasoning.summary` setzt, erhält das Denken von Claude als Reasoning-Zusammenfassungen, gestreamt als `response.reasoning_summary_text.delta`-Events. Das Gateway fordert von Claude zusammengefasstes Denken an, das Claude Opus 4.7 und später sonst verbergen.
 - Eine Anthropic-App mit eingeschaltetem Denken erhält die Reasoning-Zusammenfassungen eines OpenAI-Modells als Denk-Text. Das Gateway fordert sie bei OpenAI an, es sei denn, die App hat `thinking.display` auf `omitted` gesetzt. OpenAI kann Zusammenfassungen für Organisationen verweigern, die es nicht verifiziert hat, und Kaeso gibt seinen Fehler weiter.
-- Eine Chat-Completions-App sieht kein Reasoning.
+- Eine Chat-Completions-App sieht kein Reasoning, außer von Ollama Cloud, das das Denken eines Modells in Chat Completions als `reasoning` sendet; Kaeso gibt es unverändert weiter. Apps in anderen Formaten erhalten das Denken von Ollama Cloud noch nicht.

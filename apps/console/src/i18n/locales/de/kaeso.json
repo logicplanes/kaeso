@@ -148,6 +148,7 @@
   "kaeso.providerKey.replaced": "{name} ersetzt",
   "kaeso.providerKey.secret": "{provider}-API-Schlüssel",
   "kaeso.providerKey.where": "Unter {site} bei „API keys“ erstellen; er beginnt mit {prefix}.",
+  "kaeso.providerKey.whereAt": "Unter {site} erstellen.",
   "kaeso.providerKey.which": "Für welchen Anbieter ist der Schlüssel?",
   "kaeso.rights.added": "Hinzugefügt",
   "kaeso.rights.addedRights": "Zusätzlich zur Rolle gegebene Rechte",

@@ -135,6 +135,8 @@ Eine Anfrage benennt ein Modell in einer von drei Formen. Kaeso sucht im Katalog
 | Anbieter und Modell | `anthropic/claude-haiku-4-5` |
 | Die eigene ID des Modells | `claude-haiku-4-5` |
 
+Eine Modell-ID darf `:` enthalten, wie die IDs mit Tag von Ollama Cloud: `gpt-oss:120b` und `ollama-cloud/gpt-oss:120b` funktionieren beide.
+
 Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und mit 403 für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
 
 ## Streaming
