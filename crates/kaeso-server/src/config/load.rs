@@ -384,6 +384,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             [
                 "anthropic https://api.anthropic.com/",
+                "deepseek https://api.deepseek.com/",
                 "openai https://api.openai.com/"
             ]
         );
