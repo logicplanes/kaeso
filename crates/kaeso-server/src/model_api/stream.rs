@@ -166,8 +166,45 @@ pub(super) struct Parts {
     pub(super) carry: Option<StreamCarry>,
 }
 
+const RESERVATION_REFRESH: time::Duration = time::Duration::seconds(60);
+
+struct Reserved {
+    request_id: String,
+    due: Option<time::OffsetDateTime>,
+}
+
+impl Reserved {
+    fn new(rec: &mut Recording) -> Reserved {
+        let now = rec.state().clock.now();
+        Reserved {
+            request_id: rec.outcome().request_id.to_string(),
+            due: rec
+                .reservation()
+                .is_held()
+                .then(|| now + RESERVATION_REFRESH),
+        }
+    }
+
+    async fn keep(&mut self, rec: &Recording) {
+        let Some(due) = self.due else { return };
+        let now = rec.state().clock.now();
+        if now < due {
+            return;
+        }
+        self.due = Some(now + RESERVATION_REFRESH);
+        if let Err(e) =
+            crate::services::limits::extend(rec.state(), rec.reservation(), &self.request_id).await
+        {
+            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                .increment(1);
+            tracing::warn!(error = %e, "cannot extend a stream's reservation under its limits");
+        }
+    }
+}
+
 pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let state = rec.state().clone();
+    let mut reserved = Reserved::new(&mut rec);
     let Parts {
         mut chunks,
         mut decoder,
@@ -208,7 +245,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     }
                     break 'read;
                 }
-                next = chunks.next() => next,
+                next = chunks.next() => {
+                    reserved.keep(&rec).await;
+                    next
+                }
                 () = &mut quiet, if keepalive.interval.is_some() => {
                     if let Some(due) = keepalive.deadline(last_write)
                         && due > Instant::now()
@@ -216,6 +256,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         quiet.as_mut().reset(due);
                         continue;
                     }
+                    reserved.keep(&rec).await;
                     if !app.keepalive(encoder.keepalive()).await {
                         gone = true;
                         break 'read;

@@ -12,8 +12,8 @@ use super::error::error_body;
 use super::response::{encode_finish, encode_usage};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_ENV, FORM_ENV_ABSENT,
-    FORM_IN_CHUNK, FORM_NO_DONE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras, start_envelope,
-    value_obj,
+    FORM_IN_CHUNK, FORM_NO_DONE, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras,
+    start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
@@ -229,13 +229,21 @@ impl ChatStreamEncoder {
                 self.done = true;
             }
             StreamEvent::Extra(item) if item.origin.is(DIALECT) => {
-                let trimmed = if self.include_usage {
-                    None
+                let raw = item.raw.as_raw();
+                if self.include_usage {
+                    self.usage_sent |= carries_usage(raw);
+                    crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
                 } else {
-                    without_null_usage(item.raw.as_raw()).map_err(internal)?
-                };
-                let raw = trimmed.as_deref().unwrap_or(item.raw.as_raw());
-                crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                    match without_usage(raw).map_err(internal)? {
+                        Unasked::Keep => {
+                            crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                        }
+                        Unasked::Trimmed(trimmed) => {
+                            crate::sse::write_frame_extra(&mut out, &trimmed).map_err(internal)?;
+                        }
+                        Unasked::Hidden => {}
+                    }
+                }
             }
             _ => {}
         }
@@ -348,8 +356,13 @@ impl ChatStreamEncoder {
                 obj.insert("choices".to_owned(), to_raw(&vec![choice])?);
             }
         }
+        let running = if own {
+            form.get(FORM_RUNNING_USAGE)
+        } else {
+            None
+        };
         if self.include_usage {
-            if let Some(usage) = &chunk.usage {
+            if let Some(usage) = chunk.usage.as_ref().or(running) {
                 obj.insert("usage".to_owned(), to_raw(usage)?);
                 self.usage_sent = true;
             } else if !own {
@@ -499,16 +512,34 @@ fn add_entry_extras(entry: &mut Entry, extras: &kaeso_kpp::Extras, tc: &Map<Stri
     }
 }
 
-fn without_null_usage(raw: &RawValue) -> Result<Option<Box<RawValue>>, serde_json::Error> {
+fn carries_usage(raw: &RawValue) -> bool {
+    serde_json::from_str::<Value>(raw.get())
+        .ok()
+        .and_then(|frame| frame.get("data")?.get("usage").cloned())
+        .is_some_and(|usage| !usage.is_null())
+}
+
+enum Unasked {
+    Keep,
+    Trimmed(Box<RawValue>),
+    Hidden,
+}
+
+fn without_usage(raw: &RawValue) -> Result<Unasked, serde_json::Error> {
     let mut frame: Value = serde_json::from_str(raw.get())?;
     let Some(Value::Object(data)) = frame.get_mut("data") else {
-        return Ok(None);
+        return Ok(Unasked::Keep);
     };
-    if !data.get("usage").is_some_and(Value::is_null) {
-        return Ok(None);
+    let Some(usage) = data.remove("usage") else {
+        return Ok(Unasked::Keep);
+    };
+    let no_choices = data
+        .get("choices")
+        .is_none_or(|c| c.as_array().is_some_and(Vec::is_empty));
+    if !usage.is_null() && no_choices {
+        return Ok(Unasked::Hidden);
     }
-    data.remove("usage");
-    serde_json::value::to_raw_value(&frame).map(Some)
+    serde_json::value::to_raw_value(&frame).map(Unasked::Trimmed)
 }
 
 fn internal(e: serde_json::Error) -> KppError {

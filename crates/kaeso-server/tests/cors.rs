@@ -10,7 +10,7 @@ use axum::http::{HeaderMap, Method, Request, StatusCode};
 use common::v1::{Answer, Capture, Env, chat, messages};
 use futures::future::BoxFuture;
 use http_body_util::BodyExt;
-use kaeso_server::model_api::hooks::{Admission, Limits, Refusal};
+use kaeso_server::model_api::hooks::{Admission, Limits, Refusal, Reservation};
 use kaeso_server::state::AppState;
 use serde_json::{Value, json};
 use tower::ServiceExt;
@@ -42,9 +42,9 @@ impl Limits for Counting {
         &'a self,
         _state: &'a AppState,
         _a: &'a Admission,
-    ) -> BoxFuture<'a, Result<(), Refusal>> {
+    ) -> BoxFuture<'a, Result<Reservation, Refusal>> {
         self.0.fetch_add(1, Ordering::SeqCst);
-        Box::pin(async { Ok(()) })
+        Box::pin(async { Ok(Reservation::default()) })
     }
 }
 

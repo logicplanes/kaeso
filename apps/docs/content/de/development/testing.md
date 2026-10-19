@@ -200,6 +200,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | --- | --- |
 | `[mock:fixture=NAME]` im Prompt | Antwortet mit dieser Fixture im Format des Anbieters; `providers/<id>/<name>` wählt die Aufzeichnung eines Anbieters |
 | `[mock:gate=NAME]` im Prompt | Hält die Anfrage fest, bis der Test das Gate öffnet |
+| `[mock:steps=NAME]` im Prompt | Sendet das erste Event eines Streams, dann ein weiteres bei jedem Schritt, den der Test das Gate weiterschaltet |
 | Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |

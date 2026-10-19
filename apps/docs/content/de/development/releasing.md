@@ -10,7 +10,7 @@ Kaeso erscheint als Ganzes. Gateway, Konsole, die Crates von KPP und die Pakete 
 
 Versionen folgen [Semantic Versioning](https://semver.org). Ein Release, das von Betreibern einen Schritt von Hand verlangt, etwa eine Migration, die nicht von selbst laufen kann, ist ein Major-Release. Eine Vorabversion hängt ein Suffix an, etwa `0.2.0-rc.1`. Der Git-Tag ist `v` plus Version, etwa `v0.2.0`.
 
-Gateway und Konsole eines Releases gehören zusammen. Die `compose.yaml` des Releases legt beide Images auf diese Version fest, und die Konsole erwartet genau die Platform API ihres Gateways.
+Gateway und Konsole eines Releases gehören zusammen. Die `compose.yaml` des Releases legt beide Images auf diese Version und die Digests fest, die das Release gebaut hat, und die Konsole erwartet genau die Platform API ihres Gateways.
 
 ## Die Version im Repository
 

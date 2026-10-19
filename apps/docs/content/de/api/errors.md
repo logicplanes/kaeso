@@ -66,7 +66,6 @@ Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
-| 429 | `insufficient_quota` | `insufficient_quota`, wenn der Anbieter aus Abrechnungsgründen ablehnt |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
@@ -137,7 +136,6 @@ Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler 
 | --- | --- |
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
-| 402 | `billing_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
 | 405 | `invalid_request_error` |
@@ -172,6 +170,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |
 | 502 | Kaeso erreicht den Anbieter nicht, oder die Übertragung ist fehlgeschlagen. |
+| 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, oder aus Abrechnungs- oder Kontingentgründen abgelehnt. |
 | 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten. |
 | 504 | Der Anbieter hat nicht rechtzeitig geantwortet. |
@@ -181,19 +180,21 @@ Hat ein Stream begonnen, kann sich sein Status nicht mehr ändern. Scheitert der
 
 ## Fehler des Anbieters
 
-Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`.
+Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter, außer wenn der Anbieter den Anbieter-Schlüssel des Projekts abgelehnt hat. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`.
 
 Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bedeutung:
 
 | Der Anbieter | Ihre App erhält |
 | --- | --- |
-| Lehnt den Anbieter-Schlüssel ab | 401 oder 403 |
+| Lehnt den Anbieter-Schlüssel ab | 502, in jedem Format |
 | Lehnt die Anfrage wegen seines Ratenlimits ab | 429 |
-| Lehnt aus Abrechnungsgründen ab | 402 im Anthropic-Format, 429 `insufficient_quota` in den OpenAI-Formaten |
+| Lehnt aus Abrechnungs- oder Kontingentgründen ab | 502, in jedem Format |
 | Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten |
 | Scheitert mit einem anderen Serverfehler | Seinen eigenen 5xx-Status |
 
-Das Anfrageprotokoll behält die eigene Meldung des Anbieters. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
+Ein abgelehnter Anbieter-Schlüssel ist ein Problem der Installation, nicht Ihrer App: Das 401, 402 oder 403 des Anbieters ließe ein SDK einen falschen Kaeso-Schlüssel melden, und seine Meldung kann einen Teil des Anbieter-Schlüssels oder die Organisations-ID beim Anbieter enthalten. Daher erhält Ihre App einen Anbieterfehler mit der Meldung „The provider refused this project's provider key. Ask an organization admin to check it under Providers.“, oder derselben mit „for billing or quota reasons“. Ein Organisations-Admin prüft den Schlüssel unter **Anbieter**.
+
+Das Anfrageprotokoll behält die eigene Meldung des Anbieters, wobei alles, was wie ein Schlüssel, eine Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt ist. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
 
 ### Modelle, die der Anbieter nicht bereitstellt
 

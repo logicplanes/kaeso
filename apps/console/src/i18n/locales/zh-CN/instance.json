@@ -256,7 +256,7 @@
   "instance.updates.channelHint": "此实例接收哪些版本。",
   "instance.updates.channelSaved": "渠道已保存",
   "instance.updates.checkOffHint": "检查已在网关配置中关闭。",
-  "instance.updates.composeByHand": "请手动将 compose.yaml 中的 Kaeso 镜像改为 {version}。",
+  "instance.updates.composeByHand": "请下载 Kaeso {version} 的 compose.yaml，覆盖实例中的文件。",
   "instance.updates.confirmHint": "Kaeso 将约有一分钟不可用；应用会收到一个要求重试的错误。",
   "instance.updates.confirmTitle": "更新到 Kaeso {version}？",
   "instance.updates.deletedUser": "已删除的用户",

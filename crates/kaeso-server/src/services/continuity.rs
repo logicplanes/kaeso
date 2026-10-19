@@ -102,7 +102,7 @@ pub async fn keep(state: &AppState, key_id: Uuid, carried: &[CarriedReasoning]) 
     if kept == 0 {
         return;
     }
-    let mut conn = state.valkey.conn();
+    let mut conn = state.valkey.bulk();
     let done: Result<(), _> = pipe.query_async(&mut conn).await;
     match done {
         Ok(()) => count("kept", kept),
@@ -130,7 +130,7 @@ pub async fn restore(state: &AppState, key_id: Uuid, req: &mut GenerateRequest) 
     for id in &ids {
         pipe.cmd("HGETALL").arg(valkey_key(state, key_id, id));
     }
-    let mut conn = state.valkey.conn();
+    let mut conn = state.valkey.bulk();
     let found: Vec<HashMap<String, Vec<u8>>> = match pipe.query_async(&mut conn).await {
         Ok(f) => f,
         Err(e) => {

@@ -22,7 +22,7 @@ flowchart TD
 
 ## Dienste
 
-`compose.yaml` startet sechs Dienste. Die Datei legt die Images von Gateway und Konsole auf die Version des Releases fest, alle anderen auf eine Version und einen Digest.
+`compose.yaml` startet sechs Dienste. Die Datei legt jedes Image auf eine Version und einen Digest fest: die Images von Gateway, Konsole und Updater auf die Version des Releases und die Digests, die sein Release-Workflow gebaut hat.
 
 | Dienst | Aufgabe | Seine Daten |
 | --- | --- | --- |

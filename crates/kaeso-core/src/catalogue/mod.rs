@@ -402,7 +402,7 @@ impl FieldError {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Supplement {
-    models: BTreeMap<(String, String), Fields>,
+    models: BTreeMap<String, BTreeMap<String, Fields>>,
 }
 
 #[derive(Deserialize)]
@@ -418,7 +418,7 @@ impl Supplement {
     pub fn parse(text: &str) -> Result<Supplement, String> {
         let doc: BTreeMap<String, BTreeMap<String, SupplementEntry>> =
             toml::from_str(text).map_err(|e| e.to_string())?;
-        let mut models = BTreeMap::new();
+        let mut models: BTreeMap<String, BTreeMap<String, Fields>> = BTreeMap::new();
         for (provider_id, entries) in doc {
             let provider = provider::provider(&provider_id)
                 .ok_or_else(|| format!("unknown provider `{provider_id}`"))?;
@@ -433,7 +433,10 @@ impl Supplement {
                 fields
                     .validate(provider)
                     .map_err(|err| format!("{provider_id}.{model}: {err}"))?;
-                models.insert((provider_id.clone(), model), fields);
+                models
+                    .entry(provider_id.clone())
+                    .or_default()
+                    .insert(model, fields);
             }
         }
         Ok(Supplement { models })
@@ -444,7 +447,7 @@ impl Supplement {
     }
 
     pub fn get(&self, provider: &str, model: &str) -> Option<&Fields> {
-        self.models.get(&(provider.to_owned(), model.to_owned()))
+        self.models.get(provider)?.get(model)
     }
 }
 

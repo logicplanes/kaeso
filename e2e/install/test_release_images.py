@@ -66,3 +66,15 @@ def test_the_release_is_published_only_when_installs_would_trust_it():
 def test_published_digests_stay_long_enough_to_rerun_the_release():
     upload = job("manifest")
     assert re.search(r"name: published-\$\{\{ matrix.image \}\}\n.*?retention-days: 7", upload, re.S)
+
+
+def test_the_published_compose_file_pins_every_image_by_digest_and_matches_release_json():
+    manifest = job("release-manifest")
+    assert '--compose-out "$RUNNER_TEMP/compose/compose.yaml"' in manifest
+    assert re.search(r"name: release-compose\n\s+path: \$\{\{ runner.temp \}\}/compose/compose.yaml", manifest)
+    release = job("github-release")
+    assert "name: release-compose" in release
+    assert "cp deploy/compose.yaml" not in release
+    assert 'sha256sum "$compose"' in release
+    assert '"    image: ghcr.io/logicplanes/kaeso-$image:$VERSION@$digest"' in release
+    assert release.index('sha256sum "$compose"') < release.index("gh release create")

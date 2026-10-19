@@ -10,7 +10,7 @@ Kaeso is released as a whole. The gateway, the console, KPP's crates and the UI 
 
 Versions follow [semantic versioning](https://semver.org). A release that needs a manual step from people who run Kaeso, such as a migration that can't run by itself, is a major one. A pre-release adds a suffix, such as `0.2.0-rc.1`. The Git tag is `v` and the version, such as `v0.2.0`.
 
-The gateway and the console of one release belong together. The release's `compose.yaml` pins both images at that version, and the console expects exactly the Platform API of its gateway.
+The gateway and the console of one release belong together. The release's `compose.yaml` pins both images to that version and the digests the release built, and the console expects exactly the Platform API of its gateway.
 
 ## The version in the repository
 

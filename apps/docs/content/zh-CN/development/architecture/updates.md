@@ -46,7 +46,7 @@ flowchart TD
 
 ## 版本附带的内容
 
-Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，并为它们的构建来源生成证明。随后它写出 `release.json`（`scripts/release-manifest.mjs`），由一个只能看到这个文件的作业为它生成证明。只有当 `release.json` 和每个镜像都能用 `gh attestation verify` 针对 `refs/heads/prod` 上的这个工作流以及 `release.json` 指明的提交通过验证时，才会创建版本：
+Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，并为它们的构建来源生成证明。随后它写出 `release.json`（`scripts/release-manifest.mjs`），由一个只能看到这个文件的作业为它生成证明。同一步骤还写出该版本的 `compose.yaml`：即 `deploy/compose.yaml`，其中每个 Kaeso 镜像都固定到版本及其索引的摘要，例如 `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`。`release.json` 写明这个文件的哈希。只有当 `release.json` 和每个镜像都能用 `gh attestation verify` 针对 `refs/heads/prod` 上的这个工作流以及 `release.json` 指明的提交通过验证时，才会创建版本：
 
 ```json
 {
@@ -69,7 +69,7 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 | 字段 | 含义 |
 | --- | --- |
 | `commit` | Release 工作流运行所在的提交，也是证明中指明的提交，而不是其上的版本提交 |
-| `manual` | 工作流的 **manual** 输入为真，或者 `compose.yaml` 与上一个版本相比除镜像版本外还有其他差异时为真 |
+| `manual` | 工作流的 **manual** 输入为真，或者 `compose.yaml` 与上一个版本相比除镜像版本和摘要外还有其他差异时为真 |
 | `manual_since` | 截至本版本最新的 `manual: true` 版本，从上一个版本的 `release.json` 继承 |
 | `migrations` | 该版本最新的 PostgreSQL 和 ClickHouse 迁移 |
 
@@ -79,11 +79,11 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 
 `crates/kaeso-updater` 是一个运行在 8081 端口的小型服务器。`GET /healthz` 不需要令牌；`GET /v1/status`、`POST /v1/updates`（`{ "id", "version" }`）和 `GET /v1/updates/{id}` 需要带共享令牌的 `Authorization: Bearer`。它一次只执行一个更新，并把状态保存在 `/state/job.json` 中，每次变化后以原子方式写入。一次更新依次执行这些步骤（`engine.rs`）：
 
-1. **验证。** 它先下载并验证 `release.json`，然后根据它检查正在运行的实例（[检查项](#更新器检查的内容)）。它还检查本地 `compose.yaml` 换上新镜像版本后与版本中的文件逐字节相同，并在 `/state` 中保存一份副本。
+1. **验证。** 它先下载并验证 `release.json`，然后根据它检查正在运行的实例（[检查项](#更新器检查的内容)）。它还检查本地 `compose.yaml` 换上新镜像版本和摘要后与版本中的文件逐字节相同，并在 `/state` 中保存一份副本。
 2. **下载。** 它按摘要拉取三个镜像，每个镜像的版本标签都必须与该版本一致。它以同样的方式验证当前运行版本的 `release.json` 并比较迁移。两者不同或无法获取该清单时，本次更新视为会迁移数据库。
 3. **切换。** 它写入维护标志。然后先控制台、再网关，停止容器，将其重命名为 `…-previous`，并按旧容器的设置创建新容器（`clone.rs`）。旧镜像带来的一切都会被丢弃，所以新镜像的环境变量、命令和健康检查生效。
 4. **迁移。** 它等待每个健康检查：控制台 2 分钟，网关的迁移 10 分钟。崩溃、重启或容器停止会立即失败。
-5. **上线。** 如果 `compose.yaml` 仍是它检查过的那份，它就写入新版本号，然后给镜像打标签，删除旧容器并清除维护标志。
+5. **上线。** 如果 `compose.yaml` 仍是它检查过的那份，它就写入新版本号和摘要，然后给镜像打标签，删除旧容器并清除维护标志。
 
 切换之前的失败不会改变任何东西（`failed`）。切换之后的失败会重新启动旧容器并等待它们（`rolled_back` 或 `rollback_failed`）。如果新网关可能已经迁移了数据库，则不做任何恢复：新的网关和控制台保留，更新以 `needs_attention` 结束。无法删除维护标志或 `…-previous` 容器时也是如此。如果 `compose.yaml` 无法写入或在更新期间被修改，更新仍以 `succeeded` 结束，原因为 `compose_unwritable` 或 `compose_changed`。
 
@@ -117,6 +117,6 @@ Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求�
 | `crates/kaeso-server/tests/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避、清单、权限、审计日志、单一更新锁以及每种结束方式 |
 | `crates/kaeso-updater/tests/verify.rs` | Kaeso 0.1.0 的真实证明能通过验证；换成其他镜像、提交、工作流、签名或日志条目则不能 |
 | `crates/kaeso-updater/tests/engine.rs`、`server.rs` | 更新器对接模拟的 Docker API：完整更新、每种拒绝、回滚、每一步的重启、状态文件和 API |
-| `scripts/release-manifest.test.mjs` | 清单、`manual_since`、最新的迁移和提交 |
+| `scripts/release-manifest.test.mjs` | 清单、固定版本的 `compose.yaml`、`manual_since`、最新的迁移和提交 |
 | `e2e/install` | 启用了 updater profile 的实例、代理，以及 Kaeso 不可用时 Caddy 以各种格式给出的应答 |
 | `apps/console` | 各种状态下的更新页面，以及三种语言的更新中页面 |
