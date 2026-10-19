@@ -190,8 +190,8 @@ export function ChartFrame({
         </div>
       ) : (
         <div className="relative" style={{ height }}>
-          {children}
-          {state.loading && <Skeleton className="absolute inset-x-0 bottom-0 h-2 rounded-pill" />}
+          {state.loading && state.empty ? <Skeleton className="absolute inset-0" /> : children}
+          {state.loading && !state.empty && <Skeleton className="absolute inset-x-0 bottom-0 h-2 rounded-pill" />}
           {state.empty && !state.loading && (
             <div className="absolute inset-0 flex items-center justify-center text-body text-fg-secondary">
               {state.emptyText ?? t("chartFrame.noData", "No data for this period")}

@@ -136,7 +136,7 @@ function PhoneBar({
   const t = useUiText();
   return (
     <Bar data-phone-bar="" className="shrink-0 bg-panel safe-area-bar lg:hidden">
-      <div className="mt-8 flex h-52 items-center justify-between pr-20 pl-28">
+      <div className="mt-8 flex h-52 items-center justify-between px-24">
         <BrandWordmark href={href} label={label} />
         <span className="flex items-center">
           {actions}
@@ -288,7 +288,7 @@ export interface SettingsPageProps extends Omit<HTMLAttributes<HTMLDivElement>, 
 const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrameSettings({ title, description, actions, className, children, ...props }, ref) {
   return (
     <Body ref={ref} className="relative">
-      <MenuButton className="absolute top-10 left-12 z-10" />
+      <MenuButton className="absolute top-10 left-24 z-10" />
       <div className={cn("mx-auto w-full max-w-settings px-24 pt-64 pb-96", className)} {...props}>
         <header className="flex flex-col gap-8">
           <div className="flex items-start justify-between gap-16">

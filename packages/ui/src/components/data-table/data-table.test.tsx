@@ -176,3 +176,21 @@ describe("fitColumns", () => {
     expect(fitColumns(logs, 160)).toEqual({ hidden: ["time", "status", "key", "latency", "cost"], tight: true, overflow: true });
   });
 });
+
+describe("DataTable on the gutter", () => {
+  it("insets the table to the 24px gutter and pads every cell 12px, so row fills never touch the panel's edge", () => {
+    const { container } = render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />);
+    expect(container.firstElementChild).toHaveClass("px-24");
+    const cells = within(screen.getByText("checkout-web").closest<HTMLElement>("[role=row]")!).getAllByRole("cell");
+    expect(cells[0]).toHaveClass("px-12");
+    expect(cells[0]).not.toHaveClass("pl-24");
+    expect(cells.at(-1)).not.toHaveClass("pr-24");
+    expect(screen.getByText("checkout-web").closest("[role=row]")).toHaveClass("rounded-item");
+  });
+  it("fits columns to the width inside the gutter without reserving it twice", () => {
+    const c = (id: string, size: number, priority: number) => ({ id, size, priority, grow: false, minWidth: undefined });
+    const cols = [c("time", 160, 1), c("status", 80, 1), c("provider", 144, 3)];
+    expect(fitColumns(cols, 384, 0).hidden).toEqual([]);
+    expect(fitColumns(cols, 384).hidden).toEqual(["provider"]);
+  });
+});

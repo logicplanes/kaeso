@@ -166,3 +166,26 @@ describe("List", () => {
     spy.mockRestore();
   });
 });
+
+describe("List on the gutter", () => {
+  it("puts every row's fill and every group header on the 24px gutter, and their content 12px inside", () => {
+    render(<List aria-label="Keys" groups={[{ id: "active", title: "Active", items }]} />);
+    const header = screen.getByRole("button", { name: /Active/ });
+    expect(header.closest("[role=row]")).toHaveClass("px-24");
+    expect(header).toHaveClass("px-12");
+    const row = screen.getByRole("gridcell", { name: /checkout-web/ });
+    expect(row.parentElement).toHaveClass("px-24");
+    expect(row).toHaveClass("px-12", "rounded-item");
+    expect(row.className).not.toMatch(/(^| )-m[lrx]-/);
+  });
+  it("pads rows in a group by the group's 20px instead", () => {
+    render(
+      <InsetContent>
+        <List aria-label="Keys" items={items} />
+      </InsetContent>,
+    );
+    const row = screen.getByRole("gridcell", { name: /checkout-web/ });
+    expect(row.parentElement).toHaveClass("px-0");
+    expect(row).toHaveClass("px-20");
+  });
+});

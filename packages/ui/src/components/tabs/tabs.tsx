@@ -2,7 +2,6 @@ import { createContext, forwardRef, useContext, type ReactNode } from "react";
 import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { cn } from "../../utils/cn.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { useInset } from "../../utils/inset.js";
 
 export const KAESO_TABS_VARIANTS = {
   variant: {
@@ -55,13 +54,12 @@ export interface TabsListProps {
 
 const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ className, children, ...props }, ref) {
   const variant = useContext(Ctx);
-  const inset = useInset();
   return (
     <BaseTabs.List
       ref={ref}
       className={cn(
         "relative flex min-w-0 items-center overflow-x-auto scrollbar-none",
-        variant === "underline" ? "-mx-12 gap-20 px-12 hairline-b-inset-12" : inset ? "-my-4 -mr-4 -ml-16 gap-4 p-4" : "-m-4 gap-4 p-4",
+        variant === "underline" ? "-mx-12 gap-20 px-12 hairline-b-inset-12" : "-m-4 gap-4 p-4",
         className,
       )}
       {...props}

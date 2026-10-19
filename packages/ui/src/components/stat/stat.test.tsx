@@ -19,6 +19,21 @@ describe("StatTile", () => {
   });
 });
 
+describe("StatTile loading", () => {
+  it("shows the tile's shape at its final height instead of a number, and says it is busy", () => {
+    render(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Requests" value="334" detail="vs. the previous 30 days" change={{ value: 0.29 }} trend={[]} loading />
+      </StatGrid>,
+    );
+    const tile = screen.getByRole("listitem");
+    expect(tile).toHaveAttribute("aria-busy", "true");
+    expect(tile).toHaveTextContent(/^Requests$/);
+    expect(tile.children).toHaveLength(4);
+    expect(tile.querySelectorAll("[aria-hidden]")).toHaveLength(3);
+  });
+});
+
 describe("StatGrid", () => {
   it("gives three tiles three columns and never an empty fourth cell", () => {
     render(

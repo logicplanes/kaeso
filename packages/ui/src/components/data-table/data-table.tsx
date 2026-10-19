@@ -83,17 +83,17 @@ export const DATA_TABLE_GROW_MIN = 136;
 
 type FitColumn = { id: string; size: number; priority: number; grow: boolean; minWidth: number | undefined; fixed?: boolean | undefined };
 
-export function fitColumns(columns: FitColumn[], width: number): { hidden: string[]; tight: boolean; overflow: boolean } {
+export function fitColumns(columns: FitColumn[], width: number, reserve = 48): { hidden: string[]; tight: boolean; overflow: boolean } {
   if (!width) return { hidden: [], tight: false, overflow: false };
   const byPriority = [...columns].sort((a, b) => a.priority - b.priority);
-  let used = 48;
+  let used = reserve;
   const keep = new Set<string>();
   for (const c of byPriority) {
     used += c.size;
     if (used <= width || c.priority <= 1 || c.fixed) keep.add(c.id);
   }
   const kept = columns.filter((c) => keep.has(c.id));
-  const full = kept.reduce((a, c) => a + c.size, 48);
+  const full = kept.reduce((a, c) => a + c.size, reserve);
   let least = kept.reduce((a, c) => a + (c.grow ? growMin(c) : c.size), 0);
   if (least > width && kept.some((c) => c.grow)) {
     const last = kept[kept.length - 1];
@@ -105,6 +105,11 @@ export function fitColumns(columns: FitColumn[], width: number): { hidden: strin
     }
   }
   return { hidden: columns.filter((c) => !keep.has(c.id)).map((c) => c.id), tight: full > width, overflow: least > width };
+}
+
+function contentWidth(el: HTMLElement): number {
+  const style = getComputedStyle(el);
+  return el.getBoundingClientRect().width - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
 }
 
 const growMin = (c: { size: number; minWidth: number | undefined }) => Math.min(c.size, c.minWidth ?? DATA_TABLE_GROW_MIN);
@@ -207,7 +212,7 @@ function DataTableInner<T>(
   }));
   const fitKey = JSON.stringify(fitInput);
   const hiddenFor = (width: number) => {
-    const fit = fitColumns(fitInput, width);
+    const fit = fitColumns(fitInput, width, inset ? 48 : 0);
     return `${fit.tight ? "!" : ""}${fit.overflow ? ">" : ""}|${fit.hidden.join(" ")}`;
   };
   const hiddenForRef = useRef(hiddenFor);
@@ -219,7 +224,7 @@ function DataTableInner<T>(
     return observeResize([el], ([e]) => setHiddenKey(hiddenForRef.current(Math.round(e?.contentRect.width ?? 0))));
   }, []);
   useLayoutEffect(() => {
-    if (root.current) setHiddenKey(hiddenForRef.current(Math.round(root.current.getBoundingClientRect().width)));
+    if (root.current) setHiddenKey(hiddenForRef.current(Math.round(contentWidth(root.current))));
   }, [fitKey]);
   const [mode = "", hiddenIds = ""] = hiddenKey.split("|");
   const tight = mode.includes("!");
@@ -245,14 +250,13 @@ function DataTableInner<T>(
     scrollMargin,
   });
 
-  const cellPad = (i: number) =>
-    cn("flex min-w-0 items-center px-12", i === 0 && (inset ? "pl-16" : "pl-24"), i === cols.length - 1 && (inset ? "pr-16" : "pr-24"));
+  const cellPad = (i: number) => cn("flex min-w-0 items-center px-12", inset && i === 0 && "pl-20", inset && i === cols.length - 1 && "pr-20");
   const stickyCol = (i: number) =>
     ((stickyFirstColumn && i === 0) || (pinEnd && i === cols.length - 1)) &&
     cn(
       "sticky z-10 group-hover/tr:bg-fill-1 group-aria-selected/tr:bg-fill-2 group-data-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      inset ? "bg-raised" : "bg-panel",
+      inset ? "bg-raised" : cn("bg-panel", i === 0 ? "rounded-l-item" : "rounded-r-item"),
     );
 
   const renderRow = (row: Row<T>, style?: CSSProperties) => {
@@ -274,6 +278,7 @@ function DataTableInner<T>(
         style={{ ...gridStyle, ...style }}
         className={cn(
           "group/tr grid w-full text-body text-fg transition-control focus-ring-inset",
+          !inset && "rounded-item",
           KAESO_DATA_TABLE_VARIANTS.density[density].classes,
           onRowClick && "cursor-pointer",
           "hover:bg-fill-1 aria-selected:bg-fill-2 data-active:bg-fill-2 data-fresh:animate-row-fresh",
@@ -326,7 +331,7 @@ function DataTableInner<T>(
         if (typeof ref === "function") ref(e);
         else if (ref) (ref as { current: HTMLDivElement | null }).current = e;
       }}
-      className={cn("relative w-full min-w-0", className)}
+      className={cn("relative w-full min-w-0", !inset && "px-24", className)}
     >
       <div
         role="table"

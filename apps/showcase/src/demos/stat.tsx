@@ -61,6 +61,16 @@ export function States() {
       <StateSection title="Tiles: with a trend, loading one, and without">
         <Tiles />
       </StateSection>
+      <StateSection title="Tiles while their numbers load">
+        <div className="w-960">
+          <StatGrid aria-label="Loading">
+            <StatTile label="Requests" value="12,480" trend={[]} loading />
+            <StatTile label="Tokens" value="4.2M" trend={[]} loading />
+            <StatTile label="Cost" value="$184.20" trend={[]} loading />
+            <StatTile label="Errors" value="0.4%" trend={[]} loading />
+          </StatGrid>
+        </div>
+      </StateSection>
       <StateSection title="Five tiles (the last widens over the empty cells), a long label and value">
         <div className="w-960">
           <StatGrid aria-label="Five">

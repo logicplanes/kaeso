@@ -57,7 +57,7 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   );
   return (
     <>
-      <div ref={headRef} className="flex h-60 shrink-0 items-center gap-12 pr-12 pl-24 hairline-b">
+      <div ref={headRef} className="flex h-60 shrink-0 items-center gap-12 px-24 hairline-b">
         <div className="flex min-w-0 flex-1 flex-col">
           <Title className="truncate text-title-sm font-semibold text-fg">{title}</Title>
           {subtitle && <span className="truncate mono text-small text-fg-secondary">{subtitle}</span>}
