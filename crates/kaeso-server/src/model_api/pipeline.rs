@@ -23,7 +23,7 @@ use super::hooks::{Admission, CLIENT_DISCONNECTED, Caller, Outcome, SHUT_DOWN, S
 use super::input_count::InputCounter;
 use super::listing::project_models;
 use super::stream;
-use crate::services::availability::{self, Listings, Probe};
+use crate::services::availability::{self, Probe};
 use crate::services::continuity;
 use crate::services::credentials::{self, ResolveError as CredentialError};
 use crate::state::AppState;
@@ -530,6 +530,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         }
     })?;
 
+    if entry.is_unavailable()
+        && !state
+            .availability
+            .claim_recheck(credential.key(), entry, state.clock.now())
+            .await
+    {
+        return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+    }
+
     let carry = caller.key_id.filter(|_| {
         continuity::applies(state, ingress, plan.dialect) && kind == RequestKind::Generate
     });
@@ -677,7 +686,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 count_upstream_error(err.kind.as_str(), provider);
                 if err.kind == ErrorKind::NotFound
                     && let Probe::Unserved =
-                        availability::probe(state, &credential, &eff, &Listings::default()).await
+                        state.availability.probe(state, &credential, &eff).await
                 {
                     tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
                     availability::record(state, &learnt(Availability::Unavailable)).await;

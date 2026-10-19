@@ -26,6 +26,7 @@ fn entry(provider: &str, model: &str) -> Entry {
         delisted: false,
         last_known: None,
         availability: None,
+        availability_checked_at: None,
     }
 }
 
