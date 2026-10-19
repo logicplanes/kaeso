@@ -197,10 +197,10 @@ async fn only_lookups_that_find_nothing_count() {
 #[tokio::test]
 async fn the_client_address_follows_the_trusted_proxies() {
     let env = env(LIMIT).await;
-    exhaust(&env, "10.0.0.2", Some("198.51.100.20"), 0).await;
+    exhaust(&env, "127.0.0.1", Some("198.51.100.20"), 0).await;
     let blocked = send(
         &env,
-        "10.0.0.2",
+        "127.0.0.1",
         Some("198.51.100.20"),
         "/v1/messages",
         &made_up(50),
@@ -209,7 +209,7 @@ async fn the_client_address_follows_the_trusted_proxies() {
     assert_eq!(blocked.status, StatusCode::TOO_MANY_REQUESTS);
     let other = send(
         &env,
-        "10.0.0.2",
+        "127.0.0.1",
         Some("198.51.100.21"),
         "/v1/messages",
         &made_up(51),
@@ -228,7 +228,7 @@ async fn the_client_address_follows_the_trusted_proxies() {
     assert_eq!(spoofed.status, StatusCode::TOO_MANY_REQUESTS);
     let victim = send(
         &env,
-        "10.0.0.2",
+        "127.0.0.1",
         Some("198.51.100.99"),
         "/v1/messages",
         &made_up(201),
@@ -251,6 +251,44 @@ async fn the_client_address_follows_the_trusted_proxies() {
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
     let r = send(&env, "2001:db8:5:7::1", None, "/v1/messages", &made_up(401)).await;
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn private_networks_are_not_trusted_unless_configured() {
+    let env = env(LIMIT).await;
+    exhaust(&env, "10.0.0.2", Some("198.51.100.20"), 0).await;
+    let spoofed = send(
+        &env,
+        "10.0.0.2",
+        Some("198.51.100.21"),
+        "/v1/messages",
+        &made_up(50),
+    )
+    .await;
+    assert_eq!(
+        spoofed.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "a forwarded address from an untrusted peer is ignored"
+    );
+
+    let trusting = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_KEY_FAILURES_PER_ADDRESS", "5"),
+            ("KAESO_TRUSTED_PROXIES", "10.0.0.0/8"),
+        ]),
+    )
+    .await;
+    exhaust(&trusting, "10.0.0.2", Some("198.51.100.20"), 0).await;
+    let other = send(
+        &trusting,
+        "10.0.0.2",
+        Some("198.51.100.21"),
+        "/v1/messages",
+        &made_up(51),
+    )
+    .await;
+    assert_eq!(other.status, StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]

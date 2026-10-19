@@ -57,7 +57,7 @@ services:
 为 Kaeso 设置代理：
 
 - 关闭 `/v1/` 的响应缓冲，让流式回复实时到达应用。
-- 传递 `X-Forwarded-For`。网关只信任来自 `KAESO_TRUSTED_PROXIES` 的这个请求头，默认是各私有网段。在不受信任的代理后面，日志和 [API 密钥限流](configuration.md#api-密钥限流)会把每个客户端都看作该代理。
+- 传递 `X-Forwarded-For`。网关只信任来自 `KAESO_TRUSTED_PROXIES` 的这个请求头。Compose 包将其设为回环网段和各私有网段，只有它自己的容器和主机发布的端口能到达这些地址。在其他环境中默认只信任回环地址，因此请将其设为代理的地址。在不受信任的代理后面，日志和 [API 密钥限流](configuration.md#api-密钥限流)会把每个客户端都看作该代理。
 - 如果用户通过 `https://` 加 `KAESO_DOMAIN` 以外的地址访问 Kaeso，请在 `.env` 中把 `KAESO_PUBLIC_URL` 设为该地址。
 - 切勿转发指标端口 9100。
 
