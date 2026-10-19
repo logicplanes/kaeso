@@ -5,6 +5,8 @@ import { fill, hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, preview, projectData, projectPath, searchHit } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { DIALECT_IDS, PROVIDER_IDS } from "~/format/labels";
+import { providerDialects } from "./model-form";
 
 const hits = () => [
   searchHit(),
@@ -276,6 +278,20 @@ describe("AddModelsDialog", () => {
         },
       },
     ]);
+  });
+
+  it("offers a custom model only the formats its provider serves", async () => {
+    setUp();
+    const { user, dialog } = await open();
+
+    await user.click(await within(dialog).findByRole("radio", { name: "Together AI" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Add a custom model" }));
+    const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
+    await fill(user, within(custom).getByRole("textbox", { name: "Model id" }), "Qwen/Qwen3.5-9B");
+    await user.click(within(custom).getByRole("button", { name: "Continue" }));
+    await user.click(await within(custom).findByRole("combobox", { name: "Sends as" }));
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions", "OpenAI Embeddings"]);
+    for (const provider of PROVIDER_IDS) expect(providerDialects(provider), provider).not.toEqual(DIALECT_IDS);
   });
 
   it("treats a custom model as unlisted when models.dev can't be asked", async () => {

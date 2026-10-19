@@ -67,12 +67,16 @@ mod tests {
     fn a_name_that_resolves_elsewhere_is_sent_with_its_provider() {
         for (routed, direct) in [
             (
-                entry("openrouter", "openai/gpt-4o"),
-                entry("openai", "gpt-4o"),
+                entry("togetherai", "openai/gpt-oss-120b"),
+                entry("openai", "gpt-oss-120b"),
             ),
             (
-                entry("groq", "openai/gpt-oss-20b"),
-                entry("openai", "gpt-oss-20b"),
+                entry("togetherai", "deepseek/deepseek-chat"),
+                entry("deepseek", "deepseek-chat"),
+            ),
+            (
+                entry("openrouter", "openai/gpt-4o"),
+                entry("openai", "gpt-4o"),
             ),
         ] {
             let both = vec![routed.clone(), direct.clone()];

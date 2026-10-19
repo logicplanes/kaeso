@@ -309,12 +309,7 @@ async fn handle(
             .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7)
     };
     if !authed {
-        let name = match dialect {
-            "anthropic_messages" => "authentication",
-            "openai_chat" => "invalid-api-key",
-            _ => "invalid-api-key-401",
-        };
-        return error_response(&dir, name);
+        return error_response(&dir, key_refused(dialect));
     }
     let key = key_text(&headers);
     let asks_models = method == Method::GET && path.starts_with(MODELS);
@@ -325,6 +320,9 @@ async fn handle(
     }
     if asks_models && answers_route_not_found(marker(&key, "models"), &path) {
         return route_not_found();
+    }
+    if asks_models && path == MODELS && marker(&key, "models") == Some("list-refuses-key") {
+        return error_response(&dir, key_refused(dialect));
     }
     if is_unserved(&path, &body) {
         let (dir, name) = match dialect {
@@ -453,8 +451,16 @@ fn key_text(headers: &HeaderMap) -> String {
 fn answers_route_not_found(models: Option<&str>, path: &str) -> bool {
     match models {
         Some("absent") => true,
-        Some("list-only") => path != MODELS,
+        Some("list-only" | "list-refuses-key") => path != MODELS,
         _ => false,
+    }
+}
+
+fn key_refused(dialect: &str) -> &'static str {
+    match dialect {
+        "anthropic_messages" => "authentication",
+        "openai_chat" => "invalid-api-key",
+        _ => "invalid-api-key-401",
     }
 }
 

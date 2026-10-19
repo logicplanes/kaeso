@@ -18,7 +18,7 @@ order: 3
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
 | DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | xAI 控制台 console.x.ai | `xai-` |
+| SpaceX | console.x.ai（xAI 控制台） | `xai-` |
 | Together AI | api.together.ai | `tgp_v1_` |
 | Groq | console.groq.com | `gsk_` |
 | OpenRouter | openrouter.ai 的 **Settings** 中的 **API Keys** 页面 | `sk-or-v1-` |

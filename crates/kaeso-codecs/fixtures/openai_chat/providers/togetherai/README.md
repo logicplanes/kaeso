@@ -47,6 +47,12 @@ What Together adds to the dialect, as seen in these files and the SDK types:
 | `recorded-reasoning-stream.sse` | `reasoning-stream.json` | `reasoning` deltas, `text` and `delta.token_id`, usage chunk with `reasoning_tokens`, `[DONE]` |
 | `recorded-stream-usage-short.sse` | `stream-usage-short.json` | `reasoning_content` deltas, usage chunk with empty `choices`, `[DONE]` |
 
+## models
+
+| file | what it covers |
+|---|---|
+| `list-recorded.json` | `GET /v1/models`, recorded live with `curl` on 2026-10-19: a bare array, not `{object, data}`; each model with `type`, `running`, `display_name`, `organization`, `context_length`, `config` and `pricing`, some with `uuid`, `link` and `license`. The first 2 of 269 models, `Qwen/Qwen3.5-9B` and the first embedding model are kept, unchanged. `GET /v1/models/{model}` answers 404 for every id with `/`. |
+
 ## errors
 
 | file | status | what it covers |

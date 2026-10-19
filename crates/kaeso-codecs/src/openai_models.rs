@@ -21,6 +21,8 @@ const OPENAI: [DialectId; 3] = [
 
 const OBJECT: &str = "object";
 
+const BARE_LIST: &str = "bare_list";
+
 fn decode_object(extras: &mut Extras, object: Maybe<String>, usual: &str) {
     record_none(extras, OBJECT, &object, false);
     if let Maybe::Value(object) = object
@@ -138,6 +140,9 @@ pub(crate) fn encode_model(m: &ModelInfo) -> Result<Vec<u8>, KppError> {
 
 pub(crate) fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError> {
     let ex = &list.extras;
+    if source(ex).is_some_and(|d| ex.form_flag(d, BARE_LIST)) {
+        return to_body(&list.models.iter().map(encode_info).collect::<Vec<_>>());
+    }
     let w = ListModelsResponse {
         object: source(ex).map_or(Maybe::Value("list".to_owned()), |d| {
             encode_object(ex, d, "list")
@@ -161,6 +166,9 @@ pub(crate) fn decode_model(dialect: DialectId, body: &[u8]) -> Result<ModelInfo,
 }
 
 pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppError> {
+    if body.trim_ascii_start().starts_with(b"[") {
+        return decode_bare_list(dialect, body);
+    }
     let Ext {
         known: w,
         extra,
@@ -176,6 +184,18 @@ pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList
     let mut extras = extras_from(&Origin::new(dialect), extra, verbatim);
     decode_object(&mut extras, w.object, "list");
     list.extras = extras;
+    Ok(list)
+}
+
+fn decode_bare_list(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppError> {
+    let data: Vec<Ext<ModelWire>> =
+        serde_json::from_slice(body).map_err(|e| bad_listing(dialect, &without_position(&e)))?;
+    let models = data
+        .into_iter()
+        .map(|m| decode_info(dialect, m))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut list = ModelList::new(models);
+    list.extras = Extras::new(Origin::new(dialect)).with_form(BARE_LIST, true.into());
     Ok(list)
 }
 

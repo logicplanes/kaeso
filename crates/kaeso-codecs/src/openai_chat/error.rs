@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use super::DIALECT;
 use super::wire::ErrorResponse;
 use crate::codec::{EncodedError, HeaderList, parse_retry_after};
-use crate::openai_responses::error::{kind_for, string_error_kind, wire_for_kind};
+use crate::openai_responses::error::{kind_for, wire_for_kind};
 use crate::wire::{Ext, Short};
 
 pub(crate) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
@@ -30,11 +30,7 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
                 Short(text.trim(), 500)
             ),
         };
-        let kind = match raw.get("error") {
-            Some(Value::String(e)) if !e.trim().is_empty() => string_error_kind(status, e),
-            _ => kind_for(status, None, None),
-        };
-        let mut err = KppError::new(kind, message)
+        let mut err = KppError::new(kind_for(status, None, None), message)
             .with_origin(origin)
             .with_raw(raw);
         if let Some(status) = status {

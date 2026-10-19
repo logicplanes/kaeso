@@ -177,15 +177,15 @@ async fn a_model_whose_id_names_another_providers_model_is_offered_with_its_prov
         .app
         .post(
             &format!("/orgs/{}/credentials", env.owner.org_id),
-            json!({ "provider": "groq", "name": "groq", "secret": "gsk_test-playground-0001" }),
+            json!({ "provider": "togetherai", "name": "togetherai", "secret": "tgp_v1_test-playground-0001" }),
             Some(&env.owner.cookie),
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     for body in [
-        json!({ "provider": "groq", "model_id": "openai/gpt-oss-20b" }),
+        json!({ "provider": "togetherai", "model_id": "openai/gpt-oss-120b" }),
         json!({
-            "provider": "openai", "model_id": "gpt-oss-20b", "custom": true,
+            "provider": "openai", "model_id": "gpt-oss-120b", "custom": true,
             "overrides": {
                 "input_modalities": ["text"], "output_modalities": ["text"],
                 "context_limit": 128000, "output_limit": 8000,
@@ -217,28 +217,28 @@ async fn a_model_whose_id_names_another_providers_model_is_offered_with_its_prov
             .iter()
             .find(|m| {
                 m["provider"] == provider
-                    && m["model_id"].as_str().unwrap().ends_with("gpt-oss-20b")
+                    && m["model_id"].as_str().unwrap().ends_with("gpt-oss-120b")
             })
             .unwrap()["model"]
             .as_str()
             .unwrap()
             .to_owned()
     };
-    assert_eq!(name("groq"), "groq/openai/gpt-oss-20b");
-    assert_eq!(name("openai"), "gpt-oss-20b");
+    assert_eq!(name("togetherai"), "togetherai/openai/gpt-oss-120b");
+    assert_eq!(name("openai"), "gpt-oss-120b");
 
     let r = play(
         &env.app,
         &responses_path(&env),
         &env.owner.cookie,
-        &ask(&name("groq"), "Hi"),
+        &ask(&name("togetherai"), "Hi"),
     )
     .await;
     completed(&r);
-    assert_eq!(r.header("kaeso-provider"), Some("groq"));
+    assert_eq!(r.header("kaeso-provider"), Some("togetherai"));
     assert_eq!(
         env.mock.last().unwrap().json()["model"],
-        "openai/gpt-oss-20b"
+        "openai/gpt-oss-120b"
     );
 
     let r = call(&env, "/v1/models", Some(&env.key), false, None).await;
@@ -250,21 +250,21 @@ async fn a_model_whose_id_names_another_providers_model_is_offered_with_its_prov
         .map(|m| m["id"].as_str().unwrap().to_owned())
         .collect();
     assert!(
-        ids.iter().any(|i| i == "groq/openai/gpt-oss-20b"),
+        ids.iter().any(|i| i == "togetherai/openai/gpt-oss-120b"),
         "{ids:?}"
     );
-    assert!(ids.iter().any(|i| i == "gpt-oss-20b"), "{ids:?}");
-    assert!(!ids.iter().any(|i| i == "openai/gpt-oss-20b"), "{ids:?}");
+    assert!(ids.iter().any(|i| i == "gpt-oss-120b"), "{ids:?}");
+    assert!(!ids.iter().any(|i| i == "openai/gpt-oss-120b"), "{ids:?}");
     let r = call(
         &env,
-        "/v1/models/groq%2Fopenai%2Fgpt-oss-20b",
+        "/v1/models/togetherai%2Fopenai%2Fgpt-oss-120b",
         Some(&env.key),
         false,
         None,
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
-    assert_eq!(r.json()["owned_by"], "groq");
+    assert_eq!(r.json()["owned_by"], "togetherai");
 }
 
 #[tokio::test]

@@ -140,7 +140,7 @@ The KPP fields follow the [usage](cross-format.md#usage) convention.
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens` (includes reasoning) |
+| `completion_tokens` | `output_tokens` (includes reasoning; when `total_tokens` is `prompt_tokens + completion_tokens + reasoning_tokens`, as SpaceX counts, the reasoning tokens are added to it) |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | derived (`prompt_tokens + completion_tokens`); not stored separately, kept in `raw` |
 | `prompt_tokens_details.audio_tokens`, `text_tokens`, `image_tokens`, `completion_tokens_details.audio_tokens`, `text_tokens`, `accepted_prediction_tokens`, `rejected_prediction_tokens` | `raw` only (breakdowns of the typed totals) |
@@ -211,7 +211,7 @@ HTTP 402 is how OpenAI-compatible providers such as DeepSeek report an exhausted
 
 The Responses and Embeddings codecs use the same code table (`openai_responses::error`), so an error in the OpenAI shape has the same kind, `type` and `code` in every OpenAI API. The OpenAI SDKs choose their exception class by status, so `type` only adds information.
 
-`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message. One that starts with `Incorrect API key provided`, SpaceX's answer to a wrong key with HTTP 400, is `Authentication`. Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
+`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message. The codec reads no meaning from the text: a provider whose answer to a wrong key has no authentication status names that message in `refused_key_messages` in `crates/kaeso-core/src/provider.rs`, and the gateway reports such an error as `Authentication` (SpaceX's `Incorrect API key provided` with HTTP 400). Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
 
 ## Models
 
@@ -243,12 +243,54 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | `object` (`"list"`, optional) | form `object`, only when it differs; absent or `null` in form `none` |
 | `data` | `models` |
 | unknown keys | extras fields |
+| a bare array of models instead of the object, as Together AI sends it | `models`, form `bare_list` |
 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`.
 
 ## Providers that use this format
 
 Providers other than OpenAI that serve Chat Completions record into `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### DeepSeek
+
+Sources: DeepSeek's [API reference](https://api-docs.deepseek.com/api/create-chat-completion), [thinking mode guide](https://api-docs.deepseek.com/guides/thinking_mode/) and [error codes](https://api-docs.deepseek.com/quick_start/error_codes), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/deepseek/`.
+
+| DeepSeek field | KPP | Notes |
+|---|---|---|
+| `thinking` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning_content`, `delta.reasoning_content` | extras | Chat apps get them back unchanged, and an assistant turn that carries one sends it back to DeepSeek. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `usage.prompt_cache_hit_tokens`, `prompt_cache_miss_tokens` | `raw` usage | The hits equal `prompt_tokens_details.cached_tokens`, which is typed as a cache read. |
+| `: keep-alive` lines and empty lines while the server is busy | `Extra` | Same dialect only, like other SSE comments. |
+| HTTP 402 | `Billing` | An empty balance, whatever the `code` says. |
+| HTTP 422 for a `developer` message | `InvalidRequest` | DeepSeek doesn't know the role; the app gets DeepSeek's error. |
+| extra model fields (`name`, `context_window`, `max_output_tokens`, `input_modalities`, `output_modalities`, `effort`, `api_capabilities`) | model extras | DeepSeek's listing has no `created`. |
+
+### SpaceX
+
+Sources: xAI's [Chat Completions reference](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions) and [models reference](https://docs.x.ai/developers/rest-api-reference/inference/models), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/xai/`. SpaceX's own format is [OpenAI Responses](openai-responses.md#providers-that-use-this-format); a model reaches Chat Completions through its `egress_dialect`.
+
+| SpaceX field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `citations`, `system_fingerprint`, `service_tier` | extras | Left out towards other dialects. |
+| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | `raw` usage | The token counts are typed as above. SpaceX leaves reasoning out of `completion_tokens` and counts it in `total_tokens`, so the output is `completion_tokens` plus `reasoning_tokens`. |
+| `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400 | `KppError` | The string is the message, and apps get it in the OpenAI error shape with SpaceX's status. A wrong key is a 400 whose message starts with `Incorrect API key provided`; SpaceX's `refused_key_messages` names it, so the gateway reports a refused key. |
+| `presence_penalty` for a reasoning model, `reasoning_effort` for a model without reasoning | | SpaceX answers 400, which reaches the app as its error. |
+| `search_parameters` (request) | extras | SpaceX answers 410 because live search is deprecated; the app gets the 410. |
+| extra model fields (`aliases`, prices in USD cents per 100 million tokens, `capabilities.reasoning_effort`, image `pricing`) | model extras | |
+
+### Together AI
+
+Sources: Together AI's [chat completions reference](https://docs.together.ai/reference/chat-completions-1) and [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility), read 2026-10-19, the SDK types in `togethercomputer/together-py`, and the live recordings in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together AI field | KPP | Notes |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning_content` or `message.reasoning`, and the same in deltas, by model | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `matched_stop` and `seed` on a choice, `text` on a stream choice, `token_id` in a delta, top-level `prompt`, `metadata` and `warnings` | extras | Left out towards other dialects. |
+| `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens` | `raw` usage | The token counts are typed as above. |
+| errors in OpenAI's envelope with Together AI's own `type` and `code` (`start_generation_failed`, `model_not_available`), sometimes with a top-level `id` | `KppError` | The kind follows the status; a wrong key is a 401 `invalid_api_key`, so `Authentication`. |
+| `GET /v1/models`: a bare array of models with `type`, `display_name`, `organization`, `context_length`, `config` and `pricing` | `ModelList`, model extras | `GET /v1/models/{model}` answers 404 for ids with `/`, so a model check relies on the listing. |
 
 ### Groq
 
