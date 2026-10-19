@@ -29,10 +29,10 @@ nav: OpenAI Chat
 | `model` | `GenerateRequest.model`（类型化） | |
 | `messages` | `system` + `messages`（类型化） | 见[消息](#消息chatcompletionrequestmessage)。 |
 | `temperature`、`top_p` | `sampling.temperature`、`sampling.top_p`（类型化） | 写成整数（`1`）时：形式标记 `integers`，即以整数写出的键的列表。只要值仍是整数，编码器就把这样的键写成整数，因此 `temperature: 1` 写回时仍是 `1`，而不是 `1.0`；值改变后写出新值。来自其他方言时：`f64` 写法（`1.0`）。 |
-| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式。`CreateChatCompletionRequest` 没有为它或 `max_tokens` 规定最小值，因此任何非负整数都会保留，包括 `0`；负数为 `InvalidRequest`。 |
+| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式，除非服务商的配置要求 `max_tokens`（[服务商配置](#服务商配置)）。`CreateChatCompletionRequest` 没有为它或 `max_tokens` 规定最小值，因此任何非负整数都会保留，包括 `0`；负数为 `InvalidRequest`。 |
 | `max_tokens`（已弃用） | `sampling.max_output_tokens`（类型化） | 形式标记 `max_tokens: "max_tokens"`。两者都存在且值相同：形式标记 `"both"`。值不同时以 `max_completion_tokens` 为准，`max_tokens` 成为 extra `max_tokens (differs from max_completion_tokens)`，发回时写作 `max_tokens`；当其他方言拒绝它时，这个键名说明了冲突所在。 |
 | `stop` | `sampling.stop`（类型化） | 字符串写法：形式标记 `stop: "string"`；`[]`：形式标记 `"array"`。超过四个序列：`Unsupported`（`stop`）。 |
-| `seed` | `sampling.seed`（类型化） | |
+| `seed` | `sampling.seed`（类型化） | 服务商的配置如此规定时，以 `random_seed` 发送（[服务商配置](#服务商配置)）。 |
 | `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。 |
 | `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](cross-format.md#采样参数)）；`0`：`InvalidRequest`。 |
 | `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
@@ -47,7 +47,7 @@ nav: OpenAI Chat
 | `tool_choice` `allowed_tools`、`custom`、其他字符串 | `ToolChoice::Unknown` | 仅限同一方言。 |
 | `parallel_tool_calls` | `parallel_tool_calls`（类型化） | |
 | `safety_identifier` | `user`（类型化） | KPP `user` 是用于滥用监测的最终用户 ID，这正是 `safety_identifier` 的含义。 |
-| `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。 |
+| `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。配置中没有最终用户字段的服务商两者都收不到（[服务商配置](#服务商配置)）。 |
 | `stream` | `stream`（类型化） | `false`：形式标记 `stream_false`。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
 | `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中，会被丢弃。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
@@ -112,6 +112,23 @@ nav: OpenAI Chat
 | 未知键 | extras（嵌套的为 `function.<key>`） | |
 | `type: custom` | `Block::Unknown` | 在 `tool_calls` 中发回。 |
 | 缺少 `type`，但有 `function` 对象 | `Block::ToolCall`，形式标记 `no_type` | `ChatCompletionMessageToolCall` 要求 `type`，但某些 OpenAI 兼容服务商会省略它；只有函数调用才有 `function` 对象，因此该调用能到达每个应用。写回时不带 `type`。 |
+
+## 服务商配置
+
+其他服务商使用这种格式时各有差异。`PROVIDERS`（`crates/kaeso-core/src/provider.rs`）中的每个服务商都在 `chat` 字段中指定一个 `kaeso_codecs::openai_chat::ChatProfile`，`EgressCtx::with_chat_profile` 把它交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变；`ChatProfile::compatible(name)` 在添加设置之前也一样。
+
+| 设置 | 编码器的行为 | 为什么允许 |
+|---|---|---|
+| `max_tokens()` | 把输出上限以 `max_tokens` 发送，把 `max_completion_tokens: null` 以 `max_tokens: null` 发送。同时带这两个字段且值不同的 Chat 请求为 `Unsupported`（`max_tokens`）。 | 只改变写法，值不变。 |
+| `system_role()` | 把 `developer` 消息以 `system` 消息发送。 | 角色的写法是形式标记；两者都承载指令。 |
+| `random_seed()` | 把 `seed` 以 `random_seed` 发送，`seed: null` 也一样。负数 seed，或同时带 `seed` 和 `random_seed`（任一可为 `null`）的请求，为 `Unsupported`（`seed`）。此规则依据 Mistral 的 `random_seed`，其 OpenAPI 文档规定 `minimum: 0`。 | `seed` 仍是语义字段：只会被改名或拒绝，绝不会被丢弃。 |
+| `without_end_user()` | 省略 KPP `user`，而不是以 `user` 或 `safety_identifier` 发送；Chat 应用与 `safety_identifier` 一起发送的第二个 `user` 以及它们的 `null` 写法也一并省略。 | `user` 是提示字段（[字段类别](index.md#字段类别)）。 |
+| `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
+| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
+
+`refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段：Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。拒绝发生在编码请求时、发送任何内容之前，并以应用自己的格式返回给应用。
+
+下面列出配置与 OpenAI 不同的每个内置服务商，以及每项设置的来源：服务商的文档、它的 OpenAPI 文档，或 `fixtures/openai_chat/providers/<id>/` 中的实时录制。目前还没有内置服务商使用这样的配置。
 
 ## 回复：`CreateChatCompletionResponse`
 

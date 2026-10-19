@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::openai_chat::ChatProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request, RequestKind,
@@ -119,6 +120,7 @@ pub struct EgressCtx {
     pub(crate) tool_names: IndexMap<String, String>,
     pub adaptive_thinking: Option<bool>,
     pub reasoning: Option<bool>,
+    pub chat_profile: ChatProfile,
 }
 
 impl EgressCtx {
@@ -135,6 +137,7 @@ impl EgressCtx {
             tool_names: IndexMap::new(),
             adaptive_thinking: None,
             reasoning: None,
+            chat_profile: ChatProfile::OPENAI,
         }
     }
 
@@ -147,6 +150,12 @@ impl EgressCtx {
     #[must_use]
     pub fn with_reasoning(mut self, reasons: bool) -> Self {
         self.reasoning = Some(reasons);
+        self
+    }
+
+    #[must_use]
+    pub fn with_chat_profile(mut self, profile: ChatProfile) -> Self {
+        self.chat_profile = profile;
         self
     }
 

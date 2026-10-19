@@ -3,6 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -141,6 +142,7 @@ pub struct Provider {
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
+    pub chat: ChatProfile,
 }
 
 pub const PROVIDERS: &[Provider] = &[
@@ -158,6 +160,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
+        chat: ChatProfile::OPENAI,
     },
     Provider {
         id: "anthropic",
@@ -169,6 +172,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Anthropic"),
     },
     Provider {
         id: "deepseek",
@@ -180,6 +184,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("DeepSeek"),
     },
     Provider {
         id: "xai",
@@ -191,6 +196,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
+        chat: ChatProfile::compatible("SpaceX"),
     },
     Provider {
         id: "togetherai",
@@ -202,6 +208,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Together AI"),
     },
     Provider {
         id: "groq",
@@ -213,6 +220,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Groq"),
     },
     Provider {
         id: "openrouter",
@@ -224,6 +232,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("OpenRouter"),
     },
 ];
 
@@ -316,6 +325,14 @@ mod tests {
             assert_eq!(provider(p.id), Some(p));
         }
         assert_eq!(BY_ID.len(), PROVIDERS.len());
+    }
+
+    #[test]
+    fn every_provider_names_itself_in_its_chat_profile() {
+        for p in PROVIDERS {
+            assert_eq!(p.chat.provider, p.name, "{}", p.id);
+        }
+        assert_eq!(provider("openai").unwrap().chat, ChatProfile::OPENAI);
     }
 
     #[test]

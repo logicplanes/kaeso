@@ -540,6 +540,7 @@ mod tests {
 
     use super::*;
     use crate::testing::{Reply, TempDir, serve_once};
+    use kaeso_codecs::openai_chat::ChatProfile;
 
     #[derive(Parser)]
     struct Cli {
@@ -593,6 +594,7 @@ mod tests {
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Example Cloud"),
     };
 
     fn known(id: &str) -> &'static Provider {

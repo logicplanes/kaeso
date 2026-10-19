@@ -1,6 +1,7 @@
 mod check;
 mod convert;
 mod error;
+mod profile;
 mod request;
 mod request_encode;
 mod response;
@@ -19,6 +20,8 @@ mod tests_deepseek;
 #[cfg(test)]
 mod tests_malformed;
 #[cfg(test)]
+mod tests_profile;
+#[cfg(test)]
 mod tests_regressions;
 #[cfg(test)]
 mod tests_stream;
@@ -33,6 +36,8 @@ use crate::codec::{
     StreamEncoder, is_forwarded_header,
 };
 use crate::wire::to_body;
+
+pub use profile::{ChatProfile, OutputLimit, SeedField};
 
 pub(crate) const DIALECT: DialectId = DialectId::OpenAiChat;
 
@@ -111,6 +116,8 @@ impl Codec for OpenAiChat {
             ));
         };
         let wire = request_encode::encode_generate(generate, ctx)?;
+        let body = to_body(&wire)?;
+        ctx.chat_profile.refuse(generate, &body)?;
         let mut headers = HeaderList::new().with("content-type", "application/json");
         if generate.extras.is_from(DIALECT) {
             for (name, value) in generate.extras.headers() {
@@ -122,7 +129,7 @@ impl Codec for OpenAiChat {
         Ok(EncodedRequest::post_json(
             CHAT_COMPLETIONS_PATH,
             headers,
-            to_body(&wire)?,
+            body,
         ))
     }
 

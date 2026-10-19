@@ -29,10 +29,10 @@ Schlagen Sie hier jedes Feld des Formats OpenAI Chat Completions nach: wohin es 
 | `model` | `GenerateRequest.model` typisiert | |
 | `messages` | `system` + `messages` typisiert | Siehe [Nachrichten](#nachrichten-chatcompletionrequestmessage). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typisiert | Als Ganzzahl geschrieben (`1`): Form `integers`, die Liste der so geschriebenen Schlüssel. Der Encoder schreibt einen solchen Schlüssel als Ganzzahl, solange sein Wert noch ganzzahlig ist, sodass `temperature: 1` als `1` zurückkommt, nicht als `1.0`; ein geänderter Wert wird als der neue Wert geschrieben. Aus anderen Dialekten: die `f64`-Schreibweise (`1.0`). |
-| `max_completion_tokens` | `sampling.max_output_tokens` typisiert | Die Schreibweise, die für Anfragen aus jedem Quelldialekt geschrieben wird. `CreateChatCompletionRequest` setzt dafür und für `max_tokens` kein Minimum, daher bleibt jede nicht negative Ganzzahl erhalten, auch `0`; eine negative ist `InvalidRequest`. |
+| `max_completion_tokens` | `sampling.max_output_tokens` typisiert | Die Schreibweise, die für Anfragen aus jedem Quelldialekt geschrieben wird, außer das Profil des Anbieters verlangt `max_tokens` ([Anbieterprofile](#anbieterprofile)). `CreateChatCompletionRequest` setzt dafür und für `max_tokens` kein Minimum, daher bleibt jede nicht negative Ganzzahl erhalten, auch `0`; eine negative ist `InvalidRequest`. |
 | `max_tokens` (veraltet) | `sampling.max_output_tokens` typisiert | Form `max_tokens: "max_tokens"`. Beide mit demselben Wert vorhanden: Form `"both"`. Mit verschiedenen Werten gewinnt `max_completion_tokens`, und `max_tokens` wird zum Extra `max_tokens (differs from max_completion_tokens)`, das als `max_tokens` zurückgesendet wird; der Schlüssel benennt den Konflikt, wenn ein anderer Dialekt ihn ablehnt. |
 | `stop` | `sampling.stop` typisiert | Schreibweise als String: Form `stop: "string"`; `[]`: Form `"array"`. Mehr als vier Sequenzen: `Unsupported` (`stop`). |
-| `seed` | `sampling.seed` typisiert | |
+| `seed` | `sampling.seed` typisiert | Wird als `random_seed` gesendet, wenn das Profil des Anbieters es so festlegt ([Anbieterprofile](#anbieterprofile)). |
 | `frequency_penalty`, `presence_penalty` | `sampling.*` typisiert | Ganzzahlige Schreibweise wie bei `temperature` (Form `integers`). |
 | `n` | Form `n` bei `1` | `n > 1`: `Unsupported` (`n`, siehe [Sampling](cross-format.md#sampling)); `0`: `InvalidRequest`. |
 | `reasoning_effort` | `reasoning.effort` typisiert | Aus anderen Dialekten ([Aufwand und Budget](reasoning.md#aufwand-und-budget)): eine ausdrückliche Aufwandsstufe unverändert; Anthropic `thinking.disabled` wird zu `none`; ein Budget wird zu `low` (unter 4.096), `medium` (4.096 bis 16.383) oder `high` (16.384 und mehr). Werte `none` bis `max`; unbekannte Werte bleiben als `ReasoningEffort::Other` erhalten und gehen für Chat-Apps unverändert weiter, während `check()` für Anfragen aus anderen Dialekten Werte außerhalb des Enums der Spezifikation ablehnt (`reasoning.effort`). |
@@ -47,7 +47,7 @@ Schlagen Sie hier jedes Feld des Formats OpenAI Chat Completions nach: wohin es 
 | `tool_choice` `allowed_tools`, `custom`, andere Strings | `ToolChoice::Unknown` | Nur im selben Dialekt. |
 | `parallel_tool_calls` | `parallel_tool_calls` typisiert | |
 | `safety_identifier` | `user` typisiert | KPP `user` ist die ID des Endbenutzers für die Missbrauchserkennung, und genau das ist `safety_identifier`. |
-| `user` (veraltet) | `user` typisiert, wenn `safety_identifier` fehlt (Form `user`); sonst das Extra `user (sent alongside safety_identifier)`, das als `user` zurückgesendet wird | KPP `user` aus anderen Dialekten wird als `safety_identifier` gesendet. |
+| `user` (veraltet) | `user` typisiert, wenn `safety_identifier` fehlt (Form `user`); sonst das Extra `user (sent alongside safety_identifier)`, das als `user` zurückgesendet wird | KPP `user` aus anderen Dialekten wird als `safety_identifier` gesendet. Ein Anbieter, dessen Profil kein Feld für den Endbenutzer hat, erhält keines von beiden ([Anbieterprofile](#anbieterprofile)). |
 | `stream` | `stream` typisiert | `false`: Form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typisiert | `stream_options` fehlt: Form `stream_options: "absent"`; ohne `include_usage`: Form `"no_include_usage"`; andere Schlüssel (`include_obfuscation`) sind Extras `stream_options.<key>`; bei ausgeschaltetem `stream`: das ganze Objekt als Form `stream_options_off`. Anfragen aus anderen Dialekten verlangen immer `include_usage: true`. Das Gateway braucht die Nutzung, setzt deshalb bei jeder Streaming-Anfrage `include_usage: true` und behält die ursprüngliche Anfrage der App in `EncodeCtx`; der Stream-Encoder der App blendet den Nutzungs-Chunk dann für Apps aus, die nicht danach gefragt haben. |
 | `audio`, `functions` und `function_call` (veraltet, oberste Ebene), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | Extras | Keine Entsprechung in KPP; über Dialektgrenzen abgelehnt ([Extras](cross-format.md#extras), [Sampling](cross-format.md#sampling)), außer `prompt_cache_key`, das auf der [Extras-Allowlist](cross-format.md#extras) steht und weggelassen wird. `null`-Werte sind Form. Gegenüber Anthropic etwa schlägt `functions` fehl mit `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
@@ -112,6 +112,23 @@ Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid O
 | unbekannte Schlüssel | Extras (verschachtelt `function.<key>`) | |
 | `type: custom` | `Block::Unknown` | Wird in `tool_calls` zurückgesendet. |
 | `type` fehlt, mit einem `function`-Objekt | `Block::ToolCall`, Form `no_type` | `ChatCompletionMessageToolCall` verlangt `type`, manche OpenAI-kompatiblen Anbieter lassen es aber weg; nur Funktionsaufrufe haben ein `function`-Objekt, daher erreicht der Aufruf jede App. Wird ohne `type` zurückgeschrieben. |
+
+## Anbieterprofile
+
+Andere Anbieter sprechen dieses Format mit eigenen Abweichungen. Jeder Anbieter in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) nennt im Feld `chat` ein `kaeso_codecs::openai_chat::ChatProfile`, und `EgressCtx::with_chat_profile` übergibt es dem Encoder, der es auf jede Anfrage anwendet, gleich in welchem Format die App sie gesendet hat. `ChatProfile::OPENAI`, der Standard, ändert nichts, ebenso `ChatProfile::compatible(name)`, solange keine Einstellung hinzukommt.
+
+| Einstellung | Was der Encoder tut | Warum das erlaubt ist |
+|---|---|---|
+| `max_tokens()` | Sendet das Ausgabelimit als `max_tokens` und ein `max_completion_tokens: null` als `max_tokens: null`. Eine Chat-Anfrage mit beiden Feldern und verschiedenen Werten ist `Unsupported` (`max_tokens`). | Nur die Schreibweise ändert sich; der Wert bleibt gleich. |
+| `system_role()` | Sendet `developer`-Nachrichten als `system`-Nachrichten. | Die Schreibweise der Rolle ist Form; beide tragen die Anweisungen. |
+| `random_seed()` | Sendet `seed` als `random_seed`, auch ein `seed: null`. Ein negativer Seed oder eine Anfrage mit `seed` und `random_seed` (beide auch als `null`) ist `Unsupported` (`seed`). Die Regel folgt Mistrals `random_seed`, dem sein OpenAPI-Dokument `minimum: 0` gibt. | `seed` bleibt semantisch: Es wird umbenannt oder abgelehnt, nie verworfen. |
+| `without_end_user()` | Lässt KPP `user` weg, statt es als `user` oder `safety_identifier` zu senden, zusammen mit einem zweiten `user`, das eine Chat-App neben `safety_identifier` gesendet hat, und ihren `null`-Schreibweisen. | `user` ist ein Hinweis ([Feldklassen](index.md#feldklassen)). |
+| `refusing(fields)` | Lehnt eine Anfrage ab, deren Body einen dieser Schlüssel auf oberster Ebene enthielte, etwa `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras sind semantisch, daher werden sie abgelehnt, nicht verworfen. |
+| `refusing_in_messages(fields)` | Dasselbe für Schlüssel von System-, Benutzer- und Assistentennachrichten. Tool-Nachrichten werden nicht geprüft. | Wie oben. |
+
+`refusing` und `refusing_in_messages` nehmen jeweils die ganze Liste; ein zweiter Aufruf ersetzt den ersten. Eine Ablehnung nennt das Feld so, wie die App es geschrieben hat: den Schlüssel einer Chat-App mit eigenem Namen und Pfad (`logit_bias`, `messages[1].name`) und einen Ablehnungsblock aus einem anderen Format mit seinem KPP-Pfad (`messages[1].blocks[0]`). Die Ablehnung geschieht beim Kodieren der Anfrage, bevor etwas gesendet wird, und erreicht die App in ihrem eigenen Format.
+
+Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unten mit der Quelle jeder Einstellung: der Dokumentation des Anbieters, seinem OpenAPI-Dokument oder einer Live-Aufnahme in `fixtures/openai_chat/providers/<id>/`. Noch hat kein eingebauter Anbieter ein solches Profil.
 
 ## Antwort: `CreateChatCompletionResponse`
 
