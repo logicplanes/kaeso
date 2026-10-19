@@ -165,7 +165,7 @@ rights!(
         OrgView = "org.view", Organization, "View organization", false, false, false, [], "See the organization, its settings and its roles.";
         OrgUpdate = "org.update", Organization, "Edit organization", false, false, false, [], "Rename the organization, change its picture and general settings, and choose the default project.";
         OrgDelete = "org.delete", Organization, "Delete organization", true, true, false, [], "Schedule the organization for deletion, or restore it while it waits.";
-        OrgOwnershipTransfer = "org.ownership.transfer", Organization, "Transfer ownership", true, true, false, [MembersView], "Make another member an owner in your place.";
+        OrgOwnershipTransfer = "org.ownership.transfer", Organization, "Transfer ownership", true, true, false, [MembersView], "Make another member an owner in your place; only owners hold it.";
         MembersView = "members.view", Members, "View members", false, false, false, [], "See members, their roles and their rights.";
         MembersInvite = "members.invite", Members, "Invite members", false, false, false, [MembersView], "Invite people by email with a role you could grant yourself.";
         MembersInvitesRevoke = "members.invites.revoke", Members, "Cancel invites", false, false, false, [MembersView], "Cancel pending invitations.";
@@ -227,12 +227,18 @@ rights!(
         LogsMetadataView = "logs.metadata.view", Logs, "View request logs", false, false, false, [], "See request logs: model, tokens, cost, latency, status and key.";
         LogsContentView = "logs.content.view", Logs, "View prompts and outputs", true, false, false, [LogsMetadataView], "See request and response bodies in the logs.";
         LogsExport = "logs.export", Logs, "Export logs", true, false, false, [LogsMetadataView], "Export the project's request logs.";
-        LogsContentDisable = "logs.content.disable", Logs, "Turn off content logging", false, false, false, [], "Switch content logging off for this project.";
+        LogsContentManage = "logs.content.manage", Logs, "Switch content logging", true, false, false, [], "Switch content logging on or off for this project.";
         UsageView = "usage.view", UsageCosts, "View usage", false, false, false, [], "See the project's usage.";
         CostsView = "costs.view", UsageCosts, "View costs", false, false, false, [UsageView], "See the project's costs.";
         ProjectAuditLogView = "project.audit_log.view", Audit, "View project audit log", false, false, false, [], "Read the audit log of changes in this project.";
     }
 );
+
+impl OrgRight {
+    pub const fn owner_only(self) -> bool {
+        matches!(self, OrgRight::OrgOwnershipTransfer)
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Right {

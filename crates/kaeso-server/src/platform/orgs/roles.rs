@@ -276,8 +276,15 @@ fn holding_of(scope: &str, rights: &[String], project_rights: &[String]) -> ApiR
             .map_err(|e| ApiError::invalid(param, format!("{e}.")))
     };
     if scope == "org" {
+        let org = parse_org_param(rights)?;
+        if let Some(right) = org.intersect(OrgRights::owner_only()).iter().next() {
+            return Err(ApiError::invalid(
+                "rights",
+                format!("`{right}` is held only by owners, so a role can't include it."),
+            ));
+        }
         Ok(OrgHolding {
-            org: parse_org_param(rights)?,
+            org,
             every_project: parse_project_param(project_rights, "project_rights")?,
         })
     } else {

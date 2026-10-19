@@ -69,7 +69,7 @@
         "logs.metadata.view",
         "logs.content.view",
         "logs.export",
-        "logs.content.disable",
+        "logs.content.manage",
         "usage.view",
         "costs.view",
         "project.audit_log.view"
@@ -144,7 +144,7 @@
         "logs.metadata.view",
         "logs.content.view",
         "logs.export",
-        "logs.content.disable",
+        "logs.content.manage",
         "usage.view",
         "costs.view",
         "project.audit_log.view"
@@ -258,7 +258,7 @@
         "logs.metadata.view",
         "logs.content.view",
         "logs.export",
-        "logs.content.disable",
+        "logs.content.manage",
         "usage.view",
         "costs.view",
         "project.audit_log.view"

@@ -140,6 +140,9 @@ const messages = (): Rule[] => [
   rule("errors.chooseAnotherMember", () => t("errors.chooseAnotherMember", "Choose another member.")),
   rule("errors.newOwnerActiveMember", () => t("errors.newOwnerActiveMember", "The new owner must be an active member of the organization.")),
   rule("errors.memberHoldsMoreRights", () => t("errors.memberHoldsMoreRights", "You can't change a member who holds rights you don't hold.")),
+  rule("errors.serviceAccountHoldsMoreRights", () =>
+    t("errors.serviceAccountHoldsMoreRights", "You can't change a service account that holds rights you don't hold."),
+  ),
   rule("errors.orgAlreadyScheduled", () => t("errors.orgAlreadyScheduled", "The organization is already scheduled for deletion.")),
   rule("errors.orgNotScheduled", () => t("errors.orgNotScheduled", "The organization is not scheduled for deletion.")),
   rule("errors.onlyScheduledDeleteNow", () => t("errors.onlyScheduledDeleteNow", "Only an organization scheduled for deletion can be deleted now.")),
@@ -168,6 +171,8 @@ const messages = (): Rule[] => [
   rule("errors.grantExceedsMany", (v) => t("errors.grantExceedsMany", "You can't grant `{right}` and {more} more rights: you don't hold them yourself.", v)),
   rule("errors.rightNeeds", (v) => t("errors.rightNeeds", "`{right}` needs `{needs}`.", v)),
   rule("errors.rightNeedsRemoved", (v) => t("errors.rightNeedsRemoved", "`{right}` needs `{needs}`; remove `{right}` too.", v)),
+  rule("errors.ownerOnlyRightAdded", (v) => t("errors.ownerOnlyRightAdded", "`{right}` is held only by owners; make the member an owner instead.", v)),
+  rule("errors.ownerOnlyRightInRole", (v) => t("errors.ownerOnlyRightInRole", "`{right}` is held only by owners, so a role can't include it.", v)),
   rule("errors.roleHoldersNeed", (v) => t("errors.roleHoldersNeed", "`{right}` needs `{needs}` for {count} of this role's holders; keep it in the role.", v), {
     count: "number",
   }),
