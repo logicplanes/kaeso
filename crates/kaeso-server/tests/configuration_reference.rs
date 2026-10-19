@@ -300,5 +300,8 @@ fn an_empty_file_value_trusts_no_proxy_and_an_empty_variable_keeps_the_default()
     .unwrap();
     assert!(none.trusted_proxies.is_empty());
     let default = load(&base().set("KAESO_TRUSTED_PROXIES", "")).unwrap();
-    assert_eq!(default.trusted_proxies.len(), 6);
+    assert_eq!(
+        default.trusted_proxies,
+        ["127.0.0.0/8".parse().unwrap(), "::1/128".parse().unwrap()]
+    );
 }
