@@ -18,6 +18,7 @@ const KEYS: QueryKey = ["orgs", ORG, "projects", PROJECT, "keys", "all", {}];
 const OTHER_KEYS: QueryKey = ["orgs", ORG, "projects", OTHER_PROJECT, "keys", "all", {}];
 const MODELS: QueryKey = ["orgs", ORG, "projects", PROJECT, "models"];
 const PLAYGROUND_MODELS: QueryKey = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
+const ALIASES: QueryKey = ["orgs", ORG, "projects", PROJECT, "aliases"];
 
 const seed = (...keys: QueryKey[]) => {
   for (const k of keys) queryClient.setQueryData(k, { seeded: true });
@@ -81,17 +82,30 @@ describe("what a change reloads", () => {
     expect(invalidated(LOG_LIST)).toBe(false);
   });
 
+  it("reloads no project's keys when a disabled key's project isn't one of the person's", async () => {
+    signedIn();
+    on("GET", "me/keys", paged([key({ project_id: "proj_gone" })]));
+    on("POST", "me/keys/:key/disable", key({ project_id: "proj_gone", state: "disabled" }));
+    seed(KEYS);
+    const { user } = await renderApp("/settings/account/keys");
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    expect(await notifications().findByText("support-bot disabled")).toBeInTheDocument();
+    expect(invalidated(KEYS)).toBe(false);
+  });
+
   it("reloads the model catalogues after a models.dev sync", async () => {
     signedIn();
     on("GET", "instance/models-dev", modelsDev());
     on("POST", "instance/models-dev/sync", modelsDev({ model_count: 420 }));
-    seed(MODELS, PLAYGROUND_MODELS, PROJECT_MEMBERS);
+    seed(MODELS, PLAYGROUND_MODELS, ALIASES, PROJECT_MEMBERS);
     const { user } = await renderApp("/settings/instance/model-sources");
     await screen.findByText("412 models");
     await user.click(screen.getByRole("button", { name: "Sync now" }));
     expect(await notifications().findByText("Synced: 420 models")).toBeInTheDocument();
     expect(invalidated(MODELS)).toBe(true);
     expect(invalidated(PLAYGROUND_MODELS)).toBe(true);
+    expect(invalidated(ALIASES)).toBe(true);
     expect(invalidated(PROJECT_MEMBERS)).toBe(false);
   });
 

@@ -11,6 +11,7 @@ import { on, page, requests, type ApiRequest } from "~/test/network";
 import { auditLogQuery } from "./audit";
 import { instanceOrgsQuery, instanceUsersQuery } from "./instance";
 import { logEntryQuery, logsInfiniteQuery } from "./logs";
+import { refetchOnFocusWhileOnePage } from "../paging";
 
 const refocus = () => {
   focusManager.setFocused(true);
@@ -70,6 +71,12 @@ describe("a long list when the window regains focus", () => {
     expect(queryClient.isFetching()).toBe(0);
     expect(requests("GET", path)).toHaveLength(3);
     stop();
+  });
+});
+
+describe("a long list that hasn't loaded yet", () => {
+  it("loads on focus", () => {
+    expect(refetchOnFocusWhileOnePage({ state: { data: undefined } })).toBe(true);
   });
 });
 
