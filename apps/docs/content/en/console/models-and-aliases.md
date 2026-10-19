@@ -69,7 +69,7 @@ Kaeso looks up the model a request names in this order:
 2. A provider and a model: `anthropic/claude-haiku-4-5`.
 3. A model id: `claude-haiku-4-5`.
 
-If two providers have a model with the same id, use the `provider/model` form.
+If two providers have a model with the same id, use the `provider/model` form. Kaeso splits it at the first `/`, so a model id that contains `/` keeps it: `togetherai/Qwen/Qwen3.5-9B` names Together AI's `Qwen/Qwen3.5-9B`.
 
 A model id can contain `/`, such as OpenRouter's `anthropic/claude-sonnet-4.5`. When a name is both a model id and a provider with a model, Kaeso refuses it as ambiguous. For example, in a project with OpenRouter's `openai/gpt-4o` and OpenAI's `gpt-4o`, name them `openrouter/openai/gpt-4o` and `gpt-4o`.
 

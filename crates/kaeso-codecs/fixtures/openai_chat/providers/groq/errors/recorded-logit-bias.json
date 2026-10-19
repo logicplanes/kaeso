@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "`logit_bias` is not supported with this model",
+    "type": "invalid_request_error",
+    "param": "logit_bias"
+  }
+}

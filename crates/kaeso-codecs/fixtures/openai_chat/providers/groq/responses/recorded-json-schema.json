@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-4ff67b7e-f3c2-4902-91d1-408c0c4d89bf",
+  "object": "chat.completion",
+  "created": 1792370007,
+  "model": "openai/gpt-oss-20b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"date\":\"2026-10-16\",\"name\":\"science fair\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "reasoning": "We need to output JSON matching calendar_event schema."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.157037263,
+    "prompt_tokens": 174,
+    "prompt_time": 0.061792812,
+    "completion_tokens": 46,
+    "completion_time": 0.050576757,
+    "total_tokens": 220,
+    "total_time": 0.112369569,
+    "completion_tokens_details": {
+      "reasoning_tokens": 11
+    }
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_2b688e7cc3",
+  "x_groq": {
+    "id": "req_01m58s7q1jehj8c0emjfktrtfw",
+    "seed": 1759271693
+  },
+  "service_tier": "on_demand"
+}

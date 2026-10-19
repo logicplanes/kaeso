@@ -195,6 +195,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` oder `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, Code `content_policy_violation` |
 | 400, 409, 422 | `InvalidRequest` (und `Unsupported` beim Kodieren) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -206,9 +207,11 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 
 Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Stream-Fehler, der keinen Status hat. Ein solcher Fehler nimmt seinen Status aus einem numerischen `code` zwischen 400 und 599, den OpenRouter als HTTP-Status sendet.
 
+Mit HTTP 402 melden OpenAI-kompatible Anbieter wie DeepSeek ein aufgebrauchtes Guthaben ([Fehlercodes von DeepSeek](https://api-docs.deepseek.com/quick_start/error_codes)), deshalb ist es `Billing`, was auch immer sein `code` sagt.
+
 Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`openai_responses::error`), sodass ein Fehler in der OpenAI-Form in jeder OpenAI-API dieselbe Art, denselben `type` und denselben `code` hat. Die OpenAI-SDKs wählen ihre Exception-Klasse nach dem Status, `type` ist also nur eine zusätzliche Information.
 
-`retry-after-ms` oder `retry-after` wird zu `retry_after`, das als `retry-after` in ganzen Sekunden geschrieben wird, aufgerundet, dazu `retry-after-ms`, aufgerundet, wenn die Wartezeit einen Sekundenbruchteil hat. `param` wird zu `KppError.param`, wenn es ein String ist. Ein aus Chat dekodierter Fehler wird mit seinem ursprünglichen Status wieder kodiert, und mit seinem ursprünglichen Body, wenn dieser ein `error`-Objekt hat. Bodies, die Kaeso nicht als `ErrorResponse` lesen kann, etwa ein HTML-429 von einem Proxy, ein 503 als reiner Text, `{"error": "rate limited"}` oder ein Body mit einem Schlüssel, den Kaeso nicht tragen kann, bekommen ihre Art allein vom HTTP-Status (Tabelle oben; ohne Status, wie in einem Stream, `ProviderError`) und behalten den rohen Body. Ein `error` als String wird zur Meldung; sonst lautet die Meldung `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, mit nach 500 Bytes gekürztem Body und in einem Stream ohne den HTTP-Teil. Ein lesbarer Body ohne Meldung bekommt `The provider returned an error without a message.`
+`retry-after-ms` oder `retry-after` wird zu `retry_after`, das als `retry-after` in ganzen Sekunden geschrieben wird, aufgerundet, dazu `retry-after-ms`, aufgerundet, wenn die Wartezeit einen Sekundenbruchteil hat. `param` wird zu `KppError.param`, wenn es ein String ist. Ein aus Chat dekodierter Fehler wird mit seinem ursprünglichen Status wieder kodiert, und mit seinem ursprünglichen Body, wenn dieser ein `error`-Objekt hat. Bodies, die Kaeso nicht als `ErrorResponse` lesen kann, etwa ein HTML-429 von einem Proxy, ein 503 als reiner Text, `{"error": "rate limited"}` oder ein Body mit einem Schlüssel, den Kaeso nicht tragen kann, bekommen ihre Art allein vom HTTP-Status (Tabelle oben; ohne Status, wie in einem Stream, `ProviderError`) und behalten den rohen Body. Ein `error` als String wird zur Meldung. Beginnt er mit `Incorrect API key provided`, so antwortet xAI mit HTTP 400 auf einen falschen Schlüssel, und die Art ist `Authentication`. Sonst lautet die Meldung `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, mit nach 500 Bytes gekürztem Body und in einem Stream ohne den HTTP-Teil. Ein lesbarer Body ohne Meldung bekommt `The provider returned an error without a message.`
 
 ## Modelle
 
@@ -242,3 +245,20 @@ Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wir
 | unbekannte Schlüssel | Extras-Felder |
 
 Für OpenAI-Apps geht dabei etwas verloren: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` und Extras anderer Dialekte (Anthropic `capabilities`, `line`) haben kein Feld und werden weggelassen ([Antworten](cross-format.md#antworten)). Ein `retires_at`, das nicht auf Mitternacht UTC fällt, wird auf sein UTC-Datum gekürzt, und eines nach dem Jahr 9999 wird als `shutdown_date: null` geschrieben. `created` ist eine Ganzzahl und wird so geschrieben, wie es gespeichert ist; ein Wert in Millisekunden bleibt also einer. `encode_model_request` baut `GET /v1/models/{model}` ohne Header und Body (`retrieveModel` der Spezifikation); den Schlüssel fügt das Gateway hinzu. `encode_models_request` baut `GET /v1/models` (`listModels` der Spezifikation, das keine Query-Parameter kennt; eine Query mit `limit`, `after_id`, `before_id`, `lifecycle` oder anderen Parametern ist daher `Unsupported`). In `decode_models` und `decode_model` geht ein Status außerhalb von 2xx an `decode_error`.
+
+## Anbieter mit diesem Format
+
+Andere Anbieter als OpenAI, die Chat Completions anbieten, zeichnen in `fixtures/openai_chat/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
+
+### Groq
+
+Quellen: die [API-Referenz](https://console.groq.com/docs/api-reference) und der [Reasoning-Leitfaden](https://console.groq.com/docs/reasoning) von Groq, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/groq/`.
+
+| Groq-Feld | KPP | Hinweise |
+|---|---|---|
+| `reasoning_format`, `include_reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning`, `delta.reasoning`, `delta.channel` | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)); ein Chunk, der nur Reasoning enthält, wird dort zu einem Keepalive. |
+| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` der Nutzung | Die Token-Zahlen, `reasoning_tokens` eingeschlossen, sind wie oben typisiert. |
+| `usage` im letzten Chunk, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
+| zusätzliche Modellfelder (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` und weitere) | Modell-Extras | |

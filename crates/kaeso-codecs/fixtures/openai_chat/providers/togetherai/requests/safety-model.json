@@ -1,0 +1,11 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name one planet."
+    }
+  ],
+  "max_tokens": 300,
+  "safety_model": "meta-llama/Meta-Llama-Guard-3-8B"
+}

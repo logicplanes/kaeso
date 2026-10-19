@@ -144,6 +144,10 @@ services:
 | --- | --- | --- | --- | --- |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | 文本 | `https://api.openai.com` | OpenAI API 的基础 URL。 |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | 文本 | `https://api.anthropic.com` | Anthropic API 的基础 URL。 |
+| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | 文本 | `https://api.deepseek.com` | DeepSeek API 的基础 URL。 |
+| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | 文本 | `https://api.x.ai` | xAI API 的基础 URL。 |
+| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | 文本 | `https://api.together.ai` | Together AI API 的基础 URL。 |
+| `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | 文本 | `https://api.groq.com/openai` | Groq API 的基础 URL。 |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | 文本 | `https://openrouter.ai/api` | OpenRouter API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |

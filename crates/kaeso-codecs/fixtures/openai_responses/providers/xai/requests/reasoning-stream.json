@@ -1,0 +1,8 @@
+{
+  "model": "grok-4.3",
+  "input": "What is 17 * 24? Answer with the number only.",
+  "reasoning": {
+    "effort": "low"
+  },
+  "stream": true
+}

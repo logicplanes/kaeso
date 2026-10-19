@@ -50,6 +50,86 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("adds a DeepSeek key", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "deepseek", name: "Reasoning", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /DeepSeek/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your DeepSeek API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at platform.deepseek.com under API keys; it starts with sk-.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("DeepSeek API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-…");
+    await user.type(secret, "sk-deepseek-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Reasoning");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Reasoning is the DeepSeek default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "deepseek", name: "Reasoning", secret: "sk-deepseek-123", make_default: false },
+    ]);
+  });
+
+  it("adds an xAI key with xAI's own key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "xai", name: "xAI prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /xAI/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your xAI API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at console.x.ai under API keys; it starts with xai-.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("xAI API key");
+    expect(secret).toHaveAttribute("placeholder", "xai-…");
+    await user.type(secret, "xai-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "xAI prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("xAI prod is the xAI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "xai", name: "xAI prod", secret: "xai-123", make_default: false }]);
+  });
+
+  it("adds a Together AI key", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "togetherai", name: "Open models", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /Together AI/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Together AI API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at api.together.ai under API keys; it starts with tgp_v1_.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Together AI API key");
+    expect(secret).toHaveAttribute("placeholder", "tgp_v1_…");
+    await user.type(secret, "tgp_v1_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Open models");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Open models is the Together AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "togetherai", name: "Open models", secret: "tgp_v1_123", make_default: false },
+    ]);
+  });
+
+  it("adds a Groq key with Groq's own key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "groq", name: "Groq prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /Groq/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Groq API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at console.groq.com under API keys; it starts with gsk_.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("Groq API key");
+    expect(secret).toHaveAttribute("placeholder", "gsk_…");
+    await user.type(secret, "gsk_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Groq prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Groq prod is the Groq default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "groq", name: "Groq prod", secret: "gsk_123", make_default: false }]);
+  });
+
   it("adds an OpenRouter key with OpenRouter's own key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "openrouter", name: "OpenRouter prod", is_default: true }));
     const { user, dialog } = await open();

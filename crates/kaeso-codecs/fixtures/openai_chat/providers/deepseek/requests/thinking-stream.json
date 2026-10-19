@@ -1,0 +1,17 @@
+{
+  "model": "deepseek-flash",
+  "thinking": {
+    "type": "enabled"
+  },
+  "reasoning_effort": "low",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 * 23? Answer with the number only."
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

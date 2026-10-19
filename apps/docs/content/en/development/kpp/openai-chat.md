@@ -195,6 +195,7 @@ The error body is `{error: {message, type, param, code}}`.
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` or `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, code `content_policy_violation` |
 | 400, 409, 422 | `InvalidRequest` (and `Unsupported` when encoding) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -206,9 +207,11 @@ The error body is `{error: {message, type, param, code}}`.
 
 A code named in the table, in `code` or `type`, wins over the status. Codes of the status-based kinds (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes, `server_error`) decide only for a stream error, which has no status. Such an error takes its status from a numeric `code` between 400 and 599, which OpenRouter sends as the HTTP status.
 
+HTTP 402 is how OpenAI-compatible providers such as DeepSeek report an exhausted balance ([DeepSeek error codes](https://api-docs.deepseek.com/quick_start/error_codes)), so it is `Billing` whatever its `code` says.
+
 The Responses and Embeddings codecs use the same code table (`openai_responses::error`), so an error in the OpenAI shape has the same kind, `type` and `code` in every OpenAI API. The OpenAI SDKs choose their exception class by status, so `type` only adds information.
 
-`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message; otherwise the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
+`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message. One that starts with `Incorrect API key provided`, xAI's answer to a wrong key with HTTP 400, is `Authentication`. Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
 
 ## Models
 
@@ -242,3 +245,20 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | unknown keys | extras fields |
 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Chat Completions record into `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### Groq
+
+Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and [reasoning guide](https://console.groq.com/docs/reasoning), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/groq/`.
+
+| Groq field | KPP | Notes |
+|---|---|---|
+| `reasoning_format`, `include_reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning`, `delta.reasoning`, `delta.channel` | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)); a chunk that carries only reasoning becomes a keepalive there. |
+| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | extras | Left out towards other dialects. |
+| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as above. |
+| `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
+| extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |

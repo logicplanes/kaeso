@@ -1,0 +1,86 @@
+{
+  "created_at": 1792370367,
+  "completed_at": 1792370370,
+  "id": "6bf1a8b4-c2be-9d5a-9bc6-59c591bba072",
+  "max_output_tokens": null,
+  "model": "grok-4.3",
+  "object": "response",
+  "output": [
+    {
+      "id": "rs_6bf1a8b4-c2be-9d5a-9bc6-59c591bba072",
+      "summary": [
+        {
+          "text": "I'm preparing a three-sentence bedtime story about a unicorn.\n\nThe story will feature a unicorn in a forest, with a gentle magical adventure and a peaceful ending.",
+          "type": "summary_text"
+        }
+      ],
+      "type": "reasoning",
+      "status": "completed"
+    },
+    {
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Once upon a time, in a shimmering meadow under the silver moon, a gentle unicorn named Luna pranced through fields of glowing flowers. She collected starlight in her horn to light the way for sleepy fireflies returning home. As the night grew quiet, Luna curled up on a cloud of soft moss and drifted into peaceful dreams.",
+          "logprobs": [],
+          "annotations": []
+        }
+      ],
+      "id": "msg_6bf1a8b4-c2be-9d5a-9bc6-59c591bba072",
+      "role": "assistant",
+      "type": "message",
+      "status": "completed"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "reasoning": {
+    "effort": "low",
+    "summary": "detailed"
+  },
+  "temperature": 0.7,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "tool_choice": "auto",
+  "tools": [],
+  "top_p": 0.95,
+  "usage": {
+    "input_tokens": 203,
+    "input_tokens_details": {
+      "cached_tokens": 128
+    },
+    "output_tokens": 304,
+    "output_tokens_details": {
+      "reasoning_tokens": 238
+    },
+    "total_tokens": 507,
+    "num_sources_used": 0,
+    "num_server_side_tools_used": 0,
+    "cost_in_usd_ticks": 8793500,
+    "context_details": {
+      "input_tokens": 203,
+      "output_tokens": 312
+    }
+  },
+  "user": null,
+  "incomplete_details": null,
+  "status": "completed",
+  "store": true,
+  "metadata": {
+    "system_fingerprint": "fp_eb3c003fc66c14ed"
+  },
+  "background": false,
+  "service_tier": "default",
+  "truncation": "disabled",
+  "top_logprobs": 0,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "prompt_cache_key": null,
+  "max_tool_calls": null,
+  "safety_identifier": null,
+  "error": null,
+  "instructions": null
+}

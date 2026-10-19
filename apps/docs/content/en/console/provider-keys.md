@@ -17,6 +17,10 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | --- | --- | --- |
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
+| xAI | console.x.ai | `xai-` |
+| Together AI | api.together.ai | `tgp_v1_` |
+| Groq | console.groq.com | `gsk_` |
 | OpenRouter | openrouter.ai, under **Settings**, **API Keys** | `sk-or-v1-` |
 
 OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`; [how a request names a model](models-and-aliases.md#how-a-request-names-a-model) shows how to call them. Kaeso charges OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports.

@@ -69,7 +69,7 @@ Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 2. Ein Anbieter und ein Modell: `anthropic/claude-haiku-4-5`.
 3. Eine Modell-ID: `claude-haiku-4-5`.
 
-Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`.
+Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`. Kaeso trennt sie am ersten `/`, eine Modell-ID mit `/` bleibt also erhalten: `togetherai/Qwen/Qwen3.5-9B` meint `Qwen/Qwen3.5-9B` von Together AI.
 
 Eine Modell-ID kann `/` enthalten, etwa OpenRouters `anthropic/claude-sonnet-4.5`. Ist ein Name zugleich eine Modell-ID und ein Anbieter mit einem Modell, lehnt Kaeso ihn als mehrdeutig ab. Hat ein Projekt etwa OpenRouters `openai/gpt-4o` und OpenAIs `gpt-4o`, nennen Sie sie `openrouter/openai/gpt-4o` und `gpt-4o`.
 

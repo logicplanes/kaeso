@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "failed to template request: failed to render text output: minijinja: rendering failed: raise_exception: Unexpected message role.",
+    "type": "invalid_request_error"
+  }
+}

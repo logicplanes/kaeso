@@ -45,6 +45,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   bedrock: "Amazon Bedrock",
   azure: "Azure OpenAI",
   ollama: "Ollama",
+  togetherai: "Together AI",
   openrouter: "OpenRouter",
 };
 export const providerName = (id: string) => PROVIDER_NAMES[id] ?? id;

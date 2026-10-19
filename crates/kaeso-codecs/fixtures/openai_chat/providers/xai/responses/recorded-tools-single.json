@@ -1,0 +1,48 @@
+{
+  "id": "a590f19d-ffce-94c0-a90c-1d5c897dd3cd",
+  "object": "chat.completion",
+  "created": 1792370256,
+  "model": "grok-4.3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            },
+            "type": "function"
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 349,
+    "completion_tokens": 17,
+    "total_tokens": 366,
+    "prompt_tokens_details": {
+      "text_tokens": 349,
+      "audio_tokens": 0,
+      "image_tokens": 0,
+      "cached_tokens": 128
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "num_sources_used": 0,
+    "cost_in_usd_ticks": 3443500
+  },
+  "system_fingerprint": "fp_eb3c003fc66c14ed",
+  "service_tier": "default"
+}

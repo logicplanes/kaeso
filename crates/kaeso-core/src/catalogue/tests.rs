@@ -287,6 +287,48 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn model_ids_with_a_slash_resolve_prefixed_and_native() {
+    let oss = entry("groq", "openai/gpt-oss-20b");
+    let qwen = entry("groq", "qwen/qwen3.8-27b");
+    let entries = vec![oss.clone(), qwen.clone()];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
+    assert_eq!(r("openai/gpt-oss-20b"), Ok((oss.id, Via::Native)));
+    assert_eq!(r("qwen/qwen3.8-27b"), Ok((qwen.id, Via::Native)));
+    assert!(matches!(
+        r("groq/gpt-oss-20b"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+    let gpt = entry("openai", "gpt-oss-20b");
+    let both = vec![oss.clone(), gpt.clone()];
+    let r = |n: &str| resolve(n, &both, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-oss-20b"), Ok((gpt.id, Via::Prefixed)));
+    assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
+}
+
+#[test]
+fn model_ids_with_slashes_resolve_natively_and_with_their_provider_prefix() {
+    let qwen = entry("togetherai", "Qwen/Qwen3.5-9B");
+    let oss = entry("togetherai", "openai/gpt-oss-120b");
+    let entries = vec![qwen.clone(), oss.clone(), entry("openai", "gpt-4o")];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(r("Qwen/Qwen3.5-9B"), Ok((qwen.id, Via::Native)));
+    assert_eq!(
+        r("togetherai/Qwen/Qwen3.5-9B"),
+        Ok((qwen.id, Via::Prefixed))
+    );
+    assert_eq!(r("openai/gpt-oss-120b"), Ok((oss.id, Via::Native)));
+    assert_eq!(
+        r("togetherai/openai/gpt-oss-120b"),
+        Ok((oss.id, Via::Prefixed))
+    );
+    assert!(matches!(
+        r("togetherai/Qwen3.5-9B"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+}
+
+#[test]
 fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_prefix() {
     let free = entry("openrouter", "nvidia/nemotron-3.5-lightning:free");
     let sonnet = entry("openrouter", "anthropic/claude-sonnet-4.5");

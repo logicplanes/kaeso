@@ -195,6 +195,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | `code` `content_policy_violation`、`content_filter`、`bio_policy`、`cyber_policy`、`misalignment_policy_violation` 或 `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`，code `content_policy_violation` |
 | 400、409、422 | `InvalidRequest`（编码时还有 `Unsupported`） | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -206,9 +207,11 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 
 表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。这类错误的状态码取自 400 到 599 之间的数字 `code`，OpenRouter 以它发送 HTTP 状态码。
 
+兼容 OpenAI 的服务商（例如 DeepSeek）用 HTTP 402 表示余额不足（[DeepSeek 错误码](https://api-docs.deepseek.com/quick_start/error_codes)），因此无论其 `code` 为何，它都是 `Billing`。
+
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
-`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息；否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息。以 `Incorrect API key provided` 开头的是 xAI 对错误密钥的 HTTP 400 回复，类别为 `Authentication`。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
 
 ## 模型
 
@@ -242,3 +245,20 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | 未知键 | extras 字段 |
 
 对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。
+
+## 使用此格式的服务商
+
+提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
+
+### Groq
+
+来源：Groq 的 [API 参考](https://console.groq.com/docs/api-reference)和[推理指南](https://console.groq.com/docs/reasoning)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/groq/` 中的实时录制。
+
+| Groq 字段 | KPP | 说明 |
+|---|---|---|
+| `reasoning_format`、`include_reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning`、`delta.reasoning`、`delta.channel` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）；只含推理的数据块在那里会变成 keepalive。 |
+| `x_groq`、`usage_breakdown`、`service_tier`（`on_demand`） | extras | 发往其他方言时省略。 |
+| `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | token 数（包括 `reasoning_tokens`）按上文的类型化字段处理。 |
+| 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
+| 额外的模型字段（`active`、`context_window`、`max_completion_tokens`、`pricing`、`supported_features` 等） | 模型 extras | |

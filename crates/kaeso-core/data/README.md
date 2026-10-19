@@ -9,9 +9,9 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 | | |
 |---|---|
 | Source | `https://models.dev/api.json` |
-| Fetched | 2026-10-19T01:51:30Z |
-| Content | the providers Kaeso calls (`anthropic`, `openai`, `openrouter`), unchanged otherwise; 460 models |
-| SHA-256 | `a299e3afe98746c3263e14aaf4dbd7fa69fbd6d4685b65ddebea4656143fa696` |
+| Fetched | 2026-10-19T02:28:10Z |
+| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `openai`, `togetherai`, `xai`), unchanged otherwise; 135 models |
+| SHA-256 | `799d23ce9e48b0252a1e70c965c23b5ad25d12249da0462442ecf3ed831ac82e` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 The file keeps models.dev's shape (`{provider: {id, name, models: {id: model}}}`), pretty-printed with sorted keys. Only providers in `crates/kaeso-core/src/provider.rs` are kept; the full file lists over 200 providers Kaeso cannot call. When the gateway syncs (every 24 hours by default, `KAESO_MODELS_DEV_SYNC`), it applies the same filter and stores the result in PostgreSQL; the newer of the stored and the built-in snapshot wins at startup.

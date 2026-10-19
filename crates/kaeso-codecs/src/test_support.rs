@@ -93,6 +93,12 @@ pub(crate) fn sidecar(
         .map(|b| serde_json::from_slice(&b).unwrap())
 }
 
+pub(crate) fn encoded_error(meta: &serde_json::Value, body: &[u8]) -> Vec<u8> {
+    meta.get("encoded")
+        .map(|e| serde_json::to_vec(e).unwrap())
+        .unwrap_or_else(|| body.to_vec())
+}
+
 #[track_caller]
 pub(crate) fn assert_json_eq(name: &str, expected: &[u8], actual: &[u8]) {
     if let Some(d) = json_bytes_diff(expected, actual) {

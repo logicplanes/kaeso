@@ -1,0 +1,30 @@
+{
+  "id": "p5ndpX6-3pDw3Z-a4cbbaa92dc664b2",
+  "object": "chat.completion",
+  "created": 1792370403,
+  "model": "Qwen/Qwen3.5-9B",
+  "metadata": {
+    "weight_version": "default"
+  },
+  "prompt": [],
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [],
+        "reasoning": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   Input: \"Name one planet.\"\n    *   Task: Identify and provide the name of a planet (from the solar system, or potentially exoplanets, but usually implies the Solar System in common parlance"
+      },
+      "logprobs": null,
+      "finish_reason": "length",
+      "seed": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "total_tokens": 74,
+    "completion_tokens": 60,
+    "reasoning_tokens": 0
+  }
+}

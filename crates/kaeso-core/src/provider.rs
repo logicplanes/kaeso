@@ -167,6 +167,46 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::AnthropicMessages],
     },
     Provider {
+        id: "deepseek",
+        name: "DeepSeek",
+        default_base_url: "https://api.deepseek.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+    },
+    Provider {
+        id: "xai",
+        name: "xAI",
+        default_base_url: "https://api.x.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiResponses,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
+    },
+    Provider {
+        id: "togetherai",
+        name: "Together AI",
+        default_base_url: "https://api.together.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+    },
+    Provider {
+        id: "groq",
+        name: "Groq",
+        default_base_url: "https://api.groq.com/openai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+    },
+    Provider {
         id: "openrouter",
         name: "OpenRouter",
         default_base_url: "https://openrouter.ai/api",
@@ -238,7 +278,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, openrouter");
+        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai, groq, openrouter");
     }
 
     #[test]
@@ -315,7 +355,15 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "openrouter"]
+            [
+                "openai",
+                "anthropic",
+                "deepseek",
+                "xai",
+                "togetherai",
+                "groq",
+                "openrouter"
+            ]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

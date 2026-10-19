@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-b62b8553-e23d-415c-976c-6ce3525f6ee4",
+  "object": "chat.completion",
+  "created": 1792370392,
+  "model": "qwen/qwen3.8-27b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "\n\u003cthink\u003e\nYes, 17 is a prime number. I need to answer in one sentence.\n\u003c/think\u003e\n\nYes, 17 is a prime number because it is only divisible by 1 and itself."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.018276512,
+    "prompt_tokens": 53,
+    "prompt_time": 0.004423495,
+    "completion_tokens": 42,
+    "completion_time": 0.083247663,
+    "total_tokens": 95,
+    "total_time": 0.087671158
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_43dd1ea4ee",
+  "x_groq": {
+    "id": "req_01m58skfhneakrt798yzk5x3h8",
+    "seed": 1399102185
+  },
+  "service_tier": "on_demand"
+}

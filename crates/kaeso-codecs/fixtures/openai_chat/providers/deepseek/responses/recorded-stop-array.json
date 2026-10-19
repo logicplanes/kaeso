@@ -1,0 +1,32 @@
+{
+  "id": "eecb47b4-c080-4903-b927-4d6d891d5519",
+  "object": "chat.completion",
+  "created": 1792370238,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "1, 2, 3, 4, 5, 6, ",
+        "reasoning_content": "We need answer simple. Need count 1 to 10 separated by commas. Likely \"1, 2, 3, 4, 5, 6, 7, 8, 9, 10\". Ensure no extra. "
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 41,
+    "completion_tokens": 73,
+    "total_tokens": 114,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 53
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 41
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}

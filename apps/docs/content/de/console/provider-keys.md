@@ -17,6 +17,10 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | --- | --- | --- |
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
+| xAI | console.x.ai | `xai-` |
+| Together AI | api.together.ai | `tgp_v1_` |
+| Groq | console.groq.com | `gsk_` |
 | OpenRouter | openrouter.ai, unter **Settings**, **API Keys** | `sk-or-v1-` |
 
 OpenRouter leitet an Modelle vieler Anbieter weiter. Seine Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`; [Wie eine Anfrage ein Modell nennt](models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt) zeigt, wie Sie sie aufrufen. Kaeso berechnet Anfragen an OpenRouter zu den Preisen des Katalogs, nicht zu den Kosten, die OpenRouter in `usage.cost` meldet.

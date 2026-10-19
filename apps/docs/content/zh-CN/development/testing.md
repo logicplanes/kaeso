@@ -198,7 +198,7 @@ e2e/.venv/bin/pytest -q e2e/sdk
 
 | 标记 | 效果 |
 | --- | --- |
-| 提示中的 `[mock:fixture=NAME]` | 用服务商格式中的该 fixture 回复 |
+| 提示中的 `[mock:fixture=NAME]` | 用服务商格式中的该 fixture 回复；`providers/<id>/<name>` 选择某个服务商的录制 |
 | 提示中的 `[mock:gate=NAME]` | 挂起请求，直到测试打开闸门 |
 | 以 `unserved-` 开头的模型 ID | 该格式的“模型不存在”错误 |
 | 服务商密钥中的 `[mock:gate=NAME]` | 挂起 `GET /v1/models` 和 `GET /v1/models/{id}` |

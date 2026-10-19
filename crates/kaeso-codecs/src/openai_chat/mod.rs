@@ -15,6 +15,8 @@ mod tests_check;
 #[cfg(test)]
 mod tests_cross;
 #[cfg(test)]
+mod tests_deepseek;
+#[cfg(test)]
 mod tests_malformed;
 #[cfg(test)]
 mod tests_regressions;

@@ -239,6 +239,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | `content_policy_violation`, `content_filter`, `image_content_policy_violation`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` | `ContentFiltered` |
 | 400, 409, 422 | `InvalidRequest` |
 | 401 | `Authentication` |
+| 402 | `Billing` |
 | 403 | `PermissionDenied` |
 | 404 | `NotFound` |
 | 413 | `RequestTooLarge` |
@@ -246,6 +247,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | 408, 504, `vector_store_timeout` | `Timeout` |
 | andere Status | `ProviderError` |
 | ein Body, der kein OpenAI-Fehler ist, bei jedem Status (etwa ein HTML-429 eines Proxys) | die Art des Status nach den Zeilen oben (ein 429 eines Proxys ist `RateLimited`, ein 502 `ProviderError`), mit der Meldung ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``; Status und roher Body bleiben erhalten |
+| `{"error": "<message>"}`, wie xAI es sendet (mit `"code": "invalid-argument"` bei einem 400) | die Art des Status, mit dem String als Meldung; `Authentication`, wenn die Meldung mit `Incorrect API key provided` beginnt, so antwortet xAI auf einen falschen Schlüssel. Ein unveränderter Fehler wird in der OpenAI-Form mit seinem eigenen Status kodiert |
 
 Die Zeilen mit `type` und `code` haben Vorrang vor dem Status. Andere Codes entscheiden hier nicht, sondern der Status: `rate_limit_exceeded`, `rate_limit_error` und `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` und die Bild-Codes (beginnend mit `invalid_image` oder `image_` oder endend auf `_image`; `InvalidRequest`). Sie entscheiden nur, wo es keinen Status gibt: in einem `error`-Event eines Streams und im `error.code` einer fehlgeschlagenen Antwort. Ein Fehlerobjekt ohne Meldung bekommt `The provider returned HTTP <status> without a message.`
 

@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Thinking mode does not support this tool_choice (request_id: 6118219b-4fe1-46fe-ad55-8bd858cec7da)",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_request_error"
+  }
+}

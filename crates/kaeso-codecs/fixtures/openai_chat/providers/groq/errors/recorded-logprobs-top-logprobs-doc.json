@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "`logprobs` is not supported with this model",
+    "type": "invalid_request_error",
+    "param": "logprobs"
+  }
+}

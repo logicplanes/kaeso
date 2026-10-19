@@ -1,0 +1,29 @@
+{
+  "id": "d60012fe-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370431,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Jupiter",
+        "reasoning_content": "1.  **Analyze the Request**:\n    *   User asks: \"Name one planet.\"\n    *   Constraint: Must name exactly one planet.\n\n2.  **Identify the Planets**:\n    *   Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune. (Also Pluto, but it's a dwarf planet, so stick to the 8 major ones).\n\n3.  **Select one**:\n    *   Let's pick \"Mars\" or \"Jupiter\" or \"Earth\". Let's go with \"Jupiter\" for variety, or just \"Earth\" for simplicity. Let's pick \"Mars\" - it's a classic. Actually, let's just pick \"Earth\" - it's the most obvious, but maybe pick something else to be interesting. Let's pick \"Jupiter\".\n\n4.  **Final check**: Does it name exactly one planet? Yes. \"Jupiter\"."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 194,
+    "total_tokens": 202,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 190
+    }
+  },
+  "system_fingerprint": "default"
+}
