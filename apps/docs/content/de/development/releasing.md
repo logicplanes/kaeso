@@ -109,7 +109,7 @@ Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.M
 
 Der Lauf beginnt auf dem Commit von `prod`. Ändert sich die Version, committet der Job Tag darauf `Release X.Y.Z`, der nur `CHANGELOG.md` und die Dateien ändert, die `node scripts/version.mjs files` auflistet, und taggt diesen Commit als `vX.Y.Z`. Vor dem Commit prüft er, dass diese Änderungen außer `CHANGELOG.md` dem entsprechen, was `node scripts/version.mjs set` in einem eigenen Job schreibt. Jedes Image, jedes Paket und jedes Asset wird aus dem Tag gebaut.
 
-Die Attestierungen der Images und von `release.json`, die `gh attestation verify` und der Updater prüfen, nennen den Commit, auf dem der Lauf begann, denn GitHub signiert sie für den Lauf, und `release.json` nennt denselben Commit. Die Build-Provenienz in jedem Image, die BuildKit schreibt, nennt den Commit des Tags als Quelle. Der Commit des Tags ist also der attestierte Commit oder ein Release-Commit direkt darauf, der nur Version und Changelog ändert.
+`gh attestation verify` und der Updater prüfen die Attestierungen der Images und von `release.json`. Sie nennen den Commit, auf dem der Lauf begann, denn GitHub signiert sie für den Lauf, und `release.json` nennt denselben Commit. Die Build-Provenienz in jedem Image, die BuildKit schreibt, nennt den Commit des Tags als Quelle. Der Commit des Tags ist also der attestierte Commit oder ein Release-Commit direkt darauf, der nur Version und Changelog ändert.
 
 ## Vorabversion erstellen
 

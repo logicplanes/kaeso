@@ -109,7 +109,7 @@ Images are tagged with the version and, for stable releases, with `MAJOR.MINOR`,
 
 The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it, changing only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists, and tags that commit `vX.Y.Z`. Before it commits, it checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own. Every image, package and asset is built from the tag.
 
-The attestations of the images and of `release.json`, which `gh attestation verify` and the updater check, name the commit the run started on, since GitHub signs them for the run, and `release.json` names the same commit. The build provenance inside each image, which BuildKit writes, names the tag's commit as its source. The tag's commit is therefore the attested commit, or a release commit directly on top of it that changes only the version and the changelog.
+`gh attestation verify` and the updater check the attestations of the images and of `release.json`. They name the commit the run started on, since GitHub signs them for the run, and `release.json` names the same commit. The build provenance inside each image, which BuildKit writes, names the tag's commit as its source. The tag's commit is therefore the attested commit, or a release commit directly on top of it that changes only the version and the changelog.
 
 ## Make a pre-release
 

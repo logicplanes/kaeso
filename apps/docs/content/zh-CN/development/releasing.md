@@ -109,7 +109,7 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
 
 运行从 `prod` 的提交开始。版本需要变化时，Tag 作业会在其上提交 `Release X.Y.Z`，只修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 列出的文件，并把这个提交标记为 `vX.Y.Z`。提交之前，它会检查除 `CHANGELOG.md` 外的这些修改，与 `node scripts/version.mjs set` 在单独作业中写出的内容完全相同。每个镜像、软件包和资产都从该标签构建。
 
-`gh attestation verify` 和更新器检查的镜像证明与 `release.json` 证明，指明的是运行开始时的提交，因为 GitHub 是为这次运行签名的；`release.json` 也指明同一个提交。每个镜像内由 BuildKit 写入的构建来源，则把标签的提交指明为来源。因此，标签的提交要么就是被证明的提交，要么是紧挨其上的版本提交，且只修改版本号和更新日志。
+`gh attestation verify` 和更新器会检查镜像和 `release.json` 的证明。这些证明指明运行开始时的提交，因为 GitHub 是为这次运行签名的；`release.json` 也指明同一个提交。每个镜像内由 BuildKit 写入的构建来源，则把标签的提交指明为来源。因此，标签的提交要么就是被证明的提交，要么是紧挨其上的版本提交，且只修改版本号和更新日志。
 
 ## 制作预发布版本
 
