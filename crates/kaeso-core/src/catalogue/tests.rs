@@ -287,34 +287,6 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
-fn model_ids_with_slashes_resolve_with_and_without_the_provider_prefix() {
-    let llama = entry("nvidia", "meta/llama-3.3-70b-instruct");
-    let nemotron = entry("nvidia", "nvidia/llama-3.3-nemotron-super-49b-v1");
-    let entries = vec![llama.clone(), nemotron.clone()];
-    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
-    assert_eq!(
-        r("meta/llama-3.3-70b-instruct"),
-        Ok((llama.id, Via::Native))
-    );
-    assert_eq!(
-        r("nvidia/meta/llama-3.3-70b-instruct"),
-        Ok((llama.id, Via::Prefixed))
-    );
-    assert_eq!(
-        r("nvidia/llama-3.3-nemotron-super-49b-v1"),
-        Ok((nemotron.id, Via::Native))
-    );
-    assert_eq!(
-        r("nvidia/nvidia/llama-3.3-nemotron-super-49b-v1"),
-        Ok((nemotron.id, Via::Prefixed))
-    );
-    assert!(matches!(
-        r("meta/llama-3.1-8b-instruct"),
-        Err(ResolveError::NotInCatalogue(_))
-    ));
-}
-
-#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

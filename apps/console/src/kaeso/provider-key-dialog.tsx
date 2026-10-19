@@ -12,7 +12,6 @@ type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 const KEY_SITES: Record<string, { site: string; prefix: string }> = {
   openai: { site: "platform.openai.com", prefix: "sk-" },
   anthropic: { site: "console.anthropic.com", prefix: "sk-ant-" },
-  nvidia: { site: "build.nvidia.com", prefix: "nvapi-" },
 };
 function keyHelp(provider: string): string {
   const where = KEY_SITES[provider];

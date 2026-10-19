@@ -166,16 +166,6 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
     },
-    Provider {
-        id: "nvidia",
-        name: "NVIDIA NIM",
-        default_base_url: "https://integrate.api.nvidia.com",
-        auth: AuthStyle::Bearer,
-        generation: DialectId::OpenAiChat,
-        count_tokens: None,
-        embeddings: Some(DialectId::OpenAiEmbeddings),
-        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
-    },
 ];
 
 const _: () = {
@@ -238,7 +228,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, nvidia");
+        assert_eq!(ids(), "openai, anthropic");
     }
 
     #[test]
@@ -301,7 +291,7 @@ mod tests {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, nvidia"
+            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic"
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),
@@ -312,7 +302,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "nvidia"]
+            ["openai", "anthropic"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

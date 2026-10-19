@@ -144,7 +144,6 @@ services:
 | --- | --- | --- | --- | --- |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | 文本 | `https://api.openai.com` | OpenAI API 的基础 URL。 |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | 文本 | `https://api.anthropic.com` | Anthropic API 的基础 URL。 |
-| `KAESO_PROVIDERS_NVIDIA_BASE_URL` | `providers.nvidia.base_url` | 文本 | `https://integrate.api.nvidia.com` | NVIDIA NIM API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |
