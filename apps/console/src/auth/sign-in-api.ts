@@ -9,6 +9,12 @@ export async function signInWithPassword(email: string, password: string): Promi
   return { kind: "signed_in" };
 }
 
+export async function signInWithMagicLink(token: string): Promise<PasswordResult> {
+  const { data, response } = await api.POST("/platform/v1/auth/magic-link/verify", { body: { token } });
+  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", challenge: data.challenge, expiresAt: data.expires_at };
+  return { kind: "signed_in" };
+}
+
 export async function signInWithTotp(challenge: string, answer: { code: string } | { recoveryCode: string }): Promise<void> {
   await api.POST("/platform/v1/auth/totp", {
     body: "code" in answer ? { challenge, code: answer.code } : { challenge, recovery_code: answer.recoveryCode },

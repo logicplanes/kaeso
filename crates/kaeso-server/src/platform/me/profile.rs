@@ -13,9 +13,10 @@ use utoipa::ToSchema;
 use crate::auth::throttle::{self, EMAILS_PER_ADDRESS, EMAILS_PER_IP, TOKENS_PER_IP};
 use crate::platform::access::Ctx;
 use crate::platform::auth::setup::{validate_email, validate_name};
-use crate::platform::auth::{EmailSent, throttle_ip};
+use crate::platform::auth::{EmailSent, refused, throttle_ip};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
+use crate::platform::me::security::{SecondFactor, require_second_factor};
 use crate::platform::views::UserView;
 use crate::state::AppState;
 
@@ -149,13 +150,18 @@ pub struct EmailChange {
     #[doc = "The new address. A confirmation link is sent to it."]
     #[schema(example = "ada@example.com")]
     pub email: String,
+    #[doc = "A code or recovery code, needed while TOTP is on."]
+    #[serde(flatten)]
+    pub second_factor: SecondFactor,
 }
 
 #[utoipa::path(
     post,
     path = "/me/email",
-    summary = "Starts an email change: sends a confirmation link to the new address.\n\
-    Needs a recent sign-in.",
+    summary = "Starts an email change: sends a confirmation link to the new address\n\
+    and a link to cancel it to the current one. Needs a recent sign-in and,\n\
+    while TOTP is on, a code. Ending the session that asked, or every\n\
+    session, cancels the change.",
     tag = "me",
     request_body = EmailChange,
     responses((status = 200, body = EmailSent))
@@ -171,28 +177,41 @@ pub async fn change_email(
     throttle_ip(&state, &ctx, EMAILS_PER_IP).await?;
     throttle::hit(&state, EMAILS_PER_ADDRESS, &email)
         .await
-        .map_err(|retry_after| ApiError::RateLimited {
-            message: "Too many emails to this address; try again later.".into(),
-            retry_after: Some(retry_after),
+        .map_err(|r| {
+            refused(r, |_| {
+                "Too many emails to this address; try again later.".to_owned()
+            })
         })?;
     if users::email_taken(&state.pg, &email, Some(user.uuid())).await? {
         return Err(ApiError::Conflict(
             "Another account uses this address.".into(),
         ));
     }
+    require_second_factor(&state, &ctx, user, &req.second_factor).await?;
+    let current = users::get(&state.pg, user.uuid())
+        .await?
+        .and_then(|u| u.email);
     let token = random_token();
-    tokens::retire_all(
-        &state.pg,
-        TokenKind::EmailChange,
-        Some(user.uuid()),
-        ctx.now,
-    )
-    .await?;
+    let cancel = random_token();
+    let mut tx = state.pg.begin().await?;
+    retire_email_changes(&mut tx, user, ctx.now).await?;
     tokens::insert(
-        &state.pg,
+        &mut *tx,
         NewToken {
             kind: TokenKind::EmailChange,
             hash: &secret::hash(&token),
+            user_id: Some(user.uuid()),
+            email: Some(&email),
+            data: serde_json::json!({ "session": ctx.session()?.id }),
+            expires_at: ctx.now + EMAIL_CHANGE_LIFETIME,
+        },
+    )
+    .await?;
+    tokens::insert(
+        &mut *tx,
+        NewToken {
+            kind: TokenKind::EmailChangeCancel,
+            hash: &secret::hash(&cancel),
             user_id: Some(user.uuid()),
             email: Some(&email),
             data: serde_json::json!({}),
@@ -200,6 +219,12 @@ pub async fn change_email(
         },
     )
     .await?;
+    ctx.audit(None, "user.email_change_request")
+        .target("user", user)
+        .after(serde_json::json!({ "email": email }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
     let url = format!("{}me/email/confirm#token={token}", state.config.public_url);
     let lang =
         crate::services::mail_lang::of_user(&state.pg, user.uuid(), ctx.accept_language.as_deref())
@@ -209,6 +234,14 @@ pub async fn change_email(
         .send(kaeso_mail::templates::email_change_confirmation(
             lang, &email, &url,
         ));
+    if let Some(current) = current {
+        let url = format!("{}me/email/cancel#token={cancel}", state.config.public_url);
+        state
+            .mailer
+            .send(kaeso_mail::templates::email_change_requested(
+                lang, &current, &email, &url,
+            ));
+    }
     Ok(Json(EmailSent {
         status: "email_sent",
         message: format!("Open the link we sent to {email} to confirm the change."),
@@ -254,6 +287,20 @@ pub async fn confirm_email(
             "email change token without user or address",
         ));
     };
+    let asked_by = token
+        .data
+        .get("session")
+        .and_then(|s| s.as_str())
+        .and_then(|s| s.parse::<uuid::Uuid>().ok());
+    let live = match asked_by {
+        Some(session) => kaeso_store::pg::sessions::is_live(&mut *tx, session, ctx.now).await?,
+        None => false,
+    };
+    if !live {
+        return Err(ApiError::Authentication(
+            "This confirmation link is invalid, used or expired.".into(),
+        ));
+    }
     let user = users::get(&mut *tx, user_id)
         .await?
         .filter(|u| u.state == "active")
@@ -263,7 +310,11 @@ pub async fn confirm_email(
             "Another account uses this address now.".into(),
         ));
     }
-    for kind in [TokenKind::MagicLink, TokenKind::PasswordReset] {
+    for kind in [
+        TokenKind::MagicLink,
+        TokenKind::PasswordReset,
+        TokenKind::EmailChangeCancel,
+    ] {
         tokens::retire_all(&mut *tx, kind, Some(user_id), ctx.now).await?;
     }
     let user_id = UserId::from_uuid(user_id);
@@ -287,6 +338,68 @@ pub async fn confirm_email(
         .await?
         .ok_or_else(|| ApiError::not_found("user"))?;
     Ok(Json(UserView::from_row(&row)))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(description = "The cancel token.")]
+pub struct EmailCancel {
+    #[doc = "The token from `…/me/email/cancel#token=…`, sent to the current address."]
+    #[schema(value_type = String, write_only)]
+    pub token: SecretString,
+}
+
+pub(crate) async fn retire_email_changes(
+    db: &mut sqlx::PgConnection,
+    user: UserId,
+    now: time::OffsetDateTime,
+) -> ApiResult<()> {
+    for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
+        tokens::retire_all(&mut *db, kind, Some(user.uuid()), now).await?;
+    }
+    Ok(())
+}
+
+#[utoipa::path(
+    post,
+    path = "/me/email/cancel",
+    summary = "Cancels a pending email change with the link sent to the current\n\
+    address. Works without a session.",
+    tag = "me",
+    request_body = EmailCancel,
+    responses((status = 204, description = "Cancelled; the address stays as it is."))
+)]
+pub async fn cancel_email(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<EmailCancel>,
+) -> ApiResult<axum::http::StatusCode> {
+    throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
+    let mut tx = state.pg.begin().await?;
+    let token = tokens::consume(
+        &mut *tx,
+        TokenKind::EmailChangeCancel,
+        &secret::hash(req.token.expose_secret()),
+        ctx.now,
+    )
+    .await?
+    .ok_or_else(|| {
+        ApiError::Authentication(
+            "This link is invalid, used or expired; the change may already be done.".into(),
+        )
+    })?;
+    let user = token
+        .user_id
+        .map(UserId::from_uuid)
+        .ok_or_else(|| ApiError::internal("email change cancel token without user"))?;
+    retire_email_changes(&mut tx, user, ctx.now).await?;
+    ctx.audit(None, "user.email_change_cancel")
+        .by(user)
+        .target("user", user)
+        .before(serde_json::json!({ "email": token.email }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(

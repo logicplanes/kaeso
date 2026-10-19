@@ -50,6 +50,7 @@ describe("the public pages", () => {
     ["/auth/password-reset", "Reset your password"],
     ["/auth/signup", "This page needs the sign-up link"],
     ["/me/email/confirm", "This page needs the confirmation link"],
+    ["/me/email/cancel", "This page needs the cancel link"],
   ])("open %s without a session", async (path, title) => {
     signedOut();
     on("GET", "auth/methods", methods({ sign_up: true }));
@@ -59,13 +60,17 @@ describe("the public pages", () => {
 });
 
 describe("the sign-in link", () => {
+  const account = { email: "ada@example.com", expires_at: "2026-10-19T12:15:00Z" };
+
   it("signs in and opens the page the person came for", async () => {
     signedOut();
+    on("POST", "auth/magic-link/lookup", account);
     on("POST", "auth/magic-link/verify", () => {
       signedIn();
       return noContent();
     });
-    const { router } = await renderApp("/auth/magic-link?next=/settings/account/appearance#token=tok_1");
+    const { router, user } = await renderApp("/auth/magic-link?next=/settings/account/appearance#token=tok_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/settings/account/appearance"));
     expect(requests("POST", "auth/magic-link/verify").map((r) => r.body)).toEqual([{ token: "tok_1" }]);
     expect(await screen.findByRole("heading", { name: "Appearance", level: 1 })).toBeInTheDocument();
@@ -73,11 +78,13 @@ describe("the sign-in link", () => {
 
   it("ignores a next page on another site and goes to the start page", async () => {
     signedOut();
+    on("POST", "auth/magic-link/lookup", account);
     on("POST", "auth/magic-link/verify", () => {
       signedIn();
       return noContent();
     });
-    const { router } = await renderApp("/auth/magic-link?next=//elsewhere.test/steal#token=tok_2");
+    const { router, user } = await renderApp("/auth/magic-link?next=//elsewhere.test/steal#token=tok_2");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
     expect(window.location.host).toBe("localhost:3000");
   });

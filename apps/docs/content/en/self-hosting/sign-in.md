@@ -66,7 +66,7 @@ When no way in works, print a one-time sign-in link for an existing account on t
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 
-The link works once, within 15 minutes, even while sign-in links by email are off, so you never need to turn passwords back on. Anyone who has the link can sign in as that person. Kaeso only prints it in your terminal, never logs or sends it, and the audit log records it as `user.sign_in_link`. A deactivated account gets no link until you reactivate it.
+The link works once, within 15 minutes, even while sign-in links by email are off, so you never need to turn passwords back on. Anyone who has the link can sign in as that person. Kaeso only prints it in your terminal, never logs or sends it, and the audit log records it as `user.sign_in_link`. A deactivated account gets no link until you reactivate it. With two-factor authentication on, the link also asks for a code; when the person has lost their authenticator, `kaeso user reset-2fa` removes it first.
 
 ## Next steps
 

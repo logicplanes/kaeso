@@ -234,12 +234,71 @@
         "x-kaeso-access": "public"
       }
     },
+    "/platform/v1/auth/magic-link/lookup": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Names the account a sign-in link signs in, without using the link, so\nthe console can ask before signing in.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "postAuthMagicLinkLookup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
     "/platform/v1/auth/magic-link/verify": {
       "post": {
         "tags": [
           "auth"
         ],
-        "summary": "Signs in with a sign-in link. The link works once.",
+        "summary": "Signs in with a sign-in link. The link works once. With TOTP set up,\nanswers with a challenge for `auth/totp` instead of a session.",
         "description": "A link from `kaeso user sign-in-link` works even while sign-in links by email are turned off.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthMagicLinkVerify",
         "requestBody": {
@@ -259,6 +318,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "A TOTP or recovery code is needed: call `auth/totp`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpRequired"
                 }
               }
             }
@@ -1185,7 +1254,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Completes a password sign-in with a TOTP or recovery code. A code of\nthe same 30-second step is accepted only once.",
+        "summary": "Completes a password or sign-in link sign-in with a TOTP or recovery\ncode. A code of the same 30-second step is accepted only once.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthTotp",
         "requestBody": {
@@ -3808,7 +3877,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Starts an email change: sends a confirmation link to the new address.\nNeeds a recent sign-in.",
+        "summary": "Starts an email change: sends a confirmation link to the new address\nand a link to cancel it to the current one. Needs a recent sign-in and,\nwhile TOTP is on, a code. Ending the session that asked, or every\nsession, cancels the change.",
         "description": "**Access:** a signed-in console session; no right is needed.",
         "operationId": "postMeEmail",
         "requestBody": {
@@ -3865,6 +3934,59 @@
           }
         ],
         "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/email/cancel": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Cancels a pending email change with the link sent to the current\naddress. Works without a session.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "postMeEmailCancel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCancel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Cancelled; the address stays as it is."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
       }
     },
     "/platform/v1/me/email/confirm": {
@@ -4815,7 +4937,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\nRefused while TOTP is on.",
+        "summary": "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\nRefused while TOTP is on. Needs a recent sign-in.",
         "description": "**Access:** a signed-in console session; no right is needed.",
         "operationId": "postMeTotp",
         "responses": {
@@ -4864,9 +4986,19 @@
         "tags": [
           "me"
         ],
-        "summary": "Turns TOTP off. Refused while an org of the user requires 2FA. Needs a\nrecent sign-in.",
+        "summary": "Turns TOTP off with a current code or a recovery code. Refused while an\norg of the user requires 2FA. Needs a recent sign-in.",
         "description": "**Access:** a signed-in console session; no right is needed.",
         "operationId": "deleteMeTotp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecondFactor"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Off."
@@ -4885,6 +5017,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -16004,19 +16139,41 @@
         },
         "additionalProperties": false
       },
-      "EmailChange": {
+      "EmailCancel": {
         "type": "object",
-        "description": "A new email address.",
+        "description": "The cancel token.",
         "required": [
-          "email"
+          "token"
         ],
         "properties": {
-          "email": {
+          "token": {
             "type": "string",
-            "description": "The new address. A confirmation link is sent to it.",
-            "example": "ada@example.com"
+            "description": "The token from `…/me/email/cancel#token=…`, sent to the current address.",
+            "writeOnly": true
           }
         }
+      },
+      "EmailChange": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SecondFactor",
+            "description": "A code or recovery code, needed while TOTP is on."
+          },
+          {
+            "type": "object",
+            "required": [
+              "email"
+            ],
+            "properties": {
+              "email": {
+                "type": "string",
+                "description": "The new address. A confirmation link is sent to it.",
+                "example": "ada@example.com"
+              }
+            }
+          }
+        ],
+        "description": "A new email address."
       },
       "EmailConfirm": {
         "type": "object",
@@ -17467,6 +17624,26 @@
               "null"
             ],
             "description": "Used in the current period (same unit as `amount`), when known."
+          }
+        }
+      },
+      "LinkAccount": {
+        "type": "object",
+        "description": "Whom a sign-in link signs in.",
+        "required": [
+          "email",
+          "expires_at"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The account's email address.",
+            "example": "owner@example.com"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link expires."
           }
         }
       },
@@ -21907,6 +22084,28 @@
           }
         }
       },
+      "SecondFactor": {
+        "type": "object",
+        "description": "A second factor, needed while TOTP is on.",
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A 6-digit code from the authenticator app.",
+            "example": "123456"
+          },
+          "recovery_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Or one of the recovery codes (each works once).",
+            "example": "abcd-efgh-jkmn-pqrs"
+          }
+        }
+      },
       "SecurityView": {
         "type": "object",
         "description": "The org's security settings.",
@@ -22954,14 +23153,14 @@
       },
       "TotpRequest": {
         "type": "object",
-        "description": "The second step of a password sign-in.",
+        "description": "The second step of a password or sign-in link sign-in.",
         "required": [
           "challenge"
         ],
         "properties": {
           "challenge": {
             "type": "string",
-            "description": "The challenge from `auth/password`.",
+            "description": "The challenge from `auth/password` or `auth/magic-link/verify`.",
             "writeOnly": true
           },
           "code": {

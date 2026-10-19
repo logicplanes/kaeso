@@ -66,7 +66,7 @@ Wenn kein Weg hinein funktioniert, geben Sie auf dem Server einen einmaligen Anm
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 
-Der Link funktioniert einmal, innerhalb von 15 Minuten, auch wenn Anmeldelinks per E-Mail abgeschaltet sind; Passwörter müssen Sie also nie wieder einschalten. Wer den Link hat, kann sich als diese Person anmelden. Kaeso gibt ihn nur in Ihrem Terminal aus, protokolliert oder sendet ihn nie, und das Audit-Log hält ihn als `user.sign_in_link` fest. Ein deaktiviertes Konto erhält erst einen Link, wenn Sie es wieder aktivieren.
+Der Link funktioniert einmal, innerhalb von 15 Minuten, auch wenn Anmeldelinks per E-Mail abgeschaltet sind; Passwörter müssen Sie also nie wieder einschalten. Wer den Link hat, kann sich als diese Person anmelden. Kaeso gibt ihn nur in Ihrem Terminal aus, protokolliert oder sendet ihn nie, und das Audit-Log hält ihn als `user.sign_in_link` fest. Ein deaktiviertes Konto erhält erst einen Link, wenn Sie es wieder aktivieren. Bei eingeschalteter Zwei-Faktor-Authentifizierung fragt auch der Link nach einem Code; hat die Person ihren Authenticator verloren, entfernt `kaeso user reset-2fa` sie zuerst.
 
 ## Nächste Schritte
 

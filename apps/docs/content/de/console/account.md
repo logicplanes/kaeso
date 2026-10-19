@@ -18,7 +18,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 
 ## E-Mail-Adresse ändern
 
-Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein. Kaeso schickt einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald Sie den Link öffnen.
+Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein, bei eingeschalteter Zwei-Faktor-Authentifizierung auch einen Code aus Ihrer Authenticator-App oder einen Wiederherstellungscode. Kaeso schickt einen Bestätigungslink an die neue Adresse und einen Link zum Abbrechen der Änderung an die alte. Die Änderung gilt, sobald Sie den Bestätigungslink öffnen. Melden Sie den Browser ab, der die Änderung angefordert hat, melden Sie sich überall ab oder setzen Sie Ihr Passwort zurück, ist die Änderung ebenfalls abgebrochen.
 
 ## Passwort ändern
 
@@ -26,14 +26,16 @@ Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ih
 
 ## Zwei-Faktor-Authentifizierung einschalten
 
-Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort nach einem Code aus einer Authenticator-App. Anmeldelinks und Single Sign-on fragen nicht danach.
+Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter.
+
+Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmelden** nur, wenn Sie den Link selbst angefordert haben. Ist dieser Browser bei einem anderen Konto angemeldet, ersetzt die Anmeldung diese Sitzung hier.
 
 1. Wählen Sie unter **Sicherheit** die Option **Einrichten**.
 2. Scannen Sie den QR-Code mit Ihrer Authenticator-App, oder geben Sie den Einrichtungsschlüssel ein.
 3. Geben Sie den sechsstelligen Code aus der App ein und wählen Sie **Einschalten**.
 4. Bewahren Sie die 10 Wiederherstellungscodes auf, die die Konsole einmal zeigt: Kopieren Sie sie oder wählen Sie **.txt herunterladen**. Jeder Code meldet Sie einmal an, statt eines Codes aus der App.
 
-**Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
+Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung, nachdem Sie einen aktuellen Code oder einen Wiederherstellungscode eingegeben haben. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
 
 ## Andere Browser abmelden
 
