@@ -294,3 +294,19 @@ order: 6
 ## 模型
 
 `GET /v1/models` 和 `GET /v1/models/{model}` 在所有 OpenAI API 中结构相同。本编解码器使用 [OpenAI Chat Completions](openai-chat.md) 页面所述的共享实现对其编码和解码（fixture 位于 `fixtures/openai_chat/models/`）。解码出的 extras 带有来源 `openai_responses`。
+
+## 使用此格式的服务商
+
+提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
+
+### SpaceX
+
+来源：xAI 的 [Responses 参考](https://docs.x.ai/developers/rest-api-reference/inference/responses)和[与 Chat Completions 的比较](https://docs.x.ai/developers/model-capabilities/text/comparison)（2026-10-19 阅读），以及 `fixtures/openai_responses/providers/xai/` 中的实时录制。Responses 是 SpaceX 的 `generation` 方言。
+
+| SpaceX 字段 | KPP | 说明 |
+|---|---|---|
+| 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
+| `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
+| `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
+| `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
+| `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |

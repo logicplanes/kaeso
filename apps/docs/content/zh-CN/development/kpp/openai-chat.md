@@ -245,3 +245,35 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | 未知键 | extras 字段 |
 
 对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。
+
+## 使用此格式的服务商
+
+提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
+
+### DeepSeek
+
+来源：DeepSeek 的 [API 参考](https://api-docs.deepseek.com/api/create-chat-completion)、[思考模式指南](https://api-docs.deepseek.com/guides/thinking_mode/)和[错误码](https://api-docs.deepseek.com/quick_start/error_codes)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/deepseek/` 中的实时录制。
+
+| DeepSeek 字段 | KPP | 说明 |
+|---|---|---|
+| `thinking`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们；带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `usage.prompt_cache_hit_tokens`、`prompt_cache_miss_tokens` | 用量的 `raw` | 命中数等于 `prompt_tokens_details.cached_tokens`，后者按缓存读取类型化。 |
+| 服务器繁忙时发送的 `: keep-alive` 行和空行 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
+| HTTP 402 | `Billing` | 余额不足，无论 `code` 为何。 |
+| `developer` 消息导致的 HTTP 422 | `InvalidRequest` | DeepSeek 不认识该角色；应用会收到 DeepSeek 的错误。 |
+| 额外的模型字段（`name`、`context_window`、`max_output_tokens`、`input_modalities`、`output_modalities`、`effort`、`api_capabilities`） | 模型 extras | DeepSeek 的模型列表没有 `created`。 |
+
+### SpaceX
+
+来源：xAI 的 [Chat Completions 参考](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions)和[模型参考](https://docs.x.ai/developers/rest-api-reference/inference/models)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/xai/` 中的实时录制。SpaceX 自身的格式是 [OpenAI Responses](openai-responses.md#使用此格式的服务商)；模型通过其 `egress_dialect` 使用 Chat Completions。
+
+| SpaceX 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `citations`、`system_fingerprint`、`service_tier` | extras | 发往其他方言时省略。 |
+| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。 |
+| `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头：`Authentication`。 |
+| 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。 |
+| `search_parameters`（请求） | extras | 实时搜索已弃用，SpaceX 返回 410；应用会收到这个 410。 |
+| 额外的模型字段（`aliases`、以美分计的每 1 亿 Token 价格、`capabilities.reasoning_effort`、图像的 `pricing`） | 模型 extras | |

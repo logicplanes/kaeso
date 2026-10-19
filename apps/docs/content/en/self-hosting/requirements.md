@@ -24,7 +24,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Direction | Ports or hosts | For |
 | --- | --- | --- |
 | Incoming | TCP ports 80 and 443, and UDP port 443 for HTTP/3 | The certificate and HTTPS |
-| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.x.ai` | The providers you use |
+| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai` | The providers you use; a changed base URL ([provider calls](configuration.md#provider-calls)) replaces its host |
 | Outgoing | `models.dev` | Model data, refreshed once a day |
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, twice a day |
 | Outgoing | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | The updater |

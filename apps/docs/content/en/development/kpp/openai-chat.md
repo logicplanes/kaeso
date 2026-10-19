@@ -245,3 +245,35 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | unknown keys | extras fields |
 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Chat Completions record into `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### DeepSeek
+
+Sources: DeepSeek's [API reference](https://api-docs.deepseek.com/api/create-chat-completion), [thinking mode guide](https://api-docs.deepseek.com/guides/thinking_mode/) and [error codes](https://api-docs.deepseek.com/quick_start/error_codes), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/deepseek/`.
+
+| DeepSeek field | KPP | Notes |
+|---|---|---|
+| `thinking` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning_content`, `delta.reasoning_content` | extras | Chat apps get them back unchanged, and an assistant turn that carries one sends it back to DeepSeek. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `usage.prompt_cache_hit_tokens`, `prompt_cache_miss_tokens` | `raw` usage | The hits equal `prompt_tokens_details.cached_tokens`, which is typed as a cache read. |
+| `: keep-alive` lines and empty lines while the server is busy | `Extra` | Same dialect only, like other SSE comments. |
+| HTTP 402 | `Billing` | An empty balance, whatever the `code` says. |
+| HTTP 422 for a `developer` message | `InvalidRequest` | DeepSeek doesn't know the role; the app gets DeepSeek's error. |
+| extra model fields (`name`, `context_window`, `max_output_tokens`, `input_modalities`, `output_modalities`, `effort`, `api_capabilities`) | model extras | DeepSeek's listing has no `created`. |
+
+### SpaceX
+
+Sources: xAI's [Chat Completions reference](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions) and [models reference](https://docs.x.ai/developers/rest-api-reference/inference/models), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/xai/`. SpaceX's own format is [OpenAI Responses](openai-responses.md#providers-that-use-this-format); a model reaches Chat Completions through its `egress_dialect`.
+
+| SpaceX field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `citations`, `system_fingerprint`, `service_tier` | extras | Left out towards other dialects. |
+| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | `raw` usage | The token counts are typed as above. |
+| `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400 | `KppError` | The string is the message, and apps get it in the OpenAI error shape with SpaceX's status. A wrong key is a 400 whose message starts with `Incorrect API key provided`: `Authentication`. |
+| `presence_penalty` for a reasoning model, `reasoning_effort` for a model without reasoning | | SpaceX answers 400, which reaches the app as its error. |
+| `search_parameters` (request) | extras | SpaceX answers 410 because live search is deprecated; the app gets the 410. |
+| extra model fields (`aliases`, prices in USD cents per 100 million tokens, `capabilities.reasoning_effort`, image `pricing`) | model extras | |

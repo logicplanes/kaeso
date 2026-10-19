@@ -294,3 +294,19 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 ## Models
 
 `GET /v1/models` and `GET /v1/models/{model}` use the same shape in every OpenAI API. This codec encodes and decodes it with the shared implementation described on the [OpenAI Chat Completions](openai-chat.md) page (fixtures `fixtures/openai_chat/models/`). Decoded extras carry the origin `openai_responses`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### SpaceX
+
+Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-reference/inference/responses) and [comparison with Chat Completions](https://docs.x.ai/developers/model-capabilities/text/comparison), read 2026-10-19, and the live recordings in `fixtures/openai_responses/providers/xai/`. Responses is SpaceX's `generation` dialect.
+
+| SpaceX field | KPP | Notes |
+|---|---|---|
+| `reasoning` items with `summary`, and `encrypted_content`, which `grok-4.3` always sends | as OpenAI's | SpaceX refuses an `encrypted_content` that another provider wrote with a 400 `invalid-argument`. |
+| `web_search_call` items, `url_citation` annotations | as OpenAI's | |
+| `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as above. |
+| `presence_penalty` (request) | extras | SpaceX ignores it and echoes `0.0`. |
+| `{"error": "<message>"}` | `KppError` | See the error table above. |
