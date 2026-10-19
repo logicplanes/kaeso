@@ -1,4 +1,4 @@
-import { InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { forwardRef, useCallback, useState, type ReactElement, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
@@ -66,7 +66,7 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
         {inline ? close : <BaseDialog.Close render={close} />}
       </div>
       <div data-dialog-body="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 py-20 scrollbar-quiet">
-        {children}
+        <GutterContent>{children}</GutterContent>
       </div>
       {footer && <div className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 py-16 hairline-t">{footer}</div>}
     </>

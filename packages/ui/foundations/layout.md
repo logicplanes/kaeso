@@ -20,6 +20,8 @@ Text inside a box is padded by the box: 12px in list rows, table cells, pill tab
 - **The gutter**, where every box and every piece of plain text starts: the page title, headings, labels, descriptions, chart axes.
 - **The gutter plus 12px**, where the text inside boxes starts: a row's title, a tab's label, a column's values.
 
+A surface that already pads its content by the gutter, such as a dialog, a sheet, a content page (`AppFrame.Body padding="page"`) or a settings column, is the gutter: a list or a table inside it puts its rows on that padding instead of adding 24px of its own.
+
 The same holds at the right edge: the last box ends on the gutter, the last column's text 12px inside it.
 
 ## Exceptions

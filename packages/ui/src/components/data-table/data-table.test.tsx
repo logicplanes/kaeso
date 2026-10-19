@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DATA_TABLE_GROW_MIN, DataTable, fitColumns } from "./data-table.js";
 import { col } from "./columns.js";
+import { GutterContent } from "../../utils/inset.js";
 
 type Row = { id: string; key: string; cost: string };
 const rows: Row[] = [
@@ -186,6 +187,14 @@ describe("DataTable on the gutter", () => {
     expect(cells[0]).not.toHaveClass("pl-24");
     expect(cells.at(-1)).not.toHaveClass("pr-24");
     expect(screen.getByText("checkout-web").closest("[role=row]")).toHaveClass("rounded-item");
+  });
+  it("takes no gutter of its own inside a padded page body", () => {
+    const { container } = render(
+      <GutterContent>
+        <DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />
+      </GutterContent>,
+    );
+    expect(container.firstElementChild).not.toHaveClass("px-24");
   });
   it("fits columns to the width inside the gutter without reserving it twice", () => {
     const c = (id: string, size: number, priority: number) => ({ id, size, priority, grow: false, minWidth: undefined });

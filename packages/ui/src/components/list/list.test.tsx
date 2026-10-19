@@ -178,6 +178,15 @@ describe("List on the gutter", () => {
     expect(row).toHaveClass("px-12", "rounded-item");
     expect(row.className).not.toMatch(/(^| )-m[lrx]-/);
   });
+  it("uses a dialog's own 24px padding as its gutter instead of adding a second one", () => {
+    render(
+      <Dialog open title="Add models">
+        <List aria-label="Keys" groups={[{ id: "active", title: "Active", items }]} />
+      </Dialog>,
+    );
+    expect(screen.getByRole("gridcell", { name: /checkout-web/ }).parentElement).toHaveClass("px-0");
+    expect(screen.getByRole("button", { name: /Active/ }).closest("[role=row]")).toHaveClass("px-0");
+  });
   it("pads rows in a group by the group's 20px instead", () => {
     render(
       <InsetContent>

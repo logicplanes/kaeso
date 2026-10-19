@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { useInset } from "../../utils/inset.js";
+import { useGutterPadded, useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -355,10 +355,11 @@ function FirstRows({ count, estimateSize, row }: { count: number; estimateSize: 
 }
 
 function LoadingRows({ density }: { density: keyof typeof KAESO_LIST_VARIANTS.density }) {
+  const padded = useGutterPadded();
   return (
     <div role="presentation">
       {[62, 48, 70, 54, 40, 58].map((w, i) => (
-        <div key={i} role="presentation" className="px-24">
+        <div key={i} role="presentation" className={padded ? "px-0" : "px-24"}>
           <div className={cn("flex items-center gap-12 px-12", KAESO_LIST_VARIANTS.density[density].classes)}>
             <Skeleton shape="line" className="min-w-0" style={{ width: `${w}%` }} />
             <span className="flex-1" />
@@ -409,11 +410,12 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
   ref,
 ) {
   const card = useInset();
+  const padded = useGutterPadded();
   const t = useUiText();
   const lines = narrow && !!(item.meta || item.date);
   const stacked = (card || lines) && !!item.subtitle;
   return (
-    <div role="row" className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : "px-24"}>
+    <div role="row" className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : padded ? "px-0" : "px-24"}>
       <div
         ref={ref}
         role="gridcell"
@@ -528,9 +530,15 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
   ref,
 ) {
   const card = useInset();
+  const padded = useGutterPadded();
   const t = useUiText();
   return (
-    <div ref={ref} role="row" onFocus={onFocus} className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : "group/gh px-24 pt-16 first:pt-0"}>
+    <div
+      ref={ref}
+      role="row"
+      onFocus={onFocus}
+      className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : cn("group/gh pt-16 first:pt-0", padded ? "px-0" : "px-24")}
+    >
       <div role="gridcell" className={cn("flex h-36 items-center gap-4", card && "pr-12 pl-8")}>
         {indent && !card && <span aria-hidden className="mr-8 w-18 shrink-0" />}
         <button

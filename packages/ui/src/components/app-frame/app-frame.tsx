@@ -12,7 +12,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -268,13 +268,15 @@ export interface AppFrameBodyProps extends HTMLAttributes<HTMLDivElement> {
   padding?: keyof typeof KAESO_APP_FRAME_BODY_VARIANTS.padding | undefined;
 }
 
-const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody({ className, padding = "none", ...props }, ref) {
+const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody({ className, padding = "none", children, ...props }, ref) {
   return (
     <div
       ref={ref}
       className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet", KAESO_APP_FRAME_BODY_VARIANTS.padding[padding].classes, className)}
       {...props}
-    />
+    >
+      <GutterContent padded={padding === "page"}>{children}</GutterContent>
+    </div>
   );
 });
 Body.displayName = "AppFrame.Body";
@@ -298,7 +300,9 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
           {description && <p className="text-body-lg font-regular text-fg-secondary">{description}</p>}
         </header>
         <div className="mt-8">
-          <InsetContent>{children}</InsetContent>
+          <InsetContent>
+            <GutterContent>{children}</GutterContent>
+          </InsetContent>
         </div>
       </div>
     </Body>

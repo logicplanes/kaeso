@@ -31,6 +31,24 @@ describe("StatTile loading", () => {
     expect(tile).toHaveTextContent(/^Requests$/);
     expect(tile.children).toHaveLength(4);
     expect(tile.querySelectorAll("[aria-hidden]")).toHaveLength(3);
+    expect(tile.querySelectorAll("[data-stat-value]")).toHaveLength(1);
+  });
+  it("keeps a plain tile's height and padding while loading: no trend row it won't have", () => {
+    const { rerender } = render(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Projects" value="5" loading />
+      </StatGrid>,
+    );
+    const tile = screen.getByRole("listitem");
+    expect(tile.children).toHaveLength(3);
+    expect(tile).toHaveClass("pb-16");
+    rerender(
+      <StatGrid aria-label="Usage">
+        <StatTile label="Projects" value="5" />
+      </StatGrid>,
+    );
+    expect(screen.getByRole("listitem").children).toHaveLength(3);
+    expect(screen.getByRole("listitem")).toHaveClass("pb-16");
   });
 });
 

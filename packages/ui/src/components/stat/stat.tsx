@@ -101,26 +101,24 @@ export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatT
       ref={ref}
       role="listitem"
       aria-busy={loading || undefined}
-      className={cn("flex min-w-0 flex-col bg-raised px-20 pt-16", trend || loading ? "pb-12" : "pb-16", className)}
+      className={cn("flex min-w-0 flex-col bg-raised px-20 pt-16", trend ? "pb-12" : "pb-16", className)}
     >
       <span className="text-small font-medium text-fg-secondary">{label}</span>
       <span className="mt-6 flex h-34 min-w-0 items-center">
-        {loading ? (
-          <Skeleton shape="line" className="h-20 w-96" />
-        ) : (
-          <span data-stat-value={step.px} className={cn("max-w-full truncate font-semibold text-fg tabular", step.classes)}>
-            {value}
-          </span>
-        )}
+        <span data-stat-value={step.px} className={cn("max-w-full truncate font-semibold text-fg tabular", step.classes, loading && "flex")}>
+          {loading ? <Skeleton shape="line" className="h-20 w-96" /> : value}
+        </span>
       </span>
       {loading ? (
         <>
           <span className="mt-2 flex h-20 items-center">
             <Skeleton shape="line" className="w-120" />
           </span>
-          <span className="mt-auto h-40 shrink-0 pt-8">
-            <Skeleton className="h-full w-full" />
-          </span>
+          {trend && (
+            <span className="mt-auto h-40 shrink-0 pt-8">
+              <Skeleton className="h-full w-full" />
+            </span>
+          )}
         </>
       ) : (
         <span className="mt-2 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary">

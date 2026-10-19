@@ -1,4 +1,4 @@
-import { InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import {
   cloneElement,
@@ -168,7 +168,7 @@ function DialogFrame({
         )}
         {children && (
           <div ref={ref} data-dialog-body="" className={cn("min-h-0 flex-1 overflow-y-auto px-24 pt-16 scrollbar-quiet", footer ? "pb-8" : "pb-24")}>
-            {children}
+            <GutterContent>{children}</GutterContent>
           </div>
         )}
         {footer && (

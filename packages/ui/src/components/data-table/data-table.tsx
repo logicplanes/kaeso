@@ -13,7 +13,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { useInset } from "../../utils/inset.js";
+import { useGutterPadded, useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CheckboxBox } from "../checkbox/checkbox.js";
@@ -145,6 +145,7 @@ function DataTableInner<T>(
   ref: React.Ref<HTMLDivElement>,
 ) {
   const inset = useInset();
+  const padded = useGutterPadded();
   const t = useUiText();
   const [sortingInner, setSortingInner] = useState<SortingState>([]);
   const [selectionInner, setSelectionInner] = useState<RowSelectionState>({});
@@ -331,7 +332,7 @@ function DataTableInner<T>(
         if (typeof ref === "function") ref(e);
         else if (ref) (ref as { current: HTMLDivElement | null }).current = e;
       }}
-      className={cn("relative w-full min-w-0", !inset && "px-24", className)}
+      className={cn("relative w-full min-w-0", !inset && !padded && "px-24", className)}
     >
       <div
         role="table"

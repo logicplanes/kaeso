@@ -102,7 +102,6 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
           >
             <List
               aria-label={t("common.projects", "Projects")}
-              className="-mx-24"
               loading={projects.isPending || byProject.isLoading}
               items={(byProject.isLoading ? [] : sorted).map((p) => ({
                 id: p.id,
