@@ -174,3 +174,39 @@ async fn groq_refusals_reach_each_app_in_its_own_error_format() {
     assert_eq!(body["error"]["type"], "invalid_request_error");
     assert_eq!(body["error"]["message"], "'n' : number must be at most 1");
 }
+
+#[tokio::test]
+async fn token_counts_for_groq_models_are_refused_before_anything_is_sent() {
+    let env = env().await;
+    env.mock.clear();
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": "openai/gpt-oss-20b",
+            "messages": [{ "role": "user", "content": "Hello" }]
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["error"]["type"], "invalid_request_error");
+    assert_eq!(
+        body["error"]["message"],
+        "The model `openai/gpt-oss-20b` cannot count tokens."
+    );
+
+    let r = call(
+        &env,
+        "/v1/responses/input_tokens",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "groq/openai/gpt-oss-20b", "input": "Hello" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "model");
+    assert!(env.mock.received().is_empty());
+}

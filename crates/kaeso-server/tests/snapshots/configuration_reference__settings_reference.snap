@@ -42,6 +42,7 @@ expression: settings_reference()
 | `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater. |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | text | `https://api.anthropic.com` | Base URL of the Anthropic API. |
+| `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | text | `https://api.groq.com/openai` | Base URL of the Groq API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Connect timeout to providers, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | text | `600s` | Total timeout of a non-streaming provider request; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | text | `60s` | Streaming: time to the first byte from the provider; at most 24h. |
