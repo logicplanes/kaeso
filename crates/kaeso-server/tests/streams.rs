@@ -476,3 +476,108 @@ async fn without_content_logging_a_stream_keeps_only_what_usage_needs() {
         assert_eq!(!reply.blocks.is_empty(), on);
     }
 }
+
+async fn open_stream(env: &Env, text: &str) -> (String, axum::body::Body) {
+    use axum::body::Body;
+    use axum::http::Request;
+    use tower::ServiceExt;
+    let req = Request::builder()
+        .uri("/v1/messages")
+        .method("POST")
+        .header("x-api-key", &env.key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_vec(&streaming(messages("claude-haiku-4-5", text))).unwrap(),
+        ))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let id = resp.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    (id, resp.into_body())
+}
+
+#[tokio::test]
+async fn streams_end_at_the_installs_limits() {
+    for (setting, value, text) in [
+        (
+            "KAESO_STREAMS_MAX_BYTES",
+            "300",
+            "Hi [mock:fixture=thinking-long-tool-loop]",
+        ),
+        ("KAESO_STREAMS_MAX_DURATION", "1s", "Hi [mock:stall]"),
+    ] {
+        let env = env(&[(setting, value)]).await;
+        let r = send(
+            &env,
+            "/v1/messages",
+            true,
+            streaming(messages("claude-haiku-4-5", text)),
+        )
+        .await;
+        assert_eq!(r.status, 200);
+        let text = r.text();
+        assert!(
+            text.contains("The reply reached this install's limit for a stream; Kaeso ended it."),
+            "{setting}: {text}"
+        );
+        assert!(!text.contains("message_stop"), "{setting}: {text}");
+        let id = r.header("kaeso-request-id").unwrap().to_owned();
+        let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+        assert_eq!(o.error_kind.as_deref(), Some("stream_limit"), "{setting}");
+        assert_eq!(o.status, 502);
+        assert!(o.usage_estimated, "{setting}");
+    }
+}
+
+#[tokio::test]
+async fn an_app_that_stops_reading_ends_its_stream() {
+    use http_body_util::BodyExt;
+    let env = env(&[("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s")]).await;
+    let (id, mut body) = open_stream(
+        &env,
+        "Hi [mock:fixture=thinking-long-tool-loop] [mock:slow=10]",
+    )
+    .await;
+    assert!(body.frame().await.unwrap().unwrap().is_data());
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert!(o.cancelled);
+    assert_eq!(o.status, 499);
+    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
+    drop(body);
+}
+
+#[tokio::test]
+async fn a_request_body_that_stops_arriving_is_refused() {
+    use axum::body::{Body, Bytes};
+    use axum::http::Request;
+    use futures::StreamExt;
+    use tower::ServiceExt;
+    let env = env(&[("KAESO_SERVER_BODY_READ_TIMEOUT", "1s")]).await;
+    let stalled =
+        futures::stream::iter([Ok::<_, std::io::Error>(Bytes::from_static(b"{\"model\":"))])
+            .chain(futures::stream::pending());
+    let req = Request::builder()
+        .uri("/v1/messages")
+        .method("POST")
+        .header("x-api-key", &env.key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .body(Body::from_stream(stalled))
+        .unwrap();
+    let started = Instant::now();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), 400);
+    let body = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        json["error"]["message"],
+        "The request body did not arrive in time; send it again."
+    );
+    assert!(started.elapsed() < Duration::from_secs(10));
+}

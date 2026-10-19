@@ -7,7 +7,6 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, OwnedMutexGuard};
 
-use kaeso_crypto::{KeyRing, MacKey};
 use kaeso_store::valkey::{Invalidation, Valkey};
 
 pub const TTL: Duration = Duration::from_secs(30);
@@ -96,42 +95,6 @@ impl Flights {
 struct Held<V> {
     value: Arc<V>,
     at: Instant,
-    until: Instant,
-}
-
-const VERSION_TTL: Duration = Duration::from_secs(600);
-
-const READ: &str = r"
-return {redis.call('GET', KEYS[1]) or false, redis.call('PTTL', KEYS[1]), redis.call('GET', KEYS[2]) or ''}
-";
-
-const FILL: &str = r"
-if (redis.call('GET', KEYS[2]) or '') ~= ARGV[1] then return 0 end
-redis.call('SET', KEYS[1], ARGV[2], 'PX', ARGV[3])
-return 1
-";
-
-const DROP: &str = r"
-redis.call('DEL', KEYS[1])
-redis.call('INCR', KEYS[2])
-redis.call('PEXPIRE', KEYS[2], ARGV[1])
-return 1
-";
-
-static READ_SCRIPT: std::sync::LazyLock<redis::Script> =
-    std::sync::LazyLock::new(|| redis::Script::new(READ));
-static FILL_SCRIPT: std::sync::LazyLock<redis::Script> =
-    std::sync::LazyLock::new(|| redis::Script::new(FILL));
-static DROP_SCRIPT: std::sync::LazyLock<redis::Script> =
-    std::sync::LazyLock::new(|| redis::Script::new(DROP));
-
-fn millis(d: Duration) -> u64 {
-    u64::try_from(d.as_millis()).unwrap_or(u64::MAX)
-}
-
-enum Shared<V> {
-    Found(V, Duration),
-    Missing(String),
 }
 
 #[derive(Clone)]
@@ -144,7 +107,6 @@ pub struct TieredCache<V: Clone + Send + Sync + 'static> {
     subscription: Arc<Subscription>,
     refresh_after: Duration,
     dropped: Arc<AtomicU64>,
-    mac: Arc<MacKey>,
 }
 
 impl<V: Clone + Send + Sync + 'static> std::fmt::Debug for TieredCache<V> {
@@ -159,12 +121,7 @@ impl<V> TieredCache<V>
 where
     V: Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
 {
-    fn new(
-        name: &'static str,
-        valkey: Valkey,
-        subscription: Arc<Subscription>,
-        mac: Arc<MacKey>,
-    ) -> Self {
+    fn new(name: &'static str, valkey: Valkey, subscription: Arc<Subscription>) -> Self {
         TieredCache {
             name,
             memory: Cache::builder()
@@ -180,7 +137,6 @@ where
             subscription,
             refresh_after: REFRESH_AFTER,
             dropped: Arc::new(AtomicU64::new(0)),
-            mac,
         }
     }
 
@@ -188,26 +144,15 @@ where
         self.valkey.key(&format!("cache:{}:{key}", self.name))
     }
 
-    fn version_key(&self, key: &str) -> String {
-        self.valkey.key(&format!("cache:{}:{key}:v", self.name))
-    }
-
     async fn held(&self, key: &str, seen: Seen) -> Option<Held<V>> {
         if seen.subscribed
             && let Some(h) = self.memory.get(key).await
         {
-            if h.until > Instant::now() {
-                return Some(h);
-            }
-            self.memory.invalidate(key).await;
+            return Some(h);
         }
-        self.fallback.get(key).await.map(|value| {
-            let now = Instant::now();
-            Held {
-                value,
-                at: now,
-                until: now + UNSUBSCRIBED_TTL,
-            }
+        self.fallback.get(key).await.map(|value| Held {
+            value,
+            at: Instant::now(),
         })
     }
 
@@ -265,33 +210,21 @@ where
             }
             flight = None;
         }
-        let dropped = self.dropped.load(Ordering::Acquire);
-        let mut version = None;
-        if seen.subscribed {
-            match self.valkey_get(key).await {
-                Some(Shared::Found(v, left)) => {
-                    let v = Arc::new(v);
-                    self.remember(key, v.clone(), seen, left).await;
-                    return Ok(Some(v));
-                }
-                Some(Shared::Missing(v)) => version = Some(v),
-                None => {}
-            }
+        if seen.subscribed
+            && let Some(v) = self.valkey_get(key).await
+        {
+            let v = Arc::new(v);
+            self.remember(key, v.clone(), seen).await;
+            return Ok(Some(v));
         }
         let Some(value) = load().await? else {
             return Ok(None);
         };
         let value = Arc::new(value);
-        if self.dropped.load(Ordering::Acquire) != dropped {
-            return Ok(Some(value));
+        if self.subscription.still(seen) {
+            self.valkey_set(key, &value).await;
         }
-        let kept = match &version {
-            Some(v) if self.subscription.still(seen) => self.valkey_fill(key, &value, v).await,
-            _ => true,
-        };
-        if kept {
-            self.remember(key, value.clone(), seen, TTL).await;
-        }
+        self.remember(key, value.clone(), seen).await;
         drop(flight);
         Ok(Some(value))
     }
@@ -306,20 +239,14 @@ where
         let key = key.to_owned();
         let dropped = self.dropped.load(Ordering::Acquire);
         tokio::spawn(async move {
-            let version = cache.version(&key).await;
             let loaded = load().await;
             let undisturbed =
                 cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
             match loaded {
                 Ok(Some(value)) if undisturbed => {
                     let value = Arc::new(value);
-                    let kept = match version {
-                        Some(v) => cache.valkey_fill(&key, &value, &v).await,
-                        None => true,
-                    };
-                    if kept {
-                        cache.remember(&key, value, seen, TTL).await;
-                    }
+                    cache.valkey_set(&key, &value).await;
+                    cache.remember(&key, value, seen).await;
                 }
                 Ok(Some(_)) => {}
                 Ok(None) if undisturbed => cache.drop_local(&key).await,
@@ -332,16 +259,14 @@ where
         });
     }
 
-    async fn remember(&self, key: &str, value: Arc<V>, seen: Seen, left: Duration) {
+    async fn remember(&self, key: &str, value: Arc<V>, seen: Seen) {
         if self.subscription.still(seen) {
-            let now = Instant::now();
             self.memory
                 .insert(
                     key.to_owned(),
                     Held {
                         value,
-                        at: now,
-                        until: now + left.min(TTL),
+                        at: Instant::now(),
                     },
                 )
                 .await;
@@ -354,17 +279,15 @@ where
         let seen = self.subscription.seen();
         let value = Arc::new(value);
         self.valkey_set(key, &value).await;
-        self.remember(key, value, seen, TTL).await;
+        self.remember(key, value, seen).await;
     }
 
     pub async fn invalidate(&self, key: &str) {
         self.drop_local(key).await;
         let mut conn = self.valkey.conn();
-        let deleted: Result<i64, _> = DROP_SCRIPT
-            .key(self.valkey_key(key))
-            .key(self.version_key(key))
-            .arg(millis(VERSION_TTL))
-            .invoke_async(&mut conn)
+        let deleted: Result<i64, _> = redis::cmd("DEL")
+            .arg(self.valkey_key(key))
+            .query_async(&mut conn)
             .await;
         let published = self
             .valkey
@@ -397,92 +320,30 @@ where
         self.fallback.invalidate_all();
     }
 
-    fn sealed(&self, key: &str, value: &V) -> Option<Vec<u8>> {
-        let json = serde_json::to_vec(value).ok()?;
-        let tag = self.mac.tag(&[self.valkey_key(key).as_bytes(), &json]);
-        let mut bytes = Vec::with_capacity(tag.len() + json.len());
-        bytes.extend_from_slice(&tag);
-        bytes.extend_from_slice(&json);
-        Some(bytes)
-    }
-
-    fn opened(&self, key: &str, bytes: &[u8]) -> Option<V> {
-        let (tag, json) = bytes.split_at_checked(MacKey::TAG_LEN)?;
-        if !self
-            .mac
-            .verify(&[self.valkey_key(key).as_bytes(), json], tag)
-        {
-            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "cache_mac")
-                .increment(1);
-            tracing::warn!(
-                cache = self.name,
-                "a shared cache entry is not signed by this install's master key; loading it from PostgreSQL"
-            );
-            return None;
-        }
-        serde_json::from_slice(json)
-            .inspect_err(|e| {
-                tracing::warn!(cache = self.name, error = %e, "a shared cache entry does not parse; loading it from PostgreSQL");
-            })
-            .ok()
-    }
-
-    async fn valkey_get(&self, key: &str) -> Option<Shared<V>> {
+    async fn valkey_get(&self, key: &str) -> Option<V> {
         let mut conn = self.valkey.bulk();
-        let (raw, left, version): (Option<Vec<u8>>, i64, String) = READ_SCRIPT
-            .key(self.valkey_key(key))
-            .key(self.version_key(key))
-            .invoke_async(&mut conn)
+        let raw: Option<Vec<u8>> = redis::cmd("GET")
+            .arg(self.valkey_key(key))
+            .query_async(&mut conn)
             .await
             .inspect_err(|e| {
                 metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "cache_get")
                     .increment(1);
                 tracing::debug!(cache = self.name, error = %e, "cannot read a shared cache entry; loading it from PostgreSQL");
             })
-            .ok()?;
-        let left = u64::try_from(left).ok().map(Duration::from_millis);
-        Some(
-            match (raw.and_then(|bytes| self.opened(key, &bytes)), left) {
-                (Some(value), Some(left)) => Shared::Found(value, left),
-                _ => Shared::Missing(version),
-            },
-        )
-    }
-
-    async fn version(&self, key: &str) -> Option<String> {
-        let mut conn = self.valkey.bulk();
-        let version: Result<Option<String>, _> = redis::cmd("GET")
-            .arg(self.version_key(key))
-            .query_async(&mut conn)
-            .await;
-        version.ok().map(Option::unwrap_or_default)
-    }
-
-    async fn valkey_fill(&self, key: &str, value: &V, version: &str) -> bool {
-        let Some(bytes) = self.sealed(key, value) else {
-            return false;
-        };
-        let mut conn = self.valkey.bulk();
-        let filled: Result<i64, _> = FILL_SCRIPT
-            .key(self.valkey_key(key))
-            .key(self.version_key(key))
-            .arg(version)
-            .arg(bytes)
-            .arg(millis(TTL))
-            .invoke_async(&mut conn)
-            .await;
-        match filled {
-            Ok(n) => n == 1,
-            Err(_) => {
-                metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "cache_set")
-                    .increment(1);
-                false
-            }
-        }
+            .ok()
+            .flatten();
+        raw.and_then(|bytes| {
+            serde_json::from_slice(&bytes)
+                .inspect_err(|e| {
+                    tracing::warn!(cache = self.name, error = %e, "a shared cache entry does not parse; loading it from PostgreSQL");
+                })
+                .ok()
+        })
     }
 
     async fn valkey_set(&self, key: &str, value: &V) {
-        let Some(bytes) = self.sealed(key, value) else {
+        let Ok(bytes) = serde_json::to_vec(value) else {
             return;
         };
         let mut conn = self.valkey.bulk();
@@ -490,7 +351,7 @@ where
             .arg(self.valkey_key(key))
             .arg(bytes)
             .arg("PX")
-            .arg(millis(TTL))
+            .arg(u64::try_from(TTL.as_millis()).unwrap_or(30_000))
             .query_async(&mut conn)
             .await;
         if set.is_err() {
@@ -651,32 +512,16 @@ pub struct Caches {
 }
 
 impl Caches {
-    pub fn new(valkey: &Valkey, keyring: &KeyRing) -> Caches {
+    pub fn new(valkey: &Valkey) -> Caches {
         let subscription = Arc::new(Subscription::default());
-        let mac = Arc::new(MacKey::derive(keyring, "cache"));
         Caches {
-            sessions: TieredCache::new("ses", valkey.clone(), subscription.clone(), mac.clone()),
-            api_keys: TieredCache::new("key", valkey.clone(), subscription.clone(), mac.clone()),
-            org_keys: TieredCache::new("opk", valkey.clone(), subscription.clone(), mac.clone()),
+            sessions: TieredCache::new("ses", valkey.clone(), subscription.clone()),
+            api_keys: TieredCache::new("key", valkey.clone(), subscription.clone()),
+            org_keys: TieredCache::new("opk", valkey.clone(), subscription.clone()),
             credentials: MemoryCache::new("cred", valkey.clone(), subscription.clone()),
-            project_models: TieredCache::new(
-                "pmod",
-                valkey.clone(),
-                subscription.clone(),
-                mac.clone(),
-            ),
-            project_limits: TieredCache::new(
-                "plim",
-                valkey.clone(),
-                subscription.clone(),
-                mac.clone(),
-            ),
-            log_settings: TieredCache::new(
-                "lcfg",
-                valkey.clone(),
-                subscription.clone(),
-                mac.clone(),
-            ),
+            project_models: TieredCache::new("pmod", valkey.clone(), subscription.clone()),
+            project_limits: TieredCache::new("plim", valkey.clone(), subscription.clone()),
+            log_settings: TieredCache::new("lcfg", valkey.clone(), subscription.clone()),
             models_dev_changed: Arc::new(tokio::sync::Notify::new()),
             touched: Cache::builder()
                 .max_capacity(1_000_000)
@@ -779,17 +624,8 @@ mod tests {
             .unwrap_or_else(|e| panic!("{e}"))
     }
 
-    fn ring() -> KeyRing {
-        KeyRing::parse(&kaeso_crypto::generate_master_key()).unwrap_or_else(|e| panic!("{e}"))
-    }
-
     fn cache(subscription: &Arc<Subscription>) -> TieredCache<String> {
-        TieredCache::new(
-            "test",
-            unreachable_valkey(),
-            subscription.clone(),
-            Arc::new(MacKey::derive(&ring(), "cache")),
-        )
+        TieredCache::new("test", unreachable_valkey(), subscription.clone())
     }
 
     async fn counted(
@@ -866,7 +702,7 @@ mod tests {
     #[tokio::test]
     async fn reconnecting_keeps_short_lived_entries_instead_of_reloading_everything() {
         let valkey = unreachable_valkey();
-        let caches = Caches::new(&valkey, &ring());
+        let caches = Caches::new(&valkey);
         let loads = AtomicUsize::new(0);
         let load = || async {
             loads.fetch_add(1, Ordering::SeqCst);

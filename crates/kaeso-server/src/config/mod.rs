@@ -63,6 +63,8 @@ pub struct Config {
 pub struct ServerConfig {
     #[serde(with = "humantime_serde")]
     pub header_read_timeout: Duration,
+    #[serde(with = "humantime_serde")]
+    pub body_read_timeout: Duration,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -207,6 +209,9 @@ pub struct UpstreamConfig {
 pub struct StreamsConfig {
     #[serde(with = "humantime_serde")]
     pub keepalive_interval: Duration,
+    #[serde(with = "humantime_serde")]
+    pub max_duration: Duration,
+    pub max_bytes: ByteSize,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -301,6 +306,14 @@ impl Config {
         {
             return invalid(
                 "server.header_read_timeout",
+                "must be between 1s and 10m".into(),
+            );
+        }
+        if !(Duration::from_secs(1)..=Duration::from_secs(600))
+            .contains(&self.server.body_read_timeout)
+        {
+            return invalid(
+                "server.body_read_timeout",
                 "must be between 1s and 10m".into(),
             );
         }

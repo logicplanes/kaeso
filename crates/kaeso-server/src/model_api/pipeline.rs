@@ -445,15 +445,21 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
     let limit = state.config.body_limits.model_api.as_usize();
-    let body = axum::body::to_bytes(body, limit).await.map_err(|_| {
-        Failure::new(
+    let body = axum::body::to_bytes(body, limit).await.map_err(|e| {
+        let refused = if crate::http::body_timeout::timed_out(&e) {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The request body did not arrive in time; send it again.",
+            )
+        } else {
             error(
                 ErrorKind::RequestTooLarge,
                 413,
                 format!("The request body is larger than {limit} bytes."),
-            ),
-            Stage::Request,
-        )
+            )
+        };
+        Failure::new(refused, Stage::Request)
     })?;
     let keep_content = crate::services::logs::keeps_content(state, caller.project_id).await;
     if keep_content {
