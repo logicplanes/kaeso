@@ -16,7 +16,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
     } else toast.error(t("shell.routeError.unexpected", "This page hit an unexpected error; reload to try again"), { id: "route-error" });
   }, [error]);
   const retry = async () => {
-    await queryClient.invalidateQueries();
+    await queryClient.invalidateQueries({ predicate: (query) => query.state.status === "error" });
     reset();
     await router.invalidate();
   };

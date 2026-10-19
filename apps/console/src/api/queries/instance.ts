@@ -12,7 +12,7 @@ import type {
   UpdateJobView,
   UpdatesView,
 } from "../generated/types";
-import { allPages, nextPageParam } from "../paging";
+import { allPages, nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
 export const instanceUsersQuery = (search: string, state: string | undefined) =>
   infiniteQueryOptions({
@@ -26,6 +26,7 @@ export const instanceUsersQuery = (search: string, state: string | undefined) =>
         }),
       ),
     getNextPageParam: nextPageParam,
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
 export const instanceUserQuery = (user: string) =>
@@ -48,6 +49,7 @@ export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" =
         }),
       ),
     getNextPageParam: nextPageParam,
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
 export const instanceOrgQuery = (org: string) =>
@@ -107,6 +109,7 @@ export const updateJobsQuery = infiniteQueryOptions({
   queryFn: async ({ pageParam, signal }) =>
     data(await api.GET("/platform/v1/instance/updates/jobs", { params: { query: { limit: 20, ...(pageParam ? { after: pageParam } : {}) } }, signal })),
   getNextPageParam: nextPageParam,
+  refetchOnWindowFocus: refetchOnFocusWhileOnePage,
 });
 
 export const updateJobQuery = (update: string) =>

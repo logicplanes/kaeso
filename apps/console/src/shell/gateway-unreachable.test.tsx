@@ -4,6 +4,8 @@ import { ORG, signedIn } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
+import { sessionQuery } from "~/auth/session-queries";
 
 const RETRYING = "Can't reach the gateway; retrying";
 
@@ -55,6 +57,10 @@ describe("when the gateway stops answering later", () => {
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
     await screen.findByRole("navigation", { name: "Console" });
     on("GET", "auth/session", apiError(400, "unavailable", "The gateway is restarting."));
+    queryClient
+      .getQueryCache()
+      .find({ queryKey: sessionQuery.queryKey })
+      ?.setState({ dataUpdatedAt: Date.now() - 60_000 });
     window.dispatchEvent(new Event("visibilitychange"));
     expect(await notifications().findByText(RETRYING)).toBeInTheDocument();
     expect(notifications().queryByText("The gateway is restarting.")).not.toBeInTheDocument();
