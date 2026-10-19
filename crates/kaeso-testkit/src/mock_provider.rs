@@ -240,11 +240,10 @@ fn fixture_file(dir: &Path, folder: &str, name: &str, extension: &str) -> PathBu
 fn error_response(dir: &Path, name: &str) -> Response {
     let body = std::fs::read(fixture_file(dir, "errors", name, "json"))
         .unwrap_or_else(|e| panic!("mock: no error fixture {name}: {e}"));
-    let meta: serde_json::Value =
-        std::fs::read(fixture_file(dir, "errors", name, "meta.json"))
-            .ok()
-            .and_then(|m| serde_json::from_slice(&m).ok())
-            .unwrap_or_default();
+    let meta: serde_json::Value = std::fs::read(fixture_file(dir, "errors", name, "meta.json"))
+        .ok()
+        .and_then(|m| serde_json::from_slice(&m).ok())
+        .unwrap_or_default();
     let status = meta
         .get("status")
         .and_then(serde_json::Value::as_u64)

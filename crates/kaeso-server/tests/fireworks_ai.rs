@@ -38,10 +38,7 @@ async fn env() -> Env {
             }
         }),
     ] {
-        let r = env
-            .app
-            .post(&models, body, Some(&env.owner.cookie))
-            .await;
+        let r = env.app.post(&models, body, Some(&env.owner.cookie)).await;
         assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     }
     Env { mock, ..env }

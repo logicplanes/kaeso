@@ -48,7 +48,7 @@ async fn entries_store_only_overrides_and_merge_with_models_dev() {
 
     let status = app.get("/instance/models-dev", &owner.cookie).await;
     assert_eq!(status.body["source"], "embedded", "{:?}", status.body);
-    assert_eq!(status.body["model_count"], 70);
+    assert_eq!(status.body["model_count"], embedded_model_count());
 
     let hits = app
         .get(
@@ -546,7 +546,7 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["source"], url);
     assert_eq!(r.body["last_error"], Value::Null);
-    assert_eq!(r.body["model_count"], 70);
+    assert_eq!(r.body["model_count"], embedded_model_count());
 
     let h = app
         .get(
@@ -667,4 +667,8 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         )
         .await;
     assert_eq!(g.body["listed"], true, "{:?}", g.body);
+}
+
+fn embedded_model_count() -> usize {
+    kaeso_core::models_dev::embedded().unwrap().model_count()
 }
