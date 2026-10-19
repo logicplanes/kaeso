@@ -2,12 +2,20 @@ use indexmap::IndexMap;
 use kaeso_kpp::{Block, GenerateRequest, KppError, Role};
 
 use super::DIALECT;
+use super::wire::ChatRequest;
+use crate::wire::Ext;
 use serde_json::value::RawValue;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct ChatProfile {
     pub provider: &'static str,
+    pub request: RequestProfile,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct RequestProfile {
     pub output_limit: OutputLimit,
     pub developer_role: bool,
     pub seed: SeedField,
@@ -31,9 +39,8 @@ pub enum SeedField {
     RandomSeed,
 }
 
-impl ChatProfile {
-    pub const OPENAI: ChatProfile = ChatProfile {
-        provider: "OpenAI",
+impl RequestProfile {
+    pub const OPENAI: RequestProfile = RequestProfile {
         output_limit: OutputLimit::AsWritten,
         developer_role: true,
         seed: SeedField::Seed,
@@ -41,6 +48,13 @@ impl ChatProfile {
         assistant_prefill: true,
         refused_fields: &[],
         refused_message_fields: &[],
+    };
+}
+
+impl ChatProfile {
+    pub const OPENAI: ChatProfile = ChatProfile {
+        provider: "OpenAI",
+        request: RequestProfile::OPENAI,
     };
 
     pub const fn compatible(provider: &'static str) -> Self {
@@ -52,48 +66,48 @@ impl ChatProfile {
 
     #[must_use]
     pub const fn max_tokens(mut self) -> Self {
-        self.output_limit = OutputLimit::MaxTokens;
+        self.request.output_limit = OutputLimit::MaxTokens;
         self
     }
 
     #[must_use]
     pub const fn system_role(mut self) -> Self {
-        self.developer_role = false;
+        self.request.developer_role = false;
         self
     }
 
     #[must_use]
     pub const fn random_seed(mut self) -> Self {
-        self.seed = SeedField::RandomSeed;
+        self.request.seed = SeedField::RandomSeed;
         self
     }
 
     #[must_use]
     pub const fn without_end_user(mut self) -> Self {
-        self.end_user = false;
+        self.request.end_user = false;
         self
     }
 
     #[must_use]
     pub const fn without_prefill(mut self) -> Self {
-        self.assistant_prefill = false;
+        self.request.assistant_prefill = false;
         self
     }
 
     #[must_use]
     pub const fn refusing(mut self, fields: &'static [&'static str]) -> Self {
-        self.refused_fields = fields;
+        self.request.refused_fields = fields;
         self
     }
 
     #[must_use]
     pub const fn refusing_in_messages(mut self, fields: &'static [&'static str]) -> Self {
-        self.refused_message_fields = fields;
+        self.request.refused_message_fields = fields;
         self
     }
 
     pub(crate) fn checked_seed(&self, seed: i64) -> Result<i64, KppError> {
-        if self.seed == SeedField::RandomSeed && seed < 0 {
+        if self.request.seed == SeedField::RandomSeed && seed < 0 {
             return Err(KppError::unsupported(
                 "seed",
                 format!(
@@ -106,37 +120,44 @@ impl ChatProfile {
         Ok(seed)
     }
 
-    pub(crate) fn refuse(&self, req: &GenerateRequest, body: &[u8]) -> Result<(), KppError> {
-        if !self.assistant_prefill {
+    pub(crate) fn refuse(
+        &self,
+        req: &GenerateRequest,
+        wire: &Ext<ChatRequest>,
+    ) -> Result<(), KppError> {
+        let rules = &self.request;
+        if !rules.assistant_prefill {
             self.refuse_prefill(req)?;
         }
-        if self.refused_fields.is_empty() && self.refused_message_fields.is_empty() {
-            return Ok(());
-        }
-        let top: IndexMap<String, &RawValue> = parse(body)?;
-        if let Some(field) = top
-            .keys()
-            .find(|k| self.refused_fields.contains(&k.as_str()))
+        if let Some(field) = rules
+            .refused_fields
+            .iter()
+            .find(|f| sends_known(&wire.known, f))
         {
             return Err(self.refused(field, field));
         }
-        if self.refused_message_fields.is_empty() {
+        if let Some(field) = wire
+            .verbatim
+            .keys()
+            .chain(wire.extra.keys())
+            .find(|k| rules.refused_fields.contains(&k.as_str()))
+        {
+            return Err(self.refused(field, field));
+        }
+        if rules.refused_message_fields.is_empty() {
             return Ok(());
         }
         if !req.extras.is_from(DIALECT) {
             return self.refuse_foreign_blocks(req);
         }
-        let Some(messages) = top.get("messages") else {
-            return Ok(());
-        };
-        let messages: Vec<IndexMap<String, &RawValue>> = parse(messages.get().as_bytes())?;
-        for (index, message) in messages.iter().enumerate() {
-            if role(message).as_deref() == Some("tool") {
+        for (index, message) in wire.known.messages.iter().enumerate() {
+            let message: IndexMap<String, &RawValue> = parse(message.get().as_bytes())?;
+            if role(&message).as_deref() == Some("tool") {
                 continue;
             }
             if let Some(field) = message
                 .keys()
-                .find(|k| self.refused_message_fields.contains(&k.as_str()))
+                .find(|k| rules.refused_message_fields.contains(&k.as_str()))
             {
                 return Err(self.refused(field, &format!("messages[{index}].{field}")));
             }
@@ -165,7 +186,7 @@ impl ChatProfile {
     }
 
     fn refuse_foreign_blocks(&self, req: &GenerateRequest) -> Result<(), KppError> {
-        if !self.refused_message_fields.contains(&"refusal") {
+        if !self.request.refused_message_fields.contains(&"refusal") {
             return Ok(());
         }
         for (i, message) in req.messages.iter().enumerate() {
@@ -202,6 +223,32 @@ impl ChatProfile {
 impl Default for ChatProfile {
     fn default() -> Self {
         ChatProfile::OPENAI
+    }
+}
+
+pub(crate) fn sends_known(w: &ChatRequest, key: &str) -> bool {
+    match key {
+        "model" => true,
+        "messages" => !w.messages.is_empty(),
+        "temperature" => w.temperature.is_some(),
+        "top_p" => w.top_p.is_some(),
+        "max_completion_tokens" => w.max_completion_tokens.is_some(),
+        "max_tokens" => w.max_tokens.is_some(),
+        "stop" => w.stop.is_some(),
+        "seed" => w.seed.is_some(),
+        "frequency_penalty" => w.frequency_penalty.is_some(),
+        "presence_penalty" => w.presence_penalty.is_some(),
+        "n" => w.n.is_some(),
+        "reasoning_effort" => w.reasoning_effort.is_some(),
+        "response_format" => w.response_format.is_some(),
+        "tools" => !w.tools.is_empty(),
+        "tool_choice" => w.tool_choice.is_some(),
+        "parallel_tool_calls" => w.parallel_tool_calls.is_some(),
+        "user" => w.user.is_some(),
+        "safety_identifier" => w.safety_identifier.is_some(),
+        "stream" => w.stream.is_some(),
+        "stream_options" => w.stream_options.is_some(),
+        _ => false,
     }
 }
 

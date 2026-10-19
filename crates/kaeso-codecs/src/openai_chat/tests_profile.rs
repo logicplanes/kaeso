@@ -3,8 +3,10 @@ use kaeso_kpp::{
 };
 use serde_json::{Value, json};
 
+use super::profile::sends_known;
 use super::tests::decode;
-use super::{ChatProfile, OpenAiChat, OutputLimit, SeedField};
+use super::wire::ChatRequest;
+use super::{ChatProfile, OpenAiChat, OutputLimit, RequestProfile, SeedField};
 use crate::codec::{Codec, EgressCtx};
 use crate::test_support::fixtures;
 
@@ -51,14 +53,16 @@ fn the_openai_profile_is_the_default_and_a_bare_compatible_profile_changes_nothi
         ChatProfile::OPENAI
     );
     let bare = ChatProfile::compatible("Example Cloud");
+    assert_eq!(bare.request, RequestProfile::OPENAI);
     assert_eq!(
         (
-            bare.output_limit,
-            bare.developer_role,
-            bare.seed,
-            bare.end_user
+            bare.request.output_limit,
+            bare.request.developer_role,
+            bare.request.seed,
+            bare.request.end_user,
+            bare.request.assistant_prefill
         ),
-        (OutputLimit::AsWritten, true, SeedField::Seed, true)
+        (OutputLimit::AsWritten, true, SeedField::Seed, true, true)
     );
     for (name, body) in fixtures("openai_chat", "requests", "json") {
         let Ok(req) = decode(&body) else {
@@ -400,4 +404,40 @@ fn a_profile_without_prefill_refuses_a_conversation_that_ends_with_the_assistant
         STRICT,
     );
     assert!(after_tool_call.is_ok());
+}
+
+#[test]
+fn a_refused_field_kaeso_models_is_found_as_well_as_one_it_passes_through() {
+    let profile = ChatProfile::compatible("Example Cloud").refusing(&["parallel_tool_calls"]);
+    let err = encode_with(
+        &chat(
+            json!({"model": "m", "parallel_tool_calls": false, "messages": [
+                {"role": "user", "content": "Hi"}
+            ]}),
+        ),
+        profile,
+    )
+    .unwrap_err();
+    assert_eq!(
+        refusal(&err),
+        (
+            Some("parallel_tool_calls"),
+            Some("parallel_tool_calls"),
+            "`parallel_tool_calls` is not supported by Example Cloud; remove it from the request."
+                .to_owned()
+        )
+    );
+    let every: ChatRequest = serde_json::from_value(json!({
+        "model": "m", "messages": [{}], "temperature": 1, "top_p": 1,
+        "max_completion_tokens": 1, "max_tokens": 1, "stop": "x", "seed": 1,
+        "frequency_penalty": 0, "presence_penalty": 0, "n": 1, "reasoning_effort": "low",
+        "response_format": {}, "tools": [{}], "tool_choice": "auto",
+        "parallel_tool_calls": true, "user": "u", "safety_identifier": "s",
+        "stream": true, "stream_options": {}
+    }))
+    .unwrap();
+    for field in crate::wire::struct_fields::<ChatRequest>() {
+        assert!(sends_known(&every, field), "{field}");
+    }
+    assert!(!sends_known(&ChatRequest::default(), "parallel_tool_calls"));
 }

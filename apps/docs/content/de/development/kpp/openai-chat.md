@@ -115,7 +115,7 @@ Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid O
 
 ## Anbieterprofile
 
-Andere Anbieter sprechen dieses Format mit eigenen Abweichungen. Jeder Anbieter in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) nennt im Feld `chat` ein `kaeso_codecs::openai_chat::ChatProfile`, und `EgressCtx::with_chat_profile` übergibt es dem Encoder, der es auf jede Anfrage anwendet, gleich in welchem Format die App sie gesendet hat. `ChatProfile::OPENAI`, der Standard, ändert nichts, ebenso `ChatProfile::compatible(name)`, solange keine Einstellung hinzukommt.
+Andere Anbieter sprechen dieses Format mit eigenen Abweichungen. Jeder Anbieter in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) nennt im Feld `chat` ein `kaeso_codecs::openai_chat::ChatProfile`: den Namen des Anbieters und die Einstellungen für die Anfragen, die Kaeso ihm sendet (`ChatProfile::request`, ein `RequestProfile`), gesetzt mit den Buildern unten. Das Gateway übergibt es mit `EgressCtx::with_chat_profile` dem Encoder, der es auf jede Anfrage anwendet, gleich in welchem Format die App sie gesendet hat. `ChatProfile::OPENAI`, der Standard, ändert nichts, ebenso `ChatProfile::compatible(name)`, solange keine Einstellung hinzukommt.
 
 | Einstellung | Was der Encoder tut | Warum das erlaubt ist |
 |---|---|---|
@@ -127,7 +127,7 @@ Andere Anbieter sprechen dieses Format mit eigenen Abweichungen. Jeder Anbieter 
 | `refusing(fields)` | Lehnt eine Anfrage ab, deren Body einen dieser Schlüssel auf oberster Ebene enthielte, etwa `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras sind semantisch, daher werden sie abgelehnt, nicht verworfen. |
 | `refusing_in_messages(fields)` | Dasselbe für Schlüssel von System-, Benutzer- und Assistentennachrichten. Tool-Nachrichten werden nicht geprüft. | Wie oben. |
 
-`refusing` und `refusing_in_messages` nehmen jeweils die ganze Liste; ein zweiter Aufruf ersetzt den ersten. Eine Ablehnung nennt das Feld so, wie die App es geschrieben hat: den Schlüssel einer Chat-App mit eigenem Namen und Pfad (`logit_bias`, `messages[1].name`) und einen Ablehnungsblock aus einem anderen Format mit seinem KPP-Pfad (`messages[1].blocks[0]`). Die Ablehnung geschieht beim Kodieren der Anfrage, bevor etwas gesendet wird, und erreicht die App in ihrem eigenen Format.
+`refusing` und `refusing_in_messages` nehmen jeweils die ganze Liste; ein zweiter Aufruf ersetzt den ersten. Eine Ablehnung nennt das Feld so, wie die App es geschrieben hat: den Schlüssel einer Chat-App mit eigenem Namen und Pfad (`logit_bias`, `messages[1].name`) und einen Ablehnungsblock aus einem anderen Format mit seinem KPP-Pfad (`messages[1].blocks[0]`). Die Ablehnung geschieht beim Kodieren der Anfrage, an der Anfrage, die der Encoder gebaut hat, und bevor sie geschrieben wird, sodass nichts gesendet wird; sie erreicht die App in ihrem eigenen Format.
 
 Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unten mit der Quelle jeder Einstellung: der Dokumentation des Anbieters, seinem OpenAPI-Dokument oder einer Live-Aufnahme in `fixtures/openai_chat/providers/<id>/`. Noch hat kein eingebauter Anbieter ein solches Profil.
 

@@ -37,7 +37,7 @@ use crate::codec::{
 };
 use crate::wire::to_body;
 
-pub use profile::{ChatProfile, OutputLimit, SeedField};
+pub use profile::{ChatProfile, OutputLimit, RequestProfile, SeedField};
 
 pub(crate) const DIALECT: DialectId = DialectId::OpenAiChat;
 
@@ -116,8 +116,8 @@ impl Codec for OpenAiChat {
             ));
         };
         let wire = request_encode::encode_generate(generate, ctx)?;
+        ctx.chat_profile.refuse(generate, &wire)?;
         let body = to_body(&wire)?;
-        ctx.chat_profile.refuse(generate, &body)?;
         let mut headers = HeaderList::new().with("content-type", "application/json");
         if generate.extras.is_from(DIALECT) {
             for (name, value) in generate.extras.headers() {

@@ -115,7 +115,7 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 
 ## Provider profiles
 
-Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field, and `EgressCtx::with_chat_profile` hands it to the encoder, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
+Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field: the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below. The gateway hands it to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
 
 | Setting | What the encoder does | Why it is allowed |
 |---|---|---|
@@ -127,7 +127,7 @@ Other providers speak this format with differences of their own. Each provider i
 | `refusing(fields)` | Refuses a request whose body would contain one of these top-level keys, such as `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras are semantic, so they are refused, not dropped. |
 | `refusing_in_messages(fields)` | The same for keys of system, user and assistant messages. Tool messages are not checked. | As above. |
 
-`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it: a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`). Refusals happen while the request is encoded, before anything is sent, and reach the app in its own format.
+`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it: a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`). Refusals happen while the request is encoded, on the request the encoder built and before it is written out, so nothing is sent, and they reach the app in its own format.
 
 Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`. No built-in provider has such a profile yet.
 

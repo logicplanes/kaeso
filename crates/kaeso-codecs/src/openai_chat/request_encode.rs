@@ -32,6 +32,7 @@ pub(crate) fn encode_generate(
     let own = req.extras.is_from(DIALECT);
     let form = |key: &str| req.extras.form_value(DIALECT, key);
     let profile = ctx.chat_profile;
+    let rules = profile.request;
     let mut names = Names { ctx };
     let mut w = ChatRequest {
         model: req.model.clone(),
@@ -45,14 +46,14 @@ pub(crate) fn encode_generate(
     w.temperature = number(s.temperature, "temperature");
     w.top_p = number(s.top_p, "top_p");
     let seed = s.seed.map(|seed| profile.checked_seed(seed)).transpose()?;
-    if profile.seed == SeedField::Seed {
+    if rules.seed == SeedField::Seed {
         w.seed = seed;
     }
     w.frequency_penalty = number(s.frequency_penalty, "frequency_penalty");
     w.presence_penalty = number(s.presence_penalty, "presence_penalty");
     if let Some(max) = s.max_output_tokens {
         match form(FORM_MAX_TOKENS).and_then(Value::as_str) {
-            _ if profile.output_limit == OutputLimit::MaxTokens => w.max_tokens = Some(max),
+            _ if rules.output_limit == OutputLimit::MaxTokens => w.max_tokens = Some(max),
             Some("max_tokens") => w.max_tokens = Some(max),
             Some("both") => {
                 w.max_tokens = Some(max);
@@ -71,7 +72,7 @@ pub(crate) fn encode_generate(
     if form(FORM_N).is_some() {
         w.n = Some(1);
     }
-    if let Some(user) = req.user.as_ref().filter(|_| profile.end_user) {
+    if let Some(user) = req.user.as_ref().filter(|_| rules.end_user) {
         if own && req.extras.form_flag(DIALECT, FORM_USER) {
             w.user = Some(user.clone());
         } else {
@@ -130,7 +131,7 @@ pub(crate) fn encode_generate(
     };
     w.parallel_tool_calls = req.parallel_tool_calls;
 
-    encode_system(&req.system, profile.developer_role, &mut w.messages)?;
+    encode_system(&req.system, rules.developer_role, &mut w.messages)?;
     for message in &req.messages {
         encode_message(message, &mut names, &mut w.messages)?;
     }
@@ -157,7 +158,7 @@ fn apply_profile(
     extras: &Extras,
     out: &mut Ext<ChatRequest>,
 ) -> Result<(), KppError> {
-    if profile.output_limit == OutputLimit::MaxTokens {
+    if profile.request.output_limit == OutputLimit::MaxTokens {
         if extras
             .fields_for(DIALECT)
             .is_some_and(|f| f.contains_key(KEY_MAX_TOKENS_CONFLICT))
@@ -177,7 +178,7 @@ fn apply_profile(
             Some("max_tokens"),
         );
     }
-    if profile.seed == SeedField::RandomSeed {
+    if profile.request.seed == SeedField::RandomSeed {
         let sent_seed = seed.is_some() || out.verbatim.contains_key("seed");
         let sent_random_seed =
             out.extra.contains_key("random_seed") || out.verbatim.contains_key("random_seed");
@@ -196,7 +197,7 @@ fn apply_profile(
             out.extra.insert("random_seed".to_owned(), to_raw(&seed)?);
         }
     }
-    if !profile.end_user {
+    if !profile.request.end_user {
         out.extra.shift_remove("user");
         rename_null(&mut out.verbatim, "user", None);
         rename_null(&mut out.verbatim, "safety_identifier", None);
@@ -412,7 +413,7 @@ fn encode_message(
         Role::System => {
             let role = instruction_role(
                 message.extras.form_str(DIALECT, FORM_ROLE),
-                names.ctx.chat_profile.developer_role,
+                names.ctx.chat_profile.request.developer_role,
             );
             let blocks: Vec<&Block> = message
                 .blocks
