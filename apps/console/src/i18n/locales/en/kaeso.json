@@ -145,7 +145,7 @@
   "kaeso.providerKey.replaceTitle": "Replace {name}",
   "kaeso.providerKey.replaced": "{name} replaced",
   "kaeso.providerKey.secret": "{provider} API key",
-  "kaeso.providerKey.where": "Create one at {site} under API keys; it starts with {prefix}.",
+  "kaeso.providerKey.where": "Create one at {site} under {page}; it starts with {prefix}.",
   "kaeso.providerKey.which": "Which provider is the key for?",
   "kaeso.rights.added": "Added",
   "kaeso.rights.addedRights": "Rights given to them on top of their role",

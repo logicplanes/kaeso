@@ -12,14 +12,14 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 
 1. On **Providers**, choose **Add key**.
 2. **Which provider is the key for?** Search for the provider and choose it. Providers that already have keys come first, with their key counts.
-3. Paste the key and give it a name, such as `Production`. The table below says where each provider's keys come from.
+3. Paste the key and give it a name, such as `Production`. The dialog links the provider's page for creating keys, and the table below lists them too.
 4. If the provider already has a default key, choose whether the new key becomes the default.
 
 | Provider | Create a key at | The key starts with |
 | --- | --- | --- |
-| OpenAI | platform.openai.com | `sk-` |
-| Anthropic | console.anthropic.com | `sk-ant-` |
-| DeepSeek | platform.deepseek.com | `sk-` |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
+| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
+| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
 
 Each action on provider keys needs its own right:
 

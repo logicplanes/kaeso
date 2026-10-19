@@ -1,25 +1,35 @@
-import { useMemo, useState, type ComponentProps } from "react";
-import { Input, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog } from "@logicplanes/kaeso-ui";
+import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { CredentialView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { providerLabel } from "~/format/labels";
 import { t } from "~/i18n";
+import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
 import { providerOptions } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
-const KEY_SITES: Record<string, { site: string; prefix: string }> = {
-  openai: { site: "platform.openai.com", prefix: "sk-" },
-  anthropic: { site: "console.anthropic.com", prefix: "sk-ant-" },
-  deepseek: { site: "platform.deepseek.com", prefix: "sk-" },
+const KEY_SITES: Record<string, { url: string; page: string; prefix: string }> = {
+  openai: { url: "https://platform.openai.com/api-keys", page: "API keys", prefix: "sk-" },
+  anthropic: { url: "https://platform.claude.com/settings/keys", page: "Settings → API keys", prefix: "sk-ant-" },
+  deepseek: { url: "https://platform.deepseek.com/api_keys", page: "API keys", prefix: "sk-" },
 };
-function keyHelp(provider: string): string {
+
+function keyHelp(provider: string): ReactNode {
   const where = KEY_SITES[provider];
-  return where
-    ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", where)
-    : t("kaeso.providerKey.help", "Paste the provider's API key.");
+  if (!where) return t("kaeso.providerKey.help", "Paste the provider's API key.");
+  const site = (
+    <Link href={where.url} external>
+      {new URL(where.url).host}
+    </Link>
+  );
+  return tRich("kaeso.providerKey.where", "Create one at {site} under {page}; it starts with {prefix}.", {
+    site,
+    page: where.page,
+    prefix: <Code className="text-nowrap">{where.prefix}</Code>,
+  });
 }
 
 export function ProviderKeyDialog({
