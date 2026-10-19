@@ -43,8 +43,6 @@
   "account.keyArchived": "{name} archiviert",
   "account.keyDisabled": "{name} deaktiviert",
   "account.keyEnabled": "{name} aktiviert",
-  "account.keyNeverUsed": "Nie verwendet",
-  "account.keyUsed": "Verwendet {when}",
   "account.keysFailed": "Ihre Schlüssel konnten nicht geladen werden",
   "account.language": "Sprache",
   "account.languageAuto": "Automatisch ({language})",

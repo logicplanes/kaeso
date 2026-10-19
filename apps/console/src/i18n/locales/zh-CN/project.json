@@ -87,7 +87,6 @@
   "project.serviceAccounts.loadingKeys": "正在加载密钥…",
   "project.serviceAccounts.nameExample": "checkout-production",
   "project.serviceAccounts.nameSaved": "名称已保存",
-  "project.serviceAccounts.neverUsed": "从未使用",
   "project.serviceAccounts.noKeys": "暂无密钥。",
   "project.serviceAccounts.noLimits": "此服务账号没有限额，适用项目的限额。",
   "project.serviceAccounts.none": "暂无服务账号",

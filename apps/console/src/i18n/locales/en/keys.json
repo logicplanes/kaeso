@@ -45,5 +45,6 @@
   "keys.showAll": "Show all keys",
   "keys.title": "API keys",
   "keys.undo": "Undo",
+  "keys.used": "Used {when}",
   "keys.whose": "Whose keys"
 }

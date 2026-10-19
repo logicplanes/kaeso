@@ -140,15 +140,11 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         path="playground"
         actions={
           <div className="flex items-center gap-8">
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={empty}
-              disabledReason={empty ? t("playground.nothingToClear", "Nothing to clear yet") : undefined}
-              onClick={clear}
-            >
-              {common.clear()}
-            </Button>
+            {!empty && (
+              <Button size="sm" variant="ghost" onClick={clear}>
+                {common.clear()}
+              </Button>
+            )}
             <ParameterPopover
               value={parameters}
               onValueChange={setParameters}
@@ -218,13 +214,24 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           label={label}
                           onRetry={m && !busy ? () => retryColumn(i, m, thread.turns.slice(0, -1), lastTurn) : null}
                         />
+                      ) : empty && i === 0 ? (
+                        <Empty
+                          size="md"
+                          className="my-auto"
+                          title={t("playground.emptyThread", "Nothing sent yet")}
+                          description={
+                            refs.length > 1
+                              ? t("playground.emptyThreadCompare", "Send a prompt below and every column answers it side by side.")
+                              : t("playground.emptyThreadHint", "Send a prompt below, or start from one of the examples.")
+                          }
+                        />
                       ) : null}
                     </CompareGrid.Column>
                   );
                 })}
               </CompareGrid>
             </div>
-            <div className="mx-16 mt-12 mb-16 flex flex-col gap-8">
+            <div className="mx-24 mt-12 mb-16 flex flex-col gap-8">
               {empty && (
                 <PromptSuggestions
                   suggestions={suggestions()}
