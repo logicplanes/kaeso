@@ -1,6 +1,6 @@
-import { Button, KeyDisplay, ProviderBadge, ProviderCard, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
+import { Button, KeyDisplay, ProviderBadge, ProviderCard, ModelLabel, StatusCode, RequestTimeline, providerName } from "@logicplanes/kaeso-ui";
 import { keys, models } from "~/fixtures/kaeso";
-import { StateSection } from "~/lib/states";
+import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "KeyDisplay",
@@ -9,7 +9,7 @@ export const meta = {
   entry: "kaeso",
   import: "KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, RequestTimeline",
   a11y: [
-    "Providers show their mark in the text color, so it follows the theme; others a letter. The name is always next to it or its accessible label.",
+    "Providers show their mark in its owner's one-colour version for the theme; others a letter. The name is always next to it or its accessible label.",
     "Capability icons have tooltips and are summarized in an accessible label.",
     "Status codes carry their phrase for screen readers.",
   ],
@@ -79,9 +79,23 @@ export function Status() {
     </div>
   );
 }
+const PROVIDERS = ["openai", "anthropic", "deepseek", "xai", "togetherai", "groq", "openrouter", "mistral"];
+const BADGE_SIZES = ["sm", "md", "lg", "xl"] as const;
+
 export function States() {
   return (
     <>
+      <StateMatrix title="ProviderBadge for every built-in provider, at every size" columns={["sm · 16", "md · 20", "lg · 28", "xl · 40"]}>
+        {PROVIDERS.map((p) => (
+          <StateRow key={p} label={providerName(p)}>
+            {BADGE_SIZES.map((size) => (
+              <StateCell key={size} id={`${p}-${size}`}>
+                <ProviderBadge provider={p} size={size} />
+              </StateCell>
+            ))}
+          </StateRow>
+        ))}
+      </StateMatrix>
       <StateSection title="Keys">
         <Keys />
       </StateSection>

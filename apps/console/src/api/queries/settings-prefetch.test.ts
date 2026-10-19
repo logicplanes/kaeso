@@ -35,7 +35,7 @@ describe("settings prefetch", () => {
     expect(asked).toEqual([
       ["orgs", ORG, "roles"],
       ["orgs", ORG, "rights-catalogue"],
-      ["orgs", ORG],
+      ["orgs", ORG, "view"],
     ]);
   });
 
@@ -48,7 +48,7 @@ describe("settings prefetch", () => {
     prefetchOrgSettings(c, ORG, "storage");
     prefetchOrgSettings(c, ORG, "deletions");
     expect(asked).toEqual([
-      ["orgs", ORG],
+      ["orgs", ORG, "view"],
       ["orgs", ORG, "members"],
       ["orgs", ORG, "security"],
       ["orgs", ORG, "platform-keys", { includeArchived: false }],

@@ -4,6 +4,7 @@ import { Badge, Button, DataTable, StatusDot, Text, Tooltip, col, icons } from "
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { ModelsDevStatus } from "~/api/generated/types";
+import { modelCatalogues } from "~/api/queries/invalidation";
 import { modelsDevQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
@@ -34,7 +35,7 @@ export function InstanceModelSourcesPage() {
   const status = useQuery(modelsDevQuery);
   const sync = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/instance/models-dev/sync")),
-    invalidates: [["instance", "models-dev"], ["orgs"]],
+    invalidates: [modelsDevQuery.queryKey, modelCatalogues],
     onSuccess: (s) =>
       s.last_error
         ? toast.warning(t("instance.syncFailed", "models.dev couldn't be fetched; the current data stays in use"))

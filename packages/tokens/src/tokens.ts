@@ -84,6 +84,14 @@ export const tokenKindSeries = { input: 1, output: 3, cacheRead: 1, cacheWrite: 
 export const tokenKindTint: Partial<Record<keyof typeof tokenKindSeries, true>> = { cacheRead: true };
 export const vizSoft = mode("#a7c7fb", "#3d72b8");
 
+export const providerMark = {
+  openai: mode("#000000", "#ffffff"),
+  xai: mode("#000000", "#ffffff"),
+  togetherai: mode("#000000", "#ffffff"),
+  openrouter: mode("#03080a", "#fcfcfe"),
+  mistral: mode("#161525", "#ffffff"),
+} as const;
+
 export const type = {
   micro: { size: 11, lineHeight: 14, weight: 500, tracking: 0.01 },
   caption: { size: 12, lineHeight: 16, weight: 500, tracking: 0 },
