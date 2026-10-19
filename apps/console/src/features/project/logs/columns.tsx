@@ -85,12 +85,12 @@ export function logColumns({ spansDays, keyName, partyName }: { spansDays: boole
     ),
     endpoint: col.mono({ id: "endpoint", header: columnLabel("endpoint"), size: 152, priority: 3 }, (r: LogView) => r.endpoint),
     model: col.custom(
-      { id: "model", header: columnLabel("model"), size: 280, minWidth: 104, priority: 1, grow: true },
+      { id: "model", header: columnLabel("model"), size: 240, minWidth: 104, priority: 1, grow: true },
       (r: LogView) => r.model,
       (_v, r) => <ModelCell row={r} />,
     ),
     provider: col.custom(
-      { id: "provider", header: columnLabel("provider"), size: 112, priority: 3 },
+      { id: "provider", header: columnLabel("provider"), size: 144, priority: 3 },
       (r: LogView) => r.provider,
       (v) => <ProviderBadge provider={v} withName size="sm" />,
     ),

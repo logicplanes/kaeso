@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertDialog, Banner, Button, Empty, Input, KeyDisplay, KeyValue, List, Section, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
-import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
+import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { ServiceAccountView } from "~/api/generated/types";
@@ -22,6 +22,7 @@ import { useProjectGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
+import { LastUsed } from "~/kaeso/last-used";
 
 const accountQuery = (org: string, project: string, account: string) => ({
   queryKey: ["orgs", org, "projects", project, "service-accounts", "one", account],
@@ -234,7 +235,7 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
                 subtitle: (
                   <KeyDisplay redacted={k.redacted} state={asKeyState(k.state)} copy={false} {...(k.access !== "inference" ? { access: k.access } : {})} />
                 ),
-                date: k.last_used_at ? formatRelative(k.last_used_at) : t("project.serviceAccounts.neverUsed", "Never used"),
+                date: <LastUsed at={k.last_used_at} />,
               }))}
             />
           )}

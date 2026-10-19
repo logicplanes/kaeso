@@ -87,7 +87,6 @@
   "project.serviceAccounts.loadingKeys": "Loading keys…",
   "project.serviceAccounts.nameExample": "checkout-production",
   "project.serviceAccounts.nameSaved": "Name saved",
-  "project.serviceAccounts.neverUsed": "Never used",
   "project.serviceAccounts.noKeys": "No keys yet.",
   "project.serviceAccounts.noLimits": "No limits on this service account; the project's limits apply.",
   "project.serviceAccounts.none": "No service accounts yet",
