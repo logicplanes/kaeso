@@ -35,7 +35,7 @@ docker compose up -d --wait
 
 Der Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
-Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole die Befehle der Schritte 3 und 5 mit der genauen Version.
+Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole die Befehle der Schritte 3 bis 5 mit der genauen Version.
 
 ## Neue Releases
 

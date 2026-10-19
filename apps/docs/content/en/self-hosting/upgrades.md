@@ -35,7 +35,7 @@ docker compose up -d --wait
 
 The command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
-When the updater can't install a release, the console shows the commands of steps 3 and 5 with the exact version.
+When the updater can't install a release, the console shows the commands of steps 3 to 5 with the exact version.
 
 ## New releases
 

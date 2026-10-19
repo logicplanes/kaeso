@@ -142,7 +142,7 @@ function Outcome({ job: j }: { job: UpdateJobView }): ReactNode {
       <span className="flex flex-col gap-8">
         <span>{reasonText(j.reason) ?? t("instance.updates.whyUnknown", "The update didn't finish.")}</span>
         {j.state === "succeeded" && (
-          <span>{t("instance.updates.composeByHand", "Set the Kaeso images in compose.yaml to {version} by hand.", { version: j.to })}</span>
+          <span>{t("instance.updates.composeByHand", "Download the compose.yaml of Kaeso {version} over the install's.", { version: j.to })}</span>
         )}
         {j.state === "rolled_back" && <span>{t("instance.updates.rolledBackHint", "Kaeso {version} runs again, unchanged.", { version: j.from })}</span>}
         {j.state === "rollback_failed" && (

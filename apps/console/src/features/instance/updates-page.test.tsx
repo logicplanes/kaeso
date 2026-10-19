@@ -240,7 +240,7 @@ describe("instance updates page", () => {
     const dialog = await screen.findByRole("dialog");
     expect(await within(dialog).findByText("Kaeso 40.4.3 is running")).toBeInTheDocument();
     expect(within(dialog).getByText("One step is left")).toBeInTheDocument();
-    expect(within(dialog).getByText("Set the Kaeso images in compose.yaml to 40.4.3 by hand.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Download the compose.yaml of Kaeso 40.4.3 over the install's.")).toBeInTheDocument();
   });
 
   it("sends a major release to the upgrade guide", async () => {
@@ -359,6 +359,12 @@ describe("instance updates page", () => {
     await renderApp(PATH);
     expect(await screen.findByText("The updater doesn't answer; check that its container runs.")).toBeInTheDocument();
     expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
+    const commands = screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/).closest("pre")?.textContent ?? "";
+    const verify = commands.indexOf("gh attestation verify release.json --repo logicplanes/kaeso");
+    expect(commands).toContain("releases/download/v40.4.3/release.json");
+    expect(verify).toBeGreaterThan(0);
+    expect(commands.indexOf("sha256sum -c -")).toBeGreaterThan(verify);
+    expect(commands.indexOf("docker compose pull")).toBeGreaterThan(commands.indexOf("sha256sum -c -"));
   });
 
   it("needs the updater before updates can install automatically", async () => {
