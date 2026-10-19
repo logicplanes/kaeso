@@ -89,7 +89,7 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 
 启动时，更新器最多等待 Docker 两分钟。然后它会完成处于 `online` 的更新，完成新网关变为健康的更新，并回滚其他所有更新。
 
-更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径。代理只按方法和路径过滤，`containers/create` 的请求体由更新器决定。因此更新器相当于宿主机的 root 权限，需要主动开启。
+更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径。代理只按方法和路径过滤，`containers/create` 的请求体由更新器决定。因此更新器相当于宿主机的 root 权限，需要主动开启。`guard.rs` 会在每个请求体发出前检查它。新容器必须沿用被替换容器的名称，以及每个会放宽容器权限的 `HostConfig` 字段，例如 `Privileged`、`CapAdd`、`Devices`、`PidMode`、`NetworkMode`、`Binds` 和 `Mounts`。拉取必须按摘要指定 Kaeso 的镜像。这些检查用于拦截更新器自身的错误，而不是拦截控制了更新器的人。
 
 ### 更新器检查的内容
 
@@ -116,6 +116,7 @@ Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求�
 | `crates/kaeso-update` | 版本标签、通道、包含主版本、手动步骤和预发布的计划、清单和协议 |
 | `crates/kaeso-server/tests/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避、清单、权限、审计日志、单一更新锁以及每种结束方式 |
 | `crates/kaeso-updater/tests/verify.rs` | Kaeso 0.1.0 的真实证明能通过验证；换成其他镜像、提交、工作流、签名或日志条目则不能 |
+| `crates/kaeso-updater/src/guard.rs` | 在会放宽权限的 `HostConfig` 字段上与被替换容器不同的容器、其他名称和其他镜像都会被拒绝 |
 | `crates/kaeso-updater/tests/engine.rs`、`server.rs` | 更新器对接模拟的 Docker API：完整更新、每种拒绝、回滚、每一步的重启、状态文件和 API |
 | `scripts/release-manifest.test.mjs` | 清单、固定版本的 `compose.yaml`、`manual_since`、最新的迁移和提交 |
 | `e2e/install` | 启用了 updater profile 的实例、代理，以及 Kaeso 不可用时 Caddy 以各种格式给出的应答 |
