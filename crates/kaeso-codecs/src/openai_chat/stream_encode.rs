@@ -11,9 +11,9 @@ use super::convert::to_raw;
 use super::error::error_body;
 use super::response::{encode_finish, encode_usage};
 use super::stream::{
-    CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_ENV, FORM_ENV_ABSENT,
-    FORM_IN_CHUNK, FORM_NO_DONE, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras,
-    start_envelope, value_obj,
+    CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_ENV,
+    FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL,
+    Obj, event_extras, start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
@@ -406,7 +406,9 @@ impl ChatStreamEncoder {
                 delta.insert("refusal".to_owned(), RawJson::null());
             }
         }
-        if let Some(content) = &chunk.content {
+        if let Some(parts) = content_parts(chunk)? {
+            delta.insert("content".to_owned(), parts);
+        } else if let Some(content) = &chunk.content {
             delta.insert("content".to_owned(), to_raw(content)?);
         }
         if let Some(refusal) = &chunk.refusal {
@@ -664,4 +666,38 @@ impl ChatStreamEncoder {
         }
         Ok(out)
     }
+}
+
+fn content_parts(chunk: &Chunk) -> Result<Option<RawJson>, KppError> {
+    let Some(Value::Array(slots)) = chunk.form.get(FORM_CONTENT_SLOTS).filter(|_| chunk.own) else {
+        return Ok(None);
+    };
+    let mut others = match chunk.delta_fields.get("content") {
+        Some(raw) => serde_json::from_str::<Vec<RawJson>>(raw.get())
+            .map_err(internal)?
+            .into_iter(),
+        None => Vec::new().into_iter(),
+    };
+    let text = chunk.content.as_deref().unwrap_or("");
+    let mut at = 0;
+    let mut parts = Vec::new();
+    for slot in slots {
+        match slot.as_u64().and_then(|n| usize::try_from(n).ok()) {
+            Some(len) => {
+                let Some(piece) = text.get(at..at + len) else {
+                    return Ok(None);
+                };
+                at += len;
+                parts.push(to_raw(&serde_json::json!({"type": "text", "text": piece}))?);
+            }
+            None => match others.next() {
+                Some(raw) => parts.push(raw),
+                None => return Ok(None),
+            },
+        }
+    }
+    if at != text.len() {
+        return Ok(None);
+    }
+    Ok(Some(to_raw(&parts)?))
 }

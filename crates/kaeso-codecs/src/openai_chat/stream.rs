@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 use super::DIALECT;
 use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::decode_body;
-use super::response::{decode_finish, decode_usage};
+use super::response::{decode_finish, decode_usage, plain_text_part};
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::sse::{SseEvent, SseItem, SseParser};
@@ -16,6 +16,7 @@ use crate::wire::Ext;
 use crate::wire::StringOr;
 
 pub(crate) const FORM_CHUNK: &str = "chunk";
+pub(crate) const FORM_CONTENT_SLOTS: &str = "cs";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
 pub(crate) const FORM_ENV: &str = "env";
 pub(crate) const FORM_ENV_ABSENT: &str = "env_absent";
@@ -556,8 +557,26 @@ impl ChatStreamDecoder {
         let text = match delta.content {
             Some(StringOr::String(text)) => Some(text),
             Some(StringOr::List(parts)) => {
-                fields.insert("delta.content".to_owned(), to_raw(&parts)?);
-                None
+                let mut text: Option<String> = None;
+                let mut slots = Vec::new();
+                let mut others = Vec::new();
+                for part in parts {
+                    match plain_text_part(&part) {
+                        Some(t) => {
+                            slots.push(Value::from(t.len()));
+                            text.get_or_insert_with(String::new).push_str(&t);
+                        }
+                        None => {
+                            slots.push(Value::Null);
+                            others.push(part);
+                        }
+                    }
+                }
+                form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
+                if !others.is_empty() {
+                    fields.insert("delta.content".to_owned(), to_raw(&others)?);
+                }
+                text
             }
             None => None,
         };

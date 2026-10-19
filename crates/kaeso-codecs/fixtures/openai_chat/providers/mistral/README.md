@@ -25,7 +25,7 @@ Mistral rejects every field it doesn't declare with `422 extra_forbidden`. The `
 | `requests/tool-result-named.json`, `responses/recorded-tool-result-named.json` | a tool result with `name` |
 | `requests/safe-prompt-random-seed.json`, `responses/recorded-safe-prompt-random-seed.json` | `safe_prompt` and `random_seed` (Extras), penalties and `stop` |
 | `requests/reasoning-effort-high.json`, `responses/recorded-reasoning-effort-high.json` | `content` as an array: a `thinking` chunk (`Block::Unknown`) and a `text` chunk; `completion_tokens_details.reasoning_tokens` |
-| `requests/reasoning-effort-high-stream.json`, `streams/recorded-reasoning-effort-high-stream.sse` | thinking streamed as `delta.content` arrays (Extras), the answer as strings |
+| `requests/reasoning-effort-high-stream.json`, `streams/recorded-reasoning-effort-high-stream.sse` | thinking streamed as `delta.content` arrays; the first answer token shares such an array with an empty thinking chunk, the rest of the answer comes as strings. Text parts become text deltas, the other parts stay in Extras |
 | `requests/magistral-medium.json`, `responses/recorded-magistral-medium.json` | `magistral-medium-latest` answers with a plain string |
 | `responses/recorded-max-tokens-length.json`, `responses/recorded-prediction-doc.json`, `responses/recorded-tool-choice-function.json`, `responses/recorded-tool-choice-none.json` | canonical requests: usage with `prompt_tokens_details.cached_tokens`, `completion_tokens_details` and `service_tier` (Extras), `tool_calls: null` |
 | `streams/recorded-stream-include-usage.sse`, `requests/stream-no-options.json` with `streams/recorded-stream-no-options.sse` | the padding field `p` on chunks (Extras); usage on the chunk with `finish_reason`, also without `stream_options`; `data: [DONE]` |
@@ -39,6 +39,6 @@ Mistral rejects every field it doesn't declare with `422 extra_forbidden`. The `
 
 No Mistral error body has OpenAI's `error` object, so the Chat codec answers apps with an OpenAI error that quotes it; `openai_chat::tests::error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them` checks that instead of the round trip.
 
-Thinking stays where Mistral puts it: in a reply's `content` array as `Unknown` blocks, and in a stream as the delta's `delta.content` Extras. Apps in another format get the text without it; mapping it to their reasoning blocks is left for the reasoning design.
+Thinking stays where Mistral puts it: in a reply's `content` array as `Unknown` blocks, and in a stream as the delta's `delta.content` Extras, while text parts of those arrays become text. Apps in another format get the text without it; mapping it to their reasoning blocks is left for the reasoning design.
 
 No 429 or 5xx body was recorded.

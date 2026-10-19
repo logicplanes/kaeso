@@ -416,7 +416,7 @@ fn overlay(base: &mut Value, top: Value) {
     }
 }
 
-fn plain_text_part(part: &RawJson) -> Option<String> {
+pub(crate) fn plain_text_part(part: &RawJson) -> Option<String> {
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
     struct TextOnly {

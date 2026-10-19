@@ -1072,3 +1072,35 @@ fn a_stream_that_ends_without_a_finish_reason_is_not_a_finished_reply() {
     );
     assert_sse_eq("empty finish", finished.as_bytes(), &encode(&events, false));
 }
+
+#[test]
+fn text_parts_of_a_streamed_content_array_are_text_and_the_rest_stays_with_the_chunk() {
+    let (_, bytes) = fixtures("openai_chat", "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "providers/mistral/recorded-reasoning-effort-high-stream")
+        .unwrap();
+    let events = decode_whole(&bytes);
+    let text: String = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                kaeso_kpp::Delta::Text(t) => Some(t.as_str()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        text,
+        "No, 91 is not a prime number because it can be divided evenly by 7 and 13."
+    );
+    let mixed = br#"data: {"id":"x","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[]},{"type":"text","text":"No"},{"type":"text","text":", 91"}]},"finish_reason":null}]}
+
+data: {"id":"x","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+"#;
+    let out = encode(&decode_whole(mixed), false);
+    assert_sse_eq("mixed content array", mixed, &out);
+}

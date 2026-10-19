@@ -172,6 +172,31 @@ async fn anthropic_apps_reach_mistral_and_get_the_answer_without_its_thinking() 
 }
 
 #[tokio::test]
+async fn streamed_thinking_replies_reach_anthropic_apps_with_the_whole_answer() {
+    let env = env().await;
+    let mut body = messages(
+        SMALL,
+        &format!(
+            "Is 91 prime? {}",
+            fixture("streams", "recorded-reasoning-effort-high-stream")
+        ),
+    );
+    body["stream"] = json!(true);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let text: String = r
+        .text()
+        .lines()
+        .filter_map(|line| line.strip_prefix("data: "))
+        .filter_map(|data| serde_json::from_str::<Value>(data).ok())
+        .filter(|event| event["delta"]["type"] == "text_delta")
+        .map(|event| event["delta"]["text"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(text, ANSWER);
+    assert!(!r.text().contains(r#""type":"thinking""#), "{}", r.text());
+}
+
+#[tokio::test]
 async fn responses_apps_reach_mistral_through_chat_completions() {
     let env = env().await;
     let r = call(
