@@ -31,7 +31,7 @@ order: 3
 | Anthropic | `anthropic` | console.anthropic.com 的 API keys 页面 | `sk-ant-` |
 | Hugging Face | `huggingface` | huggingface.co/settings/tokens：可调用 Inference Providers 的细粒度令牌 | `hf_` |
 
-Hugging Face 会把每个请求转发给其某个推理服务商。模型 ID 可以用后缀指定服务商，例如 `meta-llama/Llama-3.1-8B-Instruct:cerebras`，也可以用 `:fastest` 或 `:cheapest` 让其选择；在 Kaeso 中，带前缀的名称为 `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`。如果模型所属组织的名称与某个服务商相同，例如 `openai/gpt-oss-120b`，而项目中也有该服务商的 `gpt-oss-120b`，则该名称指 OpenAI 的模型；要使用 Hugging Face 的模型，请写 `huggingface/openai/gpt-oss-120b`。Hugging Face 账户的额度用完后，其请求会以计费错误失败。
+Hugging Face 会把每个请求转发给其某个推理服务商，默认是最快的那个。目录中的 Hugging Face 模型不带后缀，例如 `meta-llama/Llama-3.1-8B-Instruct`，应用可以用 `huggingface/meta-llama/Llama-3.1-8B-Instruct` 调用。要固定某个推理服务商或策略，请将带后缀的 ID（例如 `meta-llama/Llama-3.1-8B-Instruct:cerebras` 或 `…:cheapest`）作为[自定义模型](models-and-aliases.md#添加模型)添加，并填写其价格和限制。如果模型所属组织的名称与某个服务商相同，例如 `openai/gpt-oss-120b`，而项目中也有该服务商的 `gpt-oss-120b`，则该名称指 OpenAI 的模型；要使用 Hugging Face 的模型，请写 `huggingface/openai/gpt-oss-120b`。Hugging Face 账户的额度用完后，其请求会以计费错误失败。
 
 ## 选择项目使用的密钥
 

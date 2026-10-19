@@ -31,7 +31,7 @@ Every action except deleting also needs a recent sign-in.
 | Anthropic | `anthropic` | console.anthropic.com, under API keys | `sk-ant-` |
 | Hugging Face | `huggingface` | huggingface.co/settings/tokens: a fine-grained token that may make calls to Inference Providers | `hf_` |
 
-Hugging Face routes each request to one of its inference providers. A model id can name one with a suffix, such as `meta-llama/Llama-3.1-8B-Instruct:cerebras`, or pick by `:fastest` or `:cheapest`; in Kaeso, the prefixed name is `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. When a model's organization has the name of a provider, as in `openai/gpt-oss-120b`, and the project also has that provider's `gpt-oss-120b`, the name means OpenAI's model; write `huggingface/openai/gpt-oss-120b` for Hugging Face's. When the Hugging Face account has no credits left, its requests fail with a billing error.
+Hugging Face routes each request to one of its inference providers, by default the fastest. Its models in the catalogue carry no suffix, such as `meta-llama/Llama-3.1-8B-Instruct`, and apps can call them as `huggingface/meta-llama/Llama-3.1-8B-Instruct`. To pin an inference provider or a policy, add the id with its suffix, such as `meta-llama/Llama-3.1-8B-Instruct:cerebras` or `…:cheapest`, as a [custom model](models-and-aliases.md#add-models) with its prices and limits. When a model's organization has the name of a provider, as in `openai/gpt-oss-120b`, and the project also has that provider's `gpt-oss-120b`, the name means OpenAI's model; write `huggingface/openai/gpt-oss-120b` for Hugging Face's. When the Hugging Face account has no credits left, its requests fail with a billing error.
 
 ## Choose which key a project uses
 
