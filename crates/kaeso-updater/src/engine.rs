@@ -279,15 +279,21 @@ impl Engine {
             .unwrap_or_default()
     }
 
-    fn write_compose(&self, from: &Version, to: &Version, recovering: bool) -> Option<Failure> {
-        let by_hand = format!("set the Kaeso image tags in compose.yaml to {to} by hand");
+    fn write_compose(
+        &self,
+        from: &Version,
+        to: &Version,
+        images: &[Image],
+        recovering: bool,
+    ) -> Option<Failure> {
+        let by_hand = format!("download the compose.yaml of {to} over the install's by hand");
         let Some(kept) = self.settings.state.kept_compose() else {
             return Some(fail(
                 Reason::ComposeUnwritable,
                 format!("{to} runs, but the updater lost its copy of compose.yaml; {by_hand}"),
             ));
         };
-        let prepared = compose::retag(&kept, from, to);
+        let prepared = compose::retag(&kept, from, to, images);
         let now = match self.settings.compose.read() {
             Ok(now) => now,
             Err(e) => {
@@ -302,7 +308,7 @@ impl Engine {
         }
         let torn =
             recovering && (now.is_empty() || prepared.starts_with(&now) || kept.starts_with(&now));
-        if compose::retag(&now, from, to) != prepared && !torn {
+        if compose::retag(&now, from, to, images) != prepared && !torn {
             return Some(fail(
                 Reason::ComposeChanged,
                 format!("{to} runs, but compose.yaml changed during the update; {by_hand}"),
@@ -317,9 +323,9 @@ impl Engine {
     }
 
     async fn finish(&self, from: &Version, to: &Version, recovering: bool) {
-        let warning = self.write_compose(from, to, recovering);
         let saved = self.snapshot();
         let images = saved.as_ref().map(|s| s.images.clone()).unwrap_or_default();
+        let warning = self.write_compose(from, to, &images, recovering);
         for image in &images {
             if let Err(e) = self
                 .docker
@@ -605,7 +611,8 @@ impl Engine {
             .compose
             .read()
             .map_err(|e| fail(Reason::ComposeUnwritable, e))?;
-        if compose::retag(&local, from, to) != asset {
+        let images: Vec<Image> = PULLED.iter().map(|s| manifest.image(*s).clone()).collect();
+        if compose::retag(&local, from, to, &images) != asset {
             return Err(fail(
                 Reason::ComposeChanged,
                 "compose.yaml differs from the release's beyond the image versions",

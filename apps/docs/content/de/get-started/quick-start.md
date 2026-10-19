@@ -17,7 +17,7 @@ Installieren Sie Kaeso auf einem Server, verbinden Sie einen Modellanbieter wie 
 
 ## Die Compose-Datei herunterladen
 
-Jedes Release veröffentlicht eine `compose.yaml`, die seine Gateway- und Konsolen-Images festlegt. Laden Sie sie in einen neuen Ordner, den nur Sie lesen können:
+Jedes Release veröffentlicht eine `compose.yaml`, die seine Images auf Version und Digest festlegt. Laden Sie sie in einen neuen Ordner, den nur Sie lesen können:
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso

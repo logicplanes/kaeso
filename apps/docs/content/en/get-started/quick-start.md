@@ -17,7 +17,7 @@ Install Kaeso on a server, connect a model provider such as OpenAI or Anthropic,
 
 ## Download the Compose file
 
-Each release publishes a `compose.yaml` that pins its gateway and console images. Download it into a new folder that only you can read:
+Each release publishes a `compose.yaml` that pins its images by version and digest. Download it into a new folder that only you can read:
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso

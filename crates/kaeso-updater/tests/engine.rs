@@ -52,7 +52,7 @@ async fn an_update_switches_both_services_writes_compose_and_cleans_up() {
         world.names(),
         ["kaeso-console-1", "kaeso-gateway-1", "kaeso-updater-1"]
     );
-    assert_eq!(world.compose(), compose_text(TO));
+    assert_eq!(world.compose(), release_compose(TO));
     assert!(!world.maintenance());
     assert_eq!(world.calls("POST images/create").len(), 3);
     assert_eq!(world.calls("POST images/").len() - 3, 3, "three tags");
@@ -385,6 +385,22 @@ async fn an_image_without_the_release_workflows_signature_is_never_pulled() {
 }
 
 #[tokio::test]
+async fn a_compose_file_pinned_to_the_running_release_is_pinned_to_the_new_one() {
+    let world = World::new("pinned", Daemon::install(), Verifier::default()).await;
+    let old = format!("sha256:{}", "0".repeat(64));
+    let mut local = String::from_utf8(compose_text(FROM)).unwrap();
+    for service in Service::ALL {
+        let tag = format!("{}:{FROM}", service.image());
+        local = local.replace(&tag, &format!("{tag}@{old}"));
+    }
+    std::fs::write(world.dir.join("compose.yaml"), &local).unwrap();
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    assert_eq!(job.reason, None);
+    assert_eq!(world.compose(), release_compose(TO));
+}
+
+#[tokio::test]
 async fn a_changed_compose_file_is_never_overwritten() {
     let world = World::new("compose", Daemon::install(), Verifier::default()).await;
     let mut local = compose_text(FROM);
@@ -611,6 +627,16 @@ fn interrupted(step: Step, switched: Vec<Switched>) -> Saved {
     saved
 }
 
+fn release_images() -> Vec<Image> {
+    Service::ALL
+        .iter()
+        .map(|s| Image {
+            name: s.image().into(),
+            digest: digest_of(*s),
+        })
+        .collect()
+}
+
 fn previous(daemon: &mut Daemon, service: &str) -> String {
     let old = daemon
         .containers
@@ -711,22 +737,22 @@ async fn interrupted_while_migrating(phase: Phase) {
     let dir = fresh(&format!("recover-forward-{phase:?}"));
     let state = StateFile::new(dir.join("state"));
     state.keep_compose(&compose_text(FROM)).unwrap();
-    state
-        .save(&interrupted(
-            Step::Migrating,
-            vec![switched(
-                Service::Gateway,
-                old_id,
-                Some(&format!("{:0<64}", "new7")),
-                phase,
-            )],
-        ))
-        .unwrap();
+    let mut saved = interrupted(
+        Step::Migrating,
+        vec![switched(
+            Service::Gateway,
+            old_id,
+            Some(&format!("{:0<64}", "new7")),
+            phase,
+        )],
+    );
+    saved.images = release_images();
+    state.save(&saved).unwrap();
     let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
     world.engine.recover().await;
     let job = world.engine.last().unwrap();
     assert_eq!(job.state, JobState::Succeeded, "{job:?}");
-    assert_eq!(world.compose(), compose_text(TO));
+    assert_eq!(world.compose(), release_compose(TO));
     assert!(world.container("kaeso-gateway-1-previous").is_none());
 }
 
@@ -738,13 +764,7 @@ async fn an_update_interrupted_when_online_is_finished_and_tagged_at_start() {
     let state = StateFile::new(dir.join("state"));
     state.keep_compose(&compose_text(FROM)).unwrap();
     let mut saved = interrupted(Step::Online, Vec::new());
-    saved.images = [Service::Gateway, Service::Console, Service::Updater]
-        .iter()
-        .map(|s| Image {
-            name: s.image().into(),
-            digest: digest_of(*s),
-        })
-        .collect();
+    saved.images = release_images();
     state.save(&saved).unwrap();
     let world = World::with(
         dir,
@@ -759,7 +779,7 @@ async fn an_update_interrupted_when_online_is_finished_and_tagged_at_start() {
     assert_eq!(job.reason, None);
     assert_eq!(
         world.compose(),
-        compose_text(TO),
+        release_compose(TO),
         "a torn compose.yaml is restored"
     );
     let tags: Vec<String> = world

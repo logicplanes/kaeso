@@ -22,7 +22,7 @@ flowchart TD
 
 ## Services
 
-`compose.yaml` starts six services. It pins the gateway and console images to the release's version, and every other image to a version and digest.
+`compose.yaml` starts six services. It pins every image to a version and a digest: the gateway, console and updater images to the release's version and the digests its Release workflow built.
 
 | Service | Role | Its data |
 | --- | --- | --- |
