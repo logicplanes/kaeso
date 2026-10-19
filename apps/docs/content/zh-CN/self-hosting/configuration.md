@@ -209,7 +209,7 @@ services:
 
 ## 服务商设置
 
-每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用两个服务商，`openai` 和 `anthropic`，每个只有一个字段 `base_url`（[服务商调用](#服务商调用)）。
+每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用[服务商密钥](../console/provider-keys.md#服务商)中列出的服务商，每个只有一个字段 `base_url`（[服务商调用](#服务商调用)）。
 
 服务商 ID 由小写字母和数字组成，中间用单个连字符分隔。ID 不符合此规则、或指向 Kaeso 不调用的服务商的变量或表，会让网关在启动时停止。错误消息会指明它，并列出所有服务商。
 

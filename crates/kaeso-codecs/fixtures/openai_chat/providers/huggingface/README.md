@@ -7,7 +7,7 @@ Sources, read 2026-10-19:
 - [Inference Providers](https://huggingface.co/docs/inference-providers/index): base URL, Bearer token, model suffixes, `GET /v1/models`, chat completions only on the OpenAI-compatible endpoint
 - [Chat Completion API reference](https://huggingface.co/docs/inference-providers/tasks/chat-completion): request and response fields
 - [Pricing and billing](https://huggingface.co/docs/inference-providers/pricing): credits, pay as you go
-- huggingface.js at commit [`457119ebd1d68f76dc2f9d0f218ffbadb62e7325`](https://github.com/huggingface/huggingface.js/blob/457119ebd1d68f76dc2f9d0f218ffbadb62e7325/packages/inference/test/tapes.json) (2025-04-22): `packages/inference/test/tapes.json`, the SDK's recorded HTTP tapes, taken from replies that came through `router.huggingface.co` from the `hf-inference` backend (Text Generation Inference)
+- huggingface.js at commit [`457119ebd1d68f76dc2f9d0f218ffbadb62e7325`](https://github.com/huggingface/huggingface.js/blob/457119ebd1d68f76dc2f9d0f218ffbadb62e7325/packages/inference/test/tapes.json) (2025-04-22): the SDK's recorded HTTP tapes, taken from replies that came through `router.huggingface.co` from the `hf-inference` backend (Text Generation Inference)
 
 The test token had no credits, so every generation request got HTTP 402 before it reached a backend. The successful reply and stream are therefore from the SDK's tapes, not from live recordings, and there is no tool-call fixture: neither the tapes nor the docs contain a tool-call reply from the router.
 

@@ -209,7 +209,7 @@ In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen 
 
 ## Anbietereinstellungen
 
-Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Kaeso ruft zwei Anbieter auf, `openai` und `anthropic`, und jeder hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)).
+Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Kaeso ruft die unter [Anbieter-Schlüssel](../console/provider-keys.md#anbieter) aufgeführten Anbieter auf, und jeder hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)).
 
 Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen. Eine Anbieter-Variable oder -Tabelle mit einer anderen ID, oder mit der ID eines Anbieters, den Kaeso nicht aufruft, hält das Gateway beim Start an. Die Meldung nennt sie und listet die Anbieter auf.
 

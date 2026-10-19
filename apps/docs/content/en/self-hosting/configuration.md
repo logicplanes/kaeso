@@ -209,7 +209,7 @@ In the console, instance admins can also allow account and organization creation
 
 ## Provider settings
 
-Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Kaeso calls two providers, `openai` and `anthropic`, and each has one field, `base_url` ([provider calls](#provider-calls)).
+Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Kaeso calls the providers listed under [provider keys](../console/provider-keys.md#providers), and each has one field, `base_url` ([provider calls](#provider-calls)).
 
 A provider id is lowercase letters and digits with single hyphens between them. A provider variable or table with any other id, or with the id of a provider Kaeso doesn't call, stops the gateway at startup. The message names it and lists the providers.
 

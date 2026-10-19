@@ -382,10 +382,14 @@ mod tests {
                 .iter()
                 .map(|(id, p)| format!("{id} {}", p.base_url))
                 .collect::<Vec<_>>(),
-            [
-                "anthropic https://api.anthropic.com/",
-                "openai https://api.openai.com/"
-            ]
+            {
+                let mut defaults: Vec<String> = kaeso_core::provider::PROVIDERS
+                    .iter()
+                    .map(|p| format!("{} {}/", p.id, p.default_base_url))
+                    .collect();
+                defaults.sort();
+                defaults
+            }
         );
         assert!(!c.is_local_development());
     }

@@ -59,6 +59,9 @@ base_url = "https://api.openai.com"
 [providers.anthropic]
 base_url = "https://api.anthropic.com"
 
+[providers.huggingface]
+base_url = "https://router.huggingface.co"
+
 [upstream]
 connect_timeout = "10s"
 request_timeout = "600s"
