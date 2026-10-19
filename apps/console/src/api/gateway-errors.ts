@@ -21,6 +21,9 @@ const rule = (key: ErrorKey, text: (values: Values) => string, convert?: Readonl
   convert ? { key, text, convert } : { key, text };
 
 const messages = (): Rule[] => [
+  rule("errors.keyDisabledByPerson", () => t("errors.keyDisabledByPerson", "A person disabled this key, so only a person can enable it; use a console session.")),
+  rule("errors.keyDisabledBySomeoneElse", () => t("errors.keyDisabledBySomeoneElse", "Someone else disabled this key; ask a holder of `keys.all.manage` to enable it.")),
+  rule("errors.keysCantMintPlatformKeys", () => t("errors.keysCantMintPlatformKeys", "Keys can't create keys with platform access; use a console session.")),
   rule("errors.signInFirst", () => t("errors.signInFirst", "Sign in first.")),
   rule("errors.sessionEnded", () => t("errors.sessionEnded", "Your session has ended; sign in again.")),
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
