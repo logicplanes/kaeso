@@ -166,7 +166,7 @@ describe("LimitsPage", () => {
     await user.click(within(dialog).getByRole("combobox", { name: "Counts" }));
     await user.click(await screen.findByRole("option", { name: /Request rate/ }));
     expect(within(dialog).getByText("Rates count over a sliding minute and always refuse requests above them.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("combobox", { name: "Model" }));
+    await user.click(within(dialog).getByRole("button", { name: "Model" }));
     await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
     expect(within(dialog).queryByRole("textbox", { name: "Alert at" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
@@ -266,7 +266,7 @@ describe("LimitsPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await within(dialog).findByText("What's the limit?");
     await waitFor(() => expect(requests("GET", LIMITS).map((r) => Object.fromEntries(r.query))).toContainEqual({ level: "member", user: USER }));
-    const model = within(dialog).getByRole("combobox", { name: "Model" });
+    const model = within(dialog).getByRole("button", { name: "Model" });
     await user.click(model);
     await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
     expect(model).toHaveTextContent("Claude Sonnet 4.5");

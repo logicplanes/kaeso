@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { signedIn, without } from "~/test/fixtures";
-import { hoverReason, notifications } from "~/test/fixtures/org";
+import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
@@ -198,6 +198,41 @@ describe("LogsPage", () => {
     expect(await screen.findByText("No requests in this range")).toBeInTheDocument();
     expect(lastQuery().user).toBeUndefined();
     expect(lastQuery().failed).toBeUndefined();
+  });
+
+  it("lists providers with a key first and groups a long model list by provider", async () => {
+    signedIn();
+    const models = Array.from({ length: 60 }, (_, i) =>
+      catalogueModel({
+        id: `cm_${i}`,
+        provider: i % 2 ? "anthropic" : "openai",
+        model_id: `model-${i}`,
+        effective: { ...catalogueModel().effective, display_name: null },
+      }),
+    );
+    projectData({ models });
+    logsData({ rows: [logRow()] });
+    on("GET", "orgs/:org/credentials", { data: [credential({ provider: "deepseek" })] });
+    const { user, router } = await renderApp(projectPath("logs"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(within(await screen.findByRole("menu", { name: "Add filter" })).getByRole("menuitem", { name: "Provider" }));
+    expect(within(await screen.findByRole("group", { name: "Connected" })).getByRole("menuitemradio")).toHaveAccessibleName("DeepSeek");
+    expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("menuitemradio", { name: "Anthropic" }));
+    const providers = screen.getAllByRole("menuitemradio");
+    expect(providers[0]).toHaveAccessibleName("DeepSeek");
+    expect(providers[1]).toHaveAccessibleName("Anthropic");
+    expect(providers[2]).toHaveAccessibleName("OpenAI");
+    await user.keyboard("{Escape}");
+
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(within(await screen.findByRole("menu", { name: "Add filter" })).getByRole("menuitem", { name: "Model" }));
+    const list = await screen.findByRole("listbox", { name: "Model" });
+    expect(within(list).getByRole("group", { name: "Anthropic" })).toBeInTheDocument();
+    await user.type(screen.getByRole("combobox", { name: "Search model values" }), "model-59");
+    await user.click(within(list).getByRole("option", { name: "model-59" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ model: "model-59" }));
   });
 
   it("adds filters from the menu", async () => {

@@ -8,7 +8,7 @@ A project's catalogue, on its **Models** page, lists the models its keys may cal
 
 ## Add models
 
-Choose **Add models** and search one provider's models. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
+Choose **Add models**, pick a provider from the searchable list next to the search field, with providers your organization has connected first, and search its models. The dialog remembers the provider until you reload the console or sign out. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
 Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
 

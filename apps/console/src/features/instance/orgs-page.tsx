@@ -251,6 +251,7 @@ function CreateOrgDialog({ onClose }: { onClose: () => void }) {
           options={options}
           loading={users.isFetching}
           onInputValueChange={setQuery}
+          searchDelay={250}
           value={owner}
           onValueChange={(v: string | null) => setOwner(v)}
           emptyText={t("instance.noUsersMatch", "No users match")}

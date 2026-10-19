@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge, Banner, Button, DialogScope, Empty, Input, LayerDialog, List, ModelLabel, SearchInput, Segmented, Switch, Text } from "@logicplanes/kaeso-ui";
+import {
+  Badge,
+  Banner,
+  Button,
+  DialogScope,
+  Empty,
+  Input,
+  LayerDialog,
+  List,
+  ModelLabel,
+  ProviderPicker,
+  SearchInput,
+  Switch,
+  Text,
+} from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -8,7 +22,9 @@ import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview } from "~/api/generated/types";
 import { modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
-import { PROVIDER_IDS, providerLabel } from "~/format/labels";
+import { providerLabel } from "~/format/labels";
+import { useProviderOptions } from "~/kaeso/providers";
+import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
 import { ModelForm, allFields, changedFields, draftFrom, draftProblem, type FieldDraft } from "./model-form";
 import { t } from "~/i18n";
@@ -16,6 +32,8 @@ import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
 
 type View = "search" | "review" | "custom" | "all";
+
+const LAST_PROVIDER = ["add-models", "provider"];
 
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
@@ -44,7 +62,8 @@ export function AddModelsDialog(props: AddModelsProps) {
 function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>("search");
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState(() => recall<string>(LAST_PROVIDER) ?? "openai");
+  const providers = useProviderOptions(org);
   const [q, setQ] = useState("");
   const [deprecated, setDeprecated] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -132,18 +151,20 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     description: t("models.addHint", "Search models.dev; each model brings its prices, limits and capabilities, which you can override."),
     content: (
       <div className="flex flex-col gap-16">
-        <Segmented
-          aria-label={common.provider()}
-          value={provider}
-          onValueChange={(p) => {
-            setProvider(p);
-            setSelected(new Set());
-          }}
-          options={PROVIDER_IDS.map((p) => ({ value: p, label: providerLabel(p) }))}
-          fullWidth
-        />
-        <div className="flex items-center gap-16">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-8 sm:flex-nowrap">
+          <ProviderPicker
+            appearance="select"
+            aria-label={common.provider()}
+            providers={providers}
+            value={provider}
+            onValueChange={(p) => {
+              if (!p) return;
+              remember(LAST_PROVIDER, p);
+              setProvider(p);
+              setSelected(new Set());
+            }}
+          />
+          <div className="min-w-0 flex-1 basis-200">
             <SearchInput
               aria-label={t("models.search", "Search models")}
               placeholder={common.search()}

@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, ModelLabel, Select, icons, type SelectOption } from "@logicplanes/kaeso-ui";
-import { CompareGrid, Composer, ParameterPopover, PromptSuggestions, ResponseMetrics, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
+import { AppFrame, Button, Empty, icons } from "@logicplanes/kaeso-ui";
+import {
+  CompareGrid,
+  Composer,
+  ModelPicker,
+  ParameterPopover,
+  PromptSuggestions,
+  ResponseMetrics,
+  type ReasoningEffort,
+} from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
 import { providerLabel } from "~/format/labels";
+import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
+import { useModelPickerProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { metricsOf } from "./metrics";
@@ -118,7 +128,13 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
 
   const empty = threads.every((x) => x.turns.length === 0);
-  const options = useMemo(() => chat.map(modelOption), [chat]);
+  const options = useMemo(
+    () =>
+      chat.map((m) => playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providerLabel(m.provider) }))),
+    [chat],
+  );
+  const providerIds = useMemo(() => [...new Set(chat.map((m) => m.provider))], [chat]);
+  const pickerProviders = useModelPickerProviders(org, providerIds);
   const chosen = models.filter((m): m is PlaygroundModel => !!m);
   const ready = !catalogue.isPending && chosen.length > 0;
   useEffect(() => {
@@ -191,14 +207,19 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                       key={thread?.key ?? `col${i}`}
                       label={label}
                       header={
-                        <Select
+                        <ModelPicker
                           aria-label={common.model()}
                           appearance="ghost"
                           size="sm"
                           placeholder={catalogue.isPending ? t("playground.loadingModels", "Loading models") : t("playground.chooseModel", "Choose a model")}
                           value={m ? ref : null}
-                          onValueChange={(v) => setRefs(refs.map((r, j) => (j === i ? v : r)))}
+                          onValueChange={(v) => {
+                            rememberModel(project, v);
+                            setRefs(refs.map((r, j) => (j === i ? v : r)));
+                          }}
                           options={options}
+                          providers={pickerProviders}
+                          recent={recentModels(project)}
                           disabled={catalogue.isPending}
                           fullWidth
                         />
@@ -257,17 +278,4 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
       </AppFrame.Body>
     </>
   );
-}
-
-function modelOption(m: PlaygroundModel): SelectOption {
-  const name = m.display_name;
-  return {
-    value: modelRef(m),
-    textValue: name,
-    group: providerLabel(m.provider),
-    label: <ModelLabel provider={m.provider} model={m.model_id} {...(name !== m.model_id ? { name } : {})} capabilities={m.reasoning ? ["reasoning"] : []} />,
-    ...(m.provider_key
-      ? {}
-      : { disabled: true, description: t("playground.noProviderKey", "No {provider} key for this project", { provider: providerLabel(m.provider) }) }),
-  };
 }

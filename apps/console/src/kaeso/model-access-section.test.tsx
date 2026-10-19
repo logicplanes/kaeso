@@ -47,8 +47,8 @@ describe("ModelAccessSection", () => {
     await within(sheet).findByText("Every model in the catalogue: 2 models.");
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     expect(within(sheet).getByText("Their keys' model lists are narrowed to match.")).toBeInTheDocument();
-    const picker = within(sheet).getByRole("combobox", { name: "Models" });
-    expect(picker).toHaveAttribute("placeholder", "Every model in the catalogue");
+    const picker = within(sheet).getByRole("button", { name: "Models" });
+    expect(picker).toHaveTextContent("Every model in the catalogue");
     await user.click(picker);
     await user.click(await screen.findByRole("option", { name: /GPT-5 mini/ }));
     await user.keyboard("{Escape}");
@@ -56,7 +56,7 @@ describe("ModelAccessSection", () => {
 
     expect(await notifications().findByText("Models saved")).toBeInTheDocument();
     expect(requests("PATCH", `${MEMBER}/models`).map((r) => r.body)).toEqual([{ models: ["cm_gpt"] }]);
-    await waitFor(() => expect(within(sheet).queryByRole("combobox", { name: "Models" })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(sheet).queryByRole("button", { name: "Models" })).not.toBeInTheDocument());
   });
 
   it("opens every model again when the list is emptied", async () => {
@@ -65,7 +65,11 @@ describe("ModelAccessSection", () => {
 
     await within(sheet).findByText("Sonnet 4.5");
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
-    await user.click(within(sheet).getByRole("button", { name: /Remove Sonnet 4.5/ }));
+    await user.click(within(sheet).getByRole("button", { name: "Models" }));
+    const chosen = await screen.findByRole("option", { name: /Sonnet 4.5/ });
+    expect(chosen).toHaveAttribute("aria-selected", "true");
+    await user.click(chosen);
+    await user.keyboard("{Escape}");
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(requests("PATCH", `${MEMBER}/models`).map((r) => r.body)).toEqual([{ all: true }]));
   });
@@ -82,7 +86,7 @@ describe("ModelAccessSection", () => {
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     expect((await notifications().findAllByText("That model isn't in the catalogue.")).length).toBeGreaterThan(0);
-    expect(within(sheet).getByRole("combobox", { name: "Models" })).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Models" })).toBeInTheDocument();
   });
 
   it("can't be edited without Manage limits", async () => {
@@ -105,7 +109,7 @@ describe("ModelAccessSection", () => {
     const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
     expect(await within(sheet).findByText("Every model in the catalogue: 1 model.")).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
-    await user.click(within(sheet).getByRole("combobox", { name: "Models" }));
+    await user.click(within(sheet).getByRole("button", { name: "Models" }));
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     await user.keyboard("{Escape}");
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
@@ -129,12 +133,12 @@ describe("ModelAccessSection", () => {
     expect(await within(sheet).findByText("Every model its owner may use: 1 model.")).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     expect(within(sheet).queryByText("Their keys' model lists are narrowed to match.")).not.toBeInTheDocument();
-    const picker = within(sheet).getByRole("combobox", { name: "Models" });
-    expect(picker).toHaveAttribute("placeholder", "Every model its owner may use");
+    const picker = within(sheet).getByRole("button", { name: "Models" });
+    expect(picker).toHaveTextContent("Every model its owner may use");
     await user.click(picker);
     expect(await screen.findByRole("option", { name: /GPT-5 mini/ })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: /Sonnet 4.5/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("option", { name: "cm_custom" }));
+    await user.click(screen.getByRole("option", { name: /cm_custom/ }));
     await user.keyboard("{Escape}");
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(requests("PATCH", "orgs/:org/projects/:project/keys/:key/models").map((r) => r.body)).toEqual([{ models: ["cm_custom"] }]));

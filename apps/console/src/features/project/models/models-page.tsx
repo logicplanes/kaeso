@@ -11,6 +11,7 @@ import {
   Pill,
   PillTabs,
   ProviderBadge,
+  ProviderPicker,
   Select,
   Switch,
   Text,
@@ -27,6 +28,7 @@ import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { providerLabel } from "~/format/labels";
+import { useProviderOptions } from "~/kaeso/providers";
 import { monthLabel } from "~/format/period";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
@@ -87,6 +89,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   };
 
   const all = useMemo(() => catalogue.data ?? [], [catalogue.data]);
+  const providerIds = useMemo(() => [...new Set(all.map((m) => m.provider))], [all]);
+  const providers = useProviderOptions(org, providerIds);
   const filtered = useMemo(
     () =>
       all.filter(
@@ -183,15 +187,14 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
       {tab === "catalogue" ? (
         <>
           <Toolbar aria-label={t("models.filter", "Filter models")}>
-            <Select
-              aria-label={common.provider()}
+            <ProviderPicker
+              appearance="select"
               size="sm"
-              value={search.provider ?? "all"}
-              onValueChange={(v) => setSearch({ provider: v === "all" ? undefined : v })}
-              options={[
-                { value: "all", label: t("models.allProviders", "All providers") },
-                ...[...new Set(all.map((m) => m.provider))].sort().map((p) => ({ value: p, label: providerLabel(p) })),
-              ]}
+              aria-label={common.provider()}
+              allLabel={t("models.allProviders", "All providers")}
+              providers={providers}
+              value={search.provider ?? null}
+              onValueChange={(v) => setSearch({ provider: v ?? undefined })}
             />
             <Select
               aria-label={t("models.capability", "Capability")}

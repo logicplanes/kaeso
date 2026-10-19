@@ -160,11 +160,14 @@ describe("ModelsPage", () => {
     const { user, router } = await renderApp(projectPath("models"));
 
     await screen.findByText("gpt-5");
-    await user.click(screen.getByRole("combobox", { name: "Provider" }));
-    await user.click(await screen.findByRole("option", { name: "OpenAI" }));
+    const provider = screen.getByRole("button", { name: "Provider" });
+    expect(provider).toHaveTextContent("All providers");
+    await user.click(provider);
+    await user.click(await screen.findByRole("option", { name: /^OpenAI/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ provider: "openai" }));
     expect(screen.queryByText("claude-haiku-4-5")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(provider).toHaveTextContent("OpenAI");
+    await user.click(provider);
     await user.click(await screen.findByRole("option", { name: "All providers" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
 
