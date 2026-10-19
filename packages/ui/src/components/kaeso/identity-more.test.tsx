@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode } from "./identity.js";
+import { KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
+import { providerMark } from "@logicplanes/kaeso-tokens";
+import { PROVIDER_MARKS } from "./provider-marks.js";
 import { Slider } from "../slider/slider.js";
 import { LocaleProvider } from "../../i18n/index.js";
 import { TooltipProvider } from "../tooltip/tooltip-provider.js";
@@ -110,5 +112,137 @@ describe("Slider", () => {
     expect(screen.getByRole("slider", { name: "From" })).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "To" })).toBeInTheDocument();
     expect(screen.getAllByText("0,2").length).toBeGreaterThan(0);
+  });
+});
+
+const MARKED_PROVIDERS = {
+  openai: "OpenAI",
+  deepseek: "DeepSeek",
+  xai: "SpaceX",
+  togetherai: "Together AI",
+  openrouter: "OpenRouter",
+  mistral: "Mistral",
+};
+const LETTERED_PROVIDERS = { anthropic: ["Anthropic", "A"], groq: ["Groq", "Gq"] } as const;
+const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
+
+function pathEndpoints(d: string) {
+  const NUMBER = /^[\s,]*(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)/;
+  const FLAG = /^[\s,]*([01])/;
+  let rest = d;
+  const take = (pattern: RegExp) => {
+    const match = pattern.exec(rest);
+    expect(match, `a number at "${rest.slice(0, 12)}"`).not.toBeNull();
+    rest = rest.slice(match![0].length);
+    return Number(match![1]);
+  };
+  const points: [number, number][] = [];
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  let command = "";
+  while ((rest = rest.trimStart())) {
+    if (/^[a-zA-Z]/.test(rest)) {
+      command = rest[0]!;
+      rest = rest.slice(1);
+    }
+    const lower = command.toLowerCase();
+    expect(Object.keys(PARAMS)).toContain(lower);
+    const relative = command === lower;
+    if (lower === "z") {
+      x = startX;
+      y = startY;
+      continue;
+    }
+    const args = Array.from({ length: PARAMS[lower]! }, (_, n) => take(lower === "a" && (n === 3 || n === 4) ? FLAG : NUMBER));
+    if (lower === "h") x = relative ? x + args[0]! : args[0]!;
+    else if (lower === "v") y = relative ? y + args[0]! : args[0]!;
+    else {
+      const [ex, ey] = args.slice(-2) as [number, number];
+      x = relative ? x + ex : ex;
+      y = relative ? y + ey : ey;
+    }
+    if (lower === "m") {
+      startX = x;
+      startY = y;
+      command = relative ? "l" : "L";
+    }
+    points.push([x, y]);
+  }
+  return points;
+}
+
+describe("provider marks", () => {
+  it.each(Object.entries(MARKED_PROVIDERS))("draws %s's own mark, named %s", (id, name) => {
+    render(<ProviderBadge provider={id} />);
+    const badge = screen.getByRole("img", { name });
+    const svg = badge.querySelector("svg");
+    expect(providerName(id)).toBe(name);
+    expect(badge).toHaveTextContent(/^$/);
+    expect(badge).toHaveClass(PROVIDER_MARKS[id]!.color);
+    expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
+    expect(svg).toHaveAttribute("fill", "currentColor");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg).toHaveAttribute("focusable", "false");
+    const paths = svg!.querySelectorAll("path");
+    expect(paths).toHaveLength(1);
+    expect(paths[0]).toHaveAttribute("d", PROVIDER_MARKS[id]!.d);
+    expect(paths[0]!.getAttributeNames()).toEqual(["d"]);
+  });
+
+  it.each(Object.entries(LETTERED_PROVIDERS))("writes a letter for %s, whose guidelines don't allow its logo here", (id, [name, letter]) => {
+    render(<ProviderBadge provider={id} />);
+    const badge = screen.getByRole("img", { name });
+    expect(badge).toHaveTextContent(new RegExp(`^${letter}$`));
+    expect(badge.querySelector("svg")).toBeNull();
+    expect(PROVIDER_MARKS[id]).toBeUndefined();
+  });
+
+  it("has a mark for every provider whose guidelines allow one, and for nothing else", () => {
+    expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
+  });
+
+  it("draws each mark in its owner's one-colour version for each theme, or in the text colour where no colour is set", () => {
+    for (const [id, mark] of Object.entries(PROVIDER_MARKS)) {
+      if (mark.color === "text-fg") expect(providerMark, id).not.toHaveProperty(id);
+      else {
+        expect(mark.color, id).toBe(`text-mark-${id}`);
+        expect(providerMark, id).toHaveProperty(id);
+      }
+    }
+    expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
+  });
+
+  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, { d }) => {
+    expect(d).toMatch(/^M/);
+    expect(d).not.toMatch(/\d\.\d{4}/);
+    const points = pathEndpoints(d);
+    expect(points.length).toBeGreaterThan(2);
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    for (const v of [...xs, ...ys]) {
+      expect(v).toBeGreaterThanOrEqual(-0.25);
+      expect(v).toBeLessThanOrEqual(24.25);
+    }
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(12);
+  });
+
+  it.each(Object.keys(KAESO_IDENTITY_VARIANTS.provider))("draws every mark at the %s size", (size) => {
+    render(
+      <>
+        {Object.keys(MARKED_PROVIDERS).map((id) => (
+          <ProviderBadge key={id} provider={id} size={size as keyof typeof KAESO_IDENTITY_VARIANTS.provider} />
+        ))}
+      </>,
+    );
+    for (const badge of screen.getAllByRole("img")) expect(badge.querySelector("svg path")).not.toBeNull();
+  });
+
+  it("writes the name next to the mark and hides the mark from screen readers", () => {
+    const { container } = render(<ProviderBadge provider="togetherai" withName size="sm" />);
+    expect(screen.getByText("Together AI")).toBeVisible();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(container.querySelector("[aria-hidden='true'] svg path")).not.toBeNull();
   });
 });

@@ -26,11 +26,13 @@ const PROVIDER_LETTERS: Record<string, string> = {
   mistral: "M",
   groq: "Gq",
   deepseek: "D",
-  xai: "X",
+  xai: "S",
   cohere: "C",
   bedrock: "B",
   azure: "Az",
   ollama: "Ol",
+  togetherai: "T",
+  openrouter: "Or",
 };
 const PROVIDER_NAMES: Record<string, string> = {
   openai: "OpenAI",
@@ -44,6 +46,8 @@ const PROVIDER_NAMES: Record<string, string> = {
   bedrock: "Amazon Bedrock",
   azure: "Azure OpenAI",
   ollama: "Ollama",
+  togetherai: "Together AI",
+  openrouter: "OpenRouter",
 };
 export const providerName = (id: string) => PROVIDER_NAMES[id] ?? id;
 
@@ -53,20 +57,20 @@ export const ProviderBadge = forwardRef<
   HTMLSpanElement,
   { provider: string; size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined; withName?: boolean | undefined; className?: string | undefined }
 >(function ProviderBadge({ provider, size = "md", withName, className }, ref) {
-  const path = PROVIDER_MARKS[provider];
-  const mark = (
+  const mark = PROVIDER_MARKS[provider];
+  const tile = (
     <span
       aria-hidden={withName || undefined}
       {...(!withName ? { role: "img", "aria-label": providerName(provider) } : {})}
       className={cn(
         "inline-flex shrink-0 items-center justify-center bg-fill-1 font-semibold shadow-ring",
-        path ? "text-fg" : "text-fg-secondary",
+        mark ? mark.color : "text-fg-secondary",
         KAESO_IDENTITY_VARIANTS.provider[size].classes,
       )}
     >
-      {path ? (
-        <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden className={MARK_SIZE[size]}>
-          <path d={path} />
+      {mark ? (
+        <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={MARK_SIZE[size]}>
+          <path d={mark.d} />
         </svg>
       ) : (
         (PROVIDER_LETTERS[provider] ?? provider.slice(0, 1).toUpperCase())
@@ -76,12 +80,12 @@ export const ProviderBadge = forwardRef<
   if (!withName)
     return (
       <span ref={ref} className={cn("inline-flex", className)}>
-        {mark}
+        {tile}
       </span>
     );
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8 text-body text-fg", className)}>
-      {mark}
+      {tile}
       <span className="min-w-0 truncate">{providerName(provider)}</span>
     </span>
   );

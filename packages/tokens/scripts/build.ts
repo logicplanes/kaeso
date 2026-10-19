@@ -25,6 +25,7 @@ for (const [role, s] of Object.entries(t.semantic)) {
 both("danger-fill", t.dangerFill);
 both("on-danger", t.onDanger);
 both("viz-1-soft", t.vizSoft);
+for (const [id, m] of Object.entries(t.providerMark)) both(`mark-${id}`, m);
 t.viz.forEach((v, i) => {
   both(`viz-${i + 1}`, { light: v.light, dark: v.dark });
   both(`viz-thin-${i + 1}`, { light: v.thin, dark: v.dark });
@@ -116,6 +117,7 @@ for (const role of Object.keys(t.semantic)) {
   colorRoles[`${role}-text`] = `${role}-text`;
   colorRoles[`${role}-tint`] = `${role}-tint`;
 }
+for (const id of Object.keys(t.providerMark)) colorRoles[`mark-${id}`] = `mark-${id}`;
 t.viz.forEach((_, i) => {
   colorRoles[`viz-${i + 1}`] = `viz-${i + 1}`;
   colorRoles[`viz-thin-${i + 1}`] = `viz-thin-${i + 1}`;
@@ -187,6 +189,7 @@ writeFileSync(
       semantic: t.semantic,
       dangerFill: t.dangerFill,
       viz: t.viz,
+      providerMark: resolve(t.providerMark),
       tokenKindSeries: t.tokenKindSeries,
       tokenKindTint: t.tokenKindTint,
       type: t.type,

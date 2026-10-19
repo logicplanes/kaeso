@@ -4,6 +4,7 @@ import { AlertDialog, Button, Dialog, DialogScope, InlineCopyText, Input, Settin
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import { memberViews } from "~/api/queries/invalidation";
 import { meQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -46,12 +47,12 @@ export function ProfilePage() {
 function PictureRow({ name, src }: { name: string; src: string | null | undefined }) {
   const set = useApiMutation({
     mutationFn: async (file: File) => data(await api.PUT("/platform/v1/me/avatar", { body: await toPictureUpload(file) })),
-    invalidates: [["me"], ["session"], ["orgs"]],
+    invalidates: [["me"], ["session"], memberViews, ["instance", "users"]],
     onSuccess: () => toast.success(t("account.pictureSaved", "Picture saved")),
   });
   const remove = useApiMutation({
     mutationFn: async () => data(await api.DELETE("/platform/v1/me/avatar")),
-    invalidates: [["me"], ["session"], ["orgs"]],
+    invalidates: [["me"], ["session"], memberViews, ["instance", "users"]],
     onSuccess: () => toast(t("account.pictureRemoved", "Picture removed")),
   });
   return (
