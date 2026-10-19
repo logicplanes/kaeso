@@ -863,6 +863,18 @@ fn running_usage_on_a_chunk_without_content_is_held_and_hidden_from_apps_that_di
     let events = decode_whole(sse.as_bytes());
     assert_eq!(usage_deltas(&events), [(None, 1)]);
     assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
-    let hidden = String::from_utf8(encode(&events, false)).unwrap();
-    assert!(!hidden.contains("usage"), "{hidden}");
+    let hidden = encode(&events, false);
+    let text = String::from_utf8(hidden.clone()).unwrap();
+    assert!(!text.contains("usage"), "{text}");
+    let chunks: Vec<Value> = frames(&hidden)
+        .into_iter()
+        .filter(Value::is_object)
+        .collect();
+    assert_eq!(chunks.len(), 2, "{text}");
+    assert!(
+        chunks
+            .iter()
+            .all(|c| c["choices"].as_array().is_some_and(|a| !a.is_empty())),
+        "{text}"
+    );
 }

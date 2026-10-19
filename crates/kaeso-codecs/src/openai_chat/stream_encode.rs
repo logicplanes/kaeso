@@ -229,14 +229,21 @@ impl ChatStreamEncoder {
                 self.done = true;
             }
             StreamEvent::Extra(item) if item.origin.is(DIALECT) => {
-                let trimmed = if self.include_usage {
-                    self.usage_sent |= carries_usage(item.raw.as_raw());
-                    None
+                let raw = item.raw.as_raw();
+                if self.include_usage {
+                    self.usage_sent |= carries_usage(raw);
+                    crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
                 } else {
-                    without_usage(item.raw.as_raw()).map_err(internal)?
-                };
-                let raw = trimmed.as_deref().unwrap_or(item.raw.as_raw());
-                crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                    match without_usage(raw).map_err(internal)? {
+                        Unasked::Keep => {
+                            crate::sse::write_frame_extra(&mut out, raw).map_err(internal)?;
+                        }
+                        Unasked::Trimmed(trimmed) => {
+                            crate::sse::write_frame_extra(&mut out, &trimmed).map_err(internal)?;
+                        }
+                        Unasked::Hidden => {}
+                    }
+                }
             }
             _ => {}
         }
@@ -512,16 +519,27 @@ fn carries_usage(raw: &RawValue) -> bool {
         .is_some_and(|usage| !usage.is_null())
 }
 
-fn without_usage(raw: &RawValue) -> Result<Option<Box<RawValue>>, serde_json::Error> {
+enum Unasked {
+    Keep,
+    Trimmed(Box<RawValue>),
+    Hidden,
+}
+
+fn without_usage(raw: &RawValue) -> Result<Unasked, serde_json::Error> {
     let mut frame: Value = serde_json::from_str(raw.get())?;
     let Some(Value::Object(data)) = frame.get_mut("data") else {
-        return Ok(None);
+        return Ok(Unasked::Keep);
     };
-    if !data.contains_key("usage") {
-        return Ok(None);
+    let Some(usage) = data.remove("usage") else {
+        return Ok(Unasked::Keep);
+    };
+    let no_choices = data
+        .get("choices")
+        .is_none_or(|c| c.as_array().is_some_and(Vec::is_empty));
+    if !usage.is_null() && no_choices {
+        return Ok(Unasked::Hidden);
     }
-    data.remove("usage");
-    serde_json::value::to_raw_value(&frame).map(Some)
+    serde_json::value::to_raw_value(&frame).map(Unasked::Trimmed)
 }
 
 fn internal(e: serde_json::Error) -> KppError {
