@@ -57,6 +57,7 @@ jobs:
               - .sqlx/**
               - openapi.json
               - crates/**
+              - apps/docs/content/*/concepts/supported-providers.md
               - fuzz/**
               - e2e/**
               - deploy/compose.dev.yaml

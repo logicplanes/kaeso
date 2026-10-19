@@ -141,7 +141,7 @@ Some tests compare against reviewed `insta` snapshots. When one changes, review 
 | `crates/kaeso-codecs/tests/snapshots/` | The outcomes of the cross-dialect matrix | The dialect's mapping page ([KPP internals](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | The text and HTML of every email | |
 
-Two more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks every message the Platform API can send against the [error copy rules](architecture/gateway.md#error-messages). `crates/kaeso-server/tests/docs_paths.rs` checks that every repository path and relative link in the Markdown files at the root and in `crates/`, `deploy/`, `e2e/`, `fuzz/` and `.github/` points at something that exists.
+Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks every message the Platform API can send against the [error copy rules](architecture/gateway.md#error-messages). `crates/kaeso-server/tests/docs_paths.rs` checks that every repository path and relative link in the Markdown files at the root and in `crates/`, `deploy/`, `e2e/`, `fuzz/` and `.github/` points at something that exists. `crates/kaeso-core/tests/supported_providers.rs` checks that [supported providers](../concepts/supported-providers.md) lists every provider in `PROVIDERS` with its formats, in every language, so adding a provider adds a row there.
 
 ## End-to-end tests
 
