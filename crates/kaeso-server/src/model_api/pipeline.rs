@@ -194,6 +194,7 @@ pub enum Stage {
     Credential,
     Upstream,
     Provider,
+    KeyRefused,
     Unserved(String),
     Reply,
     Shutdown,
@@ -360,6 +361,25 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
             )
         }
     }
+}
+
+const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
+
+const ACCOUNT_REFUSED: &str = "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.";
+
+pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
+    let message = match err.kind {
+        ErrorKind::Authentication | ErrorKind::PermissionDenied => KEY_REFUSED,
+        ErrorKind::Billing => ACCOUNT_REFUSED,
+        _ => return None,
+    };
+    Some(error(ErrorKind::ProviderError, 502, message))
+}
+
+fn redacted(mut err: KppError) -> KppError {
+    err.message = kaeso_core::secret::redact_tokens(&err.message);
+    err.raw = None;
+    err
 }
 
 pub(crate) fn unserved(eff: &Effective) -> KppError {
@@ -727,6 +747,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                     availability::record(state, &learnt(Availability::Unavailable)).await;
                     let mut failure = fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff));
                     failure.provider_said = Some(err);
+                    return Err(failure);
+                }
+                if let Some(refused) = refused_key(&err) {
+                    let said = redacted(err);
+                    tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
+                    let mut failure = fail(Stage::KeyRefused)(refused);
+                    failure.provider_said = Some(said);
                     return Err(failure);
                 }
                 return Err(fail(Stage::Provider)(err));

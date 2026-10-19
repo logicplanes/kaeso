@@ -66,7 +66,6 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
-| 429 | `insufficient_quota` | `insufficient_quota`，服务商因计费原因拒绝时 |
 | 500、502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
 | 504 | `server_error` | `timeout` |
@@ -137,7 +136,6 @@ try {
 | --- | --- |
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
-| 402 | `billing_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
 | 405 | `invalid_request_error` |
@@ -172,6 +170,7 @@ try {
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
 | 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此实例中不可用。 |
 | 502 | Kaeso 无法连接服务商，或传输失败。 |
+| 502 | 服务商拒绝了项目的服务商密钥，或因计费或配额原因拒绝了它。 |
 | 503 | Kaeso 无法加载目录、密钥、服务商密钥或限额，或正在重启。OpenAI 格式对这些情况返回 500。 |
 | 503 | 服务商过载，适用于 OpenAI 格式。 |
 | 504 | 服务商未及时响应。 |
@@ -181,19 +180,21 @@ try {
 
 ## 服务商错误
 
-当应用和服务商使用相同格式时，Kaeso 会连同状态码原样转发服务商的错误。Anthropic 错误还会在 `request_id` 中带上 Kaeso 的 ID。
+当应用和服务商使用相同格式时，Kaeso 会连同状态码原样转发服务商的错误，除非服务商拒绝了项目的服务商密钥。Anthropic 错误还会在 `request_id` 中带上 Kaeso 的 ID。
 
 否则，Kaeso 会以应用所用的格式写出错误，并保持其原意：
 
 | 服务商 | 应用收到 |
 | --- | --- |
-| 拒绝服务商密钥 | 401 或 403 |
+| 拒绝服务商密钥 | 502，所有格式均如此 |
 | 因速率限制拒绝请求 | 429 |
-| 因计费原因拒绝 | Anthropic 格式为 402，OpenAI 格式为 429 `insufficient_quota` |
+| 因计费或配额原因拒绝 | 502，所有格式均如此 |
 | 过载 | Anthropic 格式为 529，OpenAI 格式为 503 |
 | 返回其他服务器错误 | 其自身的 5xx 状态码 |
 
-请求日志会保存服务商自己的消息。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
+被拒绝的服务商密钥是安装的问题，而不是应用的问题：服务商的 401、402 或 403 会让 SDK 报告 Kaeso 密钥错误，而且其消息可能包含服务商密钥的片段或服务商的组织 ID。因此，应用会收到一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。组织管理员可在**服务商**下检查该密钥。
+
+请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
 
 ### 服务商不提供的模型
 

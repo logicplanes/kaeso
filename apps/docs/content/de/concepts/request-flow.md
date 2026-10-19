@@ -81,7 +81,7 @@ Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage,
 
 KPP decodiert die Antwort in das kanonische Format und codiert sie im Format der App, bei einem Stream Event für Event. Kaeso lehnt eine Antwort nie wegen ihres Inhalts ab. Was das Format der App nicht ausdrücken kann, fehlt in dem, was die App erhält, und bleibt im Anfrageprotokoll, wenn die Inhaltsprotokollierung eingeschaltet ist.
 
-Ein Fehler des Anbieters erreicht eine App im selben Format genau so, wie der Anbieter ihn gesendet hat. Eine App in einem anderen Format erhält dieselbe Bedeutung in ihrem eigenen Format. [Fehler](../api/errors.md) listet jeden Fehler.
+Ein Fehler des Anbieters erreicht eine App im selben Format genau so, wie der Anbieter ihn gesendet hat. Eine App in einem anderen Format erhält dieselbe Bedeutung in ihrem eigenen Format. Die Ausnahme ist ein Anbieter, der den Anbieter-Schlüssel des Projekts ablehnt: Jede App erhält dann einen Anbieterfehler, 502, der auf einen Organisations-Admin verweist. [Fehler](../api/errors.md) listet jeden Fehler.
 
 Antworten tragen die Header `kaeso-model` und `kaeso-provider`. Die Header eines Streams gehen hinaus, sobald der Anbieter antwortet. Solange ein Stream offen und still ist, schreibt Kaeso Keepalives, die das SDK der App ignoriert.
 

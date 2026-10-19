@@ -229,6 +229,7 @@ fn refusal(f: &Failure) -> ApiError {
             e,
         ),
         Stage::Provider => from_provider(e),
+        Stage::KeyRefused => from_provider(f.logged()),
         Stage::Unserved(m) => ApiError::invalid(
             "model",
             format!(

@@ -81,7 +81,7 @@ Four timeouts limit the call: connecting, a whole request, the first byte of a s
 
 KPP decodes the reply into the canonical format and encodes it in the app's format, event by event for a stream. Kaeso never refuses a reply for what it holds. What the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
 
-A provider's error reaches an app in the same format exactly as the provider sent it. An app in another format gets the same meaning in its own format. [Errors](../api/errors.md) lists every error.
+A provider's error reaches an app in the same format exactly as the provider sent it. An app in another format gets the same meaning in its own format. A provider that refuses the project's provider key is the exception: every app gets a provider error, 502, that asks for an organization admin. [Errors](../api/errors.md) lists every error.
 
 Replies carry the headers `kaeso-model` and `kaeso-provider`. A stream's headers go out as soon as the provider answers. While a stream is open and silent, Kaeso writes keepalives that the app's SDK ignores.
 
