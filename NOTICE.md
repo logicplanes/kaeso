@@ -18,10 +18,10 @@ The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` ident
 - OpenAI and Anthropic: the monochrome marks of [LobeHub Icons](https://github.com/lobehub/lobe-icons) (`@lobehub/icons-static-svg`), MIT licensed, © 2023 LobeHub.
 - DeepSeek: the whale from the logo on [deepseek.com](https://www.deepseek.com).
 - SpaceX: the mark of [console.x.ai](https://console.x.ai) and [x.ai](https://x.ai), cropped to a square as in the console's own app icon.
-- Together AI: the mark from the logo on [together.ai](https://www.together.ai), in one colour.
+- Together AI: the black logo from the [Together AI brand assets](https://www.together.ai/brand).
 - Groq: the bolt from the logo on [groq.com](https://groq.com).
-- OpenRouter: the mark from the logo on [openrouter.ai](https://openrouter.ai).
-- Mistral: the icon from the [Mistral AI brand assets](https://mistral.ai/brand), in one colour.
+- OpenRouter: the Ink glyph from the [OpenRouter brand assets](https://openrouter.ai/brand), shown as the Cloud glyph in dark mode.
+- Mistral: the black icon from the [Mistral AI brand assets](https://mistral.ai/brand).
 
 ## Wire formats
 
