@@ -49,7 +49,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         let err = OpenAiResponses::decode_error(status, &headers, &body);
         let out = OpenAiResponses::encode_error(&err);
         assert_eq!(out.status, status, "{name}");
-        assert_json_eq(&name, &body, &out.body);
+        assert_json_eq(&name, &encoded_error(&meta, &body), &out.body);
         assert_eq!(
             out.headers.get("retry-after"),
             headers.get("retry-after"),

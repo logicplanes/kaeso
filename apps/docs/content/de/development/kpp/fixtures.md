@@ -23,13 +23,13 @@ Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpun
 | `requests/<name>.headers.json` | Weitergegebene Header von der Allowlist, die mit dieser Anfrage gesendet wurden |
 | `responses/<name>.json` | Der exakte Body einer 200-Antwort |
 | `streams/<name>.sse` | Die exakten SSE-Bytes |
-| `errors/<name>.json` und `errors/<name>.meta.json` | Ein Fehler-Body und `{"status": …, "headers": {…}}` |
+| `errors/<name>.json` und `errors/<name>.meta.json` | Ein Fehler-Body und `{"status": …, "headers": {…}}`. Antwortet der Codec Apps mit einem anderen Body, etwa der OpenAI-Fehlerform für den String-`error` von xAI, enthält `"encoded"` diesen Body, und der Round-Trip vergleicht mit ihm |
 
 Einige Endpunkte haben eigene Unterordner: `count_tokens/` für Anthropic und `input_tokens/` für OpenAI Responses, jeweils in `requests/` und `responses/`, und `models/` für Modelllisten (`anthropic_messages/models/` und `openai_chat/models/`, das alle drei OpenAI-Codecs nutzen).
 
 Aufzeichnungen anderer Anbieter, die einen Dialekt sprechen, etwa einer OpenAI-kompatiblen API, kommen nach `<dialect>/providers/<id>/`, benannt nach der ID des Anbieters in `crates/kaeso-core/src/provider.rs`. Dieser Ordner hat dieselben Unterordner `requests/`, `responses/`, `streams/` und `errors/`, jeweils nur, wenn der Anbieter dort Dateien hat. `requests/` enthält Anfragen, die nur dieser Anbieter annimmt; jeder Name darin muss sich von den Anfrage-Fixtures des Dialekts unterscheiden.
 
-Die Round-Trip-Tests, die Decoder-Tests und die Cross-Dialekt-Matrix lesen jeden Anbieterordner zusammen mit den Fixtures des Dialekts und benennen seine Dateien `providers/<id>/<name>`. Eine neue Aufzeichnung eines Anbieters ergänzt deshalb die Snapshots der Matrix; prüfen Sie sie und übernehmen Sie sie mit `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. Die SDK-Konformität und der Mock-Anbieter des Gateways liefern weiterhin nur die Fixtures des Dialekts selbst aus.
+Die Round-Trip-Tests, die Decoder-Tests und die Cross-Dialekt-Matrix lesen jeden Anbieterordner zusammen mit den Fixtures des Dialekts und benennen seine Dateien `providers/<id>/<name>`. Eine neue Aufzeichnung eines Anbieters ergänzt deshalb die Snapshots der Matrix; prüfen Sie sie und übernehmen Sie sie mit `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. Die SDK-Konformität liefert nur die Fixtures des Dialekts selbst aus; der Mock-Anbieter des Gateways liefert die Datei eines Anbieters aus, wenn ein Test sie als `providers/<id>/<name>` nennt.
 
 - `unknown-*`-Fixtures tragen absichtlich erfundene Felder, Blöcke oder Events, um die Behandlung von `Extras` und `Unknown` zu testen.
 - Fixtures, die ein Codec ablehnen muss (`stateful-*`, `n-2*`, `input-audio*`), werden statt auf einen Round Trip auf ihren `Unsupported`-Fehler getestet.

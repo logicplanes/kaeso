@@ -3,7 +3,7 @@ title: Einführung
 description: Kaeso ist ein Open-Source-KI-Gateway, das Sie auf Ihren eigenen Servern betreiben.
 ---
 
-Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und den Modellanbietern OpenAI und Anthropic betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
+Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und Modellanbietern wie OpenAI und Anthropic betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
 
 So ruft eine App mit dem OpenAI SDK über Kaeso Claude auf:
 
@@ -49,10 +49,10 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 ```mermaid
 flowchart TD
   accTitle: Wie die Teile zusammenspielen
-  accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft OpenAI oder Anthropic auf.
+  accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft die Modellanbieter auf.
   apps[Apps] -- /v1 --> gateway[Gateway]
   console[Konsole] -- /platform/v1 --> gateway
-  gateway --> providers[OpenAI oder Anthropic]
+  gateway --> providers[Modellanbieter]
 ```
 
 | Teil | Was es ist |

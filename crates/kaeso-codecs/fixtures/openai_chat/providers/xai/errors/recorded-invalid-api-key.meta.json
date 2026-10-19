@@ -1,0 +1,11 @@
+{
+  "status": 400,
+  "encoded": {
+    "error": {
+      "message": "Incorrect API key provided. You can obtain an API key from https://console.x.ai.",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

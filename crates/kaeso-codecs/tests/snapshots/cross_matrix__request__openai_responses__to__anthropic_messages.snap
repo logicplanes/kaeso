@@ -278,6 +278,36 @@ expression: outcomes
     "param": null,
     "unsupported": "text.verbosity"
   },
+  "providers/xai/presence-penalty-ignored": {
+    "message": "`presence_penalty` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "presence_penalty"
+  },
+  "providers/xai/reasoning-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is 17 * 24? Answer with the number only.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
   "reasoning-effort-high": {
     "body": {
       "max_tokens": 4096,

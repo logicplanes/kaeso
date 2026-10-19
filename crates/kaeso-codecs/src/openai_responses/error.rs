@@ -109,16 +109,21 @@ pub(crate) fn decode(
             }
             err
         }
-        None => {
-            let text = String::from_utf8_lossy(body);
-            KppError::new(
-                kind_for(Some(status), None, None),
-                format!(
-                    "The provider returned HTTP {status} with a body Kaeso could not read: {}",
-                    Short(&text, 300)
-                ),
-            )
-        }
+        None => match value.as_ref().and_then(|v| v.get("error")) {
+            Some(Value::String(message)) if !message.trim().is_empty() => {
+                KppError::new(kind_for(Some(status), None, None), message.clone())
+            }
+            _ => {
+                let text = String::from_utf8_lossy(body);
+                KppError::new(
+                    kind_for(Some(status), None, None),
+                    format!(
+                        "The provider returned HTTP {status} with a body Kaeso could not read: {}",
+                        Short(&text, 300)
+                    ),
+                )
+            }
+        },
     };
     err = err.with_status(status).with_origin(origin);
     err = err.with_raw(
@@ -312,6 +317,25 @@ mod tests {
         e.message = "Kaeso: try later".into();
         let v: Value = serde_json::from_slice(&encode(&e).body).unwrap();
         assert_eq!(v["error"]["message"], "Kaeso: try later");
+    }
+
+    #[test]
+    fn string_errors_keep_their_message_in_the_openai_shape() {
+        let body = br#"{"code":"invalid-argument","error":"Model grok-4.3 does not support parameter presencePenalty."}"#;
+        let e = decode(D, 400, &HeaderList::new(), body);
+        assert_eq!(e.kind, ErrorKind::InvalidRequest);
+        assert_eq!(
+            e.message,
+            "Model grok-4.3 does not support parameter presencePenalty."
+        );
+        assert_eq!(e.raw, Some(serde_json::from_slice(body).unwrap()));
+        let out = encode(&e);
+        assert_eq!(out.status, 400);
+        let v: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(v["error"]["message"], e.message);
+        assert_eq!(v["error"]["type"], "invalid_request_error");
+        let blank = decode(D, 400, &HeaderList::new(), br#"{"error":" "}"#);
+        assert!(blank.message.contains("could not read"));
     }
 
     #[test]

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode};
 use http_body_util::BodyExt;
+use kaeso_core::provider::PROVIDERS;
 use kaeso_server::model_api::hooks::{Limits, Outcome, Sink};
 use kaeso_testkit::mock_provider::MockProvider;
 use kaeso_testkit::services::TestServices;
@@ -55,10 +56,14 @@ pub async fn env_hooked(
 ) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
-    let mut settings = vec![
-        ("KAESO_PROVIDERS_OPENAI_BASE_URL", mock.base_url.as_str()),
-        ("KAESO_PROVIDERS_ANTHROPIC_BASE_URL", mock.base_url.as_str()),
-    ];
+    let names: Vec<String> = PROVIDERS
+        .iter()
+        .map(|p| format!("KAESO_PROVIDERS_{}_BASE_URL", p.provider_id().env_segment()))
+        .collect();
+    let mut settings: Vec<(&str, &str)> = names
+        .iter()
+        .map(|name| (name.as_str(), mock.base_url.as_str()))
+        .collect();
     settings.extend_from_slice(extra.unwrap_or(&[]));
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
     let app = App::start_hooked(&s, &settings, limits, sink).await;

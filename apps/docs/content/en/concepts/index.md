@@ -19,7 +19,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | Right, role | A right allows one kind of action, such as `keys.all.view`. A role is a named set of rights ([rights](rights.md)) |
 | API key | `sk-kso-…`, the key of a member or service account in one project. With inference access it calls models, and with platform access it manages the project ([API keys](../console/api-keys.md)) |
 | Platform key | `sk-kso-org-…`, a key that manages a whole organization on the Platform API. It never calls models |
-| Provider key | The organization's OpenAI or Anthropic key, which Kaeso uses to call the provider. Apps never see it ([provider keys](../console/provider-keys.md)) |
+| Provider key | The organization's key for a model provider, such as OpenAI or Anthropic, which Kaeso uses to call the provider. Apps never see it ([provider keys](../console/provider-keys.md)) |
 | Master key | The install's own key, which encrypts the secrets it stores, such as provider keys ([backups and master keys](../self-hosting/backups.md)) |
 | Catalogue | The models a project may call, with their prices, limits and capabilities. They come from models.dev, and a project can add custom models or override fields ([models and aliases](../console/models-and-aliases.md)) |
 | Alias | A project's own name for a model in its catalogue, such as `fast` |

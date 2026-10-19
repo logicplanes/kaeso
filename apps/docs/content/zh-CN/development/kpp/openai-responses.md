@@ -245,7 +245,7 @@ order: 6
 | 429 | `RateLimited` |
 | 408、504、`vector_store_timeout` | `Timeout` |
 | 其他状态码 | `ProviderError` |
-| 不是 OpenAI 错误的响应体，无论状态码如何（例如代理返回的 HTML 429） | 按上面各行取该状态码对应的错误类型（代理返回的 429 为 `RateLimited`，502 为 `ProviderError`），消息为 ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``；保留状态码和原始响应体 |
+| 不是 OpenAI 错误的响应体，无论状态码如何（例如代理返回的 HTML 429） | 按上面各行取该状态码对应的错误类型（代理返回的 429 为 `RateLimited`，502 为 `ProviderError`），消息为 ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``；若 `error` 是非空字符串（xAI 即如此发送：`{"code": "invalid-argument", "error": "…"}`），则以它为消息；保留状态码和原始响应体 |
 
 含 `type` 和 `code` 的行优先于状态码。其他错误码在这里不起决定作用，由状态码决定：`rate_limit_exceeded`、`rate_limit_error` 和 `slow_down`（`RateLimited`），`server_error`（`ProviderError`），`invalid_prompt`、`invalid_request_error` 和图像相关错误码（以 `invalid_image` 或 `image_` 开头，或以 `_image` 结尾；`InvalidRequest`）。它们只在没有状态码的地方起决定作用：流中的 `error` 事件，以及失败回复的 `error.code`。没有消息的错误对象得到 `The provider returned HTTP <status> without a message.`
 

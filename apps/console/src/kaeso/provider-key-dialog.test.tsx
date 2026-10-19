@@ -50,6 +50,25 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("adds an xAI key with xAI's own key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "xai", name: "xAI prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /xAI/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your xAI API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at console.x.ai under API keys; it starts with xai-.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("xAI API key");
+    expect(secret).toHaveAttribute("placeholder", "xai-…");
+    await user.type(secret, "xai-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "xAI prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("xAI prod is the xAI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "xai", name: "xAI prod", secret: "xai-123", make_default: false }]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open({ provider: "anthropic" });
     const secret = within(dialog).getByLabelText("Anthropic API key");
