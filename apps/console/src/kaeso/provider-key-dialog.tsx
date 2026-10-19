@@ -1,11 +1,12 @@
-import { useState, type ComponentProps } from "react";
-import { Input, ProviderBadge, Radio, RadioCards, SensitiveInput, StepDialog } from "@logicplanes/kaeso-ui";
+import { useMemo, useState, type ComponentProps } from "react";
+import { Input, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { CredentialView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
-import { PROVIDER_IDS, providerLabel } from "~/format/labels";
+import { providerLabel } from "~/format/labels";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
+import { providerOptions } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
@@ -23,23 +24,22 @@ function keyHelp(provider: string): string {
 
 export function ProviderKeyDialog({
   org,
-  provider: chosen,
   keys,
   replace,
   onClose,
 }: {
   org: string;
-  provider?: string | undefined;
   keys: CredentialView[];
   replace?: CredentialView | undefined;
   onClose: () => void;
 }) {
-  const [provider, setProvider] = useState(replace?.provider ?? chosen ?? "openai");
+  const [provider, setProvider] = useState(replace?.provider ?? "openai");
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
   const label = providerLabel(provider);
   const current = keys.find((k) => k.provider === provider && k.is_default);
+  const choices = useMemo(() => providerOptions(keys), [keys]);
   const save = useApiMutation({
     mutationFn: async () => {
       if (replace)
@@ -108,38 +108,19 @@ export function ProviderKeyDialog({
   const steps: DialogStep[] = replace
     ? [keyStep]
     : [
-        ...(chosen
-          ? []
-          : [
-              {
-                id: "provider",
-                title: t("kaeso.providerKey.which", "Which provider is the key for?"),
-                content: (
-                  <RadioCards aria-label={t("common.provider", "Provider")} value={provider} onValueChange={setProvider}>
-                    {PROVIDER_IDS.map((p) => {
-                      const count = keys.filter((k) => k.provider === p).length;
-                      return (
-                        <Radio
-                          key={p}
-                          value={p}
-                          label={
-                            <span className="flex items-center gap-8">
-                              <ProviderBadge provider={p} size="sm" />
-                              {providerLabel(p)}
-                            </span>
-                          }
-                          description={
-                            count === 0
-                              ? t("kaeso.providerKey.notConnected", "Not connected yet")
-                              : t("kaeso.providerKey.count", "{count, plural, one {# key} other {# keys}}", { count })
-                          }
-                        />
-                      );
-                    })}
-                  </RadioCards>
-                ),
-              },
-            ]),
+        {
+          id: "provider",
+          title: t("kaeso.providerKey.which", "Which provider is the key for?"),
+          content: (
+            <ProviderPicker
+              aria-label={t("common.provider", "Provider")}
+              providers={choices}
+              value={provider}
+              onValueChange={(p) => p && setProvider(p)}
+              autoFocus
+            />
+          ),
+        },
         keyStep,
         ...(current
           ? [
@@ -174,13 +155,7 @@ export function ProviderKeyDialog({
     <StepDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={
-        replace
-          ? t("kaeso.providerKey.replaceTitle", "Replace {name}", { name: replace.name })
-          : chosen
-            ? t("kaeso.providerKey.connect", "Connect {provider}", { provider: label })
-            : t("kaeso.providerKey.addTitle", "Add provider key")
-      }
+      title={replace ? t("kaeso.providerKey.replaceTitle", "Replace {name}", { name: replace.name }) : t("kaeso.providerKey.addTitle", "Add provider key")}
       submitLabel={replace ? t("kaeso.providerKey.replace", "Replace key") : t("kaeso.providerKey.add", "Add key")}
       submitting={save.isPending}
       onSubmit={() => secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim()) && save.mutate()}

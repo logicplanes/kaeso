@@ -8,8 +8,10 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 
 ## Schlüssel hinzufügen
 
-1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**, oder **Verbinden** neben einem Anbieter, der noch keinen Schlüssel hat.
-2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie den Anbieter.
+**Anbieter** listet die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an.
+
+1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**.
+2. **Für welchen Anbieter ist der Schlüssel?** Suchen Sie den Anbieter und wählen Sie ihn. Anbieter, die schon Schlüssel haben, stehen oben, mit der Anzahl ihrer Schlüssel.
 3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Die Tabelle unten nennt, woher die Schlüssel jedes Anbieters kommen.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
 
