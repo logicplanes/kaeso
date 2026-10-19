@@ -42,14 +42,6 @@ async fn add(app: &App, owner: &Owner, project: &str, body: Value) -> Value {
     r.body
 }
 
-fn embedded_model_count() -> usize {
-    let ids = kaeso_core::provider::known_ids();
-    kaeso_core::models_dev::parse(kaeso_core::models_dev::EMBEDDED.as_bytes(), &ids)
-        .unwrap()
-        .snapshot
-        .model_count()
-}
-
 async fn patch(app: &App, owner: &Owner, path: &str, body: Value) -> common::Resp {
     app.call(Method::PATCH, path, Some(body), Some(&owner.cookie))
         .await

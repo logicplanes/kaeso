@@ -386,8 +386,8 @@ mod tests {
                 "anthropic https://api.anthropic.com/",
                 "deepseek https://api.deepseek.com/",
                 "openai https://api.openai.com/",
-                "xai https://api.x.ai/",
-                "togetherai https://api.together.ai/"
+                "togetherai https://api.together.ai/",
+                "xai https://api.x.ai/"
             ]
         );
         assert!(!c.is_local_development());
@@ -461,15 +461,15 @@ mod tests {
             ("KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL", unknown.as_str()),
             (
                 "KAESO_PROVIDERS_AZURE__OPENAI_BASE_URL",
-                "names `AZURE__OPENAI`, which is not a provider id: the id in upper case with `_` for `-`, made of lowercase letters and digits, with single hyphens between them".to_owned(),
+                "names `AZURE__OPENAI`, which is not a provider id: the id in upper case with `_` for `-`, made of lowercase letters and digits, with single hyphens between them",
             ),
             (
                 "KAESO_PROVIDERS_BASE_URL",
-                "is not a provider setting; provider variables end in `_BASE_URL`".to_owned(),
+                "is not a provider setting; provider variables end in `_BASE_URL`",
             ),
             (
                 "KAESO_PROVIDERS_OPENAI_URL",
-                "is not a provider setting; provider variables end in `_BASE_URL`".to_owned(),
+                "is not a provider setting; provider variables end in `_BASE_URL`",
             ),
         ] {
             let err = load(&Map::minimal().set(name, "http://mock:1"))
@@ -495,7 +495,7 @@ mod tests {
             ),
             (
                 "[providers.azure_openai]\nbase_url = \"https://azure.example.com\"\n",
-                "`providers.azure_openai.base_url` in /k.toml: `azure_openai` is not a provider id: lowercase letters and digits, with single hyphens between them".to_owned(),
+                "`providers.azure_openai.base_url` in /k.toml: `azure_openai` is not a provider id: lowercase letters and digits, with single hyphens between them",
             ),
         ] {
             let m = Map::minimal()
