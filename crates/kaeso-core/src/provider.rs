@@ -237,6 +237,34 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         chat: ChatProfile::compatible("OpenRouter"),
     },
+    Provider {
+        id: "mistral",
+        name: "Mistral",
+        default_base_url: "https://api.mistral.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        chat: ChatProfile::compatible("Mistral")
+            .max_tokens()
+            .system_role()
+            .random_seed()
+            .without_end_user()
+            .refusing(&[
+                "function_call",
+                "functions",
+                "logit_bias",
+                "moderation",
+                "prompt_cache_options",
+                "prompt_cache_retention",
+                "store",
+                "verbosity",
+                "web_search_options",
+            ])
+            .refusing_in_messages(&["name", "refusal"]),
+    },
 ];
 
 const _: () = {
@@ -318,7 +346,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral"
         );
     }
 
@@ -494,7 +522,8 @@ mod tests {
                 "xai",
                 "togetherai",
                 "groq",
-                "openrouter"
+                "openrouter",
+                "mistral"
             ]
         );
         assert_eq!(

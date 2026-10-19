@@ -39,6 +39,11 @@ function keyHelp(provider: string): ReactNode {
     : tRich("kaeso.providerKey.whereSite", "Create one at {site} under {page}.", { site, page: where.page });
 }
 
+function keyPlaceholder(provider: string): string {
+  const where = KEY_SITES[provider];
+  return `${where ? (where.prefix ?? "") : "sk-"}…`;
+}
+
 export function ProviderKeyDialog({
   org,
   keys,
@@ -104,7 +109,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={`${KEY_SITES[provider]?.prefix ?? "sk-"}…`}
+          placeholder={keyPlaceholder(provider)}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"

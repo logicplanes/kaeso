@@ -1,0 +1,29 @@
+{
+  "id": "5707c3d945054a55b19bf2b2c3415c0c",
+  "created": 1792370125,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 22,
+    "total_tokens": 73,
+    "completion_tokens": 51,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "I can't provide real-time weather updates, but you can check the current weather in Lisbon by using a weather app or website like [Weather.com](https://weather.com) or [AccuWeather](https://www.accuweather.com)."
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "model": "mistral-embed",
+  "input": "Shorter vectors, please.",
+  "output_dimension": 256
+}

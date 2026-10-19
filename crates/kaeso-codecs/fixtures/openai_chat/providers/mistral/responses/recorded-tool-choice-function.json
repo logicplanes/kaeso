@@ -1,0 +1,39 @@
+{
+  "id": "b630266f78264550bfa075233b29e799",
+  "created": 1792370125,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 132,
+    "total_tokens": 166,
+    "completion_tokens": 34,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "KY38vNOHV",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"Lisbon, Portugal\", \"unit\": \"celsius\"}"
+            },
+            "index": 0
+          }
+        ],
+        "content": "I'll check the current weather in Lisbon for you."
+      }
+    }
+  ]
+}

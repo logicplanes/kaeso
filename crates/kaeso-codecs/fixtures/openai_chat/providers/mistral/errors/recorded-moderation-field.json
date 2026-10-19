@@ -1,0 +1,22 @@
+{
+  "object": "error",
+  "message": {
+    "detail": [
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "moderation"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": {
+          "model": "omni-moderation-latest"
+        }
+      }
+    ]
+  },
+  "type": "invalid_request_error",
+  "param": null,
+  "code": null,
+  "raw_status_code": 422
+}

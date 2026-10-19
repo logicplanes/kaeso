@@ -1,0 +1,19 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tell me a secret."
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "refusal": "I cannot share that."
+    },
+    {
+      "role": "user",
+      "content": "Then say hello."
+    }
+  ],
+  "max_tokens": 10
+}

@@ -1,0 +1,22 @@
+{
+  "detail": [
+    {
+      "type": "union_tag_invalid",
+      "loc": [
+        "body",
+        "messages",
+        0
+      ],
+      "msg": "Input tag 'developer' found using 'role' does not match any of the expected tags: <Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'>",
+      "input": {
+        "role": "developer",
+        "content": "You are a helpful assistant."
+      },
+      "ctx": {
+        "discriminator": "'role'",
+        "tag": "developer",
+        "expected_tags": "<Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'>"
+      }
+    }
+  ]
+}

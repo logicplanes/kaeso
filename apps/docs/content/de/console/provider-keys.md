@@ -24,6 +24,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), unter **API Keys** | `tgp_v1_` |
 | Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
 | OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |
+| Mistral | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) | kein festes Präfix |
 
 OpenRouter leitet an Modelle vieler Anbieter weiter. Seine Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`. Rufen Sie eines als `openrouter/anthropic/claude-sonnet-4.5` auf, damit die Anfrage nie beim Anbieter des Herstellers landet; siehe [Wie eine Anfrage ein Modell nennt](models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt). Kaeso berechnet die Kosten von OpenRouter-Anfragen mit den Preisen des Katalogs, nicht mit dem `usage.cost`, das OpenRouter meldet. OpenRouter listet seine Modelle, ohne den Schlüssel zu prüfen, daher erkennt **Verfügbarkeit prüfen** keinen falschen OpenRouter-Schlüssel; die erste Anfrage damit meldet den abgelehnten Schlüssel.
 

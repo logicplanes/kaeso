@@ -172,6 +172,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | text | `https://api.together.ai` | Base URL of the Together AI API. |
 | `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | text | `https://api.groq.com/openai` | Base URL of the Groq API. |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | text | `https://openrouter.ai/api` | Base URL of the OpenRouter API. |
+| `KAESO_PROVIDERS_MISTRAL_BASE_URL` | `providers.mistral.base_url` | text | `https://api.mistral.ai` | Base URL of the Mistral API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

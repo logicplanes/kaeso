@@ -1,0 +1,16 @@
+{
+  "detail": [
+    {
+      "type": "extra_forbidden",
+      "loc": [
+        "body",
+        "messages",
+        1,
+        "assistant",
+        "refusal"
+      ],
+      "msg": "Extra inputs are not permitted",
+      "input": "I cannot share that."
+    }
+  ]
+}

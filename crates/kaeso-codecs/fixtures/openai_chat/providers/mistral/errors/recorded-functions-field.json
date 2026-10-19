@@ -1,0 +1,36 @@
+{
+  "object": "error",
+  "message": {
+    "detail": [
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "functions"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": [
+          {
+            "name": "get_weather",
+            "description": "Current weather for a city.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "type": "invalid_request_error",
+  "param": null,
+  "code": null,
+  "raw_status_code": 422
+}

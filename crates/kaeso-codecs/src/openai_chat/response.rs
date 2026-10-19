@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, Citation, Extras, KppError, Origin, RawUsage, Reply, RequestKind, Response, StopReason,
-    TextBlock, Usage,
+    Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage, Reply, RequestKind,
+    Response, StopReason, TextBlock, Usage,
 };
 use serde_json::Value;
 
@@ -14,9 +14,10 @@ use super::wire::{
 };
 use crate::codec::{EgressCtx, EncodeCtx};
 use crate::cross::{ReplyPolicy, reply_policy};
-use crate::wire::{Ext, to_body};
+use crate::wire::{Ext, StringOr, to_body};
 
 pub(crate) const FORM_OBJECT: &str = "object";
+pub(crate) const FORM_CONTENT_PARTS: &str = "content_parts";
 pub(crate) const CHOICE: &str = "choice";
 pub(crate) const MESSAGE: &str = "choice.message";
 
@@ -97,11 +98,32 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         .map(|a| Citation::new(origin.clone(), a.clone()))
         .collect();
     match message.content {
-        Some(text) => {
+        Some(StringOr::String(text)) => {
             let mut block = TextBlock::new(text);
             block.citations = citations;
             block.extras = Extras::new(origin.clone());
             blocks.push(Block::Text(block));
+        }
+        Some(StringOr::List(parts)) => {
+            extras
+                .form
+                .insert(FORM_CONTENT_PARTS.to_owned(), Value::Bool(true));
+            for part in parts {
+                blocks.push(match plain_text_part(&part) {
+                    Some(text) => {
+                        let mut block = TextBlock::new(text);
+                        block.extras = Extras::new(origin.clone());
+                        Block::Text(block)
+                    }
+                    None => Block::Unknown(RawItem::new(origin.clone(), part)),
+                });
+            }
+            if !citations.is_empty() {
+                extras.fields.insert(
+                    format!("{MESSAGE}.annotations"),
+                    to_raw(&message.annotations)?,
+                );
+            }
         }
         None if !citations.is_empty() => {
             extras.fields.insert(
@@ -149,6 +171,8 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         ));
     };
     let own = resp.extras.is_from(DIALECT);
+    let as_parts = own && resp.extras.form_flag(DIALECT, FORM_CONTENT_PARTS);
+    let mut parts: Vec<RawJson> = Vec::new();
     let mut text: Option<String> = None;
     let mut citations = Vec::new();
     let mut refusal: Option<String> = None;
@@ -156,7 +180,13 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     for block in &resp.blocks {
         match block {
             Block::Text(t) => {
-                text.get_or_insert_with(String::new).push_str(&t.text);
+                if as_parts {
+                    parts.push(to_raw(
+                        &serde_json::json!({"type": "text", "text": t.text}),
+                    )?);
+                } else {
+                    text.get_or_insert_with(String::new).push_str(&t.text);
+                }
                 citations.extend(
                     t.citations
                         .iter()
@@ -172,6 +202,9 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             {
                 tool_calls.push(item.raw.clone());
             }
+            Block::Unknown(item) if as_parts && item.origin.is(DIALECT) => {
+                parts.push(item.raw.clone());
+            }
             Block::Reasoning(_)
             | Block::Unknown(_)
             | Block::Image(_)
@@ -180,9 +213,14 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             _ => {}
         }
     }
+    let content = if as_parts {
+        Some(StringOr::List(parts))
+    } else {
+        text.map(StringOr::String)
+    };
     let message = ResponseMessage {
         role: "assistant".to_owned(),
-        content: text,
+        content,
         refusal,
         tool_calls,
         annotations: citations,
@@ -376,4 +414,18 @@ fn overlay(base: &mut Value, top: Value) {
         }
         (slot, top) => *slot = top,
     }
+}
+
+fn plain_text_part(part: &RawJson) -> Option<String> {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct TextOnly {
+        #[serde(rename = "type")]
+        ty: String,
+        text: String,
+    }
+    serde_json::from_str::<TextOnly>(part.get())
+        .ok()
+        .filter(|p| p.ty == "text")
+        .map(|p| p.text)
 }

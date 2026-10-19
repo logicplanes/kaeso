@@ -278,7 +278,7 @@ pub(crate) struct Choice {
 pub(crate) struct ResponseMessage {
     pub(crate) role: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) content: Option<String>,
+    pub(crate) content: Option<StringOr<RawJson>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) refusal: Option<String>,
     #[serde(
@@ -345,7 +345,7 @@ pub(crate) struct DeltaWire {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) role: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) content: Option<String>,
+    pub(crate) content: Option<StringOr<RawJson>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) refusal: Option<String>,
     #[serde(

@@ -1,0 +1,7 @@
+{
+  "model": "mistral-embed",
+  "input": [
+    "Embed this sentence.",
+    "As well as this one."
+  ]
+}

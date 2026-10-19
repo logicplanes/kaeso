@@ -1,0 +1,314 @@
+{
+  "object": "error",
+  "message": {
+    "detail": [
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": [
+          1212,
+          318,
+          257,
+          1332,
+          13
+        ]
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": [
+          1212,
+          318,
+          257,
+          1332,
+          13
+        ]
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": [
+          1212,
+          318,
+          257,
+          1332,
+          13
+        ]
+      },
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          0,
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": 1212
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          0,
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 1212
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          0,
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 1212
+      },
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          1,
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": 318
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          1,
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 318
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          1,
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 318
+      },
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          2,
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": 257
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          2,
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 257
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          2,
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 257
+      },
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          3,
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": 1332
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          3,
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 1332
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          3,
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 1332
+      },
+      {
+        "type": "string_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          4,
+          "str"
+        ],
+        "msg": "Input should be a valid string",
+        "input": 13
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          4,
+          "function-after[validate_cache_reference(), ImageURLChunk]"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 13
+      },
+      {
+        "type": "model_attributes_type",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "input",
+          "list[union[str,function-after[validate_cache_reference(), ImageURLChunk],AudioChunk]]",
+          4,
+          "AudioChunk"
+        ],
+        "msg": "Input should be a valid dictionary or object to extract fields from",
+        "input": 13
+      },
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "EmbeddingRequest",
+          "dimensions"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": 8
+      },
+      {
+        "type": "missing",
+        "loc": [
+          "body",
+          "ChatEmbeddingRequest",
+          "messages"
+        ],
+        "msg": "Field required",
+        "input": {
+          "model": "mistral-embed-2312",
+          "metadata": null,
+          "input": [
+            1212,
+            318,
+            257,
+            1332,
+            13
+          ],
+          "dimensions": 8
+        }
+      },
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "ChatEmbeddingRequest",
+          "input"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": [
+          1212,
+          318,
+          257,
+          1332,
+          13
+        ]
+      },
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "ChatEmbeddingRequest",
+          "dimensions"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": 8
+      }
+    ]
+  },
+  "type": "invalid_request_error",
+  "param": null,
+  "code": null,
+  "raw_status_code": 422
+}

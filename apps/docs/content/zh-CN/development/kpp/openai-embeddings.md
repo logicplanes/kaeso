@@ -81,3 +81,7 @@ order: 7
 ### OpenRouter
 
 来源：OpenRouter 的 [Embeddings 参考](https://openrouter.ai/docs/api_reference/embeddings)（2026-10-19 阅读），以及 `fixtures/openai_embeddings/providers/openrouter/` 中使用 `nvidia/nemotron-3-embed-1b:free` 的实时录制。回复中的 `model` 是实际提供服务的模型，而不是请求的 ID；`usage.cost`、`usage.is_byok`、`usage.cost_details` 以及顶层的 `provider` 和 `id` 保留在 extras 中，原样往返。上游服务商的错误以 400 返回，其 `message` 以文本形式包含该服务商的错误体。
+
+### Mistral
+
+来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400；这些错误响应体没有 `error` 对象，因此应用会收到引用它们的 OpenAI 错误。

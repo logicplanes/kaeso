@@ -1,0 +1,6 @@
+data: {"id":"bd385469ee39429f9d445ecc6b91e1ed","object":"chat.completion.chunk","created":1792370250,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"bd385469ee39429f9d445ecc6b91e1ed","object":"chat.completion.chunk","created":1792370250,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"tool_calls":[{"id":"wkuuWyUek","type":"function","function":{"name":"get_weather","arguments":"{\"city\": \"Lisbon\"}"},"index":0}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":111,"total_tokens":125,"completion_tokens":14,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":0},"service_tier":"standard"},"p":"abcdefghijklmnopqrstuvwxyz01234"}
+
+data: [DONE]
+

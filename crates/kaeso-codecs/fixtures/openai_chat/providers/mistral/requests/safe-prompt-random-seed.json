@@ -1,0 +1,18 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name one colour of the French flag."
+    }
+  ],
+  "safe_prompt": true,
+  "random_seed": 42,
+  "temperature": 0.2,
+  "max_tokens": 20,
+  "presence_penalty": 0.1,
+  "frequency_penalty": 0.1,
+  "stop": [
+    "\n\n"
+  ]
+}

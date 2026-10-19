@@ -556,6 +556,25 @@ fn efforts_are_refused_not_replaced() {
 }
 
 #[test]
+fn mistral_models_speak_chat_completions_and_mistral_embed_embeds() {
+    let small = eff(&entry("mistral", "mistral-small-latest"));
+    assert_eq!(small.dialect, DialectId::OpenAiChat);
+    assert_eq!(small.provider.chat.provider, "Mistral");
+    assert!(!small.is_embeddings());
+    let embed = eff(&entry("mistral", "mistral-embed"));
+    assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        effort_levels(&small, DialectId::AnthropicMessages),
+        ["none", "high"]
+    );
+    kept("high", DialectId::AnthropicMessages, &small);
+    kept("none", DialectId::OpenAiResponses, &small);
+    let err = refused("medium", DialectId::AnthropicMessages, &small);
+    assert!(err.contains("`none`, `high`"), "{err}");
+}
+
+#[test]
 fn duties_fill_what_kpp_cannot_know() {
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     let mut req = Request::Generate(user(vec![Block::text("hi")]));

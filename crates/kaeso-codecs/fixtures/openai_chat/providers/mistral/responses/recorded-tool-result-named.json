@@ -1,0 +1,29 @@
+{
+  "id": "2e2c5eceef9547338d02f8e34d2a077c",
+  "created": 1792370250,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 134,
+    "total_tokens": 155,
+    "completion_tokens": 21,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "The current weather in Lisbon is **21°C** with **clear skies**. Enjoy your day!"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "5835f2c75f0444939882188be17dd3a2",
+  "created": 1792370249,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 11,
+    "total_tokens": 31,
+    "completion_tokens": 20,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "length",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "The French flag, known as the \"Tricolore,\" consists of three vertical stripes. One"
+      }
+    }
+  ]
+}

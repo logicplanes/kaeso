@@ -1,0 +1,8 @@
+{
+  "object": "error",
+  "message": "Invalid model: mistral-tiny-nonexistent",
+  "type": "invalid_model",
+  "param": null,
+  "code": "1500",
+  "raw_status_code": 400
+}

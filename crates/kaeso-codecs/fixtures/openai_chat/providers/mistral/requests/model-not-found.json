@@ -1,0 +1,10 @@
+{
+  "model": "mistral-tiny-nonexistent",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello."
+    }
+  ],
+  "max_tokens": 10
+}

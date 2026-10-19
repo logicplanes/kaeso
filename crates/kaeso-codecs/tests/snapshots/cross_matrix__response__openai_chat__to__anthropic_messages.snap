@@ -677,6 +677,248 @@ expression: outcomes
       }
     }
   },
+  "providers/mistral/recorded-magistral-medium": {
+    "content": [
+      {
+        "text": "No, 91 is not a prime number because it can be divided by 7 and 13 (7 × 13 = 91).",
+        "type": "text"
+      }
+    ],
+    "id": "6e1bf00fa656433e959b54ea574dfd8a",
+    "model": "magistral-medium-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 28,
+      "output_tokens": 34,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-max-tokens-length": {
+    "content": [
+      {
+        "text": "**Haiku:**\n*Waves crash on the shore—*\n*white foam",
+        "type": "text"
+      }
+    ],
+    "id": "d39b725efad54dc78629373a5d771c2a",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 30,
+      "output_tokens": 16,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-prediction-doc": {
+    "content": [
+      {
+        "text": "class User {\n  firstName = \"\";\n  lastName = \"\";\n  email = \"\";\n}\n\nexport default User;",
+        "type": "text"
+      }
+    ],
+    "id": "ff22a05025b945ccacd340389360ea93",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 57,
+      "output_tokens": 23,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-reasoning-effort-high": {
+    "content": [
+      {
+        "text": "No, 91 is not a prime number because it can be divided evenly by 7 and 13.",
+        "type": "text"
+      }
+    ],
+    "id": "959b974d28584d54ab2752b2704ebf93",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 28,
+      "output_tokens": 203,
+      "output_tokens_details": {
+        "thinking_tokens": 176
+      }
+    }
+  },
+  "providers/mistral/recorded-safe-prompt-random-seed": {
+    "content": [
+      {
+        "text": "The French flag, known as the \"Tricolore,\" consists of three vertical stripes. One",
+        "type": "text"
+      }
+    ],
+    "id": "5835f2c75f0444939882188be17dd3a2",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 11,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-system-tool-choice-any": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "yVjSUoKG6",
+        "input": {
+          "city": "Lisbon"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "70c1666cb00d4791ba3e37dfbd3f3f0d",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 80,
+      "input_tokens": 31,
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-tool-choice-function": {
+    "content": [
+      {
+        "text": "I'll check the current weather in Lisbon for you.",
+        "type": "text"
+      },
+      {
+        "id": "KY38vNOHV",
+        "input": {
+          "location": "Lisbon, Portugal",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "b630266f78264550bfa075233b29e799",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 132,
+      "output_tokens": 34,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-tool-choice-none": {
+    "content": [
+      {
+        "text": "I can't provide real-time weather updates, but you can check the current weather in Lisbon by using a weather app or website like [Weather.com](https://weather.com) or [AccuWeather](https://www.accuweather.com).",
+        "type": "text"
+      }
+    ],
+    "id": "5707c3d945054a55b19bf2b2c3415c0c",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 51,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/mistral/recorded-tool-result-named": {
+    "content": [
+      {
+        "text": "The current weather in Lisbon is **21°C** with **clear skies**. Enjoy your day!",
+        "type": "text"
+      }
+    ],
+    "id": "2e2c5eceef9547338d02f8e34d2a077c",
+    "model": "mistral-small-latest",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 134,
+      "output_tokens": 21,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "providers/openrouter/recorded-free-basic": {
     "content": [
       {

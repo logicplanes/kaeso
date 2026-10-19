@@ -1,0 +1,8 @@
+{
+  "object": "error",
+  "message": "Reasoning prompt mode is not enabled for this model",
+  "type": "invalid_request_invalid_args",
+  "param": null,
+  "code": "3051",
+  "raw_status_code": 400
+}

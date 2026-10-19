@@ -6,13 +6,14 @@ use kaeso_kpp::{
 use serde_json::{Map, Value};
 
 use super::DIALECT;
-use super::convert::{nulls_to_verbatim, parse_ext};
+use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::decode_body;
 use super::response::{decode_finish, decode_usage};
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::sse::{SseEvent, SseItem, SseParser};
 use crate::wire::Ext;
+use crate::wire::StringOr;
 
 pub(crate) const FORM_CHUNK: &str = "chunk";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
@@ -552,7 +553,15 @@ impl ChatStreamDecoder {
         if let Some(role) = delta.role {
             form.insert("role".to_owned(), Value::String(role));
         }
-        if let Some(text) = delta.content {
+        let text = match delta.content {
+            Some(StringOr::String(text)) => Some(text),
+            Some(StringOr::List(parts)) => {
+                fields.insert("delta.content".to_owned(), to_raw(&parts)?);
+                None
+            }
+            None => None,
+        };
+        if let Some(text) = text {
             let index = match self.text {
                 Some(index) => index,
                 None => {

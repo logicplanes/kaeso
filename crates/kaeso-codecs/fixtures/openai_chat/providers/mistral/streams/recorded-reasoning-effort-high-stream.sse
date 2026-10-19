@@ -1,0 +1,86 @@
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}],"p":"abcdefghij"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"I"}]}]},"finish_reason":null}],"p":"abcdefghijklmnopqrst"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" need to determine if"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz0123456"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" 91 is"}],"closed":true}]},"finish_reason":null}],"p":"abcde"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" a prime number."}],"closed":true}]},"finish_reason":null}],"p":"abcde"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" A prime number is"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz012"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" a natural number greater"}],"closed":true}]},"finish_reason":null}],"p":"abcdefg"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" than 1 that"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz01234"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" has no positive divis"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmn"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"ors other than "}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuv"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"1 and itself.\n\n"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz0123456"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"First, let"}],"closed":true}]},"finish_reason":null}],"p":"abcdef"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"'s check if "}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijk"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"91 is divisible"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstu"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" by any number"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmno"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" other than 1"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuv"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" and itself.\n\n"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz01"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"I"}]}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz0123456789"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" know that 7"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmno"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" ×"}]}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz0123"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" 13"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrs"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" = 91"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijkl"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":". So, "}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrst"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"91 can"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvw"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" be divided evenly"}],"closed":true}]},"finish_reason":null}],"p":"abcdef"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" by 7 and"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz01234"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" 13,"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz012345"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" which means it has"}],"closed":true}]},"finish_reason":null}],"p":"abc"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" divisors other than"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijkl"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" 1 and itself"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz012345678"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":".\n\nTherefore, "}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqr"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"91 is not"}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz012345"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" a prime number."}],"closed":true}]},"finish_reason":null}],"p":"abcdefghijklmnopqrstuv"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[]},{"type":"text","text":"No"}]},"finish_reason":null}],"p":"abcdefghijklmnopq"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":", 91"},"finish_reason":null}],"p":"abcdefghijkl"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" is not a prime"},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz01234"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" number because it can"},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxyz01234"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" be divided evenly by"},"finish_reason":null}],"p":"abcdefghijklmnopqrstuvwxy"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" 7 and"},"finish_reason":null}],"p":"abcdefg"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" 13."},"finish_reason":null}],"p":"abcd"}
+
+data: {"id":"f00e7f94dc99410eb09faf4dfda2cbef","object":"chat.completion.chunk","created":1792370268,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":28,"total_tokens":168,"completion_tokens":140,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":113},"service_tier":"standard"},"p":"abcdefghijklmno"}
+
+data: [DONE]
+

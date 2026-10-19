@@ -1,0 +1,29 @@
+{
+  "id": "ff22a05025b945ccacd340389360ea93",
+  "created": 1792370124,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 57,
+    "total_tokens": 80,
+    "completion_tokens": 23,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "class User {\n  firstName = \"\";\n  lastName = \"\";\n  email = \"\";\n}\n\nexport default User;"
+      }
+    }
+  ]
+}
