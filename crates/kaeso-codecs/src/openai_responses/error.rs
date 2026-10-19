@@ -85,6 +85,14 @@ pub(crate) fn kind_for(status: Option<u16>, ty: Option<&str>, code: Option<&str>
     }
 }
 
+pub(crate) fn string_error_kind(status: Option<u16>, message: &str) -> ErrorKind {
+    if message.starts_with("Incorrect API key provided") {
+        ErrorKind::Authentication
+    } else {
+        kind_for(status, None, None)
+    }
+}
+
 pub(crate) fn decode(
     dialect: DialectId,
     status: u16,
@@ -111,7 +119,7 @@ pub(crate) fn decode(
         }
         None => match value.as_ref().and_then(|v| v.get("error")) {
             Some(Value::String(message)) if !message.trim().is_empty() => {
-                KppError::new(kind_for(Some(status), None, None), message.clone())
+                KppError::new(string_error_kind(Some(status), message), message.clone())
             }
             _ => {
                 let text = String::from_utf8_lossy(body);
@@ -199,10 +207,23 @@ pub(crate) fn encode(err: &KppError) -> EncodedError {
             }
             _ => false,
         };
+    let unchanged_string = is_openai(err.origin.as_ref())
+        && match &err.raw {
+            Some(Value::Object(m)) => matches!(
+                m.get("error"),
+                Some(Value::String(message))
+                    if *message == err.message && string_error_kind(err.status, message) == err.kind
+            ),
+            _ => false,
+        };
     let (status, body) = match (&err.raw, replay) {
         (Some(raw), true) => (err.status.unwrap_or(kind_status), raw.clone()),
         _ => (
-            kind_status,
+            if unchanged_string {
+                err.status.unwrap_or(kind_status)
+            } else {
+                kind_status
+            },
             json!({
                 "error": {
                     "message": err.message,
@@ -336,6 +357,28 @@ mod tests {
         assert_eq!(v["error"]["type"], "invalid_request_error");
         let blank = decode(D, 400, &HeaderList::new(), br#"{"error":" "}"#);
         assert!(blank.message.contains("could not read"));
+        let gone = decode(
+            D,
+            410,
+            &HeaderList::new(),
+            br#"{"error":"Live search is deprecated."}"#,
+        );
+        assert_eq!(gone.kind, ErrorKind::ProviderError);
+        assert_eq!(encode(&gone).status, 410);
+        let mut changed = gone;
+        changed.message = "Kaeso: try later".into();
+        assert_eq!(encode(&changed).status, 500);
+        let key = decode(
+            D,
+            400,
+            &HeaderList::new(),
+            br#"{"code":"invalid-argument","error":"Incorrect API key provided. You can obtain an API key from https://console.x.ai."}"#,
+        );
+        assert_eq!(key.kind, ErrorKind::Authentication);
+        let out = encode(&key);
+        assert_eq!(out.status, 400);
+        let v: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(v["error"]["message"], key.message);
     }
 
     #[test]
