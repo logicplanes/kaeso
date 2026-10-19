@@ -307,7 +307,9 @@ pub struct PlaygroundModel {
     #[doc = "The catalogue entry."]
     pub id: CatalogueModelId,
     #[doc = "The name to send as `model`: the provider's model id, or\n\
-        `provider/model` when several providers in the project serve it."]
+        `provider/model` when that id names another of the project's models\n\
+        (another provider serves it, an alias takes it, or it reads as\n\
+        another provider's prefixed name)."]
     #[schema(example = "claude-sonnet-4-5")]
     pub model: String,
     #[doc = "The provider."]
@@ -397,21 +399,15 @@ pub async fn models(
                 has
             }
         };
-        let shared = models
-            .entries
-            .iter()
-            .filter(|e| e.model_id == entry.model_id)
-            .count()
-            > 1;
         let f = &eff.fields;
         let price = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
         out.push(PlaygroundModel {
             id: CatalogueModelId::from_uuid(entry.id),
-            model: if shared {
-                format!("{}/{}", entry.provider, entry.model_id)
-            } else {
-                entry.model_id.clone()
-            },
+            model: crate::services::catalogue::request_name(
+                entry,
+                &models.entries,
+                &models.aliases,
+            ),
             provider: entry.provider.clone(),
             model_id: entry.model_id.clone(),
             display_name: eff.display_name().to_owned(),

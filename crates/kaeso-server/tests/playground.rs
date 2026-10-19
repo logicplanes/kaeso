@@ -171,6 +171,103 @@ async fn a_member_streams_responses_events_from_either_provider() {
 }
 
 #[tokio::test]
+async fn a_model_whose_id_names_another_providers_model_is_offered_with_its_provider() {
+    let env = captured().await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "groq", "name": "groq", "secret": "gsk_test-playground-0001" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    for body in [
+        json!({ "provider": "groq", "model_id": "openai/gpt-oss-20b" }),
+        json!({
+            "provider": "openai", "model_id": "gpt-oss-20b", "custom": true,
+            "overrides": {
+                "input_modalities": ["text"], "output_modalities": ["text"],
+                "context_limit": 128000, "output_limit": 8000,
+                "input_price": "1", "output_price": "2", "egress_dialect": "openai_responses"
+            }
+        }),
+    ] {
+        let r = env
+            .app
+            .post(
+                &format!("{}/models", base(&env)),
+                body,
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    }
+    let listed = env
+        .app
+        .get(
+            &format!("{}/playground/models", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    let name = |provider: &str| {
+        listed.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| {
+                m["provider"] == provider
+                    && m["model_id"].as_str().unwrap().ends_with("gpt-oss-20b")
+            })
+            .unwrap()["model"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    assert_eq!(name("groq"), "groq/openai/gpt-oss-20b");
+    assert_eq!(name("openai"), "gpt-oss-20b");
+
+    let r = play(
+        &env.app,
+        &responses_path(&env),
+        &env.owner.cookie,
+        &ask(&name("groq"), "Hi"),
+    )
+    .await;
+    completed(&r);
+    assert_eq!(r.header("kaeso-provider"), Some("groq"));
+    assert_eq!(
+        env.mock.last().unwrap().json()["model"],
+        "openai/gpt-oss-20b"
+    );
+
+    let r = call(&env, "/v1/models", Some(&env.key), false, None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let ids: Vec<String> = r.json()["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["id"].as_str().unwrap().to_owned())
+        .collect();
+    assert!(
+        ids.iter().any(|i| i == "groq/openai/gpt-oss-20b"),
+        "{ids:?}"
+    );
+    assert!(ids.iter().any(|i| i == "gpt-oss-20b"), "{ids:?}");
+    assert!(!ids.iter().any(|i| i == "openai/gpt-oss-20b"), "{ids:?}");
+    let r = call(
+        &env,
+        "/v1/models/groq%2Fopenai%2Fgpt-oss-20b",
+        Some(&env.key),
+        false,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["owned_by"], "groq");
+}
+
+#[tokio::test]
 async fn reasoning_summaries_stream_from_a_model_that_reasons() {
     let env = captured().await;
     let r = env

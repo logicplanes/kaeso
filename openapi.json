@@ -18839,7 +18839,7 @@
                 },
                 "model": {
                   "type": "string",
-                  "description": "The name to send as `model`: the provider's model id, or\n`provider/model` when several providers in the project serve it.",
+                  "description": "The name to send as `model`: the provider's model id, or\n`provider/model` when that id names another of the project's models\n(another provider serves it, an alias takes it, or it reads as\nanother provider's prefixed name).",
                   "example": "claude-sonnet-4-5"
                 },
                 "model_id": {
@@ -20896,7 +20896,7 @@
           },
           "model": {
             "type": "string",
-            "description": "The name to send as `model`: the provider's model id, or\n`provider/model` when several providers in the project serve it.",
+            "description": "The name to send as `model`: the provider's model id, or\n`provider/model` when that id names another of the project's models\n(another provider serves it, an alias takes it, or it reads as\nanother provider's prefixed name).",
             "example": "claude-sonnet-4-5"
           },
           "model_id": {
