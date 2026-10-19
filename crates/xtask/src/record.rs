@@ -4,13 +4,16 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
 use serde_json::Value;
+use serde_json::value::RawValue;
 use time::OffsetDateTime;
 use time::macros::format_description;
 
 use kaeso_codecs::{
     anthropic_messages, is_forwarded_header, openai_chat, openai_embeddings, openai_responses,
 };
+use kaeso_core::provider::{AuthStyle, Provider, lookup};
 use kaeso_kpp::DialectId;
 
 use crate::error::{Error, read, read_text, write};
@@ -18,6 +21,7 @@ use crate::json::pretty;
 use crate::signed_urls::strip_signed_queries;
 
 const FIXTURES: &str = "crates/kaeso-codecs/fixtures";
+const PROVIDERS_FOLDER: &str = "providers";
 const SKIP_PREFIXES: &[&str] = &["stateful-", "unknown-", "n-2", "input-audio"];
 const TIMEOUT: Duration = Duration::from_secs(600);
 
@@ -46,6 +50,14 @@ impl Dialect {
 
     fn is_anthropic(self) -> bool {
         self == Self::AnthropicMessages
+    }
+
+    fn default_provider(self) -> &'static str {
+        if self.is_anthropic() {
+            "anthropic"
+        } else {
+            "openai"
+        }
     }
 
     fn path(self) -> &'static str {
@@ -80,39 +92,54 @@ pub(crate) struct Args {
     count: bool,
     #[arg(long, help = "Print what would be sent and send nothing")]
     dry_run: bool,
+    #[arg(
+        long,
+        value_name = "ID",
+        help = "The provider to record, by its id in PROVIDERS [default: anthropic for anthropic_messages, openai for the others]"
+    )]
+    provider: Option<String>,
+    #[arg(
+        long,
+        help = "Send this model instead of the one each request fixture names"
+    )]
+    model: Option<String>,
 }
 
 impl Args {
-    pub(crate) fn dialect(&self) -> Dialect {
-        self.dialect
+    pub(crate) fn provider(&self) -> Result<&'static Provider, Error> {
+        let id = self
+            .provider
+            .as_deref()
+            .unwrap_or(self.dialect.default_provider());
+        lookup(id).map_err(|e| Error::Invalid(e.to_string()))
     }
 }
 
 pub(crate) struct Endpoint {
+    provider: &'static Provider,
     base_url: String,
-    key_variable: &'static str,
+    key_variable: String,
     key: Option<String>,
 }
 
 impl Endpoint {
-    pub(crate) fn from_env(dialect: Dialect) -> Self {
-        let (variable, default, key_variable) = if dialect.is_anthropic() {
-            (
-                "ANTHROPIC_BASE_URL",
-                "https://api.anthropic.com",
-                "ANTHROPIC_API_KEY",
-            )
-        } else {
-            (
-                "OPENAI_BASE_URL",
-                "https://api.openai.com",
-                "OPENAI_API_KEY",
-            )
-        };
+    pub(crate) fn from_env(provider: &'static Provider) -> Self {
+        Self::from_variables(provider, |name| std::env::var(name).ok())
+    }
+
+    fn from_variables(
+        provider: &'static Provider,
+        variable: impl Fn(&str) -> Option<String>,
+    ) -> Self {
+        let segment = provider.provider_id().env_segment();
+        let key_variable = format!("{segment}_API_KEY");
         Self {
-            base_url: std::env::var(variable).unwrap_or_else(|_| default.to_owned()),
+            provider,
+            base_url: variable(&format!("{segment}_BASE_URL"))
+                .filter(|u| !u.is_empty())
+                .unwrap_or_else(|| provider.default_base_url.to_owned()),
+            key: variable(&key_variable).filter(|k| !k.is_empty()),
             key_variable,
-            key: std::env::var(key_variable).ok().filter(|k| !k.is_empty()),
         }
     }
 }
@@ -120,9 +147,12 @@ impl Endpoint {
 struct Recorder<'a> {
     root: &'a Path,
     fixtures: PathBuf,
+    target: PathBuf,
     dialect: Dialect,
+    provider: &'static Provider,
     count: Option<(&'static str, &'static str)>,
     url: String,
+    model: Option<&'a str>,
     key: Option<&'a str>,
     client: reqwest::Client,
 }
@@ -133,13 +163,28 @@ pub(crate) async fn run(
     endpoint: &Endpoint,
     out: &mut impl Write,
 ) -> Result<(), Error> {
+    let provider = endpoint.provider;
+    let dialect = args.dialect.id();
+    if !provider.dialects.contains(&dialect) {
+        let spoken: Vec<&str> = provider.dialects.iter().map(|d| d.as_str()).collect();
+        return Err(Error::Invalid(format!(
+            "{} does not speak {dialect}; it speaks {}",
+            provider.id,
+            spoken.join(", ")
+        )));
+    }
     let count = match (args.count, args.dialect.count()) {
         (false, _) => None,
+        (true, Some(_)) if provider.count_tokens != Some(dialect) => {
+            return Err(Error::Invalid(format!(
+                "{} has no token-count endpoint for {dialect}; record without --count",
+                provider.id
+            )));
+        }
         (true, Some(count)) => Some(count),
         (true, None) => {
             return Err(Error::Invalid(format!(
-                "{} has no token-count endpoint",
-                args.dialect.folder()
+                "{dialect} has no token-count endpoint"
             )));
         }
     };
@@ -150,21 +195,33 @@ pub(crate) async fn run(
         )));
     }
     let fixtures = root.join(FIXTURES);
-    let mut folder = fixtures.join(args.dialect.folder()).join("requests");
-    if let Some((_, sub)) = count {
-        folder.push(sub);
+    let canonical = fixtures.join(args.dialect.folder());
+    let target = if provider.id == args.dialect.default_provider() {
+        canonical.clone()
+    } else {
+        canonical.join(PROVIDERS_FOLDER).join(provider.id)
+    };
+    let mut available = requests_in(&canonical, count)?;
+    if target != canonical {
+        let own = target.join("requests");
+        if own.is_dir() {
+            available = merge(available, requests_in(&target, count)?)?;
+        }
     }
-    let selected = select(request_fixtures(&folder)?, &args.names, args.all)?;
+    let selected = select(available, &args.names, args.all)?;
     let recorder = Recorder {
         root,
         fixtures,
+        target,
         dialect: args.dialect,
+        provider,
         count,
         url: format!(
             "{}{}",
             endpoint.base_url.trim_end_matches('/'),
             count.map_or(args.dialect.path(), |(path, _)| path)
         ),
+        model: args.model.as_deref(),
         key: endpoint.key.as_deref().filter(|_| !args.dry_run),
         client: reqwest::Client::builder().timeout(TIMEOUT).build()?,
     };
@@ -172,6 +229,30 @@ pub(crate) async fn run(
         recorder.record(&fixture, out).await?;
     }
     Ok(())
+}
+
+fn requests_in(
+    base: &Path,
+    count: Option<(&'static str, &'static str)>,
+) -> Result<Vec<PathBuf>, Error> {
+    let mut folder = base.join("requests");
+    if let Some((_, sub)) = count {
+        folder.push(sub);
+    }
+    request_fixtures(&folder)
+}
+
+fn merge(canonical: Vec<PathBuf>, own: Vec<PathBuf>) -> Result<Vec<PathBuf>, Error> {
+    let names: BTreeSet<String> = canonical.iter().map(|p| stem(p)).collect();
+    if let Some(twin) = own.iter().find(|p| names.contains(&stem(p))) {
+        return Err(Error::Invalid(format!(
+            "{} has the name of a request fixture of the dialect; rename it",
+            twin.display()
+        )));
+    }
+    let mut all = canonical;
+    all.extend(own);
+    Ok(all)
 }
 
 fn request_fixtures(folder: &Path) -> Result<Vec<PathBuf>, Error> {
@@ -234,20 +315,26 @@ impl Recorder<'_> {
     }
 
     async fn record(&self, fixture: &Path, out: &mut impl Write) -> Result<(), Error> {
-        let body = read(fixture)?;
+        let mut body = read(fixture)?;
         let payload: Value = serde_json::from_slice(&body)
             .map_err(|e| Error::json(self.relative(fixture).display(), e))?;
-        let model = match payload.get("model") {
-            Some(Value::String(m)) => m.clone(),
-            Some(other) => other.to_string(),
-            None => "?".to_owned(),
+        let model = match (self.model, payload.get("model")) {
+            (Some(m), _) => {
+                body = with_model(&body, m)
+                    .map_err(|e| Error::json(self.relative(fixture).display(), e))?;
+                m.to_owned()
+            }
+            (None, Some(Value::String(m))) => m.clone(),
+            (None, Some(other)) => other.to_string(),
+            (None, None) => "?".to_owned(),
         };
         let streaming = payload.get("stream").is_some_and(truthy);
         writeln!(
             out,
-            "{} -> POST {}{}",
+            "{} -> POST {}{}{}",
             self.relative(fixture).display(),
             self.url,
+            self.model.map(|m| format!(" as {m}")).unwrap_or_default(),
             if streaming { " (stream)" } else { "" }
         )?;
         let Some(key) = self.key else {
@@ -269,7 +356,7 @@ impl Recorder<'_> {
         let received = response.bytes().await?;
         let data = strip_signed_queries(&received);
         let name = stem(fixture);
-        let base = self.fixtures.join(self.dialect.folder());
+        let base = &self.target;
         let (folder, file) = if !status.is_success() {
             let folder = base.join("errors");
             let file = match pretty(&data) {
@@ -311,14 +398,17 @@ impl Recorder<'_> {
 
     fn headers(&self, fixture: &Path, key: &str) -> Result<HeaderMap, Error> {
         let mut headers = vec![("content-type".to_owned(), "application/json".to_owned())];
+        match self.provider.auth {
+            AuthStyle::Bearer => {
+                headers.push(("authorization".to_owned(), format!("Bearer {key}")))
+            }
+            AuthStyle::XApiKey => headers.push(("x-api-key".to_owned(), key.to_owned())),
+        }
         if self.dialect.is_anthropic() {
-            headers.push(("x-api-key".to_owned(), key.to_owned()));
             headers.push((
                 "anthropic-version".to_owned(),
                 anthropic_messages::ANTHROPIC_VERSION.to_owned(),
             ));
-        } else {
-            headers.push(("authorization".to_owned(), format!("Bearer {key}")));
         }
         let sidecar = fixture.with_file_name(format!("{}.headers.json", stem(fixture)));
         if sidecar.exists() {
@@ -359,7 +449,10 @@ impl Recorder<'_> {
         let mut text = if index.exists() {
             read_text(&index)?
         } else {
-            "# Recorded fixtures\n\nWritten by `cargo xtask record`. Provenance: live API.\n\n| File | Request fixture | Model | Recorded (UTC) |\n|---|---|---|---|\n".to_owned()
+            format!(
+                "# Recorded fixtures\n\nWritten by `cargo xtask record`. Provenance: live API of {} (`{}`).\n\n| File | Request fixture | Model | Recorded (UTC) |\n|---|---|---|---|\n",
+                self.provider.name, self.provider.id
+            )
         };
         let when = OffsetDateTime::now_utc()
             .format(format_description!("[year]-[month]-[day] [hour]:[minute]"))?;
@@ -374,6 +467,48 @@ impl Recorder<'_> {
         ));
         write(&index, text)
     }
+}
+
+struct Members(Vec<(String, Box<RawValue>)>);
+
+impl<'de> Deserialize<'de> for Members {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Ordered;
+        impl<'de> Visitor<'de> for Ordered {
+            type Value = Members;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a JSON object")
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Members, A::Error> {
+                let mut members = Vec::new();
+                while let Some(member) = map.next_entry()? {
+                    members.push(member);
+                }
+                Ok(Members(members))
+            }
+        }
+        deserializer.deserialize_map(Ordered)
+    }
+}
+
+fn with_model(body: &[u8], model: &str) -> Result<Vec<u8>, serde_json::Error> {
+    let Members(members) = serde_json::from_slice(body)?;
+    let model = serde_json::to_string(model)?;
+    let mut fields = Vec::with_capacity(members.len() + 1);
+    let mut named = false;
+    for (name, value) in &members {
+        let value = if name == "model" {
+            named = true;
+            model.as_str()
+        } else {
+            value.get()
+        };
+        fields.push(format!("{}:{value}", serde_json::to_string(name)?));
+    }
+    if !named {
+        fields.push(format!("\"model\":{model}"));
+    }
+    Ok(format!("{{{}}}", fields.join(",")).into_bytes())
 }
 
 fn truthy(value: &Value) -> bool {
@@ -448,18 +583,38 @@ mod tests {
         dir
     }
 
-    fn endpoint(base_url: &str, key: Option<&str>) -> Endpoint {
+    static EXAMPLE: Provider = Provider {
+        id: "example-cloud",
+        name: "Example Cloud",
+        default_base_url: "https://api.example.com/compat",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+    };
+
+    fn known(id: &str) -> &'static Provider {
+        lookup(id).unwrap()
+    }
+
+    fn endpoint(provider: &'static Provider, base_url: &str, key: Option<&str>) -> Endpoint {
         Endpoint {
+            provider,
             base_url: base_url.to_owned(),
-            key_variable: "ANTHROPIC_API_KEY",
+            key_variable: format!("{}_API_KEY", provider.provider_id().env_segment()),
             key: key.map(str::to_owned),
         }
+    }
+
+    fn anthropic(base_url: &str, key: Option<&str>) -> Endpoint {
+        endpoint(known("anthropic"), base_url, key)
     }
 
     #[test]
     fn dialect_names_and_endpoints() {
         assert_eq!(
-            args(&["openai_responses", "--all"]).dialect(),
+            args(&["openai_responses", "--all"]).dialect,
             Dialect::OpenaiResponses
         );
         assert_eq!(Dialect::OpenaiChat.path(), "/v1/chat/completions");
@@ -470,12 +625,87 @@ mod tests {
             Some(("/v1/responses/input_tokens", "input_tokens"))
         );
         assert!(Cli::try_parse_from(["record", "openai"]).is_err());
-        let openai = Endpoint::from_env(Dialect::OpenaiChat);
-        assert_eq!(openai.key_variable, "OPENAI_API_KEY");
+    }
+
+    #[test]
+    fn the_provider_comes_from_the_registry_and_defaults_to_the_dialect_owner() {
+        let id = |line: &[&str]| args(line).provider().map(|p| p.id);
+        assert_eq!(id(&["anthropic_messages", "--all"]).unwrap(), "anthropic");
+        assert_eq!(id(&["openai_chat", "--all"]).unwrap(), "openai");
+        assert_eq!(id(&["openai_embeddings", "--all"]).unwrap(), "openai");
         assert_eq!(
-            Endpoint::from_env(Dialect::AnthropicMessages).key_variable,
-            "ANTHROPIC_API_KEY"
+            id(&["openai_chat", "--provider", "anthropic", "--all"]).unwrap(),
+            "anthropic"
         );
+        assert_eq!(
+            id(&["openai_chat", "--provider", "example-cloud", "--all"])
+                .unwrap_err()
+                .to_string(),
+            "`example-cloud` is not a provider Kaeso knows; the providers are openai, anthropic"
+        );
+        assert_eq!(
+            id(&["openai_chat", "--provider", "Example_Cloud", "--all"])
+                .unwrap_err()
+                .to_string(),
+            "`Example_Cloud` is not a provider id: lowercase letters and digits, with single hyphens between them"
+        );
+    }
+
+    #[test]
+    fn keys_and_base_urls_are_named_after_the_provider_id() {
+        let variables = |pairs: &'static [(&'static str, &'static str)]| {
+            move |name: &str| {
+                pairs
+                    .iter()
+                    .find(|(n, _)| *n == name)
+                    .map(|(_, v)| (*v).to_owned())
+            }
+        };
+        let set = Endpoint::from_variables(
+            &EXAMPLE,
+            variables(&[
+                ("EXAMPLE_CLOUD_API_KEY", "sk-test"),
+                ("EXAMPLE_CLOUD_BASE_URL", "http://127.0.0.1:9"),
+                ("OPENAI_API_KEY", "sk-other"),
+            ]),
+        );
+        assert_eq!(set.key_variable, "EXAMPLE_CLOUD_API_KEY");
+        assert_eq!(set.key.as_deref(), Some("sk-test"));
+        assert_eq!(set.base_url, "http://127.0.0.1:9");
+        let unset = Endpoint::from_variables(
+            &EXAMPLE,
+            variables(&[
+                ("EXAMPLE_CLOUD_API_KEY", ""),
+                ("EXAMPLE_CLOUD_BASE_URL", ""),
+            ]),
+        );
+        assert_eq!(unset.key, None);
+        assert_eq!(unset.base_url, "https://api.example.com/compat");
+        let openai = Endpoint::from_variables(known("openai"), variables(&[]));
+        assert_eq!(
+            (openai.key_variable.as_str(), openai.base_url.as_str()),
+            ("OPENAI_API_KEY", "https://api.openai.com")
+        );
+        let anthropic = Endpoint::from_variables(known("anthropic"), variables(&[]));
+        assert_eq!(
+            (anthropic.key_variable.as_str(), anthropic.base_url.as_str()),
+            ("ANTHROPIC_API_KEY", "https://api.anthropic.com")
+        );
+    }
+
+    #[test]
+    fn a_model_override_keeps_every_other_member_as_written() {
+        let body = br#"{ "stream": true, "model": "gpt-4o", "temperature": 1.0, "n": 1e2, "messages": [ {"role": "user"} ] }"#;
+        assert_eq!(
+            String::from_utf8(with_model(body, "llama-\"x\"").unwrap()).unwrap(),
+            r#"{"stream":true,"model":"llama-\"x\"","temperature":1.0,"n":1e2,"messages":[ {"role": "user"} ]}"#
+        );
+        assert_eq!(
+            with_model(br#"{"input":"hi"}"#, "m").unwrap(),
+            br#"{"input":"hi","model":"m"}"#
+        );
+        assert_eq!(with_model(b"{}", "m").unwrap(), br#"{"model":"m"}"#);
+        assert!(with_model(b"[]", "m").is_err());
     }
 
     #[test]
@@ -530,7 +760,7 @@ mod tests {
         run(
             dir.path(),
             &args(&["anthropic_messages", "--all", "--dry-run"]),
-            &endpoint("https://api.example.com/", None),
+            &anthropic("https://api.example.com/", None),
             &mut out,
         )
         .await
@@ -548,7 +778,7 @@ mod tests {
         let no_key = run(
             dir.path(),
             &args(&["anthropic_messages", "text-simple"]),
-            &endpoint("http://127.0.0.1:9", None),
+            &anthropic("http://127.0.0.1:9", None),
             &mut Vec::new(),
         )
         .await;
@@ -559,7 +789,7 @@ mod tests {
         let no_count = run(
             dir.path(),
             &args(&["openai_chat", "--count", "--all"]),
-            &endpoint("http://127.0.0.1:9", Some("k")),
+            &endpoint(known("openai"), "http://127.0.0.1:9", Some("k")),
             &mut Vec::new(),
         )
         .await;
@@ -570,11 +800,126 @@ mod tests {
         let no_folder = run(
             dir.path(),
             &args(&["openai_embeddings", "--all"]),
-            &endpoint("http://127.0.0.1:9", Some("k")),
+            &endpoint(known("openai"), "http://127.0.0.1:9", Some("k")),
             &mut Vec::new(),
         )
         .await;
         assert!(matches!(no_folder, Err(Error::File { .. })));
+        let wrong_dialect = run(
+            dir.path(),
+            &args(&["anthropic_messages", "--all"]),
+            &endpoint(known("openai"), "http://127.0.0.1:9", Some("k")),
+            &mut Vec::new(),
+        )
+        .await;
+        assert_eq!(
+            wrong_dialect.unwrap_err().to_string(),
+            "openai does not speak anthropic_messages; it speaks openai_responses, openai_chat, openai_embeddings"
+        );
+        let cannot_count = run(
+            dir.path(),
+            &args(&["anthropic_messages", "--count", "--all"]),
+            &endpoint(&EXAMPLE, "http://127.0.0.1:9", Some("k")),
+            &mut Vec::new(),
+        )
+        .await;
+        assert_eq!(
+            cannot_count.unwrap_err().to_string(),
+            "example-cloud has no token-count endpoint for anthropic_messages; record without --count"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_provider_dry_run_adds_its_own_requests_and_names_the_model() {
+        let dir = repository();
+        let own = "crates/kaeso-codecs/fixtures/openai_chat/providers/example-cloud/requests";
+        dir.file(&format!("{own}/reasoning-format.json"), r#"{"model":"m"}"#);
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["openai_chat", "--all", "--dry-run", "--model", "llama-4"]),
+            &endpoint(&EXAMPLE, "https://api.example.com/compat", None),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            "crates/kaeso-codecs/fixtures/openai_chat/requests/basic.json -> POST https://api.example.com/compat/v1/chat/completions as llama-4\n\
+             crates/kaeso-codecs/fixtures/openai_chat/providers/example-cloud/requests/reasoning-format.json -> POST https://api.example.com/compat/v1/chat/completions as llama-4\n"
+        );
+        dir.file(&format!("{own}/basic.json"), r#"{"model":"m"}"#);
+        let twin = run(
+            dir.path(),
+            &args(&["openai_chat", "basic", "--dry-run"]),
+            &endpoint(&EXAMPLE, "https://api.example.com/compat", None),
+            &mut Vec::new(),
+        )
+        .await;
+        assert!(
+            twin.unwrap_err()
+                .to_string()
+                .ends_with("providers/example-cloud/requests/basic.json has the name of a request fixture of the dialect; rename it")
+        );
+    }
+
+    #[tokio::test]
+    async fn another_provider_records_into_its_own_folder_with_its_auth_and_model() {
+        let dir = repository();
+        let served = serve_once(Reply {
+            status: 200,
+            headers: vec![("content-type", "application/json")],
+            body: br#"{"id":"msg_2","type":"message","content":[]}"#.to_vec(),
+        })
+        .await;
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["anthropic_messages", "text-simple", "--model", "glm-5"]),
+            &endpoint(&EXAMPLE, &served.url, Some("sk-test")),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        let request = served.request.await.unwrap();
+        assert!(
+            request.starts_with("POST /v1/messages HTTP/1.1\r\n"),
+            "{request}"
+        );
+        assert!(
+            request.contains("authorization: Bearer sk-test\r\n"),
+            "{request}"
+        );
+        assert!(!request.contains("x-api-key"), "{request}");
+        assert!(
+            request.contains("anthropic-version: 2023-06-01\r\n"),
+            "{request}"
+        );
+        assert!(request.ends_with(r#"{"model":"glm-5","max_tokens":10,"messages":[]}"#));
+        let folder =
+            "crates/kaeso-codecs/fixtures/anthropic_messages/providers/example-cloud/responses";
+        assert!(
+            dir.read(&format!("{folder}/recorded-text-simple.json"))
+                .contains("\"msg_2\"")
+        );
+        let index = dir.read(&format!("{folder}/RECORDED.md"));
+        assert!(
+            index.contains("Provenance: live API of Example Cloud (`example-cloud`).\n"),
+            "{index}"
+        );
+        assert!(index.contains(
+            "| `recorded-text-simple.json` | `anthropic_messages/requests/text-simple.json` | `glm-5` | "
+        ));
+        assert!(
+            !dir.path()
+                .join("crates/kaeso-codecs/fixtures/anthropic_messages/responses/recorded-text-simple.json")
+                .exists()
+        );
+        assert!(
+            String::from_utf8(out)
+                .unwrap()
+                .ends_with(&format!("  wrote {folder}/recorded-text-simple.json\n"))
+        );
     }
 
     #[tokio::test]
@@ -590,7 +935,7 @@ mod tests {
         run(
             dir.path(),
             &args(&["anthropic_messages", "text-simple"]),
-            &endpoint(&served.url, Some("sk-test")),
+            &anthropic(&served.url, Some("sk-test")),
             &mut out,
         )
         .await
@@ -612,7 +957,9 @@ mod tests {
             "{\n  \"id\": \"msg_1\",\n  \"type\": \"message\",\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"https:\\/\\/b.s3.amazonaws.com\\/a.pdf\"\n    }\n  ]\n}\n"
         );
         let index = dir.read(&format!("{folder}/RECORDED.md"));
-        assert!(index.starts_with("# Recorded fixtures\n\nWritten by `cargo xtask record`."));
+        assert!(index.starts_with(
+            "# Recorded fixtures\n\nWritten by `cargo xtask record`. Provenance: live API of Anthropic (`anthropic`).\n"
+        ));
         assert!(index.contains(
             "| `recorded-text-simple.json` | `anthropic_messages/requests/text-simple.json` | `claude-haiku-4-5` | "
         ));
@@ -637,7 +984,7 @@ mod tests {
         run(
             dir.path(),
             &args(&["anthropic_messages", "text-stream"]),
-            &endpoint(&served.url, Some("sk-test")),
+            &anthropic(&served.url, Some("sk-test")),
             &mut Vec::new(),
         )
         .await
@@ -666,7 +1013,7 @@ mod tests {
         run(
             dir.path(),
             &args(&["anthropic_messages", "--count", "basic"]),
-            &endpoint(&served.url, Some("sk-test")),
+            &anthropic(&served.url, Some("sk-test")),
             &mut Vec::new(),
         )
         .await
@@ -704,7 +1051,7 @@ mod tests {
         run(
             dir.path(),
             &args(&["anthropic_messages", "text-simple"]),
-            &endpoint(&served.url, Some("sk-test")),
+            &anthropic(&served.url, Some("sk-test")),
             &mut Vec::new(),
         )
         .await
@@ -732,7 +1079,7 @@ mod tests {
         let result = run(
             dir.path(),
             &args(&["anthropic_messages", "text-simple"]),
-            &endpoint(&served.url, Some("sk-test")),
+            &anthropic(&served.url, Some("sk-test")),
             &mut Vec::new(),
         )
         .await;

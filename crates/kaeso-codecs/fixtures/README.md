@@ -1,3 +1,5 @@
 # Fixtures
 
 Real payloads for every dialect KPP speaks, one folder per dialect, used by the codecs' round-trip tests, the cross-dialect matrix, the SDK conformance suite, the gateway's mock provider and the fuzz seeds. Each folder's `README.md` states every file's provenance, and `RECORDED.md` lists the live recordings made with `cargo xtask record`. The layout, the naming conventions and how to record new fixtures are in the documentation: [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures).
+
+Recordings from another provider that speaks a dialect go into `<dialect>/providers/<id>/`, with the provider's id from `crates/kaeso-core/src/provider.rs`, the same `requests/`, `responses/`, `streams/` and `errors/` subfolders, and a `README.md` that names the provider and every file. `cargo xtask record <dialect> --provider <id> --model <model> <names>` writes them there, with the key from `<ID>_API_KEY`; `openai` and `anthropic` keep recording into the dialect's own folders. The round-trip, decoder and cross-dialect tests read provider folders by themselves, as `providers/<id>/<name>`.

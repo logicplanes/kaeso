@@ -13,12 +13,33 @@ const GENERATION: [DialectId; 3] = [
     DialectId::OpenAiResponses,
 ];
 
-fn fixtures(dialect: DialectId, folder: &str, ext: &str) -> Vec<(String, Vec<u8>)> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+const PROVIDERS: &str = "providers";
+
+fn fixtures_dir(dialect: DialectId) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("fixtures")
         .join(dialect.as_str())
-        .join(folder);
-    let mut out: Vec<(String, Vec<u8>)> = std::fs::read_dir(&dir)
+}
+
+fn fixtures(dialect: DialectId, folder: &str, ext: &str) -> Vec<(String, Vec<u8>)> {
+    let mut out = files(&fixtures_dir(dialect).join(folder), ext, "");
+    let providers = fixtures_dir(dialect).join(PROVIDERS);
+    if providers.is_dir() {
+        for provider in std::fs::read_dir(&providers).unwrap() {
+            let provider = provider.unwrap().path();
+            let own = provider.join(folder);
+            if own.is_dir() {
+                let id = provider.file_name().unwrap().to_str().unwrap();
+                out.extend(files(&own, ext, &format!("{PROVIDERS}/{id}/")));
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+fn files(dir: &Path, ext: &str, prefix: &str) -> Vec<(String, Vec<u8>)> {
+    std::fs::read_dir(dir)
         .unwrap()
         .map(|e| e.unwrap().path())
         .filter(|p| p.is_file() && p.extension().and_then(|e| e.to_str()) == Some(ext))
@@ -28,21 +49,28 @@ fn fixtures(dialect: DialectId, folder: &str, ext: &str) -> Vec<(String, Vec<u8>
         })
         .map(|p: PathBuf| {
             (
-                p.file_stem().unwrap().to_str().unwrap().to_owned(),
+                format!("{prefix}{}", p.file_stem().unwrap().to_str().unwrap()),
                 std::fs::read(&p).unwrap(),
             )
         })
-        .collect();
-    out.sort();
-    out
+        .collect()
 }
 
 fn headers(dialect: DialectId, name: &str) -> HeaderList {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures")
-        .join(dialect.as_str())
-        .join("requests")
-        .join(format!("{name}.headers.json"));
+    let path = match name
+        .strip_prefix(PROVIDERS)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .and_then(|rest| rest.split_once('/'))
+    {
+        Some((id, stem)) => fixtures_dir(dialect)
+            .join(PROVIDERS)
+            .join(id)
+            .join("requests")
+            .join(format!("{stem}.headers.json")),
+        None => fixtures_dir(dialect)
+            .join("requests")
+            .join(format!("{name}.headers.json")),
+    };
     match std::fs::read(path) {
         Ok(b) => {
             let v: Value = serde_json::from_slice(&b).unwrap();

@@ -27,6 +27,10 @@ order: 8
 
 部分端点有自己的子文件夹：Anthropic 的 `count_tokens/` 和 OpenAI Responses 的 `input_tokens/`，分别位于 `requests/` 和 `responses/` 中；以及用于模型列表的 `models/`（`anthropic_messages/models/`，以及三个 OpenAI 编解码器共用的 `openai_chat/models/`）。
 
+其他使用某个方言的服务商（例如兼容 OpenAI 的 API）的录制内容放在 `<dialect>/providers/<id>/` 中，以该服务商在 `crates/kaeso-core/src/provider.rs` 中的 ID 命名。该文件夹有同样的 `requests/`、`responses/`、`streams/` 和 `errors/` 子文件夹，只在服务商有对应文件时才创建。`requests/` 存放只有该服务商接受的请求；其中每个名称都必须与该方言自己的请求 fixture 不同。
+
+往返测试、解码器测试和跨方言矩阵会连同方言自己的 fixture 一起读取每个服务商文件夹，并把其中的文件命名为 `providers/<id>/<name>`。因此，新的服务商录制会给矩阵快照添加条目；审查这些条目，并用 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` 接受它们。SDK 一致性测试套件和网关的模拟服务商仍然只提供方言自己的 fixture。
+
 - `unknown-*` fixture 有意带有虚构的字段、块或事件，用于测试 `Extras` 和 `Unknown` 的处理。
 - 编解码器必须拒绝的 fixture（`stateful-*`、`n-2*`、`input-audio*`）测试的是它们的 `Unsupported` 错误，而不是往返。
 
@@ -42,6 +46,8 @@ order: 8
 | `RECORDED.md` | 用 `cargo xtask record` 进行的真实录制，附带模型和时间 |
 
 方言文件夹的 `README.md` 还会注明其 fixture 遵循的固定版本规范和 SDK 版本，以及这些 fixture 共有的约定，例如流与其响应之间一致的 ID 和 Token 计数。每添加一个新的 fixture，都要在其中添加一行。
+
+服务商文件夹有自己的一个 `README.md`：服务商的名称和 ID、它的 API 参考及阅读日期、录制时使用的基础 URL 和模型，以及其子文件夹中每个文件的一行。每个子文件夹的 `RECORDED.md` 在开头几行注明该服务商。
 
 ## 录制真实响应
 
@@ -59,17 +65,27 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
+`crates/kaeso-core/src/provider.rs` 中的其他任何服务商都以同样的方式用 `--provider` 录制，通常还要加上 `--model`，因为请求 fixture 中写的是 OpenAI 和 Anthropic 的模型：
+
+```bash
+export <ID>_API_KEY=…
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+```
+
 | 选项 | 作用 |
 | --- | --- |
 | `<dialect>` | `anthropic_messages`、`openai_chat`、`openai_responses` 或 `openai_embeddings` |
 | `<names>` | 要发送的请求 fixture，不带 `.json` |
 | `--all` | 该方言的所有请求 fixture，但不包括 `stateful-*`、`unknown-*`、`n-2*` 和 `input-audio*`：服务商会拒绝它们，或者它们带有虚构的字段 |
-| `--count` | Token 计数端点及其位于 `requests/count_tokens/` 或 `requests/input_tokens/` 的 fixture；仅限 `anthropic_messages` 和 `openai_responses` |
+| `--count` | Token 计数端点及其位于 `requests/count_tokens/` 或 `requests/input_tokens/` 的 fixture；仅限 `anthropic_messages` 和 `openai_responses`，并且仅限 `count_tokens` 为该方言的服务商 |
 | `--dry-run` | 打印将要发送的内容，不实际发送 |
+| `--provider <id>` | 要录制的服务商，按其 ID 指定；它的 `dialects` 中必须列有该方言。默认情况下，`anthropic_messages` 为 `anthropic`，其他方言为 `openai` |
+| `--model <id>` | 发送此模型，而不是各请求 fixture 中写的模型，并把它记录到 `RECORDED.md` 中 |
 
-- 它读取 `requests/<name>.json`，以及存在时的 `<name>.headers.json`，后者中在允许列表内的请求头（`anthropic-beta`、`anthropic-version`、`openai-beta`）会一并发送。Anthropic 请求带有 `anthropic-version: 2023-06-01`，除非该文件指定了其他版本。
-- 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
-- `ANTHROPIC_BASE_URL` 和 `OPENAI_BASE_URL` 用于更改 API 地址。
+- 它读取 `requests/<name>.json`（对其他服务商还会读取 `providers/<id>/requests/<name>.json`），以及存在时的 `<name>.headers.json`，后者中在允许列表内的请求头（`anthropic-beta`、`anthropic-version`、`openai-beta`）会一并发送。Anthropic 请求带有 `anthropic-version: 2023-06-01`，除非该文件指定了其他版本。
+- 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。`openai` 和 `anthropic` 录制到方言自己的文件夹中，其他每个服务商录制到 `providers/<id>/` 中。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
+- 密钥来自 `<ID>_API_KEY`，即服务商 ID 的大写形式，连字符换成下划线：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`，服务商 `fireworks-ai` 则为 `FIREWORKS_AI_API_KEY`。`<ID>_BASE_URL` 替换服务商的默认基础 URL，即网关使用的那个。密钥放在该服务商的认证请求头中：`authorization: Bearer` 或 `x-api-key`。
 - API 密钥从环境中读取，从不写入文件；请求头也从不保存。
 - 写入之前，它会从所有携带云签名凭据的 URL 中删除查询字符串（AWS Signature Version 4、Google Cloud 签名 URL、Azure 共享访问签名）。网页搜索可能返回这类预签名链接。其余内容逐字节保持不变。
 
