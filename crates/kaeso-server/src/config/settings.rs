@@ -84,7 +84,7 @@ const ROWS: &[Row] = &[
     s("clickhouse.url", "KAESO_CLICKHOUSE_URL", Text, None, true, "ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Required."),
     s("clickhouse.database", "KAESO_CLICKHOUSE_DATABASE", Text, Some("kaeso"), false, "ClickHouse database for request logs; created when missing."),
     s("valkey.url", "KAESO_VALKEY_URL", Text, None, true, "Valkey (or Redis) URL, e.g. `redis://valkey:6379`. Required."),
-    s("valkey.key_prefix", "KAESO_VALKEY_KEY_PREFIX", Text, Some("kaeso:"), false, "Prefix of every Valkey key and channel, for sharing one Valkey between installs."),
+    s("valkey.key_prefix", "KAESO_VALKEY_KEY_PREFIX", Text, Some("kaeso:"), false, "Prefix of every Valkey key and channel, for sharing one Valkey between installs that trust each other."),
     s("master_keys", "KAESO_MASTER_KEYS", Text, None, true, "Master keys as `id:base64,...`, active key first. Required. Generate one with `kaeso master-key generate`."),
     s("smtp.host", "KAESO_SMTP_HOST", Text, None, false, "SMTP server. Required unless `mail.transport` is `log`."),
     s("smtp.port", "KAESO_SMTP_PORT", Integer, Some("587"), false, "SMTP port."),

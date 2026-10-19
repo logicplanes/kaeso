@@ -69,6 +69,7 @@ flowchart TD
 - PostgreSQL、ClickHouse 和 Valkey 只取回其镜像启动时所需的 capabilities。借助这些权限，它们各自把数据目录交给自己的用户，之后不再以 root 运行。`caddy-init` 只获得读取所有目录和更改所有者的权限，`updater-init` 另外还获得更改文件权限位的权限。
 - 每个服务都有内存上限和进程数上限，Docker 会在日志达到 10 MB 时轮转，并保留五个文件（[容器限制](configuration.md#容器限制)）。
 - 网关以 `kaeso` 身份登录 PostgreSQL，该用户拥有 Kaeso 数据库，但不是超级用户。ClickHouse 的 `kaeso` 用户无法管理用户和授权，Valkey 要求每个连接都提供密码，并从文件而不是命令行读取该密码。
+- 实例之间通过 Valkey 共享的缓存条目带有用主密钥派生的密钥生成的签名，没有签名的条目会重新从 PostgreSQL 加载。Valkey 仍然保存限额计数器，并通知每个实例哪些内容发生了变化，因此切勿与安装信任边界之外的任何服务共用它。
 - Caddy 发送 `Strict-Transport-Security`，并且从不转发网关的指标端口 9100。
 
 ## 多个网关
