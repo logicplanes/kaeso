@@ -344,7 +344,11 @@ pub async fn record(state: &AppState, o: &Outcome) {
         stream: o.stream,
         status: o.status,
         error_kind: o.error_kind.clone().unwrap_or_default(),
-        error_message: o.error_message.clone().unwrap_or_default(),
+        error_message: o
+            .error_message
+            .as_deref()
+            .map(kaeso_core::secret::redact_tokens)
+            .unwrap_or_default(),
         input_tokens: usage.input_tokens,
         output_tokens: usage.output_tokens,
         cache_read_tokens: usage.cache_read_tokens,
