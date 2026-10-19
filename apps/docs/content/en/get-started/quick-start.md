@@ -60,7 +60,7 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 The master key encrypts the provider keys that Kaeso stores. Generate one into `master-keys`, which Compose hands to the gateway as a Docker secret:
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
 chmod 644 master-keys
 ```
 

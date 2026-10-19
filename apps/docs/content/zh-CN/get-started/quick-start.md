@@ -60,7 +60,7 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 主密钥用于加密 Kaeso 保存的服务商密钥。将一个主密钥生成到 `master-keys` 中，Compose 会把它作为 Docker secret 交给网关：
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
 chmod 644 master-keys
 ```
 
