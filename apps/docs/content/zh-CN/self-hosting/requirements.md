@@ -24,11 +24,16 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 方向 | 端口或主机 | 用途 |
 | --- | --- | --- |
 | 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
-| 出站 | `api.openai.com`、`api.anthropic.com`、`api.deepseek.com`、`api.x.ai`、`api.together.ai`、`api.groq.com` | 您使用的服务商；修改基础 URL（[服务商调用](configuration.md#服务商调用)）后以其主机为准 |
+| 出站 | `api.openai.com`、`api.anthropic.com`、`api.deepseek.com`、`api.x.ai`、`api.together.ai`、`api.groq.com`，或您为服务商设置的基础 URL（[服务商设置](configuration.md#服务商设置)） | 您使用的服务商 |
 | 出站 | `models.dev` | 模型数据，每天刷新一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每天两次 |
-| 出站 | `github.com`、`objects.githubusercontent.com`、`ghcr.io` | 更新器 |
+| 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |
+| 出站 | `ghcr.io`、`pkg-containers.githubusercontent.com` | 安装或更新时，Docker 拉取 Kaeso 的镜像 |
+| 出站 | `registry-1.docker.io`、`auth.docker.io`、`production.cloudflare.docker.com` | Docker 拉取 Caddy、PostgreSQL、ClickHouse、Valkey 和更新器套接字代理的镜像 |
+| 出站 | `github.com`、`release-assets.githubusercontent.com` | 手动或由更新器下载版本的 `compose.yaml` 和 `release.json` |
+| 出站 | `api.github.com` | 更新器和 `gh attestation verify` 获取版本的证明 |
 | 出站 | 您的 SMTP 服务器 | 登录链接、邀请、提醒和安全通知（[邮件](email.md)） |
+| 出站 | 您各组织的身份提供商 | 组织连接身份提供商后的单点登录（[登录](sign-in.md)） |
 
 没有互联网访问时，Kaeso 使用版本内置的模型数据，并需要手动更新。请按[无法联网的实例](upgrades.md#无法联网的实例)中的说明关闭出站检查。
 

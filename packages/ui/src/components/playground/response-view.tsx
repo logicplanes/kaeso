@@ -74,7 +74,7 @@ function Thinking({
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       className="flex min-w-0 flex-col"
     >
-      <BaseCollapsible.Trigger className="group/think -mx-8 flex h-32 min-w-0 cursor-pointer items-center gap-6 rounded-pill px-8 text-left text-small text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring-inset">
+      <BaseCollapsible.Trigger className="group/think flex h-32 min-w-0 cursor-pointer items-center gap-6 rounded-pill px-12 text-left text-small text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring-inset">
         <span className={cn("shrink-0 font-medium", live && "animate-pulse-quiet reduced:animate-none")}>{title}</span>
         <Icon
           icon={icons.chevronRight}
@@ -86,7 +86,7 @@ function Thinking({
         </span>
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
-        <div className="flex gap-12 pt-4 pb-8">
+        <div className="flex gap-12 pt-4 pb-8 pl-12">
           <span aria-hidden className="w-1 shrink-0 rounded-pill bg-line" />
           <Markdown text={text} size="small" tone="secondary" streaming={live} collapseAfter={0} wrapCode className="min-w-0 flex-1" />
         </div>

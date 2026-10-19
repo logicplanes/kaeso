@@ -208,6 +208,14 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     Ok(found.map(|c| (*c).into()))
 }
 
+pub async fn keeps_content(state: &AppState, project: Uuid) -> bool {
+    match settings(state, project).await {
+        Ok(Some(cfg)) => cfg.org_content && cfg.project_content,
+        Ok(None) => false,
+        Err(_) => true,
+    }
+}
+
 pub async fn forget(state: &AppState, project: Uuid) {
     state
         .caches
@@ -293,7 +301,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
     let usage = o.usage.clone().unwrap_or_default();
     let (_, cost) = crate::services::usage::costed(o);
     let progress = o.stream_progress.unwrap_or_default();
-    let content = cfg.org_content && cfg.project_content;
+    let content = o.content_kept && cfg.org_content && cfg.project_content;
     let request_body = o
         .request_body
         .as_ref()
@@ -344,7 +352,11 @@ pub async fn record(state: &AppState, o: &Outcome) {
         stream: o.stream,
         status: o.status,
         error_kind: o.error_kind.clone().unwrap_or_default(),
-        error_message: o.error_message.clone().unwrap_or_default(),
+        error_message: o
+            .error_message
+            .as_deref()
+            .map(kaeso_core::secret::redact_tokens)
+            .unwrap_or_default(),
         input_tokens: usage.input_tokens,
         output_tokens: usage.output_tokens,
         cache_read_tokens: usage.cache_read_tokens,

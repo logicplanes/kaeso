@@ -1,7 +1,7 @@
 import { Badge, Banner, Collapsible, JsonView, Link, Pill, Separator, Surface, Text, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
-import { Markdown, safeHref } from "./markdown";
+import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
 
 const roleLabel = (role: ConversationMessage["role"]): string =>
   ({

@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import type { ProjectView } from "../generated/types";
-import { allPages } from "../paging";
+import { allPages, unarchived } from "../paging";
 
 export const projectListKey = (org: string) => ["orgs", org, "project-list"] as const;
 
@@ -17,13 +17,14 @@ export const projectQuery = (org: string, project: string) =>
 
 export const orgProjectsQuery = (org: string, includeArchived = false) =>
   queryOptions({
-    queryKey: [...projectListKey(org), { includeArchived }],
+    queryKey: projectListKey(org),
     queryFn: (): Promise<ProjectView[]> =>
       allPages(async (after) =>
         data(
           await api.GET("/platform/v1/orgs/{org}/projects", {
-            params: { path: { org }, query: { limit: 100, include_archived: includeArchived, ...(after ? { after } : {}) } },
+            params: { path: { org }, query: { limit: 100, include_archived: true, ...(after ? { after } : {}) } },
           }),
         ),
       ),
+    ...(includeArchived ? {} : { select: unarchived<ProjectView> }),
   });

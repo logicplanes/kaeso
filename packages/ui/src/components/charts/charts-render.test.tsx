@@ -70,6 +70,10 @@ describe("TimeseriesChart", () => {
     const onRetry = vi.fn();
     const { rerender } = render(<TimeseriesChart aria-label="Spend" series={series(hours(4))} loading />);
     expect(screen.getByRole("group", { name: "Spend" })).not.toHaveTextContent("150");
+    rerender(<TimeseriesChart aria-label="Spend" series={[]} loading />);
+    expect(screen.queryByRole("group", { name: "Spend" })).not.toBeInTheDocument();
+    expect(screen.getByRole("figure", { name: "Spend" }).querySelector("svg")).toBeNull();
+    expect(screen.queryByText("No data for this period")).not.toBeInTheDocument();
     rerender(<TimeseriesChart aria-label="Spend" series={[{ id: "a", label: "A", points: [] }]} />);
     expect(screen.getByText("No data for this period")).toBeInTheDocument();
     rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4))} error="down" onRetry={onRetry} />);

@@ -29,6 +29,7 @@ The design system behind the components, in `node_modules/@logicplanes/kaeso-ui/
 | `foundations/typography.md`    | Setting text, numbers, ids or code                |
 | `foundations/shape.md`         | Choosing a radius, nesting surfaces               |
 | `foundations/elevation.md`     | Drawing a line, a ring or a raised surface        |
+| `foundations/layout.md`        | Placing anything on a page: one gutter, one edge  |
 | `foundations/motion.md`        | Animating anything, showing loading               |
 | `foundations/icons.md`         | Placing an icon                                   |
 | `foundations/writing.md`       | Writing any label, message, empty state or error  |
@@ -83,6 +84,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 9. **Use the icon vocabulary**: `icons.key`, `icons.model`, never an icon picked by look.
 10. **Copy follows the voice**: sentence case, a verb first on buttons, no exclamation points or emoji, errors that say what to do next.
 11. **Leave room.** Let the panel breathe: the components bring their own spacing, so don't pack screens with extra wrappers, borders or headings. Fewer elements, each one clear.
+12. **One edge per page.** Every box, from a button to a row's hover fill, starts on the 24px gutter, and the text inside a box 12px further in. Never pull a component into the gutter with a negative margin.
 
 ## Which component for which job
 

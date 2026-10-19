@@ -11,6 +11,7 @@ interface Sample {
   h: number;
   cx: number;
   cy: number;
+  top: number;
 }
 
 interface Motion {
@@ -37,6 +38,8 @@ interface Geometry {
   natural: number;
   cx: number;
   cy: number;
+  top: number;
+  bottom: number;
   fixed: string;
 }
 
@@ -62,7 +65,7 @@ window.kaesoResize = {
     const sample = () => {
       if (!box?.isConnected || !this.recording) return;
       const r = box.getBoundingClientRect();
-      samples.push({ t: Number(document.timeline.currentTime), w: r.width, h: r.height, cx: r.left + r.width / 2 - innerWidth / 2, cy: r.top + r.height / 2 - innerHeight / 2 });
+      samples.push({ t: Number(document.timeline.currentTime), w: r.width, h: r.height, cx: r.left + r.width / 2 - innerWidth / 2, cy: r.top + r.height / 2 - innerHeight / 2, top: r.top });
       requestAnimationFrame(() => painted.port2.postMessage(null));
     };
     painted.port1.onmessage = sample;
@@ -84,6 +87,8 @@ window.kaesoResize = {
       natural: Math.min(content, parseFloat(getComputedStyle(box).maxHeight)),
       cx: r.left + r.width / 2 - innerWidth / 2,
       cy: r.top + r.height / 2 - innerHeight / 2,
+      top: r.top,
+      bottom: innerHeight - r.bottom,
       fixed: box.style.height + box.style.width + box.style.minHeight + (frame?.style.height ?? "") + (frame?.style.minHeight ?? ""),
     };
   },
@@ -109,6 +114,19 @@ async function centredAtNaturalSize(dialog: Locator) {
   const g = await dialog.evaluate((box) => (globalThis as unknown as { kaesoResize: { geometry(el: typeof box): Geometry } }).kaesoResize.geometry(box));
   expect(Math.abs(g.cy)).toBeLessThanOrEqual(1);
   expect(Math.abs(g.cx)).toBeLessThanOrEqual(1);
+  expect(Math.abs(g.height - g.natural)).toBeLessThanOrEqual(1);
+  expect(g.fixed).toBe("");
+  return g;
+}
+
+const anchorTop = async (page: Page) => Number(await page.evaluate("Math.max(16, innerHeight * 0.12)"));
+
+async function anchoredAtNaturalSize(page: Page, dialog: Locator) {
+  await expect(dialog).not.toHaveAttribute("data-resizing");
+  const g = await dialog.evaluate((box) => (globalThis as unknown as { kaesoResize: { geometry(el: typeof box): Geometry } }).kaesoResize.geometry(box));
+  expect(Math.abs(g.top - (await anchorTop(page)))).toBeLessThanOrEqual(1);
+  expect(Math.abs(g.cx)).toBeLessThanOrEqual(1);
+  expect(g.bottom).toBeGreaterThanOrEqual(15);
   expect(Math.abs(g.height - g.natural)).toBeLessThanOrEqual(1);
   expect(g.fixed).toBe("");
   return g;
@@ -142,12 +160,19 @@ function stepsBack({ samples }: Motion, key: "h" | "w") {
 }
 
 function expectCentredAndSmooth(motion: Motion, key: "h" | "w" = "h") {
+  for (const s of motion.samples) expect(Math.abs(s.cy)).toBeLessThanOrEqual(1);
+  expectSmooth(motion, key);
+}
+
+function expectAnchoredAndSmooth(motion: Motion, top: number, key: "h" | "w" = "h") {
+  for (const s of motion.samples) expect(Math.abs(s.top - top)).toBeLessThanOrEqual(1);
+  expectSmooth(motion, key);
+}
+
+function expectSmooth(motion: Motion, key: "h" | "w") {
   const { samples, duration } = motion;
   expect(samples.length).toBeGreaterThan(3);
-  for (const s of samples) {
-    expect(Math.abs(s.cy)).toBeLessThanOrEqual(1);
-    expect(Math.abs(s.cx)).toBeLessThanOrEqual(1);
-  }
+  for (const s of samples) expect(Math.abs(s.cx)).toBeLessThanOrEqual(1);
   const trace = traceOf(motion, key);
   expect(duration).toBeGreaterThan(0);
   expect(Math.abs((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0)), trace).toBeGreaterThan(8);
@@ -166,7 +191,7 @@ for (const viewport of [
     test.describe(`${viewport.name}, ${colorScheme}`, () => {
       test.use({ colorScheme });
 
-      test("creating a key: each step at its own height, the key shown once in the same dialog, centered throughout", async ({ page }) => {
+      test("creating a key: each step at its own height, the key shown once in the same dialog, with its top edge held throughout", async ({ page }) => {
         await signInAsOwner(page);
         await openDefaultProject(page);
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -178,29 +203,30 @@ for (const viewport of [
         const dialog = page.getByRole("dialog", { name: "Create key" });
         await expect(dialog).toBeVisible();
         await dialog.getByLabel("Name").fill(`resize-${viewport.name}-${colorScheme}`);
-        const first = await centredAtNaturalSize(dialog);
+        const first = await anchoredAtNaturalSize(page, dialog);
         const heights = [first.height];
         for (const heading of ["When does it expire?", "What can it call?"]) {
           const motion = await record(page, () => footerButton(dialog, "Continue").click());
           await expect(dialog.getByRole("heading", { name: heading })).toBeVisible();
-          if (moved(motion)) expectCentredAndSmooth(motion);
-          heights.push((await centredAtNaturalSize(dialog)).height);
+          if (moved(motion)) expectAnchoredAndSmooth(motion, await anchorTop(page));
+          heights.push((await anchoredAtNaturalSize(page, dialog)).height);
         }
         const back = await record(page, () => footerButton(dialog, "Back").click());
-        expect(back.samples.every((s) => Math.abs(s.cy) <= 1)).toBe(true);
-        expect(Math.abs((await centredAtNaturalSize(dialog)).height - (heights[1] ?? 0))).toBeLessThanOrEqual(1);
+        const top = await anchorTop(page);
+        expect(back.samples.every((s) => Math.abs(s.top - top) <= 1)).toBe(true);
+        expect(Math.abs((await anchoredAtNaturalSize(page, dialog)).height - (heights[1] ?? 0))).toBeLessThanOrEqual(1);
         await footerButton(dialog, "Continue").click();
         await footerButton(dialog, "Continue").click();
         await expect(dialog.getByRole("heading", { name: "Models and limits" })).toBeVisible();
-        const before = await centredAtNaturalSize(dialog);
+        const before = await anchoredAtNaturalSize(page, dialog);
         const reveal = page.getByRole("dialog", { name: "Key created" });
         const morph = await record(page, async () => {
           await footerButton(dialog, "Create key").click();
           await expect(reveal).toBeVisible();
         });
-        expectCentredAndSmooth(morph, "h");
-        if (viewport.width > 760) expectCentredAndSmooth(morph, "w");
-        const after = await centredAtNaturalSize(reveal);
+        expectAnchoredAndSmooth(morph, top, "h");
+        if (viewport.width > 760) expectAnchoredAndSmooth(morph, top, "w");
+        const after = await anchoredAtNaturalSize(page, reveal);
         expect(after.height).toBeGreaterThan(before.height);
         if (viewport.width > 760) expect(after.width).toBe(720);
         await footerButton(reveal, "Done").click();
@@ -233,8 +259,9 @@ test("a dialog that jumps to its new size in one frame fails the smoothness chec
   });
   expect(moved(jump)).toBe(true);
   expect(travelTime(jump, "h"), traceOf(jump, "h")).toBeLessThan(animationTime(jump, "h") / 2);
-  expect(() => expectCentredAndSmooth(jump, "h")).toThrow();
-  await centredAtNaturalSize(reveal);
+  const top = await anchorTop(page);
+  expect(() => expectAnchoredAndSmooth(jump, top, "h")).toThrow();
+  await anchoredAtNaturalSize(page, reveal);
   await footerButton(reveal, "Done").click();
   await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
   await expect(reveal).toBeHidden();

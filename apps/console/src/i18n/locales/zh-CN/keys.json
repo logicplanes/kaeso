@@ -23,6 +23,7 @@
   "keys.id": "ID",
   "keys.key": "密钥",
   "keys.keys": "密钥",
+  "keys.listFailed": "无法加载密钥",
   "keys.loadFailed": "无法加载此密钥。",
   "keys.neverExpires": "永不过期",
   "keys.neverUsed": "从未使用",

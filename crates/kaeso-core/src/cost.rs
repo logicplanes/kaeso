@@ -11,12 +11,29 @@ const RAW_SCALE: u32 = 12;
 
 pub const COST_RAW_MAX: i128 = 10_i128.pow(38) - 1;
 
+const ONE_HOUR_WRITE_FACTOR: Decimal = Decimal::from_parts(2, 0, 0, false, 0);
+
+pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
+    prices
+        .input_price
+        .and_then(|p| p.checked_mul(ONE_HOUR_WRITE_FACTOR))
+        .or(prices.cache_write_price)
+}
+
 pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
+    let one_hour = usage
+        .cache_write_breakdown
+        .as_ref()
+        .map_or(0, |b| b.ephemeral_1h.min(usage.cache_write_tokens));
     let total = [
         (usage.input_tokens, prices.input_price),
         (usage.output_tokens, prices.output_price),
         (usage.cache_read_tokens, prices.cache_read_price),
-        (usage.cache_write_tokens, prices.cache_write_price),
+        (
+            usage.cache_write_tokens.saturating_sub(one_hour),
+            prices.cache_write_price,
+        ),
+        (one_hour, one_hour_cache_write_price(prices)),
     ]
     .into_iter()
     .try_fold(Decimal::ZERO, |sum, (tokens, price)| {
@@ -119,5 +136,32 @@ mod tests {
         assert_eq!(cost_from_raw(COST_RAW_MAX), Decimal::MAX);
         assert_eq!(cost_from_raw(-COST_RAW_MAX), Decimal::MIN);
         assert_eq!(cost_from_raw(i128::MAX), Decimal::MAX);
+    }
+
+    #[test]
+    fn one_hour_cache_writes_cost_twice_the_input_price() {
+        let prices = Fields {
+            input_price: Some(dec!(3)),
+            output_price: Some(dec!(15)),
+            cache_read_price: Some(dec!(0.3)),
+            cache_write_price: Some(dec!(3.75)),
+            ..Fields::default()
+        };
+        let mut u = Usage::default();
+        u.cache_write_tokens = 3_000_000;
+        assert_eq!(cost(&u, &prices), dec!(11.25));
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(1_000_000, 2_000_000));
+        assert_eq!(cost(&u, &prices), dec!(15.75));
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(0, 9_000_000));
+        assert_eq!(cost(&u, &prices), dec!(18));
+        let unpriced_input = Fields {
+            cache_write_price: Some(dec!(3.75)),
+            ..Fields::default()
+        };
+        assert_eq!(
+            one_hour_cache_write_price(&unpriced_input),
+            Some(dec!(3.75))
+        );
+        assert_eq!(one_hour_cache_write_price(&Fields::default()), None);
     }
 }

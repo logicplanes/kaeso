@@ -30,6 +30,7 @@ fn base(env: &Env) -> String {
 }
 
 async fn flush(env: &Env) {
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
     assert_eq!(env.app.state.logs.len(), 0, "the buffer drained");
 }
@@ -864,6 +865,7 @@ async fn requests_never_wait_for_clickhouse_and_drops_are_counted() {
         );
     }
     let state = &env.app.state;
+    state.in_flight.settled().await;
     assert!(!state.logs.is_empty());
     assert!(
         state.logs.dropped() > 0,
@@ -913,6 +915,7 @@ async fn long_metadata_counts_toward_the_log_buffer() {
         assert_eq!(r.status, StatusCode::NOT_FOUND);
     }
     let state = &env.app.state;
+    state.in_flight.settled().await;
     assert_eq!(
         state.logs.len(),
         0,
@@ -997,4 +1000,39 @@ async fn an_org_queues_only_a_few_log_deletions_at_once() {
         r.body["error"]["message"],
         "10 log deletions are still waiting; try again once they have run."
     );
+}
+
+#[tokio::test]
+async fn a_request_keeps_the_content_decision_it_started_with() {
+    let env = env(&[]).await;
+    let switch = |on: bool| {
+        let path = format!("{}/logs/settings", base(&env));
+        let cookie = env.owner.cookie.clone();
+        let app = &env.app;
+        async move {
+            let r = app
+                .call(
+                    Method::PATCH,
+                    &path,
+                    Some(json!({ "content_logging": on })),
+                    Some(&cookie),
+                )
+                .await;
+            assert_eq!(r.body["effective_content_logging"], on, "{:?}", r.body);
+        }
+    };
+    switch(false).await;
+    let mut gate = env.mock.gate();
+    let held = messages("claude-haiku-4-5", &format!("held {}", gate.marker()));
+    let sent = call(&env, "/v1/messages", Some(&env.key), true, Some(held));
+    let reply = async {
+        gate.wait_for(1).await;
+        switch(true).await;
+        gate.open();
+    };
+    let (r, ()) = tokio::join!(sent, reply);
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    flush(&env).await;
+    let entry = &logs(&env, "").await["data"][0];
+    assert_eq!(entry["has_content"], false, "{entry}");
 }

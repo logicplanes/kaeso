@@ -621,3 +621,69 @@ mod stream_props {
         }
     }
 }
+
+#[test]
+fn running_usage_from_chat_keeps_blocks_open_and_reaches_message_delta() {
+    let bytes = fixtures("openai_chat", "streams", "sse")
+        .into_iter()
+        .find(|(n, _)| n == "usage-every-chunk")
+        .unwrap()
+        .1;
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true));
+    let mut dec = crate::openai_chat::OpenAiChat::stream_decoder(&ctx);
+    let mut events = dec.feed(&bytes);
+    events.extend(dec.finish());
+    let out = encode_stream(&events);
+    let message = accumulate(&out);
+    assert_eq!(
+        message["content"],
+        json!([{"type": "text", "text": "Hello! How can I help?"}])
+    );
+    assert_eq!(message["stop_reason"], "end_turn");
+    assert_eq!(message["usage"]["input_tokens"], 12);
+    assert_eq!(message["usage"]["output_tokens"], 5);
+    let names: Vec<String> = crate::sse::parse_all(&out)
+        .unwrap()
+        .into_iter()
+        .filter_map(|i| match i {
+            crate::sse::SseItem::Event(e) => e.event,
+            _ => None,
+        })
+        .collect();
+    assert_eq!(names.iter().filter(|n| *n == "message_delta").count(), 1);
+    assert_eq!(
+        names.iter().filter(|n| *n == "content_block_stop").count(),
+        1
+    );
+}
+
+#[test]
+fn a_foreign_usage_report_between_deltas_only_updates_the_final_usage() {
+    let text = |d: &str| StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text(d.into())));
+    let usage = |output: u64| {
+        let mut d = ResponseDelta::new(None, Some(kaeso_kpp::Usage::new(5, output)));
+        d.extras = Extras::new(CHAT);
+        StreamEvent::ResponseDelta(d)
+    };
+    let events = [
+        StreamEvent::ResponseStart(ResponseStart::new("c", "m")),
+        StreamEvent::BlockStart(BlockStart::new(0, BlockHeader::Text)),
+        text("Hel"),
+        usage(1),
+        text("lo"),
+        usage(2),
+        StreamEvent::BlockStop(BlockStop::new(0)),
+        StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(kaeso_kpp::StopReason::EndTurn),
+            None,
+        )),
+        StreamEvent::ResponseStop(ResponseStop::new()),
+    ];
+    let message = accumulate(&encode_stream(&events));
+    assert_eq!(
+        message["content"],
+        json!([{"type": "text", "text": "Hello"}])
+    );
+    assert_eq!(message["stop_reason"], "end_turn");
+    assert_eq!(message["usage"]["output_tokens"], 2);
+}

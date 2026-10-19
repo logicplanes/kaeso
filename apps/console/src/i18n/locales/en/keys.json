@@ -23,6 +23,7 @@
   "keys.id": "Id",
   "keys.key": "Key",
   "keys.keys": "Keys",
+  "keys.listFailed": "The keys couldn't load",
   "keys.loadFailed": "Couldn't load this key.",
   "keys.neverExpires": "Never expires",
   "keys.neverUsed": "Never used",

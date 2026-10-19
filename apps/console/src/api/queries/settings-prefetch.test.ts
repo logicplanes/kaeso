@@ -54,9 +54,9 @@ describe("settings prefetch", () => {
       ["orgs", ORG, "platform-keys", { includeArchived: false }],
       ["orgs", ORG, "logs", "settings"],
       ["orgs", ORG, "logs", "storage"],
-      ["orgs", ORG, "project-list", { includeArchived: true }],
+      ["orgs", ORG, "project-list"],
       ["orgs", ORG, "logs", "deletions"],
-      ["orgs", ORG, "project-list", { includeArchived: true }],
+      ["orgs", ORG, "project-list"],
     ]);
   });
 
@@ -109,9 +109,9 @@ describe("settings prefetch by link", () => {
     prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=other`);
     expect(asked).toEqual([
       ["orgs", ORG, "logs", "storage"],
-      ["orgs", ORG, "project-list", { includeArchived: true }],
+      ["orgs", ORG, "project-list"],
       ["orgs", ORG, "logs", "deletions"],
-      ["orgs", ORG, "project-list", { includeArchived: true }],
+      ["orgs", ORG, "project-list"],
       ["orgs", ORG, "logs", "settings"],
     ]);
   });

@@ -21,6 +21,13 @@ export const orgMembersQuery = (org: string) =>
       ),
   });
 
+export const orgOwnersQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "members", { role: "owner" }],
+    queryFn: async (): Promise<MemberView[]> =>
+      data(await api.GET("/platform/v1/orgs/{org}/members", { params: { path: { org }, query: { role: "owner", limit: 3 } } })).data,
+  });
+
 export const invitesQuery = (org: string, pendingOnly: boolean) =>
   queryOptions({
     queryKey: ["orgs", org, "invites", { pendingOnly }],

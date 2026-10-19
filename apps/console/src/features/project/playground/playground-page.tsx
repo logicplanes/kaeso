@@ -10,7 +10,8 @@ import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { metricsOf } from "./metrics";
 import { modelRef, requestFor } from "./request";
-import { EFFORTS, MAX_COLUMNS, parametersOf, parseModels, searchOf, validatePlaygroundSearch, type PlaygroundSearch } from "./search";
+import { parametersOf, searchOf } from "./search";
+import { EFFORTS, MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
 import type { Turn } from "./responses";
 import { useThreads } from "./use-threads";
@@ -36,8 +37,7 @@ function writeDraft(project: string, text: string) {
 
 const same = (a: object, b: object) => JSON.stringify(a) === JSON.stringify(b);
 
-export function PlaygroundPage({ org, project, search: raw }: { org: string; project: string; search: Record<string, unknown> }) {
-  const search = useMemo(() => validatePlaygroundSearch(raw), [raw]);
+export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const catalogue = useQuery(playgroundModelsQuery(org, project));

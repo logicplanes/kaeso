@@ -83,19 +83,19 @@ describe("an organization scheduled for deletion", () => {
 
   it("names the owner to ask when the person can't restore it", async () => {
     inOrg({ org_state: "scheduled_for_deletion", org_deletion_due_at: DUE, rights: ["org.view", "members.view"] });
-    on(
-      "GET",
-      "orgs/:org/members",
-      paged([
-        member(),
-        member({
-          user: { id: "usr_grace", name: "Grace Hopper" },
-          grant: { role: { id: "developer", kind: "builtin", name: "Developer" }, rights: [], rights_added: [], rights_removed: [] },
-        }),
-      ]),
+    const everyone = [
+      member(),
+      member({
+        user: { id: "usr_grace", name: "Grace Hopper" },
+        grant: { role: { id: "developer", kind: "builtin", name: "Developer" }, rights: [], rights_added: [], rights_removed: [] },
+      }),
+    ];
+    on("GET", "orgs/:org/members", ({ query }: { query: URLSearchParams }) =>
+      paged(everyone.filter((m) => !query.get("role") || m.grant.role.id === query.get("role"))),
     );
     await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByText("It's read-only until 22 Oct 2026; ask Ada Okafor to restore it.")).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/members").map((r) => Object.fromEntries(r.query))).toEqual([{ role: "owner", limit: "3" }]);
     expect(screen.queryByRole("button", { name: "Restore organization" })).not.toBeInTheDocument();
   });
 

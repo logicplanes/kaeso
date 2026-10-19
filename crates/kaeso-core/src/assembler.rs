@@ -35,6 +35,7 @@ pub struct Assembler {
     extras: Extras,
     complete: bool,
     error: Option<KppError>,
+    blocks: bool,
 }
 
 impl std::fmt::Debug for Assembler {
@@ -143,11 +144,22 @@ impl Assembler {
             extras: Extras::default(),
             complete: false,
             error: None,
+            blocks: true,
+        }
+    }
+
+    pub fn without_blocks(origin: DialectId) -> Assembler {
+        Assembler {
+            blocks: false,
+            ..Assembler::new(origin)
         }
     }
 
     pub fn feed(&mut self, event: &StreamEvent) {
         match event {
+            StreamEvent::BlockStart(_) if !self.blocks => self.started = true,
+            StreamEvent::BlockDelta(_) | StreamEvent::BlockStop(_) | StreamEvent::Extra(_)
+                if !self.blocks => {}
             StreamEvent::ResponseStart(s) => {
                 self.started = true;
                 self.id.clone_from(&s.id);
@@ -200,7 +212,8 @@ impl Assembler {
             }
             StreamEvent::Error(e) => self.error = Some(e.clone()),
             StreamEvent::Extra(item) => self.unplaced.push(item.clone()),
-            other => self.unplaced.push(kept(self.origin, other)),
+            other if self.blocks => self.unplaced.push(kept(self.origin, other)),
+            _ => {}
         }
     }
 

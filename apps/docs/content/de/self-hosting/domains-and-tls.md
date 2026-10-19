@@ -57,7 +57,7 @@ Leiten Sie dann diese Pfade weiter:
 Richten Sie den Proxy für Kaeso ein:
 
 - Schalten Sie die Pufferung von Antworten für `/v1/` ab, damit gestreamte Antworten die Apps sofort erreichen.
-- Geben Sie `X-Forwarded-For` weiter. Das Gateway vertraut dem Header nur, wenn er von `KAESO_TRUSTED_PROXIES` kommt, standardmäßig den privaten Netzen. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
+- Geben Sie `X-Forwarded-For` weiter. Das Gateway vertraut dem Header nur, wenn er von `KAESO_TRUSTED_PROXIES` kommt. Das Compose-Paket setzt dafür die Loopback- und privaten Netze, die nur seine eigenen Container und die veröffentlichten Ports des Hosts erreichen. Anderswo ist es nur Loopback, setzen Sie es also auf die Adresse Ihres Proxys. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
 - Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
 - Leiten Sie den Metrik-Port 9100 nie weiter.
 

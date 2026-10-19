@@ -106,7 +106,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | `cargo test --workspace --all-features` | Jeden Test |
 | `cargo coverage-kpp` | Die Tests von `kaeso-kpp` und `kaeso-codecs` unter `cargo llvm-cov`, mit ihrer Coverage-Schwelle |
 | `cargo test --doc -p kaeso-kpp -p kaeso-codecs` | Die Beispiele in den READMEs beider Crates, ihrer Dokumentation auf docs.rs, die `cargo llvm-cov` nicht ausführt |
-| `cargo coverage-gateway` | Die Tests aller anderen Crates außer `kpp-conformance` und `xtask` unter `cargo llvm-cov nextest`, jeder Test in einem eigenen Prozess und alle gleichzeitig, mit ihrer Coverage-Schwelle |
+| `cargo coverage-gateway` | Die Tests aller anderen Crates außer `kpp-conformance` und `xtask` unter `cargo llvm-cov nextest`, jeder Test in einem eigenen Prozess und alle gleichzeitig, mit ihrer Coverage-Schwelle. Ein Test, der nach 5 Minuten noch läuft, wird beendet und schlägt fehl |
 | `cargo test -p xtask -p kpp-conformance` | Die Aufgaben des Repositorys und den Konformitätsserver, die die Coverage-Befehle auslassen |
 | `cargo deny check` | Lizenzen, Sicherheitshinweise, Verbote und Quellen jeder Abhängigkeit (`deny.toml`) |
 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` | Die strengere Richtlinie von KPP: keine Runtime- oder HTTP-Crates in der Bibliothek |
@@ -200,6 +200,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | --- | --- |
 | `[mock:fixture=NAME]` im Prompt | Antwortet mit dieser Fixture im Format des Anbieters; `providers/<id>/<name>` wählt die Aufzeichnung eines Anbieters |
 | `[mock:gate=NAME]` im Prompt | Hält die Anfrage fest, bis der Test das Gate öffnet |
+| `[mock:steps=NAME]` im Prompt | Sendet das erste Event eines Streams, dann ein weiteres bei jedem Schritt, den der Test das Gate weiterschaltet |
 | Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |
@@ -243,7 +244,7 @@ mkdir -p fuzz/corpus/decode_openai_chat
 cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
+Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 60 Sekunden bei jedem Pull Request, der KPP oder `fuzz/` ändert. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt `fuzz-crash-<target>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
 
 ## Continuous Integration
 
@@ -265,6 +266,8 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | OpenAPI document | `openapi.json` ist aktuell |
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
 | Fuzz targets | Die Fuzz-Targets bauen |
+| Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
+| Fuzz runs | Der Workflow **Fuzz** mit 60 Sekunden je Target, wenn sich KPP oder `fuzz/` geändert hat |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` und `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` für beide Compose-Dateien |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |
@@ -278,3 +281,5 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 Schlägt ein End-to-End-Shard fehl, führt der Job **End-to-end console report** oder **End-to-end showcase report** die Ergebnisse der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-console` oder `playwright-showcase`.
+
+Zwei Workflows laufen nach Zeitplan. **Fuzz** läuft jede Nacht, wie unter [Fuzzing](#fuzzing) beschrieben. **Audits** läuft jeden Montag: `cargo deny check` für den Workspace und KPP und `pnpm audit --audit-level high` für alle Abhängigkeiten, auch die für die Entwicklung. So fällt eine neue Sicherheitsmeldung auf, auch wenn sich nichts ändert.

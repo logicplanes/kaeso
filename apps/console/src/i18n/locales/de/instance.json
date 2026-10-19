@@ -256,7 +256,7 @@
   "instance.updates.channelHint": "Welche Releases diese Installation erhält.",
   "instance.updates.channelSaved": "Kanal gespeichert",
   "instance.updates.checkOffHint": "Die Prüfung ist in der Konfiguration des Gateways aus.",
-  "instance.updates.composeByHand": "Setzen Sie die Kaeso-Images in compose.yaml von Hand auf {version}.",
+  "instance.updates.composeByHand": "Laden Sie die compose.yaml von Kaeso {version} über die der Installation.",
   "instance.updates.confirmHint": "Kaeso ist etwa eine Minute nicht erreichbar; Apps erhalten einen Fehler mit der Bitte um Wiederholung.",
   "instance.updates.confirmTitle": "Auf Kaeso {version} aktualisieren?",
   "instance.updates.deletedUser": "Gelöschter Benutzer",

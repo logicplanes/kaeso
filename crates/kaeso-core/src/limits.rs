@@ -3,6 +3,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use time::{Date, Month, OffsetDateTime, Time};
 use uuid::Uuid;
 
+use crate::catalogue::Fields;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Kind {
@@ -291,6 +293,88 @@ pub fn applicable(
         .collect()
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct WorstCase {
+    pub tokens: i64,
+    pub nano_usd: i64,
+    pub bounded: bool,
+}
+
+fn asks_for_one_hour_cache(request: &kaeso_kpp::Request) -> bool {
+    let kaeso_kpp::Request::Generate(g) = request else {
+        return false;
+    };
+    let one_hour = |c: Option<&kaeso_kpp::CacheHint>| {
+        c.is_some_and(|c| c.ttl == Some(kaeso_kpp::CacheTtl::OneHour))
+    };
+    let top_level = g
+        .extras
+        .fields
+        .get("cache_control")
+        .and_then(|v| v.to_value().ok())
+        .is_some_and(|v| v.get("ttl").and_then(serde_json::Value::as_str) == Some("1h"));
+    top_level
+        || g.all_blocks().any(|b| one_hour(b.cache()))
+        || g.tools.iter().any(|t| match t {
+            kaeso_kpp::ToolDef::Function(f) => one_hour(f.cache.as_ref()),
+            _ => false,
+        })
+}
+
+impl WorstCase {
+    pub fn of(request: &kaeso_kpp::Request, body_bytes: usize, prices: &Fields) -> WorstCase {
+        let context = prices.context_limit;
+        let within = |n: u64| context.map_or(n, |c| n.min(c));
+        let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
+        let input = within(crate::estimate::tokens_of_bytes(bytes));
+        let output = match request {
+            kaeso_kpp::Request::Generate(g) => g
+                .sampling
+                .max_output_tokens
+                .map(u64::from)
+                .or(prices.output_limit)
+                .or(context)
+                .map(within),
+            kaeso_kpp::Request::Embed(_) => Some(0),
+            _ => return WorstCase::FREE,
+        };
+        let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
+        let mut priced = prices.clone();
+        let one_hour = asks_for_one_hour_cache(request)
+            .then(|| crate::cost::one_hour_cache_write_price(prices))
+            .flatten();
+        priced.input_price = [
+            prices.input_price,
+            prices.cache_read_price,
+            prices.cache_write_price,
+            one_hour,
+        ]
+        .into_iter()
+        .flatten()
+        .max();
+        let total = crate::cost::total_tokens(&usage);
+        WorstCase {
+            tokens: i64::try_from(total).unwrap_or(i64::MAX),
+            nano_usd: crate::cost::nano_usd(crate::cost::cost(&usage, &priced)),
+            bounded: output.is_some(),
+        }
+    }
+
+    pub const FREE: WorstCase = WorstCase {
+        tokens: 0,
+        nano_usd: 0,
+        bounded: true,
+    };
+
+    pub fn units(&self, kind: Kind) -> i64 {
+        match kind {
+            Kind::RequestRate => 0,
+            Kind::TokenRate | Kind::TokenBudget => self.tokens,
+            Kind::SpendBudget => self.nano_usd,
+        }
+    }
+}
+
 pub fn exceeds(child: &Limit, parent: &Limit) -> bool {
     child.kind == parent.kind
         && child.period == parent.period
@@ -412,6 +496,85 @@ mod tests {
         assert!(validate(&tokens).is_ok());
         let rate = limit(p, Kind::RequestRate, Period::Minute, dec!(1000000000000));
         assert!(validate(&rate).is_ok());
+    }
+
+    fn priced(input: &str, output: &str) -> Fields {
+        Fields {
+            input_price: Some(input.parse().unwrap()),
+            output_price: Some(output.parse().unwrap()),
+            output_limit: Some(64_000),
+            ..Fields::default()
+        }
+    }
+
+    fn generate(max_output: Option<u32>) -> kaeso_kpp::Request {
+        let mut g = kaeso_kpp::GenerateRequest::new("m");
+        g.sampling.max_output_tokens = max_output;
+        kaeso_kpp::Request::Generate(g)
+    }
+
+    #[test]
+    fn a_request_that_asks_for_one_hour_caching_reserves_its_write_price() {
+        let mut prices = priced("3", "15");
+        prices.cache_write_price = Some(dec!(3.75));
+        let plain = WorstCase::of(&generate(Some(0)), 4000, &prices);
+        assert_eq!(plain.nano_usd, 1000 * 3750);
+        let kaeso_kpp::Request::Generate(mut g) = generate(Some(0)) else {
+            unreachable!()
+        };
+        let mut system = kaeso_kpp::TextBlock::new("You are terse.");
+        system.cache = Some(kaeso_kpp::CacheHint::new(Some(
+            kaeso_kpp::CacheTtl::OneHour,
+        )));
+        g.system.push(kaeso_kpp::Block::Text(system));
+        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices);
+        assert_eq!(one_hour.nano_usd, 1000 * 6000);
+    }
+
+    #[test]
+    fn a_request_costs_at_most_its_input_and_its_output_limit() {
+        let prices = priced("1", "5");
+        let w = WorstCase::of(&generate(Some(1000)), 4000, &prices);
+        assert_eq!(
+            w,
+            WorstCase {
+                tokens: 2000,
+                nano_usd: 1000 * 1000 + 1000 * 5000,
+                bounded: true
+            }
+        );
+        assert_eq!(w.units(Kind::TokenBudget), 2000);
+        assert_eq!(w.units(Kind::TokenRate), 2000);
+        assert_eq!(w.units(Kind::SpendBudget), 6_000_000);
+        assert_eq!(w.units(Kind::RequestRate), 0);
+
+        let model_cap = WorstCase::of(&generate(None), 4000, &prices);
+        assert_eq!(model_cap.tokens, 65_000);
+        assert!(model_cap.bounded);
+
+        let mut cached = prices.clone();
+        cached.cache_write_price = Some(dec!(1.25));
+        assert_eq!(
+            WorstCase::of(&generate(Some(0)), 4000, &cached).nano_usd,
+            1250 * 1000
+        );
+
+        let windowed = Fields {
+            context_limit: Some(1500),
+            ..Fields::default()
+        };
+        let w = WorstCase::of(&generate(None), 40_000, &windowed);
+        assert_eq!((w.tokens, w.nano_usd, w.bounded), (3000, 0, true));
+
+        let unknown = WorstCase::of(&generate(None), 400, &Fields::default());
+        assert_eq!((unknown.tokens, unknown.bounded), (100, false));
+
+        let embed = kaeso_kpp::Request::Embed(kaeso_kpp::EmbedRequest::new("e", Vec::new()));
+        let w = WorstCase::of(&embed, 400, &prices);
+        assert_eq!((w.tokens, w.nano_usd, w.bounded), (100, 100_000, true));
+
+        let count = kaeso_kpp::Request::CountTokens(kaeso_kpp::GenerateRequest::new("m"));
+        assert_eq!(WorstCase::of(&count, 400, &prices), WorstCase::FREE);
     }
 
     #[test]

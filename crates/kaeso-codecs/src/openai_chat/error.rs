@@ -76,9 +76,11 @@ pub(crate) fn error_body(err: &KppError) -> Value {
 
 fn own_raw(err: &KppError) -> Option<&Value> {
     let from_chat = err.origin.as_ref().is_some_and(|o| o.is(DIALECT));
-    err.raw
-        .as_ref()
-        .filter(|raw| from_chat && raw.get("error").is_some_and(Value::is_object))
+    err.raw.as_ref().filter(|raw| {
+        from_chat
+            && (raw.get("error").is_some_and(Value::is_object)
+                || raw.get("choices").is_some_and(Value::is_array))
+    })
 }
 
 pub(crate) fn encode_error(err: &KppError) -> EncodedError {

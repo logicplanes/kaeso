@@ -743,3 +743,229 @@ fn a_held_tool_call_is_released_when_the_stream_breaks() {
         ["start", "block_start 0", "delta 0", "error"]
     );
 }
+
+fn running_usage_stream(final_usage: bool) -> String {
+    let chunk = |delta: Value, finish: Value, completion: Option<u64>| {
+        let mut c = json!({"id":"c","object":"chat.completion.chunk","created":1,"model":"m",
+            "choices":[{"index":0,"delta":delta,"finish_reason":finish}]});
+        if let Some(n) = completion {
+            c["usage"] = json!({"prompt_tokens":5,"completion_tokens":n,"total_tokens":5 + n});
+        }
+        format!("data: {c}\n\n")
+    };
+    [
+        chunk(
+            json!({"role":"assistant","content":"Hel"}),
+            Value::Null,
+            Some(1),
+        ),
+        chunk(json!({"content":"lo"}), Value::Null, Some(2)),
+        chunk(json!({}), json!("stop"), final_usage.then_some(3)),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat()
+}
+
+fn usage_deltas(events: &[StreamEvent]) -> Vec<(Option<StopReason>, u64)> {
+    events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => {
+                Some((d.stop.clone(), d.usage.as_ref()?.output_tokens))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn running_usage_is_reported_once_after_the_last_block_stops() {
+    let sse = running_usage_stream(true);
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        [
+            "start",
+            "block_start 0",
+            "delta 0",
+            "delta 0",
+            "block_stop 0",
+            "response_delta",
+            "stop"
+        ]
+    );
+    assert_eq!(usage_deltas(&events), [(Some(StopReason::EndTurn), 3)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+}
+
+#[test]
+fn running_usage_without_a_final_report_goes_out_before_the_stream_stops() {
+    let sse = running_usage_stream(false);
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        [
+            "start",
+            "block_start 0",
+            "delta 0",
+            "delta 0",
+            "block_stop 0",
+            "response_delta",
+            "response_delta",
+            "stop"
+        ]
+    );
+    let stops: Vec<_> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => Some(d.stop.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(stops, [Some(StopReason::EndTurn), None]);
+    assert_eq!(usage_deltas(&events), [(None, 2)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+}
+
+#[test]
+fn a_stream_with_running_usage_replays_byte_for_byte() {
+    let bytes = fixture("usage-every-chunk");
+    let events = decode_whole(&bytes);
+    let last_block_stop = events
+        .iter()
+        .rposition(|e| matches!(e, StreamEvent::BlockStop(_)))
+        .unwrap();
+    let with_usage: Vec<usize> = events
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| matches!(e, StreamEvent::ResponseDelta(d) if d.usage.is_some()))
+        .map(|(i, _)| i)
+        .collect();
+    assert!(
+        with_usage.iter().all(|i| *i > last_block_stop),
+        "{events:?}"
+    );
+    assert_sse_eq("usage-every-chunk", &bytes, &encode(&events, true));
+    let hidden = String::from_utf8(encode(&events, false)).unwrap();
+    assert!(!hidden.contains("usage"), "{hidden}");
+    assert!(hidden.contains("help?"), "{hidden}");
+}
+
+#[test]
+fn running_usage_on_a_chunk_without_content_is_held_and_hidden_from_apps_that_did_not_ask() {
+    let sse = [
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":1,\"total_tokens\":5}}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: [DONE]\n\n",
+    ]
+    .concat();
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(usage_deltas(&events), [(None, 1)]);
+    assert_sse_eq("replay", sse.as_bytes(), &encode(&events, true));
+    let hidden = encode(&events, false);
+    let text = String::from_utf8(hidden.clone()).unwrap();
+    assert!(!text.contains("usage"), "{text}");
+    let chunks: Vec<Value> = frames(&hidden)
+        .into_iter()
+        .filter(Value::is_object)
+        .collect();
+    assert_eq!(chunks.len(), 2, "{text}");
+    assert!(
+        chunks
+            .iter()
+            .all(|c| c["choices"].as_array().is_some_and(|a| !a.is_empty())),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_error_inside_a_chunk_with_choices_ends_the_stream_with_an_error() {
+    let bytes = fixture("error-in-chunk");
+    let events = decode_whole(&bytes);
+    assert_eq!(
+        kinds(&events),
+        ["start", "block_start 0", "delta 0", "delta 0", "error"]
+    );
+    let StreamEvent::Error(err) = events.last().unwrap() else {
+        unreachable!()
+    };
+    assert_eq!(err.message, "Rate limit exceeded");
+    assert!(!events.iter().any(|e| matches!(
+        e,
+        StreamEvent::ResponseDelta(_) | StreamEvent::ResponseStop(_)
+    )));
+    assert_sse_eq("error-in-chunk", &bytes, &encode(&events, false));
+}
+
+#[test]
+fn finish_reason_error_without_details_is_a_provider_error() {
+    let sse = concat!(
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"error\"}]}\n\n",
+    );
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        ["start", "block_start 0", "delta 0", "error"]
+    );
+    let StreamEvent::Error(err) = events.last().unwrap() else {
+        unreachable!()
+    };
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+    assert!(err.message.contains("finish_reason"), "{}", err.message);
+    assert_sse_eq("finish-error", sse.as_bytes(), &encode(&events, false));
+}
+
+#[test]
+fn a_second_tool_call_at_the_same_index_starts_a_block_of_its_own() {
+    let chunk = |delta: Value, finish: Value| {
+        let c = json!({"id":"c","object":"chat.completion.chunk","created":1,"model":"m",
+            "choices":[{"index":0,"delta":delta,"finish_reason":finish}]});
+        format!("data: {c}\n\n")
+    };
+    let call = |id: &str, name: &str, args: &str| json!({"tool_calls":[{"index":0,"id":id,"type":"function","function":{"name":name,"arguments":args}}]});
+    let sse = [
+        chunk(json!({"role":"assistant","content":null}), Value::Null),
+        chunk(call("call_1", "get_weather", "{\"city\":"), Value::Null),
+        chunk(
+            json!({"tool_calls":[{"index":0,"function":{"arguments":"\"Oslo\"}"}}]}),
+            Value::Null,
+        ),
+        chunk(
+            call("call_2", "get_time", "{\"zone\":\"UTC\"}"),
+            Value::Null,
+        ),
+        chunk(json!({}), json!("tool_calls")),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat();
+    let events = decode_whole(sse.as_bytes());
+    assert_eq!(
+        tool_headers(&events),
+        [
+            ("call_1".to_owned(), "get_weather".to_owned()),
+            ("call_2".to_owned(), "get_time".to_owned())
+        ]
+    );
+    let first_stop = events
+        .iter()
+        .position(|e| matches!(e, StreamEvent::BlockStop(s) if s.index == 0))
+        .unwrap();
+    let second_start = events
+        .iter()
+        .position(|e| matches!(e, StreamEvent::BlockStart(s) if s.index == 1))
+        .unwrap();
+    assert!(first_stop < second_start, "{events:?}");
+    assert_sse_eq("same-index", sse.as_bytes(), &encode(&events, false));
+    let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+    let mut enc = crate::anthropic_messages::AnthropicMessages::stream_encoder(&ctx);
+    let mut out = Vec::new();
+    for e in &events {
+        out.extend(enc.encode(e).unwrap());
+    }
+    let text = String::from_utf8(out).unwrap();
+    assert!(text.contains("\"id\":\"call_1\""), "{text}");
+    assert!(text.contains("\"id\":\"call_2\""), "{text}");
+    assert!(text.contains("{\\\"city\\\":\\\"Oslo\\\"}"), "{text}");
+}

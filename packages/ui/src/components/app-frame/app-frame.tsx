@@ -12,7 +12,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -136,7 +136,7 @@ function PhoneBar({
   const t = useUiText();
   return (
     <Bar data-phone-bar="" className="shrink-0 bg-panel safe-area-bar lg:hidden">
-      <div className="mt-8 flex h-52 items-center justify-between pr-20 pl-28">
+      <div className="mt-8 flex h-52 items-center justify-between px-24">
         <BrandWordmark href={href} label={label} />
         <span className="flex items-center">
           {actions}
@@ -268,13 +268,15 @@ export interface AppFrameBodyProps extends HTMLAttributes<HTMLDivElement> {
   padding?: keyof typeof KAESO_APP_FRAME_BODY_VARIANTS.padding | undefined;
 }
 
-const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody({ className, padding = "none", ...props }, ref) {
+const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody({ className, padding = "none", children, ...props }, ref) {
   return (
     <div
       ref={ref}
       className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet", KAESO_APP_FRAME_BODY_VARIANTS.padding[padding].classes, className)}
       {...props}
-    />
+    >
+      <GutterContent padded={padding === "page"}>{children}</GutterContent>
+    </div>
   );
 });
 Body.displayName = "AppFrame.Body";
@@ -288,7 +290,7 @@ export interface SettingsPageProps extends Omit<HTMLAttributes<HTMLDivElement>, 
 const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrameSettings({ title, description, actions, className, children, ...props }, ref) {
   return (
     <Body ref={ref} className="relative">
-      <MenuButton className="absolute top-10 left-12 z-10" />
+      <MenuButton className="absolute top-10 left-24 z-10" />
       <div className={cn("mx-auto w-full max-w-settings px-24 pt-64 pb-96", className)} {...props}>
         <header className="flex flex-col gap-8">
           <div className="flex items-start justify-between gap-16">
@@ -298,7 +300,9 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
           {description && <p className="text-body-lg font-regular text-fg-secondary">{description}</p>}
         </header>
         <div className="mt-8">
-          <InsetContent>{children}</InsetContent>
+          <InsetContent>
+            <GutterContent>{children}</GutterContent>
+          </InsetContent>
         </div>
       </div>
     </Body>

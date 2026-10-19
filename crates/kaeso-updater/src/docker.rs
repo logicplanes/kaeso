@@ -29,6 +29,11 @@ pub enum DockerError {
     },
     #[error("Docker's answer to {0} does not parse")]
     Parse(String),
+    #[error("the updater refuses to {what}: {why}")]
+    Forbidden {
+        what: String,
+        why: crate::guard::Refused,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -209,6 +214,10 @@ impl Docker {
 
     pub async fn pull(&self, image: &Image) -> Result<(), DockerError> {
         let what = format!("pull {}", image.reference());
+        crate::guard::image(image).map_err(|why| DockerError::Forbidden {
+            what: what.clone(),
+            why,
+        })?;
         let path = format!(
             "images/create?fromImage={}&tag={}",
             encode(&image.name),
@@ -245,7 +254,16 @@ impl Docker {
             .map(|_| ())
     }
 
-    pub async fn create(&self, name: &str, spec: &Value) -> Result<String, DockerError> {
+    pub async fn create(
+        &self,
+        name: &str,
+        spec: &Value,
+        replaced: &Value,
+    ) -> Result<String, DockerError> {
+        crate::guard::container(name, spec, replaced).map_err(|why| DockerError::Forbidden {
+            what: format!("create {name}"),
+            why,
+        })?;
         let out = self
             .answered(
                 Method::POST,

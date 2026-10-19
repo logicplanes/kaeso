@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
 
@@ -6,7 +7,6 @@ use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::Response;
 use kaeso_codecs::dispatch;
 use kaeso_core::catalogue::capability::model_info;
-use kaeso_core::catalogue::resolve::resolve;
 use kaeso_core::catalogue::{Effective, Entry};
 use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelLifecycle, ModelList};
 use kaeso_store::pg::catalogue::ProjectModels;
@@ -42,20 +42,19 @@ async fn visible(
     let models = project_models(state, key.project_id).await?;
     let access = models.access(Some(key.id), key.user_id, key.service_account_id);
     let mut out = Vec::new();
-    let mut listed = Vec::new();
-    for entry in &models.entries {
+    let mut listed = HashMap::new();
+    for entry in models.catalogue.entries() {
         if !access.allows(entry.id) || entry.is_unavailable() {
             continue;
         }
         if let Some(eff) = crate::services::catalogue::effective(state, entry) {
-            let name =
-                crate::services::catalogue::request_name(entry, &models.entries, &models.aliases);
+            let name = crate::services::catalogue::request_name(entry, &models.catalogue);
             out.push(info(state, &name, entry, &eff));
-            listed.push((entry, eff));
+            listed.entry(entry.id).or_insert((entry, eff));
         }
     }
-    for alias in &models.aliases {
-        if let Some((entry, eff)) = listed.iter().find(|(e, _)| e.id == alias.target) {
+    for alias in models.catalogue.aliases() {
+        if let Some((entry, eff)) = listed.get(&alias.target) {
             out.push(info(state, &alias.name, entry, eff));
         }
     }
@@ -137,7 +136,7 @@ async fn get_inner(
             format!("The model `{id}` does not exist or this key may not use it."),
         )
     };
-    let (entry, _) = resolve(id, &models.entries, &models.aliases).map_err(|_| not_found())?;
+    let (entry, _) = models.catalogue.resolve(id).map_err(|_| not_found())?;
     if !models
         .access(Some(key.id), key.user_id, key.service_account_id)
         .allows(entry.id)

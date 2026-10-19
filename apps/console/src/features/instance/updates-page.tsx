@@ -139,8 +139,12 @@ function blocked(u: UpdatesView): string | null {
 }
 
 function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
+  const download = `https://github.com/logicplanes/kaeso/releases/download/v${latest.version}`;
   const commands = [
-    `curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v${latest.version}/compose.yaml`,
+    `curl -fsSLO ${download}/compose.yaml`,
+    `curl -fsSLO ${download}/release.json`,
+    "gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod",
+    'echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -',
     "docker compose pull",
     "docker compose up -d --wait",
   ].join("\n");

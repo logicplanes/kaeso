@@ -28,15 +28,18 @@ export const keysPageQuery = (org: string, project: string, filter: KeyFilter = 
       ),
   });
 
-export const allKeysQuery = (org: string, project: string, filter: KeyFilter = {}) =>
+const unarchivedKeys = (keys: KeyView[]): KeyView[] => keys.filter((k) => k.state !== "archived");
+
+export const allKeysQuery = (org: string, project: string, { include_archived, ...owner }: KeyFilter = {}) =>
   queryOptions({
-    queryKey: ["orgs", org, "projects", project, "keys", "all", filter],
+    queryKey: ["orgs", org, "projects", project, "keys", "all", owner],
     queryFn: (): Promise<KeyView[]> =>
       allPages(async (after) =>
         data(
           await api.GET("/platform/v1/orgs/{org}/projects/{project}/keys", {
-            params: { path: { org, project }, query: { ...filter, limit: 100, ...(after ? { after } : {}) } },
+            params: { path: { org, project }, query: { ...owner, include_archived: true, limit: 100, ...(after ? { after } : {}) } },
           }),
         ),
       ),
+    ...(include_archived ? {} : { select: unarchivedKeys }),
   });

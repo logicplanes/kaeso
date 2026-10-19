@@ -556,6 +556,23 @@ describe("Live updates", () => {
     expect(shownEndpoints()).toEqual(["/v1/chat/completions"]);
   });
 
+  it("ends the list at the newest requests when a burst no longer reaches the ones shown", async () => {
+    signedIn();
+    projectData();
+    on("GET", LOGS, ({ query }: { query: URLSearchParams }) => {
+      if (!query.get("from")?.startsWith("2026-10-15T11:58")) return listPage([logRow()], "cur_2");
+      const n = Number(query.get("after") ?? 0);
+      return listPage([logRow({ id: `req_burst_${n}`, endpoint: "/v1/embeddings", started_at: "2026-10-15T11:59:00Z" })], String(n + 1));
+    });
+    const { user } = await renderApp(projectPath("logs"));
+    await screen.findByRole("button", { name: "Load more" });
+    await goLive(user);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    await waitFor(() => expect(shownEndpoints()).toEqual(Array(5).fill("/v1/embeddings")));
+    expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
+  });
+
   it("shows a request once when the first page arrives after it came in live", async () => {
     signedIn();
     projectData();

@@ -13,12 +13,14 @@ const pills = (
 );
 
 describe("PillTabs", () => {
-  it("hangs the first pill's padding outside a padded column, so its label starts on the column's edge", () => {
+  it("puts the first pill's fill on the column's edge, in a padded column too, so it lines up with the controls under it", () => {
     const { rerender } = render(pills);
-    expect(screen.getByRole("tablist")).toHaveClass("-m-4");
-    expect(screen.getByRole("tablist")).not.toHaveClass("-ml-16");
+    const list = screen.getByRole("tablist");
+    expect(list).toHaveClass("-m-4", "p-4");
+    expect(list.className).not.toMatch(/-ml-\d+/);
     rerender(<InsetContent>{pills}</InsetContent>);
-    expect(screen.getByRole("tablist")).toHaveClass("-ml-16");
+    expect(screen.getByRole("tablist")).toHaveClass("-m-4", "p-4");
+    expect(screen.getByRole("tablist").className).not.toMatch(/-ml-\d+/);
   });
   it("leaves underline tabs on the edge", () => {
     render(

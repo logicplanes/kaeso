@@ -991,5 +991,7 @@
   "The release's stored artwork, e.g. from `nextReleaseArt`; it always draws the same picture and wins over `seed`.": "版本保存的配图，例如来自 `nextReleaseArt`；它始终生成相同的图像，并优先于 `seed`。",
   "The artwork's aspect ratio.": "图像的宽高比。",
   "Large text on the artwork, e.g. the version number.": "图像上的大字，例如版本号。",
-  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "文字前同色的标记，例如“已是最新”使用 `icons.success`。"
+  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "文字前同色的标记，例如“已是最新”使用 `icons.success`。",
+  "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.": "显示位置：居中，或在内容高度变化时固定上边缘，使标题不会跳动。",
+  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "显示位置：居中，或为高度不同的层级固定上边缘。"
 }

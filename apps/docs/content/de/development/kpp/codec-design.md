@@ -42,7 +42,7 @@ stateDiagram-v2
 - **Blockindizes** gehören KPP selbst: 0, 1, 2, … in der Reihenfolge, in der Blöcke beginnen. Blöcke dürfen sich überlappen (OpenAI streamt parallele Tool-Aufrufe so), daher nennt jedes Event seinen Block.
 - **Jedes Lifecycle-Event trägt `Extras`**, sodass eine Wiedergabe im selben Dialekt die ursprünglichen Events exakt reproduziert, einschließlich Feldern einzelner Events wie OpenAIs `obfuscation`.
 - **Fehler werden im Stream gemeldet:** erst die bis dahin dekodierten Events, dann ein abschließendes `StreamEvent::Error`, sodass nichts verloren geht, was zuvor im selben Chunk dekodiert wurde.
-- **Die Reihenfolge ändert sich nie, aber Events können zurückgehalten werden.** OpenAI-kompatible Anbieter senden die `id` und das `model` der Antwort oder die `id` und den `name` eines Tool-Aufrufs teils erst in einem späteren Chunk. Der Decoder für OpenAI Chat Completions hält dann das `ResponseStart` und die Chunks ohne Inhalt zurück, bis ein Chunk diese Werte oder Inhalt trägt. Das `BlockStart` eines Tool-Aufrufs hält er mit jedem Event danach zurück, bis dessen `id` und `name` beide angekommen sind, der Block endet oder der Stream endet oder abbricht ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)).
+- **Die Reihenfolge ändert sich nie, aber Events können zurückgehalten werden.** OpenAI-kompatible Anbieter senden die `id` und das `model` der Antwort oder die `id` und den `name` eines Tool-Aufrufs teils erst in einem späteren Chunk. Der Decoder für OpenAI Chat Completions hält dann das `ResponseStart` und die Chunks ohne Inhalt zurück, bis ein Chunk diese Werte oder Inhalt trägt. Das `BlockStart` eines Tool-Aufrufs hält er mit jedem Event danach zurück, bis dessen `id` und `name` beide angekommen sind, der Block endet oder der Stream endet oder abbricht ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)). Nutzung, die ein Anbieter sendet, solange noch Blöcke offen sind, hält er zurück, bis sie enden; `ResponseDelta`s kommen daher immer nach dem letzten `BlockStop`.
 
 ### Stream-Encoder
 
@@ -53,7 +53,8 @@ Jeder Stream-Encoder kann außerdem einen Keepalive-Frame schreiben; wann, steht
 - der erste Block, der beginnt, ist aktiv und wird geschrieben, sobald er ankommt;
 - Blöcke, die beginnen, während ein anderer aktiv ist, warten und werden in Startreihenfolge gepuffert;
 - stoppt der aktive Block, wird der nächste wartende geschrieben, mit seinem Start, seinen gepufferten Deltas und seinem Stopp, falls dieser schon kam;
-- ein `ResponseDelta` oder `ResponseStop` schließt zuerst jeden offenen Block, und mehrere `ResponseDelta`s werden zu einem `message_delta` zusammengeführt, weil die SDKs `stop_reason` mit jedem einzelnen überschreiben.
+- ein `ResponseDelta` mit einem Stoppgrund oder `ResponseStop` schließt zuerst jeden offenen Block, und mehrere `ResponseDelta`s werden zu einem `message_delta` zusammengeführt, weil die SDKs `stop_reason` mit jedem einzelnen überschreiben;
+- ein `ResponseDelta` eines anderen Dialekts ohne Stoppgrund aktualisiert nur die Nutzung, die das abschließende `message_delta` meldet, und lässt die Blöcke offen.
 
 Anthropic-Indizes werden in der Reihenfolge vergeben, in der Blöcke geschrieben werden. Ein Stream, der nicht mit `ResponseStart` beginnt, bekommt ein `message_start` mit leerer ID.
 
