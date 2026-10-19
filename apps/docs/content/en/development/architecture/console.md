@@ -48,7 +48,7 @@ The console has no styles of its own. `@logicplanes/kaeso-ui` provides every vis
 
 The router splits routes (`autoCodeSplitting`), so a page's code loads with the page. The build rewrites imports from `@logicplanes/kaeso-ui` to the library's per-component entry points, and each `icons.name` to that icon's own import (`uiEntryImports` in `vite.config.ts`). A page then carries only the components and icons it draws.
 
-What the first paint doesn't need loads when it is used: the toaster, the command palette, the recent sign-in dialog, the shortcuts list, "Create organization", the sidebar's menus, tooltips and the date picker's calendar. The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The overview's breakdown and the sign-in steps after the email address load alongside the data they wait for.
+What the first paint doesn't need loads when it is used: the toaster, the command palette, the recent sign-in dialog, the shortcuts list, "Create organization", the sidebar's menus, tooltips and the date picker's calendar. The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A request log, a project's audit log and a project's overview start their data in the route's loader, from a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load.
 
 `pnpm build` fails when a route's first paint grows past its ceiling in `scripts/budget.mjs`, or when page code from `src/features` reaches the entry. To get back under it:
 

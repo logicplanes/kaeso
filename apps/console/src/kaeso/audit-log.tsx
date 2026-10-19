@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   Avatar,
@@ -73,55 +73,60 @@ export function AuditLog({
   const { event, ...filters } = search;
   const log = useInfiniteQuery(auditLogQuery(scope, filters));
   const [target, setTarget] = useState(filters.target ?? "");
-  const rows = log.data?.pages.flatMap((p) => p.data) ?? [];
+  const rows = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const set = (patch: SearchPatch<AuditSearch>) => onSearch(patchSearch(search, patch));
   const filtered = !!(filters.actor || filters.action || filters.target || filters.from);
 
-  const columns = [
-    col.custom(
-      { id: "time", header: t("kaeso.audit.time", "Time"), size: TIME_WIDTH[locale()], priority: 1 },
-      (r: AuditEventView) => r.at,
-      (v: string) => (
-        <Text tabular>
-          <time dateTime={v}>{eventTime(v)}</time>
-        </Text>
-      ),
-    ),
-    col.custom(
-      { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: 176, priority: 1 },
-      (r: AuditEventView) => r.actor,
-      (v: PartyRef) => {
-        const label = partyLabel(v);
-        return (
-          <span className="flex min-w-0 items-center gap-8">
-            {v.kind === "user" && <Avatar name={label.name} src={label.avatarUrl} size={20} decorative />}
-            <span className="truncate">{partyText(label)}</span>
-          </span>
-        );
-      },
-    ),
-    col.custom(
-      { id: "action", header: t("kaeso.audit.action", "Action"), size: 252, priority: 1, grow: true },
-      (r: AuditEventView) => r.action,
-      (v: string) => <Code>{v}</Code>,
-    ),
-    col.custom(
-      { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, priority: 2 },
-      (r: AuditEventView) => r.target_id ?? "",
-      (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={targetName} bare />,
-    ),
-    col.text({ id: "ip", header: t("kaeso.audit.ip", "IP"), size: 136, priority: 3 }, (r: AuditEventView) => r.ip ?? ""),
-    col.custom(
-      { id: "agent", header: t("kaeso.audit.userAgent", "User agent"), size: 200, priority: 4 },
-      (r: AuditEventView) => r.user_agent ?? "",
-      (v: string) =>
-        v ? (
-          <Tooltip content={v}>
-            <span className="block truncate">{v}</span>
-          </Tooltip>
-        ) : null,
-    ),
-  ].map((c) => ({ ...c, enableSorting: false }));
+  const lang = locale();
+  const columns = useMemo(
+    () =>
+      [
+        col.custom(
+          { id: "time", header: t("kaeso.audit.time", "Time"), size: TIME_WIDTH[lang], priority: 1 },
+          (r: AuditEventView) => r.at,
+          (v: string) => (
+            <Text tabular>
+              <time dateTime={v}>{eventTime(v)}</time>
+            </Text>
+          ),
+        ),
+        col.custom(
+          { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: 176, priority: 1 },
+          (r: AuditEventView) => r.actor,
+          (v: PartyRef) => {
+            const label = partyLabel(v);
+            return (
+              <span className="flex min-w-0 items-center gap-8">
+                {v.kind === "user" && <Avatar name={label.name} src={label.avatarUrl} size={20} decorative />}
+                <span className="truncate">{partyText(label)}</span>
+              </span>
+            );
+          },
+        ),
+        col.custom(
+          { id: "action", header: t("kaeso.audit.action", "Action"), size: 252, priority: 1, grow: true },
+          (r: AuditEventView) => r.action,
+          (v: string) => <Code>{v}</Code>,
+        ),
+        col.custom(
+          { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, priority: 2 },
+          (r: AuditEventView) => r.target_id ?? "",
+          (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={targetName} bare />,
+        ),
+        col.text({ id: "ip", header: t("kaeso.audit.ip", "IP"), size: 136, priority: 3 }, (r: AuditEventView) => r.ip ?? ""),
+        col.custom(
+          { id: "agent", header: t("kaeso.audit.userAgent", "User agent"), size: 200, priority: 4 },
+          (r: AuditEventView) => r.user_agent ?? "",
+          (v: string) =>
+            v ? (
+              <Tooltip content={v}>
+                <span className="block truncate">{v}</span>
+              </Tooltip>
+            ) : null,
+        ),
+      ].map((c) => ({ ...c, enableSorting: false })),
+    [lang, partyLabel, targetHref, targetName],
+  );
 
   return (
     <>

@@ -18,9 +18,7 @@ pub(super) struct InputCounter {
     pub(super) provider: &'static str,
     pub(super) auth: AuthStyle,
     pub(super) dialect: DialectId,
-    pub(super) count_tokens: Option<DialectId>,
-    pub(super) app_req: Request,
-    pub(super) req: Request,
+    pub(super) asked: Option<(Arc<Request>, Request)>,
     pub(super) adaptive_thinking: Option<bool>,
     pub(super) reasoning: Option<bool>,
     pub(super) timeouts: Timeouts,
@@ -53,10 +51,10 @@ fn with_causes(e: &UpstreamError) -> String {
 }
 
 impl InputCounter {
-    pub(super) async fn count(self) -> Input {
+    pub(super) async fn count(mut self) -> Input {
         let (provider, sent_bytes) = (self.provider, self.sent_bytes);
-        if self.count_tokens == Some(self.dialect) {
-            match self.ask_provider().await {
+        if let Some((app_req, req)) = self.asked.take() {
+            match self.ask_provider(app_req, req).await {
                 Ok(n) => return Input::Counted(n),
                 Err(e) => tracing::warn!(
                     provider,
@@ -69,8 +67,10 @@ impl InputCounter {
         Input::Estimated(kaeso_core::estimate::tokens_of_bytes(bytes))
     }
 
-    async fn ask_provider(self) -> Result<u64, KppError> {
-        let (Request::Generate(app), Request::Generate(sent)) = (self.app_req, self.req) else {
+    async fn ask_provider(self, app_req: Arc<Request>, req: Request) -> Result<u64, KppError> {
+        let (Request::Generate(app), Request::Generate(sent)) =
+            (Arc::unwrap_or_clone(app_req), req)
+        else {
             return Err(KppError::provider("only generations are counted"));
         };
         let app_req = Request::CountTokens(app);

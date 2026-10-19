@@ -1549,3 +1549,21 @@ async fn a_cancelled_request_is_charged_its_input_and_frees_its_reservation() {
     gate.open();
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
 }
+
+#[tokio::test]
+async fn a_wave_after_valkey_loses_a_counter_rebuilds_it_and_counts_every_request() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": 100000 })).await;
+    let lim = lim["id"].as_str().unwrap();
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    used(&env, lim, &TOKENS.to_string()).await;
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
+    lose_valkey(&env).await;
+    let answers = wave(&env, &secret, 20).await;
+    assert_eq!(passed(&answers), 20);
+    used(&env, lim, &(21 * TOKENS).to_string()).await;
+    assert_eq!(env.app.state.rebuilds.len(), 0);
+}

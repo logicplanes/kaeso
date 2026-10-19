@@ -950,6 +950,13 @@
   max-height: calc(100dvh - 48px);
   max-width: calc(100vw - 32px);
 }
+@utility pt-dialog-top {
+  padding-top: max(16px, 12vh);
+}
+@utility dialog-limits-top {
+  max-height: calc(100dvh - max(16px, 12vh) - 16px);
+  max-width: calc(100vw - 32px);
+}
 @utility sheet-limits-x {
   max-width: calc(100vw - 16px);
 }

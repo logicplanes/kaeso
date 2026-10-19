@@ -30,7 +30,7 @@ pub struct PlaygroundRequest {
     pub model: String,
     #[doc = "The conversation: a string, or Responses input items (messages, and\n\
         the reasoning items of earlier replies, sent back as received)."]
-    #[schema(value_type = Object)]
+    #[schema(value_type = Value)]
     pub input: serde_json::Value,
     #[doc = "System instructions."]
     pub instructions: Option<String>,
@@ -42,7 +42,7 @@ pub struct PlaygroundRequest {
     pub max_output_tokens: Option<u64>,
     #[doc = "Reasoning: `effort` (`none`, `minimal`, `low`, `medium`, `high`,\n\
         `xhigh`, `max`) and `summary` (`auto`, `concise`, `detailed`)."]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<Value>)]
     pub reasoning: Option<serde_json::Value>,
     #[doc = "Must be `true`: the Playground serves streams only."]
     #[schema(example = true)]

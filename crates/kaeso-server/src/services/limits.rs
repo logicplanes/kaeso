@@ -13,6 +13,10 @@ use uuid::Uuid;
 use crate::model_api::hooks::{Admission, Caller, Limits, Refusal, Reservation};
 use crate::state::AppState;
 
+mod flights;
+
+pub type Rebuilds = flights::Flights<LimitsError>;
+
 const IN_FLIGHT_MARGIN: Duration = Duration::from_secs(300);
 
 const VALKEY_DEADLINE: Duration = Duration::from_secs(2);
@@ -425,6 +429,22 @@ async fn rebuild(
     Ok(())
 }
 
+async fn rebuild_once(
+    state: &AppState,
+    project: Uuid,
+    l: &Limit,
+    now: OffsetDateTime,
+) -> Result<(), Arc<LimitsError>> {
+    let key = state.valkey.key(&l.counter(now));
+    let (st, limit) = (state.clone(), l.clone());
+    state
+        .rebuilds
+        .run(key, move || async move {
+            rebuild(&st, project, &limit, now).await
+        })
+        .await
+}
+
 #[derive(Debug, Default)]
 pub struct ValkeyLimits;
 
@@ -474,7 +494,8 @@ impl Limits for ValkeyLimits {
                     Ok(Admit::Missing(list)) if attempt == 0 => {
                         for i in list {
                             if let Some(l) = applicable.get(i)
-                                && let Err(e) = rebuild(state, a.caller.project_id, l, a.at).await
+                                && let Err(e) =
+                                    rebuild_once(state, a.caller.project_id, l, a.at).await
                             {
                                 return fail(&applicable, &e);
                             }

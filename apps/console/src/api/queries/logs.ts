@@ -60,16 +60,34 @@ export const logsInfiniteQuery = (org: string, project: string, filters: LogFilt
     refetchOnWindowFocus: refetchOnFocusWhileOnePage,
   });
 
-export const newestLogsQuery = (org: string, project: string, filters: LogFilters) =>
+export const LIVE_PAGES = 5;
+
+export interface NewestLogs {
+  rows: LogView[];
+  complete: boolean;
+}
+
+export const newestLogsQuery = (org: string, project: string, filters: LogFilters, since?: string) =>
   queryOptions({
-    queryKey: ["orgs", org, "projects", project, "logs", "newest", filters],
-    queryFn: async ({ signal }): Promise<LogView[]> =>
-      data(
-        await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs", {
-          params: { path: { org, project }, query: { ...logsParams(filters), limit: 100 } },
-          signal,
-        }),
-      ).data,
+    queryKey: ["orgs", org, "projects", project, "logs", "newest", filters, since ?? null],
+    queryFn: async ({ signal }): Promise<NewestLogs> => {
+      const query = { ...logsParams(filters), ...(since ? { from: since } : {}), limit: 100 };
+      const rows: LogView[] = [];
+      let after: string | undefined;
+      for (let pages = 0; pages < LIVE_PAGES; pages++) {
+        const page = data(
+          await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs", {
+            params: { path: { org, project }, query: { ...query, ...(after ? { after } : {}) } },
+            signal,
+          }),
+        );
+        rows.push(...page.data);
+        after = nextPageParam(page);
+        if (!after || !since) return { rows, complete: true };
+      }
+      return { rows, complete: false };
+    },
+    gcTime: 0,
   });
 
 export const logEntryQuery = (org: string, project: string, log: string) =>

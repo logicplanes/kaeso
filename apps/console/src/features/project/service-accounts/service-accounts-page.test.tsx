@@ -56,7 +56,7 @@ describe("ServiceAccountsPage", () => {
     expect(rows[1]).toHaveTextContent("zeta-sync");
     expect(rows[1]).toHaveTextContent("0 keys");
     expect(rows[1]).toHaveTextContent("Viewer · customized");
-    expect(requests("GET", ACCOUNTS).map((r) => r.query.get("include_archived"))).toContain("false");
+    expect(requests("GET", ACCOUNTS).map((r) => r.query.get("include_archived"))).toEqual(["true"]);
   });
 
   it("shows archived service accounts on the All tab", async () => {

@@ -34,6 +34,7 @@ Das Designsystem hinter den Komponenten, in `node_modules/@logicplanes/kaeso-ui/
 | `foundations/typography.md`    | Text, Zahlen, IDs oder Code gesetzt werden                                  |
 | `foundations/shape.md`         | ein Radius gewählt oder Flächen verschachtelt werden                        |
 | `foundations/elevation.md`     | eine Linie, ein Ring oder eine erhabene Fläche gezeichnet wird              |
+| `foundations/layout.md`        | etwas auf einer Seite platziert wird: ein Seitenrand, eine Kante            |
 | `foundations/motion.md`        | etwas animiert oder ein Ladezustand gezeigt wird                            |
 | `foundations/icons.md`         | ein Symbol platziert wird                                                   |
 | `foundations/writing.md`       | eine Beschriftung, Meldung, ein leerer Zustand oder Fehler geschrieben wird |
@@ -88,6 +89,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 9. **Das Symbolvokabular verwenden**: `icons.key`, `icons.model`, nie ein Symbol, das nach Aussehen gewählt wurde.
 10. **Texte folgen der Stimme**: Satzanfang groß, auf Buttons zuerst das Verb, keine Ausrufezeichen oder Emoji, Fehler, die sagen, was als Nächstes zu tun ist.
 11. **Raum lassen.** Das Panel atmen lassen: Die Komponenten bringen ihre eigenen Abstände mit, also Ansichten nicht mit zusätzlichen Hüllen, Rahmen oder Überschriften füllen. Weniger Elemente, jedes klar.
+12. **Eine Kante pro Seite.** Jede Fläche, vom Button bis zur Hover-Fläche einer Zeile, beginnt am 24px-Seitenrand, der Text in einer Fläche 12px weiter innen. Nie eine Komponente mit negativem Außenabstand in den Seitenrand ziehen.
 
 ## Welche Komponente für welche Aufgabe
 

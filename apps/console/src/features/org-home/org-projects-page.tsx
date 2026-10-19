@@ -15,6 +15,7 @@ import { projectPath } from "~/shell/pages";
 import { CreateProjectDialog } from "./create-project-dialog";
 import { MakeDefaultDialog } from "./make-default-dialog";
 import { t } from "~/i18n";
+import { compareNames } from "~/format/collate";
 
 export interface OrgProjectsSearch {
   create?: boolean;
@@ -37,7 +38,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
     setCreating(false);
     if (search.create) void navigate({ to: "/orgs/$org/projects", params: { org }, search: {}, replace: true });
   };
-  const list = [...(projects.data ?? [])].sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
+  const list = [...(projects.data ?? [])].sort((a, b) => Number(b.is_default) - Number(a.is_default) || compareNames(a.name, b.name));
   const current = list.find((p) => p.is_default);
 
   const menu = (p: ProjectView) => {

@@ -68,16 +68,19 @@ export async function* readSse(body: ReadableStream<Uint8Array>, signal?: AbortS
   const parser = new SseParser();
   const cancel = () => void reader.cancel().catch(() => undefined);
   signal?.addEventListener("abort", cancel, { once: true });
+  let finished = false;
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       yield* parser.push(decoder.decode(value, { stream: true }));
     }
+    finished = true;
     yield* parser.push(decoder.decode());
     yield* parser.end();
   } finally {
     signal?.removeEventListener("abort", cancel);
+    if (!finished) await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }

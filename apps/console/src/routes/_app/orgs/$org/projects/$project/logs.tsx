@@ -30,7 +30,17 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
   return out;
 }
 
-export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({ validateSearch: validateLogsSearch, component: Logs });
+export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({
+  validateSearch: validateLogsSearch,
+  loaderDeps: ({ search }) => {
+    const { log: _log, live: _live, ...filters } = validateLogsSearch(search);
+    return filters;
+  },
+  loader: ({ context, params, deps }) => {
+    void import("~/api/queries/route-prefetch").then((m) => m.prefetchLogs(context.queryClient, params.org, params.project, deps));
+  },
+  component: Logs,
+});
 
 function Logs() {
   const { org, project } = Route.useParams();

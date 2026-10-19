@@ -172,11 +172,13 @@ describe("OverviewPage", () => {
     expect(router.state.location.search).toEqual({ log: "log_1" });
   });
 
-  it("opens the keys from the project's counts and marks more keys than one page", async () => {
+  it("opens the keys from the project's counts, which include every page of active keys", async () => {
     signedIn();
     projectData();
     on("GET", "orgs/:org/projects/:project/keys", ({ query }: { query: URLSearchParams }) =>
-      query.get("after") ? listed([apiKey({ id: "key_two", name: "second-page" })]) : listed([apiKey()], "cur_2"),
+      query.get("after")
+        ? listed([apiKey({ id: "key_two", name: "second-page" }), apiKey({ id: "key_old", name: "archived", state: "archived" })])
+        : listed([apiKey()], "cur_2"),
     );
     on("GET", "orgs/:org/projects/:project/logs", listed([]));
     usage();
@@ -185,7 +187,7 @@ describe("OverviewPage", () => {
     expect(await screen.findByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
     expect(screen.getByText("No failed requests.")).toBeInTheDocument();
     const keys = within(screen.getByRole("grid", { name: "This project" })).getByRole("gridcell", { name: /Keys/ });
-    expect(keys).toHaveTextContent("1+");
+    expect(keys).toHaveTextContent("2");
     await user.click(keys);
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("keys")));
   });

@@ -193,7 +193,7 @@ pub(crate) struct CacheBreakpoint {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct ToolCall {
     pub(crate) id: String,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default, skip_serializing_if = "String::is_empty")]
     pub(crate) ty: String,
     pub(crate) function: Ext<FunctionCall>,
 }

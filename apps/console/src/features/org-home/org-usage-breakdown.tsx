@@ -1,8 +1,8 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Avatar, Badge, Link, ModelLabel, Section, Segmented, Table, Text } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { ProjectView, UsageRow } from "~/api/generated/types";
-import { serviceAccountsQuery } from "~/api/queries/members";
+import { serviceAccountLookupQuery } from "~/api/queries/members";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgUsageQuery } from "~/api/queries/usage";
 import { everyProjectRights, useOrgRights, useSession } from "~/auth/session";
@@ -47,10 +47,17 @@ export function OrgUsageBreakdown({
   const usage = useQuery({ ...orgUsageQuery(org, from, to, by), enabled: ready });
   const members = useQuery({ ...orgMembersQuery(org), enabled: by === "member" && rights.has("members.view") });
   const everyProject = everyProjectRights(session, org).has("service_accounts.view");
-  const scoped = by === "member" && everyProject ? (projects ?? []) : [];
-  const accounts = useQueries({ queries: scoped.map((p) => serviceAccountsQuery(org, p.id, true)) });
-  const named = scoped.flatMap((p, i) => (accounts[i]?.data ?? []).map((account) => ({ account, project: p.name })));
-  const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.some((q) => q.isLoading)));
+  const accountIds = by === "member" ? (usage.data ?? []).flatMap((r) => (r.key.startsWith("service_account:") ? [r.key.slice(16)] : [])).sort() : [];
+  const accounts = useQuery({
+    ...serviceAccountLookupQuery(
+      org,
+      (projects ?? []).map((p) => ({ id: p.id, name: p.name })),
+      accountIds,
+    ),
+    enabled: everyProject && !!projects && accountIds.length > 0,
+  });
+  const named = accounts.data ?? [];
+  const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.isLoading));
   const rows = loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key));
 
   const label = (r: UsageRow) => {

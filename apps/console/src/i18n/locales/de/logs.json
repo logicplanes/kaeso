@@ -114,7 +114,6 @@
   "logs.inspector.usage": "Nutzung",
   "logs.live": "Live",
   "logs.loadFailed": "Anfragen konnten nicht geladen werden",
-  "logs.markdown.showAll": "{count, plural, one {# Zeichen anzeigen} other {Alle # Zeichen anzeigen}}",
   "logs.noMatch": "Keine Anfragen passen zu diesen Filtern",
   "logs.noMatchHint": "Einen Filter entfernen oder den Zeitraum erweitern.",
   "logs.openById": "Anfrage per ID öffnen",

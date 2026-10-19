@@ -927,3 +927,43 @@ async fn a_request_cancelled_while_the_provider_works_is_charged_its_input() {
     );
     gate.open();
 }
+
+#[tokio::test]
+async fn large_requests_are_translated_like_small_ones() {
+    let env = env().await;
+    let text = "a long document line\n".repeat(20_000);
+    assert!(text.len() > kaeso_server::model_api::pipeline::OFF_THREAD_BYTES);
+    for (path, anthropic, body) in [
+        (
+            "/v1/chat/completions",
+            false,
+            chat("claude-haiku-4-5", &text),
+        ),
+        ("/v1/messages", true, messages("gpt-4o", &text)),
+    ] {
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent: serde_json::Value =
+            serde_json::from_slice(&env.mock.last().unwrap().body).unwrap();
+        assert!(sent.to_string().contains("a long document line"), "{path}");
+    }
+    let mut broken = serde_json::to_vec(&chat("gpt-4o", &text)).unwrap();
+    broken.truncate(broken.len() - 2);
+    let r = env
+        .app
+        .router
+        .clone()
+        .oneshot(
+            Request::post("/v1/chat/completions")
+                .header("authorization", format!("Bearer {}", env.key))
+                .header("content-type", "application/json")
+                .body(Body::from(broken))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::BAD_REQUEST);
+    let body = r.into_body().collect().await.unwrap().to_bytes();
+    let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body["error"]["type"], "invalid_request_error", "{body}");
+}

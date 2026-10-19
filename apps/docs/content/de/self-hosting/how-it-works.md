@@ -75,7 +75,7 @@ Die Dienste teilen so wenig wie möglich:
 
 Das Gateway hält keinen eigenen Zustand. Für mehrere Instanzen stellen Sie sie hinter denselben Proxy und verbinden sie mit denselben PostgreSQL-, ClickHouse- und Valkey-Diensten:
 
-- Valkey meldet jeder Instanz, wenn sich ein Eintrag im Cache ändert.
+- Valkey meldet jeder Instanz, wenn sich ein Eintrag im Cache ändert. Solange eine Instanz Valkey nicht hört, behält sie Geladenes höchstens zwei Sekunden, sodass eine Änderung sie innerhalb von zwei Sekunden erreicht.
 - Hintergrundjobs laufen jeweils auf einer Instanz, unter PostgreSQL-Sperren.
 - Migrationen laufen unter einer Sperre, sodass eine Instanz migriert, während die anderen warten.
 - Jede Instanz puffert und schreibt ihre eigenen Zeilen der Anfrageprotokolle und ihre eigene Nutzung.

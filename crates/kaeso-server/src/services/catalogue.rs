@@ -16,7 +16,7 @@ pub async fn project_models(
     let found = state
         .caches
         .project_models
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             let mut conn = pg.acquire().await?;
             catalogue::project_models(&mut conn, project)
                 .await

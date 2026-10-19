@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { useInset } from "../../utils/inset.js";
+import { useGutterPadded, useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -355,11 +355,12 @@ function FirstRows({ count, estimateSize, row }: { count: number; estimateSize: 
 }
 
 function LoadingRows({ density }: { density: keyof typeof KAESO_LIST_VARIANTS.density }) {
+  const padded = useGutterPadded();
   return (
     <div role="presentation">
       {[62, 48, 70, 54, 40, 58].map((w, i) => (
-        <div key={i} role="presentation" className="px-8">
-          <div className={cn("flex items-center gap-12 px-16", KAESO_LIST_VARIANTS.density[density].classes)}>
+        <div key={i} role="presentation" className={padded ? "px-0" : "px-24"}>
+          <div className={cn("flex items-center gap-12 px-12", KAESO_LIST_VARIANTS.density[density].classes)}>
             <Skeleton shape="line" className="min-w-0" style={{ width: `${w}%` }} />
             <span className="flex-1" />
             <Skeleton shape="line" className="w-64 shrink-0" />
@@ -409,11 +410,12 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
   ref,
 ) {
   const card = useInset();
+  const padded = useGutterPadded();
   const t = useUiText();
   const lines = narrow && !!(item.meta || item.date);
   const stacked = (card || lines) && !!item.subtitle;
   return (
-    <div role="row" className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : "px-8"}>
+    <div role="row" className={card ? cn("px-0", index !== undefined && index > 0 && "hairline-t") : padded ? "px-0" : "px-24"}>
       <div
         ref={ref}
         role="gridcell"
@@ -430,8 +432,8 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         }}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/row relative flex cursor-pointer items-center gap-12 px-16 text-body transition-control focus-ring-inset select-none",
-          card ? "rounded-none" : "rounded-item",
+          "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset select-none",
+          card ? "rounded-none px-20" : "rounded-item px-12",
           lines ? "min-h-56 py-8" : stacked ? "h-56" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
           "hover:bg-fill-1 hover:controls-on-fill",
           selected && "bg-fill-2 controls-on-fill hover:bg-fill-2",
@@ -477,7 +479,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </span>
           {lines && (
             <span className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-4">
-              {item.meta && <span className="flex min-w-0 flex-wrap items-center gap-6">{item.meta}</span>}
+              {item.meta && <span className="contents">{item.meta}</span>}
               {item.date && <span className="text-small whitespace-nowrap text-fg-secondary tabular">{item.date}</span>}
             </span>
           )}
@@ -528,17 +530,24 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
   ref,
 ) {
   const card = useInset();
+  const padded = useGutterPadded();
   const t = useUiText();
   return (
-    <div ref={ref} role="row" onFocus={onFocus} className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : "group/gh px-8 pt-16 first:pt-0"}>
-      <div role="gridcell" className={cn("flex items-center gap-4 pr-8", card ? "h-36 pl-6" : "h-36", !card && (indent ? "pl-36" : "pl-6"))}>
+    <div
+      ref={ref}
+      role="row"
+      onFocus={onFocus}
+      className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : cn("group/gh pt-16 first:pt-0", padded ? "px-0" : "px-24")}
+    >
+      <div role="gridcell" className={cn("flex h-36 items-center gap-4", card && "pr-12 pl-8")}>
+        {indent && !card && <span aria-hidden className="mr-8 w-18 shrink-0" />}
         <button
           type="button"
           aria-expanded={!collapsed}
           data-index={index}
           tabIndex={active === false ? -1 : 0}
           onClick={onToggle}
-          className="relative flex h-28 min-w-0 cursor-pointer items-center gap-8 rounded-pill px-10 text-small transition-control hover:bg-fill-1 focus-ring tap-target"
+          className="relative flex h-28 min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-small transition-control hover:bg-fill-1 focus-ring tap-target"
         >
           {glyph && <span className="flex size-16 items-center justify-center">{glyph}</span>}
           <span className="truncate font-medium text-fg-secondary">{title}</span>

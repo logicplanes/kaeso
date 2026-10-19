@@ -12,6 +12,9 @@ import { t } from "~/i18n";
 const unique = (ids: (string | null | undefined)[]): string[] => [...new Set(ids.filter((id): id is string => !!id))];
 const loaded = <T,>(results: { data?: T | undefined }[]): T[] => results.flatMap((r) => (r.data ? [r.data] : []));
 
+const targetHref = (kind: string, id: string) =>
+  kind === "user" ? `/settings/instance/users?user=${id}` : kind === "org" ? `/settings/instance/orgs/${id}` : undefined;
+
 export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
   const navigate = useNavigate();
   const session = useSession();
@@ -21,16 +24,20 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
   const log = useInfiniteQuery(auditLogQuery({ instance: true }, filters));
   const events = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const matches = useMemo(() => found.data?.pages.flatMap((p) => p.data) ?? [], [found.data]);
+  const listed = useMemo(() => new Set(matches.map((u) => u.id)), [matches]);
   const userIds = unique([
     filters.actor,
     ...events.flatMap((e) => [e.actor.kind === "user" ? e.actor.id : null, e.target_kind === "user" ? e.target_id : null]),
-  ]);
+  ]).filter((id) => !listed.has(id));
   const orgIds = unique(events.map((e) => (e.target_kind === "org" ? e.target_id : null)));
   const users = useQueries({ queries: userIds.map((id) => ({ ...instanceUserQuery(id), meta: { quiet: true } })), combine: loaded });
   const orgs = useQueries({ queries: orgIds.map((id) => ({ ...instanceOrgQuery(id), meta: { quiet: true } })), combine: loaded });
   const known = useMemo(() => new Map([...matches, ...users].map((u) => [u.id, u])), [matches, users]);
-  const orgNames = new Map(orgs.map((o) => [o.id, o.name]));
-  const targetName = (kind: string, id: string) => (kind === "user" ? known.get(id)?.name : kind === "org" ? orgNames.get(id) : undefined);
+  const orgNames = useMemo(() => new Map(orgs.map((o) => [o.id, o.name])), [orgs]);
+  const targetName = useCallback(
+    (kind: string, id: string) => (kind === "user" ? known.get(id)?.name : kind === "org" ? orgNames.get(id) : undefined),
+    [known, orgNames],
+  );
   const partyLabel = useCallback(
     (p: PartyRef): PartyLabel => {
       if (p.kind === "system") return { name: t("instance.system", "System"), you: false };
@@ -58,7 +65,7 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
         onActorSearch={setActorQuery}
         actorsLoading={found.isFetching}
         targetName={targetName}
-        targetHref={(kind, id) => (kind === "user" ? `/settings/instance/users?user=${id}` : kind === "org" ? `/settings/instance/orgs/${id}` : undefined)}
+        targetHref={targetHref}
       />
     </InstancePage>
   );
