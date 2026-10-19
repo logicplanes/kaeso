@@ -231,6 +231,50 @@ async fn xai_errors_reach_each_app_in_its_own_error_format() {
 }
 
 #[tokio::test]
+async fn a_wrong_xai_key_is_reported_as_a_refused_key() {
+    let env = env().await;
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(
+            "grok-4.3",
+            "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["error"]["type"], "authentication_error");
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("Incorrect API key provided")
+    );
+
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "grok-4.3",
+            "input": "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("Incorrect API key provided")
+    );
+}
+
+#[tokio::test]
 async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
     let env = env().await;
     env.mock.clear();

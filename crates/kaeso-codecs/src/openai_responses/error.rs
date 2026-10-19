@@ -86,14 +86,6 @@ pub(crate) fn kind_for(status: Option<u16>, ty: Option<&str>, code: Option<&str>
     }
 }
 
-pub(crate) fn string_error_kind(status: Option<u16>, message: &str) -> ErrorKind {
-    if message.starts_with("Incorrect API key provided") {
-        ErrorKind::Authentication
-    } else {
-        kind_for(status, None, None)
-    }
-}
-
 pub(crate) fn decode(
     dialect: DialectId,
     status: u16,
@@ -120,7 +112,7 @@ pub(crate) fn decode(
         }
         None => match value.as_ref().and_then(|v| v.get("error")) {
             Some(Value::String(message)) if !message.trim().is_empty() => {
-                KppError::new(string_error_kind(Some(status), message), message.clone())
+                KppError::new(kind_for(Some(status), None, None), message.clone())
             }
             _ => {
                 let text = String::from_utf8_lossy(body);
@@ -213,7 +205,7 @@ pub(crate) fn encode(err: &KppError) -> EncodedError {
             Some(Value::Object(m)) => matches!(
                 m.get("error"),
                 Some(Value::String(message))
-                    if *message == err.message && string_error_kind(err.status, message) == err.kind
+                    if *message == err.message
             ),
             _ => false,
         };
@@ -373,13 +365,14 @@ mod tests {
         let mut changed = gone;
         changed.message = "Kaeso: try later".into();
         assert_eq!(encode(&changed).status, 500);
-        let key = decode(
+        let mut key = decode(
             D,
             400,
             &HeaderList::new(),
             br#"{"code":"invalid-argument","error":"Incorrect API key provided. You can obtain an API key from https://console.x.ai."}"#,
         );
-        assert_eq!(key.kind, ErrorKind::Authentication);
+        assert_eq!(key.kind, ErrorKind::InvalidRequest);
+        key.kind = ErrorKind::Authentication;
         let out = encode(&key);
         assert_eq!(out.status, 400);
         let v: Value = serde_json::from_slice(&out.body).unwrap();

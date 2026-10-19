@@ -140,7 +140,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens`（包括推理） |
+| `completion_tokens` | `output_tokens`（包括推理；若 `total_tokens` 等于 `prompt_tokens + completion_tokens + reasoning_tokens`，即 SpaceX 的计法，则再加上推理 Token） |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | 推导得出（`prompt_tokens + completion_tokens`）；不单独存储，保留在 `raw` 中 |
 | `prompt_tokens_details.audio_tokens`、`text_tokens`、`image_tokens`，`completion_tokens_details.audio_tokens`、`text_tokens`、`accepted_prediction_tokens`、`rejected_prediction_tokens` | 只在 `raw` 中（类型化总数的细分） |
@@ -211,7 +211,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
-`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息。以 `Incorrect API key provided` 开头的是 SpaceX 对错误密钥的 HTTP 400 回复，类别为 `Authentication`。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息。编解码器不从文本推断含义：若服务商对错误密钥的回复没有认证状态码，就在 `crates/kaeso-core/src/provider.rs` 的 `refused_key_messages` 中列出该消息，网关会把这类错误报告为 `Authentication`（例如 SpaceX 以 HTTP 400 返回的 `Incorrect API key provided`）。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
 
 ## 模型
 
@@ -272,8 +272,8 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 |---|---|---|
 | `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
 | `citations`、`system_fingerprint`、`service_tier` | extras | 发往其他方言时省略。 |
-| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。 |
-| `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头：`Authentication`。 |
+| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。SpaceX 的 `completion_tokens` 不含推理，推理计入 `total_tokens`，因此输出为 `completion_tokens` 加 `reasoning_tokens`。 |
+| `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头；SpaceX 的 `refused_key_messages` 列出了该消息，因此网关会报告密钥被拒绝。 |
 | 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。 |
 | `search_parameters`（请求） | extras | 实时搜索已弃用，SpaceX 返回 410；应用会收到这个 410。 |
 | 额外的模型字段（`aliases`、以美分计的每 1 亿 Token 价格、`capabilities.reasoning_effort`、图像的 `pricing`） | 模型 extras | |
