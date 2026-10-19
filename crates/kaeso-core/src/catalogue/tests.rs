@@ -38,12 +38,21 @@ fn eff(e: &Entry) -> Effective {
 fn the_shipped_supplement_is_valid_and_names_known_models() {
     let supplement = Supplement::embedded().unwrap();
     let snap = snapshot();
-    for (provider, model) in supplement.models.keys() {
-        assert!(
-            snap.model(provider, model).is_some(),
-            "{provider}/{model} is in the supplement but not in models.dev"
-        );
+    for (provider, models) in &supplement.models {
+        for model in models.keys() {
+            assert!(
+                snap.model(provider, model).is_some(),
+                "{provider}/{model} is in the supplement but not in models.dev"
+            );
+            assert!(supplement.get(provider, model).is_some());
+        }
     }
+    assert!(supplement.get("anthropic", "no-such-model").is_none());
+    assert!(
+        supplement
+            .get("no-such-provider", "claude-sonnet-4-5")
+            .is_none()
+    );
     for model in snap.providers["anthropic"].models.keys() {
         assert!(
             supplement
