@@ -304,6 +304,34 @@ fn an_openrouter_error_chunk_with_choices_ends_the_stream_as_an_error() {
 }
 
 #[test]
+fn a_chunk_whose_error_is_a_string_ends_the_stream_as_an_error() {
+    let chunk = r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"role":"assistant","content":"Hi"},"finish_reason":null}]}"#;
+    let sse = format!("data: {chunk}\n\ndata: {{\"error\":\"rate limited\"}}\n\n");
+    let events = decode_whole(sse.as_bytes());
+    let StreamEvent::Error(err) = events.last().unwrap() else {
+        panic!("{events:?}")
+    };
+    assert_eq!(err.message, "rate limited");
+    assert_eq!(err.raw, Some(json!({"error": "rate limited"})));
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::ResponseStop(_)))
+    );
+    for kept in [
+        r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","error":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}"#,
+        r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","error":"note","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}"#,
+    ] {
+        let sse = format!("data: {chunk}\n\ndata: {kept}\n\ndata: [DONE]\n\n");
+        let events = decode_whole(sse.as_bytes());
+        assert!(
+            !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
+            "{kept}: {events:?}"
+        );
+    }
+}
+
+#[test]
 fn comments_and_unknown_fields_survive() {
     let events = decode_whole(&fixture("stream-doc"));
     assert!(

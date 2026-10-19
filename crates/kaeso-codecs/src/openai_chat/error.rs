@@ -69,6 +69,7 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
 
 pub(crate) struct ErrorProbe {
     pub(crate) error: bool,
+    pub(crate) any_error: bool,
     pub(crate) choices: bool,
 }
 
@@ -83,13 +84,16 @@ pub(crate) fn probe(json: &str) -> ErrorProbe {
     serde_json::from_str::<Probe>(json).map_or(
         ErrorProbe {
             error: false,
+            any_error: false,
             choices: false,
         },
-        |p| ErrorProbe {
-            error: p
-                .error
-                .is_some_and(|e| e.get().trim_start().starts_with('{')),
-            choices: p.choices.is_some(),
+        |p| {
+            let error = p.error.as_ref().map(|e| e.get().trim());
+            ErrorProbe {
+                error: error.is_some_and(|e| e.starts_with('{')),
+                any_error: error.is_some_and(|e| e != "null"),
+                choices: p.choices.is_some(),
+            }
         },
     )
 }

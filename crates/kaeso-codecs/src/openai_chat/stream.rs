@@ -741,7 +741,8 @@ impl ChatStreamDecoder {
 }
 
 fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {
-    super::error::probe(raw.get()).error
+    let p = super::error::probe(raw.get());
+    p.error || (p.any_error && !p.choices)
 }
 
 pub(crate) fn event_extras_mut(event: &mut StreamEvent) -> Option<&mut Extras> {
