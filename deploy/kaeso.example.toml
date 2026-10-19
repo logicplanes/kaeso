@@ -62,8 +62,6 @@ base_url = "https://api.anthropic.com"
 
 [providers.deepseek]
 base_url = "https://api.deepseek.com"
-[providers.mistral]
-base_url = "https://api.mistral.ai"
 
 [providers.xai]
 base_url = "https://api.x.ai"
@@ -76,6 +74,9 @@ base_url = "https://api.groq.com/openai"
 
 [providers.openrouter]
 base_url = "https://openrouter.ai/api"
+
+[providers.mistral]
+base_url = "https://api.mistral.ai"
 
 [upstream]
 connect_timeout = "10s"
