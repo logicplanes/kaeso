@@ -6,6 +6,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use kaeso_server::config::{self, Config, ProcessSource, Source};
+use kaeso_server::services::sso::OperatorVerify;
 use kaeso_server::services::users::{OperatorReset, OperatorSignIn};
 use secrecy::ExposeSecret;
 
@@ -28,6 +29,8 @@ enum Command {
     SetupLink,
     #[command(subcommand, about = "Operator actions on user accounts")]
     User(UserCommand),
+    #[command(subcommand, about = "Operator actions on single sign-on")]
+    Sso(SsoCommand),
     #[command(
         hide = true,
         about = "Exit 0 when the local gateway answers `GET /healthz` (for container health checks)"
@@ -57,6 +60,20 @@ enum UserCommand {
     SignInLink {
         #[arg(help = "The user's email address")]
         email: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum SsoCommand {
+    #[command(
+        name = "verify-domain",
+        about = "Mark an SSO email domain as verified without its DNS TXT record, for a domain public DNS doesn't answer for"
+    )]
+    VerifyDomain {
+        #[arg(help = "The email domain, such as acme.example")]
+        domain: String,
+        #[arg(long, help = "The organization, when several list the domain")]
+        org: Option<String>,
     },
 }
 
@@ -154,6 +171,40 @@ async fn run(command: Command) -> Result<()> {
                 OperatorSignIn::Link(url) => say!(
                     "{}\n\nThe link signs {email} in once, within 15 minutes, even while sign-in links by email are off. Anyone who has it can sign in as {email}: open it yourself and don't share it.",
                     url.expose_secret()
+                ),
+            }
+        }
+        Command::Sso(SsoCommand::VerifyDomain { domain, org }) => {
+            let state = kaeso_server::serve::prepare(config).await?;
+            match kaeso_server::services::sso::operator_verify_domain(
+                &state,
+                &domain,
+                org.as_deref(),
+            )
+            .await?
+            {
+                OperatorVerify::NotADomain => anyhow::bail!("{domain} is not a domain"),
+                OperatorVerify::NotAnOrg => {
+                    anyhow::bail!("--org must be an organization id, such as org_…")
+                }
+                OperatorVerify::NotListed => {
+                    anyhow::bail!("no organization's SSO connection lists {domain}")
+                }
+                OperatorVerify::Several(orgs) => anyhow::bail!(
+                    "several organizations list {domain}; name one with --org: {}",
+                    orgs.iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+                OperatorVerify::VerifiedElsewhere => {
+                    anyhow::bail!("another organization has already verified {domain}")
+                }
+                OperatorVerify::AlreadyVerified(org) => {
+                    say!("{domain} was already verified for {org}.")
+                }
+                OperatorVerify::Verified(org) => say!(
+                    "{domain} is verified for {org}: its addresses sign in through the organization's identity provider."
                 ),
             }
         }

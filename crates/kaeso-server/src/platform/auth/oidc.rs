@@ -543,17 +543,19 @@ fn deactivated() -> ApiError {
 
 fn check_domain(connection: &oidc::Connection, email: &str) -> ApiResult<()> {
     let domain = kaeso_core::email::domain(email);
-    if connection
-        .domains
-        .iter()
-        .any(|d| d.eq_ignore_ascii_case(domain))
-    {
+    let verified = &connection.verified_domains;
+    if verified.iter().any(|d| d.eq_ignore_ascii_case(domain)) {
         return Ok(());
+    }
+    if verified.is_empty() {
+        return Err(ApiError::PermissionDenied(
+            "This organization's SSO has no verified email domain yet; ask an admin to verify one."
+                .into(),
+        ));
     }
     Err(ApiError::PermissionDenied(format!(
         "This organization's SSO only signs in addresses of {}.",
-        connection
-            .domains
+        verified
             .iter()
             .map(|d| kaeso_core::email::display_domain(d))
             .collect::<Vec<_>>()

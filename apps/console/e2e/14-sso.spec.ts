@@ -1,5 +1,5 @@
 import { expect, test, enterEmail, expectSignedIn, signInAsOwner, stepTo, submitSteps, toastText } from "./support";
-import { STACK_URLS } from "./stack";
+import { STACK_URLS, verifyDomain } from "./stack";
 
 test.describe.configure({ mode: "serial" });
 
@@ -27,6 +27,9 @@ test("an identity provider is connected, and a new person signs in through it", 
   await expect(toastText(page, "Identity provider connected")).toBeVisible();
   await expect(page.getByText("Register this redirect URL at the provider.")).toBeVisible();
   await expect(page.getByRole("switch", { name: "Require single sign-on" })).not.toHaveAttribute("aria-disabled", "true");
+  verifyDomain("example.com");
+  await page.reload();
+  await expect(page.getByText("Verified; its addresses sign in through the provider.")).toBeVisible();
 
   const other = await browser.newContext();
   const visitor = await other.newPage();

@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test, expectSignedIn, stepTo, submitSteps, toastText } from "./support";
-import { SSO_CONSOLE_URL, STACK_URLS, operatorSignInToken, setupLinkToken } from "./stack";
+import { SSO_CONSOLE_URL, STACK_URLS, operatorSignInToken, setupLinkToken, verifyDomain } from "./stack";
 
 test.describe.configure({ mode: "serial" });
 test.use({ baseURL: SSO_CONSOLE_URL });
@@ -44,6 +44,9 @@ test("the first admin sets up an install without passwords and connects the iden
   await dialog.getByRole("switch", { name: "Start without a click" }).click();
   await submitSteps(dialog, "Connect");
   await expect(toastText(page, "Identity provider connected")).toBeVisible();
+  verifyDomain("example.com", "gateway-sso");
+  await page.reload();
+  await expect(page.getByText("Verified; its addresses sign in through the provider.")).toBeVisible();
   await expect(page.getByText("Says Continue with Northwind ID and starts on its own.")).toBeVisible();
   await expect(page.getByText(new RegExp(`${SSO_CONSOLE_URL}/sign-in\\?org=org_`))).toBeVisible();
 });

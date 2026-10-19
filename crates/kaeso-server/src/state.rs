@@ -35,6 +35,7 @@ pub struct Inner {
     pub logs: crate::services::logs::Buffer,
     pub in_flight: crate::model_api::in_flight::InFlight,
     pub availability: crate::services::availability::Recall,
+    pub dns: Arc<dyn crate::services::dns::TxtLookup>,
     clickhouse_migrated: AtomicBool,
 }
 
@@ -49,6 +50,7 @@ pub struct Parts {
     pub mailer: Mailer,
     pub limits: Option<Arc<dyn crate::model_api::hooks::Limits>>,
     pub sink: Option<Arc<dyn crate::model_api::hooks::Sink>>,
+    pub dns: Option<Arc<dyn crate::services::dns::TxtLookup>>,
 }
 
 impl AppState {
@@ -82,6 +84,9 @@ impl AppState {
             logs: crate::services::logs::Buffer::default(),
             in_flight: crate::model_api::in_flight::InFlight::default(),
             availability: crate::services::availability::Recall::default(),
+            dns: p
+                .dns
+                .unwrap_or_else(|| Arc::new(crate::services::dns::SystemResolver::default())),
             clickhouse_migrated: AtomicBool::new(false),
         }))
     }
