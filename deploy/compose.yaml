@@ -13,7 +13,7 @@ services:
     user: "0:0"
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [CHOWN]
+    cap_add: [CHOWN, DAC_READ_SEARCH]
     network_mode: none
     mem_limit: 64m
     pids_limit: 32
@@ -117,7 +117,7 @@ services:
     user: "0:0"
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [CHOWN, FOWNER]
+    cap_add: [CHOWN, DAC_READ_SEARCH, FOWNER]
     network_mode: none
     mem_limit: 64m
     pids_limit: 32

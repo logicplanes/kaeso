@@ -32,13 +32,13 @@ def services() -> dict:
 
 def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(services):
     needed = {
-        "caddy-init": ["CHOWN"],
+        "caddy-init": ["CHOWN", "DAC_READ_SEARCH"],
         "caddy": ["NET_BIND_SERVICE"],
         "gateway": [],
         "console": [],
         "docker-proxy": [],
         "updater": [],
-        "updater-init": ["CHOWN", "FOWNER"],
+        "updater-init": ["CHOWN", "DAC_READ_SEARCH", "FOWNER"],
         "postgres": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"],
         "clickhouse": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "KILL", "SETGID", "SETUID"],
         "valkey": ["CHOWN", "SETGID", "SETUID"],

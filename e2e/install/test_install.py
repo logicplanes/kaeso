@@ -242,6 +242,18 @@ def test_the_updater_writes_its_files_without_root(install):
     assert written.returncode == 0, written.stderr
 
 
+def test_the_init_services_run_again_over_directories_only_their_services_can_read(install):
+    for volume in ("caddy_data", "maintenance", "updater"):
+        subprocess.run(
+            ["docker", "run", "--rm", "--user", "65532:65532", "--network", "none", "-v", f"{PROJECT}_{volume}:/v",
+             "--entrypoint", "sh", CADDY, "-c", "mkdir -p -m 700 /v/private/inner && touch /v/private/inner/file"],
+            check=True,
+        )
+    for service in ("caddy-init", "updater-init"):
+        again = install.run("run", "--rm", "--no-deps", service, check=False, capture_output=True)
+        assert again.returncode == 0, again.stderr
+
+
 def flag(state: str | None) -> None:
     command = f"printf '%s' '{state}' > /m/active" if state else "rm -f /m/active"
     subprocess.run(
