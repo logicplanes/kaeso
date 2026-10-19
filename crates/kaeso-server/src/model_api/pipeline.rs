@@ -739,7 +739,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
             };
             if !success {
-                let err = refused_key(
+                let err = declared_key_refusal(
                     eff.provider,
                     dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes),
                 );
@@ -799,7 +799,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     }
 }
 
-pub(crate) fn refused_key(
+pub(crate) fn declared_key_refusal(
     provider: &kaeso_core::provider::Provider,
     mut err: KppError,
 ) -> KppError {
