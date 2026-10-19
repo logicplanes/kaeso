@@ -3,7 +3,6 @@
 mod common;
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::http::StatusCode;
 use common::v1::{Capture, Env, call, chat, messages};
@@ -45,19 +44,12 @@ async fn env_with_chat_provider() -> (Env, MockProvider) {
     (env, provider)
 }
 
-async fn outcome(env: &Env, id: &str) -> Outcome {
-    for _ in 0..300 {
-        if let Some(o) = env
-            .capture
-            .all()
-            .into_iter()
-            .find(|o| o.request_id.to_string() == id)
-        {
-            return o;
-        }
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
-    panic!("no outcome for {id} in {:#?}", env.capture.all());
+fn outcome(env: &Env, id: &str) -> Outcome {
+    env.capture
+        .all()
+        .into_iter()
+        .find(|o| o.request_id.to_string() == id)
+        .unwrap_or_else(|| panic!("no outcome for {id} in {:#?}", env.capture.all()))
 }
 
 #[tokio::test]
@@ -82,7 +74,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
         "Hello! How can I assist you today?"
     );
     assert!(r.json().get("usage").is_none(), "{}", r.text());
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
     assert_eq!(o.status, 200);
     assert!(o.usage_estimated);
     let u = o.usage.unwrap();
@@ -94,7 +86,7 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert!(r.text().contains("message_stop"), "{}", r.text());
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
     assert_eq!(o.status, 200);
     assert!(o.error_kind.is_none(), "{:?}", o.error_kind);
     assert!(o.usage_estimated);
@@ -113,12 +105,31 @@ async fn replies_and_streams_without_usage_are_charged_an_estimate() {
         )),
     )
     .await;
-    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
     assert!(!o.usage_estimated);
     let u = o.usage.unwrap();
     assert_eq!((u.input_tokens, u.output_tokens), (19, 10));
 
+    let r = call(
+        &env,
+        "/v1/embeddings",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "text-embedding-3-small", "input": "hello [mock:fixture=without-usage]" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(r.json().get("usage").is_none(), "{}", r.text());
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap());
+    assert!(o.usage_estimated);
+    let u = o.usage.unwrap();
+    assert!(u.input_tokens > 0, "{u:?}");
+    assert_eq!(u.output_tokens, 0, "{u:?}");
+
     let needle = "kaeso_usage_estimates_total{reason=\"unreported\",provider=\"deepseek\"} 2";
+    let text = handle.render();
+    assert!(text.contains(needle), "missing `{needle}` in:\n{text}");
+    let needle = "kaeso_usage_estimates_total{reason=\"unreported\",provider=\"openai\"} 1";
     let text = handle.render();
     assert!(text.contains(needle), "missing `{needle}` in:\n{text}");
 }

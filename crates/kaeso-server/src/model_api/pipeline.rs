@@ -865,21 +865,20 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     let o = rec.outcome();
     o.usage = Some(usage.clone());
     o.response_model = Some(model.clone());
-    let Reply::Generate(r) = reply else {
-        return;
-    };
-    if r.usage.raw.is_some() {
+    if usage.raw.is_some() {
         return;
     }
     let mut tally = Tally::new();
-    tally.feed_blocks(&r.blocks);
-    let input = if r.usage.total_input_tokens() == 0 {
+    if let Reply::Generate(r) = reply {
+        tally.feed_blocks(&r.blocks);
+    }
+    let input = if usage.total_input_tokens() == 0 {
         Some(counter.count().await.tokens())
     } else {
         None
     };
     let o = rec.outcome();
-    o.usage = Some(estimate::complete(&r.usage, &tally, input));
+    o.usage = Some(estimate::complete(usage, &tally, input));
     o.usage_estimated = true;
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
