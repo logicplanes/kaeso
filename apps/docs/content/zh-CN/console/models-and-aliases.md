@@ -71,6 +71,8 @@ Kaeso 按以下顺序查找请求指定的模型：
 
 如果两个服务商有相同 ID 的模型，请使用 `provider/model` 形式。
 
+模型 ID 可以包含 `/`，例如 OpenRouter 的 `anthropic/claude-sonnet-4.5`。如果一个名称既是模型 ID，又是服务商加模型，Kaeso 会以名称不明确为由拒绝它。例如，项目中同时有 OpenRouter 的 `openai/gpt-4o` 和 OpenAI 的 `gpt-4o` 时，请分别使用 `openrouter/openai/gpt-4o` 和 `gpt-4o`。
+
 ## 后续步骤
 
 - [调用模型](../get-started/calling-models.md)：从应用中调用目录中的模型。

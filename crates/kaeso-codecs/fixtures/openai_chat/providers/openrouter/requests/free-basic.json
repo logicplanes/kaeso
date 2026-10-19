@@ -1,0 +1,14 @@
+{
+  "model": "google/gemma-4-31b-it:free",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant. Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "max_tokens": 256
+}

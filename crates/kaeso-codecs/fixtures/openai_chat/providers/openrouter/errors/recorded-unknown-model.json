@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "kaeso-example/no-such-model:free is not a valid model ID",
+    "code": 400
+  },
+  "user_id": "user_000000000000000000000000000"
+}

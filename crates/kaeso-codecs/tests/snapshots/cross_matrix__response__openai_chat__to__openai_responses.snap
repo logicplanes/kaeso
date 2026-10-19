@@ -689,6 +689,195 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/openrouter/recorded-free-basic": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen-1792370384-hK3FcgoGLAo8OPNdHkO8",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "liquid/lfm-2.5-2.6b:free",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of France is Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_gen1792370384hK3FcgoGLAo8OPNdHkO8_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 34,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 62,
+      "output_tokens_details": {
+        "reasoning_tokens": 53
+      },
+      "total_tokens": 96
+    },
+    "user": null
+  },
+  "providers/openrouter/recorded-free-reasoning": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen-1792370346-mJG1Ww0FHKsjXCU4VP0F",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "nvidia/nemotron-3.5-lightning:free",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "No, because 91 = 7 × 13.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_gen1792370346mJG1Ww0FHKsjXCU4VP0F_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 33,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 434,
+      "output_tokens_details": {
+        "reasoning_tokens": 418
+      },
+      "total_tokens": 467
+    },
+    "user": null
+  },
+  "providers/openrouter/recorded-free-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen-1792370368-7fvvGcl3ZsR3zBhdgoCI",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "nvidia/nemotron-3.5-lightning:free",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\"unit\":\"celsius\",\"location\":\"Paris, France\"}",
+        "call_id": "call-018a495d-02ee-4d66-9d91-f74ddbca70cb",
+        "id": "fc_kaeso_gen17923703687fvvGcl3ZsR3zBhdgoCI_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 348,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 55,
+      "output_tokens_details": {
+        "reasoning_tokens": 16
+      },
+      "total_tokens": 403
+    },
+    "user": null
+  },
   "reasoning-cached-usage": {
     "background": false,
     "completed_at": 1760000000,

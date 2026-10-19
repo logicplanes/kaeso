@@ -275,6 +275,86 @@ expression: outcomes
       }
     }
   },
+  "providers/openrouter/recorded-free-basic": {
+    "content": [
+      {
+        "text": "The capital of France is Paris.",
+        "type": "text"
+      }
+    ],
+    "id": "gen-1792370384-hK3FcgoGLAo8OPNdHkO8",
+    "model": "liquid/lfm-2.5-2.6b:free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 34,
+      "output_tokens": 62,
+      "output_tokens_details": {
+        "thinking_tokens": 53
+      }
+    }
+  },
+  "providers/openrouter/recorded-free-reasoning": {
+    "content": [
+      {
+        "text": "No, because 91 = 7 × 13.",
+        "type": "text"
+      }
+    ],
+    "id": "gen-1792370346-mJG1Ww0FHKsjXCU4VP0F",
+    "model": "nvidia/nemotron-3.5-lightning:free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 33,
+      "output_tokens": 434,
+      "output_tokens_details": {
+        "thinking_tokens": 418
+      }
+    }
+  },
+  "providers/openrouter/recorded-free-tools": {
+    "content": [
+      {
+        "id": "call-018a495d-02ee-4d66-9d91-f74ddbca70cb",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "gen-1792370368-7fvvGcl3ZsR3zBhdgoCI",
+    "model": "nvidia/nemotron-3.5-lightning:free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 348,
+      "output_tokens": 55,
+      "output_tokens_details": {
+        "thinking_tokens": 16
+      }
+    }
+  },
   "reasoning-cached-usage": {
     "content": [
       {

@@ -1,0 +1,8 @@
+{
+  "model": "nvidia/nemotron-3-embed-1b:free",
+  "input": [
+    "Hello world",
+    "Hallo Welt"
+  ],
+  "encoding_format": "base64"
+}

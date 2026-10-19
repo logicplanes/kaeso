@@ -1,0 +1,43 @@
+{
+  "model": "google/gemma-4-31b-it:free",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a concise travel assistant. Use the tools for live data."
+    },
+    {
+      "role": "user",
+      "content": "What's the weather in Paris right now? Use Celsius."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "City and country, e.g. Paris, France"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "celsius",
+                "fahrenheit"
+              ]
+            }
+          },
+          "required": [
+            "location",
+            "unit"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}

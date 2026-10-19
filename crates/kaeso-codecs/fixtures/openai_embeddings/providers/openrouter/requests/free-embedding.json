@@ -1,0 +1,5 @@
+{
+  "model": "nvidia/nemotron-3-embed-1b:free",
+  "input": "Kaeso routes models.",
+  "encoding_format": "float"
+}

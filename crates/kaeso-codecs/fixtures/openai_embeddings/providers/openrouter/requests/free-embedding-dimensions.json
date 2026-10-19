@@ -1,0 +1,5 @@
+{
+  "model": "nvidia/nemotron-3-embed-1b:free",
+  "input": "Hello world",
+  "dimensions": 8
+}

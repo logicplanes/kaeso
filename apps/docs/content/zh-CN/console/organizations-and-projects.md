@@ -107,5 +107,5 @@ Kaeso 只会归档项目，不会删除，因此其用量和日志会保留。�
 ## 后续步骤
 
 - [成员和角色](members-and-roles.md)：邀请成员，并为其分配组织和项目中的角色。
-- [服务商密钥](provider-keys.md)：连接项目调用模型所用的 OpenAI 和 Anthropic 密钥。
+- [服务商密钥](provider-keys.md)：连接项目调用模型所用的服务商密钥。
 - [请求日志](request-logs.md)：选择组织保留哪些内容以及保留多久。

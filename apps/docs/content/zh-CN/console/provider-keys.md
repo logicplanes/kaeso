@@ -1,17 +1,25 @@
 ---
 title: 服务商密钥
-description: 连接组织的 OpenAI 和 Anthropic 密钥，并选择各项目使用哪个密钥。
+description: 连接组织的模型服务商密钥，并选择各项目使用哪个密钥。
 order: 3
 ---
 
-服务商密钥是组织用于 OpenAI 和 Anthropic 的密钥，这是 Kaeso 调用的两个服务商。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
+服务商密钥是组织用于 Kaeso 所调用的模型服务商的密钥。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
 
 ## 添加密钥
 
 1. 在**服务商**页面上选择**添加密钥**，或在尚无密钥的服务商旁选择**连接**。
-2. **此密钥属于哪个服务商？** 选择 OpenAI 或 Anthropic。
-3. 粘贴密钥并为其命名，例如 `Production`。OpenAI 密钥来自 platform.openai.com，以 `sk-` 开头。Anthropic 密钥来自 console.anthropic.com，以 `sk-ant-` 开头。
+2. **此密钥属于哪个服务商？** 选择服务商。
+3. 粘贴密钥并为其命名，例如 `Production`。下表列出各服务商的密钥从哪里获取。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
+
+| 服务商 | 在此创建密钥 | 密钥开头 |
+| --- | --- | --- |
+| OpenAI | platform.openai.com | `sk-` |
+| Anthropic | console.anthropic.com | `sk-ant-` |
+| OpenRouter | openrouter.ai 的 **Settings** 中的 **API Keys** 页面 | `sk-or-v1-` |
+
+OpenRouter 将请求转发给众多服务商的模型。它的模型 ID 包含模型的开发者，例如 `anthropic/claude-sonnet-4.5`；调用方法见[请求如何指定模型](models-and-aliases.md#请求如何指定模型)。Kaeso 按目录中的价格计算 OpenRouter 请求的费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。
 
 对服务商密钥的每种操作都需要相应的权限：
 

@@ -741,14 +741,7 @@ impl ChatStreamDecoder {
 }
 
 fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {
-    #[derive(serde::Deserialize)]
-    struct Probe {
-        #[serde(default)]
-        error: Option<serde::de::IgnoredAny>,
-        #[serde(default)]
-        choices: Option<serde::de::IgnoredAny>,
-    }
-    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| p.error.is_some() && p.choices.is_none())
+    super::error::probe(raw.get()).error
 }
 
 pub(crate) fn event_extras_mut(event: &mut StreamEvent) -> Option<&mut Extras> {

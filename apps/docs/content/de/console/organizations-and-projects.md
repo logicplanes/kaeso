@@ -107,5 +107,5 @@ Kaeso archiviert Projekte und löscht sie nie, damit ihre Nutzung und Protokolle
 ## Nächste Schritte
 
 - [Mitglieder und Rollen](members-and-roles.md): Laden Sie Personen ein und geben Sie ihnen Rollen in der Organisation und ihren Projekten.
-- [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie die OpenAI- und Anthropic-Schlüssel, mit denen Ihre Projekte Modelle aufrufen.
+- [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie die Anbieter-Schlüssel, mit denen Ihre Projekte Modelle aufrufen.
 - [Anfrageprotokolle](request-logs.md): Legen Sie fest, was die Organisation aufbewahrt und wie lange.

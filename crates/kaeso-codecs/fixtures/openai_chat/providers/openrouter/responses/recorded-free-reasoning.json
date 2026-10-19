@@ -1,0 +1,54 @@
+{
+  "id": "gen-1792370346-mJG1Ww0FHKsjXCU4VP0F",
+  "object": "chat.completion",
+  "created": 1792370346,
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "provider": "Nvidia",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "No, because 91 = 7 × 13.",
+        "refusal": null,
+        "reasoning": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User asks: \"Is 91 a prime number? Answer yes or no with one short reason.\"\n   - Constraints: Answer must be \"yes\" or \"no\" format, plus one short reason.\n\n2.  **Determine if 91 is prime:**\n   - A prime number has exactly two distinct positive divisors: 1 and itself.\n   - Check divisibility of 91:\n     - Not even, so not divisible by 2.\n     - Sum of digits: 9 + 1 = 10, not divisible by 3.\n     - Doesn't end in 0 or 5, so not divisible by 5.\n     - Check 7: 7 × 13 = 91. Yes!\n   - So 91 = 7 × 13, which means it has divisors other than 1 and itself.\n   - Therefore, 91 is not a prime number; it's composite.\n\n3.  **Format Output:**\n   - Must answer \"yes\" or \"no\" with one short reason.\n   - Answer should be \"no\" because 91 = 7 × 13.\n   - Keep it short: \"No, because 91 = 7 × 13.\"\n\n4.  **Verify Constraints:**\n   - Is it yes or no? No.\n   - Is there one short reason? Yes: \"91 = 7 × 13\".\n   - Format: \"No, because 91 = 7 × 13.\" or just \"No. 91 = 7 × 13.\" The prompt says \"Answer yes or no with one short reason.\" I'll make sure it's concise.\n\n   Possible output: \"No, because 91 = 7 × 13.\"\n   Check if this meets \"one short reason\": Yes.\n\n   I'll output exactly that.✅",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User asks: \"Is 91 a prime number? Answer yes or no with one short reason.\"\n   - Constraints: Answer must be \"yes\" or \"no\" format, plus one short reason.\n\n2.  **Determine if 91 is prime:**\n   - A prime number has exactly two distinct positive divisors: 1 and itself.\n   - Check divisibility of 91:\n     - Not even, so not divisible by 2.\n     - Sum of digits: 9 + 1 = 10, not divisible by 3.\n     - Doesn't end in 0 or 5, so not divisible by 5.\n     - Check 7: 7 × 13 = 91. Yes!\n   - So 91 = 7 × 13, which means it has divisors other than 1 and itself.\n   - Therefore, 91 is not a prime number; it's composite.\n\n3.  **Format Output:**\n   - Must answer \"yes\" or \"no\" with one short reason.\n   - Answer should be \"no\" because 91 = 7 × 13.\n   - Keep it short: \"No, because 91 = 7 × 13.\"\n\n4.  **Verify Constraints:**\n   - Is it yes or no? No.\n   - Is there one short reason? Yes: \"91 = 7 × 13\".\n   - Format: \"No, because 91 = 7 × 13.\" or just \"No. 91 = 7 × 13.\" The prompt says \"Answer yes or no with one short reason.\" I'll make sure it's concise.\n\n   Possible output: \"No, because 91 = 7 × 13.\"\n   Check if this meets \"one short reason\": Yes.\n\n   I'll output exactly that.✅",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 33,
+    "completion_tokens": 434,
+    "total_tokens": 467,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 418,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

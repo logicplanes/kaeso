@@ -119,7 +119,7 @@ nav: OpenAI Chat
 | `id`、`model` | `Response.id`、`.model` | 来自其他格式时，保留服务商的 ID 不变（[回复 ID](cross-format.md#回复-id)）。 |
 | `object` | 无 | 始终为 `chat.completion`；其他值或没有该字段：形式标记 `object`。 |
 | `created`、`service_tier`、`system_fingerprint`、`metadata`、`moderation` | extras | extras 中没有 `created` 的回复（例如来自其他方言的回复）取 `EncodeCtx::created_at`，没有时为 `0`。 |
-| `choices` | `choices[0]` | 多于一个选项（choice）：`Unsupported`（`n`）；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。 |
+| `choices` | `choices[0]` | 多于一个选项（choice）：`Unsupported`（`n`）；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。带有 `error` 对象且没有 `choices` 的 200 响应体（OpenRouter 在服务商于 200 之后失败时发送，见 [Errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)）会像流错误一样解码为该错误。 |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`：verbatim。 |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
@@ -169,7 +169,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `obfuscation` | 形式标记 `chunk.obf` | 事件来自其他方言时不发送给应用。 |
 | `moderation`、chunk 中的未知键 | 该 chunk 第一个事件上的 extras | |
 | `data: [DONE]` | `ResponseStop`（在仍打开的块的 `BlockStop` 之后） | 在 `finish_reason` 之后结束但没有 `[DONE]` 的流：带形式标记 `no_done` 的 `ResponseStop`；更早结束的流：`Error`。带有 SSE 字段的 `[DONE]` 帧是一个 `Extra`，流随后按没有 `[DONE]` 的流结束。 |
-| `data: {"error": {…}}` | `Error`，像不带状态码的错误体一样解码 | 解码器停止。编码为同样的帧；之后没有 `[DONE]`。 |
+| `data: {"error": {…}}`，也包括与 `choices` 同时出现的情况，即 OpenRouter 在 200 之后发送错误的方式（[Errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)） | `Error`，像不带状态码的错误体一样解码 | 解码器停止。编码为同样的帧；之后没有 `[DONE]`。不是对象的 `error`（例如 `null`）不算错误。 |
 | 一些兼容 OpenAI 的服务商发送的、带数据的 `event: error` 帧 | `Error` | 像不带状态码的错误体一样解码；编码为 `data:` 帧。没有数据时，这样的帧是一个 `Extra`。 |
 | 不是 JSON 的 `data:` 帧、Kaeso 无法读取的 chunk | `Error`（`ProviderError`） | 解码器停止。 |
 | SSE 注释、没有数据或数据为空的帧、其他具名事件、`[DONE]` 之后的帧 | `Extra`（`{"comment"}` 或 `{"event", "data", "text", "id", "retry", "other"}`，原帧没有数据时不含 `data`，数据不是 JSON 时带有 `text: true`） | 仅限同一方言；按收到时的样子写回。 |
@@ -204,7 +204,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |
 | `error.misalignment`（`Error` schema 中的 `MisalignmentErrorDetailsResource`）、`error` 中的未知键 | 保留在 `KppError.raw` 中（整个错误体） | 只有错误来自 Chat 时才会再次发送。 |
 
-表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。
+表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。这类错误的状态码取自 400 到 599 之间的数字 `code`，OpenRouter 以它发送 HTTP 状态码。
 
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
@@ -223,7 +223,7 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | 线路字段 | KPP | KPP 没有值时的编码 |
 |---|---|---|
 | `id` | `id` | （必填） |
-| `object`（`"model"`） | 形式标记 `object`，仅在不同时记录 | `"model"` |
+| `object`（`"model"`，可选） | 形式标记 `object`，仅在不同时记录 | `"model"` |
 | `created`（Unix 秒） | `created_at` | `0` |
 | `owned_by` | `owned_by` | `"kaeso"`：所有者未知（例如由 Anthropic 列出的模型），而模型由 Kaeso 网关提供。 |
 | `shutdown_date`（`YYYY-MM-DD` 或 `null`） | `retires_at`（该日期的 00:00 UTC） | `null` |
@@ -231,13 +231,13 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 
 网关从自己的目录列出模型：把 `owned_by` 设为服务商 ID，并在目录中有发布日期时把 `created_at` 设为该日期。
 
-收到时缺失的字段，或在默认值为具体值的地方收到 `null` 的字段，会记录在形式标记 `none` 中并按同样方式写出；`shutdown_date` 在规范中是可选的。不是 `full-date` 的 `shutdown_date` 为 `ProviderError`。三个 OpenAI 方言中任一方言的 extras 都会被三个编码器采用。
+收到时缺失的字段，或在默认值为具体值的地方收到 `null` 的字段，会记录在形式标记 `none` 中并按同样方式写出；`shutdown_date` 在规范中是可选的。`object` 在规范中是必填的，但 OpenRouter 的模型列表（[`GET /api/v1/models`](https://openrouter.ai/docs/guides/overview/models)）在列表和每个模型中都省略了它，因此按同样方式读取（fixture `providers/openrouter/models/list-recorded.json`）。不是 `full-date` 的 `shutdown_date` 为 `ProviderError`。三个 OpenAI 方言中任一方言的 extras 都会被三个编码器采用。
 
 ### `ListModelsResponse` ⇄ `ModelList`
 
 | 线路字段 | KPP |
 |---|---|
-| `object`（`"list"`） | 形式标记 `object`，仅在不同时记录 |
+| `object`（`"list"`，可选） | 形式标记 `object`，仅在不同时记录；缺失或 `null` 记录在形式标记 `none` 中 |
 | `data` | `models` |
 | 未知键 | extras 字段 |
 

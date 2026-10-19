@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "HTTP 400: {\"object\":\"error\",\"message\":\"dimensions must be one of 2048\",\"type\":\"invalid_request_error\"}",
+    "code": 400
+  }
+}

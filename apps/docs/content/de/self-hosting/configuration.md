@@ -144,6 +144,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | --- | --- | --- | --- | --- |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | Text | `https://api.openai.com` | Basis-URL der OpenAI-API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | Text | `https://api.anthropic.com` | Basis-URL der Anthropic-API. |
+| `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | Text | `https://openrouter.ai/api` | Basis-URL der API von OpenRouter. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
@@ -208,7 +209,7 @@ In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen 
 
 ## Anbietereinstellungen
 
-Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Kaeso ruft zwei Anbieter auf, `openai` und `anthropic`, und jeder hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)).
+Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Jeder Anbieter, den Kaeso aufruft, hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)).
 
 Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen. Eine Anbieter-Variable oder -Tabelle mit einer anderen ID, oder mit der ID eines Anbieters, den Kaeso nicht aufruft, hält das Gateway beim Start an. Die Meldung nennt sie und listet die Anbieter auf.
 

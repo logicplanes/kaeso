@@ -36,10 +36,11 @@ pub(crate) async fn refresh(paths: &Paths, url: &str, out: &mut impl Write) -> R
     let api = reqwest::get(url).await?.error_for_status()?.bytes().await?;
     let now = OffsetDateTime::now_utc();
     let fetched = now - Duration::nanoseconds(i64::from(now.nanosecond()));
-    let (snapshot, models) = filter(&api)?;
+    let (snapshot, providers, models) = filter(&api)?;
     let digest = hex(&Sha256::digest(snapshot.as_bytes()));
     let stamp = fetched.format(&Rfc3339)?;
-    let readme = readme(&read_text(&paths.readme)?, &stamp, models, &digest)?;
+    let content = content(&providers, models);
+    let readme = readme(&read_text(&paths.readme)?, &stamp, &content, &digest)?;
     let source = fetched_at(&read_text(&paths.source)?, fetched)?;
     write(&paths.snapshot, &snapshot)?;
     write(&paths.readme, readme)?;
@@ -52,7 +53,7 @@ pub(crate) async fn refresh(paths: &Paths, url: &str, out: &mut impl Write) -> R
     Ok(())
 }
 
-fn filter(api: &[u8]) -> Result<(String, usize), Error> {
+fn filter(api: &[u8]) -> Result<(String, Vec<String>, usize), Error> {
     let mut all: Map<String, Value> =
         serde_json::from_slice(api).map_err(|e| Error::json("the models.dev catalogue", e))?;
     let kept: Map<String, Value> = PROVIDERS
@@ -64,6 +65,7 @@ fn filter(api: &[u8]) -> Result<(String, usize), Error> {
         .filter_map(|p| p.get("models").and_then(Value::as_object))
         .map(Map::len)
         .sum();
+    let providers = kept.keys().cloned().collect();
     let mut bytes = Vec::new();
     Value::Object(kept)
         .serialize(&mut Serializer::with_formatter(
@@ -76,26 +78,33 @@ fn filter(api: &[u8]) -> Result<(String, usize), Error> {
         .map_err(|e| Error::Invalid(format!("the gateway cannot read the new snapshot: {e}")))?;
     let snapshot = String::from_utf8(bytes)
         .map_err(|e| Error::Invalid(format!("the snapshot is not UTF-8: {e}")))?;
-    Ok((snapshot, models))
+    Ok((snapshot, providers, models))
 }
 
-fn readme(text: &str, stamp: &str, models: usize, digest: &str) -> Result<String, Error> {
+fn content(providers: &[String], models: usize) -> String {
+    let names = providers
+        .iter()
+        .map(|p| format!("`{p}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "| Content | the providers Kaeso calls ({names}), unchanged otherwise; {models} models |"
+    )
+}
+
+fn readme(text: &str, stamp: &str, row: &str, digest: &str) -> Result<String, Error> {
     let (mut fetched, mut content, mut sha) = (false, false, false);
     let mut lines = Vec::new();
     for line in text.split('\n') {
-        let counted = line
-            .strip_prefix("| Content |")
-            .and_then(|_| line.rsplit_once("; "))
-            .filter(|(_, tail)| tail.ends_with(" models |"));
         if line.starts_with("| Fetched |") {
             fetched = true;
             lines.push(format!("| Fetched | {stamp} |"));
         } else if line.starts_with("| SHA-256 |") {
             sha = true;
             lines.push(format!("| SHA-256 | `{digest}` |"));
-        } else if let Some((head, _)) = counted {
+        } else if line.starts_with("| Content |") {
             content = true;
-            lines.push(format!("{head}; {models} models |"));
+            lines.push(row.to_owned());
         } else {
             lines.push(line.to_owned());
         }
@@ -154,18 +163,19 @@ mod tests {
     #[test]
     fn the_shipped_snapshot_is_what_filter_writes() {
         let shipped = include_str!("../../kaeso-core/data/models-dev.json");
-        let (snapshot, models) = filter(shipped.as_bytes()).unwrap();
+        let (snapshot, providers, models) = filter(shipped.as_bytes()).unwrap();
         assert_eq!(snapshot, shipped);
         let readme = include_str!("../../kaeso-core/data/README.md");
         let digest = hex(&Sha256::digest(shipped.as_bytes()));
         assert!(readme.contains(&format!("| SHA-256 | `{digest}` |")));
-        assert!(readme.contains(&format!("; {models} models |")));
+        assert!(readme.contains(&format!("{}\n", content(&providers, models))));
     }
 
     #[test]
     fn filter_keeps_the_providers_kaeso_calls_with_sorted_keys() {
-        let (snapshot, models) = filter(API.as_bytes()).unwrap();
+        let (snapshot, providers, models) = filter(API.as_bytes()).unwrap();
         assert_eq!(models, 3);
+        assert_eq!(providers, ["anthropic", "openai"]);
         assert!(!snapshot.contains("zeta"));
         assert!(snapshot.starts_with("{\n \"anthropic\": {\n  \"id\": \"anthropic\",\n"));
         assert!(
@@ -178,12 +188,15 @@ mod tests {
 
     #[test]
     fn readme_rows_are_rewritten_and_required() {
-        let text = readme(README, "2026-10-16T08:00:00Z", 70, "abc").unwrap();
+        let row = content(&["groq".to_owned(), "openai".to_owned()], 70);
+        let text = readme(README, "2026-10-16T08:00:00Z", &row, "abc").unwrap();
         assert!(text.contains("| Fetched | 2026-10-16T08:00:00Z |\n"));
-        assert!(text.contains("unchanged otherwise; 70 models |\n"));
+        assert!(text.contains(
+            "| Content | the providers Kaeso calls (`groq`, `openai`), unchanged otherwise; 70 models |\n"
+        ));
         assert!(text.contains("| SHA-256 | `abc` |\n"));
         assert!(text.contains("| Source | `x` |\n"));
-        assert!(readme("# Model data\n", "x", 1, "y").is_err());
+        assert!(readme("# Model data\n", "x", &row, "y").is_err());
     }
 
     #[test]

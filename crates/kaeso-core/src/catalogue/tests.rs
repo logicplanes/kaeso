@@ -287,6 +287,56 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_prefix() {
+    let free = entry("openrouter", "nvidia/nemotron-3.5-lightning:free");
+    let sonnet = entry("openrouter", "anthropic/claude-sonnet-4.5");
+    let entries = vec![free.clone(), sonnet.clone()];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(
+        r("nvidia/nemotron-3.5-lightning:free"),
+        Ok((free.id, Via::Native))
+    );
+    assert_eq!(
+        r("openrouter/nvidia/nemotron-3.5-lightning:free"),
+        Ok((free.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r("anthropic/claude-sonnet-4.5"),
+        Ok((sonnet.id, Via::Native))
+    );
+    assert!(matches!(
+        r("nvidia/nemotron-3.5-lightning"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+}
+
+#[test]
+fn a_native_id_that_reads_as_another_providers_prefixed_name_is_ambiguous() {
+    let routed = entry("openrouter", "openai/gpt-4o");
+    let direct = entry("openai", "gpt-4o");
+    let entries = vec![routed.clone(), direct.clone()];
+    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    let err = r("openai/gpt-4o").unwrap_err();
+    assert_eq!(
+        err,
+        ResolveError::Ambiguous {
+            name: "openai/gpt-4o".into(),
+            providers: vec!["openrouter".into(), "openai".into()],
+        }
+    );
+    assert!(
+        err.to_string()
+            .contains("such as `openrouter/openai/gpt-4o`"),
+        "{err}"
+    );
+    assert_eq!(
+        r("openrouter/openai/gpt-4o"),
+        Ok((routed.id, Via::Prefixed))
+    );
+    assert_eq!(r("gpt-4o"), Ok((direct.id, Via::Native)));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

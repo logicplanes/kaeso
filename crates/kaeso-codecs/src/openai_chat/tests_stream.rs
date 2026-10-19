@@ -271,6 +271,39 @@ fn a_mid_stream_error_ends_the_stream() {
 }
 
 #[test]
+fn an_openrouter_error_chunk_with_choices_ends_the_stream_as_an_error() {
+    for (name, message, kind) in [
+        (
+            "providers/openrouter/doc-error-mid-stream",
+            "Rate limit exceeded",
+            ErrorKind::RateLimited,
+        ),
+        (
+            "providers/openrouter/doc-error-mid-stream-string-code",
+            "Provider disconnected unexpectedly",
+            ErrorKind::ProviderError,
+        ),
+    ] {
+        let events = decode_whole(&fixture(name));
+        let StreamEvent::Error(err) = events.last().unwrap() else {
+            panic!("{name}: {events:?}")
+        };
+        assert_eq!(
+            (err.message.as_str(), &err.kind),
+            (message, &kind),
+            "{name}"
+        );
+        assert_eq!(err.status, None, "{name}");
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, StreamEvent::ResponseStop(_))),
+            "{name}"
+        );
+    }
+}
+
+#[test]
 fn comments_and_unknown_fields_survive() {
     let events = decode_whole(&fixture("stream-doc"));
     assert!(

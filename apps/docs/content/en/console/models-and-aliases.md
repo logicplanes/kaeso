@@ -71,6 +71,8 @@ Kaeso looks up the model a request names in this order:
 
 If two providers have a model with the same id, use the `provider/model` form.
 
+A model id can contain `/`, such as OpenRouter's `anthropic/claude-sonnet-4.5`. When a name is both a model id and a provider with a model, Kaeso refuses it as ambiguous. For example, in a project with OpenRouter's `openai/gpt-4o` and OpenAI's `gpt-4o`, name them `openrouter/openai/gpt-4o` and `gpt-4o`.
+
 ## Next steps
 
 - [Calling models](../get-started/calling-models.md): Call the models in your catalogue from an app.

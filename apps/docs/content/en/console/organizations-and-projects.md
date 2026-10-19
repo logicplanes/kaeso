@@ -107,5 +107,5 @@ Kaeso archives projects and never deletes them, so their usage and logs stay. Th
 ## Next steps
 
 - [Members and roles](members-and-roles.md): Invite people and give them roles in the organization and its projects.
-- [Provider keys](provider-keys.md): Connect the OpenAI and Anthropic keys your projects call models with.
+- [Provider keys](provider-keys.md): Connect the provider keys your projects call models with.
 - [Request logs](request-logs.md): Choose what the organization keeps, and for how long.

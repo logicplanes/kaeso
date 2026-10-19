@@ -17,7 +17,7 @@ flowchart TD
   gateway --> postgres[(PostgreSQL)]
   gateway --> clickhouse[(ClickHouse)]
   gateway --> valkey[(Valkey)]
-  gateway -->|HTTPS| providers[OpenAI 和 Anthropic]
+  gateway -->|HTTPS| providers[模型服务商]
 ```
 
 ## 服务

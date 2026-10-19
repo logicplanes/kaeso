@@ -27,6 +27,7 @@ export interface FieldDraft {
 const PROVIDER_DIALECTS: Record<string, string[]> = {
   openai: ["openai_responses", "openai_chat", "openai_embeddings"],
   anthropic: ["anthropic_messages"],
+  openrouter: ["openai_chat", "openai_embeddings"],
 };
 
 const INPUTS = ["text", "image", "pdf", "audio", "video"];

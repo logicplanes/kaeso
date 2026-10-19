@@ -1,0 +1,54 @@
+{
+  "id": "gen-1792370384-hK3FcgoGLAo8OPNdHkO8",
+  "object": "chat.completion",
+  "created": 1792370384,
+  "model": "liquid/lfm-2.5-2.6b:free",
+  "provider": "Liquid",
+  "system_fingerprint": "vllm-0.31.0-7d3fcc00",
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "The capital of France is Paris.",
+        "refusal": null,
+        "reasoning": "The user is asking a straightforward factual question: \"What is the capital of France?\" This is a simple geography question with a well-known answer. I need to provide a concise, accurate response in one short sentence as instructed. The capital of France is Paris.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "The user is asking a straightforward factual question: \"What is the capital of France?\" This is a simple geography question with a well-known answer. I need to provide a concise, accurate response in one short sentence as instructed. The capital of France is Paris.",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 34,
+    "completion_tokens": 62,
+    "total_tokens": 96,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 53,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

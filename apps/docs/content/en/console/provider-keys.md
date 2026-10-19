@@ -1,17 +1,25 @@
 ---
 title: Provider keys
-description: Connect your organization's OpenAI and Anthropic keys, and choose which projects use each one.
+description: Connect your organization's keys for model providers, and choose which projects use each one.
 order: 3
 ---
 
-Provider keys are your organization's keys for OpenAI and Anthropic, the two providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
+Provider keys are your organization's keys for the model providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
 
 ## Add a key
 
 1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose OpenAI or Anthropic.
-3. Paste the key and give it a name, such as `Production`. An OpenAI key, from platform.openai.com, starts with `sk-`. An Anthropic key, from console.anthropic.com, starts with `sk-ant-`.
+2. **Which provider is the key for?** Choose the provider.
+3. Paste the key and give it a name, such as `Production`. The table below says where each provider's keys come from.
 4. If the provider already has a default key, choose whether the new key becomes the default.
+
+| Provider | Create a key at | The key starts with |
+| --- | --- | --- |
+| OpenAI | platform.openai.com | `sk-` |
+| Anthropic | console.anthropic.com | `sk-ant-` |
+| OpenRouter | openrouter.ai, under **Settings**, **API Keys** | `sk-or-v1-` |
+
+OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`; [how a request names a model](models-and-aliases.md#how-a-request-names-a-model) shows how to call them. Kaeso charges OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports.
 
 Each action on provider keys needs its own right:
 

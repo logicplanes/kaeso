@@ -215,14 +215,27 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
     Some(rest.get(..end)?.trim_start_matches('='))
 }
 
+fn fixture_file(dir: &Path, folder: &str, name: &str, extension: &str) -> PathBuf {
+    match name
+        .strip_prefix("providers/")
+        .and_then(|rest| rest.split_once('/'))
+    {
+        Some((provider, stem)) => dir
+            .join("providers")
+            .join(provider)
+            .join(folder)
+            .join(format!("{stem}.{extension}")),
+        None => dir.join(folder).join(format!("{name}.{extension}")),
+    }
+}
+
 fn error_response(dir: &Path, name: &str) -> Response {
-    let body = std::fs::read(dir.join("errors").join(format!("{name}.json")))
+    let body = std::fs::read(fixture_file(dir, "errors", name, "json"))
         .unwrap_or_else(|e| panic!("mock: no error fixture {name}: {e}"));
-    let meta: serde_json::Value =
-        std::fs::read(dir.join("errors").join(format!("{name}.meta.json")))
-            .ok()
-            .and_then(|m| serde_json::from_slice(&m).ok())
-            .unwrap_or_default();
+    let meta: serde_json::Value = std::fs::read(fixture_file(dir, "errors", name, "meta.json"))
+        .ok()
+        .and_then(|m| serde_json::from_slice(&m).ok())
+        .unwrap_or_default();
     let status = meta
         .get("status")
         .and_then(serde_json::Value::as_u64)
@@ -373,7 +386,7 @@ async fn handle(
             "openai_responses" => "text-basic-stream".into(),
             _ => "stream-include-usage".into(),
         });
-        let bytes = std::fs::read(dir.join("streams").join(format!("{name}.sse")))
+        let bytes = std::fs::read(fixture_file(&dir, "streams", &name, "sse"))
             .unwrap_or_else(|e| panic!("mock: no stream fixture {dialect}/{name}: {e}"));
         let mode = if marker(&text, "stall").is_some() {
             StreamMode::Stall
@@ -414,8 +427,12 @@ async fn handle(
                 "openai_responses" => "text-input-string",
                 _ => "plain-developer-string",
             };
-            dir.join("responses")
-                .join(format!("{}.json", fixture.as_deref().unwrap_or(default)))
+            fixture_file(
+                &dir,
+                "responses",
+                fixture.as_deref().unwrap_or(default),
+                "json",
+            )
         }
     };
     json_file(&file)
