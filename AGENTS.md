@@ -81,7 +81,14 @@ CI runs these checks in parallel jobs, the longest suites split into shards, for
 
 ## Rules
 
-1. **No code comments, anywhere.** No `//`, `///`, `//!`, `/* */`, JSDoc or JSX comments in Rust, TypeScript, JavaScript or CSS; no `--` in SQL; no `#` comments in TOML, YAML, Python, shell, Dockerfiles, `.dockerignore`, the Caddyfile, `.env.example` or the ignore and attributes files; no `<!-- -->` in HTML, Astro or Markdown; none inside the code blocks of a Markdown file. Code explains itself through names, types, small functions and tests; explanations belong in the documentation. The **No comments** CI job enforces it.
+1. **Comments only where the code can't say why.** Names, types, small functions and tests explain what code does, and the documentation explains how to use it. Write a comment only when a careful reader would otherwise get the code wrong, and give the reason, not a description:
+   - a workaround for a bug in a dependency, a browser or a provider, with a link to the issue or the provider's documentation;
+   - a security or safety invariant that the types can't hold, such as why a value must be checked before a lock is taken;
+   - a non-obvious order, limit or constant and where it comes from: a specification, an RFC section or a provider's documented limit;
+   - why the obvious alternative is wrong, when someone would otherwise "simplify" it back.
+
+   Keep it to one or two lines next to the code it explains, and delete it when the reason goes away. Never comment what the next line does or restate a name, and never commit commented-out code, `TODO`/`FIXME`/`XXX`/`HACK` notes (open an issue instead), change history, authorship or section banners. Doc comments (`///`, `//!`, JSDoc) belong on the public API of the published crates `kaeso-kpp` and `kaeso-codecs` and the packages `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens`, where they become the reference people read; everywhere else the rule above applies. Configuration files follow the same rule: a `#` line for a pinned version, a permission or a value whose reason isn't visible. Code blocks in Markdown pages never contain comments; explain a command in the sentence before it. Review decides whether a comment is needed; the **Comments** CI job refuses `TODO`, `FIXME`, `XXX` and `HACK` notes and comments in Markdown code blocks.
+
 2. **pnpm only** for JavaScript: never npm, npx or yarn; `pnpm dlx` runs a one-off tool. Add a dependency at an exact version with `pnpm --filter <package> add --save-exact <name>`. **Cargo** for Rust. Lockfiles change only through their tool.
 3. **Every visible word in English, German and Simplified Chinese**: interfaces, emails, error messages and documentation pages. [Translations](https://docs.kaeso.app/development/translations) has the rules and the glossary.
 4. **Tests for every change**, asserting on what a person or an app sees, deterministic (injectable clocks, no sleeps). Coverage gates in `.cargo/config.toml` and every `vitest.config.ts` are never lowered; raise them when coverage rises.

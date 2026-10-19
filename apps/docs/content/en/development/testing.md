@@ -249,12 +249,12 @@ The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 se
 
 The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. Everywhere else, every job runs.
 
-The one required check is **CI**. It passes when **Changes** and **No comments** passed and every other job passed or was skipped. A pull request into `dev` can't be merged until it is green ([get it merged](contributing.md#get-it-merged)).
+The one required check is **CI**. It passes when **Changes** and **Comments** passed and every other job passed or was skipped. A pull request into `dev` can't be merged until it is green ([get it merged](contributing.md#get-it-merged)).
 
 | Job | Runs |
 | --- | --- |
 | Changes | Decides which areas a pull request changes |
-| No comments | No comments in source files, configuration or Markdown code blocks |
+| Comments | No `TODO`, `FIXME`, `XXX` or `HACK` notes in comments, and no comments in Markdown code blocks |
 | Workflows | `actionlint` |
 | Rust format, Rust lint | `cargo fmt` and `cargo clippy`, for the workspace and `fuzz/` |
 | Test KPP | `cargo coverage-kpp` and the doc tests of `kaeso-kpp` and `kaeso-codecs` |
