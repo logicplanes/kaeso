@@ -454,6 +454,55 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/xai/live-search-deprecated": {
+    "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_parameters"
+  },
+  "providers/xai/presence-penalty-reasoning-model": {
+    "message": "`presence_penalty` is not supported by OpenAI Responses. The Responses API has no `presence_penalty`. Remove it or use the Chat Completions format.",
+    "param": "presence_penalty",
+    "unsupported": "presence_penalty"
+  },
+  "providers/xai/reasoning-content": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 * 24? Answer with the number only.",
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/xai/reasoning-content-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 * 24? Answer with the number only.",
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
