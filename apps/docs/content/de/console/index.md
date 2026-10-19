@@ -8,7 +8,7 @@ Die Konsole läuft unter der Domain Ihrer Installation, etwa `https://kaeso.exam
 
 - [Organisationen und Projekte](organizations-and-projects.md): Erstellen Sie Organisationen und Projekte, verbinden Sie Single Sign-on und verwalten Sie ihre Einstellungen.
 - [Mitglieder und Rollen](members-and-roles.md): Laden Sie Personen ein, geben Sie ihnen Rollen und Rechte, und erstellen Sie Dienstkonten.
-- [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie Ihre OpenAI- und Anthropic-Schlüssel und wählen Sie, welche Projekte welchen nutzen.
+- [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie Ihre Schlüssel für Modellanbieter und wählen Sie, welche Projekte welchen nutzen.
 - [Modelle und Aliasse](models-and-aliases.md): Wählen Sie die Modelle, die ein Projekt aufrufen darf, und geben Sie ihnen eigene Namen.
 - [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Apps und Skripte, begrenzen Sie sie und schalten Sie sie ab.
 - [Limits und Budgets](limits-and-budgets.md): Begrenzen Sie Anfragen, Token und Ausgaben eines Projekts, eines Mitglieds oder eines Schlüssels.
