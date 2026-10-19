@@ -672,3 +672,41 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         .await;
     assert_eq!(g.body["listed"], true, "{:?}", g.body);
 }
+
+#[tokio::test]
+async fn a_stored_snapshot_from_before_a_provider_was_added_still_offers_its_models() {
+    let s = TestServices::start().await;
+    let embedded: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
+    let older_release = json!({ "openai": embedded["openai"], "anthropic": embedded["anthropic"] });
+    let body = Arc::new(Mutex::new((200u16, older_release.to_string())));
+    let url = stub_models_dev(body).await;
+    let app = App::start_with(&s, &[("KAESO_MODELS_DEV_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["source"], url);
+
+    let restarted = App::start_with(&s, &[("KAESO_MODELS_DEV_URL", url.as_str())]).await;
+    let p = project(&restarted, &owner).await;
+    let hits = restarted
+        .get(
+            &format!(
+                "{}/models/search?q=llama&provider=huggingface",
+                base(&owner, &p)
+            ),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(hits.status, StatusCode::OK, "{:?}", hits.body);
+    assert!(
+        hits.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["model_id"] == "meta-llama/Llama-3.1-8B-Instruct"),
+        "{:?}",
+        hits.body
+    );
+}
