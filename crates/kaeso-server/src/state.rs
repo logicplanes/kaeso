@@ -33,6 +33,7 @@ pub struct Inner {
     pub distrusted: crate::services::limits::Distrusted,
     pub logs: crate::services::logs::Buffer,
     pub in_flight: crate::model_api::in_flight::InFlight,
+    pub availability: crate::services::availability::Recall,
     clickhouse_migrated: AtomicBool,
 }
 
@@ -78,6 +79,7 @@ impl AppState {
             distrusted: crate::services::limits::Distrusted::default(),
             logs: crate::services::logs::Buffer::default(),
             in_flight: crate::model_api::in_flight::InFlight::default(),
+            availability: crate::services::availability::Recall::default(),
             clickhouse_migrated: AtomicBool::new(false),
         }))
     }
