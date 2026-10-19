@@ -195,6 +195,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` oder `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, Code `content_policy_violation` |
 | 400, 409, 422 | `InvalidRequest` (und `Unsupported` beim Kodieren) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`, Code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |

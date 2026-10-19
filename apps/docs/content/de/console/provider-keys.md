@@ -1,17 +1,27 @@
 ---
 title: Anbieter-Schlüssel
-description: Verbinden Sie die OpenAI- und Anthropic-Schlüssel Ihrer Organisation und wählen Sie, welche Projekte welchen nutzen.
+description: Verbinden Sie die Anbieter-Schlüssel Ihrer Organisation und wählen Sie, welche Projekte welchen nutzen.
 order: 3
 ---
 
-Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für OpenAI und Anthropic, die beiden Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
+Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Anbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
 
 ## Schlüssel hinzufügen
 
 1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**, oder **Verbinden** neben einem Anbieter, der noch keinen Schlüssel hat.
-2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie OpenAI oder Anthropic.
-3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Ein OpenAI-Schlüssel von platform.openai.com beginnt mit `sk-`. Ein Anthropic-Schlüssel von console.anthropic.com beginnt mit `sk-ant-`.
+2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie einen aus der [Liste unten](#anbieter).
+3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
+
+### Anbieter
+
+| Anbieter | ID | Wo Sie einen Schlüssel erstellen | Beginnt mit |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com, unter API keys | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com, unter API keys | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens: ein Fine-grained-Token, das Inference Providers aufrufen darf | `hf_` |
+
+Hugging Face leitet jede Anfrage an einen seiner Inferenz-Anbieter weiter. Eine Modell-ID kann einen davon mit einem Suffix nennen, etwa `meta-llama/Llama-3.1-8B-Instruct:cerebras`, oder mit `:fastest` oder `:cheapest` wählen lassen; in Kaeso lautet der Name mit Präfix `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. Hat das Hugging-Face-Konto kein Guthaben mehr, scheitern seine Anfragen mit einem Abrechnungsfehler.
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

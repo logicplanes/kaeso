@@ -453,19 +453,22 @@ mod tests {
         for (name, reason) in [
             (
                 "KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL",
-                "names the provider `azure-openai`, which Kaeso does not know; the providers are openai, anthropic",
+                format!(
+                    "names the provider `azure-openai`, which Kaeso does not know; the providers are {}",
+                    kaeso_core::provider::ids()
+                ),
             ),
             (
                 "KAESO_PROVIDERS_AZURE__OPENAI_BASE_URL",
-                "names `AZURE__OPENAI`, which is not a provider id: the id in upper case with `_` for `-`, made of lowercase letters and digits, with single hyphens between them",
+                "names `AZURE__OPENAI`, which is not a provider id: the id in upper case with `_` for `-`, made of lowercase letters and digits, with single hyphens between them".to_owned(),
             ),
             (
                 "KAESO_PROVIDERS_BASE_URL",
-                "is not a provider setting; provider variables end in `_BASE_URL`",
+                "is not a provider setting; provider variables end in `_BASE_URL`".to_owned(),
             ),
             (
                 "KAESO_PROVIDERS_OPENAI_URL",
-                "is not a provider setting; provider variables end in `_BASE_URL`",
+                "is not a provider setting; provider variables end in `_BASE_URL`".to_owned(),
             ),
         ] {
             let err = load(&Map::minimal().set(name, "http://mock:1"))
@@ -483,11 +486,14 @@ mod tests {
         for (toml, message) in [
             (
                 "[providers.together-ai]\nbase_url = \"https://api.together.example.com\"\n",
-                "`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are openai, anthropic",
+                format!(
+                    "`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are {}",
+                    kaeso_core::provider::ids()
+                ),
             ),
             (
                 "[providers.azure_openai]\nbase_url = \"https://azure.example.com\"\n",
-                "`providers.azure_openai.base_url` in /k.toml: `azure_openai` is not a provider id: lowercase letters and digits, with single hyphens between them",
+                "`providers.azure_openai.base_url` in /k.toml: `azure_openai` is not a provider id: lowercase letters and digits, with single hyphens between them".to_owned(),
             ),
         ] {
             let m = Map::minimal()

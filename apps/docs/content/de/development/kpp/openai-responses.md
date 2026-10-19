@@ -239,6 +239,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | `content_policy_violation`, `content_filter`, `image_content_policy_violation`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` | `ContentFiltered` |
 | 400, 409, 422 | `InvalidRequest` |
 | 401 | `Authentication` |
+| 402 | `Billing` |
 | 403 | `PermissionDenied` |
 | 404 | `NotFound` |
 | 413 | `RequestTooLarge` |

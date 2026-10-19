@@ -149,7 +149,14 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         );
         let out = OpenAiChat::encode_error(&err);
         assert_eq!(out.status, status, "{name}");
-        assert_json_eq(&name, &body, &out.body);
+        let sent: Value = serde_json::from_slice(&body).unwrap();
+        match &sent["error"] {
+            Value::String(message) => {
+                let normalized: Value = serde_json::from_slice(&out.body).unwrap();
+                assert_eq!(normalized["error"]["message"], json!(message), "{name}");
+            }
+            _ => assert_json_eq(&name, &body, &out.body),
+        }
         assert_eq!(
             out.headers.get("retry-after"),
             headers.get("retry-after"),

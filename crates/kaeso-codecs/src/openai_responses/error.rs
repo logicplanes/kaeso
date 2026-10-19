@@ -74,6 +74,7 @@ pub(crate) fn kind_for(status: Option<u16>, ty: Option<&str>, code: Option<&str>
     match status {
         Some(400 | 409 | 422) => ErrorKind::InvalidRequest,
         Some(401) => ErrorKind::Authentication,
+        Some(402) => ErrorKind::Billing,
         Some(403) => ErrorKind::PermissionDenied,
         Some(404) => ErrorKind::NotFound,
         Some(413) => ErrorKind::RequestTooLarge,

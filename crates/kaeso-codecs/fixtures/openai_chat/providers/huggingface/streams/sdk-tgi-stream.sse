@@ -1,0 +1,32 @@
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" The"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" answer"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" to"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" the"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" equation"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" "},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":"1"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" +"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" "},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":"1"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" is"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":" "},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":"2"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":"."},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"object":"chat.completion.chunk","id":"","created":1736955428,"model":"mistralai/Mistral-7B-Instruct-v0.2","system_fingerprint":"3.0.1-sha-bb9095a","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":"stop"}],"usage":null}
+
+data: [DONE]
+

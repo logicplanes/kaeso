@@ -275,6 +275,28 @@ expression: outcomes
       }
     }
   },
+  "providers/huggingface/sdk-tgi-basic": {
+    "content": [
+      {
+        "text": " One plus one is equal to two.",
+        "type": "text"
+      }
+    ],
+    "id": "",
+    "model": "mistralai/Mistral-7B-Instruct-v0.2",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 20,
+      "output_tokens": 9
+    }
+  },
   "reasoning-cached-usage": {
     "content": [
       {

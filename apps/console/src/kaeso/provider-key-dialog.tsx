@@ -12,9 +12,16 @@ type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 const KEY_SITES: Record<string, { site: string; prefix: string }> = {
   openai: { site: "platform.openai.com", prefix: "sk-" },
   anthropic: { site: "console.anthropic.com", prefix: "sk-ant-" },
+  huggingface: { site: "huggingface.co/settings/tokens", prefix: "hf_" },
 };
 function keyHelp(provider: string): string {
   const where = KEY_SITES[provider];
+  if (provider === "huggingface")
+    return t(
+      "kaeso.providerKey.whereHuggingFace",
+      "Create a fine-grained token at {site} that may call Inference Providers; it starts with {prefix}.",
+      where,
+    );
   return where
     ? t("kaeso.providerKey.where", "Create one at {site} under API keys; it starts with {prefix}.", where)
     : t("kaeso.providerKey.help", "Paste the provider's API key.");

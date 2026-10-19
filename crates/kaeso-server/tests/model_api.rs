@@ -890,3 +890,99 @@ async fn a_provider_response_beyond_the_limit_fails_in_the_apps_format() {
         "streams are not capped by it"
     );
 }
+
+#[tokio::test]
+async fn hugging_face_models_answer_apps_of_either_format() {
+    let env = env().await;
+    let secret = "hf_test-huggingface-credential-0003";
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "huggingface", "name": "router", "secret": secret }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "huggingface", "model_id": "meta-llama/Llama-3.1-8B-Instruct" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let model = "huggingface/meta-llama/Llama-3.1-8B-Instruct";
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            model,
+            "[mock:provider=huggingface] [mock:fixture=sdk-tgi-basic] Hi",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-provider"), Some("huggingface"));
+    assert_eq!(
+        r.json()["choices"][0]["message"]["content"],
+        " One plus one is equal to two."
+    );
+    assert_eq!(r.json()["system_fingerprint"], "3.0.1-sha-bb9095a");
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/v1/chat/completions");
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {secret}").as_str())
+    );
+    assert_eq!(sent.json()["model"], "meta-llama/Llama-3.1-8B-Instruct");
+
+    let mut body = messages(
+        model,
+        "[mock:provider=huggingface] [mock:fixture=sdk-tgi-stream] Hi",
+    );
+    body["stream"] = json!(true);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let text = r.text();
+    assert!(
+        text.contains("event: message_start")
+            && text.contains("\"text\":\" The\"")
+            && text.contains("event: message_stop"),
+        "{text}"
+    );
+    assert_eq!(env.mock.last().unwrap().path, "/v1/chat/completions");
+
+    let credits = "You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.";
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            model,
+            "[mock:provider=huggingface] [mock:error=recorded-plain-developer-string]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::PAYMENT_REQUIRED, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], credits);
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(
+            model,
+            "[mock:provider=huggingface] [mock:error=recorded-plain-developer-string]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::PAYMENT_REQUIRED, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "billing_error");
+    assert_eq!(r.json()["error"]["message"], credits);
+}

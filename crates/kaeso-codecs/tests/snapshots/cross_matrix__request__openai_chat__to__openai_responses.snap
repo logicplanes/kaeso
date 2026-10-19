@@ -378,6 +378,45 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/huggingface/invalid-token": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/Llama-3.1-8B-Instruct:cheapest",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/unknown-backend": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/Llama-3.1-8B-Instruct:no-such-provider",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-test/no-such-model",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

@@ -1,0 +1,9 @@
+{
+  "model": "kaeso-test/no-such-model",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ]
+}

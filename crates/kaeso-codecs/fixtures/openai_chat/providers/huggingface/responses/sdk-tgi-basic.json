@@ -1,0 +1,23 @@
+{
+  "object": "chat.completion",
+  "id": "",
+  "created": 1738849115,
+  "model": "mistralai/Mistral-7B-Instruct-v0.2",
+  "system_fingerprint": "3.0.1-sha-bb9095a",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": " One plus one is equal to two."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 9,
+    "total_tokens": 29
+  }
+}

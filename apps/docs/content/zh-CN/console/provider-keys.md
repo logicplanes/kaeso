@@ -1,17 +1,27 @@
 ---
 title: 服务商密钥
-description: 连接组织的 OpenAI 和 Anthropic 密钥，并选择各项目使用哪个密钥。
+description: 连接组织的服务商密钥，并选择各项目使用哪个密钥。
 order: 3
 ---
 
-服务商密钥是组织用于 OpenAI 和 Anthropic 的密钥，这是 Kaeso 调用的两个服务商。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
+服务商密钥是组织用于 Kaeso 所调用服务商的密钥。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
 
 ## 添加密钥
 
 1. 在**服务商**页面上选择**添加密钥**，或在尚无密钥的服务商旁选择**连接**。
-2. **此密钥属于哪个服务商？** 选择 OpenAI 或 Anthropic。
-3. 粘贴密钥并为其命名，例如 `Production`。OpenAI 密钥来自 platform.openai.com，以 `sk-` 开头。Anthropic 密钥来自 console.anthropic.com，以 `sk-ant-` 开头。
+2. **此密钥属于哪个服务商？** 从[下方列表](#服务商)中选择一个。
+3. 粘贴密钥并为其命名，例如 `Production`。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
+
+### 服务商
+
+| 服务商 | ID | 在哪里创建密钥 | 开头 |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com 的 API keys 页面 | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com 的 API keys 页面 | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens：可调用 Inference Providers 的细粒度令牌 | `hf_` |
+
+Hugging Face 会把每个请求转发给其某个推理服务商。模型 ID 可以用后缀指定服务商，例如 `meta-llama/Llama-3.1-8B-Instruct:cerebras`，也可以用 `:fastest` 或 `:cheapest` 让其选择；在 Kaeso 中，带前缀的名称为 `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`。Hugging Face 账户的额度用完后，其请求会以计费错误失败。
 
 对服务商密钥的每种操作都需要相应的权限：
 

@@ -287,6 +287,56 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn hugging_face_ids_with_slashes_and_backend_suffixes_resolve() {
+    let pinned = entry("huggingface", "meta-llama/Llama-3.1-8B-Instruct:cerebras");
+    let fastest = entry("huggingface", "meta-llama/Llama-3.1-8B-Instruct:fastest");
+    let routed = entry("huggingface", "openai/gpt-oss-120b");
+    let entries = vec![pinned.clone(), fastest.clone(), routed.clone()];
+    let r = |n: &str, entries: &[Entry]| resolve(n, entries, &[]).map(|(e, v)| (e.id, v));
+    assert_eq!(
+        r(
+            "huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras",
+            &entries
+        ),
+        Ok((pinned.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r(
+            "huggingface/meta-llama/Llama-3.1-8B-Instruct:fastest",
+            &entries
+        ),
+        Ok((fastest.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r("meta-llama/Llama-3.1-8B-Instruct:cerebras", &entries),
+        Ok((pinned.id, Via::Native))
+    );
+    assert_eq!(
+        r("openai/gpt-oss-120b", &entries),
+        Ok((routed.id, Via::Native))
+    );
+    assert!(matches!(
+        r("huggingface/meta-llama/Llama-3.1-8B-Instruct", &entries),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+    let direct = entry("openai", "gpt-oss-120b");
+    let both = vec![routed.clone(), direct.clone()];
+    assert_eq!(
+        r("openai/gpt-oss-120b", &both),
+        Ok((direct.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r("huggingface/openai/gpt-oss-120b", &both),
+        Ok((routed.id, Via::Prefixed))
+    );
+    assert!(shadows(
+        "huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras",
+        &entries,
+        &snapshot()
+    ));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

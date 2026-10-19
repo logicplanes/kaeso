@@ -1,0 +1,9 @@
+{
+  "model": "meta-llama/Llama-3.1-8B-Instruct:no-such-provider",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ]
+}

@@ -166,6 +166,16 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
     },
+    Provider {
+        id: "huggingface",
+        name: "Hugging Face",
+        default_base_url: "https://router.huggingface.co",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+    },
 ];
 
 const _: () = {
@@ -227,8 +237,25 @@ mod tests {
             (anthropic.auth, anthropic.embeddings),
             (AuthStyle::XApiKey, None)
         );
+        let huggingface = provider("huggingface").unwrap();
+        assert_eq!(
+            (
+                huggingface.default_base_url,
+                huggingface.auth,
+                huggingface.generation,
+                huggingface.count_tokens,
+                huggingface.embeddings,
+            ),
+            (
+                "https://router.huggingface.co",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                None,
+                None
+            )
+        );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic");
+        assert_eq!(ids(), "openai, anthropic, huggingface");
     }
 
     #[test]
@@ -291,7 +318,7 @@ mod tests {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic"
+            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, huggingface"
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),
@@ -302,7 +329,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic"]
+            ["openai", "anthropic", "huggingface"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

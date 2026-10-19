@@ -110,6 +110,7 @@ const SAME_IN_EVERY_LANGUAGE = new Set([
   "Kaeso",
   "OpenAI",
   "Anthropic",
+  "Hugging Face",
   "Google",
   "Gemini",
   "Mistral",

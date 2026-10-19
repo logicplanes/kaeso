@@ -286,7 +286,10 @@ async fn handle(
     } else {
         "openai_chat"
     };
-    let dir = ctx.fixtures.join(dialect);
+    let dir = match marker(&text, "provider") {
+        Some(id) => ctx.fixtures.join(dialect).join("providers").join(id),
+        None => ctx.fixtures.join(dialect),
+    };
     let authed = if anthropic {
         headers.get("x-api-key").is_some_and(|v| !v.is_empty())
     } else {

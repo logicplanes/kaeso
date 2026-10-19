@@ -426,3 +426,44 @@ fn decode_errors_name_the_field_without_parser_positions() {
         OpenAiChat::decode_response(200, &HeaderList::new(), br#"{"id":1}"#, &ctx).unwrap_err();
     assert!(!err.message.contains("column"), "{}", err.message);
 }
+
+#[test]
+fn a_402_is_a_billing_error_and_a_plain_string_error_keeps_its_message() {
+    let fixture = |name: &str| {
+        fixtures("openai_chat", "errors", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no fixture {name}"))
+            .1
+    };
+    let credits = fixture("providers/huggingface/recorded-plain-developer-string");
+    let err = OpenAiChat::decode_error(402, &HeaderList::new(), &credits);
+    assert_eq!(err.kind, ErrorKind::Billing);
+    let message = "You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.";
+    assert_eq!(err.message, message);
+    assert_eq!(err.raw, Some(serde_json::from_slice(&credits).unwrap()));
+    let out = OpenAiChat::encode_error(&err);
+    assert_eq!(out.status, 402);
+    let body: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(
+        body,
+        json!({"error": {"message": message, "type": "insufficient_quota", "param": null, "code": "insufficient_quota"}})
+    );
+    let anthropic = crate::dispatch::encode_error(DialectId::AnthropicMessages, &err);
+    let body: Value = serde_json::from_slice(&anthropic.body).unwrap();
+    assert_eq!(anthropic.status, 402);
+    assert_eq!(body["error"]["type"], "billing_error");
+    assert_eq!(body["error"]["message"], message);
+    let token = fixture("providers/huggingface/recorded-invalid-token");
+    let err = OpenAiChat::decode_error(401, &HeaderList::new(), &token);
+    assert_eq!(err.kind, ErrorKind::Authentication);
+    assert_eq!(err.message, "Invalid username or password.");
+    let backend = fixture("providers/huggingface/sdk-tgi-template-error");
+    let err = OpenAiChat::decode_error(422, &HeaderList::new(), &backend);
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.message, "Template error: template not found");
+    assert_eq!(
+        err.raw.as_ref().map(|r| &r["error_type"]),
+        Some(&json!("template_error"))
+    );
+}

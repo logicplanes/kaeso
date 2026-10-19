@@ -1,17 +1,27 @@
 ---
 title: Provider keys
-description: Connect your organization's OpenAI and Anthropic keys, and choose which projects use each one.
+description: Connect your organization's provider keys, and choose which projects use each one.
 order: 3
 ---
 
-Provider keys are your organization's keys for OpenAI and Anthropic, the two providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
+Provider keys are your organization's keys for the providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
 
 ## Add a key
 
 1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose OpenAI or Anthropic.
-3. Paste the key and give it a name, such as `Production`. An OpenAI key, from platform.openai.com, starts with `sk-`. An Anthropic key, from console.anthropic.com, starts with `sk-ant-`.
+2. **Which provider is the key for?** Choose one from the [list below](#providers).
+3. Paste the key and give it a name, such as `Production`.
 4. If the provider already has a default key, choose whether the new key becomes the default.
+
+### Providers
+
+| Provider | Id | Where to create a key | Starts with |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | platform.openai.com, under API keys | `sk-` |
+| Anthropic | `anthropic` | console.anthropic.com, under API keys | `sk-ant-` |
+| Hugging Face | `huggingface` | huggingface.co/settings/tokens: a fine-grained token that may make calls to Inference Providers | `hf_` |
+
+Hugging Face routes each request to one of its inference providers. A model id can name one with a suffix, such as `meta-llama/Llama-3.1-8B-Instruct:cerebras`, or pick by `:fastest` or `:cheapest`; in Kaeso, the prefixed name is `huggingface/meta-llama/Llama-3.1-8B-Instruct:cerebras`. When the Hugging Face account has no credits left, its requests fail with a billing error.
 
 Each action on provider keys needs its own right:
 
