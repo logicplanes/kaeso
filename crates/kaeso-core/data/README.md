@@ -10,7 +10,7 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 |---|---|
 | Source | `https://models.dev/api.json` |
 | Fetched | 2026-10-19T00:45:02Z |
-| Content | the providers Kaeso calls (`anthropic`, `openai`), unchanged otherwise; 86 models |
+| Content | the providers Kaeso calls (`anthropic`, `groq`, `openai`), unchanged otherwise; 86 models |
 | SHA-256 | `cc96082b1033b812f812a9a8641cf009fa7db508df3b170c10a55e7a001a3e93` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 

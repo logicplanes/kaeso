@@ -242,3 +242,20 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | unknown keys | extras fields |
 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Chat Completions record into `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### Groq
+
+Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and [reasoning guide](https://console.groq.com/docs/reasoning), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/groq/`.
+
+| Groq field | KPP | Notes |
+|---|---|---|
+| `reasoning_format`, `include_reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning`, `delta.reasoning`, `delta.channel` | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)); a chunk that carries only reasoning becomes a keepalive there. |
+| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | extras | Left out towards other dialects. |
+| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as above. |
+| `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
+| extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |

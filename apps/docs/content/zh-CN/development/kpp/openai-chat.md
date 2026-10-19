@@ -242,3 +242,20 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | 未知键 | extras 字段 |
 
 对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。
+
+## 使用此格式的服务商
+
+提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
+
+### Groq
+
+来源：Groq 的 [API 参考](https://console.groq.com/docs/api-reference)和[推理指南](https://console.groq.com/docs/reasoning)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/groq/` 中的实时录制。
+
+| Groq 字段 | KPP | 说明 |
+|---|---|---|
+| `reasoning_format`、`include_reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning`、`delta.reasoning`、`delta.channel` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）；只含推理的数据块在那里会变成 keepalive。 |
+| `x_groq`、`usage_breakdown`、`service_tier`（`on_demand`） | extras | 发往其他方言时省略。 |
+| `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | token 数（包括 `reasoning_tokens`）按上文的类型化字段处理。 |
+| 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
+| 额外的模型字段（`active`、`context_window`、`max_completion_tokens`、`pricing`、`supported_features` 等） | 模型 extras | |
