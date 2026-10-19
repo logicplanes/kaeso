@@ -106,6 +106,7 @@ pub struct TieredCache<V: Clone + Send + Sync + 'static> {
     valkey: Valkey,
     subscription: Arc<Subscription>,
     refresh_after: Duration,
+    dropped: Arc<AtomicU64>,
 }
 
 impl<V: Clone + Send + Sync + 'static> std::fmt::Debug for TieredCache<V> {
@@ -135,6 +136,7 @@ where
             valkey,
             subscription,
             refresh_after: REFRESH_AFTER,
+            dropped: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -235,15 +237,20 @@ where
     {
         let cache = self.clone();
         let key = key.to_owned();
+        let dropped = self.dropped.load(Ordering::Acquire);
         tokio::spawn(async move {
-            match load().await {
-                Ok(Some(value)) if cache.subscription.still(seen) => {
+            let loaded = load().await;
+            let undisturbed =
+                cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
+            match loaded {
+                Ok(Some(value)) if undisturbed => {
                     let value = Arc::new(value);
                     cache.valkey_set(&key, &value).await;
                     cache.remember(&key, value, seen).await;
                 }
                 Ok(Some(_)) => {}
-                Ok(None) => cache.drop_local(&key).await,
+                Ok(None) if undisturbed => cache.drop_local(&key).await,
+                Ok(None) => {}
                 Err(e) => {
                     tracing::debug!(cache = cache.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
                 }
@@ -297,15 +304,18 @@ where
     }
 
     async fn drop_local(&self, key: &str) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         self.memory.invalidate(key).await;
         self.fallback.invalidate(key).await;
     }
 
     fn clear_subscribed(&self) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         self.memory.invalidate_all();
     }
 
     fn clear_local(&self) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         self.memory.invalidate_all();
         self.fallback.invalidate_all();
     }
@@ -757,5 +767,38 @@ mod tests {
             tokio::task::yield_now().await;
         }
         assert_eq!(loads.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn a_refresh_that_overlaps_an_invalidation_is_dropped() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mut cache = cache(&subscription);
+        cache.refresh_after = Duration::ZERO;
+        let first = cache
+            .get_or_refresh("k", || async { Ok::<_, String>(Some("old".to_owned())) })
+            .await;
+        assert_eq!(first, Ok(Some(Arc::new("old".to_owned()))));
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let refreshing = {
+            let (started, release) = (started.clone(), release.clone());
+            move || async move {
+                started.notify_one();
+                release.notified().await;
+                Ok::<_, String>(Some("read before the change".to_owned()))
+            }
+        };
+        let served = cache.get_or_refresh("k", refreshing).await;
+        assert_eq!(served, Ok(Some(Arc::new("old".to_owned()))));
+        started.notified().await;
+        cache.drop_local("k").await;
+        release.notify_one();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while cache.flights.lane("k").await.try_lock().is_err() {
+            assert!(Instant::now() < deadline, "the refresh did not finish");
+            tokio::task::yield_now().await;
+        }
+        assert!(cache.cached("k").await.is_none());
     }
 }
