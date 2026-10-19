@@ -19,6 +19,23 @@ const ORG_SECRET: &str = "sk-test-org-secret-0123456789WXYZ";
 const SECOND_SECRET: &str = "sk-test-second-org-key-98765QRST";
 const THIRD_SECRET: &str = "sk-test-third-org-key-24680LMNO";
 
+#[test]
+fn the_api_names_every_provider_a_key_can_be_for() {
+    let doc = serde_json::to_value(kaeso_server::platform::openapi()).unwrap();
+    let description =
+        doc["components"]["schemas"]["CredentialCreate"]["properties"]["provider"]["description"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+    for p in kaeso_core::provider::PROVIDERS {
+        assert!(
+            description.contains(&format!("`{}`", p.id)),
+            "{description} lacks {}",
+            p.id
+        );
+    }
+}
+
 async fn default_project(app: &App, owner: &Owner) -> String {
     let r = app
         .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
