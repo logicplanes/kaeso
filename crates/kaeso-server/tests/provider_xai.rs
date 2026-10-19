@@ -265,6 +265,9 @@ async fn token_counts_for_xai_models_are_refused_in_each_apps_format() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     let error = &r.json()["error"];
     assert_eq!(error["type"], "invalid_request_error");
-    assert_eq!(error["message"], "The model `grok-4.3` cannot count tokens.");
+    assert_eq!(
+        error["message"],
+        "The model `grok-4.3` cannot count tokens."
+    );
     assert!(env.mock.received().is_empty());
 }
