@@ -36,7 +36,7 @@ Pull requests labelled `internal` are left out. Dependabot's updates become one 
 
 To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
-When the repository has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -92,7 +92,7 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
 
 6. Deploy the sites from the release's tag ([deploy the sites](#deploy-the-sites)).
 
-If the push in step 3 is refused, `dev` doesn't have the last release yet: merge `prod` into `dev` first, as in step 5. When a publishing job fails, re-run the run's failed jobs. Each skips what is already published.
+If the push in step 3 is refused, `dev` doesn't have the last release yet: merge `prod` into `dev` first, as in step 5. When a publishing job fails, re-run the run's failed jobs. Each skips what is already published, and the GitHub release job replaces the assets and notes of a release it already created.
 
 A release publishes:
 
@@ -104,6 +104,12 @@ A release publishes:
 | npm | `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens` |
 
 Images are tagged with the version and, for stable releases, with `MAJOR.MINOR`, `latest` and, from 1.0.0 on, `MAJOR`.
+
+### Commits and attestations
+
+The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it, changing only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists, and tags that commit `vX.Y.Z`. Before it commits, it checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own. Every image, package and asset is built from the tag.
+
+The attestations of the images and of `release.json`, which `gh attestation verify` and the updater check, name the commit the run started on, since GitHub signs them for the run, and `release.json` names the same commit. The build provenance inside each image, which BuildKit writes, names the tag's commit as its source. The tag's commit is therefore the attested commit, or a release commit directly on top of it that changes only the version and the changelog.
 
 ## Make a pre-release
 
