@@ -35,7 +35,7 @@ const DIALECTS: Record<string, string> = {
 export const DIALECT_IDS = Object.keys(DIALECTS);
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 
-const PROVIDERS: Record<string, string> = { openai: "OpenAI", anthropic: "Anthropic", xai: "xAI" };
+const PROVIDERS: Record<string, string> = { openai: "OpenAI", anthropic: "Anthropic", deepseek: "DeepSeek", xai: "xAI" };
 export const PROVIDER_IDS = Object.keys(PROVIDERS);
 export const providerLabel = (p: string) => PROVIDERS[p] ?? titled(p);
 

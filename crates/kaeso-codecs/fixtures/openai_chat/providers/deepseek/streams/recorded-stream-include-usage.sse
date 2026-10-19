@@ -1,0 +1,30 @@
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":"!"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" How"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" can"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":"#"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":"099"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" can"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" I"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" assist"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" you"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":" today"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":"?"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"1fec6b92-f91a-4ca7-a8f0-ef927f2dc8ff","object":"chat.completion.chunk","created":1792370239,"model":"deepseek-flash","system_fingerprint":"e72d3c7f663d3e1383b00b3884cb4501","choices":[{"index":0,"delta":{"content":""},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":13,"completion_tokens":12,"total_tokens":25,"prompt_tokens_details":{"cached_tokens":0},"prompt_cache_hit_tokens":0,"prompt_cache_miss_tokens":13}}
+
+data: [DONE]
+

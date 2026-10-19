@@ -378,54 +378,81 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
-  "providers/xai/live-search-deprecated": {
-    "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "search_parameters"
-  },
-  "providers/xai/presence-penalty-reasoning-model": {
-    "message": "`presence_penalty` is not supported by OpenAI Responses. The Responses API has no `presence_penalty`. Remove it or use the Chat Completions format.",
-    "param": "presence_penalty",
-    "unsupported": "presence_penalty"
-  },
-  "providers/xai/reasoning-content": {
+  "providers/deepseek/authentication-fails": {
     "body": {
-      "include": [
-        "reasoning.encrypted_content"
-      ],
       "input": [
         {
-          "content": "What is 17 * 24? Answer with the number only.",
+          "content": "Hello!",
           "role": "user"
         }
       ],
-      "model": "grok-4.3",
-      "reasoning": {
-        "effort": "low"
-      },
+      "model": "deepseek-flash",
       "store": false
     },
     "path": "/v1/responses"
   },
-  "providers/xai/reasoning-content-stream": {
+  "providers/deepseek/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/missing-model": {
     "body": {
-      "include": [
-        "reasoning.encrypted_content"
-      ],
       "input": [
         {
-          "content": "What is 17 * 24? Answer with the number only.",
+          "content": "Hello!",
           "role": "user"
         }
       ],
-      "model": "grok-4.3",
-      "reasoning": {
-        "effort": "low"
-      },
-      "store": false,
-      "stream": true
+      "model": "deepseek-nonexistent",
+      "store": false
     },
     "path": "/v1/responses"
+  },
+  "providers/deepseek/pro-tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/prompt-cache-hit": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/reasoning-content-sent-back": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tool-choice-required": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-auto": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
   },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",

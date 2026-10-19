@@ -17,6 +17,7 @@ order: 3
 | --- | --- | --- |
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
 | xAI | console.x.ai | `xai-` |
 
 对服务商密钥的每种操作都需要相应的权限：

@@ -880,6 +880,222 @@
   "name": "Anthropic",
   "npm": "@ai-sdk/anthropic"
  },
+ "deepseek": {
+  "api": "https://api.deepseek.com",
+  "doc": "https://api-docs.deepseek.com/quick_start/pricing",
+  "env": [
+   "DEEPSEEK_API_KEY"
+  ],
+  "id": "deepseek",
+  "models": {
+   "deepseek-flash": {
+    "attachment": true,
+    "canonical_model_id": "deepseek/deepseek-v4.1-flash-1017",
+    "cost": {
+     "cache_read": 0.003,
+     "input": 0.15,
+     "output": 0.6,
+     "reasoning": 0.6
+    },
+    "description": "October 17 update of DeepSeek V4.1 Flash with improved reasoning, coding, agentic tasks, and visual understanding",
+    "family": "deepseek-flash",
+    "id": "deepseek-flash",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-05",
+    "last_updated": "2026-10-17",
+    "limit": {
+     "context": 1000000,
+     "output": 393216
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "DeepSeek V4.1 Flash 1017",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-10-17",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "deepseek-v4-flash": {
+    "attachment": true,
+    "canonical_model_id": "deepseek/deepseek-v4.1-flash-1017",
+    "cost": {
+     "cache_read": 0.003,
+     "input": 0.15,
+     "output": 0.6,
+     "reasoning": 0.6
+    },
+    "description": "October 17 update of DeepSeek V4.1 Flash with improved reasoning, coding, agentic tasks, and visual understanding",
+    "family": "deepseek-flash",
+    "id": "deepseek-v4-flash",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-05",
+    "last_updated": "2026-10-17",
+    "limit": {
+     "context": 1000000,
+     "output": 393216
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "DeepSeek V4 Flash",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-10-17",
+    "status": "deprecated",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "deepseek-v4-flash-vision-exp": {
+    "attachment": true,
+    "canonical_model_id": "deepseek/deepseek-v4.1-flash-1017",
+    "cost": {
+     "cache_read": 0.003,
+     "input": 0.15,
+     "output": 0.6,
+     "reasoning": 0.6
+    },
+    "description": "October 17 update of DeepSeek V4.1 Flash with improved reasoning, coding, agentic tasks, and visual understanding",
+    "family": "deepseek-flash",
+    "id": "deepseek-v4-flash-vision-exp",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-05",
+    "last_updated": "2026-10-17",
+    "limit": {
+     "context": 1000000,
+     "output": 393216
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "DeepSeek V4 Flash Vision Exp",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-10-17",
+    "status": "deprecated",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "deepseek-v4-pro": {
+    "attachment": false,
+    "canonical_model_id": "deepseek/deepseek-v4-pro-0813",
+    "cost": {
+     "cache_read": 0.022,
+     "input": 0.66,
+     "output": 1.98,
+     "reasoning": 1.98
+    },
+    "description": "DeepSeek V4 Pro snapshot with million-token context and support for thinking and non-thinking modes",
+    "family": "deepseek-thinking",
+    "id": "deepseek-v4-pro",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "last_updated": "2026-08-22",
+    "limit": {
+     "context": 1000000,
+     "output": 393216
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "DeepSeek V4 Pro",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-08-12",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   }
+  },
+  "name": "DeepSeek",
+  "npm": "@ai-sdk/openai-compatible"
+ },
  "openai": {
   "doc": "https://platform.openai.com/docs/models",
   "env": [

@@ -98,7 +98,7 @@ impl CredentialView {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A new provider key.")]
 pub struct CredentialCreate {
-    #[doc = "The provider's id, such as `openai`, `anthropic` or `xai`."]
+    #[doc = "The provider's id, such as `openai` or `anthropic`."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

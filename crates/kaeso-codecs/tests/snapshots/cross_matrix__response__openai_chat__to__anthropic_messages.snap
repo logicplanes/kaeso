@@ -275,15 +275,15 @@ expression: outcomes
       }
     }
   },
-  "providers/xai/recorded-json-schema": {
+  "providers/deepseek/recorded-json-object-system": {
     "content": [
       {
-        "text": "{\n  \"name\": \"science fair\",\n  \"date\": \"2026-10-16\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "text": "{\"answer\": \"The capital of France is Paris.\", \"confidence\": 1.0}",
         "type": "text"
       }
     ],
-    "id": "93c7eef6-8cff-9dfa-9b2d-d8b59bf44807",
-    "model": "grok-4.3",
+    "id": "4a2059b8-58b4-4e4a-904f-9246e4b4572d",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -292,23 +292,20 @@ expression: outcomes
     "usage": {
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 128,
-      "input_tokens": 164,
-      "output_tokens": 32,
-      "output_tokens_details": {
-        "thinking_tokens": 301
-      }
+      "cache_read_input_tokens": 0,
+      "input_tokens": 47,
+      "output_tokens": 19
     }
   },
-  "providers/xai/recorded-plain-developer-string": {
+  "providers/deepseek/recorded-logprobs-top-logprobs-doc": {
     "content": [
       {
-        "text": "Hello! 👋 Nice to see you! How's it going?",
+        "text": "Hello! How can I help you today?",
         "type": "text"
       }
     ],
-    "id": "e34069c1-b99d-9b5c-9bd0-31ba872ac79a",
-    "model": "grok-4.20-0309-non-reasoning",
+    "id": "2da350ca-5d24-40eb-8371-e7df3b6f96ae",
+    "model": "deepseek-flash",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -317,23 +314,20 @@ expression: outcomes
     "usage": {
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 128,
-      "input_tokens": 67,
-      "output_tokens": 14,
-      "output_tokens_details": {
-        "thinking_tokens": 0
-      }
+      "cache_read_input_tokens": 0,
+      "input_tokens": 6,
+      "output_tokens": 9
     }
   },
-  "providers/xai/recorded-reasoning-content": {
+  "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
     "content": [
       {
-        "text": "408",
+        "text": "The current weather in Paris is **14°C** with **light rain**.",
         "type": "text"
       }
     ],
-    "id": "7d66a40f-51d4-93df-81a4-2399cb277169",
-    "model": "grok-4.3",
+    "id": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+    "model": "deepseek-v4-pro",
     "role": "assistant",
     "stop_details": null,
     "stop_reason": "end_turn",
@@ -342,85 +336,165 @@ expression: outcomes
     "usage": {
       "cache_creation": null,
       "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 128,
-      "input_tokens": 78,
-      "output_tokens": 1,
-      "output_tokens_details": {
-        "thinking_tokens": 178
-      }
-    }
-  },
-  "providers/xai/recorded-tools-parallel": {
-    "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
-      {
-        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
-        "input": {
-          "location": "Paris, France",
-          "unit": "celsius"
-        },
-        "name": "get_weather",
-        "type": "tool_use"
-      },
-      {
-        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
-        "input": {
-          "timezone": "Asia/Tokyo"
-        },
-        "name": "get_local_time",
-        "type": "tool_use"
-      }
-    ],
-    "id": "7b4647dd-256f-96ec-bae7-2f264ac87131",
-    "model": "grok-4.3",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-      "cache_creation": null,
-      "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 128,
-      "input_tokens": 294,
-      "output_tokens": 29,
-      "output_tokens_details": {
-        "thinking_tokens": 0
-      }
-    }
-  },
-  "providers/xai/recorded-tools-single": {
-    "content": [
-      {
-        "text": "",
-        "type": "text"
-      },
-      {
-        "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
-        "input": {
-          "location": "Paris, France",
-          "unit": "celsius"
-        },
-        "name": "get_weather",
-        "type": "tool_use"
-      }
-    ],
-    "id": "a590f19d-ffce-94c0-a90c-1d5c897dd3cd",
-    "model": "grok-4.3",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-      "cache_creation": null,
-      "cache_creation_input_tokens": 0,
-      "cache_read_input_tokens": 128,
-      "input_tokens": 221,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 423,
       "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/deepseek/recorded-prompt-cache-hit": {
+    "content": [
+      {
+        "text": "No — partial months are not refunded. You can cancel online at any time before your renewal date, and there’s no cancellation fee, but the current month’s charge isn’t prorated or returned (Policy 2, Policy 3, Policy 4).\n\nAlso note: if you have a device on an instalment plan, those payments continue after cancellation until the device is paid off (Policy 9).",
+        "type": "text"
+      }
+    ],
+    "id": "30e154ae-2feb-4ee9-bc9d-4bcd6b69bc7d",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 154,
+      "output_tokens": 87
+    }
+  },
+  "providers/deepseek/recorded-reasoning-content-sent-back": {
+    "content": [
+      {
+        "text": "400",
+        "type": "text"
+      }
+    ],
+    "id": "75b4381d-fa69-474c-b21d-66f449915aae",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 62,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 18
+      }
+    }
+  },
+  "providers/deepseek/recorded-stop-array": {
+    "content": [
+      {
+        "text": "1, 2, 3, 4, 5, 6, ",
+        "type": "text"
+      }
+    ],
+    "id": "eecb47b4-c080-4903-b927-4d6d891d5519",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 41,
+      "output_tokens": 73,
+      "output_tokens_details": {
+        "thinking_tokens": 53
+      }
+    }
+  },
+  "providers/deepseek/recorded-thinking-reasoning-content": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "f4046fd9-e586-4279-ac2d-b84eebbc5f37",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 44,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 18
+      }
+    }
+  },
+  "providers/deepseek/recorded-thinking-tools-auto": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "2a676b20-042f-4778-94b3-8eeebdaef0ea",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 339,
+      "output_tokens": 68,
+      "output_tokens_details": {
+        "thinking_tokens": 10
+      }
+    }
+  },
+  "providers/deepseek/recorded-tool-turn-without-reasoning-content": {
+    "content": [
+      {
+        "text": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔",
+        "type": "text"
+      }
+    ],
+    "id": "01196219-0832-4870-a63d-cb61ba063bb5",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 256,
+      "input_tokens": 176,
+      "output_tokens": 30,
       "output_tokens_details": {
         "thinking_tokens": 0
       }

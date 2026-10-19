@@ -17,6 +17,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | --- | --- | --- |
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
 | xAI | console.x.ai | `xai-` |
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
