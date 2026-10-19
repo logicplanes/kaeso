@@ -100,4 +100,23 @@ describe("live updates", () => {
     expect(requests("GET", LOGS)).toHaveLength(10);
     expect(view.result.current.rows.map((r) => r.id)).toEqual(["req_10", "req_11", "req_12", "req_13", "req_14"]);
   });
+
+  it("holds a burst behind the button while scrolled, and shows only the burst once it no longer reaches the rows", async () => {
+    const parent = document.createElement("div");
+    parent.style.overflowY = "auto";
+    const child = document.createElement("div");
+    parent.append(child);
+    document.body.append(parent);
+    parent.scrollTop = 400;
+    const base = [row(1, 58)];
+    on("GET", LOGS, ({ query }: ApiRequest) => page([row(20 + Number(query.get("after") ?? 0))], String(Number(query.get("after") ?? 0) + 1)));
+    const view = renderHook(() => useLiveLogs({ org: ORG, project: PROJECT, filters: {}, live: true, base, scroller: { current: child } }), { wrapper });
+    await tick();
+    expect(view.result.current.pending.map((r) => r.id)).toEqual(["req_20", "req_21", "req_22", "req_23", "req_24"]);
+    expect(view.result.current.rows.map((r) => r.id)).toEqual(["req_1"]);
+    act(() => view.result.current.showPending());
+    expect(view.result.current.rows.map((r) => r.id)).toEqual(["req_20", "req_21", "req_22", "req_23", "req_24"]);
+    expect(view.result.current.cut).toBe(true);
+    parent.remove();
+  });
 });

@@ -54,7 +54,12 @@ export interface FoundServiceAccount {
   project: string;
 }
 
-export const serviceAccountLookupQuery = (org: string, projects: readonly string[], ids: readonly string[]) =>
+export interface LookupProject {
+  id: string;
+  name: string;
+}
+
+export const serviceAccountLookupQuery = (org: string, projects: readonly LookupProject[], ids: readonly string[]) =>
   queryOptions({
     queryKey: ["orgs", org, "service-account-lookup", { projects, ids }],
     queryFn: async ({ client }): Promise<FoundServiceAccount[]> => {
@@ -63,7 +68,7 @@ export const serviceAccountLookupQuery = (org: string, projects: readonly string
       for (let i = 0; i < projects.length && found.length < wanted.size; i += LOOKUP_BATCH) {
         const batch = projects.slice(i, i + LOOKUP_BATCH);
         const lists = await Promise.allSettled(
-          batch.map(async (project) => ({ project, accounts: await client.fetchQuery(serviceAccountsQuery(org, project, true)) })),
+          batch.map(async (project) => ({ project: project.name, accounts: await client.fetchQuery(serviceAccountsQuery(org, project.id, true)) })),
         );
         for (const list of lists) {
           if (list.status === "rejected") continue;

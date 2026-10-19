@@ -51,12 +51,12 @@ export function OrgUsageBreakdown({
   const accounts = useQuery({
     ...serviceAccountLookupQuery(
       org,
-      (projects ?? []).map((p) => p.id),
+      (projects ?? []).map((p) => ({ id: p.id, name: p.name })),
       accountIds,
     ),
     enabled: everyProject && !!projects && accountIds.length > 0,
   });
-  const named = (accounts.data ?? []).map(({ account, project }) => ({ account, project: projects?.find((p) => p.id === project)?.name ?? project }));
+  const named = accounts.data ?? [];
   const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.isLoading));
   const rows = loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key));
 
