@@ -191,6 +191,30 @@ async fn outcome(
 }
 
 #[tokio::test]
+async fn a_stream_error_stops_the_provider_request() {
+    let env = env(&[]).await;
+    let gate = env.mock.gate();
+    let marker = format!(
+        "Hi [mock:fixture=error-overloaded-mid-stream] {}",
+        gate.steps_marker()
+    );
+    for _ in 0..7 {
+        gate.step();
+    }
+    let r = send(
+        &env,
+        "/v1/messages",
+        true,
+        streaming(messages("claude-haiku-4-5", &marker)),
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert!(r.text().contains("overloaded_error"), "{}", r.text());
+    env.mock.wait_for_dropped_streams(1).await;
+    assert_eq!(env.mock.stream_counts(), (1, 0, 1));
+}
+
+#[tokio::test]
 async fn streams_that_fail_after_their_headers_are_recorded_as_failures() {
     let env = env(&[("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s")]).await;
     let cases = [

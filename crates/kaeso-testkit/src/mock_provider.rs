@@ -44,6 +44,7 @@ struct Shared {
     streams_started: AtomicUsize,
     streams_finished: AtomicUsize,
     streams_dropped: AtomicUsize,
+    drops: tokio::sync::Notify,
     abandoned: AtomicUsize,
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
@@ -213,6 +214,18 @@ impl MockProvider {
 
     pub fn abandoned(&self) -> usize {
         self.shared.abandoned.load(Ordering::SeqCst)
+    }
+
+    pub async fn wait_for_dropped_streams(&self, n: usize) {
+        loop {
+            let dropped = self.shared.drops.notified();
+            tokio::pin!(dropped);
+            dropped.as_mut().enable();
+            if self.shared.streams_dropped.load(Ordering::SeqCst) >= n {
+                return;
+            }
+            dropped.await;
+        }
     }
 
     pub fn stream_counts(&self) -> (usize, usize, usize) {
@@ -565,6 +578,7 @@ impl Drop for Guard {
     fn drop(&mut self) {
         if !self.finished {
             self.shared.streams_dropped.fetch_add(1, Ordering::SeqCst);
+            self.shared.drops.notify_waiters();
         }
     }
 }
