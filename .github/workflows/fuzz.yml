@@ -36,7 +36,7 @@ jobs:
       matrix:
         target: [decode_anthropic_messages, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, sse]
     env:
-      TARGET: ${{ matrix.target }}
+      FUZZ_TARGET: ${{ matrix.target }}
       SECONDS_PER_TARGET: ${{ inputs.seconds || 600 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -63,10 +63,10 @@ jobs:
         run: |
           set -euo pipefail
           seed=crates/kaeso-codecs/fixtures
-          if [[ "$TARGET" == decode_* ]]; then seed="$seed/${TARGET#decode_}"; fi
-          mkdir -p "fuzz/corpus/$TARGET"
-          cargo +nightly fuzz run "$TARGET" "fuzz/corpus/$TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
-          echo "\`$TARGET\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$FUZZ_TARGET" == decode_* ]]; then seed="$seed/${FUZZ_TARGET#decode_}"; fi
+          mkdir -p "fuzz/corpus/$FUZZ_TARGET"
+          cargo +nightly fuzz run "$FUZZ_TARGET" "fuzz/corpus/$FUZZ_TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
+          echo "\`$FUZZ_TARGET\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: failure()
         with:
