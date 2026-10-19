@@ -33,7 +33,7 @@ Fields models.dev does not have. A catalogue entry's effective value is its over
 | `adaptive_thinking` | Anthropic models: whether `thinking: {type: "adaptive"}` is accepted. `false` makes kpp turn an effort from another format into a thinking budget. |
 | `forced_tool_choice` | `false` for models that refuse a forced tool choice (Anthropic `tool_choice` `any` or `tool`); the gateway then refuses `required`, `any` or a named tool before calling the provider. Absent means the model takes one. |
 | `efforts` | Supported effort levels, used when models.dev lists none. |
-| `egress_dialect` | The format Kaeso sends: for OpenAI models `openai_responses` (the default), `openai_chat` or `openai_embeddings`. |
+| `egress_dialect` | The format Kaeso sends: one of the provider's `dialects`, by default its `generation` dialect (`openai_responses` for OpenAI). |
 
 Every entry comes from one of these sources, checked on 2026-10-11:
 

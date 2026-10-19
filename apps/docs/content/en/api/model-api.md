@@ -103,7 +103,7 @@ Any other path under `/v1` gets 404, and a known path called with the wrong meth
 
 ### Listing models
 
-`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. A model that the provider doesn't serve to the project's provider key is left out ([availability](../console/models-and-aliases.md#availability)).
+`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). A model that the provider doesn't serve to the project's provider key is left out ([availability](../console/models-and-aliases.md#availability)).
 
 | | OpenAI format | Anthropic format |
 | --- | --- | --- |

@@ -18,7 +18,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
 | DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | die xAI-Konsole unter console.x.ai | `xai-` |
+| SpaceX | console.x.ai (xAI-Konsole) | `xai-` |
 | Together AI | api.together.ai | `tgp_v1_` |
 | Groq | console.groq.com | `gsk_` |
 

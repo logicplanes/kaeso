@@ -592,6 +592,7 @@ mod tests {
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        refused_key_messages: &[],
     };
 
     fn known(id: &str) -> &'static Provider {

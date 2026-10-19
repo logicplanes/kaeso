@@ -18,7 +18,7 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | OpenAI | platform.openai.com | `sk-` |
 | Anthropic | console.anthropic.com | `sk-ant-` |
 | DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | the xAI console at console.x.ai | `xai-` |
+| SpaceX | console.x.ai, the xAI console | `xai-` |
 | Together AI | api.together.ai | `tgp_v1_` |
 | Groq | console.groq.com | `gsk_` |
 

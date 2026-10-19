@@ -12,7 +12,7 @@ Wählen Sie **Modelle hinzufügen** und durchsuchen Sie die Modelle eines Anbiet
 
 Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen. Zwei Abkürzungen decken den Rest ab:
 
-- **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für Anthropic, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu.
+- **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für jeden anderen Anbieter, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu.
 - **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft.
 
 Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
@@ -27,7 +27,7 @@ Nicht jedes Modell im Katalog stellt der Anbieter dem Anbieter-Schlüssel des Pr
 | Nicht verfügbar | Der Anbieter hat erklärt, dass er es diesem Schlüssel nicht bereitstellt |
 | Nicht geprüft | Noch liegt keine Antwort vor, oder ein Anbieter-Schlüssel der Organisation hat sich seither geändert |
 
-Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund, etwa dass das Projekt keinen Schlüssel für diesen Anbieter hat.
+Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund, etwa dass das Projekt keinen Schlüssel für diesen Anbieter hat oder dass der Anbieter den Schlüssel abgelehnt hat, auch wenn nur seine Modellliste ihn ablehnt.
 
 Auch Anfragen ändern die Verfügbarkeit. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md). Gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Jede Antwort zählt nur für den Anbieter-Schlüssel, der sie erhalten hat.
 

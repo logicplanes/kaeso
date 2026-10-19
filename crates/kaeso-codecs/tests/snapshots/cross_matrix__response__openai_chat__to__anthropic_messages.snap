@@ -879,7 +879,7 @@ expression: outcomes
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 128,
       "input_tokens": 164,
-      "output_tokens": 32,
+      "output_tokens": 333,
       "output_tokens_details": {
         "thinking_tokens": 301
       }
@@ -929,7 +929,7 @@ expression: outcomes
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 128,
       "input_tokens": 78,
-      "output_tokens": 1,
+      "output_tokens": 179,
       "output_tokens_details": {
         "thinking_tokens": 178
       }

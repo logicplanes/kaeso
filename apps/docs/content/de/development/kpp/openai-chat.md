@@ -140,7 +140,7 @@ Die KPP-Felder folgen der Konvention unter [Nutzung](cross-format.md#nutzung).
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
 | `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens` (einschließlich Reasoning) |
+| `completion_tokens` | `output_tokens` (einschließlich Reasoning; ist `total_tokens` gleich `prompt_tokens + completion_tokens + reasoning_tokens`, wie SpaceX zählt, kommen die Reasoning-Token hinzu) |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | abgeleitet (`prompt_tokens + completion_tokens`); nicht eigens gespeichert, in `raw` erhalten |
 | `prompt_tokens_details.audio_tokens`, `text_tokens`, `image_tokens`, `completion_tokens_details.audio_tokens`, `text_tokens`, `accepted_prediction_tokens`, `rejected_prediction_tokens` | nur `raw` (Aufschlüsselungen der typisierten Summen) |
@@ -211,7 +211,7 @@ Mit HTTP 402 melden OpenAI-kompatible Anbieter wie DeepSeek ein aufgebrauchtes G
 
 Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`openai_responses::error`), sodass ein Fehler in der OpenAI-Form in jeder OpenAI-API dieselbe Art, denselben `type` und denselben `code` hat. Die OpenAI-SDKs wählen ihre Exception-Klasse nach dem Status, `type` ist also nur eine zusätzliche Information.
 
-`retry-after-ms` oder `retry-after` wird zu `retry_after`, das als `retry-after` in ganzen Sekunden geschrieben wird, aufgerundet, dazu `retry-after-ms`, aufgerundet, wenn die Wartezeit einen Sekundenbruchteil hat. `param` wird zu `KppError.param`, wenn es ein String ist. Ein aus Chat dekodierter Fehler wird mit seinem ursprünglichen Status wieder kodiert, und mit seinem ursprünglichen Body, wenn dieser ein `error`-Objekt hat. Bodies, die Kaeso nicht als `ErrorResponse` lesen kann, etwa ein HTML-429 von einem Proxy, ein 503 als reiner Text, `{"error": "rate limited"}` oder ein Body mit einem Schlüssel, den Kaeso nicht tragen kann, bekommen ihre Art allein vom HTTP-Status (Tabelle oben; ohne Status, wie in einem Stream, `ProviderError`) und behalten den rohen Body. Ein `error` als String wird zur Meldung. Beginnt er mit `Incorrect API key provided`, so antwortet SpaceX mit HTTP 400 auf einen falschen Schlüssel, und die Art ist `Authentication`. Sonst lautet die Meldung `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, mit nach 500 Bytes gekürztem Body und in einem Stream ohne den HTTP-Teil. Ein lesbarer Body ohne Meldung bekommt `The provider returned an error without a message.`
+`retry-after-ms` oder `retry-after` wird zu `retry_after`, das als `retry-after` in ganzen Sekunden geschrieben wird, aufgerundet, dazu `retry-after-ms`, aufgerundet, wenn die Wartezeit einen Sekundenbruchteil hat. `param` wird zu `KppError.param`, wenn es ein String ist. Ein aus Chat dekodierter Fehler wird mit seinem ursprünglichen Status wieder kodiert, und mit seinem ursprünglichen Body, wenn dieser ein `error`-Objekt hat. Bodies, die Kaeso nicht als `ErrorResponse` lesen kann, etwa ein HTML-429 von einem Proxy, ein 503 als reiner Text, `{"error": "rate limited"}` oder ein Body mit einem Schlüssel, den Kaeso nicht tragen kann, bekommen ihre Art allein vom HTTP-Status (Tabelle oben; ohne Status, wie in einem Stream, `ProviderError`) und behalten den rohen Body. Ein `error` als String wird zur Meldung. Der Codec liest aus dem Text keine Bedeutung: Ein Anbieter, dessen Antwort auf einen falschen Schlüssel keinen Authentifizierungsstatus hat, nennt diese Meldung in `refused_key_messages` in `crates/kaeso-core/src/provider.rs`, und das Gateway meldet einen solchen Fehler als `Authentication` (bei SpaceX `Incorrect API key provided` mit HTTP 400). Sonst lautet die Meldung `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, mit nach 500 Bytes gekürztem Body und in einem Stream ohne den HTTP-Teil. Ein lesbarer Body ohne Meldung bekommt `The provider returned an error without a message.`
 
 ## Modelle
 
@@ -243,10 +243,54 @@ Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wir
 | `object` (`"list"`) | Form `object`, nur wenn es abweicht |
 | `data` | `models` |
 | unbekannte Schlüssel | Extras-Felder |
+| ein bloßes Array von Modellen statt des Objekts, wie Together AI es sendet | `models`, Form `bare_list` |
 
 Für OpenAI-Apps geht dabei etwas verloren: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` und Extras anderer Dialekte (Anthropic `capabilities`, `line`) haben kein Feld und werden weggelassen ([Antworten](cross-format.md#antworten)). Ein `retires_at`, das nicht auf Mitternacht UTC fällt, wird auf sein UTC-Datum gekürzt, und eines nach dem Jahr 9999 wird als `shutdown_date: null` geschrieben. `created` ist eine Ganzzahl und wird so geschrieben, wie es gespeichert ist; ein Wert in Millisekunden bleibt also einer. `encode_model_request` baut `GET /v1/models/{model}` ohne Header und Body (`retrieveModel` der Spezifikation); den Schlüssel fügt das Gateway hinzu. `encode_models_request` baut `GET /v1/models` (`listModels` der Spezifikation, das keine Query-Parameter kennt; eine Query mit `limit`, `after_id`, `before_id`, `lifecycle` oder anderen Parametern ist daher `Unsupported`). In `decode_models` und `decode_model` geht ein Status außerhalb von 2xx an `decode_error`.
 
 ## Anbieter mit diesem Format
+
+Andere Anbieter als OpenAI, die Chat Completions bereitstellen, zeichnen in `fixtures/openai_chat/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
+
+### DeepSeek
+
+Quellen: die [API-Referenz](https://api-docs.deepseek.com/api/create-chat-completion), der [Leitfaden zum Thinking-Modus](https://api-docs.deepseek.com/guides/thinking_mode/) und die [Fehlercodes](https://api-docs.deepseek.com/quick_start/error_codes) von DeepSeek, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/deepseek/`.
+
+| DeepSeek-Feld | KPP | Hinweise |
+|---|---|---|
+| `thinking` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning_content`, `delta.reasoning_content` | Extras | Chat-Apps erhalten sie unverändert zurück, und ein Assistant-Turn, der eines trägt, schickt es an DeepSeek zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `usage.prompt_cache_hit_tokens`, `prompt_cache_miss_tokens` | `raw` der Nutzung | Die Treffer entsprechen `prompt_tokens_details.cached_tokens`, das als Cache-Lesezugriff typisiert ist. |
+| `: keep-alive`-Zeilen und leere Zeilen, solange der Server ausgelastet ist | `Extra` | Nur im selben Dialekt, wie andere SSE-Kommentare. |
+| HTTP 402 | `Billing` | Ein aufgebrauchtes Guthaben, was auch immer `code` sagt. |
+| HTTP 422 für eine `developer`-Nachricht | `InvalidRequest` | DeepSeek kennt die Rolle nicht; die App erhält den Fehler von DeepSeek. |
+| zusätzliche Modellfelder (`name`, `context_window`, `max_output_tokens`, `input_modalities`, `output_modalities`, `effort`, `api_capabilities`) | Modell-Extras | Die Modellliste von DeepSeek hat kein `created`. |
+
+### SpaceX
+
+Quellen: die [Chat-Completions-Referenz](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions) und die [Modellreferenz](https://docs.x.ai/developers/rest-api-reference/inference/models) von xAI, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/xai/`. Das eigene Format von SpaceX ist [OpenAI Responses](openai-responses.md#anbieter-mit-diesem-format); ein Modell erreicht Chat Completions über sein `egress_dialect`.
+
+| SpaceX-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `citations`, `system_fingerprint`, `service_tier` | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` und `image_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie oben typisiert. SpaceX lässt das Reasoning aus `completion_tokens` heraus und zählt es in `total_tokens`, daher ist die Ausgabe `completion_tokens` plus `reasoning_tokens`. |
+| `{"error": "<message>"}`, bei einem 400 mit `"code": "invalid-argument"` | `KppError` | Der String ist die Meldung, und Apps erhalten sie in der OpenAI-Fehlerform mit dem Status von SpaceX. Ein falscher Schlüssel ist ein 400, dessen Meldung mit `Incorrect API key provided` beginnt; die `refused_key_messages` von SpaceX nennen sie, daher meldet das Gateway einen abgelehnten Schlüssel. |
+| `presence_penalty` für ein Reasoning-Modell, `reasoning_effort` für ein Modell ohne Reasoning | | SpaceX antwortet mit 400, und dieser Fehler erreicht die App. |
+| `search_parameters` (Anfrage) | Extras | SpaceX antwortet mit 410, weil die Live-Suche abgekündigt ist; die App erhält den 410. |
+| zusätzliche Modellfelder (`aliases`, Preise in US-Cent pro 100 Millionen Token, `capabilities.reasoning_effort`, `pricing` für Bilder) | Modell-Extras | |
+
+### Together AI
+
+Quellen: die [Chat-Completions-Referenz](https://docs.together.ai/reference/chat-completions-1) und die [OpenAI-Kompatibilität](https://docs.together.ai/docs/inference/openai-compatibility) von Together AI, gelesen am 2026-10-19, die SDK-Typen in `togethercomputer/together-py` und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together-AI-Feld | KPP | Hinweise |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning_content` oder `message.reasoning`, je nach Modell, und dasselbe in Deltas | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `matched_stop` und `seed` an einer Choice, `text` an einer Stream-Choice, `token_id` in einem Delta, `prompt`, `metadata` und `warnings` auf oberster Ebene | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.reasoning_tokens` neben `completion_tokens_details.reasoning_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie oben typisiert. |
+| Fehler in der OpenAI-Hülle mit eigenen `type`- und `code`-Werten von Together AI (`start_generation_failed`, `model_not_available`), manchmal mit einer `id` auf oberster Ebene | `KppError` | Die Art folgt dem Status; ein falscher Schlüssel ist ein 401 `invalid_api_key`, also `Authentication`. |
+| `GET /v1/models`: ein bloßes Array von Modellen mit `type`, `display_name`, `organization`, `context_length`, `config` und `pricing` | `ModelList`, Modell-Extras | `GET /v1/models/{model}` antwortet für IDs mit `/` mit 404, daher stützt sich eine Modellprüfung auf die Modellliste. |
 
 Andere Anbieter als OpenAI, die Chat Completions anbieten, zeichnen in `fixtures/openai_chat/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
 
@@ -260,5 +304,5 @@ Quellen: die [API-Referenz](https://console.groq.com/docs/api-reference) und der
 | `message.reasoning`, `delta.reasoning`, `delta.channel` | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)); ein Chunk, der nur Reasoning enthält, wird dort zu einem Keepalive. |
 | `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | Extras | Gegenüber anderen Dialekten weggelassen. |
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` der Nutzung | Die Token-Zahlen, `reasoning_tokens` eingeschlossen, sind wie oben typisiert. |
-| `usage` im letzten Chunk, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
+| `usage` im Chunk mit `finish_reason`, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
 | zusätzliche Modellfelder (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` und weitere) | Modell-Extras | |

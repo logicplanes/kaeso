@@ -11,6 +11,7 @@ use kaeso_store::pg::credentials::KeyInUse;
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts};
 use tokio::sync::OnceCell;
 
+use crate::model_api::pipeline::refused_key;
 use crate::services::credentials::Resolved;
 use crate::state::AppState;
 
@@ -28,7 +29,7 @@ pub enum Probe {
 enum Listing {
     Complete(HashSet<String>),
     Unfinished,
-    Failed,
+    Failed(KppError),
 }
 
 type ListingKey = (&'static str, DialectId, KeyInUse);
@@ -91,6 +92,7 @@ impl Asked<'_> {
         let request = dispatch::encode_models_request(self.eff.dialect, query)?;
         let (status, headers, body) = self.send(request).await?;
         dispatch::decode_models(self.eff.dialect, status, &headers, &body)
+            .map_err(|e| refused_key(self.eff.provider, e))
     }
 
     async fn every_page(&self) -> Result<Option<HashSet<String>>, KppError> {
@@ -125,7 +127,7 @@ impl Asked<'_> {
             }
             Err(e) => {
                 tracing::info!(provider, kind = e.kind.as_str(), error = %e.message, "the provider's model listing cannot confirm a model not found");
-                Listing::Failed
+                Listing::Failed(e)
             }
         }
     }
@@ -148,7 +150,9 @@ pub async fn probe(
     };
     let not_found = match asked.send(request).await {
         Ok((status, headers, body)) => {
-            match dispatch::decode_model(eff.dialect, status, &headers, &body) {
+            match dispatch::decode_model(eff.dialect, status, &headers, &body)
+                .map_err(|e| refused_key(eff.provider, e))
+            {
                 Ok(_) => return Probe::Served,
                 Err(e) if e.kind == ErrorKind::NotFound => e,
                 Err(e) => return Probe::Failed(e),
@@ -160,7 +164,8 @@ pub async fn probe(
     match cell.get_or_init(|| asked.listing()).await {
         Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
         Listing::Complete(_) => Probe::Unserved,
-        Listing::Unfinished | Listing::Failed => Probe::Inconclusive(not_found),
+        Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
+        Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }
 }
 

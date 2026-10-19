@@ -247,7 +247,7 @@ order: 6
 | 408、504、`vector_store_timeout` | `Timeout` |
 | 其他状态码 | `ProviderError` |
 | 不是 OpenAI 错误的响应体，无论状态码如何（例如代理返回的 HTML 429） | 按上面各行取该状态码对应的错误类型（代理返回的 429 为 `RateLimited`，502 为 `ProviderError`），消息为 ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``；保留状态码和原始响应体 |
-| `{"error": "<message>"}`，SpaceX 以此格式发送（400 时带 `"code": "invalid-argument"`） | 该状态码对应的错误类型，以该字符串为消息；消息以 `Incorrect API key provided` 开头时为 `Authentication`，这是 SpaceX 对错误密钥的回复。未更改的错误以 OpenAI 格式和其原始状态码编码 |
+| `{"error": "<message>"}`，SpaceX 以此格式发送（400 时带 `"code": "invalid-argument"`） | 该状态码对应的错误类型，以该字符串为消息；SpaceX 对错误密钥的回复（`Incorrect API key provided`，列在其 `refused_key_messages` 中）由网关报告为 `Authentication`。未更改的错误以 OpenAI 格式和其原始状态码编码 |
 
 含 `type` 和 `code` 的行优先于状态码。其他错误码在这里不起决定作用，由状态码决定：`rate_limit_exceeded`、`rate_limit_error` 和 `slow_down`（`RateLimited`），`server_error`（`ProviderError`），`invalid_prompt`、`invalid_request_error` 和图像相关错误码（以 `invalid_image` 或 `image_` 开头，或以 `_image` 结尾；`InvalidRequest`）。它们只在没有状态码的地方起决定作用：流中的 `error` 事件，以及失败回复的 `error.code`。没有消息的错误对象得到 `The provider returned HTTP <status> without a message.`
 
@@ -294,3 +294,19 @@ order: 6
 ## 模型
 
 `GET /v1/models` 和 `GET /v1/models/{model}` 在所有 OpenAI API 中结构相同。本编解码器使用 [OpenAI Chat Completions](openai-chat.md) 页面所述的共享实现对其编码和解码（fixture 位于 `fixtures/openai_chat/models/`）。解码出的 extras 带有来源 `openai_responses`。
+
+## 使用此格式的服务商
+
+提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
+
+### SpaceX
+
+来源：xAI 的 [Responses 参考](https://docs.x.ai/developers/rest-api-reference/inference/responses)和[与 Chat Completions 的比较](https://docs.x.ai/developers/model-capabilities/text/comparison)（2026-10-19 阅读），以及 `fixtures/openai_responses/providers/xai/` 中的实时录制。Responses 是 SpaceX 的 `generation` 方言。
+
+| SpaceX 字段 | KPP | 说明 |
+|---|---|---|
+| 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
+| `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
+| `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
+| `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
+| `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |

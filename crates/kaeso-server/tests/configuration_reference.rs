@@ -49,6 +49,27 @@ fn the_settings_reference_is_current() {
 }
 
 #[test]
+fn the_requirements_list_every_provider_host_as_outgoing() {
+    for lang in ["en", "de", "zh-CN"] {
+        let page = read(&format!(
+            "apps/docs/content/{lang}/self-hosting/requirements.md"
+        ));
+        for p in PROVIDERS {
+            let host = p
+                .default_base_url
+                .trim_start_matches("https://")
+                .split('/')
+                .next()
+                .unwrap();
+            assert!(
+                page.contains(&format!("`{host}`")),
+                "{lang}/self-hosting/requirements.md does not list {host}"
+            );
+        }
+    }
+}
+
+#[test]
 fn every_environment_name_is_the_prefixed_upper_case_key() {
     for s in settings() {
         let expected = format!("KAESO_{}", s.key.to_uppercase().replace(['.', '-'], "_"));

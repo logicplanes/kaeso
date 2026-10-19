@@ -174,12 +174,13 @@ fn string_errors_keep_their_message_and_status_in_the_openai_shape() {
     let v: Value = serde_json::from_slice(&out.body).unwrap();
     assert_eq!(v["error"]["message"], err.message);
     assert_eq!(v["error"]["type"], "server_error");
-    let key = OpenAiChat::decode_error(
+    let mut key = OpenAiChat::decode_error(
         400,
         &HeaderList::new(),
         br#"{"code":"invalid-argument","error":"Incorrect API key provided. You can obtain an API key from https://console.x.ai."}"#,
     );
-    assert_eq!(key.kind, ErrorKind::Authentication);
+    assert_eq!(key.kind, ErrorKind::InvalidRequest);
+    key.kind = ErrorKind::Authentication;
     assert_eq!(OpenAiChat::encode_error(&key).status, 400);
 }
 
@@ -648,6 +649,32 @@ fn usage_splits_cached_and_reasoning_tokens() {
     assert_eq!(r.usage.reasoning_tokens, Some(1152));
     assert!(r.usage.raw.is_some());
     assert_eq!(r.stop, StopReason::EndTurn);
+}
+
+#[test]
+fn reasoning_counted_beside_completion_tokens_is_output() {
+    let r = decode_response_fixture("providers/xai/recorded-reasoning-content");
+    assert_eq!(
+        (r.usage.total_input_tokens(), r.usage.output_tokens),
+        (206, 179)
+    );
+    assert_eq!(r.usage.reasoning_tokens, Some(178));
+    let (_, body) = fixtures(D, "responses", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/xai/recorded-reasoning-content")
+        .unwrap();
+    let recorded: Value = serde_json::from_slice(&body).unwrap();
+    let out: Value = serde_json::from_slice(
+        &OpenAiChat::encode_response(
+            &Reply::Generate(r),
+            &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(out["usage"], recorded["usage"]);
+    let within = decode_response_fixture("reasoning-cached-usage");
+    assert_eq!(within.usage.output_tokens, 1186);
 }
 
 #[test]

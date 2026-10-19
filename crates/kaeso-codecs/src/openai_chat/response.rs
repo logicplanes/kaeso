@@ -275,19 +275,30 @@ fn usage_from_wire(wire: &UsageWire) -> Usage {
     let details = wire.prompt_tokens_details.as_ref();
     let cached = details.and_then(|d| d.cached_tokens).unwrap_or(0);
     let written = details.and_then(|d| d.cache_write_tokens).unwrap_or(0);
+    let reasoning = wire
+        .completion_tokens_details
+        .as_ref()
+        .and_then(|d| d.reasoning_tokens);
     let mut usage = Usage::new(
         wire.prompt_tokens
             .saturating_sub(cached)
             .saturating_sub(written),
-        wire.completion_tokens,
+        output_tokens(wire, reasoning.unwrap_or(0)),
     );
     usage.cache_read_tokens = cached;
     usage.cache_write_tokens = written;
-    usage.reasoning_tokens = wire
-        .completion_tokens_details
-        .as_ref()
-        .and_then(|d| d.reasoning_tokens);
+    usage.reasoning_tokens = reasoning;
     usage
+}
+
+fn output_tokens(wire: &UsageWire, reasoning: u64) -> u64 {
+    let counted = wire.prompt_tokens.saturating_add(wire.completion_tokens);
+    let beside = counted.saturating_add(reasoning);
+    if reasoning > 0 && wire.total_tokens == beside && wire.total_tokens != counted {
+        wire.completion_tokens.saturating_add(reasoning)
+    } else {
+        wire.completion_tokens
+    }
 }
 
 pub(crate) fn encode_usage(usage: &Usage) -> Value {

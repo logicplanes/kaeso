@@ -103,7 +103,7 @@ Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen M
 
 ### Modelle auflisten
 
-`GET /v1/models` wählt sein Format ebenso über den Header `anthropic-version`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
+`GET /v1/models` wählt sein Format ebenso über den Header `anthropic-version`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
 
 | | OpenAI-Format | Anthropic-Format |
 | --- | --- | --- |

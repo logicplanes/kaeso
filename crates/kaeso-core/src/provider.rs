@@ -139,6 +139,7 @@ pub struct Provider {
     pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
+    pub refused_key_messages: &'static [&'static str],
 }
 
 pub const PROVIDERS: &[Provider] = &[
@@ -155,6 +156,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiChat,
             DialectId::OpenAiEmbeddings,
         ],
+        refused_key_messages: &[],
     },
     Provider {
         id: "anthropic",
@@ -165,6 +167,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
+        refused_key_messages: &[],
     },
     Provider {
         id: "deepseek",
@@ -175,6 +178,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
     },
     Provider {
         id: "xai",
@@ -185,6 +189,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
+        refused_key_messages: &["Incorrect API key provided"],
     },
     Provider {
         id: "togetherai",
@@ -195,6 +200,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
     },
     Provider {
         id: "groq",
@@ -205,6 +211,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
     },
 ];
 
@@ -236,6 +243,12 @@ pub fn provider(id: &str) -> Option<&'static Provider> {
 impl Provider {
     pub fn provider_id(&self) -> ProviderId {
         ProviderId(self.id.to_owned())
+    }
+
+    pub fn refuses_key(&self, message: &str) -> bool {
+        self.refused_key_messages
+            .iter()
+            .any(|refusal| message.starts_with(refusal))
     }
 }
 
@@ -324,6 +337,20 @@ mod tests {
         ] {
             assert_eq!(pattern.is_match(id), ProviderId::is_valid(id), "{id:?}");
         }
+    }
+
+    #[test]
+    fn a_provider_names_the_messages_with_which_it_refuses_a_key() {
+        let xai = provider("xai").unwrap();
+        assert!(xai.refuses_key(
+            "Incorrect API key provided. You can obtain an API key from https://console.x.ai."
+        ));
+        assert!(!xai.refuses_key("Model grok-4.3 does not support parameter presencePenalty."));
+        assert!(
+            !provider("openai")
+                .unwrap()
+                .refuses_key("Incorrect API key provided: sk-…")
+        );
     }
 
     #[test]

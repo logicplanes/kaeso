@@ -12,7 +12,7 @@ Choose **Add models** and search one provider's models. Select one or more and a
 
 Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
 
-- **Add every current OpenAI model**, or Anthropic model, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later.
+- **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later.
 - **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it.
 
 The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
@@ -27,7 +27,7 @@ A model in the catalogue isn't always one the provider serves to the project's p
 | Unavailable | The provider said it doesn't serve it to this key |
 | Not checked | Nothing has said so yet, or a provider key of the organization changed since |
 
-Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A model that can't be checked keeps its availability, and the report says why, for example that the project has no key for that provider.
+Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A model that can't be checked keeps its availability, and the report says why, for example that the project has no key for that provider, or that the provider refused the key, also when only its model listing refused it.
 
 Requests update availability too. When the provider answers a request with "not found" and its listing confirms it, the model becomes unavailable, and the app gets an [error that says so](../api/errors.md). When a request for an unavailable model succeeds, the model becomes available again. Each answer counts only for the provider key that got it.
 

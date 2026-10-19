@@ -37,7 +37,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 
 ## Was Kaeso Ihnen bietet
 
-- **Eine API für beide Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen; ein OpenAI SDK spricht also auch mit Claude.
+- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen; ein OpenAI SDK spricht also auch mit Claude.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
 - **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog mit Aliassen in jedem Projekt.
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.

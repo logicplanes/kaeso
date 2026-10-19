@@ -247,7 +247,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | 408, 504, `vector_store_timeout` | `Timeout` |
 | andere Status | `ProviderError` |
 | ein Body, der kein OpenAI-Fehler ist, bei jedem Status (etwa ein HTML-429 eines Proxys) | die Art des Status nach den Zeilen oben (ein 429 eines Proxys ist `RateLimited`, ein 502 `ProviderError`), mit der Meldung ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``; Status und roher Body bleiben erhalten |
-| `{"error": "<message>"}`, wie SpaceX es sendet (mit `"code": "invalid-argument"` bei einem 400) | die Art des Status, mit dem String als Meldung; `Authentication`, wenn die Meldung mit `Incorrect API key provided` beginnt, so antwortet SpaceX auf einen falschen Schlüssel. Ein unveränderter Fehler wird in der OpenAI-Form mit seinem eigenen Status kodiert |
+| `{"error": "<message>"}`, wie SpaceX es sendet (mit `"code": "invalid-argument"` bei einem 400) | die Art des Status, mit dem String als Meldung; die Antwort von SpaceX auf einen falschen Schlüssel (`Incorrect API key provided`, in seinen `refused_key_messages`) macht das Gateway zu `Authentication`. Ein unveränderter Fehler wird in der OpenAI-Form mit seinem eigenen Status kodiert |
 
 Die Zeilen mit `type` und `code` haben Vorrang vor dem Status. Andere Codes entscheiden hier nicht, sondern der Status: `rate_limit_exceeded`, `rate_limit_error` und `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` und die Bild-Codes (beginnend mit `invalid_image` oder `image_` oder endend auf `_image`; `InvalidRequest`). Sie entscheiden nur, wo es keinen Status gibt: in einem `error`-Event eines Streams und im `error.code` einer fehlgeschlagenen Antwort. Ein Fehlerobjekt ohne Meldung bekommt `The provider returned HTTP <status> without a message.`
 
@@ -294,3 +294,19 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 ## Modelle
 
 `GET /v1/models` und `GET /v1/models/{model}` haben in jeder OpenAI-API dieselbe Gestalt. Dieser Codec kodiert und dekodiert sie mit der gemeinsamen Implementierung, die auf der Seite [OpenAI Chat Completions](openai-chat.md) beschrieben ist (Fixtures `fixtures/openai_chat/models/`). Dekodierte Extras tragen den Ursprung `openai_responses`.
+
+## Anbieter mit diesem Format
+
+Andere Anbieter als OpenAI, die Responses bereitstellen, zeichnen in `fixtures/openai_responses/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
+
+### SpaceX
+
+Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-reference/inference/responses) und der [Vergleich mit Chat Completions](https://docs.x.ai/developers/model-capabilities/text/comparison) von xAI, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_responses/providers/xai/`. Responses ist der `generation`-Dialekt von SpaceX.
+
+| SpaceX-Feld | KPP | Hinweise |
+|---|---|---|
+| `reasoning`-Items mit `summary` und `encrypted_content`, das `grok-4.3` immer sendet | wie bei OpenAI | Ein `encrypted_content`, das ein anderer Anbieter geschrieben hat, lehnt SpaceX mit einem 400 `invalid-argument` ab. |
+| `web_search_call`-Items, `url_citation`-Annotationen | wie bei OpenAI | |
+| `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` der Nutzung | Responses-Apps erhalten sie zurück; die Token-Zahlen sind wie oben typisiert. |
+| `presence_penalty` (Anfrage) | Extras | SpaceX ignoriert es und gibt `0.0` zurück. |
+| `{"error": "<message>"}` | `KppError` | Siehe die Fehlertabelle oben. |
