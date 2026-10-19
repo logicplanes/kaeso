@@ -1,8 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use kaeso_core::catalogue::resolve::Alias;
+use kaeso_core::catalogue::resolve::{Access, Alias, Catalogue};
 use kaeso_core::catalogue::{Availability, Entry, Fields};
 use kaeso_core::models_dev;
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgExecutor};
 use time::OffsetDateTime;
@@ -658,14 +659,48 @@ pub async fn clear_service_account(
     Ok(())
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(from = "Stored")]
 pub struct ProjectModels {
-    pub entries: Vec<Entry>,
-    pub aliases: Vec<Alias>,
+    pub catalogue: Catalogue,
     pub users: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
 }
+
+#[derive(Deserialize)]
+struct Stored {
+    entries: Vec<Entry>,
+    aliases: Vec<Alias>,
+    users: BTreeMap<Uuid, BTreeSet<Uuid>>,
+    service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
+    keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
+}
+
+impl From<Stored> for ProjectModels {
+    fn from(s: Stored) -> ProjectModels {
+        ProjectModels {
+            catalogue: Catalogue::new(s.entries, s.aliases),
+            users: s.users,
+            service_accounts: s.service_accounts,
+            keys: s.keys,
+        }
+    }
+}
+
+impl Serialize for ProjectModels {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut out = serializer.serialize_struct("ProjectModels", 5)?;
+        out.serialize_field("entries", self.catalogue.entries())?;
+        out.serialize_field("aliases", self.catalogue.aliases())?;
+        out.serialize_field("users", &self.users)?;
+        out.serialize_field("service_accounts", &self.service_accounts)?;
+        out.serialize_field("keys", &self.keys)?;
+        out.end()
+    }
+}
+
+static NOTHING: BTreeSet<Uuid> = BTreeSet::new();
 
 pub async fn project_models(
     db: &mut sqlx::PgConnection,
@@ -685,8 +720,7 @@ pub async fn project_models(
         })
         .collect();
     let mut out = ProjectModels {
-        entries,
-        aliases,
+        catalogue: Catalogue::new(entries, aliases),
         ..ProjectModels::default()
     };
     let users = sqlx::query!(
@@ -733,15 +767,71 @@ impl ProjectModels {
         key: Option<Uuid>,
         user: Option<Uuid>,
         service_account: Option<Uuid>,
-    ) -> kaeso_core::catalogue::resolve::Access {
+    ) -> Access<'_> {
         let member = match (user, service_account) {
-            (Some(u), _) => self.users.get(&u).cloned(),
-            (None, Some(s)) => self.service_accounts.get(&s).cloned(),
-            (None, None) => Some(BTreeSet::new()),
+            (Some(u), _) => self.users.get(&u),
+            (None, Some(s)) => self.service_accounts.get(&s),
+            (None, None) => Some(&NOTHING),
         };
-        kaeso_core::catalogue::resolve::Access {
+        Access {
             member,
-            key: key.and_then(|k| self.keys.get(&k).cloned()),
+            key: key.and_then(|k| self.keys.get(&k)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(provider: &str, model: &str) -> Entry {
+        Entry {
+            id: Uuid::now_v7(),
+            provider: provider.into(),
+            model_id: model.into(),
+            overrides: Fields::default(),
+            custom: false,
+            delisted: false,
+            last_known: None,
+            availability: None,
+            availability_checked_at: None,
+        }
+    }
+
+    #[test]
+    fn cached_project_models_keep_their_shape_and_resolve_after_reading_back() {
+        let gpt = entry("openai", "gpt-4o");
+        let user = Uuid::now_v7();
+        let models = ProjectModels {
+            catalogue: Catalogue::new(
+                vec![gpt.clone()],
+                vec![Alias {
+                    name: "fast".into(),
+                    target: gpt.id,
+                }],
+            ),
+            users: BTreeMap::from([(user, BTreeSet::from([gpt.id]))]),
+            ..ProjectModels::default()
+        };
+        let json = serde_json::to_value(&models).unwrap();
+        let mut keys: Vec<&str> = json
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        keys.sort_unstable();
+        assert_eq!(
+            keys,
+            ["aliases", "entries", "keys", "service_accounts", "users"]
+        );
+        assert_eq!(json["aliases"][0]["name"], "fast");
+        let back: ProjectModels = serde_json::from_value(json).unwrap();
+        assert_eq!(back, models);
+        assert_eq!(back.catalogue.resolve("fast").unwrap().0, &gpt);
+        assert_eq!(back.catalogue.resolve("openai/gpt-4o").unwrap().0, &gpt);
+        assert!(back.access(None, Some(user), None).allows(gpt.id));
+        assert!(!back.access(None, None, None).allows(gpt.id));
+        assert!(back.access(None, None, Some(Uuid::now_v7())).allows(gpt.id));
     }
 }

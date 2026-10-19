@@ -9,7 +9,7 @@ use rust_decimal_macros::dec;
 use uuid::Uuid;
 
 use super::capability::{effort_levels, model_info, prepare};
-use super::resolve::{Access, AccessLevel, Alias, ResolveError, Via, resolve, shadows};
+use super::resolve::{Access, AccessLevel, Alias, Catalogue, ResolveError, Via};
 use super::*;
 
 fn snapshot() -> models_dev::Snapshot {
@@ -279,19 +279,34 @@ fn names_resolve_alias_then_prefixed_then_native() {
             target: claude.id,
         },
     ];
-    let r = |n: &str| resolve(n, &entries, &aliases).map(|(e, v)| (e.id, v));
+    let catalogue = Catalogue::new(entries.clone(), aliases);
+    let r = |n: &str| catalogue.resolve(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("chat-default"), Ok((claude.id, Via::Alias)));
     assert_eq!(r("gpt-4o"), Ok((claude.id, Via::Alias)));
     assert_eq!(r("openai/gpt-4o"), Ok((gpt.id, Via::Prefixed)));
     assert_eq!(r("claude-sonnet-4-5"), Ok((claude.id, Via::Native)));
     assert!(matches!(r("gpt-5"), Err(ResolveError::NotInCatalogue(_))));
     assert!(r("anthropic/claude-opus-4-6").is_err());
-    let twins = vec![entry("openai", "same"), entry("anthropic", "same")];
-    let err = resolve("same", &twins, &[]).unwrap_err();
+    let twins = Catalogue::new(
+        vec![entry("openai", "same"), entry("anthropic", "same")],
+        vec![],
+    );
+    let err = twins.resolve("same").unwrap_err();
     assert!(err.to_string().contains("openai/same"), "{err}");
-    assert!(shadows("gpt-4o", &entries, &snapshot()));
-    assert!(shadows("gpt-5", &[], &snapshot()));
-    assert!(!shadows("chat-default", &entries, &snapshot()));
+    assert_eq!(twins.sharing("same"), 2);
+    assert!(catalogue.shadows("gpt-4o", &snapshot()));
+    assert!(catalogue.shadows("openai/gpt-4o", &snapshot()));
+    assert!(Catalogue::default().shadows("gpt-5", &snapshot()));
+    assert!(!catalogue.shadows("chat-default", &snapshot()));
+    assert_eq!(
+        catalogue
+            .aliases_of(claude.id)
+            .map(|a| a.name.as_str())
+            .collect::<Vec<_>>(),
+        ["chat-default", "gpt-4o"]
+    );
+    assert_eq!(catalogue.aliases_of(gpt.id).count(), 0);
+    assert_eq!(catalogue.entry(gpt.id), Some(&gpt));
     assert!(super::resolve::validate_alias_name("a/b").is_err());
     assert!(super::resolve::validate_alias_name("fast chat").is_err());
 }
@@ -304,8 +319,8 @@ fn access_lists_narrow_level_by_level() {
     let member: BTreeSet<Uuid> = [a, b].into();
     let key: BTreeSet<Uuid> = [b].into();
     let narrowed = Access {
-        member: Some(member.clone()),
-        key: Some(key.clone()),
+        member: Some(&member),
+        key: Some(&key),
     };
     assert_eq!(narrowed.check(a), Err(AccessLevel::Key));
     assert_eq!(narrowed.check(b), Ok(()));
@@ -685,4 +700,172 @@ fn adaptive_thinking_is_refused_before_sending_where_the_model_has_none() {
         )
         .is_ok()
     );
+}
+
+fn linear_resolve<'a>(
+    name: &str,
+    entries: &'a [Entry],
+    aliases: &[Alias],
+) -> Result<(&'a Entry, Via), ResolveError> {
+    if let Some(alias) = aliases.iter().find(|a| a.name == name)
+        && let Some(entry) = entries.iter().find(|e| e.id == alias.target)
+    {
+        return Ok((entry, Via::Alias));
+    }
+    if let Some((provider, model)) = name.split_once('/')
+        && let Some(entry) = entries
+            .iter()
+            .find(|e| e.provider == provider && e.model_id == model)
+    {
+        return Ok((entry, Via::Prefixed));
+    }
+    let native: Vec<&Entry> = entries.iter().filter(|e| e.model_id == name).collect();
+    match native.as_slice() {
+        [] => Err(ResolveError::NotInCatalogue(name.to_owned())),
+        [one] => Ok((one, Via::Native)),
+        many => Err(ResolveError::Ambiguous {
+            name: name.to_owned(),
+            providers: many.iter().map(|e| e.provider.clone()).collect(),
+        }),
+    }
+}
+
+fn linear_shadows(name: &str, entries: &[Entry], snapshot: &models_dev::Snapshot) -> bool {
+    entries
+        .iter()
+        .any(|e| e.model_id == name || format!("{}/{}", e.provider, e.model_id) == name)
+        || snapshot
+            .providers
+            .values()
+            .any(|p| p.models.contains_key(name))
+}
+
+mod indexed {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    const PROVIDERS: &[&str] = &["openai", "anthropic", "deepseek", "a-b"];
+    const MODELS: &[&str] = &["m1", "m2", "gpt-4o", "x/y", "m1/z", ""];
+    const NAMES: &[&str] = &["fast", "m1", "gpt-4o", "openai/m1", "x/y"];
+
+    fn id(n: u8) -> Uuid {
+        Uuid::from_u128(u128::from(n))
+    }
+
+    fn entries() -> impl Strategy<Value = Vec<Entry>> {
+        prop::collection::vec(
+            (
+                0u8..12,
+                prop::sample::select(PROVIDERS),
+                prop::sample::select(MODELS),
+            )
+                .prop_map(|(n, p, m)| Entry {
+                    id: id(n),
+                    ..entry(p, m)
+                }),
+            0..10,
+        )
+    }
+
+    fn aliases() -> impl Strategy<Value = Vec<Alias>> {
+        prop::collection::vec(
+            (prop::sample::select(NAMES), 0u8..14).prop_map(|(name, n)| Alias {
+                name: name.into(),
+                target: id(n),
+            }),
+            0..6,
+        )
+    }
+
+    fn names() -> impl Strategy<Value = String> {
+        prop_oneof![
+            prop::sample::select(NAMES).prop_map(str::to_owned),
+            prop::sample::select(MODELS).prop_map(str::to_owned),
+            (
+                prop::sample::select(PROVIDERS),
+                prop::sample::select(MODELS)
+            )
+                .prop_map(|(p, m)| format!("{p}/{m}")),
+            "[a-z/]{0,6}",
+        ]
+    }
+
+    proptest! {
+        #[test]
+        fn the_index_resolves_every_name_as_the_linear_scan_did(
+            entries in entries(),
+            aliases in aliases(),
+            name in names(),
+        ) {
+            let catalogue = Catalogue::new(entries, aliases);
+            let at = |r: Result<(&Entry, Via), ResolveError>| r.map(|(e, v)| (std::ptr::from_ref(e), v));
+            prop_assert_eq!(
+                at(catalogue.resolve(&name)),
+                at(linear_resolve(&name, catalogue.entries(), catalogue.aliases()))
+            );
+            let empty = models_dev::Snapshot::default();
+            prop_assert_eq!(
+                catalogue.shadows(&name, &empty),
+                linear_shadows(&name, catalogue.entries(), &empty)
+            );
+            prop_assert_eq!(
+                catalogue.sharing(&name),
+                catalogue.entries().iter().filter(|e| e.model_id == name).count()
+            );
+            for e in catalogue.entries() {
+                prop_assert_eq!(
+                    catalogue.entry(e.id).map(std::ptr::from_ref),
+                    catalogue.entries().iter().find(|x| x.id == e.id).map(std::ptr::from_ref)
+                );
+                let of: Vec<&Alias> = catalogue.aliases_of(e.id).collect();
+                let scanned: Vec<&Alias> =
+                    catalogue.aliases().iter().filter(|a| a.target == e.id).collect();
+                prop_assert_eq!(of, scanned);
+            }
+        }
+    }
+
+    #[test]
+    #[ignore = "timing; run with --ignored --nocapture"]
+    fn resolving_against_a_large_catalogue_is_timed() {
+        let entries: Vec<Entry> = (0..20_000)
+            .map(|i| entry(&format!("p{}", i % 200), &format!("model-{}", i / 2)))
+            .collect();
+        let aliases: Vec<Alias> = (0..2_000)
+            .map(|i| Alias {
+                name: format!("alias-{i}"),
+                target: entries[i * 10].id,
+            })
+            .collect();
+        let names: Vec<String> = (0..1_000)
+            .flat_map(|i| {
+                [
+                    format!("alias-{}", i * 2),
+                    format!("p{}/model-{}", (i * 20) % 200, i * 10),
+                    format!("model-{}", i * 10),
+                    format!("missing-{i}"),
+                ]
+            })
+            .collect();
+        let started = std::time::Instant::now();
+        let catalogue = Catalogue::new(entries, aliases);
+        let built = started.elapsed();
+        let time = |f: &dyn Fn(&str) -> bool| {
+            let started = std::time::Instant::now();
+            let found = names.iter().filter(|n| f(n)).count();
+            (
+                started.elapsed() / u32::try_from(names.len()).unwrap(),
+                found,
+            )
+        };
+        let (linear, linear_found) =
+            time(&|n| linear_resolve(n, catalogue.entries(), catalogue.aliases()).is_ok());
+        let (indexed, indexed_found) = time(&|n| catalogue.resolve(n).is_ok());
+        assert_eq!(linear_found, indexed_found);
+        println!(
+            "20000 entries, 2000 aliases, {} names: index built in {built:?}; per name: linear {linear:?}, indexed {indexed:?}",
+            names.len()
+        );
+    }
 }

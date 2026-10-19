@@ -380,7 +380,12 @@ pub async fn models(
     let access = models.access(None, Some(session.user_id), None);
     let mut keys: Vec<(&str, bool)> = Vec::new();
     let mut out = Vec::new();
-    for entry in models.entries.iter().filter(|e| access.allows(e.id)) {
+    for entry in models
+        .catalogue
+        .entries()
+        .iter()
+        .filter(|e| access.allows(e.id))
+    {
         let Some(eff) = crate::services::catalogue::effective(&state, entry) else {
             continue;
         };
@@ -398,12 +403,7 @@ pub async fn models(
                 has
             }
         };
-        let shared = models
-            .entries
-            .iter()
-            .filter(|e| e.model_id == entry.model_id)
-            .count()
-            > 1;
+        let shared = models.catalogue.sharing(&entry.model_id) > 1;
         let f = &eff.fields;
         let price = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
         out.push(PlaygroundModel {
@@ -417,9 +417,8 @@ pub async fn models(
             model_id: entry.model_id.clone(),
             display_name: eff.display_name().to_owned(),
             aliases: models
-                .aliases
-                .iter()
-                .filter(|a| a.target == entry.id)
+                .catalogue
+                .aliases_of(entry.id)
                 .map(|a| a.name.clone())
                 .collect(),
             reasoning: f.reasoning.unwrap_or(false),
