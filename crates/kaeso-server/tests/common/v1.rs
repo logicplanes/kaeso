@@ -44,6 +44,13 @@ pub struct Env {
     pub services: TestServices,
 }
 
+impl Env {
+    pub async fn outcomes(&self) -> Vec<Outcome> {
+        self.app.state.in_flight.settled().await;
+        self.capture.all()
+    }
+}
+
 pub async fn env(capture: Option<Arc<Capture>>, extra: Option<&[(&str, &str)]>) -> Env {
     env_hooked(capture, None, extra).await
 }

@@ -200,6 +200,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | --- | --- |
 | `[mock:fixture=NAME]` in the prompt | Replies with that fixture of the provider's format |
 | `[mock:gate=NAME]` in the prompt | Holds the request until the test opens the gate |
+| `[mock:steps=NAME]` in the prompt | Sends a stream's first event, then one more each time the test steps the gate |
 | A model id starting with `unserved-` | The format's model not found |
 | `[mock:gate=NAME]` in the provider key | Holds `GET /v1/models` and `GET /v1/models/{id}` |
 | `[mock:models=absent]` in the provider key | Answers both models endpoints with a bare 404 |

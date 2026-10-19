@@ -107,6 +107,8 @@ Kaeso charges such a request, and a stream that broke off, what the provider rep
 - the input from the provider's usage at the start of the stream, or else from its token-counting endpoint, or else from the size of the request;
 - the output from the content received.
 
+A request that isn't streamed is charged its input, estimated from its size, once Kaeso has sent it to the provider.
+
 These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning that the provider doesn't stream.
 
 ## Shutdown
@@ -119,4 +121,4 @@ A request still open after that gets the error "Kaeso is restarting and ended th
 
 Kaeso charges the tokens at the model's prices at the time of the request, to the key, the member and the project, and counts them against their budgets. The request log keeps the metadata. It also keeps the request and the reply when content logging is on for both the organization and the project.
 
-Logging never holds a request up. Entries wait in memory and go to ClickHouse in batches. When the buffer is full, Kaeso drops the oldest entries ([request logs](../console/request-logs.md)).
+Logging never holds a request up: the reply goes out first. Under a hard budget or a token rate, Kaeso charges the request before its reply ends, so the app's next request already counts it. Entries wait in memory and go to ClickHouse in batches. When the buffer is full, Kaeso drops the oldest entries ([request logs](../console/request-logs.md)).
