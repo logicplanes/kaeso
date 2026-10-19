@@ -1,0 +1,11 @@
+{
+  "status": 410,
+  "encoded": {
+    "error": {
+      "message": "Live search is deprecated. Please switch to the Agent Tools API: https://docs.x.ai/docs/guides/tools/overview",
+      "type": "server_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

@@ -4,13 +4,13 @@ description: 用 Docker Compose 安装 Kaeso，连接服务商并发送第一个
 order: 1
 ---
 
-在服务器上安装 Kaeso，连接 OpenAI、Anthropic 或 Together AI，并通过它发送第一个请求。
+在服务器上安装 Kaeso，连接 OpenAI、Anthropic 等模型服务商，并通过它发送第一个请求。
 
 ## 准备工作
 
 - 一台装有 Docker Engine 和 Docker Compose 2.24 或更高版本的服务器，2 个 vCPU、4 GB 内存和 20 GB 磁盘（[系统要求](../self-hosting/requirements.md)）。
 - 一个域名，例如 `kaeso.example.com`，其 DNS 记录指向该服务器。80 和 443 端口必须向互联网开放，以便 Caddy 获取证书。
-- 一个 OpenAI、Anthropic 或 Together AI 的 API 密钥。
+- 一个 Kaeso 所调用的模型服务商（如 OpenAI 或 Anthropic）的 API 密钥（[服务商密钥](../console/provider-keys.md)）。
 
 > [!TIP]
 > 想在自己的电脑上试用，把域名设为 `localhost`，然后打开 `https://localhost`。此时 Caddy 自行签发证书，浏览器会要求您确认接受一次。[在自己的电脑上试用](../self-hosting/installation.md#在自己的电脑上试用)介绍如何让 curl 和 SDK 信任它。
@@ -96,7 +96,7 @@ docker compose exec gateway kaeso setup-link
 服务商密钥属于组织，每个项目都使用服务商的默认密钥。
 
 1. 在侧边栏中打开**服务商**，选择**添加密钥**。
-2. 选择 OpenAI、Anthropic 或 Together AI，粘贴服务商提供的密钥。
+2. 选择服务商，粘贴它提供的密钥。
 3. 为它命名，例如 `Production`，然后选择**添加密钥**。
 
 某个服务商的第一个密钥会成为其默认密钥。Kaeso 不会再次显示该密钥；详见[服务商密钥](../console/provider-keys.md)。

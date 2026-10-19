@@ -1,0 +1,56 @@
+{
+  "id": "7b4647dd-256f-96ec-bae7-2f264ac87131",
+  "object": "chat.completion",
+  "created": 1792370255,
+  "model": "grok-4.3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
+            "function": {
+              "name": "get_local_time",
+              "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+            },
+            "type": "function"
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 422,
+    "completion_tokens": 29,
+    "total_tokens": 451,
+    "prompt_tokens_details": {
+      "text_tokens": 422,
+      "audio_tokens": 0,
+      "image_tokens": 0,
+      "cached_tokens": 128
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "num_sources_used": 0,
+    "cost_in_usd_ticks": 4656000
+  },
+  "system_fingerprint": "fp_eb3c003fc66c14ed",
+  "service_tier": "default"
+}

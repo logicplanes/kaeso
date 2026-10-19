@@ -195,6 +195,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | `code` `content_policy_violation`、`content_filter`、`bio_policy`、`cyber_policy`、`misalignment_policy_violation` 或 `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`，code `content_policy_violation` |
 | 400、409、422 | `InvalidRequest`（编码时还有 `Unsupported`） | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -206,9 +207,11 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 
 表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。
 
+兼容 OpenAI 的服务商（例如 DeepSeek）用 HTTP 402 表示余额不足（[DeepSeek 错误码](https://api-docs.deepseek.com/quick_start/error_codes)），因此无论其 `code` 为何，它都是 `Billing`。
+
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
-`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息；否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息。以 `Incorrect API key provided` 开头的是 xAI 对错误密钥的 HTTP 400 回复，类别为 `Authentication`。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
 
 ## 模型
 

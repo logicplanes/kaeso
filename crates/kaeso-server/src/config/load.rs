@@ -384,7 +384,9 @@ mod tests {
                 .collect::<Vec<_>>(),
             [
                 "anthropic https://api.anthropic.com/",
+                "deepseek https://api.deepseek.com/",
                 "openai https://api.openai.com/",
+                "xai https://api.x.ai/",
                 "togetherai https://api.together.ai/"
             ]
         );
@@ -451,12 +453,12 @@ mod tests {
     #[test]
     fn unknown_provider_variables_are_refused_with_the_rule() {
         let docs = "; see https://docs.kaeso.app/self-hosting/configuration#provider-settings";
-        let known = kaeso_core::provider::ids();
+        let unknown = format!(
+            "names the provider `azure-openai`, which Kaeso does not know; the providers are {}",
+            kaeso_core::provider::ids()
+        );
         for (name, reason) in [
-            (
-                "KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL",
-                format!("names the provider `azure-openai`, which Kaeso does not know; the providers are {known}"),
-            ),
+            ("KAESO_PROVIDERS_AZURE_OPENAI_BASE_URL", unknown.as_str()),
             (
                 "KAESO_PROVIDERS_AZURE__OPENAI_BASE_URL",
                 "names `AZURE__OPENAI`, which is not a provider id: the id in upper case with `_` for `-`, made of lowercase letters and digits, with single hyphens between them".to_owned(),
@@ -482,11 +484,14 @@ mod tests {
     #[test]
     fn unknown_provider_tables_in_the_file_are_refused_with_the_rule() {
         let docs = "; see https://docs.kaeso.app/self-hosting/configuration#provider-settings";
-        let known = kaeso_core::provider::ids();
+        let unknown = format!(
+            "`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are {}",
+            kaeso_core::provider::ids()
+        );
         for (toml, message) in [
             (
                 "[providers.together-ai]\nbase_url = \"https://api.together.example.com\"\n",
-                format!("`providers.together-ai.base_url` in /k.toml: `together-ai` is not a provider Kaeso knows; the providers are {known}"),
+                unknown.as_str(),
             ),
             (
                 "[providers.azure_openai]\nbase_url = \"https://azure.example.com\"\n",

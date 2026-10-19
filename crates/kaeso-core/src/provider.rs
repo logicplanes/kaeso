@@ -167,6 +167,26 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::AnthropicMessages],
     },
     Provider {
+        id: "deepseek",
+        name: "DeepSeek",
+        default_base_url: "https://api.deepseek.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+    },
+    Provider {
+        id: "xai",
+        name: "xAI",
+        default_base_url: "https://api.x.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiResponses,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
+    },
+    Provider {
         id: "togetherai",
         name: "Together AI",
         default_base_url: "https://api.together.ai",
@@ -238,7 +258,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, togetherai");
+        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai");
     }
 
     #[test]
@@ -315,7 +335,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "togetherai"]
+            ["openai", "anthropic", "deepseek", "xai", "togetherai"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

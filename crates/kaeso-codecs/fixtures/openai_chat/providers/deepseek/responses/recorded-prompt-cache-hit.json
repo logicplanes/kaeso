@@ -1,0 +1,28 @@
+{
+  "id": "30e154ae-2feb-4ee9-bc9d-4bcd6b69bc7d",
+  "object": "chat.completion",
+  "created": 1792370271,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "No — partial months are not refunded. You can cancel online at any time before your renewal date, and there’s no cancellation fee, but the current month’s charge isn’t prorated or returned (Policy 2, Policy 3, Policy 4).\n\nAlso note: if you have a device on an instalment plan, those payments continue after cancellation until the device is paid off (Policy 9)."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 282,
+    "completion_tokens": 87,
+    "total_tokens": 369,
+    "prompt_tokens_details": {
+      "cached_tokens": 128
+    },
+    "prompt_cache_hit_tokens": 128,
+    "prompt_cache_miss_tokens": 154
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}

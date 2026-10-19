@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use super::OpenAiChat;
 use crate::codec::{Codec, EgressCtx, EncodeCtx, HeaderList};
-use crate::test_support::{assert_json_eq, fixtures, sidecar};
+use crate::test_support::{assert_json_eq, encoded_error, fixtures, sidecar};
 
 const D: &str = "openai_chat";
 
@@ -149,13 +149,35 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         );
         let out = OpenAiChat::encode_error(&err);
         assert_eq!(out.status, status, "{name}");
-        assert_json_eq(&name, &body, &out.body);
+        assert_json_eq(&name, &encoded_error(&meta, &body), &out.body);
         assert_eq!(
             out.headers.get("retry-after"),
             headers.get("retry-after"),
             "{name}"
         );
     }
+}
+
+#[test]
+fn string_errors_keep_their_message_and_status_in_the_openai_shape() {
+    let body = br#"{"error":"Live search is deprecated. Please switch to the Agent Tools API."}"#;
+    let err = OpenAiChat::decode_error(410, &HeaderList::new(), body);
+    assert_eq!(
+        err.message,
+        "Live search is deprecated. Please switch to the Agent Tools API."
+    );
+    let out = OpenAiChat::encode_error(&err);
+    assert_eq!(out.status, 410);
+    let v: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(v["error"]["message"], err.message);
+    assert_eq!(v["error"]["type"], "server_error");
+    let key = OpenAiChat::decode_error(
+        400,
+        &HeaderList::new(),
+        br#"{"code":"invalid-argument","error":"Incorrect API key provided. You can obtain an API key from https://console.x.ai."}"#,
+    );
+    assert_eq!(key.kind, ErrorKind::Authentication);
+    assert_eq!(OpenAiChat::encode_error(&key).status, 400);
 }
 
 #[test]

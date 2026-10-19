@@ -3,7 +3,7 @@ title: Einführung
 description: Kaeso ist ein Open-Source-KI-Gateway, das Sie auf Ihren eigenen Servern betreiben.
 ---
 
-Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und den Modellanbietern OpenAI, Anthropic und Together AI betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
+Kaeso ist ein Gateway, das Sie zwischen Ihren Apps und Modellanbietern wie OpenAI und Anthropic betreiben. Ihre Apps behalten die offiziellen SDKs, die sie schon nutzen, und ändern zwei Einstellungen: die Basis-URL und den Schlüssel. Kaeso prüft jede Anfrage gegen Ihre Schlüssel, Modelle und Limits, ruft den Anbieter mit Ihrem Anbieter-Schlüssel auf und protokolliert, was jede Anfrage gekostet hat.
 
 So ruft eine App mit dem OpenAI SDK über Kaeso Claude auf:
 
@@ -37,7 +37,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 
 ## Was Kaeso Ihnen bietet
 
-- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen; ein OpenAI SDK spricht also auch mit Claude.
+- **Eine API für beide Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen; ein OpenAI SDK spricht also auch mit Claude.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
 - **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog mit Aliassen in jedem Projekt.
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.
@@ -49,10 +49,10 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 ```mermaid
 flowchart TD
   accTitle: Wie die Teile zusammenspielen
-  accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft OpenAI, Anthropic oder Together AI auf.
+  accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft die Modellanbieter auf.
   apps[Apps] -- /v1 --> gateway[Gateway]
   console[Konsole] -- /platform/v1 --> gateway
-  gateway --> providers[OpenAI, Anthropic oder Together AI]
+  gateway --> providers[Modellanbieter]
 ```
 
 | Teil | Was es ist |

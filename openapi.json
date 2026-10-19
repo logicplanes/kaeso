@@ -15803,7 +15803,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider: `openai`, `anthropic` or `togetherai`."
+            "description": "The provider's id, such as `openai` or `anthropic`."
           },
           "secret": {
             "type": "string",

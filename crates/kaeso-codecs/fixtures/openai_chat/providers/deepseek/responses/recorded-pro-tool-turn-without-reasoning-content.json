@@ -1,0 +1,32 @@
+{
+  "id": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+  "object": "chat.completion",
+  "created": 1792374067,
+  "model": "deepseek-v4-pro",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The current weather in Paris is **14°C** with **light rain**.",
+        "reasoning_content": ""
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 423,
+    "completion_tokens": 17,
+    "total_tokens": 440,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 423
+  },
+  "system_fingerprint": "a307abda487cd1b463329ccb945ce396"
+}

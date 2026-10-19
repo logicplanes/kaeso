@@ -1,0 +1,9 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ]
+}

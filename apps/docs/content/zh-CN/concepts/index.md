@@ -19,7 +19,7 @@ order: 2
 | 权限、角色 | 一项权限允许一类操作，例如 `keys.all.view`。角色是一组有名称的权限（[权限](rights.md)） |
 | API 密钥 | `sk-kso-…`，属于某个项目中一名成员或一个服务账号的密钥。有模型调用访问权限时它调用模型，有平台访问权限时它管理该项目（[API 密钥](../console/api-keys.md)） |
 | 平台密钥 | `sk-kso-org-…`，通过 Platform API 管理整个组织的密钥。它从不调用模型 |
-| 服务商密钥 | 组织的 OpenAI、Anthropic 或 Together AI 密钥，Kaeso 用它调用服务商。应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
+| 服务商密钥 | 组织用于某个模型服务商（如 OpenAI 或 Anthropic）的密钥，Kaeso 用它调用服务商。应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
 | 主密钥 | 实例自己的密钥，用于加密它存储的机密信息，例如服务商密钥（[备份和主密钥](../self-hosting/backups.md)） |
 | 目录 | 项目可以调用的模型及其价格、限制和能力。它们来自 models.dev，项目也可以添加自定义模型或覆盖字段（[模型和别名](../console/models-and-aliases.md)） |
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast` |

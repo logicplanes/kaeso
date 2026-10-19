@@ -1,17 +1,25 @@
 ---
 title: Provider keys
-description: Connect your organization's OpenAI, Anthropic and Together AI keys, and choose which projects use each one.
+description: Connect your organization's keys for model providers, and choose which projects use each one.
 order: 3
 ---
 
-Provider keys are your organization's keys for OpenAI, Anthropic and Together AI, the providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
+Provider keys are your organization's keys for the model providers Kaeso calls. Kaeso stores them encrypted under the install's master key and never shows them again. Apps never see them: they call Kaeso with [API keys](api-keys.md) instead.
 
 ## Add a key
 
 1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose OpenAI, Anthropic or Together AI.
-3. Paste the key and give it a name, such as `Production`. An OpenAI key, from platform.openai.com, starts with `sk-`. An Anthropic key, from console.anthropic.com, starts with `sk-ant-`. A Together AI key, from api.together.ai, starts with `tgp_v1_`.
+2. **Which provider is the key for?** Choose the provider.
+3. Paste the key and give it a name, such as `Production`. The table below says where each provider's keys come from.
 4. If the provider already has a default key, choose whether the new key becomes the default.
+
+| Provider | Create a key at | The key starts with |
+| --- | --- | --- |
+| OpenAI | platform.openai.com | `sk-` |
+| Anthropic | console.anthropic.com | `sk-ant-` |
+| DeepSeek | platform.deepseek.com | `sk-` |
+| xAI | console.x.ai | `xai-` |
+| Together AI | api.together.ai | `tgp_v1_` |
 
 Each action on provider keys needs its own right:
 

@@ -144,6 +144,8 @@ services:
 | --- | --- | --- | --- | --- |
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | 文本 | `https://api.openai.com` | OpenAI API 的基础 URL。 |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | 文本 | `https://api.anthropic.com` | Anthropic API 的基础 URL。 |
+| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | 文本 | `https://api.deepseek.com` | DeepSeek API 的基础 URL。 |
+| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | 文本 | `https://api.x.ai` | xAI API 的基础 URL。 |
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | 文本 | `https://api.together.ai` | Together AI API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
@@ -209,7 +211,7 @@ services:
 
 ## 服务商设置
 
-每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用三个服务商，`openai`、`anthropic` 和 `togetherai`，每个只有一个字段 `base_url`（[服务商调用](#服务商调用)）。
+每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用的每个服务商都只有一个字段 `base_url`（[服务商调用](#服务商调用)）。
 
 服务商 ID 由小写字母和数字组成，中间用单个连字符分隔。ID 不符合此规则、或指向 Kaeso 不调用的服务商的变量或表，会让网关在启动时停止。错误消息会指明它，并列出所有服务商。
 
