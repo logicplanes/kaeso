@@ -12,6 +12,7 @@ pub const COST: &str = "kaeso_cost_microusd_total";
 pub const LIMIT_REFUSALS: &str = "kaeso_limit_refusals_total";
 pub const UPSTREAM_ERRORS: &str = "kaeso_upstream_errors_total";
 pub const STREAM_FAILURES: &str = "kaeso_stream_failures_total";
+pub const USAGE_ESTIMATES: &str = "kaeso_usage_estimates_total";
 pub const REASONING_CONTINUITY: &str = "kaeso_reasoning_continuity_total";
 pub const LOG_BUFFER_BYTES: &str = "kaeso_log_buffer_bytes";
 pub const LOG_BUFFER_ROWS: &str = "kaeso_log_buffer_rows";
@@ -53,6 +54,10 @@ pub fn describe() {
     describe_counter!(
         STREAM_FAILURES,
         "Streamed replies that failed after their headers were sent, by error kind and provider."
+    );
+    describe_counter!(
+        USAGE_ESTIMATES,
+        "Replies whose usage Kaeso estimated, by provider and reason (unreported, cancelled, failed)."
     );
     describe_counter!(
         REASONING_CONTINUITY,

@@ -38,6 +38,7 @@ services:
 | `kaeso_request_duration_seconds{surface, route}`、`kaeso_time_to_first_byte_seconds{provider}` | 各路由和各服务商的 99 分位数变化 |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`、`timeout` 或 `connect`：服务商故障。`authentication` 或 `billing`：某个服务商密钥需要处理 |
 | `kaeso_stream_failures_total{kind, provider}` | 在响应头发出后失败的流。`kaeso_requests_total` 把它们计为 200，请求日志则计为失败 |
+| `kaeso_usage_estimates_total{reason, provider}` | Kaeso 不得不估算的用量。`unreported`：服务商结束回复时没有报告用量。`cancelled` 和 `failed`：断开连接的应用和中途中断的流 |
 | `kaeso_limit_refusals_total{kind, level}` | 预算即将用完 |
 | `kaeso_reasoning_continuity_total{outcome}` | `unavailable`：Valkey 出现问题。大量 `missing`：对话持续时间超过 `KAESO_CONTINUITY_REASONING_TTL` |
 | `kaeso_tokens_total{provider, kind}`、`kaeso_cost_microusd_total{provider}` | 支出趋势 |

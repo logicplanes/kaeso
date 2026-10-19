@@ -744,3 +744,34 @@ fn content_that_arrives_only_in_done_events_reaches_kpp() {
         .collect();
     assert_eq!(texts, ["Hi there! How can I assist you today?"]);
 }
+
+#[test]
+fn a_stream_whose_usage_cannot_be_read_ends_with_a_provider_error() {
+    let bytes = fixture("streams", "text-basic-stream", "sse");
+    let text = String::from_utf8(bytes).unwrap();
+    let completed = text
+        .split("\n\n")
+        .find(|f| f.contains("\"type\":\"response.completed\""))
+        .unwrap()
+        .to_owned();
+    let (head, _) = completed.split_once("\"usage\":").unwrap();
+    let broken = format!("{head}\"usage\":{{\"input_tokens\":-1}}}}}}");
+    let events = decode_stream_chunked(text.replace(&completed, &broken).as_bytes(), 9);
+    assert!(
+        matches!(events.last(), Some(StreamEvent::Error(e)) if e.kind == ErrorKind::ProviderError && e.message.contains("usage object")),
+        "{:?}",
+        events.last()
+    );
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::ResponseDelta(_))),
+        "{events:?}"
+    );
+    let created = "event: response.created\ndata: {\"type\":\"response.created\",\"sequence_number\":0,\"response\":{\"id\":\"r\",\"model\":\"m\",\"status\":\"in_progress\",\"output\":[],\"usage\":{\"output_tokens\":\"x\"}}}\n\n";
+    let events = decode_stream_chunked(created.as_bytes(), 4);
+    assert!(
+        matches!(events.as_slice(), [StreamEvent::Error(e)] if e.message.contains("usage object")),
+        "{events:?}"
+    );
+}

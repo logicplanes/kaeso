@@ -38,6 +38,7 @@ services:
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Changes in the 99th percentile per route and per provider |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` or `connect`: a provider outage. `authentication` or `billing`: a provider key needs attention |
 | `kaeso_stream_failures_total{kind, provider}` | Streams that failed after their headers were sent. `kaeso_requests_total` counts them as 200, the request log as failures |
+| `kaeso_usage_estimates_total{reason, provider}` | Usage Kaeso had to estimate. `unreported`: a provider finished a reply without usage. `cancelled` and `failed`: apps that disconnected and streams that broke off |
 | `kaeso_limit_refusals_total{kind, level}` | Budgets running out |
 | `kaeso_reasoning_continuity_total{outcome}` | `unavailable`: Valkey trouble. Many `missing`: conversations outlive `KAESO_CONTINUITY_REASONING_TTL` |
 | `kaeso_tokens_total{provider, kind}`, `kaeso_cost_microusd_total{provider}` | Spend trends |

@@ -460,3 +460,22 @@ fn dropping_blocks_keeps_item_boundaries_and_provider_ids() {
     );
     assert_eq!(v["output"].as_array().unwrap().len(), 2);
 }
+
+#[test]
+fn a_reply_whose_usage_cannot_be_read_is_a_provider_error_not_zero_usage() {
+    let mut body: Value =
+        serde_json::from_slice(&fixture("responses", "text-input-string", "json")).unwrap();
+    body["usage"] = json!({"input_tokens": "many", "output_tokens": 3});
+    let err = OpenAiResponses::decode_response(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&body).unwrap(),
+        &gen_ctx(),
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+    assert!(err.message.contains("usage object"), "{}", err.message);
+    body["usage"] = Value::Null;
+    let resp = decode_resp(&serde_json::to_vec(&body).unwrap());
+    assert_eq!(resp.usage, Usage::default());
+}
