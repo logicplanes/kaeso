@@ -30,6 +30,25 @@ describe("single sign-on links", () => {
     expect(requests("POST", "me/sso-links").map((r) => r.body)).toEqual([{ org: "org_contoso", next: PATH }]);
   });
 
+  it("names the organization's SSO when its provider has no name, and keeps the link when asked not to", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("GET", "me/sso-links", {
+      data: [
+        { org_id: "org_contoso", org_name: "Contoso", provider_name: null, linked: true, linked_at: "2026-10-15T12:00:00Z" },
+        { org_id: "org_fabrikam", org_name: "Fabrikam", provider_name: null, linked: false, linked_at: null },
+      ],
+    });
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText("Linked; you can sign in through its SSO.")).toBeInTheDocument();
+    expect(screen.getByText("Not linked; link it to sign in through its SSO.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Unlink" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Unlink from Contoso's single sign-on?" });
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(requests("DELETE", "me/sso-links/:org")).toHaveLength(0);
+  });
+
   it("unlinks after asking", async () => {
     signedIn();
     on("GET", "me", me());

@@ -67,6 +67,20 @@ describe("an account change from a single sign-on session", () => {
     await waitFor(() => expect(requests("PUT", "me/notifications")).toHaveLength(2));
   });
 
+  it("drops the change when the person doesn't sign in again", async () => {
+    signedIn({ session: whoAmI({ session: ssoSession }) });
+    on("GET", "me", me({ has_password: true }));
+    on("POST", "auth/methods", methods);
+    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
+    on("PUT", "me/notifications", apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."));
+    const { user } = await renderApp("/settings/account/notifications");
+    await user.click(await screen.findByRole("switch", { name: "Budget alerts" }));
+    const box = await dialog();
+    await user.click(within(box).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in another way" })).not.toBeInTheDocument());
+    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+  });
+
   it("offers no way when the account has neither a password nor sign-in links", async () => {
     signedIn({ session: whoAmI({ session: ssoSession }) });
     on("GET", "me", me({ has_password: false }));

@@ -411,7 +411,8 @@ const LINKED_PAGE = "/settings/account/security";
 function SingleSignOnSection() {
   const links = useQuery(ssoLinksQuery);
   const [failed] = useState(() => takeFragment("sso_error"));
-  const [unlinking, setUnlinking] = useState<{ org_id: string; org_name: string } | null>(null);
+  const [unlinking, setUnlinking] = useState(false);
+  const [target, setTarget] = useState({ org_id: "", org_name: "" });
   useEffect(() => {
     if (failed) void translateGatewayMessage(failed).then((message) => toast.error(message, { id: "sso-link-error" }));
   }, [failed]);
@@ -425,10 +426,10 @@ function SingleSignOnSection() {
     },
     invalidates: [ssoLinksQuery.queryKey],
     onSuccess: () => {
-      setUnlinking(null);
+      setUnlinking(false);
       toast(t("account.ssoUnlinked", "Unlinked from single sign-on"));
     },
-    onError: () => setUnlinking(null),
+    onError: () => setUnlinking(false),
   });
   const rows = links.data?.data ?? [];
   if (rows.length === 0) return null;
@@ -451,7 +452,13 @@ function SingleSignOnSection() {
             }
             control={
               r.linked ? (
-                <Button size="sm" onClick={() => setUnlinking({ org_id: r.org_id, org_name: r.org_name })}>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setTarget({ org_id: r.org_id, org_name: r.org_name });
+                    setUnlinking(true);
+                  }}
+                >
                   {t("account.ssoUnlink", "Unlink")}
                 </Button>
               ) : (
@@ -464,14 +471,14 @@ function SingleSignOnSection() {
         ))}
       </SettingsGroup>
       <AlertDialog
-        open={unlinking !== null}
-        onOpenChange={(open) => !open && setUnlinking(null)}
+        open={unlinking}
+        onOpenChange={setUnlinking}
         tone="warning"
-        title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: unlinking?.org_name ?? "" })}
+        title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
         description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in until you link the account again.")}
         confirmLabel={t("account.ssoUnlink", "Unlink")}
         loading={unlink.isPending}
-        onConfirm={() => (unlinking ? unlink.mutateAsync(unlinking.org_id) : Promise.resolve())}
+        onConfirm={() => unlink.mutateAsync(target.org_id)}
       />
     </SettingsSection>
   );
