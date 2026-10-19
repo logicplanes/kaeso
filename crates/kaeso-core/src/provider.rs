@@ -321,7 +321,10 @@ mod tests {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, fireworks-ai"
+            format!(
+                "`together-ai` is not a provider Kaeso knows; the providers are {}",
+                ids()
+            )
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),

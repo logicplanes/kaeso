@@ -314,7 +314,10 @@ mod tests {
         let none = parse(br#"{"x": {"models": {}}}"#, &known_ids()).unwrap_err();
         assert_eq!(
             none.to_string(),
-            "models.dev data has none of the providers openai, anthropic"
+            format!(
+                "models.dev data has none of the providers {}",
+                crate::provider::ids()
+            )
         );
     }
 
