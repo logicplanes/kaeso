@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use kaeso_kpp::{Block, GenerateRequest, KppError};
+use kaeso_kpp::{Block, GenerateRequest, KppError, Role};
 
 use super::DIALECT;
 use serde_json::value::RawValue;
@@ -12,6 +12,7 @@ pub struct ChatProfile {
     pub developer_role: bool,
     pub seed: SeedField,
     pub end_user: bool,
+    pub assistant_prefill: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -37,6 +38,7 @@ impl ChatProfile {
         developer_role: true,
         seed: SeedField::Seed,
         end_user: true,
+        assistant_prefill: true,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -73,6 +75,12 @@ impl ChatProfile {
     }
 
     #[must_use]
+    pub const fn without_prefill(mut self) -> Self {
+        self.assistant_prefill = false;
+        self
+    }
+
+    #[must_use]
     pub const fn refusing(mut self, fields: &'static [&'static str]) -> Self {
         self.refused_fields = fields;
         self
@@ -99,6 +107,9 @@ impl ChatProfile {
     }
 
     pub(crate) fn refuse(&self, req: &GenerateRequest, body: &[u8]) -> Result<(), KppError> {
+        if !self.assistant_prefill {
+            self.refuse_prefill(req)?;
+        }
         if self.refused_fields.is_empty() && self.refused_message_fields.is_empty() {
             return Ok(());
         }
@@ -131,6 +142,26 @@ impl ChatProfile {
             }
         }
         Ok(())
+    }
+
+    fn refuse_prefill(&self, req: &GenerateRequest) -> Result<(), KppError> {
+        let Some(last) = req.messages.last() else {
+            return Ok(());
+        };
+        let index = req.messages.len() - 1;
+        let calls_tools = last.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)));
+        let own_prefix = last.extras.is_from(DIALECT) && last.extras.fields.contains_key("prefix");
+        if last.role != Role::Assistant || calls_tools || own_prefix {
+            return Ok(());
+        }
+        Err(KppError::unsupported(
+            "assistant prefill",
+            format!(
+                "{} cannot continue a prefilled assistant message; end the conversation with a user message.",
+                self.provider
+            ),
+        )
+        .with_param(format!("messages[{index}]")))
     }
 
     fn refuse_foreign_blocks(&self, req: &GenerateRequest) -> Result<(), KppError> {

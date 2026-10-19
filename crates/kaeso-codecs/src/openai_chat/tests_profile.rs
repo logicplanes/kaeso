@@ -13,6 +13,7 @@ const STRICT: ChatProfile = ChatProfile::compatible("Example Cloud")
     .system_role()
     .random_seed()
     .without_end_user()
+    .without_prefill()
     .refusing(&["logit_bias", "store"])
     .refusing_in_messages(&["name", "refusal"]);
 
@@ -348,10 +349,55 @@ fn a_refused_message_field_from_another_format_is_named_where_the_app_wrote_it()
     let err = encode_with(
         &chat(json!({"model": "m", "messages": [
             {"role": "user", "content": "Tell me a secret."},
-            {"role": "assistant", "content": null, "refusal": "I cannot share that."}
+            {"role": "assistant", "content": null, "refusal": "I cannot share that."},
+            {"role": "user", "content": "Then say hello."}
         ]})),
         STRICT,
     )
     .unwrap_err();
     assert_eq!(refusal(&err).1, Some("messages[1].refusal"));
+}
+
+#[test]
+fn a_profile_without_prefill_refuses_a_conversation_that_ends_with_the_assistant() {
+    let mut req = foreign(DialectId::AnthropicMessages);
+    req.messages = vec![
+        Message::user("Name a colour."),
+        Message::new(
+            kaeso_kpp::Role::Assistant,
+            vec![kaeso_kpp::Block::text("The colour is")],
+        ),
+    ];
+    let err = encode_with(&Request::Generate(req.clone()), STRICT).unwrap_err();
+    assert_eq!(
+        refusal(&err),
+        (
+            Some("assistant prefill"),
+            Some("messages[1]"),
+            "Example Cloud cannot continue a prefilled assistant message; end the conversation with a user message."
+                .to_owned()
+        )
+    );
+    assert!(encode_with(&Request::Generate(req), ChatProfile::OPENAI).is_ok());
+
+    let own_prefix = encode_with(
+        &chat(json!({"model": "m", "messages": [
+            {"role": "user", "content": "Name a colour."},
+            {"role": "assistant", "content": "The colour is", "prefix": true}
+        ]})),
+        STRICT,
+    )
+    .unwrap();
+    assert_eq!(own_prefix["messages"][1]["prefix"], true);
+
+    let after_tool_call = encode_with(
+        &chat(json!({"model": "m", "messages": [
+            {"role": "user", "content": "Weather?"},
+            {"role": "assistant", "content": null, "tool_calls": [
+                {"id": "D681PevKs", "type": "function", "function": {"name": "get_weather", "arguments": "{}"}}
+            ]}
+        ]})),
+        STRICT,
+    );
+    assert!(after_tool_call.is_ok());
 }
