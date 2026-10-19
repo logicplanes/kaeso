@@ -345,7 +345,14 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "deepseek", "xai", "togetherai", "groq"]
+            [
+                "openai",
+                "anthropic",
+                "deepseek",
+                "xai",
+                "togetherai",
+                "groq"
+            ]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),
