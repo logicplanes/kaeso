@@ -73,7 +73,7 @@ The services share as little as they can:
 
 The gateway keeps no state of its own. To run several instances, put them behind the same proxy and point them at the same PostgreSQL, ClickHouse and Valkey:
 
-- Valkey tells every instance when a cached entry changes.
+- Valkey tells every instance when a cached entry changes. While an instance can't hear Valkey, it keeps what it loads for two seconds at most, so a change reaches it within two seconds.
 - Background jobs run on one instance at a time, under PostgreSQL locks.
 - Migrations run under a lock, so one instance migrates while the others wait.
 - Each instance buffers and writes its own request log rows and usage.
