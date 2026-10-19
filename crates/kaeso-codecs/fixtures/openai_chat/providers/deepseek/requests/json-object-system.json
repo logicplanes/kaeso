@@ -1,0 +1,19 @@
+{
+  "model": "deepseek-flash",
+  "thinking": {
+    "type": "disabled"
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "Reply in JSON with the keys \"answer\" and \"confidence\"."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "response_format": {
+    "type": "json_object"
+  }
+}

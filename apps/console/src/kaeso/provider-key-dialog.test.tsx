@@ -50,6 +50,27 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("adds a DeepSeek key", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "deepseek", name: "Reasoning", is_default: true }));
+    const { user, dialog } = await open();
+
+    await user.click(within(dialog).getByRole("radio", { name: /DeepSeek/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your DeepSeek API key" })).toBeVisible();
+    expect(within(dialog).getByText("Create one at platform.deepseek.com under API keys; it starts with sk-.")).toBeInTheDocument();
+    const secret = within(dialog).getByLabelText("DeepSeek API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-…");
+    await user.type(secret, "sk-deepseek-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Reasoning");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Reasoning is the DeepSeek default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "deepseek", name: "Reasoning", secret: "sk-deepseek-123", make_default: false },
+    ]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open({ provider: "anthropic" });
     const secret = within(dialog).getByLabelText("Anthropic API key");

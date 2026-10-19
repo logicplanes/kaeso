@@ -1,0 +1,28 @@
+{
+  "id": "4a2059b8-58b4-4e4a-904f-9246e4b4572d",
+  "object": "chat.completion",
+  "created": 1792370269,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"answer\": \"The capital of France is Paris.\", \"confidence\": 1.0}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 47,
+    "completion_tokens": 19,
+    "total_tokens": 66,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 47
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}

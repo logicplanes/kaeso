@@ -3,7 +3,7 @@ title: 简介
 description: Kaeso 是一个部署在您自己服务器上的开源 AI 网关。
 ---
 
-Kaeso 是一个网关，部署在您的应用与模型服务商 OpenAI 和 Anthropic 之间。应用继续使用已有的官方 SDK，只需改两项设置：基础 URL 和密钥。Kaeso 按您的密钥、模型和限额检查每个请求，用您的服务商密钥调用服务商，并记录每个请求的费用。
+Kaeso 是一个网关，部署在您的应用与 OpenAI、Anthropic 等模型服务商之间。应用继续使用已有的官方 SDK，只需改两项设置：基础 URL 和密钥。Kaeso 按您的密钥、模型和限额检查每个请求，用您的服务商密钥调用服务商，并记录每个请求的费用。
 
 下面是一个用 OpenAI SDK 通过 Kaeso 调用 Claude 的应用：
 
@@ -49,10 +49,10 @@ console.log(response.output_text);
 ```mermaid
 flowchart TD
   accTitle: 各部分如何配合
-  accDescr: 应用通过 /v1 调用网关，控制台通过 /platform/v1 调用网关；网关调用 OpenAI 或 Anthropic。
+  accDescr: 应用通过 /v1 调用网关，控制台通过 /platform/v1 调用网关；网关调用模型服务商。
   apps[应用] -- /v1 --> gateway[网关]
   console[控制台] -- /platform/v1 --> gateway
-  gateway --> providers[OpenAI 或 Anthropic]
+  gateway --> providers[模型服务商]
 ```
 
 | 部分 | 说明 |

@@ -195,6 +195,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` oder `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, Code `content_policy_violation` |
 | 400, 409, 422 | `InvalidRequest` (und `Unsupported` beim Kodieren) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -205,6 +206,8 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | `error.misalignment` (`MisalignmentErrorDetailsResource` im Schema `Error`), unbekannte Schlüssel in `error` | in `KppError.raw` erhalten (der ganze Body) | Wird nur erneut gesendet, wenn der Fehler aus Chat kam. |
 
 Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Stream-Fehler, der keinen Status hat.
+
+Mit HTTP 402 melden OpenAI-kompatible Anbieter wie DeepSeek ein aufgebrauchtes Guthaben ([Fehlercodes von DeepSeek](https://api-docs.deepseek.com/quick_start/error_codes)), deshalb ist es `Billing`, was auch immer sein `code` sagt.
 
 Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`openai_responses::error`), sodass ein Fehler in der OpenAI-Form in jeder OpenAI-API dieselbe Art, denselben `type` und denselben `code` hat. Die OpenAI-SDKs wählen ihre Exception-Klasse nach dem Status, `type` ist also nur eine zusätzliche Information.
 

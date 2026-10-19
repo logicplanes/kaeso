@@ -74,6 +74,7 @@ pub(crate) fn kind_for(status: Option<u16>, ty: Option<&str>, code: Option<&str>
     match status {
         Some(400 | 409 | 422) => ErrorKind::InvalidRequest,
         Some(401) => ErrorKind::Authentication,
+        Some(402) => ErrorKind::Billing,
         Some(403) => ErrorKind::PermissionDenied,
         Some(404) => ErrorKind::NotFound,
         Some(413) => ErrorKind::RequestTooLarge,
@@ -275,6 +276,10 @@ mod tests {
         assert_eq!(k(500, "server_error", None), ErrorKind::ProviderError);
         assert_eq!(k(504, "x", None), ErrorKind::Timeout);
         assert_eq!(k(413, "x", None), ErrorKind::RequestTooLarge);
+        assert_eq!(
+            k(402, "invalid_request_error", Some("invalid_request_error")),
+            ErrorKind::Billing
+        );
     }
 
     #[test]

@@ -195,6 +195,7 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | `code` `content_policy_violation`、`content_filter`、`bio_policy`、`cyber_policy`、`misalignment_policy_violation` 或 `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`，code `content_policy_violation` |
 | 400、409、422 | `InvalidRequest`（编码时还有 `Unsupported`） | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
+| 402 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
 | 403 | `PermissionDenied` | 403 `request_forbidden` |
 | 404 | `NotFound` | 404 `invalid_request_error` |
 | 413 | `RequestTooLarge` | 413 `invalid_request_error` |
@@ -205,6 +206,8 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | `error.misalignment`（`Error` schema 中的 `MisalignmentErrorDetailsResource`）、`error` 中的未知键 | 保留在 `KppError.raw` 中（整个错误体） | 只有错误来自 Chat 时才会再次发送。 |
 
 表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有状态码的流错误中起决定作用。
+
+兼容 OpenAI 的服务商（例如 DeepSeek）用 HTTP 402 表示余额不足（[DeepSeek 错误码](https://api-docs.deepseek.com/quick_start/error_codes)），因此无论其 `code` 为何，它都是 `Billing`。
 
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 

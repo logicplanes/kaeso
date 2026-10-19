@@ -8,7 +8,7 @@ order: 3
 
 - [组织和项目](organizations-and-projects.md)：创建组织和项目，连接单点登录，并管理它们的设置。
 - [成员和角色](members-and-roles.md)：邀请成员，为其分配角色和权限，并创建服务账号。
-- [服务商密钥](provider-keys.md)：连接 OpenAI 和 Anthropic 密钥，并选择各项目使用哪个密钥。
+- [服务商密钥](provider-keys.md)：连接模型服务商密钥，并选择各项目使用哪个密钥。
 - [模型和别名](models-and-aliases.md)：选择项目可调用的模型，并为其设置自己的名称。
 - [API 密钥](api-keys.md)：为应用和脚本创建密钥，加以限制，并在需要时停用。
 - [限额和预算](limits-and-budgets.md)：限制项目、成员或密钥的请求数、Token 和支出。

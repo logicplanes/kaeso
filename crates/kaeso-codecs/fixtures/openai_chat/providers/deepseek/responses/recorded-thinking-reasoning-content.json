@@ -1,0 +1,32 @@
+{
+  "id": "f4046fd9-e586-4279-ac2d-b84eebbc5f37",
+  "object": "chat.completion",
+  "created": 1792370232,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "391",
+        "reasoning_content": "We need answer only number. 17*23=391. Need final only number."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 44,
+    "completion_tokens": 20,
+    "total_tokens": 64,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 18
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 44
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}

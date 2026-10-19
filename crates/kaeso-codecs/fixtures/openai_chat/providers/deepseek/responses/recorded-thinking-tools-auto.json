@@ -1,0 +1,43 @@
+{
+  "id": "2a676b20-042f-4778-94b3-8eeebdaef0ea",
+  "object": "chat.completion",
+  "created": 1792370234,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "The user wants the weather in Paris in Celsius.",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}"
+            }
+          }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 339,
+    "completion_tokens": 68,
+    "total_tokens": 407,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 10
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 339
+  },
+  "system_fingerprint": "e72d3c7f663d3e1383b00b3884cb4501"
+}

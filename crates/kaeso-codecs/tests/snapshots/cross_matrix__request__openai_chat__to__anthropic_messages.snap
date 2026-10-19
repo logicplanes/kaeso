@@ -308,6 +308,82 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/deepseek/authentication-fails": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/deepseek/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/missing-model": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-nonexistent"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/deepseek/prompt-cache-hit": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/reasoning-content-sent-back": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tool-choice-required": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-auto": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
   "reasoning-cached-usage": {
     "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
