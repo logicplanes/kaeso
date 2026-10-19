@@ -217,11 +217,43 @@ async fn a_request_teaches_the_catalogue_and_listings_leave_the_model_out() {
     );
 }
 
+fn posts(env: &Env) -> usize {
+    env.mock
+        .received()
+        .iter()
+        .filter(|r| r.method == "POST")
+        .count()
+}
+
+fn gets(env: &Env) -> usize {
+    env.mock
+        .received()
+        .iter()
+        .filter(|r| r.method == "GET")
+        .count()
+}
+
+async fn ask(env: &Env, model: &str) -> common::v1::Answer {
+    call(
+        env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(model, "Hi")),
+    )
+    .await
+}
+
+fn recheck_every() -> time::Duration {
+    kaeso_server::services::availability::RECHECK_EVERY
+}
+
 #[tokio::test]
 async fn a_success_marks_an_unavailable_model_available_again() {
     let env = env().await;
     let haiku = entry(&env, "claude-haiku-4-5").await;
-    sqlx::query("UPDATE catalogue_models SET availability = 'unavailable', availability_checked_at = now() WHERE model_id = 'claude-haiku-4-5'")
+    sqlx::query("UPDATE catalogue_models SET availability = 'unavailable', availability_checked_at = $1 WHERE model_id = 'claude-haiku-4-5'")
+        .bind(env.app.state.clock.now())
         .execute(&env.app.state.pg)
         .await
         .unwrap();
@@ -232,15 +264,18 @@ async fn a_success_marks_an_unavailable_model_available_again() {
             .await
             .contains(&"claude-haiku-4-5".to_owned())
     );
-    let r = call(
-        &env,
-        "/v1/messages",
-        Some(&env.key),
-        true,
-        Some(messages("claude-haiku-4-5", "Hi")),
-    )
-    .await;
+    let r = ask(&env, "claude-haiku-4-5").await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        unserved_message("Anthropic", "claude-haiku-4-5")
+    );
+    assert_eq!(posts(&env), 0, "a recent answer is not asked again");
+
+    env.app.clock.advance(recheck_every());
+    let r = ask(&env, "claude-haiku-4-5").await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(posts(&env), 1);
     let after = entry(&env, "claude-haiku-4-5").await;
     assert_eq!(after["availability"], "available");
     assert_eq!(after["revision"], haiku["revision"]);
@@ -248,6 +283,103 @@ async fn a_success_marks_an_unavailable_model_available_again() {
         listed(&env, true)
             .await
             .contains(&"claude-haiku-4-5".to_owned())
+    );
+    let r = ask(&env, "claude-haiku-4-5").await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(posts(&env), 2);
+}
+
+#[tokio::test]
+async fn an_unavailable_model_is_refused_without_calling_the_provider_until_a_recheck_is_due() {
+    let env = env().await;
+    let r = ask(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    let learnt = entry(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(learnt["availability"], "unavailable");
+    let (sent, asked) = (posts(&env), gets(&env));
+    assert_eq!((sent, asked), (1, 3));
+
+    for _ in 0..5 {
+        let r = ask(&env, UNSERVED_CLAUDE).await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+        assert_eq!(r.header("kaeso-provider"), Some("anthropic"));
+        assert_eq!(
+            r.json()["error"]["message"],
+            unserved_message("Anthropic", UNSERVED_CLAUDE)
+        );
+    }
+    assert_eq!(
+        (posts(&env), gets(&env)),
+        (sent, asked),
+        "refused without calling the provider"
+    );
+    let o = env.capture.all().pop().unwrap();
+    assert_eq!(o.status, 404);
+    assert_eq!(o.error_kind.as_deref(), Some("not_found"));
+    assert_eq!(
+        o.error_message.as_deref(),
+        Some(unserved_message("Anthropic", UNSERVED_CLAUDE).as_str())
+    );
+
+    env.app
+        .clock
+        .advance(recheck_every() - time::Duration::seconds(1));
+    let r = ask(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND);
+    assert_eq!(posts(&env), sent);
+
+    env.app.clock.advance(time::Duration::seconds(1));
+    let r = ask(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        unserved_message("Anthropic", UNSERVED_CLAUDE)
+    );
+    assert_eq!(posts(&env), sent + 1, "one request asks the provider again");
+    let r = ask(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND);
+    assert_eq!(posts(&env), sent + 1);
+
+    let rechecked = entry(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(rechecked["availability"], "unavailable");
+    assert_eq!(rechecked["revision"], learnt["revision"]);
+    assert_ne!(
+        rechecked["availability_checked_at"],
+        learnt["availability_checked_at"]
+    );
+}
+
+#[tokio::test]
+async fn concurrent_not_founds_ask_the_provider_about_the_model_once() {
+    let env = env().await;
+    let answers = futures::future::join_all((0..16).map(|_| ask(&env, UNSERVED_CLAUDE))).await;
+    for r in &answers {
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+        assert_eq!(
+            r.json()["error"]["message"],
+            unserved_message("Anthropic", UNSERVED_CLAUDE)
+        );
+    }
+    let gets: Vec<_> = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|r| r.method == "GET")
+        .map(|r| (r.path, r.query))
+        .collect();
+    assert_eq!(
+        gets.iter()
+            .filter(|(path, _)| *path == format!("/v1/models/{UNSERVED_CLAUDE}"))
+            .count(),
+        1,
+        "{gets:?}"
+    );
+    assert_eq!(
+        gets.iter()
+            .filter(|(path, query)| path == "/v1/models" && query.is_none())
+            .count(),
+        1,
+        "{gets:?}"
     );
 }
 
@@ -689,14 +821,16 @@ async fn availability_is_written_only_for_the_key_that_answered() {
         .unwrap()
         .unwrap();
     assert_eq!((replaced.id, replaced.revision), (key.id, 2));
-    let mut tx = pg.begin().await.unwrap();
-    assert_eq!(
-        record_availability(&mut tx, &answer(haiku, replaced))
-            .await
-            .unwrap(),
-        Recorded::Yes
-    );
-    tx.commit().await.unwrap();
+    for expected in [Recorded::Changed, Recorded::Unchanged] {
+        let mut tx = pg.begin().await.unwrap();
+        assert_eq!(
+            record_availability(&mut tx, &answer(haiku, replaced))
+                .await
+                .unwrap(),
+            expected
+        );
+        tx.commit().await.unwrap();
+    }
     kaeso_server::services::catalogue::forget(&env.app.state, project).await;
     assert_eq!(
         entry(&env, "claude-haiku-4-5").await["availability"],

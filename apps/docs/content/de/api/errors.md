@@ -197,6 +197,6 @@ Das Anfrageprotokoll behält die eigene Meldung des Anbieters. Kaeso sendet jede
 
 ### Modelle, die der Anbieter nicht bereitstellt
 
-Antwortet der Anbieter auf ein Modell aus dem Katalog mit 404, fragt Kaeso den Anbieter, ob er dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Ist das nicht so, erhält Ihre App 404 mit einer Meldung, die Anbieter und Modell nennt. Der Katalog zeigt das Modell dann als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich während der Anfrage geändert.
+Antwortet der Anbieter auf ein Modell aus dem Katalog mit 404, fragt Kaeso den Anbieter, ob er dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Ist das nicht so, erhält Ihre App 404 mit einer Meldung, die Anbieter und Modell nennt. Der Katalog zeigt das Modell dann als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich während der Anfrage geändert. Spätere Anfragen nach dem Modell beantwortet Kaeso dann mit demselben 404, ohne den Anbieter aufzurufen, bis auf eine Anfrage alle fünf Minuten.
 
 Führt der Anbieter das Modell noch, erhält Ihre App das 404 des Anbieters so, wie er es gesendet hat: Es betraf etwas anderes, etwa eine Datei-ID. Kann der Anbieter keine Auskunft geben, weil er keine Modellliste hat oder die Liste scheitert, erhält Ihre App ebenfalls das 404 des Anbieters, wie er es gesendet hat. In beiden Fällen bleibt der Katalog unverändert.

@@ -154,8 +154,10 @@ async fn check_one(
     serves the model, and records the answer.",
     description = "A model the provider does not serve to the key, because it is retired\n\
     or the key has no access, becomes `unavailable`: model listings leave it\n\
-    out, and requests for it still go to the provider and fail there. Kaeso\n\
-    also learns this from requests the provider answers with model not found.\n\
+    out, and requests for it fail with model not found without reaching the\n\
+    provider, except for one request every five minutes that asks again.\n\
+    Kaeso also learns this from requests the provider answers with model not\n\
+    found.\n\
     A not found from the provider's model endpoint counts only when the\n\
     provider's model listing answers and lacks the model; otherwise the model\n\
     keeps its availability and is reported as `inconclusive`. An answer is\n\
@@ -212,7 +214,7 @@ pub async fn check(
         };
         let name = format!("{}/{}", row.provider, row.model_id);
         match catalogue::record_availability(&mut tx, &answer).await? {
-            Recorded::Yes => match found.availability {
+            Recorded::Changed | Recorded::Unchanged => match found.availability {
                 Availability::Available => available.push(name),
                 Availability::Unavailable => unavailable.push(name),
             },

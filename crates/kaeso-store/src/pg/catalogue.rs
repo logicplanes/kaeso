@@ -122,6 +122,7 @@ impl EntryRow {
             delisted: self.delisted_at.is_some(),
             last_known,
             availability,
+            availability_checked_at: self.availability_checked_at,
         })
     }
 }
@@ -321,7 +322,8 @@ pub struct Answer<'a> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Recorded {
-    Yes,
+    Changed,
+    Unchanged,
     KeyChanged,
     EntryGone,
 }
@@ -337,9 +339,11 @@ pub async fn record_availability(
     if current != Some(answer.key) {
         return Ok(Recorded::KeyChanged);
     }
-    let updated = sqlx::query!(
-        "UPDATE catalogue_models SET availability = $5, availability_checked_at = $6 \
-         WHERE org_id = $1 AND project_id = $2 AND id = $3 AND provider = $4",
+    let changed = sqlx::query_scalar!(
+        "UPDATE catalogue_models c SET availability = $5, availability_checked_at = $6 \
+         FROM catalogue_models prev \
+         WHERE c.org_id = $1 AND c.project_id = $2 AND c.id = $3 AND c.provider = $4 AND prev.id = c.id \
+         RETURNING prev.availability IS DISTINCT FROM c.availability AS \"changed!\"",
         answer.org_id,
         answer.project_id,
         answer.entry,
@@ -347,13 +351,12 @@ pub async fn record_availability(
         answer.availability.as_str(),
         answer.at
     )
-    .execute(&mut *tx)
-    .await?
-    .rows_affected();
-    Ok(if updated == 1 {
-        Recorded::Yes
-    } else {
-        Recorded::EntryGone
+    .fetch_optional(&mut *tx)
+    .await?;
+    Ok(match changed {
+        Some(true) => Recorded::Changed,
+        Some(false) => Recorded::Unchanged,
+        None => Recorded::EntryGone,
     })
 }
 
