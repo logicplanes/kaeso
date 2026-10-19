@@ -1,6 +1,6 @@
 # `fixtures/openai_responses/providers/xai`
 
-xAI, provider id `xai`, over its Responses API at `https://api.x.ai/v1/responses`, with `authorization: Bearer`. It is the provider's `generation` dialect: xAI calls Responses its primary interface and keeps reasoning and tool state there.
+SpaceX, provider id `xai`, over the xAI Responses API at `https://api.x.ai/v1/responses`, with `authorization: Bearer`. It is the provider's `generation` dialect: xAI calls Responses its primary interface and keeps reasoning and tool state there.
 
 Sources, read 2026-10-19:
 

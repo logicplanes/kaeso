@@ -71,23 +71,23 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
-  it("adds an xAI key with xAI's own key hint", async () => {
-    on("POST", CREDENTIALS, credential({ provider: "xai", name: "xAI prod", is_default: true }));
+  it("adds a SpaceX key with the xAI console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "xai", name: "Grok prod", is_default: true }));
     const { user, dialog } = await open();
 
-    await user.click(within(dialog).getByRole("radio", { name: /xAI/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /SpaceX/ }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
-    expect(await within(dialog).findByRole("heading", { name: "Paste your xAI API key" })).toBeVisible();
+    expect(await within(dialog).findByRole("heading", { name: "Paste your SpaceX API key" })).toBeVisible();
     expect(within(dialog).getByText("Create one at console.x.ai under API keys; it starts with xai-.")).toBeInTheDocument();
-    const secret = within(dialog).getByLabelText("xAI API key");
+    const secret = within(dialog).getByLabelText("SpaceX API key");
     expect(secret).toHaveAttribute("placeholder", "xai-…");
     await user.type(secret, "xai-123");
-    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "xAI prod");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Grok prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
-    expect(await notifications().findByText("xAI prod is the xAI default")).toBeInTheDocument();
-    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "xai", name: "xAI prod", secret: "xai-123", make_default: false }]);
+    expect(await notifications().findByText("Grok prod is the SpaceX default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "xai", name: "Grok prod", secret: "xai-123", make_default: false }]);
   });
 
   it("adds a Together AI key", async () => {

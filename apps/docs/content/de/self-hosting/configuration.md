@@ -145,7 +145,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | Text | `https://api.openai.com` | Basis-URL der OpenAI-API. |
 | `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | Text | `https://api.anthropic.com` | Basis-URL der Anthropic-API. |
 | `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | Text | `https://api.deepseek.com` | Basis-URL der API von DeepSeek. |
-| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | Text | `https://api.x.ai` | Basis-URL der API von xAI. |
+| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | Text | `https://api.x.ai` | Basis-URL der API von SpaceX. |
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | Text | `https://api.together.ai` | Basis-URL der Together-AI-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |

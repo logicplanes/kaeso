@@ -39,7 +39,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   mistral: "Mistral",
   groq: "Groq",
   deepseek: "DeepSeek",
-  xai: "xAI",
+  xai: "SpaceX",
   cohere: "Cohere",
   bedrock: "Amazon Bedrock",
   azure: "Azure OpenAI",

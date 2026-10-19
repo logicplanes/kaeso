@@ -178,7 +178,7 @@ pub const PROVIDERS: &[Provider] = &[
     },
     Provider {
         id: "xai",
-        name: "xAI",
+        name: "SpaceX",
         default_base_url: "https://api.x.ai",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiResponses,

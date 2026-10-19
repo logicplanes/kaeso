@@ -23,7 +23,7 @@ Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint
 | `requests/<name>.headers.json` | Allowlisted forwarded headers sent with that request |
 | `responses/<name>.json` | The exact 200 body |
 | `streams/<name>.sse` | The exact SSE bytes |
-| `errors/<name>.json` and `errors/<name>.meta.json` | An error body, and `{"status": …, "headers": {…}}`. When the codec answers apps with another body, such as the OpenAI error shape for xAI's string `error`, `"encoded"` holds that body and the round trip compares against it |
+| `errors/<name>.json` and `errors/<name>.meta.json` | An error body, and `{"status": …, "headers": {…}}`. When the codec answers apps with another body, such as the OpenAI error shape for SpaceX's string `error`, `"encoded"` holds that body and the round trip compares against it |
 
 Some endpoints have subfolders of their own: `count_tokens/` for Anthropic and `input_tokens/` for OpenAI Responses, inside `requests/` and `responses/`, and `models/` for model listings (`anthropic_messages/models/`, and `openai_chat/models/`, which all three OpenAI codecs use).
 
