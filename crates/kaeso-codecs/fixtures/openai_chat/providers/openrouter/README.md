@@ -26,6 +26,7 @@ Every live recording used a free model (an id ending in `:free`) and is listed w
 | `requests/free-tools.json` | One function tool, `tool_choice: "auto"` | written for recording |
 | `requests/free-reasoning.json`, `requests/free-reasoning-stream.json` | The `reasoning` request object (`effort: "low"`), as a reply and as a stream | written for recording |
 | `requests/routing-fields.json` | The routing fields with no KPP field: `models` (fallback list), `provider` (routing preferences), `transforms`, `usage: {include: true}`; model ids with `/` and `:` | written for recording |
+| `requests/free-stream-rate-limited.json` | The earlier `free-stream.json`, which `errors/recorded-upstream-rate-limited.json` was recorded with: `liquid/lfm-2.5-2.6b:free`, no `reasoning.exclude`, `max_tokens: 256` | written for recording |
 | `requests/unknown-model.json`, `requests/invalid-messages.json` | Requests OpenRouter refuses with 400 | written for recording |
 | `responses/recorded-free-basic.json` | A reply with `provider`, `native_finish_reason`, `message.reasoning`, `message.reasoning_details` (`reasoning.text`), `usage.cost`, `usage.is_byok`, `usage.cost_details`, `prompt_tokens_details.cache_write_tokens` and `video_tokens`, `completion_tokens_details.image_tokens` | live, `liquid/lfm-2.5-2.6b:free` |
 | `responses/recorded-free-tools.json` | A tool call with reasoning beside it | live, `nvidia/nemotron-3.5-lightning:free` |
@@ -36,7 +37,7 @@ Every live recording used a free model (an id ending in `:free`) and is listed w
 | `streams/doc-error-mid-stream.sse` | An error after the 200: a chunk with a top-level `error` (`code` a number, `metadata.error_type`) and `finish_reason: "error"`, with no `[DONE]` after it | doc: errors-and-debugging, "Example SSE data", verbatim |
 | `streams/doc-error-mid-stream-string-code.sse` | The same with `code` as a string (`"server_error"`), as the streaming page shows it | doc: streaming, "Errors after the response is committed", verbatim |
 | `errors/recorded-routing-fields.json` | 429 from the upstream provider after the `models` fallback was tried too: `metadata.raw`, `provider_name`, `is_byok`, `provider_error_code`, `limit_source`, `remedy_hint`, `previous_errors`, top-level `user_id` | live, `google/gemma-4-31b-it:free` |
-| `errors/recorded-upstream-rate-limited.json` | 429 with `Retry-After` and `metadata.retry_after_seconds`, `metadata.headers`; recorded with an earlier `free-stream.json` that had no `reasoning.exclude` and `max_tokens: 256` | live, `liquid/lfm-2.5-2.6b:free` |
+| `errors/recorded-upstream-rate-limited.json` | 429 with `Retry-After` and `metadata.retry_after_seconds`, `metadata.headers`; recorded with `requests/free-stream-rate-limited.json` | live, `liquid/lfm-2.5-2.6b:free` |
 | `errors/recorded-unknown-model.json` | 400 for a model id OpenRouter doesn't know | live |
 | `errors/recorded-invalid-messages.json` | 400 for an empty `messages` array | live |
 | `errors/retrieve-not-found.json` | 404 from `GET /api/v1/models/{model}`, which OpenRouter answers for every model, so Kaeso's model check falls back to the listing | live, `curl` without a key, 2026-10-19 |

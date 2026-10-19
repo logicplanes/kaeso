@@ -641,6 +641,21 @@ expression: outcomes
     "param": null,
     "unsupported": "reasoning"
   },
+  "providers/openrouter/free-stream-rate-limited": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from one to five in words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/openrouter/free-tools": {
     "body": {
       "input": [
