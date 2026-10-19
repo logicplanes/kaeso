@@ -35,7 +35,7 @@ pub struct ModelsDevStatus {
 
 async fn status_of(state: &AppState) -> ApiResult<ModelsDevStatus> {
     let loaded = state.models_dev.current();
-    let row = catalogue::snapshot(&state.pg).await?;
+    let row = catalogue::sync_state(&state.pg).await?;
     Ok(ModelsDevStatus {
         sync_enabled: state.config.models_dev.sync,
         url: state.config.models_dev.url.to_string(),

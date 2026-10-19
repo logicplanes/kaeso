@@ -32,6 +32,22 @@ pub async fn snapshot(db: impl PgExecutor<'_>) -> Result<Option<SnapshotRow>, St
     .await?)
 }
 
+#[derive(Clone, Debug)]
+pub struct SyncState {
+    pub content_hash: Vec<u8>,
+    pub last_attempt_at: Option<OffsetDateTime>,
+    pub last_error: Option<String>,
+}
+
+pub async fn sync_state(db: impl PgExecutor<'_>) -> Result<Option<SyncState>, StoreError> {
+    Ok(sqlx::query_as!(
+        SyncState,
+        "SELECT content_hash, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1"
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
 pub async fn put_snapshot(
     db: impl PgExecutor<'_>,
     fetched_at: OffsetDateTime,
