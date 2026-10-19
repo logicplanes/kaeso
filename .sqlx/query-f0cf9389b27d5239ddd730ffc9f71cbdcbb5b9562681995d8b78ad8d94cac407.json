@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_models c SET availability = $5, availability_checked_at = $6 FROM catalogue_models prev WHERE c.org_id = $1 AND c.project_id = $2 AND c.id = $3 AND c.provider = $4 AND prev.id = c.id RETURNING prev.availability IS DISTINCT FROM c.availability AS \"changed!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "changed!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "f0cf9389b27d5239ddd730ffc9f71cbdcbb5b9562681995d8b78ad8d94cac407"
+}
