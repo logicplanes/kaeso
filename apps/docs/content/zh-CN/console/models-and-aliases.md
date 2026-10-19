@@ -42,7 +42,7 @@ order: 4
 | 显示名称 | 控制台中显示的名称 |
 | 输入、输出 | 文本、图片、音频、视频、嵌入 |
 | 上下文、输出上限 | 模型的 Token 限制 |
-| 输入、输出、缓存读取和缓存写入价格 | 每百万 Token 的美元价格。用量和预算按请求发生时的价格计算 |
+| 输入、输出、缓存读取和缓存写入价格 | 每百万 Token 的美元价格。用量和预算按请求发生时的价格计算。缓存写入价格是 models.dev 所列的 5 分钟价格；写入 Anthropic 1 小时缓存按输入价格的两倍计费（[Anthropic 的规则](https://platform.claude.com/docs/en/about-claude/pricing)），模型没有输入价格时按缓存写入价格计费 |
 | 发送格式 | Kaeso 调用该模型所用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses 或 OpenAI Embeddings |
 | 工具调用、推理、结构化输出 | 模型支持的能力 |
 | 支持温度参数 | 模型是否接受 `temperature` |

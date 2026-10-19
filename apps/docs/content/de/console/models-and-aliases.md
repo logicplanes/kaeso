@@ -42,7 +42,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Anzeigename | Der Name, den die Konsole zeigt |
 | Eingaben, Ausgaben | Text, Bilder, Audio, Video, Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
-| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten |
+| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten, wie models.dev ihn führt; Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten das Doppelte des Eingabepreises, [Anthropics Regel](https://platform.claude.com/docs/en/about-claude/pricing), oder den Cache-Schreibpreis, wenn das Modell keinen Eingabepreis hat |
 | Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Unterstützt Temperatur | Ob das Modell `temperature` annimmt |

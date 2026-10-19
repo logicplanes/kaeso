@@ -300,6 +300,27 @@ pub struct WorstCase {
     pub bounded: bool,
 }
 
+fn asks_for_one_hour_cache(request: &kaeso_kpp::Request) -> bool {
+    let kaeso_kpp::Request::Generate(g) = request else {
+        return false;
+    };
+    let one_hour = |c: Option<&kaeso_kpp::CacheHint>| {
+        c.is_some_and(|c| c.ttl == Some(kaeso_kpp::CacheTtl::OneHour))
+    };
+    let top_level = g
+        .extras
+        .fields
+        .get("cache_control")
+        .and_then(|v| v.to_value().ok())
+        .is_some_and(|v| v.get("ttl").and_then(serde_json::Value::as_str) == Some("1h"));
+    top_level
+        || g.all_blocks().any(|b| one_hour(b.cache()))
+        || g.tools.iter().any(|t| match t {
+            kaeso_kpp::ToolDef::Function(f) => one_hour(f.cache.as_ref()),
+            _ => false,
+        })
+}
+
 impl WorstCase {
     pub fn of(request: &kaeso_kpp::Request, body_bytes: usize, prices: &Fields) -> WorstCase {
         let context = prices.context_limit;
@@ -319,10 +340,14 @@ impl WorstCase {
         };
         let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
         let mut priced = prices.clone();
+        let one_hour = asks_for_one_hour_cache(request)
+            .then(|| crate::cost::one_hour_cache_write_price(prices))
+            .flatten();
         priced.input_price = [
             prices.input_price,
             prices.cache_read_price,
             prices.cache_write_price,
+            one_hour,
         ]
         .into_iter()
         .flatten()
@@ -486,6 +511,24 @@ mod tests {
         let mut g = kaeso_kpp::GenerateRequest::new("m");
         g.sampling.max_output_tokens = max_output;
         kaeso_kpp::Request::Generate(g)
+    }
+
+    #[test]
+    fn a_request_that_asks_for_one_hour_caching_reserves_its_write_price() {
+        let mut prices = priced("3", "15");
+        prices.cache_write_price = Some(dec!(3.75));
+        let plain = WorstCase::of(&generate(Some(0)), 4000, &prices);
+        assert_eq!(plain.nano_usd, 1000 * 3750);
+        let kaeso_kpp::Request::Generate(mut g) = generate(Some(0)) else {
+            unreachable!()
+        };
+        let mut system = kaeso_kpp::TextBlock::new("You are terse.");
+        system.cache = Some(kaeso_kpp::CacheHint::new(Some(
+            kaeso_kpp::CacheTtl::OneHour,
+        )));
+        g.system.push(kaeso_kpp::Block::Text(system));
+        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices);
+        assert_eq!(one_hour.nano_usd, 1000 * 6000);
     }
 
     #[test]

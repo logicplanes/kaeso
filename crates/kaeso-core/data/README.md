@@ -24,6 +24,10 @@ cargo xtask models-dev
 
 It downloads `api.json` (`MODELS_DEV_URL` overrides the address), filters it, checks that the gateway can read the result, rewrites this file's table and `EMBEDDED_FETCHED_AT` in `crates/kaeso-core/src/models_dev.rs`, and prints the new hash. Tests check that the snapshot, this table and the constant agree.
 
+## Prices models.dev doesn't have
+
+models.dev lists one cache-write price, Anthropic's five-minute one (1.25 times the input price). Anthropic charges writes to its one-hour cache twice the input price ([pricing](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-19), and its usage reports them apart (`cache_creation.ephemeral_1h_input_tokens`). `kaeso_core::cost` therefore prices those tokens at twice the input price, or at the cache-write price when the model has no input price, and a hard budget reserves that price for a request that asks for one-hour caching.
+
 ## `supplement.toml`
 
 Fields models.dev does not have. A catalogue entry's effective value is its override, else models.dev, else this file, else empty.
