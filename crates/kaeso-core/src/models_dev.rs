@@ -231,6 +231,15 @@ impl Snapshot {
     pub fn model_count(&self) -> usize {
         self.providers.values().map(|p| p.models.len()).sum()
     }
+
+    pub fn with_providers_from(mut self, fallback: &Snapshot) -> Snapshot {
+        for (id, provider) in &fallback.providers {
+            self.providers
+                .entry(id.clone())
+                .or_insert_with(|| provider.clone());
+        }
+        self
+    }
 }
 
 #[cfg(test)]
@@ -291,6 +300,30 @@ mod tests {
         assert!(
             readme.contains(&format!("| Fetched | {stamp} |")),
             "{stamp}"
+        );
+    }
+
+    #[test]
+    fn a_stored_snapshot_gains_the_providers_it_was_filtered_without() {
+        let embedded = embedded().unwrap();
+        let stored = parse(
+            br#"{"openai": {"id": "openai", "models": {"gpt-new": {"id": "gpt-new"}}}}"#,
+            &known_ids(),
+        )
+        .unwrap()
+        .snapshot;
+        let merged = stored.with_providers_from(&embedded);
+        assert_eq!(
+            merged.providers["openai"].models.keys().collect::<Vec<_>>(),
+            ["gpt-new"]
+        );
+        assert_eq!(
+            merged.providers.keys().collect::<Vec<_>>(),
+            embedded.providers.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            merged.providers.get("fireworks-ai"),
+            embedded.providers.get("fireworks-ai")
         );
     }
 

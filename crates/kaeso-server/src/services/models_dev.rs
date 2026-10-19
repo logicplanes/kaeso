@@ -90,8 +90,11 @@ pub async fn init(state: &AppState) -> Result<(), StoreError> {
 
 fn load_row(state: &AppState, row: catalogue::SnapshotRow) {
     match serde_json::from_value::<Snapshot>(row.data) {
-        Ok(snapshot) => state.models_dev.replace(Loaded {
-            snapshot,
+        Ok(stored) => state.models_dev.replace(Loaded {
+            snapshot: match models_dev::embedded() {
+                Ok(embedded) => stored.with_providers_from(&embedded),
+                Err(_) => stored,
+            },
             fetched_at: row.fetched_at,
             source: row.source_url,
         }),
