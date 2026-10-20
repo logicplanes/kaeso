@@ -212,12 +212,12 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   const projectName = orgContext ? projects.data?.find((p) => p.id === project)?.name : undefined;
   const projectFind = useFindGroup(org, project, query, open, close, projectName);
   const orgFind = useOrgFindGroup(org, query, open && orgContext, close);
-  const find =
-    orgFind && projectFind
-      ? { ...orgFind, items: [...orgFind.items, ...projectFind.items].slice(0, 20), loading: !!(orgFind.loading || projectFind.loading) }
-      : (orgFind ?? projectFind);
 
   const groups = useMemo(() => {
+    const find =
+      orgFind && projectFind
+        ? { ...orgFind, items: [...orgFind.items, ...projectFind.items].slice(0, 20), loading: !!(orgFind.loading || projectFind.loading) }
+        : (orgFind ?? projectFind);
     const go = (to: string) => () => {
       close();
       void navigate({ to });
@@ -383,7 +383,8 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   }, [
     close,
     create,
-    find,
+    orgFind,
+    projectFind,
     memberships,
     navigate,
     open,
