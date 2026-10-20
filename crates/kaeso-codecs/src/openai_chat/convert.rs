@@ -21,6 +21,7 @@ use crate::wire::{
 pub(crate) const FORM_BREAKPOINT_MODE: &str = "mode";
 pub(crate) const FORM_ARGUMENTS: &str = "arguments";
 pub(crate) const FORM_NO_TYPE: &str = "no_type";
+pub(crate) const FORM_ID: &str = "id";
 pub(crate) const FORM_REFUSAL_PART: &str = "part";
 pub(crate) const FORM_BARE_FILE_DATA: &str = "bare_file_data";
 
@@ -356,8 +357,12 @@ pub(crate) fn encode_image_part(block: &ImageBlock) -> Result<RawJson, KppError>
 
 pub(crate) fn encode_file_part(block: &DocumentBlock) -> Result<RawJson, KppError> {
     let mut file = FileRef::default();
+    let mut filename = None;
     match &block.source {
         Source::Base64(b) => {
+            if !block.extras.is_from(DIALECT) {
+                filename = Some(default_filename(&b.media_type));
+            }
             let bare = block.extras.form_flag(DIALECT, FORM_BARE_FILE_DATA);
             file.file_data = Some(if bare {
                 b.data.clone()
@@ -368,12 +373,25 @@ pub(crate) fn encode_file_part(block: &DocumentBlock) -> Result<RawJson, KppErro
         Source::FileId(f) => file.file_id = Some(f.id.clone()),
         other => return Err(source_unsupported("document", other)),
     }
+    let mut file = ext_nested(file, &block.extras, "file");
+    if let Some(name) = filename {
+        file.extra.insert("filename".to_owned(), to_raw(&name)?);
+    }
     let part = FilePart {
         ty: "file".to_owned(),
-        file: ext_nested(file, &block.extras, "file"),
+        file,
         prompt_cache_breakpoint: encode_breakpoint(block.cache.as_ref()),
     };
     to_raw(&ext_with(part, &block.extras))
+}
+
+fn default_filename(media_type: &str) -> String {
+    let extension = media_type
+        .split_once('/')
+        .map(|(_, sub)| sub.split(['+', ';']).next().unwrap_or(sub).trim())
+        .filter(|e| !e.is_empty() && e.chars().all(|c| c.is_ascii_alphanumeric()))
+        .unwrap_or("pdf");
+    format!("document.{extension}")
 }
 
 fn source_unsupported(kind: &str, source: &Source) -> KppError {
@@ -424,6 +442,7 @@ pub(crate) fn decode_tool_call(
     origin: &Origin,
     from_provider: bool,
     name_back: &dyn Fn(&str) -> String,
+    generated_id: Option<String>,
 ) -> Result<Block, KppError> {
     let ty = type_tag(raw.as_raw()).ok().flatten();
     let untyped = ty.is_none() && has_function(raw);
@@ -444,7 +463,17 @@ pub(crate) fn decode_tool_call(
         ..
     } = known.function;
     let (arguments, literal) = arguments_to_raw(&function.arguments);
-    let mut block = ToolCallBlock::new(known.id, name_back(&function.name), arguments);
+    let id_form = match known.id.as_deref() {
+        Some(id) if !id.is_empty() => None,
+        Some(empty) => Some(Value::String(empty.to_owned())),
+        None => Some(Value::Null),
+    };
+    let id = known
+        .id
+        .filter(|id| !id.is_empty())
+        .or(generated_id)
+        .unwrap_or_default();
+    let mut block = ToolCallBlock::new(id, name_back(&function.name), arguments);
     block.extras = extras_of(origin, extra, verbatim);
     add_nested(&mut block.extras, "function", fn_extra, fn_verbatim);
     if let Some(literal) = literal {
@@ -455,6 +484,9 @@ pub(crate) fn decode_tool_call(
             .extras
             .form
             .insert(FORM_NO_TYPE.to_owned(), true.into());
+    }
+    if let Some(form) = id_form {
+        block.extras.form.insert(FORM_ID.to_owned(), form);
     }
     Ok(Block::ToolCall(block))
 }
@@ -474,8 +506,13 @@ pub(crate) fn encode_tool_call(call: &ToolCallBlock, name: &str) -> Result<RawJs
         arguments: arguments_text(call),
     };
     let untyped = call.extras.is_from(DIALECT) && call.extras.form_flag(DIALECT, FORM_NO_TYPE);
+    let id = match call.extras.form_value(DIALECT, FORM_ID) {
+        Some(Value::Null) if call.extras.is_from(DIALECT) => None,
+        Some(Value::String(spelled)) if call.extras.is_from(DIALECT) => Some(spelled.clone()),
+        _ => Some(call.id.clone()),
+    };
     let wire = ToolCall {
-        id: call.id.clone(),
+        id,
         ty: if untyped {
             String::new()
         } else {

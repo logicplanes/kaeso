@@ -715,7 +715,7 @@ fn empty_ids_and_missing_ids_are_written_back_as_they_came() {
         tool_headers(&events),
         [
             ("call_1".to_owned(), "f".to_owned()),
-            (String::new(), "g".to_owned())
+            ("call_kaeso_c_1".to_owned(), "g".to_owned())
         ]
     );
     for sizes in [&[1][..], &[5], &[3, 17]] {
@@ -968,4 +968,50 @@ fn a_second_tool_call_at_the_same_index_starts_a_block_of_its_own() {
     assert!(text.contains("\"id\":\"call_1\""), "{text}");
     assert!(text.contains("\"id\":\"call_2\""), "{text}");
     assert!(text.contains("{\\\"city\\\":\\\"Oslo\\\"}"), "{text}");
+}
+
+#[test]
+fn a_stream_that_ends_without_a_finish_reason_is_not_a_finished_reply() {
+    let chunk = |finish: Value| {
+        let c = json!({"id":"c","object":"chat.completion.chunk","created":1,"model":"m",
+            "choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":finish}]});
+        format!("data: {c}\n\n")
+    };
+    let truncated = [chunk(Value::Null), "data: [DONE]\n\n".to_owned()].concat();
+    let events = decode_whole(truncated.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        ["start", "block_start 0", "delta 0", "error"]
+    );
+    let empty = [
+        chunk(json!("")),
+        chunk(json!("")),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat();
+    let events = decode_whole(empty.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        ["start", "block_start 0", "delta 0", "delta 0", "error"]
+    );
+    let finished = [
+        chunk(json!("")),
+        chunk(json!("stop")),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat();
+    let events = decode_whole(finished.as_bytes());
+    assert_eq!(
+        kinds(&events),
+        [
+            "start",
+            "block_start 0",
+            "delta 0",
+            "delta 0",
+            "block_stop 0",
+            "response_delta",
+            "stop"
+        ]
+    );
+    assert_sse_eq("empty finish", finished.as_bytes(), &encode(&events, false));
 }
