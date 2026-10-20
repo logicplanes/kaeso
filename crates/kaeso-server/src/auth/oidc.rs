@@ -43,6 +43,20 @@ impl OidcError {
     }
 }
 
+impl OidcError {
+    pub fn code_of_message(message: &str) -> Option<&'static str> {
+        [
+            (OidcError::Provider(String::new()), "provider_unreachable"),
+            (OidcError::Token(String::new()), "answer_unverified"),
+            (OidcError::Config(String::new()), "provider_incompatible"),
+            (OidcError::UnverifiedEmail, "email_unverified"),
+        ]
+        .into_iter()
+        .find(|(e, _)| e.message() == message)
+        .map(|(_, code)| code)
+    }
+}
+
 fn chain(e: &dyn std::error::Error) -> String {
     let mut message = e.to_string();
     let mut source = e.source();

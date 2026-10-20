@@ -95,20 +95,70 @@ fn binding_cookie(
     ))
 }
 
+const SSO_OFF: &str = "SSO sign-in is turned off on this install.";
+const NO_SSO: &str = "No organization uses SSO for this sign-in; use another way to sign in.";
+const NAME_THE_ORG: &str = "Name the organization with `org`; several organizations use SSO here.";
+const PROVIDER_REFUSED: &str = "The identity provider refused the sign-in.";
+const INCOMPLETE: &str = "The identity provider's answer is incomplete.";
+const INVALID_EMAIL: &str = "The identity provider sent an invalid email address.";
+const NO_ACCESS: &str = "You have no access to this organization yet; ask an admin to invite you.";
+const EXPIRED: &str = "The SSO sign-in expired or began in another browser; start again.";
+const LINK_REQUIRED: &str =
+    "Your account isn't linked to this SSO; sign in another way and link it under Account.";
+const LINKED_ELSEWHERE: &str = "This SSO identity is already linked to another Kaeso account.";
+const DEACTIVATED: &str = "This account is deactivated.";
+const NO_VERIFIED_DOMAIN: &str =
+    "This organization's SSO has no verified email domain yet; ask an admin to verify one.";
+const OTHER_DOMAIN: &str = "This organization's SSO only signs in addresses of ";
+const ACCEPT_INVITE: &str = "; sign in to accept the invitation.";
+
+const CODES: &[(&str, &str)] = &[
+    (SSO_OFF, "sso_off"),
+    (NO_SSO, "no_sso"),
+    (NAME_THE_ORG, "name_org"),
+    (PROVIDER_REFUSED, "provider_refused"),
+    (INCOMPLETE, "incomplete"),
+    (INVALID_EMAIL, "invalid_email"),
+    (NO_ACCESS, "no_access"),
+    (EXPIRED, "expired"),
+    (LINK_REQUIRED, "link_required"),
+    (LINKED_ELSEWHERE, "linked_elsewhere"),
+    (DEACTIVATED, "deactivated"),
+    (NO_VERIFIED_DOMAIN, "no_verified_domain"),
+];
+
+pub fn failure_code(e: &ApiError) -> &'static str {
+    let message = e.to_string();
+    if let Some((_, code)) = CODES.iter().find(|(m, _)| *m == message) {
+        return code;
+    }
+    if message.starts_with(OTHER_DOMAIN) {
+        return "domain_not_allowed";
+    }
+    if message.ends_with(ACCEPT_INVITE) {
+        return "accept_invite";
+    }
+    if let Some(code) = crate::auth::oidc::OidcError::code_of_message(&message) {
+        return code;
+    }
+    match e {
+        ApiError::RateLimited { .. } => "throttled",
+        ApiError::OrgScheduledForDeletion => "org_scheduled",
+        ApiError::InvalidRequest { .. } | ApiError::NotFound(_) => "invalid_link",
+        _ => "failed",
+    }
+}
+
 fn sso_on(state: &AppState) -> ApiResult<()> {
     if state.config.auth.oidc {
         Ok(())
     } else {
-        Err(ApiError::PermissionDenied(
-            "SSO sign-in is turned off on this install.".into(),
-        ))
+        Err(ApiError::PermissionDenied(SSO_OFF.into()))
     }
 }
 
 fn no_sso() -> ApiError {
-    ApiError::NotFound(
-        "No organization uses SSO for this sign-in; use another way to sign in.".into(),
-    )
+    ApiError::NotFound(NO_SSO.into())
 }
 
 struct Begun {
@@ -229,7 +279,7 @@ pub async fn start(
     path = "/auth/oidc/start",
     summary = "A link that starts SSO: sends the browser straight to the identity\n\
     provider, with the flow bound to this browser as `POST auth/oidc/start`\n\
-    binds it. On failure, to the sign-in page with the reason in `#sso_error=`.",
+    binds it. On failure, to the sign-in page with an error code in `#sso_error=`.",
     description = "For links from an intranet page or a bookmark. It only begins a sign-in \
     in the browser that follows it, and whoever signs in at the provider is who is signed in \
     afterwards, so it needs no `Origin` header.",
@@ -256,10 +306,7 @@ pub async fn start_link(
                 oidc::Connected::Only(org) => OrgId::from_uuid(org),
                 oidc::Connected::Nowhere => return Err(no_sso()),
                 oidc::Connected::Several => {
-                    return Err(ApiError::invalid(
-                        "org",
-                        "Name the organization with `org`; several organizations use SSO here.",
-                    ));
+                    return Err(ApiError::invalid("org", NAME_THE_ORG));
                 }
             },
         };
@@ -330,8 +377,7 @@ fn signed_in_location(state: &AppState, next: Option<&str>) -> String {
         .map_or_else(|| state.config.public_url.to_string(), |u| u.to_string())
 }
 
-fn failed_location(state: &AppState, message: &str, back: &Back) -> String {
-    let reason = percent_encoding::utf8_percent_encode(message, FRAGMENT).to_string();
+fn failed_location(state: &AppState, reason: &str, back: &Back) -> String {
     if back.link {
         let mut page = back
             .next
@@ -369,11 +415,7 @@ fn refused(state: &AppState, e: &ApiError, back: &Back, clear_binding: bool) -> 
     metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "oidc", "reason" => e.kind())
         .increment(1);
     tracing::info!(error = %e, "SSO sign-in failed");
-    let message = match e {
-        ApiError::Internal(_) => "Something went wrong; try again.".to_owned(),
-        other => other.to_string(),
-    };
-    let mut response = redirect(&failed_location(state, &message, back));
+    let mut response = redirect(&failed_location(state, failure_code(e), back));
     if clear_binding && let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);
     }
@@ -397,7 +439,13 @@ fn binding_from(state: &AppState, headers: &HeaderMap) -> Option<String> {
     path = "/auth/oidc/callback",
     summary = "The identity provider returns here. On success the session cookie is\n\
     set and the browser goes to the console; on failure to the sign-in page\n\
-    with the reason in `#sso_error=`.",
+    with an error code in `#sso_error=`.",
+    description = "The codes: `sso_off`, `no_sso`, `name_org`, `invalid_link`, `expired`, \
+    `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, \
+    `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, \
+    `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, \
+    `linked_elsewhere`, `org_scheduled`, `throttled` and `failed`. Show your own message for \
+    each; new codes may appear, so show a general one for a code you don't know.",
     tag = "auth",
     params(Callback),
     responses((status = 303, description = "Redirect to the console (signed in) or to the sign-in page with `#sso_error=`."))
@@ -438,12 +486,7 @@ async fn answer(
             .map_err(|e| tracing::info!(error = %e, "refused SSO answer matched no flow"))
             .map(|f| f.back)
             .unwrap_or_default();
-        return (
-            back,
-            Err(ApiError::Authentication(
-                "The identity provider refused the sign-in.".into(),
-            )),
-        );
+        return (back, Err(ApiError::Authentication(PROVIDER_REFUSED.into())));
     }
     let flow = match flow {
         Ok(flow) => flow,
@@ -457,13 +500,11 @@ async fn answer(
 }
 
 fn incomplete() -> ApiError {
-    ApiError::bad_request("The identity provider's answer is incomplete.")
+    ApiError::Authentication(INCOMPLETE.into())
 }
 
 fn no_access() -> ApiError {
-    ApiError::PermissionDenied(
-        "You have no access to this organization yet; ask an admin to invite you.".into(),
-    )
+    ApiError::PermissionDenied(NO_ACCESS.into())
 }
 
 struct Flow {
@@ -475,9 +516,7 @@ struct Flow {
 }
 
 fn expired() -> ApiError {
-    ApiError::Authentication(
-        "The SSO sign-in expired or began in another browser; start again.".into(),
-    )
+    ApiError::Authentication(EXPIRED.into())
 }
 
 async fn take_flow(
@@ -527,18 +566,15 @@ async fn take_flow(
 }
 
 fn link_required() -> ApiError {
-    ApiError::PermissionDenied(
-        "Your account isn't linked to this SSO; sign in another way and link it under Account."
-            .into(),
-    )
+    ApiError::PermissionDenied(LINK_REQUIRED.into())
 }
 
 fn linked_elsewhere() -> ApiError {
-    ApiError::Conflict("This SSO identity is already linked to another Kaeso account.".into())
+    ApiError::Conflict(LINKED_ELSEWHERE.into())
 }
 
 fn deactivated() -> ApiError {
-    ApiError::PermissionDenied("This account is deactivated.".into())
+    ApiError::PermissionDenied(DEACTIVATED.into())
 }
 
 fn check_domain(connection: &oidc::Connection, email: &str) -> ApiResult<()> {
@@ -548,13 +584,10 @@ fn check_domain(connection: &oidc::Connection, email: &str) -> ApiResult<()> {
         return Ok(());
     }
     if verified.is_empty() {
-        return Err(ApiError::PermissionDenied(
-            "This organization's SSO has no verified email domain yet; ask an admin to verify one."
-                .into(),
-        ));
+        return Err(ApiError::PermissionDenied(NO_VERIFIED_DOMAIN.into()));
     }
     Err(ApiError::PermissionDenied(format!(
-        "This organization's SSO only signs in addresses of {}.",
+        "{OTHER_DOMAIN}{}.",
         verified
             .iter()
             .map(|d| kaeso_core::email::display_domain(d))
@@ -581,9 +614,8 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             tracing::info!(error = %e, "SSO answer refused");
             ApiError::Authentication(e.message().to_owned())
         })?;
-    let email = kaeso_core::email::normalize(&identity.email).map_err(|_| {
-        ApiError::Authentication("The identity provider sent an invalid email address.".into())
-    })?;
+    let email = kaeso_core::email::normalize(&identity.email)
+        .map_err(|_| ApiError::Authentication(INVALID_EMAIL.into()))?;
     check_domain(&connection, &email)?;
     if let Some(user) = flow.link_user {
         return link(state, ctx, flow, &connection, &identity, user).await;
@@ -658,7 +690,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         if !new_account {
             return Err(match invite {
                 Some(_) => ApiError::PermissionDenied(format!(
-                    "An account with {email} exists; sign in to accept the invitation."
+                    "An account with {email} exists{ACCEPT_INVITE}"
                 )),
                 None => no_access(),
             });

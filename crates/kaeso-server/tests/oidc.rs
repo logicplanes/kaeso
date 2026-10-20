@@ -396,7 +396,7 @@ async fn sso_signs_in_existing_accounts_once_linked_and_only_where_they_are_memb
     .unwrap();
     let r = sign_in().await;
     assert!(
-        location(&r).contains("sign%20in%20to%20accept"),
+        location(&r).ends_with("#sso_error=accept_invite"),
         "{}",
         location(&r)
     );
@@ -437,29 +437,28 @@ async fn forged_or_misdirected_answers_are_refused() {
     let owner = app.setup().await;
     let idp = MockIdp::start("kaeso", "client-secret").await;
     connect(&app, &owner, &idp, Some("member")).await;
-    for fault in [
-        Fault::WrongNonce,
-        Fault::WrongAudience,
-        Fault::Expired,
-        Fault::WrongIssuer,
-        Fault::UnverifiedEmail,
+    for (fault, code) in [
+        (Fault::WrongNonce, "answer_unverified"),
+        (Fault::WrongAudience, "answer_unverified"),
+        (Fault::Expired, "answer_unverified"),
+        (Fault::WrongIssuer, "answer_unverified"),
+        (Fault::UnverifiedEmail, "email_unverified"),
     ] {
         idp.set_fault(fault.clone());
         let flow = start(&app, json!({ "org": owner.org_id })).await;
         let auth = idp.authorize(&flow.url, "eve@acme.example", "Eve");
         let r = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
-        assert!(
-            location(&r).contains("sso_error="),
-            "{fault:?}: {}",
-            location(&r)
-        );
-        assert!(r.cookie().is_none(), "{fault:?}");
+        refused_with(&r, code);
     }
     idp.set_fault(Fault::None);
     let flow = start(&app, json!({ "org": owner.org_id })).await;
     let auth = idp.authorize(&flow.url, "owner@example.com", "Owner");
     let r = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
-    assert!(location(&r).contains("acme.example"), "{}", location(&r));
+    assert!(
+        location(&r).ends_with("#sso_error=domain_not_allowed"),
+        "{}",
+        location(&r)
+    );
     assert!(r.cookie().is_none());
     let flow = start(&app, json!({ "org": owner.org_id })).await;
     let auth = idp.authorize(&flow.url, "eve@acme.example", "Eve");
@@ -769,7 +768,7 @@ async fn next_never_sends_the_browser_off_the_install() {
     let to = location(&back);
     assert!(
         to.starts_with(&format!(
-            "{ORIGIN}/sign-in?next=%2Forgs%3Fa%3D1&org={}#sso_error=This%20organization",
+            "{ORIGIN}/sign-in?next=%2Forgs%3Fa%3D1&org={}#sso_error=domain_not_allowed",
             owner.org_id
         )),
         "a refused sign-in keeps the page to come back to and the org it began with: {to}"
@@ -785,9 +784,7 @@ async fn a_start_link_without_an_org_needs_exactly_one_provider() {
     let owner = app.setup().await;
     let to = location(&follow(&app, "?next=%2Forgs").await);
     assert!(
-        to.starts_with(&format!(
-            "{ORIGIN}/sign-in?next=%2Forgs#sso_error=No%20organization"
-        )),
+        to.starts_with(&format!("{ORIGIN}/sign-in?next=%2Forgs#sso_error=no_sso")),
         "{to}"
     );
     let idp = MockIdp::start("kaeso", "client-secret").await;
@@ -796,7 +793,7 @@ async fn a_start_link_without_an_org_needs_exactly_one_provider() {
     let beta = another_org(&app, "Beta").await;
     connect_org(&app, &beta, &idp, "beta.example", None, false).await;
     let to = location(&follow(&app, "").await);
-    assert!(to.contains("sso_error=Name%20the%20organization"), "{to}");
+    assert!(to.ends_with("#sso_error=name_org"), "{to}");
     assert!(location(&follow(&app, &format!("?org={beta}")).await).starts_with(idp.issuer()));
     let to = location(&follow(&app, "?org=not-an-org").await);
     assert!(
@@ -806,7 +803,7 @@ async fn a_start_link_without_an_org_needs_exactly_one_provider() {
 
     let off = App::start_with(&s, &[("KAESO_AUTH_OIDC", "false")]).await;
     let to = location(&follow(&off, &format!("?org={beta}")).await);
-    assert!(to.contains("turned%20off"), "{to}");
+    assert!(to.ends_with("#sso_error=sso_off"), "{to}");
     s.cleanup().await;
 }
 
@@ -848,10 +845,7 @@ async fn a_refusal_at_the_provider_ends_the_flow_and_keeps_the_way_back() {
     let owner = app.setup().await;
     let idp = MockIdp::start("kaeso", "client-secret").await;
     connect(&app, &owner, &idp, Some("member")).await;
-    let refused = format!(
-        "#sso_error={}",
-        urlencode("The identity provider refused the sign-in.").replace('+', "%20")
-    );
+    let refused = "#sso_error=provider_refused";
 
     let flow = start(
         &app,
@@ -870,7 +864,7 @@ async fn a_refusal_at_the_provider_ends_the_flow_and_keeps_the_way_back() {
     assert!(r.cookie().is_none());
     let late = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
     assert!(
-        location(&late).contains("sso_error=The%20SSO%20sign-in%20expired"),
+        location(&late).ends_with("#sso_error=expired"),
         "the refused flow can't be finished afterwards: {}",
         location(&late)
     );
@@ -918,7 +912,7 @@ async fn a_refusal_after_the_provider_keeps_the_org_of_its_sign_in_link() {
     let to = location(&back);
     assert!(
         to.starts_with(&format!(
-            "{ORIGIN}/sign-in?next=%2Forgs&org={}#sso_error=You%20have%20no%20access",
+            "{ORIGIN}/sign-in?next=%2Forgs&org={}#sso_error=no_access",
             owner.org_id
         )),
         "{to}"
@@ -985,15 +979,13 @@ async fn links(app: &App) -> i64 {
         .unwrap()
 }
 
-fn refused_with(r: &common::Resp, reason: &str) {
+fn refused_with(r: &common::Resp, code: &str) {
     let to = location(r);
-    let wanted = urlencode(reason).replace('+', "%20");
-    assert!(to.contains(&format!("sso_error={wanted}")), "{to}");
+    assert!(to.ends_with(&format!("#sso_error={code}")), "{to}");
     assert!(r.cookie().is_none(), "{to}");
 }
 
-const LINK_REQUIRED: &str =
-    "Your account isn't linked to this SSO; sign in another way and link it under Account.";
+const LINK_REQUIRED: &str = "link_required";
 
 #[tokio::test]
 async fn an_orgs_sso_never_signs_in_an_account_by_its_address_alone() {
@@ -1106,7 +1098,7 @@ async fn a_linked_account_signs_in_through_its_identity_and_only_its_own_org() {
     .await;
     assert!(
         location(&r).starts_with(&format!(
-            "{ORIGIN}/settings/account/security#sso_error=This%20SSO%20identity%20is%20already%20linked"
+            "{ORIGIN}/settings/account/security#sso_error=linked_elsewhere"
         )),
         "{}",
         location(&r)
@@ -1291,10 +1283,7 @@ async fn an_unverified_domain_neither_signs_in_nor_creates_accounts() {
         .await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
     let r = sso_as(&app, &idp, &evil, "sub-ada", "ada@acme.example").await;
-    refused_with(
-        &r,
-        "This organization's SSO has no verified email domain yet; ask an admin to verify one.",
-    );
+    refused_with(&r, "no_verified_domain");
     let accounts: i64 = sqlx::query_scalar("SELECT count(*) FROM users")
         .fetch_one(&app.state.pg)
         .await
@@ -1326,10 +1315,7 @@ async fn a_token_without_email_verified_signs_in_only_where_the_connection_allow
     connect(&app, &owner, &idp, Some("member")).await;
     idp.set_fault(Fault::NoEmailVerified);
     let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
-    refused_with(
-        &r,
-        "The identity provider didn't confirm that the email address is verified.",
-    );
+    refused_with(&r, "email_unverified");
     sqlx::query("UPDATE org_oidc SET require_email_verified = false")
         .execute(&app.state.pg)
         .await
@@ -1338,10 +1324,7 @@ async fn a_token_without_email_verified_signs_in_only_where_the_connection_allow
     assert!(r.cookie().is_some(), "{}", location(&r));
     idp.set_fault(Fault::UnverifiedEmail);
     let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
-    refused_with(
-        &r,
-        "The identity provider didn't confirm that the email address is verified.",
-    );
+    refused_with(&r, "email_unverified");
     s.cleanup().await;
 }
 
