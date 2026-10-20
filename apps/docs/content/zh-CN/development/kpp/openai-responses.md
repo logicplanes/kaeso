@@ -154,9 +154,9 @@ order: 6
 | `response.output_text.delta` | `BlockDelta` `Text`；`logprobs` 为 extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`、`response.refusal.done` | 附加到该部分的 `BlockStop`（`@done`） |
+| `response.output_text.done`、`response.refusal.done` | 附加到该部分的 `BlockStop`（`@done`）；该部分没有增量时，其 `text` 或 `refusal` 成为该部分的 `BlockDelta`，使其他方言能看到它；Responses 应用会原样收到该事件。没有增量的 `response.function_call_arguments.done` 同样成为该调用的 `ToolArguments`。 |
 | `response.content_part.done`（消息） | `BlockStop` |
-| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`） |
+| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`）；其部分从未以流式发送（没有 `content_part.added`）的消息：该项的每个 `output_text` 或 `refusal` 部分成为 `BlockStart`、`BlockDelta` 和 `BlockStop`，写回 Responses 应用时跳过（形式标记 `skip`）。 |
 | `response.output_item.added`（`function_call`） | `BlockStart` `ToolCall`（`call_id`、`name`） |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | 附加到 `BlockStop`（`@done`） |
