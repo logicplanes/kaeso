@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Banner, Button, Dialog, Empty, IconButton, Input, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Banner, Button, Code, Dialog, Empty, IconButton, Input, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders } from "~/kaeso/providers";
@@ -12,7 +12,10 @@ import type { AliasView } from "~/api/generated/types";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
+import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
+
+const MODEL_FIELD = "model";
 
 const shadowText = (name: string) => t("models.alias.shadows", "Apps that send `{name}` get this alias, not the model with the same name.", { name });
 
@@ -66,7 +69,10 @@ export function AliasesTab({
         <Empty
           size="lg"
           title={t("models.alias.empty", "No aliases yet")}
-          description={t("models.alias.emptyHint", "A name like fast that apps send as model; retarget it and every app follows.")}
+          description={tRich("models.alias.emptyHint", "A name like {name} that apps send as {field}; retarget it and every app follows.", {
+            name: <Code>{t("models.alias.nameExample", "fast")}</Code>,
+            field: <Code>{MODEL_FIELD}</Code>,
+          })}
           actions={
             canManage ? (
               <Button variant="primary" onClick={() => onCreatingChange(true)}>

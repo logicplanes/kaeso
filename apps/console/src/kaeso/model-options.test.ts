@@ -19,7 +19,7 @@ describe("model picker options", () => {
       name: "GPT-5 mini",
       capabilities: ["tools", "reasoning"],
       context: 400_000,
-      price: "$0.25 / $2.00",
+      price: "$0.25 / $2",
     });
   });
 
@@ -52,7 +52,7 @@ describe("model picker options", () => {
       name: "Claude Sonnet 4.5",
       capabilities: ["reasoning", "vision", "pdf"],
       context: 200_000,
-      price: "$3.00 / $15.00",
+      price: "$3 / $15",
       disabled: true,
       note: "No Anthropic key",
     });

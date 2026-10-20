@@ -49,7 +49,7 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Structured outputNomodels.dev");
     expect(s).toHaveTextContent("Effortslow, highmodels.dev");
     expect(s).toHaveTextContent("Timeout120 smodels.dev");
-    expect(s).toHaveTextContent("Released29 Sept 2025models.dev");
+    expect(s).toHaveTextContent("Released29 Sep 2025models.dev");
   });
 
   it("marks a model models.dev no longer lists", async () => {
@@ -57,7 +57,7 @@ describe("ModelSheet", () => {
     const { router } = await renderApp(projectPath("models?model=cm_sonnet"));
 
     const s = await sheet("Claude Sonnet 4.5");
-    expect(await within(s).findByText("No longer listed since 1 Sept 2026")).toBeInTheDocument();
+    expect(await within(s).findByText("No longer listed since 1 Sep 2026")).toBeInTheDocument();
     expect(within(s).getByText("models.dev stopped listing it; it keeps its last known values.")).toBeInTheDocument();
     expect(within(s).queryByText(/^Overridden/)).not.toBeInTheDocument();
     await router.navigate({ to: projectPath("models"), search: { model: "cm_old" } });

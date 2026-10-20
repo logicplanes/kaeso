@@ -46,6 +46,9 @@ describe("AddModelsDialog", () => {
     expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
     expect(searches()).toContainEqual({ provider: "openai", include_deprecated: "false", limit: "50" });
     expect(within(dialog).getByRole("gridcell", { name: /gpt-4o/ })).toHaveTextContent("Already in catalogue");
+    expect(within(dialog).getByRole("gridcell", { name: /^Select gpt-5 / })).toHaveTextContent(/GPT-5gpt-5400K\$1\.25 \/ \$10Aug 2025/);
+    expect(within(dialog).queryByRole("img", { name: "OpenAI" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Showing", { exact: false })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("gpt-3.5-turbo")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Add models" })).toBeDisabled();
     await user.click(within(dialog).getByRole("checkbox", { name: "Select gpt-5" }));
@@ -373,32 +376,50 @@ describe("AddModelsDialog", () => {
     expect(requests("POST", BATCH).map((r) => r.body)).toEqual([{ provider: "openai", all_current: true }]);
   });
 
-  it("warns before adding a provider's models in bulk when there are many", async () => {
+  it("says exactly how many models adding every current one adds, and warns when there are many", async () => {
     signedIn();
     projectData();
     const many = (n: number) => Array.from({ length: n }, (_, i) => searchHit({ provider: "deepseek", model_id: `vendor/model-${i}`, name: `Model ${i}` }));
-    modelsApi({ hits: many(120) });
+    modelsApi({ hits: [...many(260), searchHit({ provider: "deepseek", model_id: "old", deprecated: true })] });
     const { user, dialog } = await open();
     await pickProvider(user, dialog, "DeepSeek");
+    expect(await within(dialog).findByText("Showing 50 of 260 DeepSeek models; search to narrow them down.")).toBeInTheDocument();
     await user.click(await within(dialog).findByRole("button", { name: "Add every current DeepSeek model" }));
     const all = await screen.findByRole("dialog", { name: /Add every current DeepSeek model/ });
-    expect(await within(all).findByText("This adds up to 120 models at once; adding the ones you need keeps the catalogue short.")).toBeInTheDocument();
+    expect(await within(all).findByText("This adds 260 models at once; adding the ones you need keeps the catalogue short.")).toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/models/search").map((r) => Object.fromEntries(r.query))).toContainEqual({
       provider: "deepseek",
-      include_deprecated: "false",
-      limit: "200",
+      current: "true",
+      limit: "1",
     });
   });
 
-  it("says when a provider has 200 or more models to add", async () => {
+  it("says how many current models are left to add when they are few", async () => {
     signedIn();
     projectData();
-    modelsApi({ hits: Array.from({ length: 200 }, (_, i) => searchHit({ provider: "deepseek", model_id: `m-${i}` })) });
+    modelsApi({
+      hits: [
+        searchHit({ provider: "deepseek", model_id: "deepseek-chat" }),
+        searchHit({ provider: "deepseek", model_id: "deepseek-reasoner", catalogue_model_id: "cm_r" }),
+      ],
+    });
     const { user, dialog } = await open();
     await pickProvider(user, dialog, "DeepSeek");
     await user.click(await within(dialog).findByRole("button", { name: "Add every current DeepSeek model" }));
     const all = await screen.findByRole("dialog", { name: /Add every current DeepSeek model/ });
-    expect(await within(all).findByText("This can add 200 or more models at once; adding the ones you need keeps the catalogue short.")).toBeInTheDocument();
+    expect(await within(all).findByText("1 current model isn't in the catalogue yet.")).toBeInTheDocument();
+  });
+
+  it("says when every current model is in the catalogue already", async () => {
+    signedIn();
+    projectData();
+    modelsApi({ hits: [searchHit({ provider: "groq", model_id: "llama-3.1-8b-instant", catalogue_model_id: "cm_l" })] });
+    const { user, dialog } = await open();
+    await pickProvider(user, dialog, "Groq");
+    await user.click(await within(dialog).findByRole("button", { name: "Add every current Groq model" }));
+    const none = await screen.findByRole("dialog", { name: /Add every current Groq model/ });
+    expect(await within(none).findByText("Every current Groq model is in the catalogue already.")).toBeInTheDocument();
+    expect(within(none).getByRole("button", { name: "Add every current Groq model" })).toBeDisabled();
   });
 
   it("says when the organization has no key for the chosen provider", async () => {

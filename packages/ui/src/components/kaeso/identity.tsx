@@ -96,16 +96,17 @@ export interface ModelLabelProps {
   model: string;
   name?: string | undefined;
   capabilities?: Capability[] | undefined;
+  mark?: boolean | undefined;
   className?: string | undefined;
 }
 
 export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function ModelLabel(
-  { provider, providerName: providerDisplayName, model, name, capabilities = [], className },
+  { provider, providerName: providerDisplayName, model, name, capabilities = [], mark = true, className },
   ref,
 ) {
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8", className)}>
-      <ProviderBadge provider={provider} name={providerDisplayName} />
+      {mark && <ProviderBadge provider={provider} name={providerDisplayName} />}
       {name ? (
         <>
           <span className="min-w-0 truncate text-body text-fg">{name}</span>

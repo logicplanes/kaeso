@@ -156,6 +156,9 @@ export function searchHit(overrides: Partial<SearchHit> = {}): SearchHit {
     deprecated: false,
     release_date: "2025-08-07",
     catalogue_model_id: null,
+    input_price: "1.25",
+    output_price: "10",
+    context_limit: 400_000,
     ...overrides,
   };
 }
@@ -295,16 +298,21 @@ export function modelsApi({ models = [], hits = [], previews = [] }: ModelsApi =
     ({ params }: { params: Record<string, string> }) => models.find((m) => m.id === params.model) ?? apiError(404, "not_found", "No such model."),
   );
   on("GET", "orgs/:org/projects/:project/models", page(models));
-  on("GET", "orgs/:org/projects/:project/models/search", ({ query }: { query: URLSearchParams }) =>
-    page(
-      hits.filter(
-        (h) =>
-          h.provider === query.get("provider") &&
-          (!query.get("q") || h.model_id.includes(query.get("q") ?? "")) &&
-          (query.get("include_deprecated") === "true" || !h.deprecated),
-      ),
-    ),
-  );
+  on("GET", "orgs/:org/projects/:project/models/search", ({ query }: { query: URLSearchParams }) => {
+    const matches = hits.filter(
+      (h) =>
+        h.provider === query.get("provider") &&
+        (!query.get("q") || h.model_id.includes(query.get("q") ?? "")) &&
+        ((query.get("include_deprecated") === "true" && query.get("current") !== "true") || !h.deprecated),
+    );
+    const limit = Number(query.get("limit") ?? 50);
+    return {
+      data: matches.slice(0, limit),
+      has_more: matches.length > limit,
+      total: matches.length,
+      not_in_catalogue: matches.filter((h) => !h.catalogue_model_id).length,
+    };
+  });
   on(
     "GET",
     "orgs/:org/projects/:project/models/preview",

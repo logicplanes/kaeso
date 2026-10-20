@@ -33,6 +33,13 @@ describe("StatusCode", () => {
     rerender(<ModelLabel provider="anthropic" model="claude-sonnet-5-5-20260901" name="Claude Sonnet 5.5" />);
     expect(screen.getByText("claude-sonnet-5-5-20260901")).toHaveClass("min-w-96");
   });
+  it("leaves out the provider's mark in a list that already groups under it", () => {
+    const { rerender } = render(<ModelLabel provider="openai" model="gpt-5.4-mini" />);
+    expect(screen.getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    rerender(<ModelLabel provider="openai" model="gpt-5.4-mini" mark={false} />);
+    expect(screen.queryByRole("img", { name: "OpenAI" })).toBeNull();
+    expect(screen.getByText("gpt-5.4-mini")).toBeInTheDocument();
+  });
 });
 
 describe("RequestTimeline", () => {

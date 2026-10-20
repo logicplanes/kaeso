@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import { isApiError } from "../errors";
-import type { AliasView, CatalogueModelView, Preview, SearchHit } from "../generated/types";
+import type { AliasView, CatalogueModelView, ModelSearch, Preview } from "../generated/types";
 
 export const catalogueQuery = (org: string, project: string) =>
   queryOptions({
@@ -26,33 +26,36 @@ export const catalogueModelQuery = (org: string, project: string, model: string)
       data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/models/{model}", { params: { path: { org, project, model } } })),
   });
 
+export const SEARCH_LIMIT = 50;
+
 export const modelSearchQuery = (org: string, project: string, q: { q: string; provider: string; include_deprecated: boolean }) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "models", "search", q],
-    queryFn: async ({ signal }): Promise<SearchHit[]> =>
+    queryFn: async ({ signal }): Promise<ModelSearch> =>
       data(
         await api.GET("/platform/v1/orgs/{org}/projects/{project}/models/search", {
-          params: { path: { org, project }, query: { ...(q.q ? { q: q.q } : {}), provider: q.provider, include_deprecated: q.include_deprecated, limit: 50 } },
+          params: {
+            path: { org, project },
+            query: { ...(q.q ? { q: q.q } : {}), provider: q.provider, include_deprecated: q.include_deprecated, limit: SEARCH_LIMIT },
+          },
           signal,
         }),
-      ).data,
+      ),
     staleTime: 60_000,
   });
 
 export const currentModelsQuery = (org: string, project: string, provider: string) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "models", "search", { provider, current: true }],
-    queryFn: async ({ signal }): Promise<SearchHit[]> =>
+    queryFn: async ({ signal }): Promise<ModelSearch> =>
       data(
         await api.GET("/platform/v1/orgs/{org}/projects/{project}/models/search", {
-          params: { path: { org, project }, query: { provider, include_deprecated: false, limit: CURRENT_MODELS_LIMIT } },
+          params: { path: { org, project }, query: { provider, current: true, limit: 1 } },
           signal,
         }),
-      ).data,
+      ),
     staleTime: 60_000,
   });
-
-export const CURRENT_MODELS_LIMIT = 200;
 
 export const modelPreviewQuery = (org: string, project: string, provider: string, model: string) =>
   queryOptions({

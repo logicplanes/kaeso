@@ -57,6 +57,7 @@ export const docs = {
       "A model: provider mark, display name, then its id in mono, capability icons with tooltips. Recognition over recall. Never wider than its container: the id gives way first, ending in an ellipsis, and goes when fewer than a few of its characters would show (a short id shows whole or not at all); the name ends in an ellipsis last. On a phone the capability icons give way (the model's sheet lists them), where they were clipped at the row's edge.",
     props: {
       capabilities: "What the model can do, shown as small marks after its name.",
+      mark: "Shows the provider's mark first (default); turn it off in a list grouped under each provider's mark.",
       model: "The model id, in mono: after the name, quieter, or alone when there's no name.",
       name: "The display name, first.",
       provider: "The provider id, such as `openai` or `anthropic`.",
