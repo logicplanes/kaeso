@@ -22,7 +22,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
 | OpenAI `openai` | Responses, Chat Completions, Embeddings, token counts | `api.openai.com` | [platform.openai.com](https://platform.openai.com/api-keys), `sk-` |
 | OpenRouter `openrouter` | Chat Completions, Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys), `sk-or-v1-` |
-| SpaceX `xai` | Responses, Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai), `xai-` |
+| SpaceX `xai` | Responses, Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai/team/default/api-keys), `xai-` |
 | Together AI `togetherai` | Chat Completions, Embeddings | `api.together.ai` | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), `tgp_v1_` |
 
 ## Notes
