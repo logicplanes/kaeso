@@ -60,16 +60,6 @@ async fn security_settings_start_open_and_follow_each_switch() {
     assert_eq!(r.body["sso"], Value::Null);
     assert_eq!(r.body["sso_default_role"], Value::Null);
 
-    let r = put(
-        &app,
-        cookie,
-        &format!("{base}/require-2fa"),
-        json!({ "enabled": true }),
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["require_2fa"], true);
-
     for days in [0, 3651] {
         let r = put(
             &app,
@@ -110,17 +100,35 @@ async fn security_settings_start_open_and_follow_each_switch() {
     let r = delete(&app, cookie, &format!("{base}/sso")).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
 
-    let audit = app
-        .get(&format!("/orgs/{}/audit-log", owner.org_id), cookie)
-        .await;
-    let actions: Vec<&str> = audit.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|e| e["action"].as_str())
-        .collect();
-    assert!(actions.contains(&"security.require_2fa"), "{actions:?}");
-    assert!(actions.contains(&"security.key_policy"), "{actions:?}");
+    let r = put(
+        &app,
+        cookie,
+        &format!("{base}/require-2fa"),
+        json!({ "enabled": true }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["require_2fa"], true);
+    let r = app.get(&base, cookie).await;
+    assert_eq!(
+        r.body["error"]["message"],
+        "This organization requires two-factor authentication; set it up, then sign in again.",
+        "a sign-in without a second factor no longer opens the org"
+    );
+
+    let actions: Vec<String> =
+        sqlx::query_scalar("SELECT action FROM audit_events WHERE scope = 'org'")
+            .fetch_all(&app.state.pg)
+            .await
+            .unwrap();
+    assert!(
+        actions.iter().any(|a| a == "security.require_2fa"),
+        "{actions:?}"
+    );
+    assert!(
+        actions.iter().any(|a| a == "security.key_policy"),
+        "{actions:?}"
+    );
     s.cleanup().await;
 }
 
@@ -410,5 +418,61 @@ async fn an_sso_connection_names_its_button_and_its_sign_in_link() {
         (&r.body["sso"]["name"], &r.body["sso"]["auto_redirect"]),
         (&Value::Null, &json!(false))
     );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn only_a_console_session_changes_single_sign_on() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let base = security(&owner);
+    let created = app
+        .post(
+            &format!("/orgs/{}/platform-keys", owner.org_id),
+            json!({ "name": "CI", "expires_in_days": 30 }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let key = created.body["secret"].as_str().unwrap().to_owned();
+    let connection = json!({
+        "issuer": idp.issuer(),
+        "client_id": "kaeso",
+        "client_secret": "client-secret",
+        "domains": ["acme.example"],
+    });
+    for (method, path, body) in [
+        (Method::PUT, format!("{base}/sso"), Some(connection.clone())),
+        (Method::DELETE, format!("{base}/sso"), None),
+        (
+            Method::PUT,
+            format!("{base}/require-sso"),
+            Some(json!({ "enabled": true })),
+        ),
+    ] {
+        let r = app.with_key(method.clone(), &path, body, &key).await;
+        assert_eq!(
+            (r.status, r.body["error"]["message"].as_str()),
+            (
+                StatusCode::FORBIDDEN,
+                Some("Only a console session can change SSO; API keys can't.")
+            ),
+            "{method} {path}"
+        );
+    }
+    assert_eq!(
+        app.with_key(Method::GET, &base, None, &key).await.status,
+        StatusCode::OK
+    );
+    app.clock.advance(time::Duration::minutes(16));
+    let r = put(&app, &owner.cookie, &format!("{base}/sso"), connection).await;
+    assert_eq!(r.error_type(), "recent_sign_in_required", "{:?}", r.body);
+    let stored: i64 = sqlx::query_scalar("SELECT count(*) FROM org_oidc")
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(stored, 0);
     s.cleanup().await;
 }

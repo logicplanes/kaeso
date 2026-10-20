@@ -9,7 +9,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 | Seite | Inhalt |
 | --- | --- |
 | Profil | Bild, Name, E-Mail-Adresse und Konto-ID sowie das Löschen des Kontos |
-| Sicherheit | Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes |
+| Sicherheit | Passwort, Zwei-Faktor-Authentifizierung, Wiederherstellungscodes und Verknüpfungen mit Single Sign-on |
 | Sitzungen | Die Browser, in denen Sie angemeldet sind |
 | API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
 | Mitgliedschaften | Ihre Organisationen und deren Projekte mit Ihren Rollen sowie das Verlassen einer Organisation |
@@ -18,7 +18,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 
 ## E-Mail-Adresse ändern
 
-Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein. Kaeso schickt einen Bestätigungslink an die neue Adresse und informiert die alte. Die Änderung gilt, sobald Sie den Link öffnen.
+Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein, bei eingeschalteter Zwei-Faktor-Authentifizierung auch einen Code aus Ihrer Authenticator-App oder einen Wiederherstellungscode. Kaeso schickt einen Bestätigungslink an die neue Adresse und einen Link zum Abbrechen der Änderung an die alte. Die Änderung gilt, sobald Sie den Bestätigungslink öffnen. Melden Sie den Browser ab, der die Änderung angefordert hat, melden Sie sich überall ab oder setzen Sie Ihr Passwort zurück, ist die Änderung ebenfalls abgebrochen.
 
 ## Passwort ändern
 
@@ -26,14 +26,26 @@ Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ih
 
 ## Zwei-Faktor-Authentifizierung einschalten
 
-Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort nach einem Code aus einer Authenticator-App. Anmeldelinks und Single Sign-on fragen nicht danach.
+Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code oder eine Anmeldung über ihren eigenen Identitätsanbieter.
+
+Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmelden** nur, wenn Sie den Link selbst angefordert haben. Ist dieser Browser bei einem anderen Konto angemeldet, ersetzt die Anmeldung diese Sitzung hier.
 
 1. Wählen Sie unter **Sicherheit** die Option **Einrichten**.
 2. Scannen Sie den QR-Code mit Ihrer Authenticator-App, oder geben Sie den Einrichtungsschlüssel ein.
 3. Geben Sie den sechsstelligen Code aus der App ein und wählen Sie **Einschalten**.
 4. Bewahren Sie die 10 Wiederherstellungscodes auf, die die Konsole einmal zeigt: Kopieren Sie sie oder wählen Sie **.txt herunterladen**. Jeder Code meldet Sie einmal an, statt eines Codes aus der App.
 
-**Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
+Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung, nachdem Sie einen aktuellen Code oder einen Wiederherstellungscode eingegeben haben. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
+
+## Single Sign-on verknüpfen
+
+Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mit ihm verknüpft ist. Ein Konto, das die Single Sign-on der Organisation angelegt hat, ist von Anfang an verknüpft. **Single Sign-on** unter **Sicherheit** listet Ihre Organisationen mit Identitätsanbieter.
+
+1. Melden Sie sich mit Ihrem Passwort oder einem Anmeldelink an.
+2. Wählen Sie **Verknüpfen** neben der Organisation.
+3. Melden Sie sich beim Identitätsanbieter an. Sie kommen zurück zu **Sicherheit** und sind angemeldet wie zuvor.
+
+**Trennen** hindert den Anbieter daran, Sie anzumelden. Das Audit-Log der Organisation verzeichnet beides, als `user.sso_link` und `user.sso_unlink`.
 
 ## Andere Browser abmelden
 
@@ -47,7 +59,16 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 - In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
-- Als Instanz-Admin: jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen.
+
+## Nach einer Anmeldung über Single Sign-on
+
+Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
+
+- E-Mail-Adresse, Passwort oder Zwei-Faktor-Authentifizierung ändern;
+- eine Organisation erstellen, eine andere verlassen oder das Konto löschen;
+- eine andere Organisation öffnen oder die Instanz verwalten.
+
+Ohne Passwort legen Sie eines mit **Passwort vergessen?** auf der Anmeldeseite fest.
 
 ## E-Mails wählen
 

@@ -29,6 +29,9 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
         if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) {
           return await mutationFn(vars);
         }
+        if (isApiError(error) && error.type === "other_sign_in_required" && (await requestRecentSignIn("without-sso"))) {
+          return await mutationFn(vars);
+        }
         throw error;
       }
     },
@@ -48,7 +51,7 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
         await router.navigate({ to: "/sign-in", search: { next } });
         return;
       }
-      if (error.type === "recent_sign_in_required") return;
+      if (error.type === "recent_sign_in_required" || error.type === "other_sign_in_required") return;
       if (error.status === 412) {
         for (const filters of filtersFor(vars)) void queryClient.invalidateQueries(filters);
         toastApiError(error, { description: t("auth.reloaded", "The latest version is loaded now.") });

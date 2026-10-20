@@ -60,6 +60,10 @@ impl InFlight {
         let _ = finishing.wait_for(|n| *n == 0).await;
     }
 
+    pub fn cutter(&self) -> CancellationToken {
+        self.cut.clone()
+    }
+
     pub fn cut(&self) -> WaitForCancellationFuture<'_> {
         self.cut.cancelled()
     }

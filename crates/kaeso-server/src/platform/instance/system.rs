@@ -55,9 +55,13 @@ pub struct LogBufferView {
 )]
 pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SystemView>> {
     let health = crate::health::check(&state).await;
-    let postgres_bytes = kaeso_store::pg::database_size(&state.pg).await.ok();
+    let postgres_bytes = kaeso_store::pg::database_size(&state.pg)
+        .await
+        .inspect_err(|e| tracing::warn!(error = %e, "cannot read the PostgreSQL database size"))
+        .ok();
     let disk = kaeso_store::clickhouse::logs::disk(&state.clickhouse)
         .await
+        .inspect_err(|e| tracing::warn!(error = %e, "cannot read the request log's disk usage"))
         .ok();
     Ok(Json(SystemView {
         version: env!("CARGO_PKG_VERSION"),

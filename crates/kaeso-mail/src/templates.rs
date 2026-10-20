@@ -16,6 +16,7 @@ pub enum EmailKind {
     TwoFactorDisabled,
     TwoFactorReset,
     EmailChanged,
+    EmailChangeRequested,
     SessionsEnded,
     AccountDeactivated,
     OrgScheduledForDeletion,
@@ -39,6 +40,7 @@ impl EmailKind {
             EmailKind::TwoFactorDisabled => "two_factor_disabled",
             EmailKind::TwoFactorReset => "two_factor_reset",
             EmailKind::EmailChanged => "email_changed",
+            EmailKind::EmailChangeRequested => "email_change_requested",
             EmailKind::SessionsEnded => "sessions_ended",
             EmailKind::AccountDeactivated => "account_deactivated",
             EmailKind::OrgScheduledForDeletion => "org_scheduled_for_deletion",
@@ -659,6 +661,49 @@ pub fn email_changed(lang: Locale, to: &str, new_address: &str) -> Email {
     )
 }
 
+pub fn email_change_requested(lang: Locale, to: &str, new_address: &str, url: &str) -> Email {
+    let (subject, heading, sentence, action, note) = match lang {
+        Locale::En => (
+            "Someone asked to change your Kaeso email address",
+            "Your email address is about to change",
+            format!(
+                "Your account asked to use {new_address} instead; the change waits until that address confirms it."
+            ),
+            "Cancel the change",
+            "If this wasn't you, cancel the change, reset your password and tell your organization's admin.",
+        ),
+        Locale::De => (
+            "Jemand möchte Ihre E-Mail-Adresse für Kaeso ändern",
+            "Ihre E-Mail-Adresse soll sich ändern",
+            format!(
+                "Ihr Konto soll künftig {new_address} verwenden; die Änderung wartet auf die Bestätigung von dort."
+            ),
+            "Änderung abbrechen",
+            "Waren Sie das nicht, brechen Sie ab, setzen Sie Ihr Passwort zurück und informieren Sie Ihren Admin.",
+        ),
+        Locale::ZhCn => (
+            "有人请求更改您的 Kaeso 邮箱地址",
+            "您的邮箱地址即将更改",
+            zh(&[
+                "您的账户请求改用",
+                new_address,
+                "代替此地址；该更改需要从新地址确认。",
+            ]),
+            "取消更改",
+            "如果这不是您本人的操作，请取消更改、重置密码并告知您组织的管理员。",
+        ),
+    };
+    Email::new(
+        to,
+        EmailKind::EmailChangeRequested,
+        subject.to_owned(),
+        Content::new(lang, heading, Reason::Security)
+            .sentence(sentence)
+            .action(action, url)
+            .note(note),
+    )
+}
+
 pub fn sessions_ended<'a>(lang: Locale, to: &str, by: impl Into<Actor<'a>>) -> Email {
     let by = by.into().name(lang);
     let (subject, heading, sentence) = match lang {
@@ -979,6 +1024,7 @@ mod tests {
             two_factor_disabled(l, TO),
             two_factor_reset(l, TO, Actor::Administrator),
             email_changed(l, TO, "new@example.com"),
+            email_change_requested(l, TO, "new@example.com", URL),
             sessions_ended(l, TO, Actor::Administrator),
             account_deactivated(l, TO),
             org_scheduled_for_deletion(l, TO, "Acme", "Ada Lovelace", date!(2026 - 11 - 10), URL),
@@ -1052,6 +1098,7 @@ mod tests {
             EmailKind::TwoFactorDisabled,
             EmailKind::TwoFactorReset,
             EmailKind::EmailChanged,
+            EmailKind::EmailChangeRequested,
             EmailKind::SessionsEnded,
             EmailKind::AccountDeactivated,
             EmailKind::OrgScheduledForDeletion,
@@ -1235,7 +1282,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 18] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 19] = [
             (
                 EmailKind::Invitation,
                 [
@@ -1317,6 +1364,14 @@ mod tests {
                     "Ihre E-Mail-Adresse wurde geändert",
                 ],
                 ["您的 Kaeso 邮箱地址已更改", "邮箱地址已更改"],
+            ),
+            (
+                EmailKind::EmailChangeRequested,
+                [
+                    "Jemand möchte Ihre E-Mail-Adresse für Kaeso ändern",
+                    "Ihre E-Mail-Adresse soll sich ändern",
+                ],
+                ["有人请求更改您的 Kaeso 邮箱地址", "您的邮箱地址即将更改"],
             ),
             (
                 EmailKind::SessionsEnded,

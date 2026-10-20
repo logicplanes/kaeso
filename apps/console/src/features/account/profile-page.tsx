@@ -12,6 +12,7 @@ import { fieldError } from "~/api/field-error";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
+import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
 
 export function ProfilePage() {
   const me = useQuery(meQuery);
@@ -28,7 +29,7 @@ export function ProfilePage() {
             <SettingsGroup>
               <PictureRow name={m.name} src={m.avatar_url} />
               <NameRow name={m.name} />
-              <EmailRow email={m.email ?? ""} />
+              <EmailRow email={m.email ?? ""} twoFactor={m.totp_enabled} />
               <SettingsRow
                 title={t("account.accountId", "Account id")}
                 description={t("account.accountIdHint", "Used by instance administrators and in the audit log.")}
@@ -97,7 +98,7 @@ function NameRow({ name }: { name: string }) {
   );
 }
 
-function EmailRow({ email }: { email: string }) {
+function EmailRow({ email, twoFactor }: { email: string; twoFactor: boolean }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   return (
@@ -114,6 +115,7 @@ function EmailRow({ email }: { email: string }) {
       <DialogScope open={open}>
         <ChangeEmailDialog
           open={open}
+          twoFactor={twoFactor}
           onOpenChange={setOpen}
           onSent={(next) => {
             setSent(next);
@@ -125,10 +127,23 @@ function EmailRow({ email }: { email: string }) {
   );
 }
 
-function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: boolean; onOpenChange: (open: boolean) => void; onSent: (email: string) => void }) {
+function ChangeEmailDialog({
+  open,
+  twoFactor,
+  onOpenChange: setOpen,
+  onSent,
+}: {
+  open: boolean;
+  twoFactor: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSent: (email: string) => void;
+}) {
   const [next, setNext] = useState("");
+  const [factor, setFactor] = useState<SecondFactorValue>(NO_SECOND_FACTOR);
+  const ready = !!next.trim() && (!twoFactor || secondFactorReady(factor));
   const change = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/me/email", { body: { email: next.trim() } })),
+    mutationFn: async () => data(await api.POST("/platform/v1/me/email", { body: { email: next.trim(), ...(twoFactor ? secondFactorBody(factor) : {}) } })),
+    onError: () => setFactor((f) => ({ ...f, code: "" })),
     onSuccess: () => {
       toast.success(t("account.emailLinkSent", "Confirmation link sent; your old address was notified"));
       onSent(next.trim());
@@ -142,27 +157,30 @@ function ChangeEmailDialog({ open, onOpenChange: setOpen, onSent }: { open: bool
       size="sm"
       title={t("account.changeEmail", "Change email")}
       description={t("account.changeEmailHint", "We send a confirmation link to the new address; the change takes effect when you open it.")}
-      onSubmit={() => next.trim() && change.mutate()}
+      onSubmit={() => ready && change.mutate()}
       footer={
         <>
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!next.trim()} loading={change.isPending} onClick={() => change.mutate()}>
+          <Button variant="primary" disabled={!ready} loading={change.isPending} onClick={() => change.mutate()}>
             {t("account.sendConfirmation", "Send confirmation link")}
           </Button>
         </>
       }
     >
-      <Input
-        label={t("account.newEmail", "New email")}
-        type="email"
-        autoComplete="email"
-        value={next}
-        onChange={(e) => setNext(e.target.value)}
-        autoFocus
-        error={fieldError(change.error, "email")}
-      />
+      <div className="flex flex-col gap-16">
+        <Input
+          label={t("account.newEmail", "New email")}
+          type="email"
+          autoComplete="email"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          autoFocus
+          error={fieldError(change.error, "email")}
+        />
+        {twoFactor && <SecondFactorField value={factor} onChange={setFactor} error={fieldError(change.error, "code")} />}
+      </div>
     </Dialog>
   );
 }

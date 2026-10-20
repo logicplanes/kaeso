@@ -95,6 +95,7 @@ test("the operator's sign-in link lets the first admin in without a password", a
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();
   await page.goto(`/auth/magic-link#token=${operatorSignInToken(ADMIN.email)}`);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expectSignedIn(page);
   await expect(page.getByRole("button", { name: `${ADMIN.org}: switch or open settings` })).toBeVisible();
   await context.close();

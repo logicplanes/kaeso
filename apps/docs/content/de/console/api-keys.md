@@ -27,7 +27,7 @@ Einen Schlüssel zu erstellen erfordert diese Rechte:
 | --- | --- |
 | Eigene Schlüssel | **Eigene Schlüssel erstellen** |
 | Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** |
-| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung; ein Schlüssel kann keinen erstellen |
+| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben** und eine kürzliche Anmeldung |
 
 Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre Nutzung, Protokolle und Limits ihre eigenen, und das Abschalten eines Schlüssels betrifft nichts anderes.
 
@@ -44,7 +44,7 @@ Das Menü im Sheet eines Schlüssels hat drei Aktionen:
 | Aktion | Wirkung |
 | --- | --- |
 | Deaktivieren | Der Schlüssel hört sofort auf zu funktionieren. Sie können ihn wieder aktivieren |
-| Aktivieren | Ein deaktivierter Schlüssel funktioniert wieder. Hat eine Person ihn deaktiviert, aktiviert ihn nur eine Person, und unter **API-Schlüssel** im Konto lässt sich nur das eigene Deaktivieren rückgängig machen |
+| Aktivieren | Ein deaktivierter Schlüssel funktioniert wieder |
 | Archivieren | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten |
 
 Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
@@ -60,7 +60,7 @@ Plattform-Schlüssel sind für Skripte und Infrastruktur, die die ganze Organisa
 1. Öffnen Sie in den **Organisationseinstellungen** die Seite **Plattform-Schlüssel** und wählen Sie **Plattform-Schlüssel erstellen**.
 2. Geben Sie an, was den Schlüssel verwendet und wann er abläuft. Die Optionen und die maximale Schlüssellaufzeit der Organisation sind dieselben wie bei API-Schlüsseln.
 
-Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen**, eine Konsolensitzung und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**; hat eine Person einen Plattform-Schlüssel deaktiviert, aktiviert ihn nur eine Person.
+Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen** und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**.
 
 ## Nächste Schritte
 

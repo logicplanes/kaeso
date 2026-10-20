@@ -18,7 +18,7 @@ Open **Organization settings** › **Members** and choose **Invite member**. The
 
 **Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**.
 
-An organization with [single sign-on](organizations-and-projects.md#single-sign-on) can also let people from its email domains join without an invitation. That works only for people new to Kaeso. Someone who already has an account needs an invitation.
+An organization with [single sign-on](organizations-and-projects.md#single-sign-on) can also let people from its email domains join without an invitation. That works only for people new to Kaeso. Someone who already has an account needs an invitation, and links the account to the identity provider from their **Account**.
 
 ## Choose a role
 

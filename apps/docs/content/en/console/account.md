@@ -9,7 +9,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 | Page | What it holds |
 | --- | --- |
 | Profile | Picture, name, email address and account id, and deleting the account |
-| Security | Password, two-factor authentication and recovery codes |
+| Security | Password, two-factor authentication, recovery codes and links to single sign-on |
 | Sessions | The browsers you are signed in with |
 | API keys | Your own keys in every project ([API keys](api-keys.md)) |
 | Memberships | Your organizations and their projects, with your roles, and leaving an organization |
@@ -18,7 +18,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 
 ## Change your email address
 
-Under **Profile**, choose **Change email** and enter the new address. Kaeso sends a confirmation link to the new address and tells the old one. The change takes effect when you open the link.
+Under **Profile**, choose **Change email** and enter the new address, and with two-factor authentication on, a code from your authenticator app or a recovery code. Kaeso sends a confirmation link to the new address, and a link to cancel the change to the old one. The change takes effect when you open the confirmation link. Signing out the browser that asked for the change, signing out everywhere or resetting your password cancels it too.
 
 ## Change your password
 
@@ -26,14 +26,26 @@ Under **Security**, **Change password** sets a new password and signs out your o
 
 ## Turn on two-factor authentication
 
-Two-factor authentication asks for a code from an authenticator app at every password sign-in. Sign-in links and single sign-on don't ask for one.
+Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code, or a sign-in through its own identity provider.
+
+A sign-in link first shows the account it signs in to. Choose **Sign in** only if you asked for the link yourself. If this browser is signed in to another account, signing in replaces that session here.
 
 1. Under **Security**, choose **Set up**.
 2. Scan the QR code with your authenticator app, or enter the setup key.
 3. Enter the six-digit code the app shows, and choose **Turn on**.
 4. Store the 10 recovery codes the console shows once: copy them or choose **Download .txt**. Each code signs you in once instead of an app code.
 
-**Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
+Setting it up needs a sign-in from the last 15 minutes. **Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication after you enter a current code or a recovery code. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
+
+## Link single sign-on
+
+An organization's identity provider signs you in only once your account is linked to it. An account that the organization's single sign-on created is linked from the start. **Single sign-on**, under **Security**, lists your organizations with an identity provider.
+
+1. Sign in with your password or a sign-in link.
+2. Choose **Link** next to the organization.
+3. Sign in at the identity provider. You come back to **Security**, signed in as before.
+
+**Unlink** stops the provider from signing you in. The organization's audit log records both, as `user.sso_link` and `user.sso_unlink`.
 
 ## Sign out other browsers
 
@@ -47,7 +59,16 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 
 - In your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
-- As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner.
+
+## After signing in through single sign-on
+
+A sign-in through an organization's identity provider opens only that organization, and lets you read your account. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
+
+- changing your email address or password, or two-factor authentication;
+- creating an organization, leaving another one, or deleting the account;
+- opening another organization, or instance administration.
+
+Without a password, set one with **Forgot your password?** on the sign-in page.
 
 ## Choose your emails
 

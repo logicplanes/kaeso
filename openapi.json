@@ -234,12 +234,71 @@
         "x-kaeso-access": "public"
       }
     },
+    "/platform/v1/auth/magic-link/lookup": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Names the account a sign-in link signs in, without using the link, so\nthe console can ask before signing in.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "postAuthMagicLinkLookup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
     "/platform/v1/auth/magic-link/verify": {
       "post": {
         "tags": [
           "auth"
         ],
-        "summary": "Signs in with a sign-in link. The link works once.",
+        "summary": "Signs in with a sign-in link. The link works once. With TOTP set up,\nanswers with a challenge for `auth/totp` instead of a session.",
         "description": "A link from `kaeso user sign-in-link` works even while sign-in links by email are turned off.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthMagicLinkVerify",
         "requestBody": {
@@ -259,6 +318,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "A TOTP or recovery code is needed: call `auth/totp`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpRequired"
                 }
               }
             }
@@ -1185,7 +1254,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Completes a password sign-in with a TOTP or recovery code. A code of\nthe same 30-second step is accepted only once.",
+        "summary": "Completes a password or sign-in link sign-in with a TOTP or recovery\ncode. A code of the same 30-second step is accepted only once.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthTotp",
         "requestBody": {
@@ -1246,7 +1315,7 @@
           "instance"
         ],
         "summary": "The instance audit log, newest first.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceAuditLog",
         "parameters": [
           {
@@ -1375,7 +1444,7 @@
           "instance"
         ],
         "summary": "One event of the instance audit log.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceAuditLogEvent",
         "parameters": [
           {
@@ -1436,7 +1505,7 @@
           "instance"
         ],
         "summary": "The models.dev data in use and the last sync.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceModelsDev",
         "responses": {
           "200": {
@@ -1487,7 +1556,7 @@
           "instance"
         ],
         "summary": "Fetches models.dev now (even when periodic sync is off).",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceModelsDevSync",
         "responses": {
           "200": {
@@ -1538,7 +1607,7 @@
           "instance"
         ],
         "summary": "Every org of the install.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceOrgs",
         "parameters": [
           {
@@ -1634,7 +1703,7 @@
           "instance"
         ],
         "summary": "Creates an org with an owner.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceOrgs",
         "requestBody": {
           "content": {
@@ -1698,7 +1767,7 @@
           "instance"
         ],
         "summary": "One org's metadata.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceOrgsOrg",
         "parameters": [
           {
@@ -1757,7 +1826,7 @@
           "instance"
         ],
         "summary": "Deletes an org scheduled for deletion now, instead of at its date.\nNeeds a recent sign-in and an instance that allows\ndeleting orgs. `204` once it is gone; `202` when its logs cannot be\ndeleted yet, and the next run of the deletion job finishes it.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "deleteInstanceOrgsOrg",
         "parameters": [
           {
@@ -1813,7 +1882,7 @@
           "instance"
         ],
         "summary": "Renames an org. Recorded in the org's audit log and the instance's.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "patchInstanceOrgsOrg",
         "parameters": [
           {
@@ -1887,7 +1956,7 @@
           "instance"
         ],
         "summary": "One org's members.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceOrgsOrgMembers",
         "parameters": [
           {
@@ -1969,8 +2038,8 @@
         "tags": [
           "instance"
         ],
-        "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin.",
+        "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceOrgsOrgOwner",
         "parameters": [
           {
@@ -2044,7 +2113,7 @@
           "instance"
         ],
         "summary": "One org's projects.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceOrgsOrgProjects",
         "parameters": [
           {
@@ -2127,7 +2196,7 @@
           "instance"
         ],
         "summary": "Restores an org scheduled for deletion.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceOrgsOrgRestore",
         "parameters": [
           {
@@ -2188,7 +2257,7 @@
           "instance"
         ],
         "summary": "Schedules an org for deletion, as its owner can: its\nkeys stop working at once, members and instance admins are told, and it\nstays read-only for the instance's grace period. Needs a recent sign-in\nand an instance that allows deleting orgs.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceOrgsOrgScheduleDeletion",
         "parameters": [
           {
@@ -2249,7 +2318,7 @@
           "instance"
         ],
         "summary": "An org's usage totals and log storage.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceOrgsOrgUsage",
         "parameters": [
           {
@@ -2310,7 +2379,7 @@
           "instance"
         ],
         "summary": "The instance settings.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceSettings",
         "responses": {
           "200": {
@@ -2359,7 +2428,7 @@
           "instance"
         ],
         "summary": "Changes who may create accounts and orgs and the allowed domains (with a\nrecent sign-in), org deletion, and the retention defaults and maximums.\nContent is never kept longer than metadata.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "patchInstanceSettings",
         "requestBody": {
           "content": {
@@ -2423,7 +2492,7 @@
           "instance"
         ],
         "summary": "Sends a test email now and reports whether the SMTP server took it.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceSettingsTestEmail",
         "requestBody": {
           "content": {
@@ -2487,7 +2556,7 @@
           "instance"
         ],
         "summary": "Version, component health and storage.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceSystem",
         "responses": {
           "200": {
@@ -2538,7 +2607,7 @@
           "instance"
         ],
         "summary": "The running version, newer releases with their notes, the update settings, the updater and the last update.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceUpdates",
         "responses": {
           "200": {
@@ -2589,7 +2658,7 @@
           "instance"
         ],
         "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUpdatesApply",
         "requestBody": {
           "content": {
@@ -2653,7 +2722,7 @@
           "instance"
         ],
         "summary": "Looks for new releases now, even when checking is off.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUpdatesCheck",
         "responses": {
           "200": {
@@ -2704,7 +2773,7 @@
           "instance"
         ],
         "summary": "Past and running updates, newest first.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceUpdatesJobs",
         "parameters": [
           {
@@ -2779,7 +2848,7 @@
           "instance"
         ],
         "summary": "One update and its progress.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceUpdatesJobsUpdate",
         "parameters": [
           {
@@ -2840,7 +2909,7 @@
           "instance"
         ],
         "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "patchInstanceUpdatesSettings",
         "requestBody": {
           "content": {
@@ -2904,7 +2973,7 @@
           "instance"
         ],
         "summary": "Every user of the install.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceUsers",
         "parameters": [
           {
@@ -2997,7 +3066,7 @@
           "instance"
         ],
         "summary": "Invites someone to create an account on this install (without an org).",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersInvites",
         "requestBody": {
           "content": {
@@ -3061,7 +3130,7 @@
           "instance"
         ],
         "summary": "One user.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "getInstanceUsersUser",
         "parameters": [
           {
@@ -3119,8 +3188,8 @@
         "tags": [
           "instance"
         ],
-        "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin.",
+        "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "deleteInstanceUsersUser",
         "parameters": [
           {
@@ -3175,7 +3244,7 @@
           "instance"
         ],
         "summary": "Deactivates a user: no sign-in, every session ends, their keys are\ndisabled until reactivation.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersUserDeactivate",
         "parameters": [
           {
@@ -3235,8 +3304,8 @@
         "tags": [
           "instance"
         ],
-        "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin.",
+        "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "putInstanceUsersUserInstanceAdmin",
         "parameters": [
           {
@@ -3310,7 +3379,7 @@
           "instance"
         ],
         "summary": "Reactivates a user and re-enables the keys deactivation disabled.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersUserReactivate",
         "parameters": [
           {
@@ -3370,8 +3439,8 @@
         "tags": [
           "instance"
         ],
-        "summary": "Resets a user's two-factor authentication. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin.",
+        "summary": "Resets a user's two-factor authentication.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersUserReset2fa",
         "parameters": [
           {
@@ -3426,7 +3495,7 @@
           "instance"
         ],
         "summary": "Ends every session of a user and tells them.",
-        "description": "**Access:** a console session of an instance admin.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersUserSessionsRevoke",
         "parameters": [
           {
@@ -3530,7 +3599,7 @@
           "me"
         ],
         "summary": "Deletes the user's account. Needs a recent sign-in;\nrefused while the user is the last owner of an org.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "deleteMe",
         "responses": {
           "204": {
@@ -3566,7 +3635,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       },
       "patch": {
         "tags": [
@@ -3808,8 +3877,8 @@
         "tags": [
           "me"
         ],
-        "summary": "Starts an email change: sends a confirmation link to the new address.\nNeeds a recent sign-in.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "summary": "Starts an email change: sends a confirmation link to the new address\nand a link to cancel it to the current one. Needs a recent sign-in and,\nwhile TOTP is on, a code. Ending the session that asked, or every\nsession, cancels the change.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeEmail",
         "requestBody": {
           "content": {
@@ -3864,7 +3933,60 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
+      }
+    },
+    "/platform/v1/me/email/cancel": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Cancels a pending email change with the link sent to the current\naddress. Works without a session.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "postMeEmailCancel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCancel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Cancelled; the address stays as it is."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
       }
     },
     "/platform/v1/me/email/confirm": {
@@ -4479,7 +4601,7 @@
           "me"
         ],
         "summary": "Creates an org; the caller becomes its owner. Allowed for instance admins,\nand for others as the instance setting `org_creation` says;\n`auth/session` reports it as `can_create_orgs`.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeOrgs",
         "requestBody": {
           "content": {
@@ -4534,7 +4656,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       }
     },
     "/platform/v1/me/password": {
@@ -4543,7 +4665,7 @@
           "me"
         ],
         "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMePassword",
         "requestBody": {
           "content": {
@@ -4599,7 +4721,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       }
     },
     "/platform/v1/me/recovery-codes": {
@@ -4608,7 +4730,7 @@
           "me"
         ],
         "summary": "Replaces the recovery codes with ten new ones. Needs TOTP on and a\nrecent sign-in.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeRecoveryCodes",
         "responses": {
           "200": {
@@ -4650,7 +4772,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       }
     },
     "/platform/v1/me/sessions": {
@@ -4810,13 +4932,181 @@
         "x-kaeso-access": "session"
       }
     },
+    "/platform/v1/me/sso-links": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The user's orgs that sign in through SSO, and whether the account is\nlinked to each org's identity provider.",
+        "description": "**Access:** a signed-in console session; no right is needed.",
+        "operationId": "getMeSsoLinks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsoLinks"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      },
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Starts linking the account to an org's identity provider: answers with\nthe provider's URL. Whoever signs in there is linked to this account, and\nthe browser comes back to `next` signed in as before.",
+        "description": "Needs a sign-in within the last 15 minutes. On failure the browser comes back to `next` with the reason in `#sso_error=`.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "operationId": "postMeSsoLinks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "account"
+      }
+    },
+    "/platform/v1/me/sso-links/{org}": {
+      "delete": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Unlinks the account from an org's identity provider: it no longer signs\nin through it.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "operationId": "deleteMeSsoLinksOrg",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unlinked."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "account"
+      }
+    },
     "/platform/v1/me/totp": {
       "post": {
         "tags": [
           "me"
         ],
-        "summary": "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\nRefused while TOTP is on.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "summary": "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\nRefused while TOTP is on. Needs a recent sign-in.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeTotp",
         "responses": {
           "200": {
@@ -4858,15 +5148,25 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       },
       "delete": {
         "tags": [
           "me"
         ],
-        "summary": "Turns TOTP off. Refused while an org of the user requires 2FA. Needs a\nrecent sign-in.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "summary": "Turns TOTP off with a current code or a recovery code. Refused while an\norg of the user requires 2FA. Needs a recent sign-in.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "deleteMeTotp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecondFactor"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Off."
@@ -4886,6 +5186,9 @@
           "409": {
             "$ref": "#/components/responses/Conflict"
           },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
@@ -4901,7 +5204,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       }
     },
     "/platform/v1/me/totp/confirm": {
@@ -4910,7 +5213,7 @@
           "me"
         ],
         "summary": "Confirms TOTP setup with a code and returns ten recovery codes. The\nsession gets a new id and counts as signed in with a second factor.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeTotpConfirm",
         "requestBody": {
           "content": {
@@ -4966,7 +5269,7 @@
             "session": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "account"
       }
     },
     "/platform/v1/me/whats-new": {
@@ -10530,7 +10833,7 @@
             "description": "Only this provider.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ProviderId"
             }
           },
           {
@@ -10730,7 +11033,7 @@
             "description": "Only this provider.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ProviderId"
             }
           },
           {
@@ -14544,7 +14847,7 @@
           "orgs"
         ],
         "summary": "Requires (or stops requiring) members to sign in to this org through\nits SSO. Needs an SSO connection.",
-        "description": "**Right:** `security.sso.require` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "**Right:** `security.sso.require` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecurityRequireSso",
         "parameters": [
           {
@@ -14607,9 +14910,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
           }
         ],
         "x-kaeso-access": "right:security.sso.require"
@@ -14621,7 +14921,7 @@
           "orgs"
         ],
         "summary": "Sets up or replaces the SSO connection. The provider's discovery\ndocument is fetched first, so a mistake shows now, not at sign-in.",
-        "description": "**Right:** `security.sso.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecuritySso",
         "parameters": [
           {
@@ -14684,9 +14984,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
           }
         ],
         "x-kaeso-access": "right:security.sso.manage"
@@ -14696,7 +14993,7 @@
           "orgs"
         ],
         "summary": "Removes the SSO connection. Refused while SSO is required.",
-        "description": "**Right:** `security.sso.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "deleteOrgsOrgSecuritySso",
         "parameters": [
           {
@@ -14740,9 +15037,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
           }
         ],
         "x-kaeso-access": "right:security.sso.manage"
@@ -16004,19 +16298,41 @@
         },
         "additionalProperties": false
       },
-      "EmailChange": {
+      "EmailCancel": {
         "type": "object",
-        "description": "A new email address.",
+        "description": "The cancel token.",
         "required": [
-          "email"
+          "token"
         ],
         "properties": {
-          "email": {
+          "token": {
             "type": "string",
-            "description": "The new address. A confirmation link is sent to it.",
-            "example": "ada@example.com"
+            "description": "The token from `…/me/email/confirm#cancel=…`, sent to the current address.",
+            "writeOnly": true
           }
         }
+      },
+      "EmailChange": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SecondFactor",
+            "description": "A code or recovery code, needed while TOTP is on."
+          },
+          {
+            "type": "object",
+            "required": [
+              "email"
+            ],
+            "properties": {
+              "email": {
+                "type": "string",
+                "description": "The new address. A confirmation link is sent to it.",
+                "example": "ada@example.com"
+              }
+            }
+          }
+        ],
+        "description": "A new email address."
       },
       "EmailConfirm": {
         "type": "object",
@@ -16081,7 +16397,7 @@
           },
           "type": {
             "type": "string",
-            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `not_found`, `conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
+            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `other_sign_in_required` (a session from an\norganization's SSO can't do this; sign in another way), `not_found`,\n`conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
             "example": "not_found"
           }
         }
@@ -17467,6 +17783,47 @@
               "null"
             ],
             "description": "Used in the current period (same unit as `amount`), when known."
+          }
+        }
+      },
+      "LinkAccount": {
+        "type": "object",
+        "description": "Whom a sign-in link signs in.",
+        "required": [
+          "email",
+          "expires_at"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The account's email address.",
+            "example": "owner@example.com"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link expires."
+          }
+        }
+      },
+      "LinkRequest": {
+        "type": "object",
+        "description": "The org whose identity provider to link the account to.",
+        "required": [
+          "org"
+        ],
+        "properties": {
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The console path to come back to, as in `POST auth/oidc/start`.\nWithout it, the account's security page.",
+            "example": "/settings/account/security"
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org; the user must be a member and the org must have an SSO\nconnection."
           }
         }
       },
@@ -19971,7 +20328,7 @@
         "properties": {
           "access": {
             "type": "string",
-            "description": "Whether this session may use the org: `ok`, `needs_2fa` (set up TOTP\nand sign in with it) or `needs_sso` (sign in through the org's\nidentity provider).",
+            "description": "Whether this session may use the org: `ok`, `needs_2fa` (set up TOTP\nand sign in with it), `needs_sso` (sign in through the org's\nidentity provider) or `needs_other_sign_in` (this session came from\nanother org's SSO; sign in with a password or a sign-in link).",
             "example": "ok"
           },
           "org_avatar_url": {
@@ -21907,6 +22264,28 @@
           }
         }
       },
+      "SecondFactor": {
+        "type": "object",
+        "description": "A second factor, needed while TOTP is on.",
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A 6-digit code from the authenticator app.",
+            "example": "123456"
+          },
+          "recovery_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Or one of the recovery codes (each works once).",
+            "example": "abcd-efgh-jkmn-pqrs"
+          }
+        }
+      },
       "SecurityView": {
         "type": "object",
         "description": "The org's security settings.",
@@ -22128,6 +22507,17 @@
             "type": "string",
             "format": "date-time",
             "description": "When the user last signed in on this session."
+          },
+          "sso_org": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrgId",
+                "description": "The org whose SSO signed this session in; `null` for other ways in.\nSuch a session opens only that org and reads the user's own account;\nanything else answers `other_sign_in_required`."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -22525,6 +22915,62 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "SsoLinkView": {
+        "type": "object",
+        "description": "An org of the user's that signs in through SSO.",
+        "required": [
+          "org_id",
+          "org_name",
+          "linked"
+        ],
+        "properties": {
+          "linked": {
+            "type": "boolean",
+            "description": "Whether the account is linked to an identity at the org's identity\nprovider. Only a linked account signs in through it."
+          },
+          "linked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was linked; `null` while it isn't."
+          },
+          "org_id": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org."
+          },
+          "org_name": {
+            "type": "string",
+            "description": "The org's name.",
+            "example": "Acme"
+          },
+          "provider_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name on its sign-in button; `null`: the button says SSO.",
+            "example": "Acme ID"
+          }
+        }
+      },
+      "SsoLinks": {
+        "type": "object",
+        "description": "The user's orgs that sign in through SSO.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SsoLinkView"
+            },
+            "description": "By org name."
           }
         }
       },
@@ -22954,14 +23400,14 @@
       },
       "TotpRequest": {
         "type": "object",
-        "description": "The second step of a password sign-in.",
+        "description": "The second step of a password or sign-in link sign-in.",
         "required": [
           "challenge"
         ],
         "properties": {
           "challenge": {
             "type": "string",
-            "description": "The challenge from `auth/password`.",
+            "description": "The challenge from `auth/password` or `auth/magic-link/verify`.",
             "writeOnly": true
           },
           "code": {
@@ -23752,14 +24198,19 @@
           "session",
           "memberships",
           "can_create_orgs",
+          "can_administer_instance",
           "org_deletion",
           "locale",
           "timezone"
         ],
         "properties": {
+          "can_administer_instance": {
+            "type": "boolean",
+            "description": "Whether this session may use `instance/*`: the user is an instance\nadmin and didn't sign in through an org's SSO."
+          },
           "can_create_orgs": {
             "type": "boolean",
-            "description": "Whether the user may create organizations (`POST me/orgs`): always\nfor instance admins; for everyone else as the instance setting\n`org_creation` says, by their email domain when it is\n`allowed_domains`."
+            "description": "Whether the user may create organizations (`POST me/orgs`): always\nfor instance admins; for everyone else as the instance setting\n`org_creation` says, by their email domain when it is\n`allowed_domains`. Never from a session that came from an org's SSO."
           },
           "locale": {
             "$ref": "#/components/schemas/UserLocale",
@@ -23808,7 +24259,7 @@
         }
       },
       "Forbidden": {
-        "description": "The caller lacks the right, the org requires 2FA or SSO, or a recent sign-in is needed (`permission_denied`, `recent_sign_in_required`).",
+        "description": "The caller lacks the right, the org requires 2FA or SSO, a recent sign-in is needed, or a session from an organization's SSO can't do this (`permission_denied`, `recent_sign_in_required`, `other_sign_in_required`).",
         "content": {
           "application/json": {
             "schema": {

@@ -4,8 +4,8 @@ import { takeFragment } from "~/auth/fragment";
 
 export type TokenState = { kind: "working" } | { kind: "missing" } | { kind: "failed" } | { kind: "done" };
 
-export function useTokenAction(action: (token: string) => Promise<void>): TokenState {
-  const [token] = useState(() => takeFragment("token"));
+export function useTokenAction(action: (token: string) => Promise<void>, fragment = "token"): TokenState {
+  const [token] = useState(() => takeFragment(fragment));
   const [state, setState] = useState<TokenState>(token ? { kind: "working" } : { kind: "missing" });
   const started = useRef(false);
   const run = useEffectEvent((value: string) => action(value));

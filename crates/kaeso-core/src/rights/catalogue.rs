@@ -260,6 +260,22 @@ impl Right {
             Right::Project(r) => r.needs_recent_sign_in(),
         }
     }
+
+    pub const fn needs_session(self) -> bool {
+        match self {
+            Right::Org(r) => r.needs_session(),
+            Right::Project(_) => false,
+        }
+    }
+}
+
+impl OrgRight {
+    pub const fn needs_session(self) -> bool {
+        matches!(
+            self,
+            OrgRight::SecuritySsoManage | OrgRight::SecuritySsoRequire
+        )
+    }
 }
 
 impl fmt::Display for Right {

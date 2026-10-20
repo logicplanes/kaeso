@@ -1,66 +1,141 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { ORG, PROJECT, signedIn } from "~/test/fixtures";
-import { signedInReply } from "~/test/fixtures/public";
-import { apiError, on, requests } from "~/test/network";
+import { ORG, PROJECT, signedIn, signedOut, whoAmI } from "~/test/fixtures";
+import { signedInReply, totpRequired } from "~/test/fixtures/public";
+import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
+
+const LOOKUP = "auth/magic-link/lookup";
+const VERIFY = "auth/magic-link/verify";
+
+function linkFor(email = "ada@example.com") {
+  on("POST", LOOKUP, { email, expires_at: new Date(Date.now() + 15 * 60_000).toISOString() });
+}
 
 describe("signing in with an emailed link", () => {
   it("asks for the link when the token is missing", async () => {
     await renderApp("/auth/magic-link");
     expect(await screen.findByText("This page needs the sign-in link")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute("href", "/sign-in");
-    expect(requests("POST", "auth/magic-link/verify")).toHaveLength(0);
+    expect(requests("POST", LOOKUP)).toHaveLength(0);
+    expect(requests("POST", VERIFY)).toHaveLength(0);
   });
 
-  it("verifies the token once and opens the page the person came for", async () => {
-    let release: () => void = () => undefined;
-    const held = new Promise<void>((resolve) => (release = resolve));
-    on("POST", "auth/magic-link/verify", async () => {
-      await held;
+  it("names the account and signs in only when asked, then opens the page the person came for", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, () => {
       signedIn();
       return signedInReply();
     });
     const next = `/orgs/${ORG}/projects/${PROJECT}/keys`;
-    await renderApp(`/auth/magic-link?next=${encodeURIComponent(next)}#token=mgl_1`);
-    expect(await screen.findByText("Signing you in…")).toBeInTheDocument();
+    const { user } = await renderApp(`/auth/magic-link?next=${encodeURIComponent(next)}#token=mgl_1`);
+    expect(await screen.findByRole("heading", { name: "Sign in as ada@example.com", level: 1 })).toBeInTheDocument();
+    expect(screen.getByText("Continue only if you asked for this link yourself.")).toBeInTheDocument();
     expect(window.location.hash).toBe("");
-    release();
+    expect(requests("POST", LOOKUP).map((r) => r.body)).toEqual([{ token: "mgl_1" }]);
+    expect(requests("POST", VERIFY)).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(window.location.pathname).toBe(next));
-    expect(requests("POST", "auth/magic-link/verify").map((r) => r.body)).toEqual([{ token: "mgl_1" }]);
+    expect(requests("POST", VERIFY).map((r) => r.body)).toEqual([{ token: "mgl_1" }]);
   });
 
-  it("goes home when the next address leaves the console", async () => {
-    on("POST", "auth/magic-link/verify", () => {
+  it("says which session a different account replaces, and can keep it", async () => {
+    signedIn({ session: whoAmI() });
+    linkFor();
+    await renderApp("/auth/magic-link#token=mgl_1");
+    expect(
+      await screen.findByText("You're signed in as owner@example.com in this browser; signing in as ada@example.com replaces that here."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Stay signed in as owner@example.com" })).toHaveAttribute("href", "/");
+    expect(requests("POST", VERIFY)).toHaveLength(0);
+  });
+
+  it("says when the link is for the account already signed in here", async () => {
+    signedIn({ session: whoAmI() });
+    linkFor("owner@example.com");
+    await renderApp("/auth/magic-link#token=mgl_1");
+    expect(await screen.findByText("You're already signed in as owner@example.com; the link signs you in again here.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Keep this session" })).toHaveAttribute("href", "/");
+  });
+
+  it("asks for the authenticator code when the account has two-factor authentication", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, json(totpRequired(), { status: 202 }));
+    on("POST", "auth/totp", () => {
       signedIn();
       return signedInReply();
     });
-    await renderApp("/auth/magic-link?next=//elsewhere.test#token=mgl_1");
+    const { user } = await renderApp("/auth/magic-link#token=mgl_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText("Two-step verification")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Code from your authenticator app"), "123456");
+    await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
+    expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", code: "123456" }]);
+  });
+
+  it("clears a wrong code and takes a recovery code instead", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, json(totpRequired(), { status: 202 }));
+    on("POST", "auth/totp", apiError(401, "authentication", "That code isn't valid or was already used."));
+    const { user } = await renderApp("/auth/magic-link#token=mgl_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    const field = await screen.findByLabelText("Code from your authenticator app");
+    await user.type(field, "000000");
+    expect((await (await notifications()).findAllByText("That code isn't valid or was already used.")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(field).toHaveValue(""));
+    on("POST", "auth/totp", () => {
+      signedIn();
+      return signedInReply();
+    });
+    await user.click(screen.getByRole("link", { name: "Use a recovery code" }));
+    await user.type(screen.getByRole("textbox", { name: "Recovery code" }), "abcd-efgh");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
+    expect(requests("POST", "auth/totp").at(-1)?.body).toEqual({ challenge: "chl_42", recovery_code: "abcd-efgh" });
+  });
+
+  it("goes home when the next address leaves the console", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, () => {
+      signedIn();
+      return signedInReply();
+    });
+    const { user } = await renderApp("/auth/magic-link?next=//elsewhere.test#token=mgl_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
   });
 
   it("offers a new link when this one is used up", async () => {
-    on("POST", "auth/magic-link/verify", apiError(401, "authentication", "This sign-in link has expired."));
+    signedOut();
+    on("POST", LOOKUP, apiError(401, "authentication", "This sign-in link has expired."));
     await renderApp("/auth/magic-link#token=mgl_1");
     expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
     expect(screen.getByText("A sign-in link works once, for 15 minutes.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute("href", "/sign-in");
     expect((await (await notifications()).findAllByText("This sign-in link has expired.")).length).toBeGreaterThan(0);
+    expect(requests("POST", VERIFY)).toHaveLength(0);
+  });
+
+  it("offers a new link when the link is used up before the person signs in", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, apiError(401, "authentication", "This sign-in link has expired."));
+    const { user } = await renderApp("/auth/magic-link#token=mgl_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
   });
 
   it("says when the gateway can't be reached", async () => {
-    on("POST", "auth/magic-link/verify", () => {
+    signedOut();
+    on("POST", LOOKUP, () => {
       throw new TypeError("Failed to fetch");
     });
-    await renderApp("/auth/magic-link#token=mgl_1");
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
-    expect(screen.getByText("This link has expired or was already used.")).toBeInTheDocument();
-  });
-
-  it("asks to try again when the gateway's answer can't be read", async () => {
-    on("POST", "auth/magic-link/verify", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     await renderApp("/auth/magic-link#token=mgl_1");
     expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
     expect(screen.getByText("This link has expired or was already used.")).toBeInTheDocument();

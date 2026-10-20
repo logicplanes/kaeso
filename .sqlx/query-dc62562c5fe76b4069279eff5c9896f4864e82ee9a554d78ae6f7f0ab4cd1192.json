@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH s AS (SELECT id, revoked_at FROM sessions WHERE id = $1), t AS (UPDATE sessions SET last_used_at = $2 WHERE id = $1 AND last_used_at < $2 AND revoked_at IS NULL RETURNING id) SELECT (SELECT count(*) FROM t) AS \"touched!\", (SELECT count(*) FROM s WHERE revoked_at IS NULL) AS \"live!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "touched!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "live!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "dc62562c5fe76b4069279eff5c9896f4864e82ee9a554d78ae6f7f0ab4cd1192"
+}

@@ -71,7 +71,7 @@ export type InstanceSettingsData =
   | { page: "general" | "logging" | "model-sources" | "system" | "updates" };
 
 export function prefetchInstanceSettings(client: QueryClient, data: InstanceSettingsData | null): void {
-  if (!data || !client.getQueryData(sessionQuery.queryKey)?.user.is_instance_admin) return;
+  if (!data || !client.getQueryData(sessionQuery.queryKey)?.can_administer_instance) return;
   switch (data.page) {
     case "users":
       void client.prefetchInfiniteQuery(instanceUsersQuery(data.search, data.state));

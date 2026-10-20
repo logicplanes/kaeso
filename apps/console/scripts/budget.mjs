@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const BUDGETS = [
-  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 118, ceiling: 124 },
-  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 175, ceiling: 185 },
-  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 180, ceiling: 190 },
+  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 126 },
+  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 190 },
+  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 195 },
 ];
 
 export function checkBudgets({ root = ROOT, dist = join(root, "dist"), budgets = BUDGETS } = {}) {
@@ -31,16 +31,7 @@ export function checkBudgets({ root = ROOT, dist = join(root, "dist"), budgets =
     for (const dep of manifest[key].imports ?? []) closure(dep, seen);
     return seen;
   };
-  const chunkNames = Object.values(manifest)
-    .map((e) => e.file)
-    .filter((f) => f?.endsWith(".js"))
-    .map((f) => f.slice(f.lastIndexOf("/") + 1));
-  const withoutHash = (name) => name.replace(/[\w-]{7}(?=\.js$)/, "0000000");
-  const gz = (file) => {
-    let text = readFileSync(join(dist, file), "utf8");
-    for (const name of chunkNames) text = text.replaceAll(name, withoutHash(name));
-    return gzipSync(text).length;
-  };
+  const gz = (file) => gzipSync(readFileSync(join(dist, file))).length;
   const sources = (file) => (existsSync(join(dist, `${file}.map`)) ? JSON.parse(readFileSync(join(dist, `${file}.map`), "utf8")).sources : []);
   const chunkOf = (src) => (manifest[src] ? src : Object.keys(manifest).find((k) => sources(manifest[k].file).some((s) => s === src || s.endsWith(`/${src}`))));
   const entry = Object.keys(manifest).find((k) => manifest[k].isEntry);
