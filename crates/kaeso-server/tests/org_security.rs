@@ -21,6 +21,26 @@ async fn delete(app: &App, cookie: &str, path: &str) -> Resp {
     app.call(Method::DELETE, path, None, Some(cookie)).await
 }
 
+fn domain_names(view: &Value) -> Vec<String> {
+    view["sso"]["domains"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["domain"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+async fn publish_and_verify(app: &App, cookie: &str, base: &str, view: &Value) -> Resp {
+    for d in view["sso"]["domains"].as_array().unwrap() {
+        app.dns.set(
+            d["record_name"].as_str().unwrap(),
+            &[d["record_value"].as_str().unwrap()],
+        );
+    }
+    app.post(&format!("{base}/sso/verify"), json!({}), Some(cookie))
+        .await
+}
+
 async fn sso_session(app: &App, idp: &MockIdp, email: &str) -> String {
     let start = app
         .post("/auth/oidc/start", json!({ "email": email }), None)
@@ -159,6 +179,18 @@ async fn an_sso_connection_is_checked_before_it_is_stored() {
         (with("default_role", json!("owner")), "default_role"),
         (with("client_secret", Value::Null), "client_secret"),
         (with("issuer", json!("http://127.0.0.1:9")), "issuer"),
+        (
+            with("issuer", json!("https://login.acme.example/?x=1")),
+            "issuer",
+        ),
+        (
+            with("issuer", json!("https://login.acme.example/#x")),
+            "issuer",
+        ),
+        (
+            with("issuer", json!("https://user:pass@login.acme.example")),
+            "issuer",
+        ),
     ];
     for (body, param) in refused {
         let r = put(&app, &owner.cookie, &sso, body.clone()).await;
@@ -196,10 +228,12 @@ async fn an_sso_connection_is_stored_kept_required_and_removed() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["sso"]["issuer"], idp.issuer());
     assert_eq!(r.body["sso"]["client_id"], "kaeso");
-    assert_eq!(
-        r.body["sso"]["domains"],
-        json!(["acme.example", "eu.acme.example"])
-    );
+    assert_eq!(domain_names(&r.body), ["acme.example", "eu.acme.example"]);
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], false);
+    let r = publish_and_verify(&app, cookie, &base, &r.body).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], true);
+    assert_eq!(r.body["sso"]["domains"][1]["verified"], true);
     assert!(
         r.body["sso"]["redirect_url"]
             .as_str()
@@ -307,7 +341,14 @@ async fn an_internationalised_sso_domain_is_one_domain_however_it_is_typed() {
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["sso"]["domains"], json!(["bücher.example"]));
+    assert_eq!(domain_names(&r.body), ["bücher.example"]);
+    assert_eq!(
+        r.body["sso"]["domains"][0]["record_name"],
+        "_kaeso-verify.xn--bcher-kva.example"
+    );
+    publish_and_verify(&app, cookie, &base, &r.body)
+        .await
+        .expect_status(StatusCode::OK);
     let stored: Vec<String> = sqlx::query_scalar("SELECT domain FROM org_oidc_domains")
         .fetch_all(&app.state.pg)
         .await
@@ -474,5 +515,205 @@ async fn only_a_console_session_changes_single_sign_on() {
         .await
         .unwrap();
     assert_eq!(stored, 0);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let base = security(&owner);
+    let cookie = owner.cookie.as_str();
+    let connection = |domains: Value| {
+        json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": domains,
+        })
+    };
+    for public in ["gmail.com", "outlook.de", "proton.me"] {
+        let r = put(
+            &app,
+            cookie,
+            &format!("{base}/sso"),
+            connection(json!([public])),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{public}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], "domains[0]");
+    }
+    let r = put(
+        &app,
+        cookie,
+        &format!("{base}/sso"),
+        connection(json!(["acme.example", "eu.acme.example"])),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let token = r.body["sso"]["domains"][0]["record_value"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(token.starts_with("kaeso-verify="), "{token}");
+    let m = app
+        .post(
+            "/auth/methods",
+            json!({ "email": "ada@acme.example" }),
+            None,
+        )
+        .await;
+    assert_eq!(m.body["sso"], false, "an unverified domain routes nobody");
+
+    app.dns.set(
+        "_kaeso-verify.acme.example",
+        &["v=spf1 -all", "kaeso-verify=someone-else"],
+    );
+    let r = app
+        .post(&format!("{base}/sso/verify"), json!({}), Some(cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], false);
+    app.dns.set("_kaeso-verify.acme.example", &[token.as_str()]);
+    let r = app
+        .post(&format!("{base}/sso/verify"), json!({}), Some(cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], true);
+    assert!(r.body["sso"]["domains"][0]["verified_at"].is_string());
+    assert_eq!(r.body["sso"]["domains"][1]["verified"], false);
+    let m = app
+        .post(
+            "/auth/methods",
+            json!({ "email": "ada@acme.example" }),
+            None,
+        )
+        .await;
+    assert_eq!(m.body["sso"], true);
+
+    let r = put(
+        &app,
+        cookie,
+        &format!("{base}/sso"),
+        json!({ "issuer": idp.issuer(), "client_id": "kaeso", "domains": ["acme.example", "eu.acme.example"] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        r.body["sso"]["domains"][0]["record_value"], token,
+        "the record stays the same while the connection exists"
+    );
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], true);
+
+    let other = app
+        .post("/me/orgs", json!({ "name": "Other" }), Some(cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let other_base = format!("/orgs/{}/security", other.body["id"].as_str().unwrap());
+    let r = put(
+        &app,
+        cookie,
+        &format!("{other_base}/sso"),
+        connection(json!(["eu.acme.example"])),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let theirs = r.body["sso"]["domains"][0]["record_value"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_ne!(theirs, token, "every org has its own record value");
+    let r = put(
+        &app,
+        cookie,
+        &format!("{other_base}/sso"),
+        connection(json!(["acme.example"])),
+    )
+    .await;
+    assert_eq!(
+        r.body["error"]["message"],
+        "The domain acme.example is verified by another organization."
+    );
+    app.dns
+        .set("_kaeso-verify.eu.acme.example", &[theirs.as_str()]);
+    let r = app
+        .post(&format!("{other_base}/sso/verify"), json!({}), Some(cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["domains"][0]["verified"], true);
+    app.dns.set(
+        "_kaeso-verify.eu.acme.example",
+        &[theirs.as_str(), token.as_str()],
+    );
+    let r = app
+        .post(&format!("{base}/sso/verify"), json!({}), Some(cookie))
+        .await;
+    assert_eq!(
+        r.body["error"]["message"],
+        "The domain eu.acme.example is verified by another organization."
+    );
+    let audit: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM audit_events WHERE action = 'security.sso_domain_verify'",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(audit, 2);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_stored_secret_is_kept_only_for_the_same_issuer_and_client() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let other = MockIdp::start("kaeso", "client-secret").await;
+    let sso = format!("{}/sso", security(&owner));
+    let cookie = owner.cookie.as_str();
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": idp.issuer(), "client_id": "kaeso", "client_secret": "client-secret", "domains": ["acme.example"] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["require_email_verified"], true);
+    for body in [
+        json!({ "issuer": other.issuer(), "client_id": "kaeso", "domains": ["acme.example"] }),
+        json!({ "issuer": idp.issuer(), "client_id": "someone-else", "domains": ["acme.example"] }),
+    ] {
+        let r = put(&app, cookie, &sso, body.clone()).await;
+        assert_eq!(
+            (r.status, r.body["error"]["param"].as_str()),
+            (StatusCode::BAD_REQUEST, Some("client_secret")),
+            "{body}"
+        );
+    }
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": idp.issuer(), "client_id": "kaeso", "domains": ["acme.example"], "require_email_verified": false }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["require_email_verified"], false);
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": other.issuer(), "client_id": "kaeso", "client_secret": "client-secret", "domains": ["acme.example"] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["issuer"], other.issuer());
+    assert_eq!(
+        r.body["sso"]["require_email_verified"], false,
+        "kept when left out"
+    );
     s.cleanup().await;
 }

@@ -15,7 +15,8 @@ export const docs = {
       propertyIcon: "The icon of the property the filter applies to.",
       selected: "The chosen values.",
       value: 'The value, as shown: "2xx", or "2 models".',
-      values: "Choices for the value menu.",
+      values:
+        "Choices for the value menu: past 8 it gets a search field, past 50 it opens a fast searchable list grouped by each choice's `group`, such as models by provider.",
     },
   },
 } satisfies ComponentDocs;

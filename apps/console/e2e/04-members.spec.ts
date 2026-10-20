@@ -50,7 +50,7 @@ test("a member's rights are customized and their models limited; removed, then a
   await expect(row(page, "Members", DEVELOPER.name).getByText("Viewer · customized", { exact: true })).toBeVisible();
 
   await sheet.getByRole("button", { name: "Edit", exact: true }).click();
-  await sheet.getByRole("combobox", { name: "Models" }).click();
+  await sheet.getByRole("button", { name: "Models" }).click();
   await page.getByRole("option", { name: /^GPT-5\.6/ }).click();
   await page.keyboard.press("Escape");
   await sheet.getByRole("button", { name: "Save", exact: true }).click();

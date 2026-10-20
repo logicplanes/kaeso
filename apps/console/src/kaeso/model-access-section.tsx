@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Combobox, Section, Text } from "@logicplanes/kaeso-ui";
+import { Button, Section, Text } from "@logicplanes/kaeso-ui";
+import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { ModelAccess, ModelAccessUpdate } from "~/api/generated/types";
 import { catalogueQuery } from "~/api/queries/models";
 import { modelAccessQuery, type Principal } from "~/api/queries/members";
 import { joinList } from "~/format/labels";
-import { modelName, modelOption } from "~/format/models";
+import { modelName } from "~/format/models";
+import { catalogueModelOption } from "./model-options";
+import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { useApiMutation } from "~/auth/mutation";
 
@@ -27,7 +30,22 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
     const m = byId(id);
     return m ? modelName(m) : id;
   };
-  const choices = subject.kind === "key" ? (owner.data?.effective ?? []) : (catalogue.data ?? []).map((m) => m.id);
+  const choices = useMemo(
+    () => (subject.kind === "key" ? (owner.data?.effective ?? []) : (catalogue.data ?? []).map((m) => m.id)),
+    [subject.kind, owner.data, catalogue.data],
+  );
+  const options = useMemo(
+    () =>
+      choices.map((id) => {
+        const m = catalogue.data?.find((x) => x.id === id);
+        return m ? catalogueModelOption(m) : { value: id, provider: "", model: id };
+      }),
+    [choices, catalogue.data],
+  );
+  const providers = useModelPickerProviders(
+    org,
+    useMemo(() => [...new Set(options.map((o) => o.provider))], [options]),
+  );
   const above =
     subject.kind === "key"
       ? t("kaeso.modelAccess.ownerModels", "Every model its owner may use")
@@ -71,16 +89,17 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
     >
       {editing !== null ? (
         <div className="flex flex-col gap-12">
-          <Combobox
+          <ModelPicker
             aria-label={t("common.models", "Models")}
             multiple
+            appearance="default"
+            size="md"
+            fullWidth
             placeholder={above}
-            options={choices.map((id) => {
-              const m = byId(id);
-              return m ? modelOption(m) : { value: id, label: id };
-            })}
+            options={options}
+            providers={providers}
             value={editing}
-            onValueChange={(v: string[]) => setEditing(v)}
+            onValueChange={setEditing}
           />
           {subject.kind !== "key" && (
             <Text variant="small" tone="secondary">

@@ -42,18 +42,37 @@ export const docs = {
     },
   },
   ModelPicker: {
-    description: "A model, picked from the project's catalogue: the provider mark, name and id (ModelLabel), grouped by provider.",
+    description:
+      "A model from a catalogue of any size: a pill showing the chosen model that opens a searchable list, grouped by provider under sticky captions with marks and counts, connected providers first and recent models on top. Each row shows the name, the id, capabilities, context and price; deprecated models wait behind a toggle.",
     props: {
+      description: "One sentence of help under the label.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      required: "Marks it as required in a form.",
+      allLabel: 'Single only: a first option for no model in particular, such as "All models"; choosing it reports an empty string.',
       appearance: "A quiet button (`ghost`) or a filled one (`default`).",
       "aria-label": 'The picker\'s accessible name ("Model" by default).',
-      defaultValue: "The chosen model on first render.",
+      defaultValue: "The chosen model, or models with `multiple`, on first render.",
       disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      fullWidth: "Fills the container.",
       groupByProvider: "Groups the list by provider (true by default when there are several).",
-      onValueChange: "Called with the chosen model.",
-      options: "The models to choose from.",
+      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
+      multiple: "Allows choosing several models; `value` is then a list.",
+      onOpenChange: "Called when the list opens or closes.",
+      onValueChange: "Called with the chosen model, or the list of models with `multiple`.",
+      open: "Whether the list is open, when you control it.",
+      options:
+        "The models: value, provider, id, name, capabilities, context window, a formatted price, a short note such as why it is disabled, and whether it is deprecated.",
       placeholder: "Text shown while there is no value.",
+      providers: "The providers' names and whether each is connected; connected providers come first.",
+      recent: "Values of recently used models, shown first while the search is empty.",
       size: "The button's height.",
-      value: "The chosen model, when you control it.",
+      value: "The chosen model, or models with `multiple`, when you control it.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
     },
   },
   ParameterPanel: {

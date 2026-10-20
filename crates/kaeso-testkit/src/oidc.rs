@@ -30,6 +30,7 @@ pub enum Fault {
     Expired,
     WrongIssuer,
     UnverifiedEmail,
+    NoEmailVerified,
 }
 
 struct Grant {
@@ -312,7 +313,11 @@ async fn token(
     name.insert(None, EndUserName::new(grant.name.clone()));
     let standard = StandardClaims::new(SubjectIdentifier::new(grant.subject.clone()))
         .set_email(Some(EndUserEmail::new(grant.email.clone())))
-        .set_email_verified(Some(fault != Fault::UnverifiedEmail))
+        .set_email_verified(match fault {
+            Fault::UnverifiedEmail => Some(false),
+            Fault::NoEmailVerified => None,
+            _ => Some(true),
+        })
         .set_name(Some(name));
     let claims = CoreIdTokenClaims::new(
         IssuerUrl::new(issuer).expect("issuer"),

@@ -234,7 +234,7 @@ describe("CreateKeyDialog", () => {
     await user.click(within(dialog).getByRole("radio", { name: /Inference and platform/ }));
     await next(user, dialog, "Models and limits");
 
-    await user.click(within(dialog).getByRole("combobox", { name: "Models" }));
+    await user.click(within(dialog).getByRole("button", { name: "Models" }));
     expect(screen.queryByRole("option", { name: /GPT-5 mini/ })).not.toBeInTheDocument();
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     await user.keyboard("{Escape}");
@@ -273,12 +273,12 @@ describe("CreateKeyDialog", () => {
     await next(user, dialog, "When does it expire?");
     await next(user, dialog, "What can it call?");
     await next(user, dialog, "Models and limits");
-    await user.click(within(dialog).getByRole("combobox", { name: "Models" }));
+    await user.click(within(dialog).getByRole("button", { name: "Models" }));
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     await user.click(await screen.findByRole("option", { name: /GPT-5 mini/ }));
     await user.keyboard("{Escape}");
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
-    await user.click(within(dialog).getByRole("combobox", { name: "Model" }));
+    await user.click(within(dialog).getByRole("button", { name: "Model" }));
     await user.click(await screen.findByRole("option", { name: /GPT-5 mini/ }));
     await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "5");
 
@@ -289,9 +289,9 @@ describe("CreateKeyDialog", () => {
     await next(user, dialog, "What can it call?");
     await next(user, dialog, "Models and limits");
 
-    await waitFor(() => expect(within(dialog).queryByRole("button", { name: /GPT-5 mini/ })).not.toBeInTheDocument());
-    expect(within(dialog).getByRole("button", { name: /Sonnet 4.5/ })).toBeInTheDocument();
-    expect(within(dialog).getByRole("combobox", { name: "Model" })).toHaveTextContent("All models");
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Models" })).not.toHaveTextContent("GPT-5 mini"));
+    expect(within(dialog).getByRole("button", { name: "Models" })).toHaveTextContent("Sonnet 4.5");
+    expect(within(dialog).getByRole("button", { name: "Model" })).toHaveTextContent("All models");
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
 
     await screen.findByRole("dialog", { name: "Key created" });

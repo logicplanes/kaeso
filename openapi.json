@@ -15042,6 +15042,67 @@
         "x-kaeso-access": "right:security.sso.manage"
       }
     },
+    "/platform/v1/orgs/{org}/security/sso/verify": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Verifies the SSO connection's email domains: looks up each unverified\ndomain's TXT record and marks the domains whose record holds the org's value.",
+        "description": "Each domain needs a TXT record named `_kaeso-verify.<domain>` with the value in `record_value`. Domains whose record isn't found yet stay unverified; DNS changes can take a while to show.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "operationId": "postOrgsOrgSecuritySsoVerify",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:security.sso.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/usage": {
       "get": {
         "tags": [
@@ -22918,6 +22979,45 @@
           }
         }
       },
+      "SsoDomain": {
+        "type": "object",
+        "description": "An email domain of the SSO connection.",
+        "required": [
+          "domain",
+          "verified",
+          "record_name",
+          "record_value"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain; internationalised domains in Unicode.",
+            "example": "acme.example"
+          },
+          "record_name": {
+            "type": "string",
+            "description": "The DNS name of the TXT record that proves the org holds the domain.",
+            "example": "_kaeso-verify.acme.example"
+          },
+          "record_value": {
+            "type": "string",
+            "description": "The TXT record's value, the same for every domain of the org.",
+            "example": "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Whether the domain is verified by its DNS TXT record."
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was verified; `null` while it isn't."
+          }
+        }
+      },
       "SsoLinkView": {
         "type": "object",
         "description": "An org of the user's that signs in through SSO.",
@@ -23025,7 +23125,7 @@
               "string",
               "null"
             ],
-            "description": "The client secret. Required when creating; leave out to keep the stored one. Never returned.",
+            "description": "The client secret. Required when creating or when `issuer` or\n`client_id` changes; leave out otherwise to keep the stored one. Never\nreturned.",
             "writeOnly": true
           },
           "default_preset": {
@@ -23066,6 +23166,13 @@
             ],
             "description": "The name on the sign-in button, 1 to 50 characters, such as `Acme ID`.\nLeave out to keep the stored one; an empty string removes it.",
             "example": "Acme ID"
+          },
+          "require_email_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Refuse ID tokens that don't mark the address as verified with\n`email_verified`. Turn off only for a provider that never sends the\nclaim and verifies every address itself; `email_verified: false` is\nalways refused. Leave out to keep the stored choice; on for a new\nconnection."
           }
         }
       },
@@ -23079,6 +23186,7 @@
           "key_id",
           "redirect_url",
           "auto_redirect",
+          "require_email_verified",
           "sign_in_url"
         ],
         "properties": {
@@ -23093,9 +23201,9 @@
           "domains": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SsoDomain"
             },
-            "description": "The email domains that sign in through it; internationalised domains\nin Unicode."
+            "description": "The email domains that sign in through it, and whether each is\nverified. Only a verified domain's addresses sign in or join through\nthe provider."
           },
           "issuer": {
             "type": "string",
@@ -23116,6 +23224,10 @@
           "redirect_url": {
             "type": "string",
             "description": "Where the provider must send users back (register it there)."
+          },
+          "require_email_verified": {
+            "type": "boolean",
+            "description": "Whether ID tokens must mark the address as verified with\n`email_verified`."
           },
           "sign_in_url": {
             "type": "string",

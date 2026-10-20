@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Banner, Button, Dialog, Empty, IconButton, Input, List, Menu, Select, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Banner, Button, Dialog, Empty, IconButton, Input, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
+import { catalogueModelOption } from "~/kaeso/model-options";
+import { useModelPickerProviders } from "~/kaeso/providers";
 import { modelName } from "~/format/models";
 import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
@@ -138,8 +141,11 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
   const catalogue = useQuery(catalogueQuery(org, project));
   const [name, setName] = useState(alias?.name ?? "");
   const [target, setTarget] = useState<string | null>(alias?.catalogue_model_id ?? null);
-  const models = catalogue.data ?? [];
+  const models = useMemo(() => catalogue.data ?? [], [catalogue.data]);
   const shadows = models.some((m) => m.model_id === name.trim());
+  const options = useMemo(() => models.map(catalogueModelOption), [models]);
+  const providerIds = useMemo(() => [...new Set(models.map((m) => m.provider))], [models]);
+  const providers = useModelPickerProviders(org, providerIds);
 
   const save = useApiMutation({
     mutationFn: async (to: string) => {
@@ -203,13 +209,16 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
           maxLength={200}
           placeholder={t("models.alias.nameExample", "fast")}
         />
-        <Select
+        <ModelPicker
           label={t("models.alias.target", "Target")}
+          appearance="default"
+          size="md"
           fullWidth
           placeholder={t("models.chooseModel", "Choose a model")}
           value={target}
           onValueChange={setTarget}
-          options={models.map((m) => ({ value: m.id, label: modelName(m), description: `${m.provider}/${m.model_id}` }))}
+          options={options}
+          providers={providers}
         />
         {shadows && name.trim() && <Banner tone="warning">{shadowText(name.trim())}</Banner>}
       </div>
