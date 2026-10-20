@@ -331,6 +331,24 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/deepseek/max-completion-tokens-limit": {
+    "body": {
+      "max_tokens": 20,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Count from one to forty in English words, separated by commas.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-flash"
+    },
+    "path": "/v1/messages"
+  },
   "providers/deepseek/missing-model": {
     "body": {
       "max_tokens": 4096,
@@ -1199,6 +1217,24 @@ expression: outcomes
     "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "search_parameters"
+  },
+  "providers/xai/max-completion-tokens-reasoning": {
+    "body": {
+      "max_tokens": 20,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Is 391 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.3"
+    },
+    "path": "/v1/messages"
   },
   "providers/xai/presence-penalty-reasoning-model": {
     "message": "`presence_penalty` is not supported by Anthropic Messages. Remove `presence_penalty` or route the request to an OpenAI model.",

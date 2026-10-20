@@ -607,7 +607,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         kind,
         at: rec.outcome().started_at,
         timeout: timeouts.request,
-        worst: WorstCase::of(&req, request_bytes, &eff.fields),
+        worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
     };
     rec.reservation = state
         .limits

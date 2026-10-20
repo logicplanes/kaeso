@@ -13,3 +13,4 @@ Written by `cargo xtask record`. Provenance: live API of DeepSeek (`deepseek`).
 | `recorded-reasoning-content-sent-back.json` | `openai_chat/providers/deepseek/requests/reasoning-content-sent-back.json` | `deepseek-flash` | 2026-10-19 00:39 |
 | `recorded-tool-turn-without-reasoning-content.json` | `openai_chat/providers/deepseek/requests/tool-turn-without-reasoning-content.json` | `deepseek-flash` | 2026-10-19 01:40 |
 | `recorded-pro-tool-turn-without-reasoning-content.json` | `openai_chat/providers/deepseek/requests/pro-tool-turn-without-reasoning-content.json` | `deepseek-v4-pro` | 2026-10-19 01:41 |
+| `recorded-max-completion-tokens-limit.json` | `openai_chat/providers/deepseek/requests/max-completion-tokens-limit.json` | `deepseek-flash` | 2026-10-20 05:06 |

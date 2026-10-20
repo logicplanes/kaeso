@@ -309,4 +309,5 @@ Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-referenc
 | `web_search_call`-Items, `url_citation`-Annotationen | wie bei OpenAI | |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` der Nutzung | Responses-Apps erhalten sie zurück; die Token-Zahlen sind wie oben typisiert. |
 | `presence_penalty` (Anfrage) | Extras | SpaceX ignoriert es und gibt `0.0` zurück. |
+| `max_output_tokens` (Anfrage) | `sampling.max_output_tokens` | SpaceX wendet es nur auf die sichtbare Ausgabe an, nicht auf Reasoning-Token (Responses-Referenz), wie bei [Chat Completions](openai-chat.md#spacex). |
 | `{"error": "<message>"}` | `KppError` | Siehe die Fehlertabelle oben. |

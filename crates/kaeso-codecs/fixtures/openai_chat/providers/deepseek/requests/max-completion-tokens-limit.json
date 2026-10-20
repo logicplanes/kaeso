@@ -1,0 +1,10 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from one to forty in English words, separated by commas."
+    }
+  ],
+  "max_completion_tokens": 20
+}

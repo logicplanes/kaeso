@@ -89,6 +89,30 @@ async fn an_openai_chat_app_gets_deepseeks_tool_call_and_reasoning_content() {
 }
 
 #[tokio::test]
+async fn a_responses_apps_output_limit_reaches_deepseek_as_max_tokens() {
+    let (env, deepseek) = env_with_deepseek().await;
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": FLASH,
+            "max_output_tokens": 60,
+            "input": "Count to forty. [mock:fixture=providers/deepseek/recorded-max-completion-tokens-limit]"
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = deepseek
+        .last()
+        .expect("the request reached DeepSeek")
+        .json();
+    assert_eq!(sent["max_tokens"], 60, "{sent}");
+    assert!(sent.get("max_completion_tokens").is_none(), "{sent}");
+}
+
+#[tokio::test]
 async fn a_chat_apps_developer_message_reaches_deepseek_as_a_system_message() {
     let (env, deepseek) = env_with_deepseek().await;
     let r = call(

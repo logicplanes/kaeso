@@ -594,6 +594,7 @@ mod tests {
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Example Cloud"),
     };
 

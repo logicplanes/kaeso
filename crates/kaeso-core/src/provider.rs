@@ -142,6 +142,7 @@ pub struct Provider {
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
+    pub reasoning_beyond_output_limit: bool,
     pub chat: ChatProfile,
 }
 
@@ -160,6 +161,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::OPENAI,
     },
     Provider {
@@ -172,6 +174,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Anthropic"),
     },
     Provider {
@@ -184,7 +187,10 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
-        chat: ChatProfile::compatible("DeepSeek").system_role(),
+        reasoning_beyond_output_limit: false,
+        chat: ChatProfile::compatible("DeepSeek")
+            .max_tokens()
+            .system_role(),
     },
     Provider {
         id: "xai",
@@ -196,6 +202,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
+        reasoning_beyond_output_limit: true,
         chat: ChatProfile::compatible("SpaceX"),
     },
     Provider {
@@ -208,6 +215,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Together AI"),
     },
     Provider {
@@ -220,6 +228,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
@@ -235,6 +244,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("OpenRouter"),
     },
     Provider {
@@ -247,6 +257,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
             .system_role()
@@ -420,6 +431,33 @@ mod tests {
                 "{provider_id} {request}: {roles:?}"
             );
         }
+    }
+
+    #[test]
+    fn deepseek_gets_every_apps_output_limit_as_max_tokens_which_it_honours() {
+        let recorded = sent_with_profile(
+            "deepseek",
+            "providers/deepseek/requests/max-completion-tokens-limit",
+        )
+        .unwrap();
+        assert_eq!(recorded["max_tokens"], 20, "{recorded}");
+        assert!(
+            recorded.get("max_completion_tokens").is_none(),
+            "{recorded}"
+        );
+
+        let mut g = kaeso_kpp::GenerateRequest::new("deepseek-flash");
+        g.extras.origin = Some(kaeso_kpp::Origin::new(DialectId::OpenAiResponses));
+        g.messages = vec![kaeso_kpp::Message::user("Count to forty.")];
+        g.sampling.max_output_tokens = Some(60);
+        let req = kaeso_kpp::Request::Generate(g);
+        let mut ctx = kaeso_codecs::EgressCtx::new(&req)
+            .with_chat_profile(provider("deepseek").unwrap().chat);
+        let out =
+            kaeso_codecs::dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx).unwrap();
+        let sent: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["max_tokens"], 60, "{sent}");
+        assert!(sent.get("max_completion_tokens").is_none(), "{sent}");
     }
 
     #[test]

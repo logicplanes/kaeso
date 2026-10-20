@@ -319,6 +319,31 @@ expression: outcomes
       "output_tokens": 9
     }
   },
+  "providers/deepseek/recorded-max-completion-tokens-limit": {
+    "content": [
+      {
+        "text": "one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three, twenty-four, twenty-five, twenty-six, twenty-seven, twenty-eight, twenty-nine, thirty, thirty-one, thirty-two, thirty-three, thirty-four, thirty-five, thirty-six, thirty-seven, thirty-eight, thirty-nine, forty",
+        "type": "text"
+      }
+    ],
+    "id": "034e445a-6bbd-47d9-b88a-027624bdfa21",
+    "model": "deepseek-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 43,
+      "output_tokens": 133,
+      "output_tokens_details": {
+        "thinking_tokens": 35
+      }
+    }
+  },
   "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
     "content": [
       {
@@ -1279,6 +1304,31 @@ expression: outcomes
       "output_tokens": 333,
       "output_tokens_details": {
         "thinking_tokens": 301
+      }
+    }
+  },
+  "providers/xai/recorded-max-completion-tokens-reasoning": {
+    "content": [
+      {
+        "text": "No, 391 is not a prime number as it equals 17 × 23.",
+        "type": "text"
+      }
+    ],
+    "id": "afd8f39e-9421-96f9-9120-66865135a28b",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 76,
+      "output_tokens": 289,
+      "output_tokens_details": {
+        "thinking_tokens": 271
       }
     }
   },
