@@ -68,6 +68,7 @@ pub struct PlaygroundRequest {
     request_body = PlaygroundRequest,
     responses(
         (status = 200, description = "OpenAI Responses stream events.", content_type = "text/event-stream", body = String),
+        (status = 404, description = "The provider does not serve the model to the project's provider key, or answered 404 for something else the request names (`not_found`).", body = crate::platform::error::ErrorEnvelope),
         (status = 502, description = "The provider failed or refused the provider key (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
         (status = 504, description = "The provider did not answer in time (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
     )
@@ -230,12 +231,7 @@ fn refusal(f: &Failure) -> ApiError {
         ),
         Stage::Provider => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
-        Stage::Unserved(m) => ApiError::invalid(
-            "model",
-            format!(
-                "The provider does not serve `{m}` to this project's key; check the key's access."
-            ),
-        ),
+        Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
         Stage::Reply => provider_error(
             StatusCode::BAD_GATEWAY,
             "The provider's answer could not be read; try again.",
@@ -262,13 +258,15 @@ fn from_provider(e: &KppError) -> ApiError {
         ErrorKind::RequestTooLarge => {
             ApiError::TooLarge("The provider refused the request as too large.".into())
         }
-        ErrorKind::InvalidRequest | ErrorKind::NotFound | ErrorKind::Unsupported { .. } => {
-            ApiError::InvalidRequest {
-                message: "The provider refused the request as invalid; check the model's settings."
-                    .into(),
-                param: e.param.clone(),
-            }
-        }
+        ErrorKind::NotFound => ApiError::NotFound(
+            "The provider did not find something the request names; check the model and its ids."
+                .into(),
+        ),
+        ErrorKind::InvalidRequest | ErrorKind::Unsupported { .. } => ApiError::InvalidRequest {
+            message: "The provider refused the request as invalid; check the model's settings."
+                .into(),
+            param: e.param.clone(),
+        },
         ErrorKind::Authentication | ErrorKind::PermissionDenied => provider_error(
             StatusCode::BAD_GATEWAY,
             "The provider refused the project's provider key; an org admin can replace it.",

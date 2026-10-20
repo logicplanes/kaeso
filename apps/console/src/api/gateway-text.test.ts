@@ -46,6 +46,18 @@ describe("the gateway's messages", () => {
     );
   });
 
+  it("name the provider that does not serve a model, in every language", async () => {
+    const unserved = "Together AI does not serve `meta-llama/Llama-3.3-70B` to this project's key; check the key's access.";
+    await speak("de");
+    expect((await errorFromResponse(failure(unserved, 404))).message).toBe(
+      "Together AI bietet `meta-llama/Llama-3.3-70B` dem Schlüssel dieses Projekts nicht an; Zugriff des Schlüssels prüfen.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(failure(unserved, 404))).message).toBe(
+      "Together AI 不向此项目的密钥提供 `meta-llama/Llama-3.3-70B`；请检查密钥的访问权限。",
+    );
+  });
+
   it("are shown in Chinese", async () => {
     await speak("zh-CN");
     expect((await errorFromResponse(failure("ada@example.com is already a member of this organization.", 409))).message).toBe(

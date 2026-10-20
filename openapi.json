@@ -13041,7 +13041,14 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "The provider does not serve the model to the project's provider key, or answered 404 for something else the request names (`not_found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           },
           "409": {
             "$ref": "#/components/responses/Conflict"

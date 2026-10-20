@@ -430,7 +430,7 @@ pub(crate) fn unserved(eff: &Effective) -> KppError {
         ErrorKind::NotFound,
         404,
         format!(
-            "{} does not serve the model `{}` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
+            "{} does not serve `{}` to this project's key; check the key's access.",
             eff.provider.name, eff.model_id
         ),
     )
@@ -818,9 +818,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 {
                     tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
                     availability::record(state, &learnt(Availability::Unavailable)).await;
-                    let mut failure = fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff));
-                    failure.provider_said = Some(err);
-                    return Err(failure);
+                    return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
                 }
                 if let Some(refused) = refused_key(&err) {
                     let said = redacted(err);

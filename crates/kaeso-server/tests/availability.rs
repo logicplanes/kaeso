@@ -73,9 +73,7 @@ async fn listed(env: &Env, anthropic: bool) -> Vec<String> {
 }
 
 fn unserved_message(provider: &str, model: &str) -> String {
-    format!(
-        "{provider} does not serve the model `{model}` to this project's provider key; check the key's access to it, or remove the model from the catalogue."
-    )
+    format!("{provider} does not serve `{model}` to this project's key; check the key's access.")
 }
 
 #[tokio::test]
@@ -134,8 +132,8 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
     assert_eq!(o.error_kind.as_deref(), Some("not_found"));
     assert_eq!(
         o.error_message.as_deref(),
-        Some(ANTHROPIC_NOT_FOUND),
-        "the request log keeps the provider's own answer"
+        Some(unserved_message("Anthropic", UNSERVED_CLAUDE).as_str()),
+        "the request log has the message the app got, as on later requests"
     );
 
     let r = call(
@@ -156,7 +154,10 @@ async fn a_listed_model_the_provider_does_not_serve_fails_clearly_in_each_dialec
         unserved_message("OpenAI", UNSERVED_GPT)
     );
     let o = env.outcomes().await.pop().unwrap();
-    assert_eq!(o.error_message.as_deref(), Some(OPENAI_NOT_FOUND));
+    assert_eq!(
+        o.error_message.as_deref(),
+        Some(unserved_message("OpenAI", UNSERVED_GPT).as_str())
+    );
 
     let mut streamed = messages(UNSERVED_GPT, "Hi");
     streamed["stream"] = json!(true);
@@ -1013,5 +1014,51 @@ async fn a_model_listing_that_never_ends_decides_nothing() {
     assert_eq!(
         entry(&env, UNSERVED_CLAUDE).await["availability"],
         "unchecked"
+    );
+}
+
+#[tokio::test]
+async fn the_playground_refuses_a_model_the_provider_does_not_serve_as_v1_does() {
+    let env = env().await;
+    let path = format!("{}/playground/responses", base(&env));
+    let played = json!({ "model": UNSERVED_CLAUDE, "input": "Hi", "stream": true });
+    for _ in 0..2 {
+        let r = env
+            .app
+            .post(&path, played.clone(), Some(&env.owner.cookie))
+            .await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+        assert_eq!(r.body["error"]["type"], "not_found", "{:?}", r.body);
+        assert_eq!(
+            r.body["error"]["message"],
+            unserved_message("Anthropic", UNSERVED_CLAUDE)
+        );
+        let o = env.outcomes().await.pop().unwrap();
+        assert_eq!(o.status, 404);
+        assert_eq!(
+            o.error_message.as_deref(),
+            Some(unserved_message("Anthropic", UNSERVED_CLAUDE).as_str())
+        );
+    }
+    let r = ask(&env, UNSERVED_CLAUDE).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        unserved_message("Anthropic", UNSERVED_CLAUDE)
+    );
+
+    replace_key(&env, "openai", "sk-[mock:models=absent]-0001").await;
+    let r = env
+        .app
+        .post(
+            &path,
+            json!({ "model": UNSERVED_GPT, "input": "Hi", "stream": true }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The provider did not find something the request names; check the model and its ids."
     );
 }

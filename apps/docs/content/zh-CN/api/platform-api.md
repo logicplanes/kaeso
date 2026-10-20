@@ -245,7 +245,8 @@ curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/pla
 
 | 状态码 | `type` | 原因 |
 | --- | --- | --- |
-| 400 | `invalid_request` | 模型不在目录中，或服务商不向项目的服务商密钥提供该模型时，`param` 为 `model`。`"stream": false` 时为 `stream`。 |
+| 400 | `invalid_request` | 模型不在目录中时，`param` 为 `model`。`"stream": false` 时为 `stream`。 |
+| 404 | `not_found` | 服务商不向项目的服务商密钥提供该模型，消息与 `/v1` 应用收到的相同（[服务商不提供的模型](errors.md#服务商不提供的模型)）；或者服务商对请求中指定的其他内容返回了 404。 |
 | 403 | `permission_denied` | 模型不在成员的模型访问范围内。 |
 | 409 | `conflict` | 项目已归档，或没有该模型服务商的服务商密钥。 |
 | 409 | `org_scheduled_for_deletion` | 组织已计划删除。 |
