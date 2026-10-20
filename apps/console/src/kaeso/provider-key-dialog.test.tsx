@@ -88,7 +88,7 @@ describe("ProviderKeyDialog", () => {
     await choose(user, dialog, "SpaceX");
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your SpaceX API key" })).toBeVisible();
-    expectKeyHint(dialog, "console.x.ai", "https://console.x.ai", "API Keys", "xai-");
+    expectKeyHint(dialog, "console.x.ai", "https://console.x.ai/team/default/api-keys", "API Keys", "xai-");
     const secret = within(dialog).getByLabelText("SpaceX API key");
     expect(secret).toHaveAttribute("placeholder", "xai-…");
     await user.type(secret, "xai-123");
@@ -197,6 +197,14 @@ describe("ProviderKeyDialog", () => {
     expect(within(dialog).getByRole("heading", { name: "Paste the new Cohere key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
     expect(within(dialog).getByLabelText("Cohere API key")).toHaveAttribute("placeholder", "sk-…");
+  });
+
+  it("links a provider's key page without a prefix when its keys have none", async () => {
+    const mistral = credential({ id: "cred_mistral", provider: "mistral", name: "Mistral main" });
+    const { dialog } = await open({ keys: [mistral], replace: mistral });
+    const link = within(dialog).getByRole("link", { name: /console\.mistral\.ai/ });
+    expect(link).toHaveAttribute("href", "https://console.mistral.ai/api-keys");
+    expect(link.closest("p")?.textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe("Create one at console.mistral.ai under API keys.");
   });
 
   it("replaces a key's secret", async () => {

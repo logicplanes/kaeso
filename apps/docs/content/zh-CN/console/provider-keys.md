@@ -20,7 +20,7 @@ order: 3
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
-| SpaceX | [console.x.ai](https://console.x.ai)（xAI 控制台）的 **API Keys** | `xai-` |
+| SpaceX | [console.x.ai](https://console.x.ai/team/default/api-keys)（xAI 控制台）的 **API Keys** | `xai-` |
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys) 的 **API Keys** | `tgp_v1_` |
 | Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
 | OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |

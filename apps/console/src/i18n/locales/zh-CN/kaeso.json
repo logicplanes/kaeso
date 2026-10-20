@@ -146,6 +146,7 @@
   "kaeso.providerKey.replaced": "已替换 {name}",
   "kaeso.providerKey.secret": "{provider} API 密钥",
   "kaeso.providerKey.where": "在 {site} 的“{page}”页面创建，以 {prefix} 开头。",
+  "kaeso.providerKey.whereSite": "在 {site} 的“{page}”页面创建。",
   "kaeso.providerKey.which": "此密钥属于哪个服务商？",
   "kaeso.rights.added": "额外添加",
   "kaeso.rights.addedRights": "在其角色之外额外授予的权限",
