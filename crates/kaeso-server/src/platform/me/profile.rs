@@ -235,7 +235,10 @@ pub async fn change_email(
             lang, &email, &url,
         ));
     if let Some(current) = current {
-        let url = format!("{}me/email/cancel#token={cancel}", state.config.public_url);
+        let url = format!(
+            "{}me/email/confirm#cancel={cancel}",
+            state.config.public_url
+        );
         state
             .mailer
             .send(kaeso_mail::templates::email_change_requested(
@@ -343,7 +346,7 @@ pub async fn confirm_email(
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "The cancel token.")]
 pub struct EmailCancel {
-    #[doc = "The token from `…/me/email/cancel#token=…`, sent to the current address."]
+    #[doc = "The token from `…/me/email/confirm#cancel=…`, sent to the current address."]
     #[schema(value_type = String, write_only)]
     pub token: SecretString,
 }

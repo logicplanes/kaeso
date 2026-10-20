@@ -53,6 +53,14 @@ describe("signing in with an emailed link", () => {
     expect(requests("POST", VERIFY)).toHaveLength(0);
   });
 
+  it("says when the link is for the account already signed in here", async () => {
+    signedIn({ session: whoAmI() });
+    linkFor("owner@example.com");
+    await renderApp("/auth/magic-link#token=mgl_1");
+    expect(await screen.findByText("You're already signed in as owner@example.com; the link signs you in again here.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Keep this session" })).toHaveAttribute("href", "/");
+  });
+
   it("asks for the authenticator code when the account has two-factor authentication", async () => {
     signedOut();
     linkFor();
@@ -67,6 +75,28 @@ describe("signing in with an emailed link", () => {
     await user.type(screen.getByLabelText("Code from your authenticator app"), "123456");
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", code: "123456" }]);
+  });
+
+  it("clears a wrong code and takes a recovery code instead", async () => {
+    signedOut();
+    linkFor();
+    on("POST", VERIFY, json(totpRequired(), { status: 202 }));
+    on("POST", "auth/totp", apiError(401, "authentication", "That code isn't valid or was already used."));
+    const { user } = await renderApp("/auth/magic-link#token=mgl_1");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    const field = await screen.findByLabelText("Code from your authenticator app");
+    await user.type(field, "000000");
+    expect((await (await notifications()).findAllByText("That code isn't valid or was already used.")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(field).toHaveValue(""));
+    on("POST", "auth/totp", () => {
+      signedIn();
+      return signedInReply();
+    });
+    await user.click(screen.getByRole("link", { name: "Use a recovery code" }));
+    await user.type(screen.getByRole("textbox", { name: "Recovery code" }), "abcd-efgh");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
+    expect(requests("POST", "auth/totp").at(-1)?.body).toEqual({ challenge: "chl_42", recovery_code: "abcd-efgh" });
   });
 
   it("goes home when the next address leaves the console", async () => {

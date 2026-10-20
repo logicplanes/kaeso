@@ -61,8 +61,10 @@ test("a sign-in link from the email signs you in", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   const link = await mailLink(OWNER.email, /\/auth\/magic-link#token=/);
   await page.goto(new URL(link).pathname + new URL(link).hash);
-  await expectSignedIn(page);
+  await expect(page.getByRole("heading", { name: `Sign in as ${OWNER.email}` })).toBeVisible();
   await expect(page).not.toHaveURL(/token=/);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expectSignedIn(page);
 });
 
 test("a password reset ends with a new password", async ({ page }) => {

@@ -7,14 +7,14 @@ const notifications = async () => within(await screen.findByRole("region", { nam
 
 describe("cancelling an email change", () => {
   it("asks for the cancel link when the token is missing", async () => {
-    await renderApp("/me/email/cancel");
+    await renderApp("/me/email/confirm#cancel=");
     expect(await screen.findByText("This page needs the cancel link")).toBeInTheDocument();
     expect(requests("POST", "me/email/cancel")).toHaveLength(0);
   });
 
   it("cancels the change once and says the address stays", async () => {
     on("POST", "me/email/cancel", noContent);
-    await renderApp("/me/email/cancel#token=ecc_1");
+    await renderApp("/me/email/confirm#cancel=ecc_1");
     expect(await screen.findByRole("heading", { name: "The email change is cancelled", level: 1 })).toBeInTheDocument();
     expect(window.location.hash).toBe("");
     expect(requests("POST", "me/email/cancel").map((r) => r.body)).toEqual([{ token: "ecc_1" }]);
@@ -23,7 +23,7 @@ describe("cancelling an email change", () => {
 
   it("says when the link no longer works", async () => {
     on("POST", "me/email/cancel", apiError(401, "authentication", "This link is invalid, used or expired; the change may already be done."));
-    await renderApp("/me/email/cancel#token=ecc_1");
+    await renderApp("/me/email/confirm#cancel=ecc_1");
     expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
     expect((await (await notifications()).findAllByText("This link is invalid, used or expired; the change may already be done.")).length).toBeGreaterThan(0);
   });

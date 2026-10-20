@@ -16148,7 +16148,7 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "The token from `…/me/email/cancel#token=…`, sent to the current address.",
+            "description": "The token from `…/me/email/confirm#cancel=…`, sent to the current address.",
             "writeOnly": true
           }
         }

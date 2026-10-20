@@ -162,9 +162,14 @@ async fn email_changes_need_the_second_factor_and_can_be_cancelled_from_the_old_
     let warning = app.mail.to("owner@example.com").last().unwrap().clone();
     assert_eq!(warning.kind.as_str(), "email_change_requested");
     assert!(warning.text.contains("new@example.com"), "{}", warning.text);
-    assert!(warning.text.contains("/me/email/cancel#token="));
+    assert!(warning.text.contains("/me/email/confirm#cancel="));
     let confirm = app.last_token("new@example.com");
-    let cancel = app.last_token("owner@example.com");
+    let start = warning.text.find("#cancel=").unwrap() + 8;
+    let cancel = warning.text[start..]
+        .split_whitespace()
+        .next()
+        .unwrap()
+        .to_owned();
 
     app.post("/me/email/cancel", json!({ "token": cancel }), None)
         .await

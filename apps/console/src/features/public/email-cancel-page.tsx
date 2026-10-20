@@ -9,7 +9,7 @@ export function EmailCancelPage() {
   usePageTitle(t("public.cancelEmailChange", "Cancel email change"));
   const state = useTokenAction(async (token) => {
     await api.POST("/platform/v1/me/email/cancel", { body: { token } });
-  });
+  }, "cancel");
   if (state.kind === "working") {
     return (
       <PublicPage title={t("public.cancellingEmailChange", "Cancelling the email change…")}>

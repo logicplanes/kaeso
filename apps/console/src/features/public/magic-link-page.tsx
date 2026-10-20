@@ -9,10 +9,16 @@ import { usePageTitle } from "~/shell/title";
 import { safeNext } from "~/auth/next";
 import { takeFragment } from "~/auth/fragment";
 import { sessionQuery } from "~/auth/session-queries";
-import { signInWithMagicLink, signInWithTotp } from "~/auth/sign-in-api";
+import { signInWithTotp, type PasswordResult } from "~/auth/sign-in-api";
 import { t } from "~/i18n";
 
 type Steps = typeof import("~/features/sign-in/sign-in-steps");
+
+async function signInWithMagicLink(token: string): Promise<PasswordResult> {
+  const { data, response } = await api.POST("/platform/v1/auth/magic-link/verify", { body: { token } });
+  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", challenge: data.challenge, expiresAt: data.expires_at };
+  return { kind: "signed_in" };
+}
 type Totp = { challenge: string; expiresAt: string; recovery: boolean };
 
 function Waiting() {
@@ -30,12 +36,12 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
   usePageTitle(t("public.signingIn", "Signing in"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [token] = useState(() => takeFragment("token"));
+  const [token] = useState(() => takeFragment("token") ?? "");
   const account = useQuery({
     queryKey: ["magic-link", token],
     queryFn: async () => {
       try {
-        return data(await api.POST("/platform/v1/auth/magic-link/lookup", { body: { token: token ?? "" } }));
+        return data(await api.POST("/platform/v1/auth/magic-link/lookup", { body: { token } }));
       } catch (e) {
         toastApiError(e, { id: "token-link" });
         throw e;
@@ -70,7 +76,7 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
   const signIn = () =>
     run(
       async () => {
-        const result = await signInWithMagicLink(token ?? "");
+        const result = await signInWithMagicLink(token);
         if (result.kind === "signed_in") return done();
         setSteps(await import("~/features/sign-in/sign-in-steps"));
         setTotp({ challenge: result.challenge, expiresAt: result.expiresAt, recovery: false });

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
+import { signedInReply } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -268,6 +269,25 @@ describe("turning on two-factor authentication", () => {
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
+  });
+});
+
+describe("starting two-factor setup after a while", () => {
+  it("asks to sign in again, then shows the setup key", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("POST", "auth/methods", { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, provider: null });
+    on("POST", "auth/password", signedInReply());
+    let calls = 0;
+    on("POST", "me/totp", () => (++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : SETUP));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Set up" }));
+    const again = await screen.findByRole("dialog", { name: "Sign in again to continue" });
+    await user.type(await within(again).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(again).getByRole("button", { name: "Sign in" }));
+    const setup = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    expect(await within(setup).findByText(SETUP.secret)).toBeInTheDocument();
+    expect(requests("POST", "me/totp")).toHaveLength(2);
   });
 });
 

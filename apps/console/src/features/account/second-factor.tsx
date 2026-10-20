@@ -19,12 +19,10 @@ export function secondFactorReady(v: SecondFactorValue): boolean {
 export function SecondFactorField({
   value,
   onChange,
-  onComplete,
   error,
 }: {
   value: SecondFactorValue;
   onChange: (value: SecondFactorValue) => void;
-  onComplete?: () => void;
   error?: string | undefined;
 }) {
   const toggle = (
@@ -52,12 +50,7 @@ export function SecondFactorField({
   return (
     <div className="flex flex-col gap-8">
       <Field label={t("account.appCode", "Code from the app")} error={error}>
-        <OTPInput
-          aria-label={t("account.appCode", "Code from the app")}
-          value={value.code}
-          onValueChange={(code) => onChange({ recovery: false, code })}
-          {...(onComplete ? { onComplete: () => onComplete() } : {})}
-        />
+        <OTPInput aria-label={t("account.appCode", "Code from the app")} value={value.code} onValueChange={(code) => onChange({ recovery: false, code })} />
       </Field>
       {toggle}
     </div>
