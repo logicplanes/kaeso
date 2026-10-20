@@ -135,7 +135,7 @@ export function byBucket(rows: UsageRow[], from: string, to: string, g: Granular
 
 const pointTime = (day: string) => new Date(`${day}T00:00:00Z`);
 
-export function bucketNames(days: { day: string }[], { from, to, granularity: g = "day" }: Pick<DailyProps, "from" | "to" | "granularity">) {
+export function bucketNames({ from, to, granularity: g = "day" }: Pick<DailyProps, "from" | "to" | "granularity">) {
   const withYear = spansYears(from, to, g);
   return {
     label: (day: string) => bucketLabel(day, g, withYear),
@@ -145,7 +145,7 @@ export function bucketNames(days: { day: string }[], { from, to, granularity: g 
 }
 
 const timeAxis = (days: { day: string }[], props: DailyProps) => {
-  const names = bucketNames(days, props);
+  const names = bucketNames(props);
   const byTime = new Map(days.map((d) => [pointTime(d.day).getTime(), d.day]));
   const day = (time: Date) => byTime.get(time.getTime()) ?? "";
   return {

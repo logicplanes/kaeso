@@ -5,7 +5,7 @@ import { t } from "~/i18n";
 import { bucketNames, byBucket, chartState, tokensByKind, type DailyProps } from "./usage-panels";
 
 export function DayBars(props: DailyProps & { label: string; days: { day: string }[]; series: TimeSeries[] }) {
-  const names = bucketNames(props.days, props);
+  const names = bucketNames(props);
   return (
     <BarChart
       aria-label={props.label}
@@ -27,7 +27,7 @@ export function DayBars(props: DailyProps & { label: string; days: { day: string
 export function TokenBars(props: DailyProps) {
   const g = props.granularity ?? "day";
   const days = byBucket(props.rows, props.from, props.to, g);
-  const names = bucketNames(days, props);
+  const names = bucketNames(props);
   const field: Record<(typeof TOKEN_KIND_ORDER)[number], (r: UsageRow) => number> = {
     input: (r) => r.input_tokens,
     cacheRead: (r) => r.cache_read_tokens,
