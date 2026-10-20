@@ -322,15 +322,23 @@ fn asks_for_one_hour_cache(request: &kaeso_kpp::Request) -> bool {
 }
 
 impl WorstCase {
-    pub fn of(request: &kaeso_kpp::Request, body_bytes: usize, prices: &Fields) -> WorstCase {
+    pub fn of(
+        request: &kaeso_kpp::Request,
+        body_bytes: usize,
+        prices: &Fields,
+        provider: &crate::provider::Provider,
+    ) -> WorstCase {
         let context = prices.context_limit;
         let within = |n: u64| context.map_or(n, |c| n.min(c));
         let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
         let input = within(crate::estimate::tokens_of_bytes(bytes));
+        let limit_holds =
+            !(provider.reasoning_beyond_output_limit && prices.reasoning == Some(true));
         let output = match request {
             kaeso_kpp::Request::Generate(g) => g
                 .sampling
                 .max_output_tokens
+                .filter(|_| limit_holds)
                 .map(u64::from)
                 .or(prices.output_limit)
                 .or(context)
@@ -498,6 +506,10 @@ mod tests {
         assert!(validate(&rate).is_ok());
     }
 
+    fn openai() -> &'static crate::provider::Provider {
+        crate::provider::provider("openai").unwrap()
+    }
+
     fn priced(input: &str, output: &str) -> Fields {
         Fields {
             input_price: Some(input.parse().unwrap()),
@@ -517,7 +529,7 @@ mod tests {
     fn a_request_that_asks_for_one_hour_caching_reserves_its_write_price() {
         let mut prices = priced("3", "15");
         prices.cache_write_price = Some(dec!(3.75));
-        let plain = WorstCase::of(&generate(Some(0)), 4000, &prices);
+        let plain = WorstCase::of(&generate(Some(0)), 4000, &prices, openai());
         assert_eq!(plain.nano_usd, 1000 * 3750);
         let kaeso_kpp::Request::Generate(mut g) = generate(Some(0)) else {
             unreachable!()
@@ -527,14 +539,34 @@ mod tests {
             kaeso_kpp::CacheTtl::OneHour,
         )));
         g.system.push(kaeso_kpp::Block::Text(system));
-        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices);
+        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices, openai());
         assert_eq!(one_hour.nano_usd, 1000 * 6000);
+    }
+
+    #[test]
+    fn a_reasoning_model_whose_provider_leaves_reasoning_out_of_the_limit_holds_its_own_output_limit()
+     {
+        let xai = crate::provider::provider("xai").unwrap();
+        let mut prices = priced("1", "5");
+        prices.reasoning = Some(true);
+        let w = WorstCase::of(&generate(Some(60)), 4000, &prices, xai);
+        assert_eq!(w.tokens, 1000 + 64_000);
+        prices.reasoning = Some(false);
+        assert_eq!(
+            WorstCase::of(&generate(Some(60)), 4000, &prices, xai).tokens,
+            1060
+        );
+        prices.reasoning = Some(true);
+        assert_eq!(
+            WorstCase::of(&generate(Some(60)), 4000, &prices, openai()).tokens,
+            1060
+        );
     }
 
     #[test]
     fn a_request_costs_at_most_its_input_and_its_output_limit() {
         let prices = priced("1", "5");
-        let w = WorstCase::of(&generate(Some(1000)), 4000, &prices);
+        let w = WorstCase::of(&generate(Some(1000)), 4000, &prices, openai());
         assert_eq!(
             w,
             WorstCase {
@@ -548,14 +580,14 @@ mod tests {
         assert_eq!(w.units(Kind::SpendBudget), 6_000_000);
         assert_eq!(w.units(Kind::RequestRate), 0);
 
-        let model_cap = WorstCase::of(&generate(None), 4000, &prices);
+        let model_cap = WorstCase::of(&generate(None), 4000, &prices, openai());
         assert_eq!(model_cap.tokens, 65_000);
         assert!(model_cap.bounded);
 
         let mut cached = prices.clone();
         cached.cache_write_price = Some(dec!(1.25));
         assert_eq!(
-            WorstCase::of(&generate(Some(0)), 4000, &cached).nano_usd,
+            WorstCase::of(&generate(Some(0)), 4000, &cached, openai()).nano_usd,
             1250 * 1000
         );
 
@@ -563,18 +595,21 @@ mod tests {
             context_limit: Some(1500),
             ..Fields::default()
         };
-        let w = WorstCase::of(&generate(None), 40_000, &windowed);
+        let w = WorstCase::of(&generate(None), 40_000, &windowed, openai());
         assert_eq!((w.tokens, w.nano_usd, w.bounded), (3000, 0, true));
 
-        let unknown = WorstCase::of(&generate(None), 400, &Fields::default());
+        let unknown = WorstCase::of(&generate(None), 400, &Fields::default(), openai());
         assert_eq!((unknown.tokens, unknown.bounded), (100, false));
 
         let embed = kaeso_kpp::Request::Embed(kaeso_kpp::EmbedRequest::new("e", Vec::new()));
-        let w = WorstCase::of(&embed, 400, &prices);
+        let w = WorstCase::of(&embed, 400, &prices, openai());
         assert_eq!((w.tokens, w.nano_usd, w.bounded), (100, 100_000, true));
 
         let count = kaeso_kpp::Request::CountTokens(kaeso_kpp::GenerateRequest::new("m"));
-        assert_eq!(WorstCase::of(&count, 400, &prices), WorstCase::FREE);
+        assert_eq!(
+            WorstCase::of(&count, 400, &prices, openai()),
+            WorstCase::FREE
+        );
     }
 
     #[test]

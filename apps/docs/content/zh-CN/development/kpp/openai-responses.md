@@ -309,4 +309,5 @@ order: 6
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
+| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat.md#spacex) 相同。 |
 | `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |

@@ -396,6 +396,20 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/deepseek/max-completion-tokens-limit": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from one to forty in English words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "deepseek-flash",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/deepseek/missing-model": {
     "body": {
       "input": [
@@ -1072,6 +1086,20 @@ expression: outcomes
     "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
     "unsupported": "search_parameters"
+  },
+  "providers/xai/max-completion-tokens-reasoning": {
+    "body": {
+      "input": [
+        {
+          "content": "Is 391 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "grok-4.3",
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/xai/presence-penalty-reasoning-model": {
     "message": "`presence_penalty` is not supported by OpenAI Responses. The Responses API has no `presence_penalty`. Remove it or use the Chat Completions format.",

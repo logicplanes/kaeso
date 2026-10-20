@@ -9,3 +9,4 @@ Written by `cargo xtask record`. Provenance: live API of xAI (`xai`).
 | `recorded-tools-parallel.json` | `openai_chat/requests/tools-parallel.json` | `grok-4.3` | 2026-10-19 00:37 |
 | `recorded-tools-single.json` | `openai_chat/requests/tools-single.json` | `grok-4.3` | 2026-10-19 00:37 |
 | `recorded-reasoning-content.json` | `openai_chat/providers/xai/requests/reasoning-content.json` | `grok-4.3` | 2026-10-19 00:38 |
+| `recorded-max-completion-tokens-reasoning.json` | `openai_chat/providers/xai/requests/max-completion-tokens-reasoning.json` | `grok-4.3` | 2026-10-20 05:07 |

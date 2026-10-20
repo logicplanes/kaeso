@@ -22,6 +22,7 @@ xAI sends errors as `{"error": "<message>"}`, with `"code": "invalid-argument"` 
 | `responses/recorded-plain-developer-string.json` | text reply with `system_fingerprint`, `service_tier`, `usage.num_sources_used`, `usage.cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | live, `grok-4.20-0309-non-reasoning` |
 | `responses/recorded-reasoning-content.json` | `message.reasoning_content`, `reasoning_tokens` and `cached_tokens` in `usage` | live |
 | `responses/recorded-json-schema.json` | Structured Outputs reply | live |
+| `requests/max-completion-tokens-reasoning.json`, `responses/recorded-max-completion-tokens-reasoning.json` | `max_completion_tokens: 20` on `grok-4.3`: the answer stays within 20 tokens (18), but 271 reasoning tokens come on top, as the chat-completions reference says the limit "only applies to visible output tokens"; KPP counts 289 output tokens, and the gateway reserves the model's own output limit for budgets | live, chat-completions reference, `max_completion_tokens` |
 | `responses/recorded-tools-single.json` | tool call with `content: ""` | live |
 | `responses/recorded-tools-parallel.json` | parallel tool calls | live |
 | `streams/recorded-stream-include-usage.sse` | usage chunk with empty `choices`, then `[DONE]` | live |
