@@ -54,6 +54,7 @@ interface Conversation {
 }
 const conversationKey = (project: string) => [...PLAYGROUND_CONVERSATION, project];
 const warnOnLeave = (e: BeforeUnloadEvent) => e.preventDefault();
+const CLEARED = "playground:cleared";
 
 export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
@@ -171,7 +172,16 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   }, [empty]);
   const clearAll = () => {
     const before = clear();
-    toast(t("playground.cleared", "Conversation cleared"), { action: { label: t("playground.undoClear", "Undo"), onClick: () => restore(before) } });
+    toast(t("playground.cleared", "Conversation cleared"), {
+      id: CLEARED,
+      action: {
+        label: t("playground.undoClear", "Undo"),
+        onClick: () => {
+          restore(before);
+          toast.dismiss(CLEARED);
+        },
+      },
+    });
   };
   const options = useMemo(
     () =>

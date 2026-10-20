@@ -267,6 +267,7 @@ describe("PlaygroundPage", () => {
     await user.click(notifications().getByRole("button", { name: "Undo" }));
     expect(await screen.findByText("Second try worked.")).toBeInTheDocument();
     expect(screen.getByText("Hi")).toBeInTheDocument();
+    await waitFor(() => expect(notifications().queryByText("Conversation cleared")).not.toBeInTheDocument());
   });
 
   it("keeps the conversation when you leave the Playground and come back, and asks before the tab closes", async () => {
