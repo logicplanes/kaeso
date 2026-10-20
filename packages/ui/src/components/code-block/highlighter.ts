@@ -3,12 +3,16 @@ import { codeTokenClass, kaesoShikiTheme } from "./kaeso-theme.js";
 type Highlighter = {
   codeToTokens: (
     code: string,
-    o: { lang: string; theme: string },
+    o: { lang: string; theme: string; tokenizeMaxLineLength?: number | undefined },
   ) => { tokens: { content: string; color?: string | undefined; fontStyle?: number | undefined }[][] };
   getLoadedLanguages: () => string[];
   loadLanguage: (...l: unknown[]) => Promise<void>;
 };
 let instance: Promise<Highlighter> | null = null;
+
+export const HIGHLIGHT_MAX_CHARS = 200_000;
+
+const HIGHLIGHT_MAX_LINE = 2_000;
 
 export const CODE_LANGS = ["ts", "tsx", "js", "json", "bash", "python", "yaml", "diff"] as const;
 export type CodeLang = (typeof CODE_LANGS)[number] | "text";
@@ -41,7 +45,7 @@ export interface CodeToken {
 }
 
 export async function highlight(code: string, lang: CodeLang): Promise<CodeToken[][] | null> {
-  if (lang === "text") return null;
+  if (lang === "text" || code.length > HIGHLIGHT_MAX_CHARS) return null;
   const h = await getHighlighter();
   if (!h.getLoadedLanguages().includes(lang)) {
     const loader = LOADERS[lang];
@@ -49,6 +53,6 @@ export async function highlight(code: string, lang: CodeLang): Promise<CodeToken
     await h.loadLanguage((await loader()).default);
   }
   return h
-    .codeToTokens(code, { lang, theme: "kaeso" })
+    .codeToTokens(code, { lang, theme: "kaeso", tokenizeMaxLineLength: HIGHLIGHT_MAX_LINE })
     .tokens.map((line) => line.map((token) => ({ content: token.content, className: codeTokenClass(token.color, token.fontStyle) })));
 }

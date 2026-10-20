@@ -53,7 +53,10 @@ test("a site without inline code gets the strict policy, and the policy without 
   const out = writeSitePolicy(site({ "index.html": page(`<script src="/app.js"></script>`), "de/guides.html": page() }));
   assert.match(out, /^csp: 2 pages under one policy, 0 inline script and 0 inline style hashes/);
   assert.equal(readFileSync(join(dir, "csp.txt"), "utf8"), `${STRICT}\n`);
-  assert.equal(readFileSync(join(dir, "_headers"), "utf8"), `/*\n  Content-Security-Policy: ${STRICT}\n`);
+  assert.equal(
+    readFileSync(join(dir, "_headers"), "utf8"),
+    `/*\n  Content-Security-Policy: ${STRICT}\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`,
+  );
   const html = readFileSync(join(dir, "de/guides.html"), "utf8");
   assert.ok(html.includes(`<meta charset="utf-8" /><meta http-equiv="content-security-policy" content="${STRICT.replace("; frame-ancestors 'none'", "")}">`));
 });

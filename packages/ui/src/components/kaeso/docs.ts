@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   ConversationView: {
-    description: "A model conversation from a request log: role captions, prose, tool calls and results, reasoning, images, refusals.",
+    description:
+      "A model conversation from a request log: role captions, prose, tool calls and results, reasoning, images, refusals. Inline images show; remote ones are links, so viewing a log never fetches them.",
     props: {
       density: "How much room each message gets.",
       footer: "Content after the last message, such as a composer.",

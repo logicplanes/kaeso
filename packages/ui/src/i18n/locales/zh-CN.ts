@@ -61,6 +61,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "conversationView.encrypted": "服务商以加密形式返回了此推理。",
   "conversationView.error": "错误",
   "conversationView.image": "图片",
+  "conversationView.imageFrom": "来自 {host} 的图片",
   "conversationView.imageInput": "图片输入",
   "conversationView.reasoning": "推理",
   "conversationView.redacted": "已被服务商隐去",

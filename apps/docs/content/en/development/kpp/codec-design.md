@@ -98,7 +98,8 @@ The OpenAI Responses codec reads typed values with plain serde structs and write
 - a frame without any `data:` line, such as `retry: 3000` or `event: ping` alone, is no event in the specification. The parser still returns it, with `has_data: false` and empty `data`, and the writer writes it back without a `data:` line;
 - comments and unknown fields are reported instead of ignored, and an `id` or `retry` value the specification ignores is kept as an unknown field (`SseEvent::other`);
 - a last frame that no blank line closes is still reported;
-- a stream that ends in the middle of a line is reported as `SseError::Truncated` instead of being discarded.
+- a stream that ends in the middle of a line is reported as `SseError::Truncated` instead of being discarded;
+- a frame whose first line is a field named with a leading U+FEFF is written after a blank line, because a reader would take those bytes at the start of a stream for a byte order mark and drop them.
 
 Every stream decoder passes a frame without data on as an `Extra` whose raw JSON has no `data` key. Every encoder writes such an `Extra` back without a `data:` line. In OpenAI Chat Completions, an `event: error` frame without data is such an `Extra`, not an error.
 

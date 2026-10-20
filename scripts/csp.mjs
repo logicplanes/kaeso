@@ -163,6 +163,17 @@ export function withPolicyMeta(html, policy) {
   return { html: `${cleaned.slice(0, at)}<meta http-equiv="content-security-policy" content="${policy}">${cleaned.slice(at)}` };
 }
 
+const SITE_HEADERS = [
+  ["Strict-Transport-Security", "max-age=63072000; includeSubDomains"],
+  ["X-Content-Type-Options", "nosniff"],
+  ["Referrer-Policy", "strict-origin-when-cross-origin"],
+];
+
+function headersFile(policy) {
+  const lines = [["Content-Security-Policy", policy], ...SITE_HEADERS].map(([name, value]) => `  ${name}: ${value}\n`);
+  return `/*\n${lines.join("")}`;
+}
+
 export function writeSitePolicy(dir, options = {}) {
   const policy = sitePolicy(dir, options);
   const problems = [...policy.problems];
@@ -175,6 +186,6 @@ export function writeSitePolicy(dir, options = {}) {
   if (problems.length) throw new Error(`csp: ${problems.length} to fix in ${dir}\n  ${problems.join("\n  ")}`);
   for (const [file, html] of pages) writeFileSync(join(dir, file), html);
   writeFileSync(join(dir, "csp.txt"), `${policy.header}\n`);
-  writeFileSync(join(dir, "_headers"), `/*\n  Content-Security-Policy: ${policy.header}\n`);
+  writeFileSync(join(dir, "_headers"), headersFile(policy.header));
   return `csp: ${policy.files.length} pages under one policy, ${policy.scripts} inline script and ${policy.styles} inline style hashes, in csp.txt and _headers`;
 }

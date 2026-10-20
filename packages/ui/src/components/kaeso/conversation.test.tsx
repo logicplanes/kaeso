@@ -32,7 +32,8 @@ describe("ConversationView", () => {
     expect(container.querySelector("pre")).toHaveTextContent('{"ok":true}');
   });
 
-  it("opens images only from http(s) and inline data", () => {
+  it("shows inline images, links remote ones without loading them and drops other schemes", () => {
+    const pixel = "data:image/png;base64,iVBORw0KGgo=";
     const { container } = render(
       <ConversationView
         messages={[
@@ -41,6 +42,7 @@ describe("ConversationView", () => {
             content: [
               { type: "image", src: "javascript:alert(1)", alt: "bad" },
               { type: "image", src: "https://example.com/receipt.png", alt: "Receipt" },
+              { type: "image", src: pixel, alt: "Inline" },
             ],
           },
         ]}
@@ -48,6 +50,9 @@ describe("ConversationView", () => {
     );
     const links = [...container.querySelectorAll("a")];
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["https://example.com/receipt.png"]);
+    expect(links[0]).toHaveTextContent("Image from example.com");
+    expect(links[0]?.getAttribute("rel")).toContain("nofollow");
+    expect([...container.querySelectorAll("img")].map((i) => i.getAttribute("src"))).toEqual([pixel]);
     expect(container.innerHTML).not.toContain("javascript:");
   });
 });

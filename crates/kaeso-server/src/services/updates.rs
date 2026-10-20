@@ -428,6 +428,12 @@ async fn fetch_manifest(url: &str, version: &Version, downloads: &str) -> Result
     Manifest::parse(&body, version).map_err(|e| e.to_string())
 }
 
+fn release_page(url: String) -> String {
+    let https = url::Url::parse(&url)
+        .is_ok_and(|u| u.scheme() == "https" && u.username().is_empty() && u.password().is_none());
+    if https { url } else { String::new() }
+}
+
 fn notes(body: Option<String>) -> String {
     let mut text = body.unwrap_or_default();
     if text.len() > MAX_NOTES {
@@ -518,7 +524,7 @@ async fn rows_of(
                 published_at: r.published_at.unwrap_or(OffsetDateTime::UNIX_EPOCH),
                 prerelease: r.prerelease || !version.pre.is_empty(),
                 notes: notes(r.body),
-                url: r.html_url,
+                url: release_page(r.html_url),
                 manifest,
                 manifest_error,
                 art,
@@ -961,6 +967,20 @@ pub async fn reconcile_running(state: &AppState) -> Result<Option<JobRow>, Store
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn release_pages_are_https_links_or_nothing() {
+        let page = "https://github.com/logicplanes/kaeso/releases/tag/v1.2.3";
+        assert_eq!(release_page(page.to_owned()), page);
+        for bad in [
+            "http://github.com/logicplanes/kaeso",
+            "javascript:alert(1)",
+            "https://user:secret@github.com/x",
+            "x",
+        ] {
+            assert_eq!(release_page(bad.to_owned()), "", "{bad}");
+        }
+    }
 
     #[test]
     fn only_artwork_the_console_can_draw_is_kept() {
