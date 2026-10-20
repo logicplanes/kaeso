@@ -65,7 +65,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [view, setView] = useState<View>("search");
   const catalog = useProviders(org);
   const [chosen, setProvider] = useState(() => recall<string>(LAST_PROVIDER));
-  const provider = chosen ?? catalog.list[0]?.id ?? "";
+  const provider = (chosen && catalog.get(chosen) ? chosen : catalog.list[0]?.id) ?? "";
   const providers = useProviderOptions(org);
   const dialects = catalog.dialects(provider);
   const orgKeys = useOrgProviderKeys(org);
