@@ -17,11 +17,11 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 
 | Anbieter | Formate | Host | Schlüssel |
 | --- | --- | --- | --- |
-| Anthropic `anthropic` | Messages, Token-Zählung | `api.anthropic.com` | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys), `sk-ant-` |
-| DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys), `sk-` |
-| Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com/keys](https://console.groq.com/keys), `gsk_` |
-| OpenAI `openai` | Responses, Chat Completions, Embeddings, Token-Zählung | `api.openai.com` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys), `sk-` |
-| OpenRouter `openrouter` | Chat Completions, Embeddings | `openrouter.ai` | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys), `sk-or-v1-` |
+| Anthropic `anthropic` | Messages, Token-Zählung | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
+| DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
+| Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
+| OpenAI `openai` | Responses, Chat Completions, Embeddings, Token-Zählung | `api.openai.com` | [platform.openai.com](https://platform.openai.com/api-keys), `sk-` |
+| OpenRouter `openrouter` | Chat Completions, Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys), `sk-or-v1-` |
 | SpaceX `xai` | Responses, Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai), `xai-` |
 | Together AI `togetherai` | Chat Completions, Embeddings | `api.together.ai` | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), `tgp_v1_` |
 
