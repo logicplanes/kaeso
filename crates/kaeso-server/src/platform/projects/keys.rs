@@ -11,7 +11,7 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::{KEYS_ARCHIVED, ensure_active};
-use crate::platform::access::Ctx;
+use crate::platform::access::{Caller, Ctx};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{
@@ -52,6 +52,11 @@ async fn create_key(
     let name = validate_name(&req.name)?;
     let (inference, platform) = req.access.flags();
     if platform {
+        if !matches!(ctx.caller, Caller::Session(_)) {
+            return Err(ApiError::PermissionDenied(
+                "Keys can't create keys with platform access; use a console session.".into(),
+            ));
+        }
         if !ctx
             .project()?
             .rights
@@ -284,28 +289,65 @@ pub(crate) enum Change {
     Archive,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Holder {
+    Owner,
+    Manager,
+}
+
+fn may_enable(ctx: &Ctx, disabler: Option<&keys::Disabler>, holder: Holder) -> ApiResult<()> {
+    let by_person = disabler.is_some_and(|d| d.kind.as_deref() == Some("user"));
+    match holder {
+        Holder::Owner => {
+            let me = ctx.acting_user().map(|u| u.uuid());
+            if by_person && disabler.and_then(|d| d.id) == me && me.is_some() {
+                Ok(())
+            } else {
+                Err(ApiError::PermissionDenied(
+                    "Someone else disabled this key; ask a holder of `keys.all.manage` to enable it."
+                        .into(),
+                ))
+            }
+        }
+        Holder::Manager if by_person && !matches!(ctx.caller, Caller::Session(_)) => {
+            Err(ApiError::PermissionDenied(PERSON_DISABLED.into()))
+        }
+        Holder::Manager => Ok(()),
+    }
+}
+
+pub(crate) const PERSON_DISABLED: &str =
+    "A person disabled this key, so only a person can enable it; use a console session.";
+
 pub(crate) async fn change(
     state: &AppState,
     ctx: &Ctx,
     org: OrgId,
     row: &keys::KeyRow,
     change: Change,
+    holder: Holder,
 ) -> ApiResult<KeyView> {
     if row.archived_at.is_some() {
         return Err(ApiError::Conflict(
             "The key is archived and cannot change.".into(),
         ));
     }
+    let (kind, by) = creator_of(ctx);
+    let actor = keys::Actor { kind, id: by };
     let mut tx = state.pg.begin().await?;
     let (action, done) = match change {
         Change::Disable => (
             "key.disable",
-            keys::set_disabled(&mut *tx, row.project_id, row.id, Some(ctx.now)).await?,
+            keys::set_disabled(&mut *tx, row.project_id, row.id, Some(ctx.now), actor).await?,
         ),
-        Change::Enable => (
-            "key.enable",
-            keys::set_disabled(&mut *tx, row.project_id, row.id, None).await?,
-        ),
+        Change::Enable => {
+            let disabler = keys::disabled_by(&mut *tx, row.project_id, row.id).await?;
+            may_enable(ctx, disabler.as_ref(), holder)?;
+            (
+                "key.enable",
+                keys::set_disabled(&mut *tx, row.project_id, row.id, None, actor).await?,
+            )
+        }
         Change::Archive => (
             "key.archive",
             keys::archive(&mut *tx, row.project_id, row.id, ctx.now).await?,
@@ -345,7 +387,15 @@ pub async fn disable(
 ) -> ApiResult<Json<KeyView>> {
     let row = key(&state, &ctx, &id).await?;
     Ok(Json(
-        change(&state, &ctx, ctx.org()?.id(), &row, Change::Disable).await?,
+        change(
+            &state,
+            &ctx,
+            ctx.org()?.id(),
+            &row,
+            Change::Disable,
+            Holder::Manager,
+        )
+        .await?,
     ))
 }
 
@@ -364,7 +414,15 @@ pub async fn enable(
 ) -> ApiResult<Json<KeyView>> {
     let row = key(&state, &ctx, &id).await?;
     Ok(Json(
-        change(&state, &ctx, ctx.org()?.id(), &row, Change::Enable).await?,
+        change(
+            &state,
+            &ctx,
+            ctx.org()?.id(),
+            &row,
+            Change::Enable,
+            Holder::Manager,
+        )
+        .await?,
     ))
 }
 
@@ -383,6 +441,14 @@ pub async fn archive(
 ) -> ApiResult<Json<KeyView>> {
     let row = key(&state, &ctx, &id).await?;
     Ok(Json(
-        change(&state, &ctx, ctx.org()?.id(), &row, Change::Archive).await?,
+        change(
+            &state,
+            &ctx,
+            ctx.org()?.id(),
+            &row,
+            Change::Archive,
+            Holder::Manager,
+        )
+        .await?,
     ))
 }

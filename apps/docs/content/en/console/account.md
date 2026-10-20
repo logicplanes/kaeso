@@ -59,6 +59,7 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 
 - In your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
+- As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner.
 
 ## After signing in through single sign-on
 

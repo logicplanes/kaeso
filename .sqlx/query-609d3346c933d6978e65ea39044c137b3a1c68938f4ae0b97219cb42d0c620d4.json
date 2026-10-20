@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_platform_keys SET disabled_at = $3, disabled_by_kind = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $4 END, disabled_by_id = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $5::uuid END, updated_at = now() WHERE org_id = $1 AND id = $2 AND archived_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "609d3346c933d6978e65ea39044c137b3a1c68938f4ae0b97219cb42d0c620d4"
+}

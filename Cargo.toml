@@ -58,6 +58,7 @@ utoipa-axum = "0.3"
 aes-gcm = "0.11"
 argon2 = { version = "0.6", features = ["zeroize"] }
 sha2 = "0.11"
+hmac = "0.13"
 subtle = "2.6"
 rand = "0.10"
 zeroize = { version = "1.9", features = ["derive"] }

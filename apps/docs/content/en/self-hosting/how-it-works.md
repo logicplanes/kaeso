@@ -69,6 +69,7 @@ The services share as little as they can:
 - PostgreSQL, ClickHouse and Valkey get back only the capabilities their images need at start. With them, each hands its data directory to its own user and stops running as root. `caddy-init` only gets the rights to read every directory and change owners, and `updater-init` also the right to change a file's mode.
 - Every service has a memory limit and a process limit, and Docker rotates its log at 10 MB, keeping five files ([container limits](configuration.md#container-limits)).
 - The gateway signs in to PostgreSQL as `kaeso`, which owns the Kaeso database but is not a superuser. ClickHouse's `kaeso` user can't manage users or grants, and Valkey requires a password on every connection, which it reads from a file rather than its command line.
+- Cache entries that instances share through Valkey carry a signature made with a key derived from the master key, and an entry without it is loaded from PostgreSQL again. Valkey still holds the limit counters and tells every instance what changed, so never share it with anything outside the install's trust boundary.
 - Caddy sends `Strict-Transport-Security` and never routes the gateway's metrics port, 9100.
 
 ## Several gateways

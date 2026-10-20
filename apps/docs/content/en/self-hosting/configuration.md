@@ -102,7 +102,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | text, secret | required | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. |
 | `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
 | `KAESO_VALKEY_URL` | `valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
-| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, to share one Valkey between installs. |
+| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, to share one Valkey between installs that trust each other. |
 
 ### Master keys
 

@@ -668,7 +668,13 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
         }
     }
     for call in &known.tool_calls {
-        blocks.push(decode_tool_call(call, origin, false, &|n| n.to_owned())?);
+        blocks.push(decode_tool_call(
+            call,
+            origin,
+            false,
+            &|n| n.to_owned(),
+            None,
+        )?);
     }
     let mut message = Message::new(Role::Assistant, blocks);
     message.extras = extras;

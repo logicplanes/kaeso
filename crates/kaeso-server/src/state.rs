@@ -55,7 +55,7 @@ pub struct Parts {
 
 impl AppState {
     pub fn new(p: Parts) -> AppState {
-        let caches = Caches::new(&p.valkey);
+        let caches = Caches::new(&p.valkey, &p.keyring);
         let connect_timeout = p.config.upstream.connect_timeout;
         caches.listen(&p.valkey);
         AppState(Arc::new(Inner {

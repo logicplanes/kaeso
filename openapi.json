@@ -2038,7 +2038,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes.",
+        "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes. Needs a recent sign-in.",
         "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceOrgsOrgOwner",
         "parameters": [
@@ -3188,7 +3188,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org.",
+        "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org. Needs a recent sign-in.",
         "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "deleteInstanceUsersUser",
         "parameters": [
@@ -3304,7 +3304,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves.",
+        "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves. Needs a recent sign-in.",
         "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "putInstanceUsersUserInstanceAdmin",
         "parameters": [
@@ -3439,7 +3439,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Resets a user's two-factor authentication.",
+        "summary": "Resets a user's two-factor authentication. Needs a recent sign-in.",
         "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
         "operationId": "postInstanceUsersUserReset2fa",
         "parameters": [
