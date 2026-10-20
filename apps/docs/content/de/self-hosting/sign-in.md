@@ -31,8 +31,8 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 ## Wer sich über Single Sign-on anmeldet
 
-- Nur Adressen unter den E-Mail-Domains der Verbindung. Jede Domain gehört auf einer Installation zu einer Organisation.
-- Nur Adressen, die der Anbieter nicht als unbestätigt kennzeichnet.
+- Nur Adressen unter den bestätigten E-Mail-Domains der Verbindung ([E-Mail-Domains bestätigen](../console/organizations-and-projects.md#e-mail-domains-bestätigen)). Jede Domain bestätigt auf einer Installation eine Organisation.
+- Nur Adressen, die der Anbieter mit `email_verified` als bestätigt kennzeichnet. Für einen Anbieter, der den Claim nie sendet, kann eine Verbindung **Bestätigte Adressen verlangen** abschalten; eine als unbestätigt gekennzeichnete Adresse bleibt abgewiesen.
 - Wer neu bei Kaeso ist, tritt der Organisation mit einer Einladung an seine Adresse bei oder mit der Rolle, die die Verbindung Personen ohne Einladung gibt. Ohne beides erhält er keinen Zugang. Kaeso legt das Konto auch an, wo die [Einstellung zur Kontoerstellung](../console/instance-administration.md#installationseinstellungen-ändern) keine Registrierungen erlaubt, denn der Anbieter der Organisation bürgt für die Person.
 - Kaeso verknüpft jedes Konto mit seiner Identität beim Anbieter, dem Aussteller und dem Subjekt des Anbieters. Spätere Anmeldungen folgen dieser Verknüpfung, nicht der E-Mail-Adresse.
 - Ein bestehendes Konto meldet sich über Single Sign-on erst an, wenn seine Inhaberin oder sein Inhaber es nach einer Anmeldung auf anderem Weg unter **Konto** › **Sicherheit** verknüpft ([Single Sign-on verknüpfen](../console/account.md#single-sign-on-verknüpfen)), und nur dort, wo es Mitglied ist. Um eine Einladung anzunehmen, meldet es sich zuerst auf anderem Weg an.
@@ -40,7 +40,7 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 Eine Anmeldung über den Anbieter einer Organisation öffnet nur diese Organisation und liest das eigene Konto der Person. Andere Organisationen, die Verwaltung der Instanz und Änderungen an E-Mail, Passwort und Zwei-Faktor-Authentifizierung des Kontos brauchen eine weitere Anmeldung ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
 
-Fügen Sie der Verbindung nicht die Domain eines öffentlichen Mail-Anbieters hinzu, um solche Personen hereinzulassen. Sonst würde sich jede Adresse unter dieser Domain über Ihren Anbieter anmelden, und keine andere Organisation könnte die Domain nutzen.
+Eine Verbindung kann keine Domain eines öffentlichen Mail-Anbieters wie `gmail.com` enthalten: Jede Adresse dort würde sich über den Anbieter einer einzigen Organisation anmelden.
 
 ## Nur mit Single Sign-on betreiben
 

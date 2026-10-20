@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", display_name, auto_redirect FROM org_oidc",
+  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", verification_token, display_name, auto_redirect, require_email_verified FROM org_oidc",
   "describe": {
     "columns": [
       {
@@ -88,6 +88,23 @@
       },
       {
         "ordinal": 8,
+        "name": "verified_domains!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "verification_token",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "verification_token"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "display_name",
         "type_info": "Text",
         "origin": {
@@ -98,13 +115,24 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "auto_redirect",
         "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "org_oidc",
             "name": "auto_redirect"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "require_email_verified",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "require_email_verified"
           }
         }
       }
@@ -121,9 +149,12 @@
       false,
       false,
       null,
+      null,
+      false,
       true,
+      false,
       false
     ]
   },
-  "hash": "a17134c0ae096d99beb57a555ead355f634433a2995128a67dc58bd1a140722f"
+  "hash": "de1ca4652e8c53de4c44fab4bfa68acd247daffd8989660f3c1b688bba480e11"
 }

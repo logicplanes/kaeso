@@ -12,7 +12,7 @@
   "playground.full": "Bis zu {count} Modelle gleichzeitig vergleichen",
   "playground.loadingModels": "Modelle werden geladen",
   "playground.modelError": "Das Modell brach mit einem Fehler ab. Bitte erneut versuchen.",
-  "playground.noProviderKey": "Kein {provider}-Schlüssel für dieses Projekt",
+  "playground.noProviderKeyShort": "Kein {provider}-Schlüssel",
   "playground.parameters": "Parameter",
   "playground.prompt": "Prompt senden",
   "playground.promptEvery": "Prompt an alle Modelle senden",

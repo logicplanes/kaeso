@@ -61,13 +61,34 @@ describe("organization providers", () => {
     expect(await within(await table()).findByText("Grace Hopper, 15 Oct 2026")).toBeInTheDocument();
     expect(second).toHaveTextContent(/ago/);
 
-    const anthropic = await row("Anthropic");
-    expect(anthropic).toHaveTextContent("Not connected");
-    expect(within(anthropic).getByRole("button", { name: "Connect" })).toBeInTheDocument();
+    expect(within(await table()).queryByText("Anthropic")).not.toBeInTheDocument();
+    expect(within(await table()).queryByText("Groq")).not.toBeInTheDocument();
 
     const mistral = await row("Mistral main");
     expect(mistral).toHaveTextContent("Mistral");
     expect(mistral).toHaveTextContent("Every unassigned project");
+  });
+
+  it("explains provider keys to a new organization and offers to add one", async () => {
+    signedIn();
+    keys([]);
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
+    expect(screen.getByText("A provider key lets this organization's projects call that provider's models.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "About provider keys" })).toHaveAttribute("href", "https://docs.kaeso.app/console/provider-keys");
+    await user.click(screen.getByRole("button", { name: "Add provider key" }));
+    const dialog = await screen.findByRole("dialog", { name: /Add provider key/ });
+    expect(within(dialog).getByRole("listbox", { name: "Provider" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("group")).not.toBeInTheDocument();
+  });
+
+  it("offers only the documentation in an empty organization to people who can't add keys", async () => {
+    withRights(["org.view", "provider_credentials.view"]);
+    keys([]);
+    await renderApp(PATH);
+    expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add provider key" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "About provider keys" })).toBeInTheDocument();
   });
 
   it("hides the providers from people who can't view them", async () => {
@@ -97,7 +118,6 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     await row("OpenAI production");
     expect(screen.queryByRole("button", { name: "Actions for OpenAI production" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Connect" })).not.toBeInTheDocument();
     const add = screen.getByRole("button", { name: "Add key" });
     await hoverReason(user, add, "You need Add provider keys; ask an owner or admin for it.");
     await user.click(add);
@@ -116,7 +136,7 @@ describe("organization providers", () => {
     ).toEqual(["Delete"]);
   });
 
-  it("opens the add, connect and replace dialogs", async () => {
+  it("opens the add and replace dialogs", async () => {
     signedIn();
     keys([production, staging]);
     const { user } = await renderApp(PATH);
@@ -125,11 +145,6 @@ describe("organization providers", () => {
     expect(await screen.findByRole("dialog", { name: /Add provider key/ })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add provider key/ })).not.toBeInTheDocument());
-
-    await user.click(within(await row("Anthropic")).getByRole("button", { name: "Connect" }));
-    expect(await screen.findByRole("dialog", { name: /Connect Anthropic/ })).toBeInTheDocument();
-    await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Connect Anthropic/ })).not.toBeInTheDocument());
 
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Replace" }));

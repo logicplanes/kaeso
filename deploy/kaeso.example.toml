@@ -34,7 +34,7 @@ transport = "smtp"
 password = true
 magic_link = true
 oidc = true
-oidc_allow_private_networks = true
+oidc_allow_private_networks = false
 
 [key_failures]
 per_address = 100

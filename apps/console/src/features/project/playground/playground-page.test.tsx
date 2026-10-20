@@ -107,7 +107,7 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "anthropic/claude-opus-5-5,openai/gpt-5.4-mini" }));
     await user.click(screen.getByRole("button", { name: "Add column" }));
     await user.click(screen.getByRole("button", { name: "Add column" }));
-    await waitFor(() => expect(screen.getAllByRole("combobox", { name: "Model" })).toHaveLength(4));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Model" })).toHaveLength(4));
     const add = screen.getByRole("button", { name: "Add column" });
     expect(add).toHaveAttribute("aria-disabled", "true");
     await hoverReason(user, add, "Compare up to 4 models at once");
@@ -119,7 +119,7 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(sentBodies()).toHaveLength(4));
 
     await user.click(screen.getAllByRole("button", { name: "Remove Claude Opus 5.5" })[0] as HTMLElement);
-    await waitFor(() => expect(screen.getAllByRole("combobox", { name: "Model" })).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Model" })).toHaveLength(3));
     expect(screen.getAllByText("From claude.")).toHaveLength(1);
     expect(screen.getByText("From gpt-5.4-mini.")).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-nano,anthropic/claude-opus-5-5" });
@@ -139,12 +139,14 @@ describe("PlaygroundPage", () => {
     const { user, router } = await renderApp(PLAYGROUND);
 
     await screen.findByText("claude-opus-5-5");
-    await user.click(screen.getByRole("combobox", { name: "Model" }));
+    await user.click(screen.getByRole("button", { name: "Model" }));
     const listbox = await screen.findByRole("listbox");
-    expect(within(listbox).getByRole("option", { name: /Claude X claude-x No Anthropic key for this project/ })).toHaveAttribute("aria-disabled", "true");
+    expect(within(listbox).getByRole("option", { name: /Claude X claude-x No Anthropic key/ })).toHaveAttribute("aria-disabled", "true");
     await user.click(within(listbox).getByRole("option", { name: /GPT-5.4 mini/ }));
-    await user.click(screen.getByRole("combobox", { name: "Model" }));
-    await user.click(within(await screen.findByRole("listbox")).getByRole("option", { name: /Claude Opus 5.5/ }));
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const recent = within(await screen.findByRole("listbox")).getByRole("group", { name: "Recent" });
+    expect(within(recent).getByRole("option", { name: /GPT-5.4 mini/ })).toHaveAttribute("aria-selected", "true");
+    await user.click(within(screen.getByRole("group", { name: "Anthropic" })).getByRole("option", { name: /Claude Opus 5.5/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "anthropic/claude-opus-5-5" }));
   });
 
@@ -153,7 +155,7 @@ describe("PlaygroundPage", () => {
     on("GET", MODELS, page([playgroundModel()]));
     await renderApp(`${PLAYGROUND}?models=openai/gone-model`);
 
-    const select = await screen.findByRole("combobox", { name: "Model" });
+    const select = await screen.findByRole("button", { name: "Model" });
     expect(select).toHaveTextContent("Choose a model");
     expect(screen.getByRole("textbox", { name: "Prompt" })).toBeDisabled();
   });
@@ -300,7 +302,7 @@ describe("PlaygroundPage", () => {
     expect((await notifications().findAllByText("Models are hidden from you.")).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Add column" }));
     expect(router.state.location.search).toEqual({});
-    expect(screen.getAllByRole("combobox", { name: "Model" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Model" })).toHaveLength(1);
   });
 
   it("sends only to the columns that have a model", async () => {
@@ -310,7 +312,7 @@ describe("PlaygroundPage", () => {
     const { user } = await renderApp(`${PLAYGROUND}?models=openai/gone-model,openai/gpt-5.4-mini`);
 
     await screen.findByText("gpt-5.4-mini");
-    expect(screen.getAllByRole("combobox", { name: "Model" })[0]).toHaveTextContent("Choose a model");
+    expect(screen.getAllByRole("button", { name: "Model" })[0]).toHaveTextContent("Choose a model");
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
     expect(await screen.findByText("Only one.")).toBeInTheDocument();
@@ -324,7 +326,7 @@ describe("PlaygroundPage", () => {
     const { user, router } = await renderApp(`${PLAYGROUND}?models=openai/gpt-5.4-mini,anthropic/claude-opus-5-5`);
 
     await screen.findByText("claude-opus-5-5");
-    await user.click(screen.getAllByRole("combobox", { name: "Model" })[1] as HTMLElement);
+    await user.click(screen.getAllByRole("button", { name: "Model" })[1] as HTMLElement);
     const option = within(await screen.findByRole("listbox")).getByRole("option", { name: /gpt-5\.4-nano/ });
     expect(within(option).getAllByText("gpt-5.4-nano")).toHaveLength(1);
     await user.click(option);

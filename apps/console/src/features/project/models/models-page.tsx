@@ -10,7 +10,9 @@ import {
   ModelLabel,
   Pill,
   PillTabs,
+  Popover,
   ProviderBadge,
+  ProviderPicker,
   Select,
   Switch,
   Text,
@@ -27,6 +29,8 @@ import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { providerLabel } from "~/format/labels";
+import { useProviderOptions } from "~/kaeso/providers";
+import { usePhone } from "~/shell/use-phone";
 import { monthLabel } from "~/format/period";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
@@ -87,6 +91,9 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   };
 
   const all = useMemo(() => catalogue.data ?? [], [catalogue.data]);
+  const providerIds = useMemo(() => [...new Set(all.map((m) => m.provider))], [all]);
+  const providers = useProviderOptions(org, providerIds);
+  const phone = usePhone();
   const filtered = useMemo(
     () =>
       all.filter(
@@ -159,6 +166,35 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
     </Button>
   );
 
+  const filters = (stacked: boolean) => (
+    <>
+      <ProviderPicker
+        appearance="select"
+        size="sm"
+        {...(stacked ? { className: "w-full" } : {})}
+        aria-label={common.provider()}
+        allLabel={t("models.allProviders", "All providers")}
+        providers={providers}
+        value={search.provider ?? null}
+        onValueChange={(v) => setSearch({ provider: v ?? undefined })}
+      />
+      <Select
+        aria-label={t("models.capability", "Capability")}
+        size="sm"
+        {...(stacked ? { fullWidth: true } : {})}
+        value={search.cap ?? "any"}
+        onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
+        options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
+      />
+      <Switch
+        size="sm"
+        label={t("models.onlyOverridden", "Only overridden")}
+        checked={!!search.overridden}
+        onCheckedChange={(v) => setSearch({ overridden: v || undefined })}
+      />
+    </>
+  );
+  const activeFilters = [search.provider, search.cap, search.overridden].filter(Boolean).length;
   return (
     <>
       <ProjectHeader
@@ -183,29 +219,20 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
       {tab === "catalogue" ? (
         <>
           <Toolbar aria-label={t("models.filter", "Filter models")}>
-            <Select
-              aria-label={common.provider()}
-              size="sm"
-              value={search.provider ?? "all"}
-              onValueChange={(v) => setSearch({ provider: v === "all" ? undefined : v })}
-              options={[
-                { value: "all", label: t("models.allProviders", "All providers") },
-                ...[...new Set(all.map((m) => m.provider))].sort().map((p) => ({ value: p, label: providerLabel(p) })),
-              ]}
-            />
-            <Select
-              aria-label={t("models.capability", "Capability")}
-              size="sm"
-              value={search.cap ?? "any"}
-              onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
-              options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
-            />
-            <Switch
-              size="sm"
-              label={t("models.onlyOverridden", "Only overridden")}
-              checked={!!search.overridden}
-              onCheckedChange={(v) => setSearch({ overridden: v || undefined })}
-            />
+            {phone ? (
+              <Popover>
+                <Popover.Trigger>
+                  <Button size="sm" leadingIcon={icons.filter}>
+                    {activeFilters ? t("models.filtersCount", "Filters · {count}", { count: activeFilters }) : t("models.filters", "Filters")}
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Content aria-label={t("models.filter", "Filter models")}>
+                  <div className="flex w-280 max-w-full flex-col gap-12">{filters(true)}</div>
+                </Popover.Content>
+              </Popover>
+            ) : (
+              filters(false)
+            )}
             <Toolbar.Spacer />
             <Button
               size="sm"

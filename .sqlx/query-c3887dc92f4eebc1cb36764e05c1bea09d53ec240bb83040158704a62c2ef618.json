@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", c.display_name, c.auto_redirect FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id WHERE c.org_id = $1 GROUP BY c.org_id",
+  "query": "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.verified_at IS NOT NULL), '{}') AS \"verified_domains!\", c.verification_token, c.display_name, c.auto_redirect, c.require_email_verified FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id WHERE c.org_id = $1 GROUP BY c.org_id",
   "describe": {
     "columns": [
       {
@@ -88,6 +88,23 @@
       },
       {
         "ordinal": 8,
+        "name": "verified_domains!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "verification_token",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "verification_token"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "display_name",
         "type_info": "Text",
         "origin": {
@@ -98,13 +115,24 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "auto_redirect",
         "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "org_oidc",
             "name": "auto_redirect"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "require_email_verified",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "require_email_verified"
           }
         }
       }
@@ -123,9 +151,12 @@
       false,
       false,
       null,
+      null,
+      false,
       true,
+      false,
       false
     ]
   },
-  "hash": "252992f1ab8aaf125ca8d3ffa73697df92af2cdb59f2b699240eb91acd130a14"
+  "hash": "c3887dc92f4eebc1cb36764e05c1bea09d53ec240bb83040158704a62c2ef618"
 }

@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { Field, NumberInput, Segmented, Select, Switch, TagInput, Text } from "@logicplanes/kaeso-ui";
+import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import type { CatalogueModelView } from "~/api/generated/types";
-import { modelOption } from "~/format/models";
+import { catalogueModelOption } from "./model-options";
 import { limitKindLabel, limitUnit } from "~/format/labels";
 import { t } from "~/i18n";
 
@@ -80,6 +82,7 @@ export function LimitEditor({
 }) {
   const set = (patch: Partial<LimitDraft>) => onChange({ ...value, ...patch });
   const rate = isRate(value.kind);
+  const options = useMemo(() => models.map(catalogueModelOption), [models]);
   return (
     <div className="flex flex-col gap-16">
       {!fixedKind && (
@@ -125,12 +128,15 @@ export function LimitEditor({
         )
       )}
       {!fixedKind && (
-        <Select
+        <ModelPicker
           label={t("common.model", "Model")}
+          appearance="default"
+          size="md"
           fullWidth
-          value={value.model ?? "all"}
-          onValueChange={(m) => set({ model: m === "all" ? null : m })}
-          options={[{ value: "all", label: t("kaeso.limits.allModels", "All models") }, ...models.map(modelOption)]}
+          allLabel={t("kaeso.limits.allModels", "All models")}
+          value={value.model}
+          onValueChange={(m) => set({ model: m || null })}
+          options={options}
         />
       )}
       {!rate && (

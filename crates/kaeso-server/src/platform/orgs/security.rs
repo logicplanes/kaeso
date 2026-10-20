@@ -17,6 +17,7 @@ use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{RoleBook, RoleRef, check_org, org_to_store};
 use crate::platform::json::Body;
 use crate::platform::params::Path;
+use crate::services::dns;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -27,9 +28,10 @@ pub struct SsoView {
     pub issuer: String,
     #[doc = "The client id Kaeso uses."]
     pub client_id: String,
-    #[doc = "The email domains that sign in through it; internationalised domains\n\
-        in Unicode."]
-    pub domains: Vec<String>,
+    #[doc = "The email domains that sign in through it, and whether each is\n\
+        verified. Only a verified domain's addresses sign in or join through\n\
+        the provider."]
+    pub domains: Vec<SsoDomain>,
     #[doc = "The master key id that wraps the client secret."]
     pub key_id: String,
     #[doc = "Where the provider must send users back (register it there)."]
@@ -40,10 +42,32 @@ pub struct SsoView {
     #[doc = "The sign-in page sends people to the provider without a click when it\n\
         offers this provider alone."]
     pub auto_redirect: bool,
+    #[doc = "Whether ID tokens must mark the address as verified with\n\
+        `email_verified`."]
+    pub require_email_verified: bool,
     #[doc = "The org's sign-in link: the sign-in page with this provider's button,\n\
         without asking for an address. `GET auth/oidc/start?org=…` goes\n\
         straight to the provider instead."]
     pub sign_in_url: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "An email domain of the SSO connection.")]
+pub struct SsoDomain {
+    #[doc = "The domain; internationalised domains in Unicode."]
+    #[schema(example = "acme.example")]
+    pub domain: String,
+    #[doc = "Whether the domain is verified by its DNS TXT record."]
+    pub verified: bool,
+    #[doc = "When it was verified; `null` while it isn't."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub verified_at: Option<time::OffsetDateTime>,
+    #[doc = "The DNS name of the TXT record that proves the org holds the domain."]
+    #[schema(example = "_kaeso-verify.acme.example")]
+    pub record_name: String,
+    #[doc = "The TXT record's value, the same for every domain of the org."]
+    #[schema(example = "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA")]
+    pub record_value: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -66,18 +90,29 @@ pub struct SecurityView {
 }
 
 async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
+    let verified_at = oidc::verified_at(&state.pg, org.id).await?;
     let sso = oidc::get(&state.pg, org.id).await?.map(|c| SsoView {
-        issuer: c.issuer,
-        client_id: c.client_id,
         domains: c
             .domains
             .iter()
-            .map(|d| kaeso_core::email::display_domain(d))
+            .map(|d| {
+                let at = verified_at.iter().find(|(v, _)| v == d).map(|(_, at)| *at);
+                SsoDomain {
+                    domain: kaeso_core::email::display_domain(d),
+                    verified: at.is_some(),
+                    verified_at: at,
+                    record_name: dns::record_name(d),
+                    record_value: dns::record_value(&c.verification_token),
+                }
+            })
             .collect(),
+        issuer: c.issuer,
+        client_id: c.client_id,
         key_id: c.key_id,
         redirect_url: crate::auth::oidc::redirect_url(state),
         name: c.display_name,
         auto_redirect: c.auto_redirect,
+        require_email_verified: c.require_email_verified,
         sign_in_url: format!(
             "{}sign-in?org={}",
             state.config.public_url,
@@ -129,7 +164,9 @@ pub struct SsoRequest {
     pub issuer: String,
     #[doc = "The client id registered at the provider."]
     pub client_id: String,
-    #[doc = "The client secret. Required when creating; leave out to keep the stored one. Never returned."]
+    #[doc = "The client secret. Required when creating or when `issuer` or\n\
+        `client_id` changes; leave out otherwise to keep the stored one. Never\n\
+        returned."]
     #[schema(value_type = Option<String>, write_only)]
     pub client_secret: Option<SecretString>,
     #[doc = "The email domains that sign in through this provider (at least one)."]
@@ -152,6 +189,12 @@ pub struct SsoRequest {
         provider of an install that signs in only with SSO. Leave out to keep\n\
         the stored choice; off for a new connection."]
     pub auto_redirect: Option<bool>,
+    #[doc = "Refuse ID tokens that don't mark the address as verified with\n\
+        `email_verified`. Turn off only for a provider that never sends the\n\
+        claim and verifies every address itself; `email_verified: false` is\n\
+        always refused. Leave out to keep the stored choice; on for a new\n\
+        connection."]
+    pub require_email_verified: Option<bool>,
 }
 
 #[utoipa::path(
@@ -180,6 +223,16 @@ pub async fn put_sso(
             "`issuer` must be an https URL.",
         ));
     }
+    if issuer.query().is_some()
+        || issuer.fragment().is_some()
+        || !issuer.username().is_empty()
+        || issuer.password().is_some()
+    {
+        return Err(ApiError::invalid(
+            "issuer",
+            "`issuer` takes no query, fragment or credentials.",
+        ));
+    }
     let issuer = issuer.as_str().trim_end_matches('/').to_owned();
     if req.client_id.trim().is_empty() {
         return Err(ApiError::invalid("client_id", "`client_id` is required."));
@@ -190,6 +243,12 @@ pub async fn put_sso(
             .ok_or_else(|| {
                 ApiError::invalid(&format!("domains[{i}]"), format!("`{d}` is not a domain."))
             })?;
+        if kaeso_core::email::is_public_mail(&domain) {
+            return Err(ApiError::invalid(
+                &format!("domains[{i}]"),
+                format!("`{d}` is a public mail domain; name your organization's own domains."),
+            ));
+        }
         domains.push(domain);
     }
     domains.sort();
@@ -228,8 +287,17 @@ pub async fn put_sso(
     let auto_redirect = req
         .auto_redirect
         .unwrap_or_else(|| existing.as_ref().is_some_and(|c| c.auto_redirect));
+    let require_email_verified = req
+        .require_email_verified
+        .unwrap_or_else(|| existing.as_ref().is_none_or(|c| c.require_email_verified));
     let secret: String = match (&req.client_secret, &existing) {
         (Some(s), _) => s.expose_secret().to_owned(),
+        (None, Some(c)) if c.issuer != issuer || c.client_id != req.client_id.trim() => {
+            return Err(ApiError::invalid(
+                "client_secret",
+                "Send `client_secret` again when you change `issuer` or `client_id`.",
+            ));
+        }
         (None, Some(c)) => {
             let sealed = Sealed {
                 ciphertext: c.secret_ciphertext.clone(),
@@ -269,14 +337,19 @@ pub async fn put_sso(
             wrapped_key: sealed.wrapped_key,
             key_id: sealed.key_id,
             domains: domains.clone(),
+            verified_domains: Vec::new(),
+            verification_token: existing
+                .as_ref()
+                .map_or_else(kaeso_crypto::random_token, |c| c.verification_token.clone()),
             display_name: display_name.clone(),
             auto_redirect,
+            require_email_verified,
         },
     )
     .await?;
     if let oidc::Upserted::DomainTaken(domain) = stored {
         return Err(ApiError::Conflict(format!(
-            "The domain {} already signs in through another organization.",
+            "The domain {} is verified by another organization.",
             kaeso_core::email::display_domain(&domain)
         )));
     }
@@ -285,9 +358,70 @@ pub async fn put_sso(
     orgs::update(&mut *tx, &row).await?;
     ctx.audit(Some(org), "security.sso_update")
         .target("org", org)
-        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect }))
+        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified }))
         .write(&mut tx)
         .await?;
+    tx.commit().await?;
+    Ok(Json(view(&state, &row).await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/security/sso/verify",
+    summary = "Verifies the SSO connection's email domains: looks up each unverified\n\
+    domain's TXT record and marks the domains whose record holds the org's value.",
+    description = "Each domain needs a TXT record named `_kaeso-verify.<domain>` with the value \
+    in `record_value`. Domains whose record isn't found yet stay unverified; DNS changes can take \
+    a while to show.",
+    tag = "orgs",
+    params(("org" = OrgId, Path)),
+    responses((status = 200, body = SecurityView))
+)]
+pub async fn verify_domains(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_org): Path<String>,
+) -> ApiResult<Json<SecurityView>> {
+    let scope = ctx.org()?;
+    let org = scope.id();
+    let connection = oidc::get(&state.pg, scope.org.id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("SSO connection"))?;
+    let wanted = dns::record_value(&connection.verification_token);
+    let mut proven = Vec::new();
+    for domain in connection
+        .domains
+        .iter()
+        .filter(|d| !connection.verified_domains.contains(d))
+    {
+        match state.dns.txt(&dns::record_name(domain)).await {
+            Ok(values) if values.iter().any(|v| v.trim() == wanted) => proven.push(domain.clone()),
+            Ok(_) => {}
+            Err(e) => {
+                tracing::info!(error = %e, domain = %domain, "SSO domain lookup failed");
+                return Err(ApiError::Unavailable(
+                    "The domain's DNS records couldn't be read; try again shortly.".into(),
+                ));
+            }
+        }
+    }
+    let mut tx = state.pg.begin().await?;
+    let row = lock_changeable(&mut tx, &ctx).await?;
+    for domain in &proven {
+        if oidc::verified_elsewhere(&mut *tx, row.id, domain).await? {
+            return Err(ApiError::Conflict(format!(
+                "The domain {} is verified by another organization.",
+                kaeso_core::email::display_domain(domain)
+            )));
+        }
+        if oidc::mark_verified(&mut *tx, row.id, domain, ctx.now).await? {
+            ctx.audit(Some(org), "security.sso_domain_verify")
+                .target("org", org)
+                .after(serde_json::json!({ "domain": domain }))
+                .write(&mut tx)
+                .await?;
+        }
+    }
     tx.commit().await?;
     Ok(Json(view(&state, &row).await?))
 }

@@ -91,6 +91,10 @@ export function setupToken(stack, service = "gateway") {
   return /#token=(\S+)/.exec(printed)?.[1] ?? null;
 }
 
+export function verifySsoDomain(stack, domain, service = "gateway") {
+  compose(stack, ["exec", "--no-TTY", service, "kaeso", "sso", "verify-domain", domain], { stdio: ["ignore", "pipe", "inherit"] });
+}
+
 export function signInLinkToken(stack, email, service = "gateway") {
   const printed = compose(stack, ["exec", "--no-TTY", service, "kaeso", "user", "sign-in-link", email], { stdio: ["ignore", "pipe", "inherit"] });
   return /#token=(\S+)/.exec(printed)?.[1] ?? null;
