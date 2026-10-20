@@ -118,6 +118,17 @@ pub fn decode_error(
         .unwrap_or_else(|e| KppError::new(ErrorKind::ProviderError, e.message).with_status(status))
 }
 
+pub fn decode_provider_error(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+    ctx: &EgressCtx,
+) -> KppError {
+    dispatch!(dialect, decode_provider_error(status, headers, body, ctx))
+        .unwrap_or_else(|e| KppError::new(ErrorKind::ProviderError, e.message).with_status(status))
+}
+
 pub fn models_dialect(headers: &HeaderList) -> DialectId {
     if headers.get("anthropic-version").is_some() {
         DialectId::AnthropicMessages

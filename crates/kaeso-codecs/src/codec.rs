@@ -41,6 +41,15 @@ pub trait Codec: sealed::Sealed {
 
     fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError;
 
+    fn decode_provider_error(
+        status: u16,
+        headers: &HeaderList,
+        body: &[u8],
+        _ctx: &EgressCtx,
+    ) -> KppError {
+        Self::decode_error(status, headers, body)
+    }
+
     fn decode_models_query(query: &str) -> Result<ModelsQuery, KppError>;
 
     fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError>;

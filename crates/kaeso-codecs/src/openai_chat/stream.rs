@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 
 use super::DIALECT;
 use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
-use super::error::decode_body;
+use super::error::{decode_body, with_detail};
 use super::profile::ReplyReasoning;
 use super::response::{
     decode_finish, decode_usage, plain_text_part, take_reasoning_field, thinking_part,
@@ -155,6 +155,7 @@ pub(crate) struct ChatStreamDecoder {
     reasoning: Option<u32>,
     thinking_parts: bool,
     reasoning_fields: &'static [&'static str],
+    error_detail: &'static [&'static str],
     tools: IndexMap<u32, ToolState>,
     running_usage: Option<Usage>,
     finished: bool,
@@ -179,6 +180,7 @@ impl ChatStreamDecoder {
             reasoning: None,
             thinking_parts: ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts,
             reasoning_fields: ctx.chat_profile.reply.reasoning_fields,
+            error_detail: ctx.chat_profile.reply.error_detail,
             tools: IndexMap::new(),
             running_usage: None,
             finished: false,
@@ -290,7 +292,7 @@ impl ChatStreamDecoder {
 
     fn event(&mut self, event: SseEvent, out: &mut Vec<StreamEvent>) {
         if event.has_data && event.event.as_deref() == Some("error") {
-            let err = decode_body(None, event.data.as_bytes());
+            let err = with_detail(decode_body(None, event.data.as_bytes()), self.error_detail);
             self.fail(out, err);
             return;
         }
@@ -332,7 +334,7 @@ impl ChatStreamDecoder {
             }
         };
         if is_error_frame(&raw) {
-            let err = decode_body(None, event.data.as_bytes());
+            let err = with_detail(decode_body(None, event.data.as_bytes()), self.error_detail);
             self.fail(out, err);
             return;
         }

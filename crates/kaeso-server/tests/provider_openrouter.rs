@@ -3,7 +3,7 @@
 mod common;
 
 use axum::http::StatusCode;
-use common::v1::{Env, call, chat, messages};
+use common::v1::{Capture, Env, call, chat, messages};
 use serde_json::{Value, json};
 
 const OPENROUTER_SECRET: &str = "sk-or-v1-test-openrouter-credential-0004";
@@ -11,7 +11,7 @@ const OPENROUTER_SECRET: &str = "sk-or-v1-test-openrouter-credential-0004";
 const MODEL: &str = "nvidia/nemotron-3.5-lightning:free";
 
 async fn env() -> Env {
-    let env = common::v1::env(None, None).await;
+    let env = common::v1::env(Some(std::sync::Arc::new(Capture::default())), None).await;
     let org = &env.owner.org_id;
     let r = env
         .app
@@ -249,4 +249,52 @@ async fn token_counts_for_openrouter_models_are_refused_before_anything_is_sent(
         format!("The model `{MODEL}` cannot count tokens.")
     );
     assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
+async fn an_upstream_rate_limit_names_its_reason_for_other_formats_and_in_the_request_log() {
+    let env = env().await;
+    let marker = "Hello! [mock:error=providers/openrouter/recorded-upstream-rate-limited]";
+    let reason = "Provider returned error: liquid/lfm-2.5-2.6b:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations";
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(MODEL, marker)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "rate_limit_error");
+    assert_eq!(r.json()["error"]["message"], reason);
+    let o = env.outcomes().await.pop().unwrap();
+    assert_eq!(o.error_message.as_deref(), Some(reason));
+
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": MODEL, "input": marker })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], reason);
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(MODEL, marker)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    let error = &r.json()["error"];
+    assert_eq!(error["message"], "Provider returned error");
+    assert_eq!(
+        error["metadata"]["limit_source"],
+        "upstream_provider_shared_pool"
+    );
 }

@@ -248,7 +248,9 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        chat: ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
+        chat: ChatProfile::compatible("OpenRouter")
+            .reasoning_fields(&["reasoning"])
+            .error_detail(&["error", "metadata", "raw"]),
     },
     Provider {
         id: "mistral",
