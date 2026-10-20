@@ -207,6 +207,7 @@ describe("connecting an identity provider", () => {
         default_role: "member",
         name: "Example ID",
         auto_redirect: true,
+        require_email_verified: true,
         client_secret: "s3cret",
       },
     ]);
@@ -240,7 +241,7 @@ describe("connecting an identity provider", () => {
     const dialog = await screen.findByRole("dialog", { name: "Edit single sign-on" });
     expect(within(dialog).getByRole("textbox", { name: "Issuer URL" })).toHaveValue("https://login.northwind.test");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(await within(dialog).findByText("The app's client id. Leave the secret empty to keep the stored one.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("The app's client id; an empty secret keeps the stored one for the same issuer and app.")).toBeInTheDocument();
     expect(within(dialog).getByRole("textbox", { name: "Client id" })).toHaveValue("client-123");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await fill(user, await within(dialog).findByRole("combobox", { name: "Email domains" }), "Northwind.Example");
@@ -256,6 +257,9 @@ describe("connecting an identity provider", () => {
     expect(auto).toBeChecked();
     await user.click(auto);
     await user.clear(within(dialog).getByRole("textbox", { name: "Name on the button" }));
+    const verified = within(dialog).getByRole("switch", { name: "Require verified addresses" });
+    expect(verified).toBeChecked();
+    await user.click(verified);
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("Single sign-on saved")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/security/sso").map((r) => r.body)).toEqual([
@@ -266,9 +270,25 @@ describe("connecting an identity provider", () => {
         default_role: null,
         name: "",
         auto_redirect: false,
+        require_email_verified: false,
       },
     ]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit single sign-on" })).not.toBeInTheDocument());
+  });
+
+  it("asks for the secret again when the app changes", async () => {
+    signedIn();
+    serveSecurity(security({ sso: sso() }));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit single sign-on" });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    const clientId = await within(dialog).findByRole("textbox", { name: "Client id" });
+    await user.clear(clientId);
+    await user.type(clientId, "client-456");
+    expect(within(dialog).getByRole("button", { name: "Continue" })).toHaveAttribute("aria-disabled", "true");
+    await user.type(within(dialog).getByLabelText("Client secret"), "new-secret");
+    expect(within(dialog).getByRole("button", { name: "Continue" })).not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("closes without saving when cancelled", async () => {

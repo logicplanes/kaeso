@@ -64,6 +64,7 @@ async fn connect_org_with(
             verification_token: "token".into(),
             display_name: name.map(str::to_owned),
             auto_redirect,
+            require_email_verified: true,
         },
     )
     .await
@@ -487,13 +488,9 @@ async fn providers_on_private_networks_are_refused_when_not_allowed() {
         .post("/auth/oidc/start", json!({ "org": owner.org_id }), None)
         .await;
     assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{:?}", r.body);
-    assert!(
-        r.body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("private network"),
-        "{:?}",
-        r.body
+    assert_eq!(
+        r.body["error"]["message"], "The identity provider could not be reached.",
+        "a private address answers like an unreachable one"
     );
     let r = app
         .post(
@@ -1318,4 +1315,50 @@ async fn an_unverified_domain_neither_signs_in_nor_creates_accounts() {
         "the address routes to the org that verified its domain"
     );
     s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_token_without_email_verified_signs_in_only_where_the_connection_allows_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    idp.set_fault(Fault::NoEmailVerified);
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
+    refused_with(
+        &r,
+        "The identity provider didn't confirm that the email address is verified.",
+    );
+    sqlx::query("UPDATE org_oidc SET require_email_verified = false")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
+    assert!(r.cookie().is_some(), "{}", location(&r));
+    idp.set_fault(Fault::UnverifiedEmail);
+    let r = sso_as(&app, &idp, &owner.org_id, "sub-ada", "ada@acme.example").await;
+    refused_with(
+        &r,
+        "The identity provider didn't confirm that the email address is verified.",
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn link_local_and_cloud_metadata_addresses_are_never_fetched() {
+    for url in [
+        "http://169.254.169.254/latest/meta-data/",
+        "http://[fe80::1]/.well-known/openid-configuration",
+        "http://[fd00:ec2::254]/latest/meta-data/",
+    ] {
+        let request = Request::get(url).body(Vec::new()).unwrap();
+        let refused = kaeso_server::auth::oidc::fetch(true, request)
+            .await
+            .unwrap_err();
+        assert!(
+            refused.to_string().contains("private network"),
+            "{url}: {refused}"
+        );
+    }
 }

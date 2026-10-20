@@ -110,6 +110,7 @@ export function sso(overrides: Partial<SsoView> = {}): SsoView {
     redirect_url: "https://console.northwind.test/sso/callback",
     name: null,
     auto_redirect: false,
+    require_email_verified: true,
     sign_in_url: "https://console.northwind.test/sign-in?org=org_northwind",
     ...overrides,
   };

@@ -570,7 +570,12 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         .ok_or_else(expired)?;
     let identity = provider(state, org, &connection)
         .await?
-        .finish(code, &flow.verifier, &flow.nonce)
+        .finish(
+            code,
+            &flow.verifier,
+            &flow.nonce,
+            connection.require_email_verified,
+        )
         .await
         .map_err(|e| {
             tracing::info!(error = %e, "SSO answer refused");

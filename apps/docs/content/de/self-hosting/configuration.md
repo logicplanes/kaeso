@@ -131,7 +131,7 @@ Diese Einstellungen schalten Anmeldemethoden für die ganze Installation ein ode
 | `KAESO_AUTH_PASSWORD` | `auth.password` | Bool | `true` | Anmeldung mit E-Mail und Passwort erlauben. |
 | `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | Bool | `true` | Anmeldung mit einem Link per E-Mail erlauben. |
 | `KAESO_AUTH_OIDC` | `auth.oidc` | Bool | `true` | Anmeldung über den OIDC-Identitätsanbieter einer Organisation erlauben. |
-| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | Bool | `true` | OIDC-Anfragen an private und Loopback-Adressen erlauben. Schalten Sie es ab, wo Admins von Organisationen Ihr internes Netz nicht über das Gateway erreichen sollen. |
+| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | Bool | `false` | OIDC-Anfragen an private und Loopback-Adressen erlauben, für einen Identitätsanbieter in Ihrem eigenen Netz. Schalten Sie es nur ein, wo Admins von Organisationen Ihr internes Netz über das Gateway erreichen dürfen. Link-lokale Adressen und Metadaten-Adressen von Clouds wie `169.254.169.254` bleiben gesperrt. |
 
 ### Fehlgeschlagene Schlüsselprüfungen
 

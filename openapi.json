@@ -23125,7 +23125,7 @@
               "string",
               "null"
             ],
-            "description": "The client secret. Required when creating; leave out to keep the stored one. Never returned.",
+            "description": "The client secret. Required when creating or when `issuer` or\n`client_id` changes; leave out otherwise to keep the stored one. Never\nreturned.",
             "writeOnly": true
           },
           "default_preset": {
@@ -23166,6 +23166,13 @@
             ],
             "description": "The name on the sign-in button, 1 to 50 characters, such as `Acme ID`.\nLeave out to keep the stored one; an empty string removes it.",
             "example": "Acme ID"
+          },
+          "require_email_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Refuse ID tokens that don't mark the address as verified with\n`email_verified`. Turn off only for a provider that never sends the\nclaim and verifies every address itself; `email_verified: false` is\nalways refused. Leave out to keep the stored choice; on for a new\nconnection."
           }
         }
       },
@@ -23179,6 +23186,7 @@
           "key_id",
           "redirect_url",
           "auto_redirect",
+          "require_email_verified",
           "sign_in_url"
         ],
         "properties": {
@@ -23216,6 +23224,10 @@
           "redirect_url": {
             "type": "string",
             "description": "Where the provider must send users back (register it there)."
+          },
+          "require_email_verified": {
+            "type": "boolean",
+            "description": "Whether ID tokens must mark the address as verified with\n`email_verified`."
           },
           "sign_in_url": {
             "type": "string",

@@ -42,6 +42,9 @@ pub struct SsoView {
     #[doc = "The sign-in page sends people to the provider without a click when it\n\
         offers this provider alone."]
     pub auto_redirect: bool,
+    #[doc = "Whether ID tokens must mark the address as verified with\n\
+        `email_verified`."]
+    pub require_email_verified: bool,
     #[doc = "The org's sign-in link: the sign-in page with this provider's button,\n\
         without asking for an address. `GET auth/oidc/start?org=…` goes\n\
         straight to the provider instead."]
@@ -109,6 +112,7 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         redirect_url: crate::auth::oidc::redirect_url(state),
         name: c.display_name,
         auto_redirect: c.auto_redirect,
+        require_email_verified: c.require_email_verified,
         sign_in_url: format!(
             "{}sign-in?org={}",
             state.config.public_url,
@@ -160,7 +164,9 @@ pub struct SsoRequest {
     pub issuer: String,
     #[doc = "The client id registered at the provider."]
     pub client_id: String,
-    #[doc = "The client secret. Required when creating; leave out to keep the stored one. Never returned."]
+    #[doc = "The client secret. Required when creating or when `issuer` or\n\
+        `client_id` changes; leave out otherwise to keep the stored one. Never\n\
+        returned."]
     #[schema(value_type = Option<String>, write_only)]
     pub client_secret: Option<SecretString>,
     #[doc = "The email domains that sign in through this provider (at least one)."]
@@ -183,6 +189,12 @@ pub struct SsoRequest {
         provider of an install that signs in only with SSO. Leave out to keep\n\
         the stored choice; off for a new connection."]
     pub auto_redirect: Option<bool>,
+    #[doc = "Refuse ID tokens that don't mark the address as verified with\n\
+        `email_verified`. Turn off only for a provider that never sends the\n\
+        claim and verifies every address itself; `email_verified: false` is\n\
+        always refused. Leave out to keep the stored choice; on for a new\n\
+        connection."]
+    pub require_email_verified: Option<bool>,
 }
 
 #[utoipa::path(
@@ -209,6 +221,16 @@ pub async fn put_sso(
         return Err(ApiError::invalid(
             "issuer",
             "`issuer` must be an https URL.",
+        ));
+    }
+    if issuer.query().is_some()
+        || issuer.fragment().is_some()
+        || !issuer.username().is_empty()
+        || issuer.password().is_some()
+    {
+        return Err(ApiError::invalid(
+            "issuer",
+            "`issuer` takes no query, fragment or credentials.",
         ));
     }
     let issuer = issuer.as_str().trim_end_matches('/').to_owned();
@@ -265,8 +287,17 @@ pub async fn put_sso(
     let auto_redirect = req
         .auto_redirect
         .unwrap_or_else(|| existing.as_ref().is_some_and(|c| c.auto_redirect));
+    let require_email_verified = req
+        .require_email_verified
+        .unwrap_or_else(|| existing.as_ref().is_none_or(|c| c.require_email_verified));
     let secret: String = match (&req.client_secret, &existing) {
         (Some(s), _) => s.expose_secret().to_owned(),
+        (None, Some(c)) if c.issuer != issuer || c.client_id != req.client_id.trim() => {
+            return Err(ApiError::invalid(
+                "client_secret",
+                "Send `client_secret` again when you change `issuer` or `client_id`.",
+            ));
+        }
         (None, Some(c)) => {
             let sealed = Sealed {
                 ciphertext: c.secret_ciphertext.clone(),
@@ -312,6 +343,7 @@ pub async fn put_sso(
                 .map_or_else(kaeso_crypto::random_token, |c| c.verification_token.clone()),
             display_name: display_name.clone(),
             auto_redirect,
+            require_email_verified,
         },
     )
     .await?;
@@ -326,7 +358,7 @@ pub async fn put_sso(
     orgs::update(&mut *tx, &row).await?;
     ctx.audit(Some(org), "security.sso_update")
         .target("org", org)
-        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect }))
+        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;

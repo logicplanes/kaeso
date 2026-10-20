@@ -267,6 +267,7 @@ function SsoDialog({
   const [role, setRole] = useState(defaultRole ?? INVITE_ONLY);
   const [buttonName, setButtonName] = useState(current?.name ?? "");
   const [autoRedirect, setAutoRedirect] = useState(current?.auto_redirect ?? false);
+  const [requireVerified, setRequireVerified] = useState(current?.require_email_verified ?? true);
   const cat = useCatalogue(org);
   const giver = useOrgGiver(org);
   const roles = rolesOfScope(useRoles(org), "org").filter((r) => r.id !== "owner");
@@ -283,6 +284,7 @@ function SsoDialog({
             default_role: role === INVITE_ONLY ? null : role,
             name: buttonName.trim(),
             auto_redirect: autoRedirect,
+            require_email_verified: requireVerified,
             ...(secret ? { client_secret: secret } : {}),
           },
         }),
@@ -317,7 +319,7 @@ function SsoDialog({
       : undefined;
   const clientReason = !clientId.trim()
     ? t("org.sso.enterClientId", "Enter the client id")
-    : !current && !secret
+    : !secret && (!current || current.issuer !== issuer.trim().replace(/\/+$/, "") || current.client_id !== clientId.trim())
       ? t("org.sso.enterSecret", "Enter the client secret")
       : undefined;
   return (
@@ -348,7 +350,7 @@ function SsoDialog({
           id: "client",
           title: t("org.sso.clientStep", "Which app signs people in?"),
           description: current
-            ? t("org.sso.clientStepEditHint", "The app's client id. Leave the secret empty to keep the stored one.")
+            ? t("org.sso.clientStepEditHint", "The app's client id; an empty secret keeps the stored one for the same issuer and app.")
             : t("org.sso.clientStepHint", "The app's client id and secret."),
           blockedReason: clientReason,
           content: (
@@ -431,6 +433,15 @@ function SsoDialog({
                 )}
                 checked={autoRedirect}
                 onCheckedChange={setAutoRedirect}
+              />
+              <Switch
+                label={t("org.sso.requireVerified", "Require verified addresses")}
+                description={t(
+                  "org.sso.requireVerifiedHint",
+                  "Refuses tokens that don't mark the address as verified; turn off only for a provider that never does.",
+                )}
+                checked={requireVerified}
+                onCheckedChange={setRequireVerified}
               />
             </div>
           ),

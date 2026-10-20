@@ -10,6 +10,19 @@ pub fn is_public(ip: IpAddr) -> bool {
     }
 }
 
+pub fn is_link_local_or_metadata(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => v4.is_link_local(),
+        IpAddr::V6(v6) => match embedded_v4(v6) {
+            Some(v4) => v4.is_link_local(),
+            None => {
+                let s = v6.segments();
+                (s[0] & 0xffc0) == 0xfe80 || s == [0xfd00, 0x0ec2, 0, 0, 0, 0, 0, 0x0254]
+            }
+        },
+    }
+}
+
 fn embedded_v4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
     let s = ip.segments();
     let low = Ipv4Addr::from(u32::from(s[6]) << 16 | u32::from(s[7]));
@@ -57,6 +70,29 @@ fn is_public_v6(ip: Ipv6Addr) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn link_local_and_cloud_metadata_addresses_are_known() {
+        for ip in [
+            "169.254.169.254",
+            "169.254.0.1",
+            "fe80::1",
+            "fd00:ec2::254",
+            "::ffff:169.254.169.254",
+        ] {
+            assert!(is_link_local_or_metadata(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "10.0.0.1",
+            "127.0.0.1",
+            "192.168.1.1",
+            "fd00::1",
+            "1.1.1.1",
+            "::1",
+        ] {
+            assert!(!is_link_local_or_metadata(ip.parse().unwrap()), "{ip}");
+        }
+    }
 
     #[test]
     fn private_and_special_addresses_are_not_public() {
