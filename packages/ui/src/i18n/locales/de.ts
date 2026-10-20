@@ -61,6 +61,7 @@ const de: Readonly<Record<string, string>> = {
   "conversationView.encrypted": "Der Anbieter hat dieses Reasoning verschlüsselt zurückgegeben.",
   "conversationView.error": "Fehler",
   "conversationView.image": "Bild",
+  "conversationView.imageFrom": "Bild von {host}",
   "conversationView.imageInput": "Bildeingabe",
   "conversationView.reasoning": "Reasoning",
   "conversationView.redacted": "Vom Anbieter geschwärzt",

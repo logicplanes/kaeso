@@ -24,7 +24,7 @@ test("the build writes one strict policy, with no inline scripts or styles to al
   expect(header).toBe(
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   );
-  expect(readFileSync(new URL("../dist-e2e/_headers", import.meta.url), "utf8")).toBe(`/*\n  Content-Security-Policy: ${header}\n`);
+  expect(readFileSync(new URL("../dist-e2e/_headers", import.meta.url), "utf8")).toBe(`/*\n  Content-Security-Policy: ${header}\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
   const html = readFileSync(new URL("../dist-e2e/guides/keys-and-limits.html", import.meta.url), "utf8");
   expect(html).toContain(`<meta http-equiv="content-security-policy" content="${header.replace("; frame-ancestors 'none'", "")}">`);
 });

@@ -6,6 +6,7 @@ import { Markdown } from "@logicplanes/kaeso-ui/markdown";
 import { api } from "~/api/client";
 import type { WhatsNewRelease } from "~/api/generated/types";
 import { whatsNewQuery } from "~/api/queries/whats-new";
+import { httpsHref } from "~/format/links";
 import { t } from "~/i18n";
 
 export default function WhatsNew({ releases }: { releases: WhatsNewRelease[] }) {
@@ -28,6 +29,7 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
   const release = releases[index] as WhatsNewRelease;
   const last = index >= releases.length - 1;
   const hasNotes = release.notes.trim().length > 0;
+  const url = httpsHref(release.url);
   const go = (to: number) => {
     setIndex(to);
     setDetails(false);
@@ -52,9 +54,11 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
                 {details ? t("shell.whatsNew.hide", "Hide improvements") : t("shell.whatsNew.show", "Show improvements")}
               </Button>
             ) : (
-              <Button href={release.url} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
-                {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
-              </Button>
+              url && (
+                <Button href={url} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
+                  {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
+                </Button>
+              )
             )}
           </div>
           {last ? (
@@ -80,9 +84,11 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
         {details && (
           <section aria-label={t("shell.whatsNew.notesOf", "Improvements in {version}", { version: release.version })} className="flex flex-col gap-8">
             <Markdown text={release.notes} headingLevel={3} size="small" />
-            <Link href={release.url} external variant="quiet">
-              {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
-            </Link>
+            {url && (
+              <Link href={url} external variant="quiet">
+                {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
+              </Link>
+            )}
           </section>
         )}
         {!details && !hasNotes && (

@@ -27,7 +27,7 @@ pub struct WhatsNewRelease {
     pub prerelease: bool,
     #[doc = "The release notes, in Markdown; empty when the gateway doesn't know them."]
     pub notes: String,
-    #[doc = "The release's page."]
+    #[doc = "The release's page, an `https` URL; empty when the release server gave no `https` link."]
     #[schema(example = "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0")]
     pub url: String,
     #[doc = "The release's artwork as update.kaeso.app chose it once for good; `null` when the feed has none, and the console then draws one from the version."]
