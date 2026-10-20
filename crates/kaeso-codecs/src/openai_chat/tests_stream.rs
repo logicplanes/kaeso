@@ -318,7 +318,7 @@ fn a_chunk_whose_error_is_a_string_ends_the_stream_as_an_error() {
             .iter()
             .any(|e| matches!(e, StreamEvent::ResponseStop(_)))
     );
-    let kept = r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","error":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}"#;
+    let kept = r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","error":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":"stop"}]}"#;
     let sse = format!("data: {chunk}\n\ndata: {kept}\n\ndata: [DONE]\n\n");
     let events = decode_whole(sse.as_bytes());
     assert!(
