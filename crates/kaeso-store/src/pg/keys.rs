@@ -256,23 +256,55 @@ pub async fn list_of_user(
     .await?)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Actor<'a> {
+    pub kind: &'a str,
+    pub id: Option<Uuid>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Disabler {
+    pub kind: Option<String>,
+    pub id: Option<Uuid>,
+}
+
 pub async fn set_disabled(
     db: impl PgExecutor<'_>,
     project_id: Uuid,
     id: Uuid,
     at: Option<OffsetDateTime>,
+    by: Actor<'_>,
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE api_keys SET disabled_at = $3, disabled_reason = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE 'manual' END, \
+         disabled_by_kind = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $4 END, \
+         disabled_by_id = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $5::uuid END, \
          updated_at = now() WHERE project_id = $1 AND id = $2 AND archived_at IS NULL",
         project_id,
         id,
-        at
+        at,
+        by.kind,
+        by.id
     )
     .execute(db)
     .await?
     .rows_affected()
         == 1)
+}
+
+pub async fn disabled_by(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+) -> Result<Option<Disabler>, StoreError> {
+    Ok(sqlx::query_as!(
+        Disabler,
+        "SELECT disabled_by_kind AS kind, disabled_by_id AS id FROM api_keys WHERE project_id = $1 AND id = $2",
+        project_id,
+        id
+    )
+    .fetch_optional(db)
+    .await?)
 }
 
 pub async fn archive(
@@ -473,17 +505,38 @@ pub async fn set_org_disabled(
     org_id: Uuid,
     id: Uuid,
     at: Option<OffsetDateTime>,
+    by: Actor<'_>,
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
-        "UPDATE org_platform_keys SET disabled_at = $3, updated_at = now() WHERE org_id = $1 AND id = $2 AND archived_at IS NULL",
+        "UPDATE org_platform_keys SET disabled_at = $3, \
+         disabled_by_kind = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $4 END, \
+         disabled_by_id = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $5::uuid END, \
+         updated_at = now() WHERE org_id = $1 AND id = $2 AND archived_at IS NULL",
         org_id,
         id,
-        at
+        at,
+        by.kind,
+        by.id
     )
     .execute(db)
     .await?
     .rows_affected()
         == 1)
+}
+
+pub async fn org_disabled_by(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+) -> Result<Option<Disabler>, StoreError> {
+    Ok(sqlx::query_as!(
+        Disabler,
+        "SELECT disabled_by_kind AS kind, disabled_by_id AS id FROM org_platform_keys WHERE org_id = $1 AND id = $2",
+        org_id,
+        id
+    )
+    .fetch_optional(db)
+    .await?)
 }
 
 pub async fn archive_org(

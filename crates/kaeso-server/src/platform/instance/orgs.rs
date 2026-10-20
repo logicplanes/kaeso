@@ -233,7 +233,7 @@ pub struct AppointOwner {
     how an instance admin takes over an org\n\
     whose owners left, or gets in to manage it. Recorded in the org's audit\n\
     log, which its members see, and in the instance audit log. An owner\n\
-    already is one: nothing changes.",
+    already is one: nothing changes. Needs a recent sign-in.",
     tag = "instance",
     params(("org" = OrgId, Path)),
     request_body = AppointOwner,
@@ -245,6 +245,7 @@ pub async fn appoint_owner(
     Path(id): Path<String>,
     Body(req): Body<AppointOwner>,
 ) -> ApiResult<Json<InstanceOrgView>> {
+    ctx.require_recent_sign_in()?;
     let o = org(&state, &id).await?;
     let org_id = OrgId::from_uuid(o.id);
     users::get(&state.pg, req.user_id.uuid())
