@@ -86,8 +86,8 @@ describe("signing in again with a password", () => {
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     await user.type(within(box).getByLabelText("Password"), "correct horse battery{Enter}");
-    await user.click(within(box).getByRole("button", { name: "Sign in" }));
     expect(await within(box).findByText("Enter the 6-digit code from your authenticator app.")).toBeInTheDocument();
+    expect(requests("POST", "auth/password")).toHaveLength(1);
     expect(within(box).getByRole("button", { name: "Verify" })).toBeDisabled();
     await user.type(within(box).getByRole("textbox"), "123456");
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();

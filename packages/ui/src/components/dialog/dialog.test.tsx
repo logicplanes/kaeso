@@ -182,6 +182,22 @@ describe("Dialog", () => {
     await userEvent.type(screen.getByLabelText("Prompt"), "{Control>}{Enter}{/Control}");
     expect(onSubmit).toHaveBeenCalledOnce();
   });
+  it("⌘Enter submits from a control that handles Enter itself", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog defaultOpen title="Edit limit" onSubmit={onSubmit}>
+        <button type="button" role="switch" aria-checked="false" onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}>
+          Hard limit
+        </button>
+      </Dialog>,
+    );
+    await frames();
+    screen.getByRole("switch").focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
   it("Enter does nothing while the dialog is busy", async () => {
     const onSubmit = vi.fn();
     render(
