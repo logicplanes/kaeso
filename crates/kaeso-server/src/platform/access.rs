@@ -473,13 +473,14 @@ async fn check(
             let org = path_id::<OrgId>(params, "org", "organization")?;
             let scope = match &ctx.caller {
                 Caller::Session(_) => org_scope(state, &ctx, org, None, changes_org).await?,
-                Caller::OrgKey(_) | Caller::ProjectKey(_) if right.needs_session() => {
-                    return Err(ApiError::PermissionDenied(
-                        "Only a console session can change SSO; API keys can't.".into(),
-                    ));
-                }
                 Caller::OrgKey(_) | Caller::ProjectKey(_) => {
-                    key_scope(state, &ctx, org, None).await?
+                    let scope = key_scope(state, &ctx, org, None).await?;
+                    if right.needs_session() {
+                        return Err(ApiError::PermissionDenied(
+                            "Only a console session can change SSO; API keys can't.".into(),
+                        ));
+                    }
+                    scope
                 }
                 Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
             };
