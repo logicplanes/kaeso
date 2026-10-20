@@ -866,7 +866,7 @@
   "Two to five exclusive options on a fill track; the active one raised, sliding in 180ms.": "二到五个互斥选项，位于底色轨道上；当前项凸起，在 180ms 内滑动切换。",
   "Typed confirmation": "输入确认",
   "Typed confirmation: the person types this to enable the confirm.": "输入确认：输入这段文字后才能确认。",
-  "USD as a decimal string: \"0.004213\".": "以十进制字符串表示的 USD：“0.004213”。",
+  "USD as a decimal string: \"0.004213\" reads \"$0.004213\", and zero reads \"$0\".": "以十进制字符串表示的 USD：“0.004213”显示为“$0.004213”，零显示为“$0”。",
   "Under the response: its metrics, actions.": "回复下方：数据和操作。",
   "Underline": "下划线",
   "Underline tabs for detail pages and pill tabs for page headers.": "详情页使用下划线标签页，页面标题栏使用胶囊标签页。",

@@ -41,17 +41,19 @@ function useElapsed(from: number | undefined) {
   return from === undefined ? undefined : Math.max(0, now - from);
 }
 
+function requestCost(amount: string): string {
+  return /[1-9]/.test(amount) ? formatUSD(amount, { decimals: 6 }) : formatUSD("0", { decimals: 0 });
+}
+
 function known(n: number | null | undefined): n is number {
   return typeof n === "number" && Number.isFinite(n);
 }
 
-function Item({ label, width, children, value }: { label: string; width: string; children: ReactNode; value?: string | undefined }) {
+function Item({ label, width, children }: { label: string; width: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline gap-4 whitespace-nowrap">
       <dt className="text-fg-tertiary">{label}</dt>
-      <dd className={cn("text-fg-secondary tabular", width)} {...(value ? { "aria-label": value } : {})}>
-        {children}
-      </dd>
+      <dd className={cn("text-fg-secondary tabular", width)}>{children}</dd>
     </div>
   );
 }
@@ -89,25 +91,13 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
         </Item>
       )}
       {show(tokens) && (
-        <Item
-          label={t("responseMetrics.tokens", "Tokens")}
-          width="min-w-48"
-          value={
-            tokens
-              ? t("responseMetrics.tokensInOut", "{input} in, {output} out", {
-                  input: known(inputTokens) ? formatNumber(inputTokens) : t("responseMetrics.unknown", "unknown"),
-                  output: known(outputTokens) ? formatNumber(outputTokens) : t("responseMetrics.unknown", "unknown"),
-                })
-              : undefined
-          }
-        >
-          {tokens ? (
-            <>
-              {known(inputTokens) ? formatNumber(inputTokens) : dash} → {known(outputTokens) ? formatNumber(outputTokens) : dash}
-            </>
-          ) : (
-            dash
-          )}
+        <Item label={t("responseMetrics.tokens", "Tokens")} width="min-w-48">
+          {tokens
+            ? t("responseMetrics.tokensValue", "{input} in · {output} out", {
+                input: known(inputTokens) ? formatNumber(inputTokens) : "—",
+                output: known(outputTokens) ? formatNumber(outputTokens) : "—",
+              })
+            : dash}
         </Item>
       )}
       {(known(reasoningTokens) || (live && reasoning)) && (
@@ -117,7 +107,7 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
       )}
       {show(hasCost) && (
         <Item label={t("responseMetrics.cost", "Cost")} width="min-w-40">
-          {hasCost ? formatUSD(cost) : dash}
+          {hasCost ? requestCost(cost) : dash}
         </Item>
       )}
     </dl>

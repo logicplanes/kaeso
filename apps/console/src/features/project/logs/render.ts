@@ -44,7 +44,18 @@ const parseArgs = (v: Json): Json => {
   }
 };
 
+const fieldsOf = (v: Obj) => Object.entries(v).filter(([, x]) => x !== null && x !== undefined);
 const show = (v: Json) => (typeof v === "string" ? v : JSON.stringify(v));
+const nested = (v: Json): string => (isObj(v) && fieldsOf(v).length ? `(${param(v)})` : param(v));
+
+function param(v: Json): string {
+  if (Array.isArray(v)) return v.map(nested).join(", ");
+  if (isObj(v) && fieldsOf(v).length)
+    return fieldsOf(v)
+      .map(([k, x]) => `${k}: ${nested(x)}`)
+      .join(", ");
+  return show(v);
+}
 
 const redactedOpaque = (opaque: Json): boolean => arr(opaque).some((o) => isObj(o) && o.kind === "anthropic_redacted_thinking");
 
@@ -99,7 +110,7 @@ const paramLabels = (): Record<string, string> => ({
 function params(body: Obj): RequestView["params"] {
   return Object.entries(paramLabels())
     .filter(([k]) => body[k] !== undefined && body[k] !== null)
-    .map(([k, label]) => ({ label, value: show(body[k]) }));
+    .map(([k, label]) => ({ label, value: param(body[k]) }));
 }
 
 function anthropicSource(source: Json): { src?: string; media_type?: string } {

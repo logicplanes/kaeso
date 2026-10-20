@@ -2,6 +2,7 @@
   "playground.addColumn": "Spalte hinzufügen",
   "playground.addModels": "Modelle hinzufügen",
   "playground.chooseModel": "Modell wählen",
+  "playground.cleared": "Gespräch geleert",
   "playground.connectionClosed": "Die Verbindung brach vor dem Ende der Antwort ab. Bitte erneut versuchen.",
   "playground.empty": "Noch keine Modelle zum Ausprobieren",
   "playground.emptyHint": "Hier erscheinen die Modelle aus dem Katalog dieses Projekts, die aufgerufen werden dürfen.",
@@ -22,5 +23,6 @@
   "playground.suggestion.haiku": "Schreiben Sie ein Haiku über Latenz",
   "playground.suggestion.raceCondition": "Erklären Sie einer neuen Entwicklerin eine Race Condition",
   "playground.suggestion.restGrpc": "Vergleichen Sie REST und gRPC in drei Stichpunkten",
-  "playground.title": "Playground"
+  "playground.title": "Playground",
+  "playground.undoClear": "Rückgängig"
 }

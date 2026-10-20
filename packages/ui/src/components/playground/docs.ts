@@ -122,9 +122,9 @@ export const docs = {
   },
   ResponseMetrics: {
     description:
-      'A response\'s numbers on one line: time to first token, total time, tokens in → out (and reasoning), cost. Tabular figures, labels in tertiary text. While `live`, values not known yet show "—" in the room they will take; before any response the line is empty, its height kept.',
+      'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost to the millionth of a dollar, as request logs show it. Tabular figures, labels in tertiary text. While `live`, values not known yet show "—" in the room they will take; before any response the line is empty, its height kept.',
     props: {
-      cost: 'USD as a decimal string: "0.004213".',
+      cost: 'USD as a decimal string: "0.004213" reads "$0.004213", and zero reads "$0".',
       duration: "Milliseconds from sending to the last token.",
       inputTokens: "The tokens sent, once known.",
       live: 'A response is arriving: values not known yet show a quiet "—" in the room they will take.',

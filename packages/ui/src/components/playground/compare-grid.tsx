@@ -267,7 +267,7 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
           {children}
         </div>
       </div>
-      {footer !== undefined && footer !== null && <footer className="flex min-h-44 min-w-0 items-center px-24 pt-8 pb-12">{footer}</footer>}
+      {footer !== undefined && footer !== null && <footer className="flex min-h-44 min-w-0 items-start px-24 pt-12 pb-12">{footer}</footer>}
     </section>
   );
 });

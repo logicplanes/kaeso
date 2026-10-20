@@ -12,9 +12,9 @@ Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugle
 2. Senden Sie einen Prompt an alle Modelle.
 3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten. Eine fehlgeschlagene Antwort zeigt den Grund in ihrer Spalte, und eine, die das Modell abgebrochen hat, sagt warum, etwa **Am Ausgabelimit gestoppt**; **Erneut versuchen** sendet diesen Schritt noch einmal.
 
-**Leeren** leert das Gespräch jeder Spalte.
+**Leeren** leert das Gespräch jeder Spalte; **Rückgängig** in der Meldung holt es zurück.
 
-Die Adresse der Seite enthält die Modelle und Parameter, sodass ein Link denselben Vergleich öffnet. Ein Prompt, den Sie noch nicht gesendet haben, bleibt in Ihrem Browser. Gespräche werden nicht gespeichert.
+Die Adresse der Seite enthält die Modelle und Parameter, sodass ein Link denselben Vergleich öffnet. Ein Prompt, den Sie noch nicht gesendet haben, bleibt in Ihrem Browser. Das Gespräch bleibt erhalten, solange die Konsole in diesem Tab geöffnet ist, auch wenn Sie andere Seiten besuchen und zurückkehren; es wird nie gespeichert, daher beendet es ein Neuladen oder Schließen des Tabs, und der Browser fragt vorher nach.
 
 ## Parameter festlegen
 

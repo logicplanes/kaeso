@@ -2,6 +2,7 @@
   "playground.addColumn": "Add column",
   "playground.addModels": "Add models",
   "playground.chooseModel": "Choose a model",
+  "playground.cleared": "Conversation cleared",
   "playground.connectionClosed": "The connection closed before the reply finished. Try again.",
   "playground.empty": "No models to try yet",
   "playground.emptyHint": "Models in this project's catalogue that you may call appear here.",
@@ -22,5 +23,6 @@
   "playground.suggestion.haiku": "Write a haiku about latency",
   "playground.suggestion.raceCondition": "Explain a race condition to a new engineer",
   "playground.suggestion.restGrpc": "Compare REST and gRPC in three bullets",
-  "playground.title": "Playground"
+  "playground.title": "Playground",
+  "playground.undoClear": "Undo"
 }
