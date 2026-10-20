@@ -121,8 +121,6 @@ export interface ModelLabelProps {
 }
 
 export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function ModelLabel({ provider, model, name, capabilities = [], className }, ref) {
-  const t = useUiText();
-  const capLabel = capabilityLabels(t);
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8", className)}>
       <ProviderBadge provider={provider} />
@@ -137,27 +135,39 @@ export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function 
       ) : (
         <span className="min-w-0 truncate mono text-small text-fg">{model}</span>
       )}
-      {capabilities.length > 0 && (
-        <span
-          role="img"
-          className="hidden shrink-0 items-center gap-2 sm:flex"
-          aria-label={t("modelLabel.capabilities", "Capabilities: {list}", {
-            list: capabilities.map((c) => capLabel[c]).join(t("modelLabel.listSeparator", ", ")),
-          })}
-        >
-          {capabilities.map((c) => (
-            <Tooltip key={c} content={capLabel[c]}>
-              <span className="inline-flex size-20 items-center justify-center rounded-pill text-fg-tertiary hover:text-fg">
-                <Icon icon={CAP_ICON[c]} size="xs" />
-              </span>
-            </Tooltip>
-          ))}
-        </span>
-      )}
+      {capabilities.length > 0 && <CapabilityIcons capabilities={capabilities} className="hidden sm:flex" />}
     </span>
   );
 });
 ModelLabel.displayName = "ModelLabel";
+
+export const CapabilityIcons = forwardRef<HTMLSpanElement, { capabilities: Capability[]; className?: string | undefined }>(function CapabilityIcons(
+  { capabilities, className },
+  ref,
+) {
+  const t = useUiText();
+  const capLabel = capabilityLabels(t);
+  if (capabilities.length === 0) return null;
+  return (
+    <span
+      ref={ref}
+      role="img"
+      className={cn("flex shrink-0 items-center gap-2", className)}
+      aria-label={t("modelLabel.capabilities", "Capabilities: {list}", {
+        list: capabilities.map((c) => capLabel[c]).join(t("modelLabel.listSeparator", ", ")),
+      })}
+    >
+      {capabilities.map((c) => (
+        <Tooltip key={c} content={capLabel[c]}>
+          <span className="inline-flex size-20 items-center justify-center rounded-pill text-fg-tertiary hover:text-fg">
+            <Icon icon={CAP_ICON[c]} size="xs" />
+          </span>
+        </Tooltip>
+      ))}
+    </span>
+  );
+});
+CapabilityIcons.displayName = "CapabilityIcons";
 
 export type KeyState = "active" | "disabled" | "expired" | "archived";
 const KEY_TONE: Record<KeyState, "success" | "neutral" | "warning"> = { active: "success", disabled: "neutral", expired: "warning", archived: "neutral" };

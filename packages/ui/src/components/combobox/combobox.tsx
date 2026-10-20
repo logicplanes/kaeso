@@ -1,5 +1,5 @@
 import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js";
-import { forwardRef, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
 import { Autocomplete as BaseAutocomplete } from "@base-ui/react/autocomplete";
 import { cn } from "../../utils/cn.js";
@@ -70,6 +70,7 @@ interface BaseProps extends FieldWrapProps {
   emptyText?: ReactNode | undefined;
   loading?: boolean | undefined;
   onInputValueChange?: ((value: string) => void) | undefined;
+  searchDelay?: number | undefined;
   onCreate?: ((label: string) => void) | undefined;
   disabled?: boolean | undefined;
   invalid?: boolean | undefined;
@@ -105,6 +106,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
     emptyText,
     loading,
     onInputValueChange,
+    searchDelay = 0,
     onCreate,
     disabled,
     invalid,
@@ -128,25 +130,48 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   const [query, setQuery] = useState("");
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const fieldWidth = useLayoutWidth(fieldRef);
+  const [inner, setInner] = useState<string | null | string[]>(() => props.defaultValue ?? (multiple ? [] : null));
+  const current = props.value !== undefined ? props.value : inner;
+  const chosenKey = (Array.isArray(current) ? current : current == null ? [] : [current]).join("\u0000");
   const seen = useRef(new Map<string, ComboboxOption>());
   const byValue = useMemo(() => {
-    for (const o of options) seen.current.set(o.value, o);
-    return seen.current;
-  }, [options]);
-  const filtered = useMemo(() => {
+    const chosen = new Set(chosenKey ? chosenKey.split("\u0000") : []);
+    const next = new Map<string, ComboboxOption>();
+    for (const [v, o] of seen.current) if (chosen.has(v)) next.set(v, o);
+    for (const o of options) next.set(o.value, o);
+    seen.current = next;
+    return next;
+  }, [options, chosenKey]);
+  const { filtered, hidden } = useMemo(() => {
+    const SHOWN_AT_MOST = 100;
     const q = query.trim().toLowerCase();
-    const list: (ComboboxOption | CreateItem)[] = q ? options.filter((o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)) : options;
+    const matched = q ? options.filter((o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)) : options;
+    const list: (ComboboxOption | CreateItem)[] = matched.slice(0, SHOWN_AT_MOST);
     if (onCreate && q && !options.some((o) => o.label.toLowerCase() === q))
       list.push({
         value: `__create__${query}`,
         label: query.trim(),
         __create: true,
       });
-    return list;
+    return { filtered: list, hidden: Math.max(0, matched.length - SHOWN_AT_MOST) };
   }, [options, query, onCreate]);
-
-  const [inner, setInner] = useState<string | null | string[]>(() => props.defaultValue ?? (multiple ? [] : null));
-  const current = props.value !== undefined ? props.value : inner;
+  const report = useRef(onInputValueChange);
+  report.current = onInputValueChange;
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const timer = pending;
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+  const reportInput = (v: string) => {
+    if (searchDelay <= 0) return report.current?.(v);
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = setTimeout(() => {
+      pending.current = null;
+      report.current?.(v);
+    }, searchDelay);
+  };
   const rootValue = Array.isArray(current) ? current.flatMap((v) => byValue.get(v) ?? []) : current == null ? null : (byValue.get(current) ?? null);
 
   const handleChange = (v: unknown) => {
@@ -183,7 +208,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
       onValueChange={handleChange}
       onInputValueChange={(v: string) => {
         setQuery(v);
-        onInputValueChange?.(v);
+        reportInput(v);
       }}
       autoHighlight
       itemToStringLabel={(o: ComboboxOption) => o?.label ?? ""}
@@ -293,6 +318,11 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                 </BaseCombobox.Item>
               )}
             </BaseCombobox.List>
+            {hidden > 0 && (
+              <div className="flex h-28 shrink-0 items-center px-10 text-caption font-medium text-fg-tertiary">
+                {t("combobox.more", "{count, plural, one {# more; type to narrow it down} other {# more; type to narrow them down}}", { count: hidden })}
+              </div>
+            )}
           </BaseCombobox.Popup>
         </BaseCombobox.Positioner>
       </BaseCombobox.Portal>
