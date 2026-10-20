@@ -114,7 +114,9 @@ Eine solche Anfrage, und ebenso einen abgebrochenen Stream, berechnet Kaeso mit 
 
 Eine nicht gestreamte Anfrage wird mit ihrer Eingabe berechnet, aus ihrer Größe geschätzt, sobald Kaeso sie an den Anbieter gesendet hat.
 
-Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limits verwenden dieselben Zahlen. Schätzungen der Ausgabe fallen bei Reasoning, das der Anbieter nicht streamt, zu niedrig aus.
+Eine Antwort oder ein Stream, die ohne jede Nutzungsangabe des Anbieters enden, wie sie manche OpenAI-kompatiblen Anbieter weglassen, werden genauso geschätzt, die Ausgabe aus der ganzen Antwort.
+
+Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limits verwenden dieselben Zahlen. Schätzungen der Ausgabe fallen bei Reasoning, das der Anbieter nicht streamt, zu niedrig aus. Die Metrik `kaeso_usage_estimates_total` zählt sie nach Anbieter und Grund ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
 ## Herunterfahren
 

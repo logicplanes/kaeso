@@ -319,10 +319,13 @@ impl Decoder {
             return;
         };
         let mut start = ResponseStart::new(w.id, w.model);
-        start.usage = w
-            .usage
-            .as_deref()
-            .and_then(|u| decode_usage(u, &self.origin));
+        match w.usage.as_deref().map(|u| decode_usage(u, &self.origin)) {
+            Some(Err(e)) => {
+                self.fail(out, e);
+                return;
+            }
+            usage => start.usage = usage.and_then(Result::ok),
+        }
         start.extras = Extras::new(self.origin.clone()).with_form(NATIVE, true.into());
         let mut frames = vec![created];
         frames.extend(in_progress);
@@ -616,10 +619,10 @@ impl Decoder {
                         .and_then(|d| d.reason.as_deref()),
                     has_calls,
                 );
-                let usage = w
-                    .usage
-                    .as_deref()
-                    .and_then(|u| decode_usage(u, &self.origin));
+                let usage = match w.usage.as_deref().map(|u| decode_usage(u, &self.origin)) {
+                    Some(Err(e)) => return Action::Broken(e.message),
+                    usage => usage.and_then(Result::ok),
+                };
                 let mut d = ResponseDelta::new(Some(stop), usage);
                 d.extras = Extras::new(self.origin.clone());
                 let mut s = ResponseStop::new();

@@ -121,7 +121,7 @@ order: 6
 | `output[]` `function_call` | `Block::ToolCall` | `id`（`fc_…`）：块上的形式标记；发出时改写过的名称和 ID 会映射回原值。 |
 | `output[]` `reasoning` | `Block::Reasoning` | 与输入项相同。 |
 | `output[]` 其他类型（`web_search_call` 等） | `Block::Unknown` | |
-| `usage`（`ResponseUsage`） | `usage` 类型化 | 按[用量](cross-format.md#用量)中的约定：`input_tokens` = 线路中的 `input_tokens` − `cached_tokens` − `cache_write_tokens`，因为线路中的 `input_tokens` 包含缓存读取和缓存写入；`cache_read_tokens` = `cached_tokens`；`cache_write_tokens`；`output_tokens`（包含推理）；`reasoning_tokens`；原对象存于 `raw`。编码时写出类型化字段，并叠加来自本方言的 `raw`。`null`：形式标记。 |
+| `usage`（`ResponseUsage`） | `usage` 类型化 | 按[用量](cross-format.md#用量)中的约定：`input_tokens` = 线路中的 `input_tokens` − `cached_tokens` − `cache_write_tokens`，因为线路中的 `input_tokens` 包含缓存读取和缓存写入；`cache_read_tokens` = `cached_tokens`；`cache_write_tokens`；`output_tokens`（包含推理）；`reasoning_tokens`；原对象存于 `raw`。编码时写出类型化字段，并叠加来自本方言的 `raw`。`null`：形式标记。Kaeso 无法读取的用量对象（例如某个计数不是非负整数）是 `ProviderError`（在流中是 `Error` 事件），而不是零用量，因此付费的回复绝不会被记录为免费。 |
 | `object`、`created_at`、`completed_at`、`error: null`、回显的请求参数（`instructions`、`tools`、`tool_choice`、`text`、`reasoning`、`temperature`、`top_p`、`store`、`truncation`、`metadata`、`service_tier` 等）、未知键 | 回复的 extras（覆盖项） | 形式标记 `native` 标记从本方言解码的回复。 |
 
 来自其他方言的回复会写成一个完整的 `Response` 对象：

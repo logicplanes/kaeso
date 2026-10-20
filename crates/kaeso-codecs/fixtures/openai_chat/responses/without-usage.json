@@ -1,0 +1,19 @@
+{
+  "id": "chatcmpl-3f8a1c2e9b7d4e60",
+  "object": "chat.completion",
+  "created": 1792400000,
+  "model": "gpt-6-astra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I assist you today?",
+        "refusal": null,
+        "annotations": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ]
+}
