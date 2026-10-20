@@ -254,7 +254,7 @@ describe("turning on two-factor authentication", () => {
 
     await user.click(screen.getByRole("button", { name: "Set up" }));
     const again = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    expect(await within(again).findByText(second.secret)).toBeInTheDocument();
+    expect(await within(again).findByText("KRSX G5CT MVRX EZLU")).toBeInTheDocument();
     expect(screen.queryByText("JBSW Y3DP EHPK 3PXP")).not.toBeInTheDocument();
     expect((within(again).getAllByLabelText("Code from the app")[0] as HTMLInputElement).value).toBe("");
     expect(within(again).getByRole("button", { name: "Turn on" })).toBeDisabled();
