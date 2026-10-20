@@ -12,7 +12,7 @@ Together AI (`togetherai`), recorded live with `cargo xtask record openai_chat -
 What Together adds to the dialect, as seen in these files and the SDK types:
 
 - Requests: `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior`. They stay request `Extras` for Together and are refused in another format.
-- Replies: `reasoning_content` or `reasoning` on the message and in deltas, `matched_stop` and `seed` on a choice, `text` on a stream choice and `token_id` in its delta, top-level `prompt`, `metadata` and `warnings`, and `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens`. All of them stay in `Extras`.
+- Replies: `reasoning_content` or `reasoning` on the message and in deltas, by model, become a reasoning block through the `chat` profile's `reasoning_fields(["reasoning_content", "reasoning"])`. `matched_stop` and `seed` on a choice, `text` on a stream choice and `token_id` in its delta, top-level `prompt`, `metadata` and `warnings`, and `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens` stay in `Extras`.
 - Errors: OpenAI's envelope with Together's own `type` and `code` values, sometimes with a top-level `id`.
 
 ## requests

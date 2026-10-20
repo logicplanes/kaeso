@@ -10,7 +10,9 @@ use super::DIALECT;
 use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::decode_body;
 use super::profile::ReplyReasoning;
-use super::response::{decode_finish, decode_usage, plain_text_part, thinking_part};
+use super::response::{
+    decode_finish, decode_usage, plain_text_part, take_reasoning_field, thinking_part,
+};
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::sse::{SseEvent, SseItem, SseParser};
@@ -20,6 +22,7 @@ use crate::wire::StringOr;
 pub(crate) const FORM_CHUNK: &str = "chunk";
 pub(crate) const FORM_CONTENT_SLOTS: &str = "cs";
 pub(crate) const FORM_REASONING_SLOT: &str = "r";
+pub(crate) const FORM_REASONING_FIELD: &str = "rf";
 pub(crate) const FORM_EMPTY_TEXT: &str = "et";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
 pub(crate) const FORM_ENV: &str = "env";
@@ -151,6 +154,7 @@ pub(crate) struct ChatStreamDecoder {
     refusal: Option<u32>,
     reasoning: Option<u32>,
     thinking_parts: bool,
+    reasoning_fields: &'static [&'static str],
     tools: IndexMap<u32, ToolState>,
     running_usage: Option<Usage>,
     finished: bool,
@@ -174,6 +178,7 @@ impl ChatStreamDecoder {
             refusal: None,
             reasoning: None,
             thinking_parts: ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts,
+            reasoning_fields: ctx.chat_profile.reply.reasoning_fields,
             tools: IndexMap::new(),
             running_usage: None,
             finished: false,
@@ -375,6 +380,10 @@ impl ChatStreamDecoder {
         }
     }
 
+    fn reasons_first(&self) -> bool {
+        self.thinking_parts || !self.reasoning_fields.is_empty()
+    }
+
     fn new_block(&mut self) -> u32 {
         let index = self.next_block;
         self.next_block = self.next_block.saturating_add(1);
@@ -566,9 +575,6 @@ impl ChatStreamDecoder {
         if !d_verbatim.is_empty() {
             form.insert("dv".to_owned(), obj_value(&d_verbatim));
         }
-        for (key, value) in d_extra {
-            fields.insert(format!("delta.{key}"), value);
-        }
         if let Some(role) = delta.role {
             form.insert("role".to_owned(), Value::String(role));
         }
@@ -606,6 +612,16 @@ impl ChatStreamDecoder {
             }
             None => None,
         };
+        if thoughts.is_empty()
+            && let Some((field, thought)) =
+                take_reasoning_field(self.reasoning_fields, &mut d_extra)
+        {
+            form.insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
+            thoughts.push(thought);
+        }
+        for (key, value) in d_extra {
+            fields.insert(format!("delta.{key}"), value);
+        }
         for thought in thoughts.into_iter().filter(|t| !t.is_empty()) {
             let index = match self.reasoning {
                 Some(index) => index,
@@ -626,7 +642,7 @@ impl ChatStreamDecoder {
             events.push(StreamEvent::BlockDelta(d));
         }
         let text = match text {
-            Some(t) if t.is_empty() && self.text.is_none() && self.thinking_parts => {
+            Some(t) if t.is_empty() && self.text.is_none() && self.reasons_first() => {
                 form.insert(FORM_EMPTY_TEXT.to_owned(), Value::Bool(true));
                 None
             }

@@ -115,7 +115,8 @@ async fn an_anthropic_app_gets_openrouter_tool_calls_and_streams_in_its_own_form
     assert_eq!(body["model"], MODEL);
     let reply = r.json();
     assert_eq!(reply["stop_reason"], "tool_use");
-    let tool = &reply["content"][0];
+    assert_eq!(reply["content"][0]["type"], "thinking");
+    let tool = &reply["content"][1];
     assert_eq!(tool["type"], "tool_use");
     assert_eq!(tool["name"], "get_weather");
     assert_eq!(

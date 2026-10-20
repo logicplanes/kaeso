@@ -22,6 +22,8 @@ mod tests_malformed;
 #[cfg(test)]
 mod tests_profile;
 #[cfg(test)]
+mod tests_reasoning_fields;
+#[cfg(test)]
 mod tests_regressions;
 #[cfg(test)]
 mod tests_stream;

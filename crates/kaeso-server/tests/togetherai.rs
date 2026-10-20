@@ -111,9 +111,10 @@ async fn an_anthropic_app_calls_a_together_model_by_its_prefixed_name() {
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let reply = r.json();
     assert_eq!(reply["stop_reason"], "tool_use");
-    assert_eq!(reply["content"][0]["type"], "tool_use");
+    assert_eq!(reply["content"][0]["type"], "thinking");
+    assert_eq!(reply["content"][1]["type"], "tool_use");
     assert_eq!(
-        reply["content"][0]["input"],
+        reply["content"][1]["input"],
         json!({ "location": "Paris, France", "unit": "celsius" })
     );
     assert_eq!(sent_to_together(&env)["model"], MODEL);

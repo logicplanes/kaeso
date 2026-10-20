@@ -12,8 +12,9 @@ use super::error::error_body;
 use super::response::{encode_finish, encode_thinking_part, encode_usage};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
-    FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_REASONING_SLOT,
-    FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras, start_envelope, value_obj,
+    FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_REASONING_FIELD,
+    FORM_REASONING_SLOT, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras,
+    start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
@@ -423,6 +424,11 @@ impl ChatStreamEncoder {
         }
         if let Some(refusal) = &chunk.refusal {
             delta.insert("refusal".to_owned(), to_raw(refusal)?);
+        }
+        if let (true, Some(Value::String(field)), Some(reasoning)) =
+            (own, chunk.form.get(FORM_REASONING_FIELD), &chunk.reasoning)
+        {
+            delta.insert(field.clone(), to_raw(reasoning)?);
         }
         if !chunk.tool_calls.is_empty() {
             let mut entries = Vec::new();

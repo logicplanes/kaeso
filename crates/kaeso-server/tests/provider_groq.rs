@@ -105,7 +105,8 @@ async fn an_anthropic_app_gets_groq_tool_calls_and_streams_in_its_own_format() {
     assert_eq!(body["model"], "openai/gpt-oss-20b");
     let reply = r.json();
     assert_eq!(reply["stop_reason"], "tool_use");
-    let tool = &reply["content"][0];
+    assert_eq!(reply["content"][0]["type"], "thinking");
+    let tool = &reply["content"][1];
     assert_eq!(tool["type"], "tool_use");
     assert_eq!(tool["name"], "get_weather");
     assert_eq!(
@@ -129,6 +130,17 @@ async fn an_anthropic_app_gets_groq_tool_calls_and_streams_in_its_own_format() {
         .filter_map(|e| e["delta"]["text"].as_str())
         .collect();
     assert_eq!(text, "Hello! 👋 How can I help you today?");
+    let thinking: String = events
+        .iter()
+        .filter(|e| e["delta"]["type"] == "thinking_delta")
+        .filter_map(|e| e["delta"]["thinking"].as_str())
+        .collect();
+    assert!(thinking.starts_with("The user says"), "{thinking}");
+    let first = events
+        .iter()
+        .find(|e| e["type"] == "content_block_start")
+        .unwrap();
+    assert_eq!(first["content_block"]["type"], "thinking");
     let end = events
         .iter()
         .find(|e| e["type"] == "message_delta")

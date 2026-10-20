@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use kaeso_kpp::{
     Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage, ReasoningBlock, Reply,
     RequestKind, Response, StopReason, TextBlock, Usage,
@@ -20,6 +21,7 @@ use crate::wire::{Ext, StringOr, to_body};
 pub(crate) const FORM_OBJECT: &str = "object";
 pub(crate) const FORM_CONTENT_PARTS: &str = "content_parts";
 pub(crate) const FORM_THINKING: &str = "thinking";
+pub(crate) const FORM_REASONING_FIELD: &str = "reasoning_field";
 pub(crate) const CHOICE: &str = "choice";
 pub(crate) const MESSAGE: &str = "choice.message";
 
@@ -86,14 +88,25 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     add_nested(&mut extras, CHOICE, c_extra, c_verbatim);
     let Ext {
         known: message,
-        extra: m_extra,
+        extra: mut m_extra,
         verbatim: m_verbatim,
         ..
     } = choice.message;
+    let reasoning = take_reasoning_field(ctx.chat_profile.reply.reasoning_fields, &mut m_extra);
     add_nested(&mut extras, MESSAGE, m_extra, m_verbatim);
 
     let name_back = |n: &str| ctx.original_tool_name(n).to_owned();
     let mut blocks = Vec::new();
+    if let Some((field, text)) = reasoning {
+        let mut block = ReasoningBlock::new(origin.clone());
+        block.text = vec![text];
+        block.extras = Extras::new(origin.clone());
+        block
+            .extras
+            .form
+            .insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
+        blocks.push(Block::Reasoning(block));
+    }
     let citations: Vec<Citation> = message
         .annotations
         .iter()
@@ -188,8 +201,17 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     let mut citations = Vec::new();
     let mut refusal: Option<String> = None;
     let mut tool_calls = Vec::new();
+    let mut reasoning: IndexMap<String, String> = IndexMap::new();
     for block in &resp.blocks {
         match block {
+            Block::Reasoning(r) if r.extras.is_from(DIALECT) && reasoning_field(r).is_some() => {
+                if let Some(field) = reasoning_field(r) {
+                    reasoning
+                        .entry(field.to_owned())
+                        .or_default()
+                        .push_str(&r.text.concat());
+                }
+            }
             Block::Text(t) => {
                 if as_parts {
                     parts.push(to_raw(
@@ -242,6 +264,10 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         annotations: citations,
     };
     let mut message = ext_nested(message, &resp.extras, MESSAGE);
+    for (field, text) in reasoning {
+        let text = to_raw(&text)?;
+        message.extra.entry(field).or_insert(text);
+    }
     let mut choice = ext_nested(
         Choice {
             index: 0,
@@ -444,6 +470,25 @@ pub(crate) fn plain_text_part(part: &RawJson) -> Option<String> {
         .ok()
         .filter(|p| p.ty == "text")
         .map(|p| p.text)
+}
+
+pub(crate) fn take_reasoning_field(
+    fields: &[&'static str],
+    extra: &mut IndexMap<String, RawJson>,
+) -> Option<(&'static str, String)> {
+    fields.iter().find_map(|field| {
+        let text = extra
+            .get(*field)?
+            .parse::<String>()
+            .ok()
+            .filter(|t| !t.is_empty())?;
+        extra.shift_remove(*field);
+        Some((*field, text))
+    })
+}
+
+fn reasoning_field(block: &ReasoningBlock) -> Option<&str> {
+    block.extras.form_str(DIALECT, FORM_REASONING_FIELD)
 }
 
 pub(crate) struct Thought {

@@ -326,6 +326,87 @@ async fn reasoning_summaries_stream_from_a_model_that_reasons() {
 }
 
 #[tokio::test]
+async fn reasoning_of_chat_providers_streams_as_summaries_and_is_kept_as_reasoning() {
+    let env = captured().await;
+    let cases = [
+        (
+            "deepseek",
+            "sk-test-deepseek-credential-0004",
+            "deepseek-flash",
+            "providers/deepseek/recorded-thinking-stream",
+            "391",
+        ),
+        (
+            "groq",
+            "gsk_test-groq-credential-0003",
+            "openai/gpt-oss-20b",
+            "providers/groq/recorded-stream-doc",
+            "Hello! 👋 How can I help you today?",
+        ),
+    ];
+    for (provider, secret, model, fixture, answer) in cases {
+        let org = &env.owner.org_id;
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/credentials"),
+                json!({ "provider": provider, "name": provider, "secret": secret }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        let r = env
+            .app
+            .post(
+                &format!("{}/models", base(&env)),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        let body = json!({
+            "model": model,
+            "stream": true,
+            "reasoning": { "summary": "auto" },
+            "input": format!("Think first. [mock:fixture={fixture}]"),
+        });
+        let r = play(&env.app, &responses_path(&env), &env.owner.cookie, &body).await;
+        let evs = completed(&r);
+        let thought = text_of(&evs, "response.reasoning_summary_text.delta");
+        assert!(!thought.is_empty(), "{provider}: {:?}", types(&evs));
+        assert_eq!(text_of(&evs, "response.output_text.delta"), answer);
+        let t = types(&evs);
+        let at = |x: &str| t.iter().position(|y| y == x).unwrap();
+        assert!(
+            at("response.reasoning_summary_text.delta") < at("response.output_text.delta"),
+            "{provider}: {t:?}"
+        );
+
+        let id = r.header("kaeso-request-id").unwrap().to_owned();
+        let reply = outcome(&env, &id).await.reply.unwrap();
+        let kinds: Vec<&str> = reply
+            .blocks
+            .iter()
+            .map(|b| match b {
+                kaeso_kpp::Block::Reasoning(_) => "reasoning",
+                kaeso_kpp::Block::Text(_) => "text",
+                _ => "other",
+            })
+            .collect();
+        assert_eq!(
+            kinds,
+            ["reasoning", "text"],
+            "{provider}: {:?}",
+            reply.blocks
+        );
+        let kaeso_kpp::Block::Reasoning(kept) = &reply.blocks[0] else {
+            unreachable!()
+        };
+        assert_eq!(kept.text.concat(), thought, "{provider}");
+    }
+}
+
+#[tokio::test]
 async fn models_and_aliases_resolve_in_this_project_only() {
     let env = captured().await;
     let path = responses_path(&env);
