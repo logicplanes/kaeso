@@ -55,7 +55,7 @@ test("allowed email domains: those addresses sign up, others are refused with th
   const link = await mailLink("ada@eu.example.net", /\/auth\/signup#token=/);
   await visitor.goto(new URL(link).pathname + new URL(link).hash);
   await visitor.getByLabel("Name").fill("Ada Example");
-  await visitor.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
+  await visitor.getByLabel(/^Password/).fill(NEW_PASSWORD);
   await visitor.getByRole("button", { name: "Create account" }).click();
   await expect(visitor).not.toHaveURL(/sign-up|signup/);
   await context.close();
