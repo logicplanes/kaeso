@@ -16,6 +16,8 @@ const de: Readonly<Record<string, string>> = {
   "chart.listSeparator": ", ",
   "chart.liveLine": "{heading}: {values}",
   "chart.liveValue": "{label} {value}",
+  "chart.partial": "{heading}, unvollständig",
+  "chart.soFar": "{heading}, bisher",
   "chartFrame.loadFailed": "Diagramm konnte nicht geladen werden",
   "chartFrame.noData": "Keine Daten für diesen Zeitraum",
   "chartFrame.tryAgain": "Erneut versuchen",

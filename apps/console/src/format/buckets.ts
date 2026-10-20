@@ -44,12 +44,27 @@ function opensYear(key: string, g: Granularity): boolean {
   return g === "day" ? day === 1 : g === "week" ? day <= 7 : true;
 }
 
-const dayName = (day: string) => (opensYear(day, "day") ? dayYearName(day) : dayLabel(day));
-const weekName = (day: string) => (opensYear(day, "week") ? dayMonthYear(day) : dayMonth(day));
+const dayName = (day: string, withYear = false) => (withYear || opensYear(day, "day") ? dayYearName(day) : dayLabel(day));
+const weekName = (day: string, withYear = false) => (withYear || opensYear(day, "week") ? dayMonthYear(day) : dayMonth(day));
 
-export function bucketLabel(key: string, g: Granularity): string {
-  if (g === "day") return dayName(key);
-  return g === "week" ? t("format.bucket.weekOf", "Week of {date}", { date: weekName(key) }) : monthYear(key);
+export const spansYears = (from: string, to: string, g: Granularity) => (bucketsBetween(from, to, g)[0] ?? from).slice(0, 4) !== to.slice(0, 4);
+
+export function bucketLabel(key: string, g: Granularity, withYear = false): string {
+  if (g === "day") return dayName(key, withYear);
+  return g === "week" ? t("format.bucket.weekOf", "Week of {date}", { date: weekName(key, withYear) }) : monthYear(key);
+}
+
+const lastDay = (key: string, g: Granularity) => {
+  if (g === "day") return key;
+  if (g === "week") return utcDay(new Date(at(key) + 6 * DAY));
+  const [y = 1970, m = 1] = key.split("-").map(Number);
+  return utcDay(new Date(Date.UTC(y, m, 0)));
+};
+
+export function partialBuckets(from: string, to: string, g: Granularity, today: string): { first: boolean; last: boolean; ongoing: boolean } {
+  const keys = bucketsBetween(from, to, g);
+  const last = keys[keys.length - 1];
+  return { first: (keys[0] ?? from) < from, last: last !== undefined && lastDay(last, g) > to, ongoing: to >= today };
 }
 
 export function bucketAxisLabel(key: string, g: Granularity): string {
