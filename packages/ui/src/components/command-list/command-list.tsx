@@ -26,7 +26,10 @@ import { commandMatch } from "./match.js";
 export const KAESO_COMMAND_LIST_VARIANTS = {
   height: {
     popover: { classes: "picker-limits", description: "At most 480px or 70% of the window, shrinking to its rows: a popover (default)" },
-    inline: { classes: "h-360 rounded-group bg-raised shadow-xs", description: "360px in a raised frame: a dialog step" },
+    inline: {
+      classes: "max-h-360 rounded-group bg-raised shadow-xs",
+      description: "Its rows' height up to 360px in a raised frame, kept while searching: a dialog step",
+    },
     fill: { classes: "min-h-0 flex-1", description: "Fills its parent: a phone sheet or a command palette" },
   },
   size: {
@@ -106,6 +109,8 @@ const isCoarse = () => typeof window !== "undefined" && !!window.matchMedia?.(CO
 
 const HEADER = 28;
 const EDGE = 6;
+const SEARCH = { md: 44, lg: 56 } as const;
+const EMPTY = 80;
 const FALLBACK_VIEWPORT = 480;
 const VIRTUALIZE_ABOVE = 200;
 
@@ -194,6 +199,11 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     return { rows, options, spans };
   }, [shown]);
   const labelled = shown.some((g) => g.group.label);
+  const unfiltered = useMemo(
+    () => visibleGroups(groups, "", match).reduce((sum, { group, items }) => sum + (group.label ? HEADER : 0) + items.length * rowHeight, 0),
+    [groups, match, rowHeight],
+  );
+  const fitted = height === "inline" && !toolbar && !footer ? { height: SEARCH[size] + 2 * EDGE + Math.max(unfiltered, EMPTY) } : undefined;
   const offsets = useMemo(() => {
     const out = [EDGE];
     for (const row of rows) out.push((out[out.length - 1] ?? EDGE) + (row.kind === "header" ? HEADER : rowHeight));
@@ -401,6 +411,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     <div
       {...(force ? { "data-force": force } : {})}
       className={cn("relative flex min-w-0 flex-col overflow-hidden", KAESO_COMMAND_LIST_VARIANTS.height[height].classes, className)}
+      {...(fitted ? { style: fitted } : {})}
     >
       {loading && (
         <span aria-hidden className="absolute inset-x-0 top-0 h-2 overflow-hidden">

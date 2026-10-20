@@ -18,6 +18,7 @@ export const docs = {
       loading: "Shows skeleton rows while the first page loads.",
       loadingMore: "Shows that more rows are loading.",
       manualSorting: "Sorting happens on the server: the data arrives sorted.",
+      onHiddenColumnsChange: "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.",
       onLoadMore: "Called to load the next rows.",
       onRetry: "Shows a Retry button when loading failed.",
       onRowClick: "Called when a row is clicked; rows then show that they can be opened.",

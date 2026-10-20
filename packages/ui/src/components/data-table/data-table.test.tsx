@@ -132,6 +132,13 @@ describe("DataTable", () => {
         `104px minmax(${DATA_TABLE_GROW_MIN}px, 1fr) 64px`,
       );
     });
+    it("tells the page which columns it left out, so a kept column can show what they held", () => {
+      narrow(390);
+      const onHidden = vi.fn();
+      render(<DataTable aria-label="Request logs" data={logs} columns={logColumns} getRowId={(r) => r.id} onHiddenColumnsChange={onHidden} />);
+      expect(onHidden).toHaveBeenLastCalledWith(expect.arrayContaining(["key", "cost"]));
+      expect(onHidden.mock.lastCall?.[0]).not.toContain("model");
+    });
     it("keeps the selection boxes when columns give way", () => {
       narrow(300);
       render(<DataTable aria-label="Request logs" data={logs} columns={logColumns} getRowId={(r) => r.id} selectable />);

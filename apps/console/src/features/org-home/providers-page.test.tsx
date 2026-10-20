@@ -1,9 +1,10 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CredentialView } from "~/api/generated/types";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
 import { OTHER_USER, credential, hoverReason, member, notifications } from "~/test/fixtures/org";
+import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -21,7 +22,7 @@ const table = () => screen.findByRole("table", { name: "Provider keys" });
 const row = async (name: string | RegExp) => (await within(await table()).findByText(name)).closest('[role="row"]') as HTMLElement;
 
 async function openMenu(user: UserEvent, name: string) {
-  await user.click(await screen.findByRole("button", { name: `Actions for ${name}` }));
+  await user.click(await screen.findByRole("button", { name: `Actions for OpenAI · ${name}` }));
   return screen.findByRole("menu");
 }
 
@@ -57,7 +58,8 @@ describe("organization providers", () => {
     expect(openai).toHaveTextContent("Never");
 
     const second = await row("Staging");
-    expect(second).toHaveTextContent("None");
+    expect(second).toHaveTextContent("No project");
+    expect(second).toHaveTextContent("OpenAI");
     expect(await within(await table()).findByText("Grace Hopper, 15 Oct 2026")).toBeInTheDocument();
     expect(second).toHaveTextContent(/ago/);
 
@@ -96,7 +98,7 @@ describe("organization providers", () => {
     await renderApp(PATH);
     expect(await screen.findByText("You can't see the providers here")).toBeInTheDocument();
     expect(await screen.findByText("You need View provider keys; ask an owner or admin for it.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add key" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add provider key" })).not.toBeInTheDocument();
     expect(requests("GET", CREDENTIALS)).toHaveLength(0);
   });
 
@@ -117,8 +119,8 @@ describe("organization providers", () => {
     keys([production]);
     const { user } = await renderApp(PATH);
     await row("OpenAI production");
-    expect(screen.queryByRole("button", { name: "Actions for OpenAI production" })).not.toBeInTheDocument();
-    const add = screen.getByRole("button", { name: "Add key" });
+    expect(screen.queryByRole("button", { name: "Actions for OpenAI · OpenAI production" })).not.toBeInTheDocument();
+    const add = screen.getByRole("button", { name: "Add provider key" });
     await hoverReason(user, add, "You need Add provider keys; ask an owner or admin for it.");
     await user.click(add);
     expect(screen.queryByRole("dialog", { name: /Add provider key/ })).not.toBeInTheDocument();
@@ -141,16 +143,16 @@ describe("organization providers", () => {
     keys([production, staging]);
     const { user } = await renderApp(PATH);
     await row("Staging");
-    await user.click(screen.getByRole("button", { name: "Add key" }));
+    await user.click(screen.getByRole("button", { name: "Add provider key" }));
     expect(await screen.findByRole("dialog", { name: /Add provider key/ })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add provider key/ })).not.toBeInTheDocument());
 
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Replace" }));
-    expect(await screen.findByRole("dialog", { name: /Replace Staging/ })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: /Replace OpenAI · Staging/ })).toBeInTheDocument();
     await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Replace Staging/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Replace OpenAI · Staging/ })).not.toBeInTheDocument());
 
     await user.keyboard("c");
     expect(await screen.findByRole("dialog", { name: /Add provider key/ })).toBeInTheDocument();
@@ -178,7 +180,7 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Rename" }));
-    const dialog = await screen.findByRole("dialog", { name: "Rename Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Rename OpenAI · Staging" });
     const input = within(dialog).getByRole("textbox", { name: "Name" });
     expect(input).toHaveValue("Staging");
     await user.hover(within(dialog).getByRole("button", { name: "Rename" }));
@@ -192,7 +194,7 @@ describe("organization providers", () => {
     expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
       ["cred_staging", { name: "Staging EU" }],
     ]);
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Rename Staging" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Rename OpenAI · Staging" })).not.toBeInTheDocument());
   });
 
   it("renames a key with the Rename button", async () => {
@@ -201,7 +203,7 @@ describe("organization providers", () => {
     on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string } }) => ({ ...staging, name: body.name }));
     const { user } = await renderApp(PATH);
     await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Rename" }));
-    const dialog = await screen.findByRole("dialog", { name: "Rename Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Rename OpenAI · Staging" });
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), " EU");
     await user.click(within(dialog).getByRole("button", { name: "Rename" }));
     expect(await notifications().findByText("Renamed to Staging EU")).toBeInTheDocument();
@@ -215,7 +217,7 @@ describe("organization providers", () => {
     on("GET", "orgs/:org/projects", () => new Promise((resolve) => waiting.push(() => resolve(page([project()])))));
     const { user } = await renderApp(PATH);
     await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Assign to projects" }));
-    const dialog = await screen.findByRole("dialog", { name: "Assign Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
     expect(within(dialog).getByText("Loading projects…")).toBeInTheDocument();
     for (const release of waiting) release();
     expect(await within(dialog).findByRole("checkbox", { name: /Checkout assistant/ })).not.toBeChecked();
@@ -233,7 +235,7 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Assign to projects" }));
-    const dialog = await screen.findByRole("dialog", { name: "Assign Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
     expect(within(dialog).getByText("These projects use it for OpenAI instead of the default.")).toBeInTheDocument();
     const checkout = await within(dialog).findByRole("checkbox", { name: /Checkout assistant/ });
     expect(within(dialog).getByText("Uses OpenAI production now")).toBeInTheDocument();
@@ -241,7 +243,7 @@ describe("organization providers", () => {
     expect(within(dialog).getByRole("checkbox", { name: /Support triage/ })).not.toBeChecked();
     await user.click(checkout);
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
-    expect(await notifications().findByText("Staging assigned to 2 projects")).toBeInTheDocument();
+    expect(await notifications().findByText("OpenAI · Staging assigned to 2 projects")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([{ projects: ["proj_gone", PROJECT] }]);
   });
 
@@ -252,10 +254,10 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Assign to projects" }));
-    const dialog = await screen.findByRole("dialog", { name: "Assign Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
     await user.click(await within(dialog).findByRole("checkbox", { name: /Support triage/ }));
     await user.keyboard("{Meta>}{Enter}{/Meta}");
-    expect(await notifications().findByText("No project is assigned to Staging")).toBeInTheDocument();
+    expect(await notifications().findByText("No project is assigned to OpenAI · Staging")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([{ projects: [] }]);
   });
 
@@ -264,17 +266,17 @@ describe("organization providers", () => {
     keys([production, staging]);
     const { user } = await renderApp(PATH);
     await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Rename" }));
-    await screen.findByRole("dialog", { name: "Rename Staging" });
+    await screen.findByRole("dialog", { name: "Rename OpenAI · Staging" });
     await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Rename Staging" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Rename OpenAI · Staging" })).not.toBeInTheDocument());
     await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Assign to projects" }));
-    const dialog = await screen.findByRole("dialog", { name: "Assign Staging" });
+    const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Assign Staging" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Assign OpenAI · Staging" })).not.toBeInTheDocument());
     await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Assign to projects" }));
-    await screen.findByRole("dialog", { name: "Assign Staging" });
+    await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
     await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Assign Staging" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Assign OpenAI · Staging" })).not.toBeInTheDocument());
     expect(requests("PATCH", "orgs/:org/credentials/:credential")).toHaveLength(0);
     expect(requests("PUT", "orgs/:org/credentials/:credential/projects")).toHaveLength(0);
   });
@@ -305,15 +307,15 @@ describe("organization providers", () => {
     for (const [name, text] of cases) {
       const menu = await openMenu(user, name);
       await user.click(within(menu).getByRole("menuitem", { name: "Delete" }));
-      const alert = await screen.findByRole("alertdialog", { name: `Delete ${name}?` });
+      const alert = await screen.findByRole("alertdialog", { name: `Delete OpenAI · ${name}?` });
       expect(within(alert).getByText(text)).toBeInTheDocument();
       if (name !== "Staging") {
         await user.click(within(alert).getByRole("button", { name: "Cancel" }));
-        await waitFor(() => expect(screen.queryByRole("alertdialog", { name: `Delete ${name}?` })).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByRole("alertdialog", { name: `Delete OpenAI · ${name}?` })).not.toBeInTheDocument());
       }
     }
-    await user.click(within(screen.getByRole("alertdialog", { name: "Delete Staging?" })).getByRole("button", { name: "Delete key" }));
-    expect(await notifications().findByText("Staging deleted")).toBeInTheDocument();
+    await user.click(within(screen.getByRole("alertdialog", { name: "Delete OpenAI · Staging?" })).getByRole("button", { name: "Delete key" }));
+    expect(await notifications().findByText("OpenAI · Staging deleted")).toBeInTheDocument();
     expect(requests("DELETE", "orgs/:org/credentials/:credential").map((r) => r.params.credential)).toEqual(["cred_staging"]);
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
@@ -325,10 +327,115 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "OpenAI production");
     await user.click(within(menu).getByRole("menuitem", { name: "Delete" }));
-    const alert = await screen.findByRole("alertdialog", { name: "Delete OpenAI production?" });
+    const alert = await screen.findByRole("alertdialog", { name: "Delete OpenAI · OpenAI production?" });
     expect(within(alert).getByText("Requests to OpenAI fail until the organization adds another key.")).toBeInTheDocument();
     await user.click(within(alert).getByRole("button", { name: "Delete key" }));
     expect(await notifications().findAllByText("The key is still in use.")).not.toHaveLength(0);
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  });
+
+  describe("with many keys", () => {
+    const many = [
+      ...["openai", "anthropic", "groq", "mistral", "deepseek", "openrouter", "togetherai", "xai"].map((provider, i) =>
+        credential({ id: `cred_${provider}`, provider, name: "Demo", projects: i === 0 ? [{ id: OTHER_PROJECT, name: "Support triage" }] : [] }),
+      ),
+      staging,
+    ];
+
+    it("offers no search while the keys fit on a screen", async () => {
+      signedIn();
+      keys(many.slice(0, 8));
+      await renderApp(PATH);
+      await row(/Groq/);
+      expect(screen.queryByRole("searchbox", { name: "Search provider keys" })).not.toBeInTheDocument();
+    });
+
+    it("finds keys by provider, key name or project, and says when none match", async () => {
+      signedIn();
+      keys(many);
+      const { user } = await renderApp(PATH);
+      const search = await screen.findByRole("searchbox", { name: "Search provider keys" });
+      await user.type(search, "groq");
+      await waitFor(() => expect(within(screen.getByRole("table", { name: "Provider keys" })).getAllByRole("row")).toHaveLength(2));
+      expect(await row("Groq")).toHaveTextContent("Demo");
+      await user.clear(search);
+      await user.type(search, "support");
+      expect(await row("Demo")).toHaveTextContent("OpenAI");
+      expect(within(await table()).queryByText("Staging")).not.toBeInTheDocument();
+      await user.clear(search);
+      await user.type(search, "staging");
+      expect(await row("Staging")).toHaveTextContent("OpenAI");
+      await user.clear(search);
+      await user.type(search, "nothing like it");
+      expect(await screen.findByText("No provider keys match")).toBeInTheDocument();
+      expect(screen.getByText("Search by another provider, key or project name.")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Clear search" }));
+      expect(search).toHaveValue("");
+      expect(await row("Staging")).toBeInTheDocument();
+    });
+  });
+
+  it("explains that assigned projects keep the default key when another becomes the default", async () => {
+    signedIn();
+    keys([production, staging]);
+    const { user } = await renderApp(PATH);
+    await user.click(within(await openMenu(user, "OpenAI production")).getByRole("menuitem", { name: "Assign to projects" }));
+    const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · OpenAI production" });
+    expect(within(dialog).getByText("These projects keep it for OpenAI even when another key becomes the default.")).toBeInTheDocument();
+  });
+
+  describe("on a tablet", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it("shows each key's projects, last use and who added it under its name once their columns give way", async () => {
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+        width: 720,
+        height: 0,
+        top: 0,
+        left: 0,
+        right: 720,
+        bottom: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      signedIn();
+      keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+      const { user } = await renderApp(PATH);
+      await row("Staging");
+      const headers = within(await table())
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent);
+      expect(headers).not.toContain("Projects");
+      expect(await within(await table()).findByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026")).toBeInTheDocument();
+      expect(within(await table()).getByText("Checkout assistant, and every unassigned project · Never · Ada Okafor (you), 15 Oct 2026")).toBeInTheDocument();
+      act(() => showTooltipsAtOnce(true));
+      try {
+        await user.hover(within(await table()).getByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026"));
+        expect(await screen.findAllByText("Support triage", { exact: true })).not.toHaveLength(0);
+      } finally {
+        act(() => showTooltipsAtOnce(false));
+      }
+    });
+
+    it("shows a tooltip only for keys with assigned projects", async () => {
+      signedIn();
+      keys([credential({ projects: [] }), { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+      const { user } = await renderApp(PATH);
+      await row("Staging");
+      act(() => showTooltipsAtOnce(true));
+      try {
+        await user.hover(within(await table()).getByText("Every unassigned project"));
+        await user.hover(within(await table()).getByText("Support triage"));
+        await waitFor(() => expect(screen.getAllByText("Support triage", { exact: true }).length).toBeGreaterThan(1));
+        expect(within(await table()).getByText("Support triage")).toHaveAttribute("data-popup-open");
+        await user.unhover(within(await table()).getByText("Support triage"));
+        await user.hover(within(await table()).getByText("Every unassigned project"));
+        expect(screen.getAllByText("Every unassigned project", { exact: true })).toHaveLength(1);
+        expect(within(await table()).getByText("Every unassigned project")).not.toHaveAttribute("data-popup-open");
+      } finally {
+        act(() => showTooltipsAtOnce(false));
+      }
+    });
   });
 });

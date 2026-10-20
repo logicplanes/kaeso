@@ -55,12 +55,12 @@ export function ProviderKeyDialog({
   replace?: CredentialView | undefined;
   onClose: () => void;
 }) {
-  const [provider, setProvider] = useState(replace?.provider ?? "openai");
+  const [provider, setProvider] = useState<string | null>(replace?.provider ?? null);
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
-  const label = providerLabel(provider);
-  const current = keys.find((k) => k.provider === provider && k.is_default);
+  const label = provider ? providerLabel(provider) : "";
+  const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
   const choices = useMemo(() => providerOptions(keys), [keys]);
   const save = useApiMutation({
     mutationFn: async () => {
@@ -74,7 +74,7 @@ export function ProviderKeyDialog({
       return data(
         await api.POST("/platform/v1/orgs/{org}/credentials", {
           params: { path: { org } },
-          body: { provider, name: name.trim(), secret: secret.trim(), make_default: makeDefault },
+          body: { provider: provider ?? "", name: name.trim(), secret: secret.trim(), make_default: makeDefault },
         }),
       );
     },
@@ -97,7 +97,7 @@ export function ProviderKeyDialog({
     title: replace
       ? t("kaeso.providerKey.pasteNew", "Paste the new {provider} key", { provider: label })
       : t("kaeso.providerKey.paste", "Paste your {provider} API key", { provider: label }),
-    description: keyHelp(provider),
+    description: provider ? keyHelp(provider) : undefined,
     blockedReason: !secret.trim()
       ? t("kaeso.providerKey.pasteBlocked", "Paste the {provider} API key", { provider: label })
       : /\s/.test(secret.trim())
@@ -109,7 +109,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={keyPlaceholder(provider)}
+          placeholder={provider ? keyPlaceholder(provider) : undefined}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"
@@ -133,6 +133,7 @@ export function ProviderKeyDialog({
         {
           id: "provider",
           title: t("kaeso.providerKey.which", "Which provider is the key for?"),
+          blockedReason: provider ? undefined : t("kaeso.providerKey.chooseProvider", "Choose a provider"),
           content: (
             <ProviderPicker
               aria-label={t("common.provider", "Provider")}
@@ -177,10 +178,14 @@ export function ProviderKeyDialog({
     <StepDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={replace ? t("kaeso.providerKey.replaceTitle", "Replace {name}", { name: replace.name }) : t("kaeso.providerKey.addTitle", "Add provider key")}
+      title={
+        replace
+          ? t("kaeso.providerKey.replaceTitle", "Replace {provider} · {name}", { provider: providerLabel(replace.provider), name: replace.name })
+          : t("kaeso.providerKey.addTitle", "Add provider key")
+      }
       submitLabel={replace ? t("kaeso.providerKey.replace", "Replace key") : t("kaeso.providerKey.add", "Add key")}
       submitting={save.isPending}
-      onSubmit={() => secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim()) && save.mutate()}
+      onSubmit={() => provider && secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim()) && save.mutate()}
       steps={steps}
     />
   );

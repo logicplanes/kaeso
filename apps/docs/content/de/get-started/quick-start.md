@@ -95,7 +95,7 @@ Der Link funktioniert einmal, innerhalb von 24 Stunden. Rufen Sie den Befehl ern
 
 Anbieter-Schlüssel gehören zur Organisation, und jedes Projekt nutzt den Standardschlüssel des Anbieters.
 
-1. Öffnen Sie in der Seitenleiste **Anbieter**, und wählen Sie **Schlüssel hinzufügen**.
+1. Öffnen Sie in der Seitenleiste **Anbieter**, und wählen Sie **Anbieter-Schlüssel hinzufügen**.
 2. Wählen Sie den Anbieter, und fügen Sie seinen Schlüssel ein.
 3. Benennen Sie ihn, etwa `Production`, und wählen Sie **Schlüssel hinzufügen**.
 

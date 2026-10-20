@@ -40,7 +40,8 @@ describe("ProviderKeyDialog", () => {
     expect(within(dialog).getByRole("heading", { name: "Add provider key" })).toBeInTheDocument();
     expect(within(dialog).getByRole("combobox", { name: "Search providers" })).toBeInTheDocument();
     expect(within(within(dialog).getByRole("group", { name: "Connected" })).getByRole("option")).toHaveAccessibleName("OpenAI 2 keys");
-    expect(within(dialog).getByRole("option", { name: "OpenAI 2 keys" })).toHaveAttribute("aria-selected", "true");
+    expect(within(dialog).getByRole("option", { name: "OpenAI 2 keys" })).toHaveAttribute("aria-selected", "false");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose a provider");
     expect(within(dialog).getByRole("group", { name: "Other providers" })).toContainElement(within(dialog).getByRole("option", { name: "Anthropic" }));
     await user.click(within(dialog).getByRole("option", { name: "Anthropic" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -235,7 +236,7 @@ describe("ProviderKeyDialog", () => {
     on("POST", `${CREDENTIALS}/:credential/replace`, credential());
     const { user, dialog, onClose } = await open({ keys: [credential()], replace: credential() });
 
-    expect(within(dialog).getByRole("heading", { name: "Replace Production" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Replace OpenAI · Production" })).toBeInTheDocument();
     expect(within(dialog).getByRole("heading", { name: "Paste the new OpenAI key" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-rotated");
