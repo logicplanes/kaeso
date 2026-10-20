@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { AlertDialog, Empty, FilterRow, IconButton, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
-import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { KeyView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -16,6 +15,7 @@ import { projectPath } from "~/shell/pages";
 import { SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
 import { allPages } from "~/api/paging";
+import { LastUsed } from "~/kaeso/last-used";
 
 const myKeysQuery = (includeArchived: boolean) => ({
   queryKey: ["me", "keys", { includeArchived }],
@@ -82,7 +82,7 @@ export function AccountKeysPage() {
               {expiry.text}
             </Text>
           ),
-          date: k.last_used_at ? t("account.keyUsed", "Used {when}", { when: formatRelative(k.last_used_at) }) : t("account.keyNeverUsed", "Never used"),
+          date: <LastUsed at={k.last_used_at} />,
           actions:
             k.state === "archived" || readOnly.has(where.get(k.project_id)?.org ?? "") ? undefined : (
               <Menu>

@@ -66,16 +66,16 @@ Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seine
 - Mit `roles.manage` kann eine Organisation bis zu 50 eigene Rollen festlegen, für die Organisation oder für Projekte. Organisationsrollen enthalten Organisationsrechte und Rechte in jedem Projekt. Projektrollen enthalten Projektrechte.
 - Alle mit `org.view` sehen die eigenen Rollen.
 - Ein Name hat 1 bis 50 Zeichen und ist pro Organisation und Geltungsbereich eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Er darf weder `custom` noch der Name einer integrierten Rolle dieses Geltungsbereichs sein. Eine Beschreibung hat höchstens 200 Zeichen.
-- Eigene Rollen können keine Inhaber machen. Inhaber ist nur die integrierte Rolle.
+- Eigene Rollen können keine Inhaber machen. Inhaber ist nur die integrierte Rolle, und nur Inhaber haben `org.ownership.transfer`: Keine eigene Rolle und keine einzelne Änderung kann es vergeben.
 - Eine Rolle, die ein Mitglied, ein aktives Dienstkonto oder eine offene Einladung hat, können Sie nicht löschen. Ebenso wenig die Rolle, die Personen erhalten, die über Single Sign-on kommen.
 
 ## Vergaberegeln
 
 Jede Änderung an Rollen und Rechten folgt diesen Regeln:
 
-1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Das gilt, wenn Sie Rolle oder Rechte eines Mitglieds ändern, einladen, ein Projektmitglied hinzufügen, ein Dienstkonto oder eine eigene Rolle erstellen oder ändern und die Rolle für Single Sign-on wählen.
-2. **Nur auf Gleichgestellte wirken.** Sie können Rolle und Rechte eines Mitglieds nur ändern oder das Mitglied entfernen, wenn Sie jedes Recht haben, das das Mitglied in diesem Geltungsbereich hat.
-3. **Inhaber verwalten Inhaber.** Nur Inhaber machen, ändern, entfernen und laden Inhaber ein. Eine Organisation verliert nie ihren letzten Inhaber.
+1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Das gilt, wenn Sie Rolle oder Rechte eines Mitglieds ändern, einladen und eine Einladung erneut senden, ein Projektmitglied hinzufügen, ein Dienstkonto oder eine eigene Rolle erstellen oder ändern und die Rolle für Single Sign-on wählen.
+2. **Nur auf Gleichgestellte wirken.** Sie können Rolle und Rechte eines Mitglieds nur ändern oder das Mitglied entfernen, wenn Sie jedes Recht haben, das das Mitglied in diesem Geltungsbereich hat. Dasselbe gilt, wenn Sie ein Dienstkonto ändern oder archivieren.
+3. **Inhaber verwalten Inhaber.** Nur Inhaber machen, ändern, entfernen und laden Inhaber ein, und nur ein Inhaber überträgt die Inhaberschaft. Eine Organisation verliert nie ihren letzten Inhaber.
 4. **Erforderliche Rechte werden geprüft.** Kaeso prüft, was jedes Recht erfordert, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Kaeso lehnt eine Änderung an einer eigenen Rolle ab, nach der ein Träger der Rolle ein Recht ohne ein erforderliches hätte. Die eigenen Rechte der Träger ändern sich dabei nie.
 5. **Schlüssel haben keine eigenen Rechte.** Ein API-Schlüssel handelt als sein Mitglied oder Dienstkonto in seinem Projekt. Ein Plattform-Schlüssel einer Organisation handelt mit den Rechten der Rolle Admin in seiner Organisation.
 
@@ -90,7 +90,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `org.view` | Organisation ansehen | Die Organisation, ihre Einstellungen und Rollen sehen. |  |
 | `org.update` | Organisation bearbeiten | Die Organisation umbenennen, Bild und allgemeine Einstellungen ändern und das Standardprojekt wählen. |  |
 | `org.delete` | Organisation löschen | Die Organisation zur Löschung vormerken oder sie in der Wartezeit wiederherstellen. | sensibel; kürzliche Anmeldung |
-| `org.ownership.transfer` | Inhaberschaft übertragen | Ein anderes Mitglied an Ihrer Stelle zum Inhaber machen. | sensibel; kürzliche Anmeldung; erfordert `members.view` |
+| `org.ownership.transfer` | Inhaberschaft übertragen | Ein anderes Mitglied an Ihrer Stelle zum Inhaber machen; nur Inhaber haben dieses Recht. | sensibel; kürzliche Anmeldung; erfordert `members.view` |
 
 ### Mitglieder & Zugriff
 
@@ -224,7 +224,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `logs.metadata.view` | Anfrageprotokolle ansehen | Anfrageprotokolle sehen: Modell, Token, Kosten, Latenz, Status und Schlüssel. |  |
 | `logs.content.view` | Prompts und Ausgaben ansehen | Anfrage- und Antwortinhalte in den Protokollen sehen. | sensibel; erfordert `logs.metadata.view` |
 | `logs.export` | Protokolle exportieren | Die Anfrageprotokolle des Projekts exportieren. | sensibel; erfordert `logs.metadata.view` |
-| `logs.content.disable` | Inhaltsprotokollierung ausschalten | Die Inhaltsprotokollierung für dieses Projekt ausschalten. |  |
+| `logs.content.manage` | Inhaltsprotokollierung schalten | Die Inhaltsprotokollierung für dieses Projekt ein- oder ausschalten. | sensibel |
 
 ### Nutzung & Kosten
 

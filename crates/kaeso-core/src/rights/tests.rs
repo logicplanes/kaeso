@@ -381,6 +381,34 @@ fn owners_cannot_lose_rights() {
 }
 
 #[test]
+fn only_owners_hold_owner_only_rights() {
+    assert_eq!(OrgRights::owner_only().names(), ["org.ownership.transfer"]);
+    let id = crate::id::RoleId::new();
+    let everything = OrgRights::all();
+    for grant in [
+        OrgGrant {
+            added: everything,
+            ..OrgGrant::preset(OrgPreset::Admin)
+        },
+        OrgGrant::custom(id, everything, ProjectRights::all()),
+    ] {
+        assert!(!grant.effective().contains(OrgRight::OrgOwnershipTransfer));
+        assert!(
+            !grant
+                .normalised()
+                .added
+                .contains(OrgRight::OrgOwnershipTransfer)
+        );
+        assert_eq!(grant.effective(), everything.minus(OrgRights::owner_only()));
+    }
+    assert!(
+        OrgGrant::preset(OrgPreset::Owner)
+            .effective()
+            .contains(OrgRight::OrgOwnershipTransfer)
+    );
+}
+
+#[test]
 fn normalising_drops_redundant_deviations() {
     let grant = OrgGrant {
         added: [OrgRight::OrgView, OrgRight::AuditLogView]
@@ -709,9 +737,13 @@ fn org_rights() -> impl Strategy<Value = OrgRights> {
     })
 }
 
+fn role_rights() -> impl Strategy<Value = OrgRights> {
+    org_rights().prop_map(|r| r.minus(OrgRights::owner_only()))
+}
+
 fn deviations() -> impl Strategy<Value = Vec<Deviation<OrgRights>>> {
     prop::collection::vec(
-        (org_rights(), org_rights(), org_rights()).prop_map(|(a, b, c)| Deviation {
+        (role_rights(), role_rights(), role_rights()).prop_map(|(a, b, c)| Deviation {
             added: a.intersect(b),
             removed: b.intersect(c).minus(a),
         }),
@@ -744,14 +776,15 @@ proptest! {
         let preset = OrgPreset::ALL[p];
         let g = OrgGrant { added, removed, ..OrgGrant::preset(preset) };
         let e = g.effective();
-        prop_assert!(added.minus(removed).is_subset(e));
+        prop_assert!(added.minus(removed).minus(OrgRights::owner_only()).is_subset(e));
+        prop_assert!(e.intersect(OrgRights::owner_only()).is_empty());
         prop_assert!(e.minus(preset.rights().union(added)).is_empty());
         prop_assert_eq!(e.union(removed).minus(removed), e);
         prop_assert_eq!(g.normalised().effective(), e);
     }
 
     #[test]
-    fn a_checked_role_change_never_strands_a_holder(before in org_rights(), after in org_rights(), holders in deviations()) {
+    fn a_checked_role_change_never_strands_a_holder(before in role_rights(), after in role_rights(), holders in deviations()) {
         let id = crate::id::RoleId::new();
         let held = |role: OrgRights, d: &Deviation<OrgRights>| {
             OrgGrant { added: d.added, removed: d.removed, ..OrgGrant::custom(id, role, ProjectRights::EMPTY) }.effective()

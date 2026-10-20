@@ -6,6 +6,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type HTMLAttributes,
@@ -57,8 +58,9 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
   const sheetReady = useRef(false);
   const mainId = `k-main-${useId().replace(/[^\w-]/g, "")}`;
   const Main = fill === "screen" ? "main" : "div";
+  const frame = useMemo(() => ({ openNav: () => setNavOpen(true), embedded: fill === "parent", sheetReady }), [fill]);
   return (
-    <Ctx.Provider value={{ openNav: () => setNavOpen(true), embedded: fill === "parent", sheetReady }}>
+    <Ctx.Provider value={frame}>
       <div
         ref={ref}
         className={cn(
@@ -229,6 +231,7 @@ function MenuButton({ className }: { className?: string | undefined }) {
   const { openNav, sheetReady } = useAppFrame();
   const { collapsed, setCollapsed, setPeeking } = useSidebar();
   const intent = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(intent.current), []);
   const t = useUiText();
   const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
   return (

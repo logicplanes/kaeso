@@ -76,7 +76,7 @@ gh stack submit
 
 Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 
-- **Keine Code-Kommentare, nirgends.** Namen, Typen, kleine Funktionen und Tests erklären den Code, und diese Dokumentation erklärt den Rest. Das gilt auch für `#` in Konfigurationsdateien, `<!-- -->` in Markdown und Kommentare in den Codeblöcken einer Seite. Der Job **No comments** setzt das durch.
+- **Kommentare nur, wo der Code das Warum nicht sagen kann.** Namen, Typen, kleine Funktionen und Tests erklären, was Code tut, und diese Dokumentation erklärt, wie man ihn nutzt. Ein Kommentar nennt einen Grund, den ein sorgfältiger Leser sonst übersieht: einen Workaround für einen Fehler anderswo, mit Link darauf, eine Sicherheitsbedingung, die die Typen nicht abbilden, oder woher ein Grenzwert oder eine Reihenfolge stammt. Er beschreibt nie die nächste Zeile, und Code wird nie auskommentiert oder mit `TODO`-Notizen committet; dafür gibt es Issues. Doc-Kommentare gehören an die öffentliche API der veröffentlichten Crates und Pakete. Codeblöcke auf diesen Seiten enthalten nie Kommentare. Der Job **Comments** lehnt `TODO`-, `FIXME`-, `XXX`- und `HACK`-Notizen ab, den Rest entscheidet das Review.
 - **Tests prüfen, was eine Person oder eine App sieht.** Sie sind deterministisch, mit injizierten Uhren und ohne Sleeps. Coverage-Schwellen steigen nur.
 - **Oberflächen nutzen nur `@logicplanes/kaeso-ui`**, mit `className` nur für Layout, und jedes Wort gibt es in drei Sprachen ([Übersetzungen](translations.md)).
 - **Nur pnpm** für JavaScript, und `pnpm dlx` für ein einmaliges Werkzeug. Cargo baut den Rust-Code, und Lockfiles ändern sich nur über ihr Werkzeug.

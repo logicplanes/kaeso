@@ -43,8 +43,6 @@
   "account.keyArchived": "{name} archived",
   "account.keyDisabled": "{name} disabled",
   "account.keyEnabled": "{name} enabled",
-  "account.keyNeverUsed": "Never used",
-  "account.keyUsed": "Used {when}",
   "account.keysFailed": "Your keys couldn't load",
   "account.language": "Language",
   "account.languageAuto": "Automatic ({language})",

@@ -169,6 +169,7 @@
   "kaeso.rights.orgRoleSource": "{role} · organization",
   "kaeso.rights.orgRoleSourceHint": "Their organization role gives this in every project",
   "kaeso.rights.ownerLocked": "Owners hold every right; give another role to hold fewer",
+  "kaeso.rights.ownerOnly": "Only owners hold this right; transfer ownership to give it",
   "kaeso.rights.ownerSource": "Owners hold every right",
   "kaeso.rights.projectRole": "Project role",
   "kaeso.rights.projectRoleSource": "Their role in this project",

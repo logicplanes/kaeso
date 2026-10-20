@@ -290,7 +290,7 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
   const unavailable = m.availability === "unavailable" && <Badge tone="danger">{t("models.unavailable", "Unavailable")}</Badge>;
   return (
     <>
-      <span className="md:hidden">{unavailable}</span>
+      {unavailable && <span className="md:hidden">{unavailable}</span>}
       <span className="hidden items-center gap-8 md:flex">
         {unavailable}
         {m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}

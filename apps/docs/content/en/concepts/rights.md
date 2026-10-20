@@ -66,16 +66,16 @@ A member's rights in a project add up from three sources: their project role, th
 - With `roles.manage`, an organization can define up to 50 custom roles, for the organization or for projects. Organization roles hold organization rights and rights in every project. Project roles hold project rights.
 - Anyone with `org.view` sees the custom roles.
 - A name has 1 to 50 characters and is unique per organization and scope, ignoring case. It can't be `custom` or the name of a built-in role of that scope. A description has at most 200 characters.
-- Custom roles can't make owners. Owner is only the built-in role.
+- Custom roles can't make owners. Owner is only the built-in role, and only owners hold `org.ownership.transfer`: no custom role or individual change can give it.
 - You can't delete a role that a member, an active service account or a pending invitation holds. Nor can you delete the role that people who arrive through single sign-on get.
 
 ## Grant rules
 
 Every change of roles and rights follows these rules:
 
-1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. This applies to changing a member's role or rights, inviting, adding a project member, creating or changing a service account or a custom role, and choosing the single sign-on role.
-2. **Act only on peers.** You can change a member's role and rights, or remove the member, only if you hold every right the member holds in that scope.
-3. **Owners manage owners.** Only owners make, change, remove and invite owners. An organization never loses its last owner.
+1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. This applies to changing a member's role or rights, inviting and resending an invitation, adding a project member, creating or changing a service account or a custom role, and choosing the single sign-on role.
+2. **Act only on peers.** You can change a member's role and rights, or remove the member, only if you hold every right the member holds in that scope. The same goes for changing or archiving a service account.
+3. **Owners manage owners.** Only owners make, change, remove and invite owners, and only an owner transfers ownership. An organization never loses its last owner.
 4. **Needs are checked.** Kaeso checks what every right a change gives needs. A change can't remove a right that a remaining right needs, even when that remaining right already lacks another of its needs. Kaeso refuses a change to a custom role that would leave a holder with a right but without one it needs. The holders' own rights never change with it.
 5. **Keys have no rights of their own.** An API key acts as its member or service account in its project. An organization's platform key acts with the Admin role's rights in its organization.
 
@@ -90,7 +90,7 @@ Every change of roles and rights follows these rules:
 | `org.view` | View organization | See the organization, its settings and its roles. |  |
 | `org.update` | Edit organization | Rename the organization, change its picture and general settings, and choose the default project. |  |
 | `org.delete` | Delete organization | Schedule the organization for deletion, or restore it while it waits. | sensitive; recent sign-in |
-| `org.ownership.transfer` | Transfer ownership | Make another member an owner in your place. | sensitive; recent sign-in; needs `members.view` |
+| `org.ownership.transfer` | Transfer ownership | Make another member an owner in your place; only owners hold it. | sensitive; recent sign-in; needs `members.view` |
 
 ### Members & access
 
@@ -224,7 +224,7 @@ Every change of roles and rights follows these rules:
 | `logs.metadata.view` | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |
 | `logs.content.view` | View prompts and outputs | See request and response bodies in the logs. | sensitive; needs `logs.metadata.view` |
 | `logs.export` | Export logs | Export the project's request logs. | sensitive; needs `logs.metadata.view` |
-| `logs.content.disable` | Turn off content logging | Switch content logging off for this project. |  |
+| `logs.content.manage` | Switch content logging | Switch content logging on or off for this project. | sensitive |
 
 ### Usage & costs
 

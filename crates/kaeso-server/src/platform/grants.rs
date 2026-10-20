@@ -213,6 +213,12 @@ impl RoleBook {
             .map_err(|e| ApiError::invalid("rights_added", format!("{e}.")))?;
         let removed = OrgRights::parse(req.rights_removed.iter().map(String::as_str))
             .map_err(|e| ApiError::invalid("rights_removed", format!("{e}.")))?;
+        if let Some(right) = added.intersect(OrgRights::owner_only()).iter().next() {
+            return Err(ApiError::invalid(
+                "rights_added",
+                format!("`{right}` is held only by owners; make the member an owner instead."),
+            ));
+        }
         Ok((
             OrgGrant {
                 added,
@@ -373,6 +379,16 @@ pub fn check_project_peer(caller: ProjectRights, target: &ProjectGrant) -> ApiRe
     } else {
         Err(ApiError::PermissionDenied(
             "You can't change a member who holds rights you don't hold.".into(),
+        ))
+    }
+}
+
+pub fn check_service_account_peer(caller: ProjectRights, target: &ProjectGrant) -> ApiResult<()> {
+    if target.effective().is_subset(caller) {
+        Ok(())
+    } else {
+        Err(ApiError::PermissionDenied(
+            "You can't change a service account that holds rights you don't hold.".into(),
         ))
     }
 }

@@ -15,10 +15,7 @@ export const docs = {
       size: "The height of the input.",
       suffix: 'Text after the value: "USD", "/ min".',
       trailing: "Any trailing element (a button, a Kbd).",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   InputGroup: {
@@ -55,10 +52,7 @@ export const docs = {
       trailing: "Any trailing element (a button, a Kbd).",
       unit: 'Unit after the value: "USD", "tokens", "/ min".',
       value: 'The exact value as a decimal string ("12.50"). Never a float.',
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   OTPInput: {
@@ -88,10 +82,7 @@ export const docs = {
       shortcut: 'A shortcut hint shown while empty: `["mod", "k"]` or `["/"]`.',
       size: "The height of the input.",
       trailing: "Any trailing element (a button, a Kbd).",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   SensitiveInput: {
@@ -110,10 +101,7 @@ export const docs = {
       prefix: 'Text before the value: "https://".',
       size: "The height of the input.",
       suffix: 'Text after the value: "USD", "/ min".',
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   TagInput: {
@@ -133,12 +121,9 @@ export const docs = {
       required: "Marks it as required in a form.",
       separators: "Characters that end a tag, besides Enter.",
       validate:
-        "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip (and to a screen reader); errors are never drawn under the field, so toast it too when someone submits.",
+        "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip; the first one also shows under the field.",
       value: "The tags, when you control them.",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   Textarea: {
@@ -152,10 +137,7 @@ export const docs = {
       mono: "Uses the monospace font, for code and JSON.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       resize: "Grows with its content (`auto`) or can be resized by hand (`vertical`).",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
 } satisfies ComponentDocs;

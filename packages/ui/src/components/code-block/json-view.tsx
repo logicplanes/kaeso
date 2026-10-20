@@ -172,12 +172,13 @@ function Node({
 }
 
 export const JsonView = forwardRef<HTMLDivElement, JsonViewProps>(function JsonView({ value, defaultDepth = 2, query, surface = "well", className }, ref) {
+  const t = useUiText();
   return (
     <div
       ref={ref}
       tabIndex={0}
       role="region"
-      aria-label="JSON"
+      aria-label={t("jsonView.label", "JSON")}
       className={cn(
         "mono overflow-x-auto text-small focus-ring-inset leading-code text-fg scrollbar-quiet",
         KAESO_JSON_VIEW_VARIANTS.surface[surface].classes,

@@ -198,3 +198,12 @@ describe("List on the gutter", () => {
     expect(row).toHaveClass("px-20");
   });
 });
+
+describe("List contrast", () => {
+  it("lifts a selected row's id to the secondary text color, which stays readable on the selected fill", () => {
+    render(
+      <List aria-label="Keys" items={[{ id: "a", title: "checkout-web", displayId: "key_01" }]} selectable selected={new Set(["a"])} selectionBar={false} />,
+    );
+    expect(screen.getByText("key_01")).toHaveClass("text-fg-secondary");
+  });
+});

@@ -90,6 +90,8 @@ impl Limits for NoLimits {
 
 pub const STREAM_INTERRUPTED: &str = "stream_interrupted";
 
+pub const STREAM_LIMIT: &str = "stream_limit";
+
 pub const CLIENT_DISCONNECTED: &str = "client_disconnected";
 
 pub const SHUT_DOWN: &str = "shutdown";

@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Avatar, Button, Combobox, Empty, KeyDisplay, List, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
-import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { allKeysQuery, keyFilter } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { keyStateLabel } from "~/format/labels";
@@ -18,6 +17,7 @@ import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
+import { LastUsed } from "~/kaeso/last-used";
 
 export type KeysSearch = { key?: string; owner?: string; archived?: boolean; create?: boolean };
 
@@ -71,7 +71,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
                     {expiry.text}
                   </Text>
                 ),
-                date: k.last_used_at ? formatRelative(k.last_used_at) : t("keys.neverUsed", "Never used"),
+                date: <LastUsed at={k.last_used_at} />,
                 avatar: <Avatar name={who.name} src={who.avatarUrl} size={20} />,
               };
             }),

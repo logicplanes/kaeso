@@ -45,5 +45,6 @@
   "keys.showAll": "Alle Schlüssel anzeigen",
   "keys.title": "API-Schlüssel",
   "keys.undo": "Rückgängig",
+  "keys.used": "Verwendet {when}",
   "keys.whose": "Inhaber der Schlüssel"
 }

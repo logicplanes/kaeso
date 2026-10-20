@@ -14,8 +14,8 @@ use super::{ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
-    GrantRequest, GrantView, RoleBook, RoleRef, check_project, lock_roles, project_from_store,
-    project_to_store, project_view, requested_role,
+    GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_service_account_peer,
+    lock_roles, project_from_store, project_to_store, project_view, requested_role,
 };
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
@@ -211,7 +211,8 @@ pub struct AccountUpdate {
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/projects/{project}/service-accounts/{account}",
-    summary = "Renames a service account or changes its rights.",
+    summary = "Renames a service account or changes its rights. Only a caller who\n\
+    holds every right of the account can change it.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("account" = ServiceAccountId, Path)),
     request_body = AccountUpdate,
@@ -235,6 +236,7 @@ pub async fn update(
         None => None,
     };
     let before = lock_active(&mut tx, &ctx, &id).await?;
+    check_service_account_peer(ctx.project()?.rights, &grant_of(&before)?)?;
     let mut after = before.clone();
     if let Some(name) = req.name {
         after.name = validate_name("name", &name)?;
@@ -265,7 +267,8 @@ pub async fn update(
 #[utoipa::path(
     post,
     path = "/orgs/{org}/projects/{project}/service-accounts/{account}/archive",
-    summary = "Archives a service account and its keys. Permanent.",
+    summary = "Archives a service account and its keys. Permanent. Only a caller who\n\
+    holds every right of the account can archive it.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("account" = ServiceAccountId, Path)),
     responses((status = 200, body = ServiceAccountView))
@@ -289,6 +292,7 @@ pub async fn archive(
             "The service account is already archived.".into(),
         ));
     }
+    check_service_account_peer(ctx.project()?.rights, &grant_of(&row)?)?;
     row.archived_at = Some(ctx.now);
     service_accounts::update(&mut *tx, &row).await?;
     let keys = key_lifecycle::archive_service_account_keys(&mut *tx, row.id, ctx.now).await?;

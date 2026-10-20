@@ -2,7 +2,9 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{InviteId, OrgId, ProjectId, RoleId, UserId};
-use kaeso_core::rights::{OrgPreset, ProjectPreset, ProjectRights, effective_project_rights};
+use kaeso_core::rights::{
+    OrgGrant, OrgPreset, ProjectPreset, ProjectRights, effective_project_rights,
+};
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
 use kaeso_mail::Actor;
@@ -12,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::platform::access::Ctx;
+use crate::platform::access::{Ctx, OrgScope};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     RoleBook, RoleRef, check_org, check_project, org_to_store, project_from_store, project_to_store,
@@ -179,12 +181,7 @@ pub async fn create(
         .or(req.preset.as_deref())
         .ok_or_else(|| ApiError::invalid("role", "`role` is required."))?;
     let (grant, role) = book.org_role(role_name, "role")?;
-    if grant.is_owner() && !scope.is_owner() {
-        return Err(ApiError::PermissionDenied(
-            "Only owners can invite owners.".into(),
-        ));
-    }
-    check_org(scope, None, &grant)?;
+    check_org_role(scope, &grant)?;
     let stored = org_to_store(&grant);
     if req.project_roles.len() > MAX_PROJECTS {
         return Err(ApiError::invalid(
@@ -277,6 +274,52 @@ pub async fn create(
         StatusCode::CREATED,
         Json(InviteView::from_row(&row, ctx.now, &book)),
     ))
+}
+
+fn check_org_role(scope: &OrgScope, grant: &OrgGrant) -> ApiResult<()> {
+    if grant.is_owner() && !scope.is_owner() {
+        return Err(ApiError::PermissionDenied(
+            "Only owners can invite owners.".into(),
+        ));
+    }
+    check_org(scope, None, grant)
+}
+
+async fn check_resend(
+    state: &AppState,
+    ctx: &Ctx,
+    invite: &Invite,
+    book: &RoleBook,
+) -> ApiResult<()> {
+    let scope = ctx.org()?;
+    let org_role = match (invite.org_preset.as_deref(), invite.org_role_id) {
+        (Some("custom"), Some(id)) if book.get(id).is_some() => RoleId::from_uuid(id).to_string(),
+        (Some(p), _) if p.parse::<OrgPreset>().is_ok() => p.to_owned(),
+        _ => OrgPreset::Member.as_str().to_owned(),
+    };
+    let (grant, _) = book.org_role(&org_role, "role")?;
+    check_org_role(scope, &grant)?;
+    let stored: Vec<ProjectRole> =
+        serde_json::from_value(invite.project_roles.clone()).unwrap_or_default();
+    for wanted in stored {
+        let name = match wanted.role_id {
+            Some(id) if book.get(id.uuid()).is_none() => continue,
+            Some(id) => id.to_string(),
+            None => wanted.preset.clone(),
+        };
+        let Ok((project_grant, _)) = book.project_role(&name, "project_roles") else {
+            continue;
+        };
+        let Some(project) = projects::get(&state.pg, scope.org.id, wanted.project_id.uuid())
+            .await?
+            .filter(|p| p.archived_at.is_none())
+        else {
+            continue;
+        };
+        let caller_rights = caller_project_rights(state, ctx, project.id).await?;
+        check_project(caller_rights, None, &project_grant)?;
+    }
+    Ok(())
 }
 
 fn email_role(role: &RoleRef) -> &str {
@@ -378,7 +421,8 @@ fn invite_param(invite: &str) -> ApiResult<InviteId> {
 #[utoipa::path(
     post,
     path = "/orgs/{org}/invites/{invite}/resend",
-    summary = "Sends a pending invitation again, with a new link valid 21 days.",
+    summary = "Sends a pending invitation again, with a new link valid 21 days. Only a\n\
+    caller who could send the invitation now can resend it.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("invite" = InviteId, Path)),
     responses((status = 200, body = InviteView))
@@ -390,6 +434,11 @@ pub async fn resend(
 ) -> ApiResult<Json<InviteView>> {
     let scope = ctx.org()?;
     let id = invite_param(&invite)?;
+    let book = RoleBook::load(&state.pg, scope.org.id).await?;
+    let pending = invites::get(&state.pg, Some(scope.org.id), id.uuid())
+        .await?
+        .ok_or_else(|| ApiError::not_found("pending invite"))?;
+    check_resend(&state, &ctx, &pending, &book).await?;
     let token = random_token();
     let mut tx = state.pg.begin().await?;
     if !invites::renew(
@@ -411,7 +460,6 @@ pub async fn resend(
     let row = invites::get(&state.pg, Some(scope.org.id), id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("invite"))?;
-    let book = RoleBook::load(&state.pg, scope.org.id).await?;
     let view = InviteView::from_row(&row, ctx.now, &book);
     let role = view
         .role

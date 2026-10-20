@@ -13,7 +13,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "org.ownership.transfer": () => [
     t("rights.orgOwnershipTransfer.name", "Transfer ownership"),
-    t("rights.orgOwnershipTransfer.description", "Make another member an owner in your place."),
+    t("rights.orgOwnershipTransfer.description", "Make another member an owner in your place; only owners hold it."),
   ],
   "members.view": () => [t("rights.membersView.name", "View members"), t("rights.membersView.description", "See members, their roles and their rights.")],
   "members.invite": () => [
@@ -206,9 +206,9 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.logsContentView.description", "See request and response bodies in the logs."),
   ],
   "logs.export": () => [t("rights.logsExport.name", "Export logs"), t("rights.logsExport.description", "Export the project's request logs.")],
-  "logs.content.disable": () => [
-    t("rights.logsContentDisable.name", "Turn off content logging"),
-    t("rights.logsContentDisable.description", "Switch content logging off for this project."),
+  "logs.content.manage": () => [
+    t("rights.logsContentManage.name", "Switch content logging"),
+    t("rights.logsContentManage.description", "Switch content logging on or off for this project."),
   ],
   "usage.view": () => [t("rights.usageView.name", "View usage"), t("rights.usageView.description", "See the project's usage.")],
   "costs.view": () => [t("rights.costsView.name", "View costs"), t("rights.costsView.description", "See the project's costs.")],

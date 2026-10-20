@@ -3,13 +3,13 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Field",
-  description: "A label, a control and its help, wired together; errors are toasts, never text under the field.",
+  description: "A label, a control and its help, wired together; an error shows under the control.",
   group: "Components",
   entry: "field",
   import: "Field, Fieldset",
   a11y: [
     "The label points at the control; help is in aria-describedby.",
-    "invalid sets aria-invalid and the danger ring; say what is wrong in a toast. A deprecated error stays the control's description for a screen reader but isn't drawn.",
+    "invalid sets aria-invalid and the danger ring; error shows what is wrong under the control and is its description for a screen reader.",
     "Optional fields are marked, not required ones.",
   ],
 };

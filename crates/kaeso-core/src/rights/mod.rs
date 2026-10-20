@@ -95,6 +95,16 @@ macro_rules! right_set {
 right_set!(OrgRights, OrgRight);
 right_set!(ProjectRights, ProjectRight);
 
+impl OrgRights {
+    pub fn owner_only() -> OrgRights {
+        OrgRight::ALL
+            .iter()
+            .copied()
+            .filter(|r| r.owner_only())
+            .collect()
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum OrgRole {
     Builtin(OrgPreset),
@@ -152,7 +162,10 @@ impl OrgGrant {
         if self.is_owner() {
             return OrgRights::all();
         }
-        self.base.union(self.added).minus(self.removed)
+        self.base
+            .union(self.added)
+            .minus(self.removed)
+            .minus(OrgRights::owner_only())
     }
 
     pub fn every_project(&self) -> ProjectRights {
@@ -173,7 +186,11 @@ impl OrgGrant {
             return OrgGrant::preset(OrgPreset::Owner);
         }
         OrgGrant {
-            added: self.added.minus(self.base).minus(self.removed),
+            added: self
+                .added
+                .minus(self.base)
+                .minus(self.removed)
+                .minus(OrgRights::owner_only()),
             removed: self.removed.intersect(self.base),
             ..self
         }

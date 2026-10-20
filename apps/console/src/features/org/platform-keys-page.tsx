@@ -18,7 +18,6 @@ import {
   type StepDialogResult,
 } from "@logicplanes/kaeso-ui";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
-import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { CreatedKey_OrgKeyView, OrgKeyView } from "~/api/generated/types";
 import { orgQuery, platformKeysQuery } from "~/api/queries/orgs";
@@ -34,6 +33,7 @@ import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
 import { useNeedsRight } from "~/auth/needs-right";
+import { LastUsed } from "~/kaeso/last-used";
 
 export function PlatformKeysPage({ org }: { org: string }) {
   const needs = useNeedsRight(org);
@@ -84,9 +84,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
           {expiry.text}
         </Text>
       ),
-      date: k.last_used_at
-        ? t("org.platformKeys.used", "Used {when}", { when: formatRelative(k.last_used_at) })
-        : t("org.platformKeys.neverUsed", "Never used"),
+      date: <LastUsed at={k.last_used_at} />,
       actions:
         k.state === "archived" || !canRevoke ? undefined : (
           <Menu>

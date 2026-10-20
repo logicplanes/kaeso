@@ -68,6 +68,26 @@ describe("Sidebar resizing", () => {
     expect(screen.getByRole("status")).toHaveTextContent("collapsed");
   });
 
+  it("stores the width once, when the drag ends, not on every move", () => {
+    render(
+      <Sidebar.Provider storageKey="console">
+        <Sidebar>
+          <Sidebar.Content />
+        </Sidebar>
+        <State />
+      </Sidebar.Provider>,
+    );
+    fireEvent.pointerDown(edge(), { clientX: 248 });
+    act(() => {
+      edge().dispatchEvent(new PointerEvent("pointermove", { clientX: 252 }));
+      edge().dispatchEvent(new PointerEvent("pointermove", { clientX: 264 }));
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded full 264");
+    expect(localStorage.getItem("kaeso:console:width")).toBeNull();
+    act(() => edge().dispatchEvent(new PointerEvent("pointerup")));
+    expect(localStorage.getItem("kaeso:console:width")).toBe("264");
+  });
+
   it("ends a drag the browser cancels without collapsing, and ignores other buttons", () => {
     render(
       <Sidebar.Provider>

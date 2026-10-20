@@ -21,9 +21,10 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     {
         resp.headers_mut().insert(MODEL_HEADER, v);
     }
-    if let Some(p) = served.provider {
-        resp.headers_mut()
-            .insert(PROVIDER_HEADER, HeaderValue::from_static(p));
+    if let Some(p) = served.provider
+        && let Ok(v) = HeaderValue::from_str(p)
+    {
+        resp.headers_mut().insert(PROVIDER_HEADER, v);
     }
 }
 

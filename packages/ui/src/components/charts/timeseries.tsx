@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { forwardRef, useId, useMemo, useState, type ReactNode } from "react";
 import { scaleLinear } from "./linear-scale.js";
-import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack } from "d3-shape";
+import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack, type SeriesPoint } from "d3-shape";
 import { bisector, max as d3max, min as d3min } from "d3-array";
 import { timeTicks } from "d3-time";
 import { cn } from "../../utils/cn.js";
@@ -144,13 +144,13 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
     .y0(h)
     .y1((v) => y(v))
     .curve(curveMonotoneX);
-  const stackArea = d3area<[number, number]>()
+  const stackArea = d3area<SeriesPoint<number[]>>()
     .x((_, i) => Math.round(x(times[i] ?? new Date())))
     .y0((d) => y(d[0]))
     .y1((d) => y(d[1]))
     .curve(curveMonotoneX);
 
-  const stackTop = d3line<[number, number]>()
+  const stackTop = d3line<SeriesPoint<number[]>>()
     .x((_, i) => Math.round(x(times[i] ?? new Date())))
     .y((d) => y(d[1]))
     .curve(curveMonotoneX);
@@ -254,15 +254,8 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                         const s = visible[li]!;
                         return (
                           <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
-                            <path d={stackArea(layer as unknown as [number, number][]) ?? ""} fill={color(s)} className="chart-stack-fill" />
-                            <path
-                              d={stackTop(layer as unknown as [number, number][]) ?? ""}
-                              fill="none"
-                              stroke={color(s)}
-                              strokeWidth={1.5}
-                              strokeLinejoin="round"
-                              strokeLinecap="round"
-                            />
+                            <path d={stackArea(layer) ?? ""} fill={color(s)} className="chart-stack-fill" />
+                            <path d={stackTop(layer) ?? ""} fill="none" stroke={color(s)} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
                           </g>
                         );
                       })

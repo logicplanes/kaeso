@@ -69,6 +69,27 @@ describe("List, loading what it needs", () => {
     await userEvent.keyboard("j");
     await waitFor(() => expect(document.activeElement).toHaveAttribute("data-index", "1"));
   });
+  it("moves through a virtualized narrow list, whose rows the virtualizer measures, with the arrow keys", async () => {
+    const rects = vi.spyOn(HTMLElement.prototype, "getClientRects").mockImplementation(() => [new DOMRect(0, 0, 375, 44)] as unknown as DOMRectList);
+    const width = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(375);
+    try {
+      const many = Array.from({ length: 300 }, (_, i) => ({ id: `key-${i}`, title: `key-${i}`, date: "Oct 2026" }));
+      render(<List aria-label="Keys" items={many} />);
+      await act(() => lazyModulesSettled());
+      await waitFor(() => expect(document.querySelector("[data-v-index]")).not.toBeNull());
+      const first = screen.getAllByRole("gridcell")[0]!;
+      const start = Number(first.dataset.index);
+      first.focus();
+      await userEvent.keyboard("{ArrowDown}");
+      await waitFor(() => expect(document.activeElement).toHaveAttribute("data-index", String(start + 1)));
+      await userEvent.keyboard("{ArrowDown}");
+      await waitFor(() => expect(document.activeElement).toHaveAttribute("data-index", String(start + 2)));
+      expect(document.activeElement).toHaveAttribute("role", "gridcell");
+    } finally {
+      rects.mockRestore();
+      width.mockRestore();
+    }
+  });
   it("selects with Space and x on a row while the checkbox is still on its way, and shows it on the stand-in box", async () => {
     const user = userEvent.setup();
     render(<List aria-label="Keys" items={items} selectable selectionBar={false} />);

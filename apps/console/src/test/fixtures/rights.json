@@ -13,6 +13,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": []
           },
           {
@@ -23,6 +24,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -33,16 +35,18 @@
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
             "id": "org.ownership.transfer",
             "scope": "org",
             "name": "Transfer ownership",
-            "description": "Make another member an owner in your place.",
+            "description": "Make another member an owner in your place; only owners hold it.",
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": true,
             "needs": ["org.view", "members.view"]
           }
         ]
@@ -59,6 +63,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -69,6 +74,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "members.view"]
           },
           {
@@ -79,6 +85,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "members.view"]
           },
           {
@@ -89,6 +96,7 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "members.view"]
           },
           {
@@ -99,6 +107,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "members.view"]
           },
           {
@@ -109,6 +118,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           }
         ]
@@ -125,6 +135,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -135,6 +146,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -145,6 +157,7 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "projects.view.all"]
           }
         ]
@@ -161,6 +174,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -171,6 +185,7 @@
             "sensitive": false,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "provider_credentials.view"]
           },
           {
@@ -181,6 +196,7 @@
             "sensitive": false,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "provider_credentials.view"]
           },
           {
@@ -191,6 +207,7 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "provider_credentials.view"]
           }
         ]
@@ -207,6 +224,7 @@
             "sensitive": false,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -217,6 +235,7 @@
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -227,6 +246,7 @@
             "sensitive": false,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -237,6 +257,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           }
         ]
@@ -253,6 +274,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -263,6 +285,7 @@
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "platform_keys.view"]
           },
           {
@@ -273,6 +296,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "platform_keys.view"]
           }
         ]
@@ -289,6 +313,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -299,6 +324,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -309,6 +335,7 @@
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "logs.storage.view"]
           }
         ]
@@ -325,6 +352,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -335,6 +363,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "usage.org.view"]
           },
           {
@@ -345,6 +374,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": true,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -355,6 +385,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": true,
+            "owner_only": false,
             "needs": ["org.view", "billing.view"]
           }
         ]
@@ -371,6 +402,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view"]
           },
           {
@@ -381,6 +413,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["org.view", "audit_log.view"]
           }
         ]
@@ -401,6 +434,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": []
           },
           {
@@ -411,6 +445,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -421,6 +456,7 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           }
         ]
@@ -437,6 +473,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -447,6 +484,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "project.members.view"]
           },
           {
@@ -457,6 +495,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "project.members.view"]
           },
           {
@@ -467,6 +506,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "project.members.view"]
           },
           {
@@ -477,6 +517,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -487,6 +528,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "service_accounts.view"]
           },
           {
@@ -497,6 +539,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "service_accounts.view"]
           },
           {
@@ -507,6 +550,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "service_accounts.view"]
           }
         ]
@@ -523,6 +567,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -533,6 +578,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           }
         ]
@@ -549,6 +595,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -559,6 +606,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -569,6 +617,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -579,6 +628,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "keys.all.view"]
           },
           {
@@ -589,6 +639,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "service_accounts.view"]
           },
           {
@@ -599,6 +650,7 @@
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -609,6 +661,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           }
         ]
@@ -625,6 +678,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -635,6 +689,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "models.view"]
           }
         ]
@@ -651,6 +706,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -661,6 +717,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "limits.view"]
           }
         ]
@@ -677,6 +734,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -687,6 +745,7 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "logs.metadata.view"]
           },
           {
@@ -697,16 +756,18 @@
             "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "logs.metadata.view"]
           },
           {
-            "id": "logs.content.disable",
+            "id": "logs.content.manage",
             "scope": "project",
-            "name": "Turn off content logging",
-            "description": "Switch content logging off for this project.",
-            "sensitive": false,
+            "name": "Switch content logging",
+            "description": "Switch content logging on or off for this project.",
+            "sensitive": true,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           }
         ]
@@ -723,6 +784,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           },
           {
@@ -733,6 +795,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view", "usage.view"]
           }
         ]
@@ -749,6 +812,7 @@
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
+            "owner_only": false,
             "needs": ["project.view"]
           }
         ]
