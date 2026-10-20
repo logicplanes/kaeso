@@ -48,11 +48,8 @@ fn query_err(dialect: DialectId, q: &str) -> kaeso_kpp::KppError {
 }
 
 fn round_trip(dialect: DialectId, name: &str, body: &[u8]) {
-    let out = if name
-        .rsplit('/')
-        .next()
-        .is_some_and(|n| n.starts_with("retrieve"))
-    {
+    let stem = name.rsplit('/').next().unwrap_or(name);
+    let out = if stem.starts_with("retrieve") {
         dispatch::encode_model(dialect, &model(dialect, body)).unwrap()
     } else {
         dispatch::encode_models(dialect, &list(dialect, body)).unwrap()

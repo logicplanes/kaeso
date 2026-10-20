@@ -13,8 +13,11 @@ use crate::test_support::{assert_json_eq, encoded_error, fixtures, sidecar};
 
 const D: &str = "openai_chat";
 
-pub(super) const REJECTED_REQUESTS: &[(&str, &str)] =
-    &[("input-audio-unsupported", "input_audio"), ("n-2", "n")];
+pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
+    ("input-audio-unsupported", "input_audio"),
+    ("n-2", "n"),
+    ("providers/groq/n-above-one", "n"),
+];
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 

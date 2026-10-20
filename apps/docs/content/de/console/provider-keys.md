@@ -22,6 +22,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
 | SpaceX | [console.x.ai](https://console.x.ai) (xAI-Konsole), unter **API Keys** | `xai-` |
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), unter **API Keys** | `tgp_v1_` |
+| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

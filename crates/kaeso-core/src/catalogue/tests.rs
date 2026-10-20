@@ -312,6 +312,28 @@ fn names_resolve_alias_then_prefixed_then_native() {
 }
 
 #[test]
+fn model_ids_with_a_slash_resolve_prefixed_and_native() {
+    let oss = entry("groq", "openai/gpt-oss-20b");
+    let qwen = entry("groq", "qwen/qwen3.8-27b");
+    let entries = vec![oss.clone(), qwen.clone()];
+    let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
+    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
+    assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
+    assert_eq!(r("openai/gpt-oss-20b"), Ok((oss.id, Via::Native)));
+    assert_eq!(r("qwen/qwen3.8-27b"), Ok((qwen.id, Via::Native)));
+    assert!(matches!(
+        r("groq/gpt-oss-20b"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+    let gpt = entry("openai", "gpt-oss-20b");
+    let both = vec![oss.clone(), gpt.clone()];
+    let catalogue_both = Catalogue::new(both.clone(), vec![]);
+    let r = |n: &str| catalogue_both.resolve(n).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-oss-20b"), Ok((gpt.id, Via::Prefixed)));
+    assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
+}
+
+#[test]
 fn model_ids_with_slashes_resolve_natively_and_with_their_provider_prefix() {
     let qwen = entry("togetherai", "Qwen/Qwen3.5-9B");
     let oss = entry("togetherai", "openai/gpt-oss-120b");

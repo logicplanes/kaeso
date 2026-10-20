@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-8136daa1-82d4-40fa-a64e-26b7b5ae55b3",
+  "object": "chat.completion",
+  "created": 1792370392,
+  "model": "openai/gpt-oss-20b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Yes, 17 is a prime number."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.206929424,
+    "prompt_tokens": 83,
+    "prompt_time": 0.004002897,
+    "completion_tokens": 27,
+    "completion_time": 0.027894889,
+    "total_tokens": 110,
+    "total_time": 0.031897786,
+    "completion_tokens_details": {
+      "reasoning_tokens": 9
+    }
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_f102a3179c",
+  "x_groq": {
+    "id": "req_01m58skerqexsr3efdxxdmevzv",
+    "seed": 1495837360
+  },
+  "service_tier": "on_demand"
+}

@@ -24,7 +24,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Direction | Ports or hosts | For |
 | --- | --- | --- |
 | Incoming | TCP ports 80 and 443, and UDP port 443 for HTTP/3 | The certificate and HTTPS |
-| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai`, or the base URL you set for a provider ([provider settings](configuration.md#provider-settings)) | The providers you use |
+| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai`, `api.groq.com`, or the base URL you set for a provider ([provider settings](configuration.md#provider-settings)) | The providers you use |
 | Outgoing | `models.dev` | Model data, refreshed once a day |
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, twice a day |
 | Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |

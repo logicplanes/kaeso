@@ -18,12 +18,7 @@ async fn project(app: &App, owner: &Owner) -> String {
 }
 
 fn embedded_model_count() -> usize {
-    let data: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    data.as_object()
-        .unwrap()
-        .values()
-        .map(|p| p["models"].as_object().unwrap().len())
-        .sum()
+    kaeso_core::models_dev::embedded().unwrap().model_count()
 }
 
 fn base(owner: &Owner, project: &str) -> String {

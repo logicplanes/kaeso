@@ -377,19 +377,31 @@ mod tests {
             c.providers.get("anthropic").unwrap().base_url.as_str(),
             "https://api.anthropic.com/"
         );
+        let mut known: Vec<&str> = kaeso_core::provider::PROVIDERS
+            .iter()
+            .map(|p| p.id)
+            .collect();
+        known.sort_unstable();
         assert_eq!(
             c.providers
                 .iter()
-                .map(|(id, p)| format!("{id} {}", p.base_url))
+                .map(|(id, _)| id.as_str())
                 .collect::<Vec<_>>(),
-            [
-                "anthropic https://api.anthropic.com/",
-                "deepseek https://api.deepseek.com/",
-                "openai https://api.openai.com/",
-                "togetherai https://api.together.ai/",
-                "xai https://api.x.ai/"
-            ]
+            known
         );
+        for p in kaeso_core::provider::PROVIDERS {
+            assert_eq!(
+                c.providers
+                    .get(p.id)
+                    .unwrap()
+                    .base_url
+                    .as_str()
+                    .trim_end_matches('/'),
+                p.default_base_url,
+                "default base URL of {}",
+                p.id
+            );
+        }
         assert!(!c.is_local_development());
     }
 

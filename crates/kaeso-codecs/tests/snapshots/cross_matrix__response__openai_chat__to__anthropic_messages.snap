@@ -500,6 +500,183 @@ expression: outcomes
       }
     }
   },
+  "providers/groq/recorded-include-reasoning-false": {
+    "content": [
+      {
+        "text": "Yes, 17 is a prime number.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-8136daa1-82d4-40fa-a64e-26b7b5ae55b3",
+    "model": "openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 83,
+      "output_tokens": 27,
+      "output_tokens_details": {
+        "thinking_tokens": 9
+      }
+    }
+  },
+  "providers/groq/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{\"date\":\"2026-10-16\",\"name\":\"science fair\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-4ff67b7e-f3c2-4902-91d1-408c0c4d89bf",
+    "model": "openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 174,
+      "output_tokens": 46,
+      "output_tokens_details": {
+        "thinking_tokens": 11
+      }
+    }
+  },
+  "providers/groq/recorded-plain-developer-string": {
+    "content": [
+      {
+        "text": "Hello! 👋 How can I assist you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-fcd59ef0-9dfd-429e-a929-a61891b4cdeb",
+    "model": "openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 82,
+      "output_tokens": 39,
+      "output_tokens_details": {
+        "thinking_tokens": 19
+      }
+    }
+  },
+  "providers/groq/recorded-reasoning-format-hidden": {
+    "content": [
+      {
+        "text": "Yes, 17 is a prime number because it is only divisible by 1 and itself.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-2b36d10f-800d-4199-8ef3-2599edb10334",
+    "model": "qwen/qwen3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 53,
+      "output_tokens": 62,
+      "output_tokens_details": {
+        "thinking_tokens": 39
+      }
+    }
+  },
+  "providers/groq/recorded-reasoning-format-parsed": {
+    "content": [
+      {
+        "text": "Yes, 17 is a prime number because it has only two divisors: 1 and itself.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-8a475ec4-2917-4370-b98d-205e79d2cd07",
+    "model": "qwen/qwen3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 53,
+      "output_tokens": 64,
+      "output_tokens_details": {
+        "thinking_tokens": 39
+      }
+    }
+  },
+  "providers/groq/recorded-reasoning-format-raw": {
+    "content": [
+      {
+        "text": "\n<think>\nYes, 17 is a prime number. I need to answer in one sentence.\n</think>\n\nYes, 17 is a prime number because it is only divisible by 1 and itself.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-b62b8553-e23d-415c-976c-6ce3525f6ee4",
+    "model": "qwen/qwen3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 53,
+      "output_tokens": 42
+    }
+  },
+  "providers/groq/recorded-tools-system-role": {
+    "content": [
+      {
+        "id": "fc_64cfb53a-eb82-4cd9-b9c8-18177c53d0c2",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-17055776-9bcc-4256-8699-2f1abc20df34",
+    "model": "openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 180,
+      "output_tokens": 37,
+      "output_tokens_details": {
+        "thinking_tokens": 7
+      }
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "content": [
       {

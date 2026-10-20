@@ -17,6 +17,7 @@ const KEY_SITES: Record<string, { url: string; page: string; prefix: string }> =
   deepseek: { url: "https://platform.deepseek.com/api_keys", page: "API keys", prefix: "sk-" },
   xai: { url: "https://console.x.ai", page: "API Keys", prefix: "xai-" },
   togetherai: { url: "https://api.together.ai/settings/projects/~current/api-keys", page: "API Keys", prefix: "tgp_v1_" },
+  groq: { url: "https://console.groq.com/keys", page: "API Keys", prefix: "gsk_" },
 };
 
 function keyHelp(provider: string): ReactNode {

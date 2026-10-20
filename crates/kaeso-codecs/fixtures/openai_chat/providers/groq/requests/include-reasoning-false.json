@@ -1,0 +1,11 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 17 a prime number? Answer in one sentence."
+    }
+  ],
+  "include_reasoning": false,
+  "reasoning_effort": "low"
+}

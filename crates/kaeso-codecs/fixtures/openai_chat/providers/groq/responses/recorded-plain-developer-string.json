@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-fcd59ef0-9dfd-429e-a929-a61891b4cdeb",
+  "object": "chat.completion",
+  "created": 1792370007,
+  "model": "openai/gpt-oss-20b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! 👋 How can I assist you today?",
+        "reasoning": "We need to respond in a helpful manner. Probably greet and ask how can I help."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.024371779,
+    "prompt_tokens": 82,
+    "prompt_time": 0.030850964,
+    "completion_tokens": 39,
+    "completion_time": 0.041414168,
+    "total_tokens": 121,
+    "total_time": 0.072265132,
+    "completion_tokens_details": {
+      "reasoning_tokens": 19
+    }
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_9b8528b477",
+  "x_groq": {
+    "id": "req_01m58s7qcqe008dp17brjt05h9",
+    "seed": 1984629934
+  },
+  "service_tier": "on_demand"
+}

@@ -203,6 +203,17 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
     },
+    Provider {
+        id: "groq",
+        name: "Groq",
+        default_base_url: "https://api.groq.com/openai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+    },
 ];
 
 const _: () = {
@@ -282,7 +293,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai");
+        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai, groq");
     }
 
     #[test]
@@ -381,7 +392,14 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "deepseek", "xai", "togetherai"]
+            [
+                "openai",
+                "anthropic",
+                "deepseek",
+                "xai",
+                "togetherai",
+                "groq"
+            ]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

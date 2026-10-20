@@ -22,6 +22,7 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
 | SpaceX | [console.x.ai](https://console.x.ai), the xAI console, under **API Keys** | `xai-` |
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), under **API Keys** | `tgp_v1_` |
+| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
 
 Each action on provider keys needs its own right:
 

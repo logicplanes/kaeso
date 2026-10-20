@@ -30,6 +30,7 @@ const PROVIDER_DIALECTS: Record<string, string[]> = {
   deepseek: ["openai_chat"],
   xai: ["openai_responses", "openai_chat"],
   togetherai: ["openai_chat", "openai_embeddings"],
+  groq: ["openai_chat"],
 };
 export const providerDialects = (provider: string) => PROVIDER_DIALECTS[provider] ?? DIALECT_IDS;
 

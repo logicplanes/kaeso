@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "'messages.2' : for 'role:assistant' the following must be satisfied[('messages.2' : property 'refusal' is unsupported)]",
+    "type": "invalid_request_error"
+  }
+}
