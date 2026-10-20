@@ -92,6 +92,8 @@
   "models.field.timeout": "超时",
   "models.fieldReset": "{field}已恢复为 models.dev 的值",
   "models.filter": "筛选模型",
+  "models.filters": "筛选",
+  "models.filtersCount": "筛选 · {count}",
   "models.inCatalogue": "已在目录中",
   "models.includeDeprecated": "包含已弃用",
   "models.listSeparator": "、",

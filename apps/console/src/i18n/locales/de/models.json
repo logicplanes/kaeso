@@ -92,6 +92,8 @@
   "models.field.timeout": "Zeitlimit",
   "models.fieldReset": "{field} auf models.dev zurückgesetzt",
   "models.filter": "Modelle filtern",
+  "models.filters": "Filter",
+  "models.filtersCount": "Filter · {count}",
   "models.inCatalogue": "Bereits im Katalog",
   "models.includeDeprecated": "Veraltete anzeigen",
   "models.listSeparator": ", ",
