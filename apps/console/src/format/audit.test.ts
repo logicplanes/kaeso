@@ -106,12 +106,16 @@ describe("target names in snapshots", () => {
     );
     expect(snapshotName({ target_kind: "org", after: { org: { id: "org_1", name: "Northwind Labs" } } })).toBe("Northwind Labs");
     expect(snapshotName({ target_kind: "role", after: null, before: { name: "Support lead" } })).toBe("Support lead");
+    expect(snapshotName({ target_kind: "catalogue_model", after: { model_id: "gpt-5" } })).toBe("gpt-5");
+    expect(snapshotName({ target_kind: "user", after: { email: "grace@example.com" } })).toBe("grace@example.com");
+    expect(snapshotName({ target_kind: "project", after: { email: "grace@example.com" } })).toBeNull();
     expect(snapshotName({ target_kind: "key", after: null, before: null })).toBeNull();
   });
 });
 
 describe("target kinds", () => {
   it("are named in English and German, and an unknown kind stays as written", async () => {
+    expect([targetKindLabel("role"), targetKindLabel("update")]).toEqual(["Role", "Update"]);
     const kinds = ["user", "org", "invite", "project", "service_account", "limit", "credential", "catalogue_model", "alias", "platform_key", "key"];
     expect(kinds.map(targetKindLabel)).toEqual([
       "User",

@@ -33,7 +33,8 @@ import { afterToday, DAY_PRESETS, pickedDay, pickerDate } from "~/format/picked-
 import { locale, t, type Locale } from "~/i18n";
 import { showExportProgress, startExport } from "~/shell/export-job";
 import { patchSearch, type SearchPatch } from "~/search";
-import { inZone, yearOf } from "~/format/zone";
+import { dayKey, inZone, yearOf } from "~/format/zone";
+import { usePhone } from "~/shell/use-phone";
 
 const shortTimes = new Map<string, Intl.DateTimeFormat>();
 function shortTime(v: string): string {
@@ -47,9 +48,19 @@ function shortTime(v: string): string {
 }
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
+function compactTime(v: string): string {
+  const at = new Date(v);
+  const tag = locale() === "en" ? "en-GB" : locale();
+  if (dayKey(at) === dayKey(new Date())) return new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }).format(at);
+  const thisYear = yearOf(at) === yearOf(new Date());
+  return new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", ...(thisYear ? {} : { year: "2-digit" }), ...inZone() }).format(at);
+}
 function zoneName(at: Date): string {
   const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...inZone() }).formatToParts(at);
-  return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
+  return parts
+    .filter((p) => p.type === "timeZoneName")
+    .map((p) => p.value)
+    .join("");
 }
 
 export function AuditLog({
@@ -90,23 +101,37 @@ export function AuditLog({
   const nameOf = useCallback((kind: string, id: string) => targetName?.(kind, id) ?? snapshotNames.get(id), [targetName, snapshotNames]);
 
   const lang = locale();
+  const phone = usePhone();
   const columns = useMemo(
     () =>
       [
         col.custom(
-          { id: "time", header: t("kaeso.audit.timeIn", "Time ({zone})", { zone: zoneName(new Date()) }), size: TIME_WIDTH[lang], priority: 1 },
+          {
+            id: "time",
+            header: phone ? zoneName(new Date()) : t("kaeso.audit.timeIn", "Time ({zone})", { zone: zoneName(new Date()) }),
+            size: phone ? 88 : TIME_WIDTH[lang],
+            priority: 1,
+          },
           (r: AuditEventView) => r.at,
           (v: string) => (
             <Text tabular>
-              <time dateTime={v}>{eventTime(v)}</time>
+              <time dateTime={v}>{phone ? compactTime(v) : eventTime(v)}</time>
             </Text>
           ),
         ),
         col.custom(
-          { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: 176, priority: 1 },
+          { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: phone ? 64 : 168, priority: 1 },
           (r: AuditEventView) => r.actor,
           (v: PartyRef) => {
             const label = partyLabel(v);
+            if (phone)
+              return (
+                <Tooltip content={partyText(label)}>
+                  <span className="flex">
+                    <Avatar name={partyText(label)} src={label.avatarUrl} size={20} />
+                  </span>
+                </Tooltip>
+              );
             return (
               <span className="flex min-w-0 items-center gap-8">
                 {v.kind === "user" && <Avatar name={label.name} src={label.avatarUrl} size={20} decorative />}
@@ -116,7 +141,7 @@ export function AuditLog({
           },
         ),
         col.custom(
-          { id: "action", header: t("kaeso.audit.action", "Action"), size: 236, priority: 1, grow: true },
+          { id: "action", header: t("kaeso.audit.action", "Action"), size: 196, priority: 1, grow: true },
           (r: AuditEventView) => r.action,
           (v: string) => <Text truncate>{auditActionLabel(v)}</Text>,
         ),
@@ -137,7 +162,7 @@ export function AuditLog({
             ) : null,
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [lang, partyLabel, targetHref, nameOf],
+    [lang, phone, partyLabel, targetHref, nameOf],
   );
 
   return (

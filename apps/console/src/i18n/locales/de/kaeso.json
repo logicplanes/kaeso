@@ -17,7 +17,7 @@
   "kaeso.audit.event": "Ereignis",
   "kaeso.audit.eventMissing": "Dieses Ereignis gibt es nicht",
   "kaeso.audit.eventUnavailable": "Dieses Ereignis kann gerade nicht angezeigt werden",
-  "kaeso.audit.exportJsonl": "Als JSON Lines exportieren",
+  "kaeso.audit.exportJsonl": "JSON Lines exportieren",
   "kaeso.audit.exported": "Audit-Log exportiert",
   "kaeso.audit.exporting": "Audit-Ereignisse werden exportiert",
   "kaeso.audit.exportingSize": "Audit-Ereignisse werden exportiert · {size}",

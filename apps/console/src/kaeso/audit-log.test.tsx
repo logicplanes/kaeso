@@ -118,6 +118,35 @@ describe("AuditLog", () => {
     expect(within(sheet).getByText("No before or after values are kept for this kind of change.")).toBeInTheDocument();
   });
 
+  it("on a phone, keeps who acted as a named picture and shortens the time", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    try {
+      vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
+      orgLog([
+        auditEvent({ id: "evt_today", action: "key.create", at: "2026-10-15T00:05:00Z", target_kind: "key", target_id: "key_web" }),
+        auditEvent({ id: "evt_jan", action: "key.archive", at: "2026-01-01T09:00:00Z" }),
+        auditEvent({ id: "evt_old", action: "key.create", at: "2024-03-02T10:00:00Z", target_kind: "key", target_id: "key_web" }),
+      ]);
+      await renderApp(PATH);
+      const rows = within(await table())
+        .getAllByRole("row")
+        .slice(1);
+      expect(within(rows[0] as HTMLElement).getByRole("img", { name: "Ada Okafor (you)" })).toBeInTheDocument();
+      expect(rows.map((r) => r.querySelector("time")?.textContent)).toEqual(["00:05", "1 Jan", "2 Mar 24"]);
+      expect(rows[0]).toHaveTextContent("Key created");
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("shows each actor's picture, or their initial without one", async () => {
     const pictured = member({ user: { id: OTHER_USER, name: "Grace Hopper", email: "grace@example.com", avatar_url: "/avatars/grace.webp" } });
     signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" }, memberships: [membership({ rights: ALL_ORG_RIGHTS })] }) });
