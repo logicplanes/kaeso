@@ -6,6 +6,7 @@ import { apiKey, catalogueModel, projectData, projectMember, projectPath, servic
 import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { PROVIDER_IDS, providerLabel } from "~/format/labels";
 
 const LOGS = "orgs/:org/projects/:project/logs";
 const listQueries = () => requests("GET", LOGS).map((r) => Object.fromEntries(r.query));
@@ -222,8 +223,10 @@ describe("LogsPage", () => {
     expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("menuitemradio", { name: "Anthropic" }));
     const providers = screen.getAllByRole("menuitemradio");
     expect(providers[0]).toHaveAccessibleName("DeepSeek");
-    expect(providers[1]).toHaveAccessibleName("Anthropic");
-    expect(providers[2]).toHaveAccessibleName("OpenAI");
+    const others = PROVIDER_IDS.filter((p) => p !== "deepseek")
+      .map(providerLabel)
+      .sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+    others.forEach((name, i) => expect(providers[i + 1]).toHaveAccessibleName(name));
     await user.keyboard("{Escape}");
 
     await user.click(screen.getByRole("button", { name: "Add filter" }));
