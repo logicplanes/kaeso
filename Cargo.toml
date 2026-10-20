@@ -115,6 +115,11 @@ print_stderr = "deny"
 large_enum_variant = "allow"
 result_large_err = "allow"
 
+[profile.dist]
+inherits = "release"
+lto = "thin"
+codegen-units = 1
+
 [profile.dev.package.argon2]
 opt-level = 3
 

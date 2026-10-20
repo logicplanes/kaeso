@@ -9,11 +9,12 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS build
+ARG PROFILE=release
 COPY --from=plan /src/recipe.json recipe.json
-RUN cargo chef cook --release --locked -p kaeso --recipe-path recipe.json
+RUN cargo chef cook --profile "${PROFILE}" --locked -p kaeso --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked -p kaeso \
- && cp target/release/kaeso /kaeso \
+RUN cargo build --profile "${PROFILE}" --locked -p kaeso \
+ && cp "target/${PROFILE}/kaeso" /kaeso \
  && rm -rf target
 
 FROM chef AS mock-build
