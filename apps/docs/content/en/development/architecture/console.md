@@ -50,7 +50,7 @@ The router splits routes (`autoCodeSplitting`), so a page's code loads with the 
 
 What the first paint doesn't need loads when it is used: the toaster, the command palette, the recent sign-in dialog, the shortcuts list, "Create organization", the sidebar's menus, tooltips and the date picker's calendar. The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A request log, a project's audit log and a project's overview start their data in the route's loader, from a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load.
 
-`pnpm build` fails when a route's first paint grows past its ceiling in `scripts/budget.mjs`, or when page code from `src/features` reaches the entry. To get back under it:
+`pnpm build` fails when a route's first paint grows past its ceiling in `scripts/budget.mjs`, or when page code from `src/features` reaches the entry. It measures each chunk with the hashes in chunk names set to zeros, so a size changes with the code, not with the names. To get back under it:
 
 - Import only types from a page into its route file. The route tree is in the entry, so a value import pulls the page into every page.
 - Give code that the entry imports, but that later pages use, a module of its own.
