@@ -1041,5 +1041,6 @@
   "The search field's placeholder; in a pill without `allLabel`, also the text shown while nothing is chosen.": "搜索框的占位符；在没有 `allLabel` 的胶囊按钮中，也是未选择时显示的文本。",
   "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.": "服务商：ID、名称、组织是否已连接它，以及简短提示，例如其密钥数量。",
   "Select only: the height of the pill.": "仅限选择框：胶囊按钮的高度。",
-  "The chosen provider's id, when you control it.": "受控时选中服务商的 ID。"
+  "The chosen provider's id, when you control it.": "受控时选中服务商的 ID。",
+  "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "以表格宽度下被省略的列的 ID 调用，让保留的列可以显示它们的内容。"
 }
