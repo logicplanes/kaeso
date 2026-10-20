@@ -20,7 +20,7 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
-| SpaceX | [console.x.ai](https://console.x.ai), the xAI console, under **API Keys** | `xai-` |
+| SpaceX | [console.x.ai](https://console.x.ai/team/default/api-keys), the xAI console, under **API Keys** | `xai-` |
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), under **API Keys** | `tgp_v1_` |
 | Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
 | OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |

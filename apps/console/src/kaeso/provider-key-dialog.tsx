@@ -11,14 +11,15 @@ import { providerOptions } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
-const KEY_SITES: Record<string, { url: string; page: string; prefix: string }> = {
+const KEY_SITES: Record<string, { url: string; page: string; prefix?: string }> = {
   openai: { url: "https://platform.openai.com/api-keys", page: "API keys", prefix: "sk-" },
   anthropic: { url: "https://platform.claude.com/settings/keys", page: "Settings → API keys", prefix: "sk-ant-" },
   deepseek: { url: "https://platform.deepseek.com/api_keys", page: "API keys", prefix: "sk-" },
-  xai: { url: "https://console.x.ai", page: "API Keys", prefix: "xai-" },
+  xai: { url: "https://console.x.ai/team/default/api-keys", page: "API Keys", prefix: "xai-" },
   togetherai: { url: "https://api.together.ai/settings/projects/~current/api-keys", page: "API Keys", prefix: "tgp_v1_" },
   groq: { url: "https://console.groq.com/keys", page: "API Keys", prefix: "gsk_" },
   openrouter: { url: "https://openrouter.ai/settings/keys", page: "API Keys", prefix: "sk-or-v1-" },
+  mistral: { url: "https://console.mistral.ai/api-keys", page: "API keys" },
 };
 
 function keyHelp(provider: string): ReactNode {
@@ -29,11 +30,13 @@ function keyHelp(provider: string): ReactNode {
       {new URL(where.url).host}
     </Link>
   );
-  return tRich("kaeso.providerKey.where", "Create one at {site} under {page}; it starts with {prefix}.", {
-    site,
-    page: where.page,
-    prefix: <Code className="text-nowrap">{where.prefix}</Code>,
-  });
+  return where.prefix
+    ? tRich("kaeso.providerKey.where", "Create one at {site} under {page}; it starts with {prefix}.", {
+        site,
+        page: where.page,
+        prefix: <Code className="text-nowrap">{where.prefix}</Code>,
+      })
+    : tRich("kaeso.providerKey.whereSite", "Create one at {site} under {page}.", { site, page: where.page });
 }
 
 export function ProviderKeyDialog({
