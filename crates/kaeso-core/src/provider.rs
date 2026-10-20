@@ -190,7 +190,8 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
-            .system_role(),
+            .system_role()
+            .reasoning_fields(&["reasoning_content"]),
     },
     Provider {
         id: "xai",
@@ -203,7 +204,7 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
-        chat: ChatProfile::compatible("SpaceX"),
+        chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
     },
     Provider {
         id: "togetherai",
@@ -216,7 +217,8 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        chat: ChatProfile::compatible("Together AI"),
+        chat: ChatProfile::compatible("Together AI")
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
     },
     Provider {
         id: "groq",
@@ -231,6 +233,7 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
+            .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
     },
@@ -245,7 +248,7 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        chat: ChatProfile::compatible("OpenRouter"),
+        chat: ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
     },
     Provider {
         id: "mistral",

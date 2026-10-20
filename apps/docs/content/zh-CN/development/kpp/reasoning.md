@@ -65,6 +65,8 @@ OpenAI 只有在请求设置了 `reasoning.summary` 时才返回可读推理，�
 
 没有推理设置的请求、推理强度 `none`，以及不推理或未知的模型，都不会被开启推理。OpenAI Chat 应用的格式不显示推理，因此不会请求摘要。
 
+提供 Chat Completions 的服务商会在自己的字段中返回可读推理，例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`，无需请求摘要。它们的 Chat 配置会指明该字段（`reasoning_fields`，[服务商配置](openai-chat.md#服务商配置)），因此推理会成为 KPP 推理块：Anthropic Messages 应用以 `thinking` 块得到它，Responses 应用以带摘要的推理项得到它，原始块都保存在[推理数据块](#推理数据块)中。
+
 ## 思考与采样
 
 当 Kaeso 为来自其他方言的请求开启思考时，Anthropic 禁止与思考同时使用的设置会被调整而不是被拒绝，因为采样设置和强制工具在 OpenAI 应用中很常见：

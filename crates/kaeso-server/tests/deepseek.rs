@@ -171,7 +171,7 @@ async fn an_anthropic_messages_app_pays_deepseeks_cache_hits_at_the_cache_read_p
 }
 
 #[tokio::test]
-async fn an_anthropic_messages_app_streams_deepseek_without_its_reasoning() {
+async fn an_anthropic_messages_app_streams_deepseeks_reasoning_as_a_thinking_block() {
     let (env, _deepseek) = env_with_deepseek().await;
     let mut body = messages(
         FLASH,
@@ -181,18 +181,61 @@ async fn an_anthropic_messages_app_streams_deepseek_without_its_reasoning() {
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let events = sse_data(&r.text());
-    let text: String = events
-        .iter()
-        .filter(|e| e["type"] == "content_block_delta")
-        .filter_map(|e| e["delta"]["text"].as_str())
-        .collect();
-    assert_eq!(text, "391");
-    assert!(
-        !events
+    let delta = |kind: &str, field: &str| -> String {
+        events
             .iter()
-            .any(|e| e["content_block"]["type"] == "thinking")
-    );
+            .filter(|e| e["type"] == "content_block_delta" && e["delta"]["type"] == kind)
+            .filter_map(|e| e["delta"][field].as_str())
+            .collect()
+    };
+    assert_eq!(delta("text_delta", "text"), "391");
+    let thinking = delta("thinking_delta", "thinking");
+    assert!(thinking.starts_with("We need"), "{thinking}");
+    assert!(!delta("signature_delta", "signature").is_empty());
+    let starts: Vec<&Value> = events
+        .iter()
+        .filter(|e| e["type"] == "content_block_start")
+        .map(|e| &e["content_block"]["type"])
+        .collect();
+    assert_eq!(starts, [&json!("thinking"), &json!("text")]);
     assert_eq!(events.last().unwrap()["type"], "message_stop");
+
+    let reply = env.outcomes().await.pop().unwrap().reply.unwrap();
+    assert_eq!(reply.blocks.len(), 2, "{:?}", reply.blocks);
+    assert!(
+        matches!(&reply.blocks[0], kaeso_kpp::Block::Reasoning(r) if r.text.concat() == thinking)
+    );
+}
+
+#[tokio::test]
+async fn an_openai_chat_app_streams_deepseeks_reasoning_content_back_as_sent() {
+    let (env, _deepseek) = env_with_deepseek().await;
+    let fixture = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../kaeso-codecs/fixtures/openai_chat/providers/deepseek/streams/recorded-thinking-stream.sse"
+    ))
+    .unwrap();
+    let mut body = chat(
+        FLASH,
+        "17 * 23? [mock:fixture=providers/deepseek/recorded-thinking-stream]",
+    );
+    body["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let deltas = |chunks: &[Value]| -> Vec<Value> {
+        chunks
+            .iter()
+            .filter_map(|c| c["choices"].get(0).map(|c| c["delta"].clone()))
+            .collect()
+    };
+    assert_eq!(deltas(&sse_data(&r.text())), deltas(&sse_data(&fixture)));
 }
 
 #[tokio::test]

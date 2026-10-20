@@ -186,3 +186,52 @@ fn mask_ids(v: &mut Value) {
 fn assembled_usage_is_known(r: &Response) -> bool {
     r.usage.input_tokens > 0
 }
+
+#[test]
+fn streamed_reasoning_of_chat_providers_is_logged_as_one_reasoning_block() {
+    let cases = [
+        ("deepseek", "recorded-thinking-stream"),
+        ("deepseek", "recorded-thinking-tools-stream"),
+        ("groq", "recorded-stream-doc"),
+        ("groq", "recorded-stream-reasoning-parsed"),
+        ("openrouter", "recorded-free-reasoning-stream"),
+        ("togetherai", "recorded-reasoning-stream"),
+        ("xai", "recorded-reasoning-content-stream"),
+    ];
+    for (id, name) in cases {
+        let path = fixtures().join(format!("openai_chat/providers/{id}/streams/{name}.sse"));
+        let sse = std::fs::read(&path).unwrap();
+        let profile = kaeso_core::provider::provider(id).unwrap().chat;
+        let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true))
+            .with_provider(id)
+            .with_chat_profile(profile);
+        let mut decoder = dispatch::stream_decoder(DialectId::OpenAiChat, &ctx).unwrap();
+        let mut asm = Assembler::new(DialectId::OpenAiChat);
+        for chunk in sse.chunks(97) {
+            for e in decoder.feed(chunk) {
+                asm.feed(&e);
+            }
+        }
+        for e in decoder.finish() {
+            asm.feed(&e);
+        }
+        let reply = asm.finish().response.unwrap();
+        let unknown: Vec<&Block> = reply
+            .blocks
+            .iter()
+            .filter(|b| matches!(b, Block::Unknown(_)))
+            .collect();
+        assert!(unknown.is_empty(), "{id}/{name}: {unknown:?}");
+        assert!(
+            matches!(&reply.blocks[0], Block::Reasoning(r) if !r.text.concat().is_empty()),
+            "{id}/{name}: {:?}",
+            reply.blocks
+        );
+        let reasoning = reply
+            .blocks
+            .iter()
+            .filter(|b| matches!(b, Block::Reasoning(_)))
+            .count();
+        assert_eq!(reasoning, 1, "{id}/{name}");
+    }
+}

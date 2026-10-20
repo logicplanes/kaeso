@@ -87,7 +87,7 @@ nav: OpenAI Chat
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |
 
-对于来自其他方言的 KPP，`check()` 会拒绝：文本文档、文档 URL、文档的 `title`、`context` 和 `citations`、图像文件 ID、用户消息之外的图像和文档、助手消息之外的拒绝、助手消息之外的引用（以及通过 `check_foreign` 拒绝其他方言的引用）、`top_k`（[采样参数](cross-format.md#采样参数)）、未知的推理模式以及规范枚举之外的推理强度。预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：推理块（[推理](reasoning.md)）、其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）、`ToolResult::is_error`（其信息由错误内容承载，见[工具错误](cross-format.md#工具错误)），以及其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 不返回可显示的推理（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
+对于来自其他方言的 KPP，`check()` 会拒绝：文本文档、文档 URL、文档的 `title`、`context` 和 `citations`、图像文件 ID、用户消息之外的图像和文档、助手消息之外的拒绝、助手消息之外的引用（以及通过 `check_foreign` 拒绝其他方言的引用）、`top_k`（[采样参数](cross-format.md#采样参数)）、未知的推理模式以及规范枚举之外的推理强度。预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：推理块（[推理](reasoning.md)）、其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）、`ToolResult::is_error`（其信息由错误内容承载，见[工具错误](cross-format.md#工具错误)），以及其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
 
 编解码器无法读取的请求体为 `InvalidRequest`，错误会指明字段及其应有的形式并设置 `param`，而不会给出解析器位置：`` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
@@ -132,6 +132,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | 设置 | 解码器的行为 | 为何允许 |
 |---|---|---|
 | `thinking_parts()` | 把 `content` 数组中的 `thinking` 部分（`{type: "thinking", thinking: [文本部分], closed}`，不含其他内容）读作 `Block::Reasoning`，其 `text` 包含每个文本部分；流式发送的则读作 `BlockStart(Reasoning)` 和 `BlockDelta(ReasoningText)`。回答、拒绝或工具调用开始时，推理块结束；流中第一个真正的文本片段之前的空文本片段不会打开文本块（形式标记 `et`）。带有其他键或其他内部部分的 `thinking` 部分保持与没有此设置时相同。 | 不丢弃任何内容：Chat 应用收回同样的部分，其他格式以各自的推理形式得到思考内容，原始块保存在[推理数据块](reasoning.md#推理数据块)中。 |
+| `reasoning_fields(fields)` | 把这些消息键中第一个含非空字符串的键（例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`）读作 `Block::Reasoning`，放在回复的其他块之前，并用形式 `reasoning_field` 记下键名。在流中，每个增量的该键变为同一个推理块的 `BlockDelta(ReasoningText)`，数据块上带形式 `rf`。回答、拒绝或工具调用开始时，推理块结束；第一个真正的文本片段之前的空文本片段不会打开文本块（形式 `et`）。空字符串、`null` 或其他类型仍是 extra。 | 不丢弃任何内容：Chat 应用按原样收回该键，增量中的其他键（Groq 的 `channel`）仍是数据块的 extras，其他格式以各自的推理形式得到推理，原始块保存在[推理数据块](reasoning.md#推理数据块)中。没有此设置时，每个流式推理片段都会是一个没有 KPP 事件的数据块，并各自记录为一个未知块。 |
 
 `refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段：Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。拒绝发生在编码请求时，针对编码器构建好的请求、在写出请求体之前进行，因此不会发送任何内容，并以应用自己的格式返回给应用。
 
@@ -139,9 +140,12 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 | 服务商 | 设置 | 来源 |
 |---|---|---|
-| DeepSeek（`deepseek`） | `max_tokens()`、`system_role()` | `fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
-| Groq（`groq`） | `system_role()`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色） |
+| DeepSeek（`deepseek`） | `max_tokens()`、`system_role()`、`reasoning_fields(["reasoning_content"])` | DeepSeek 的 API 参考和思考模式指南（`reasoning_content`），`responses/recorded-thinking-reasoning-content` 和 `streams/recorded-thinking-stream`；`fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
+| Groq（`groq`） | `system_role()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色）；Groq 的推理指南（`reasoning`），`responses/recorded-reasoning-format-parsed` 和 `streams/recorded-stream-doc` |
 | Mistral（`mistral`） | `max_tokens()`、`system_role()`、`random_seed()`、`without_end_user()`、`without_prefill()`、`thinking_parts()`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`moderation`、`prompt_cache_options`、`prompt_cache_retention`、`store`、`verbosity` 和 `web_search_options`，以及消息中的 `name` 和 `refusal` | Mistral 的 OpenAPI 文档（https://docs.mistral.ai/openapi.yaml，2026-10-19 查阅），其中 `ChatCompletionRequest` 禁止未声明的字段，并规定 `random_seed` 的 `minimum: 0`；`fixtures/openai_chat/providers/mistral/errors/` 中的 `422 extra_forbidden` 录制文件，每个被拒绝或改名的字段一个；`responses/recorded-audio-field`，其中 Mistral 接受 `audio` 却只以文本回答；另有 `recorded-assistant-prefill`（400 `invalid_request_message_order`）和 `responses/recorded-assistant-prefix`，其回复重复了预填内容；`thinking_parts()` 依据 `responses/recorded-reasoning-effort-high` 和 `streams/recorded-reasoning-effort-high-stream` |
+| OpenRouter（`openrouter`） | `reasoning_fields(["reasoning"])` | OpenRouter 的推理 token 指南（`reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-free-reasoning` 和 `streams/recorded-free-reasoning-stream` |
+| SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])` | xAI 的 Chat Completions 参考（`reasoning_content`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
+| Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
 
 ## 回复：`CreateChatCompletionResponse`
 
@@ -155,6 +159,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。其他方言自有的值会变为最接近的 Chat 值：`max_tokens`、`max_output_tokens` 和 `model_context_window_exceeded` 变为 `length`，`tool_use` 变为 `tool_calls`，`refusal` 变为 `content_filter`，规范枚举之外的其他值变为 `stop`。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
 | 以部分数组形式出现的 `message.content`（Mistral，不在 OpenAI 规范中） | 恰好是 `{type: "text", text}` 的部分为 `Block::Text`，配置使用 `thinking_parts()` 时 `thinking` 部分为 `Block::Reasoning`，其他部分为 `Block::Unknown`；形式标记 `content_parts`，形式标记 `thinking` 保留 `thinking` 部分的其余键 | 对 Chat 应用写回为同样的数组。其他方言得到文本和推理内容；未知部分只到达 Chat 应用（[回复](cross-format.md#回复)）。来源：Mistral 的 `AssistantMessage.content`（`ContentChunk[]`，https://docs.mistral.ai/openapi.yaml）以及录制文件 `fixtures/openai_chat/providers/mistral/responses/recorded-reasoning-effort-high.json`。 |
+| `message.reasoning_content`、`message.reasoning`，以及配置在 `reasoning_fields` 中列出的其他键 | 首先是 `Block::Reasoning`，形式 `reasoning_field` | 仅在列出该键的配置下（[服务商配置](#服务商配置)）；否则为 extras `choice.message.<key>`。对 Chat 应用写回同一个键。 |
 | `message.annotations` | `TextBlock.citations`（原始，绑定到 Chat） | 没有内容时：extras `choice.message.annotations`。其他方言的引用会被省略（[回复](cross-format.md#回复)）。 |
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
@@ -191,6 +196,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `choices[0].delta.role` | 形式标记 `chunk.role` | 来自其他方言时，回复一开始流就以一个角色 chunk 开头：`delta: {"role": "assistant", "content": "", "refusal": null}`，即 OpenAI 自己在文本回复中发送的第一个 chunk，这样模型思考时应用也能收到流的消息（[保活消息](cross-format.md#保活消息)）。 |
 | `choices[0].delta.content` | 一次 `BlockStart(Text)`，然后是 `BlockDelta(Text)` | 每一片都保留，包括 `""`。 |
 | 以部分数组形式出现的 `choices[0].delta.content`（Mistral） | 恰好是 `{type: "text", text}` 的每个部分为 `BlockDelta(Text)`，配置使用 `thinking_parts()` 时 `thinking` 部分的每段文本为 `BlockDelta(ReasoningText)`；其余部分为块的 extras `delta.content`，形式标记 `cs` 记录每个部分的位置 | Chat 应用收回同样的数组；其他方言得到文本和推理内容并省略其余部分。Mistral 以这种方式流式发送思考内容，回答的第一个 token 可能与之在同一数组中（`fixtures/openai_chat/providers/mistral/streams/recorded-reasoning-effort-high-stream.sse`）。 |
+| `choices[0].delta.reasoning_content`、`delta.reasoning`，以及配置在 `reasoning_fields` 中列出的其他键 | 一次 `BlockStart(Reasoning)`，然后是 `BlockDelta(ReasoningText)`；形式 `chunk.rf` | 仅在列出该键的配置下；否则为数据块 extras `delta.<key>`。文本、拒绝或工具调用开始时，推理块结束。Chat 应用在同一个数据块中收回该键。 |
 | `choices[0].delta.refusal` | 一次 `BlockStart(Refusal)`，然后是 `BlockDelta(Refusal)` | |
 | `choices[0].delta.tool_calls[]`，新的 `index` | `BlockStart(ToolCall { id, name })` + 针对 `arguments` 的 `BlockDelta(ToolArguments)` | KPP 块索引按块开始的顺序排列；Chat 的 `index` 映射到 KPP 索引。改写过的名称会映射回原名。结构差异（缺少 `id`、`type`、`function`、`name` 或 `arguments`，或出现意外的 `index`）：形式标记 `tc`。未知键：extras `tool_call.<key>` 和 `tool_call.function.<key>`。`type` 不是 `function`：`BlockStart(Unknown)`，其后续条目为 `BlockDelta(Unknown)`。条目没有非空的 `id` 或 `name`（一些兼容 OpenAI 的服务商在后面的 chunk 中才发送）：`BlockStart` 及其后的每个事件都会被暂缓输出，直到两者都已到达、该块结束，或流结束或中断；之后头部带有后到的 `id` 和 `name`，名称映射回原名。第一个条目中为 `""` 的 `id` 或 `name` 由形式标记 `tc` 保留。 |
 | `choices[0].delta.tool_calls[]`，已知的 `index` | `BlockDelta(ToolArguments)` | 重复或后到的 `id`、`type` 或 `name`：形式标记 `tc`。调用已有 `id` 时出现另一个非空 `id`，表示复用该索引的新调用：先前的块结束，新的 `BlockStart` 开始，带形式标记 `tc.index`。 |
@@ -293,7 +299,7 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | DeepSeek 字段 | KPP | 说明 |
 |---|---|---|
 | `thinking`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们；带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Chat 应用带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项；它们发回时，该推理不会出现在发往 DeepSeek 的请求中（[推理](reasoning.md)），DeepSeek 在没有它的情况下照常回答。 |
 | `usage.prompt_cache_hit_tokens`、`prompt_cache_miss_tokens` | 用量的 `raw` | 命中数等于 `prompt_tokens_details.cached_tokens`，后者按缓存读取类型化。 |
 | 服务器繁忙时发送的 `: keep-alive` 行和空行 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
 | HTTP 402 | `Billing` | 余额不足，无论 `code` 为何。 |
@@ -306,7 +312,7 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 
 | SpaceX 字段 | KPP | 说明 |
 |---|---|---|
-| `message.reasoning_content`、`delta.reasoning_content` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
 | `citations`、`system_fingerprint`、`service_tier` | extras | 发往其他方言时省略。 |
 | `max_completion_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Chat Completions 参考；`responses/recorded-max-completion-tokens-reasoning`：要求 20，可见 18 个、推理 271 个 token）。用量两者都计入，因此输出可能超过上限；在硬性预算和 Token 速率下，网关为 SpaceX 的推理模型（`PROVIDERS` 中的 `reasoning_beyond_output_limit`）预留模型自身的输出上限（[限额与预算](../../console/limits-and-budgets.md)）。 |
 | `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。SpaceX 的 `completion_tokens` 不含推理，推理计入 `total_tokens`，因此输出为 `completion_tokens` 加 `reasoning_tokens`。 |
@@ -322,7 +328,7 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | Together AI 字段 | KPP | 说明 |
 |---|---|---|
 | `top_k`、`min_p`、`repetition_penalty`、`safety_model`、`context_length_exceeded_behavior`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning_content` 或 `message.reasoning`（视模型而定），以及增量中的同名字段 | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `message.reasoning_content` 或 `message.reasoning`（视模型而定），以及增量中的同名字段 | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。流式推理片段带有 `content: ""`，它不会打开文本块。 |
 | choice 上的 `matched_stop` 和 `seed`、流式 choice 上的 `text`、增量中的 `token_id`，以及顶层的 `prompt`、`metadata` 和 `warnings` | extras | 发往其他方言时省略。 |
 | 与 `completion_tokens_details.reasoning_tokens` 并列的 `usage.reasoning_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。 |
 | 采用 OpenAI 错误结构、带 Together AI 自有 `type` 和 `code`（`start_generation_failed`、`model_not_available`）的错误，有时带顶层 `id` | `KppError` | 类别取决于状态码；密钥错误时返回 401 `invalid_api_key`，即 `Authentication`。 |
@@ -335,7 +341,8 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | Groq 字段 | KPP | 说明 |
 |---|---|---|
 | `reasoning_format`、`include_reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning`、`delta.reasoning`、`delta.channel` | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）；只含推理的数据块在那里会变成 keepalive。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
+| `delta.channel`（GPT-OSS 推理中为 `analysis`） | 数据块的 extras | Chat 应用随推理一起收回；对其他方言省略。 |
 | `x_groq`、`usage_breakdown`、`service_tier`（`on_demand`） | extras | 发往其他方言时省略。 |
 | `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | Token 数（包括 `reasoning_tokens`）按上文的类型化字段处理。 |
 | 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
@@ -348,7 +355,8 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | OpenRouter 字段 | KPP | 说明 |
 |---|---|---|
 | `provider`、`models`、`transforms`、`usage`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning`、`message.reasoning_details`，以及增量中的同名字段 | extras | Chat 应用会原样收到它们。Anthropic Messages 和 Responses 目前还不会将其显示为推理（[推理](reasoning.md)）。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
+| `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；Chat 应用原样收回，其他方言从 `reasoning` 得到文本。 |
 | 回复中的 `provider`、`native_finish_reason` | extras | 发往其他方言时省略。 |
 | `usage.cost`、`is_byok`、`cost_details` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用，而不是按 `usage.cost`。 |
 | 最后一个流式数据块，它在 `usage` 旁重复带 `finish_reason` 的 choice | `Usage` | 按 `choices: []` 的用量数据块读取。 |

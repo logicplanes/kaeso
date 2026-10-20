@@ -48,7 +48,7 @@ Every reply, stream and error below is a live recording made with `cargo xtask r
 
 | difference | how KPP carries it | source |
 |---|---|---|
-| `message.reasoning` and `delta.reasoning` (GPT-OSS by default, Qwen with `reasoning_format: "parsed"`); `delta.channel: "analysis"` on GPT-OSS reasoning chunks | extras; round-trip in the same format; not carried into Anthropic Messages or Responses until reasoning gets its own cross-format design | reasoning docs; live |
+| `message.reasoning` and `delta.reasoning` (GPT-OSS by default, Qwen with `reasoning_format: "parsed"`); `delta.channel: "analysis"` on GPT-OSS reasoning chunks | a reasoning block through the `chat` profile's `reasoning_fields(["reasoning"])`; `channel` stays an extra of the chunk; Chat apps get both back as sent, Anthropic Messages and Responses apps get a thinking block or reasoning item | reasoning docs; live |
 | `reasoning_format` (`parsed`, `raw`, `hidden`) and `include_reasoning` | request extras for Groq; refused when the target speaks another format | api-reference |
 | `reasoning_effort` values differ per model (`none` and `default` only for Qwen, `low`/`medium`/`high` for GPT-OSS) | the gateway refuses a value outside the model's models.dev `reasoning_options` before sending; Groq answers 400 for any other value the model does not take | api-reference; live |
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time`; top-level `usage_breakdown`, `x_groq` (`id`, `seed`), `service_tier: "on_demand"` | extras, round-trip | live; api-reference example |
