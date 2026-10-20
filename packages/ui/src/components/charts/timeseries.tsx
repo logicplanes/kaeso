@@ -187,17 +187,11 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   };
   const dashedFirst = !!partial?.first && last >= 1;
   const dashedLast = !!(partial?.last || partial?.ongoing) && last >= 1;
-  const solid: [number, number] = [dashedFirst ? 1 : 0, dashedLast ? last - 1 : last];
-  const segments = (vals: number[]) => {
-    const part = (from: number, to: number) => lineGen(vals.slice(from, to + 1).map((v, k) => [from + k, v] as [number, number])) ?? "";
-    return {
-      solid: solid[1] >= solid[0] ? part(solid[0], solid[1]) : "",
-      dashed: [dashedFirst ? part(0, 1) : "", dashedLast ? part(last - 1, last) : ""].filter(Boolean),
-    };
-  };
-  const lineGen = d3line<[number, number]>()
-    .x(([i]) => Math.round(x(times[i] ?? new Date())))
-    .y(([, v]) => y(v))
+  const cutStart = dashedFirst ? Math.round(x(times[1]!)) : -M.left;
+  const cutEnd = dashedLast ? Math.round(x(times[last - 1]!)) : w + M.right;
+  const lineGen = d3line<number>()
+    .x((_, i) => Math.round(x(times[i] ?? new Date())))
+    .y((v) => y(v))
     .curve(curveMonotoneX);
   const areaGen = d3area<number>()
     .x((_, i) => Math.round(x(times[i] ?? new Date())))
@@ -280,6 +274,17 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
           {size.width > 0 && (
             <svg width={size.width} height={height} className="block overflow-visible" role="presentation">
               <defs>
+                {(dashedFirst || dashedLast) && (
+                  <>
+                    <clipPath id={`${gid}-whole`}>
+                      <rect x={cutStart} y={-M.top} width={Math.max(0, cutEnd - cutStart)} height={height} />
+                    </clipPath>
+                    <clipPath id={`${gid}-partial`}>
+                      {dashedFirst && <rect x={-M.left} y={-M.top} width={cutStart + M.left} height={height} />}
+                      {dashedLast && <rect x={cutEnd} y={-M.top} width={w + M.right - cutEnd} height={height} />}
+                    </clipPath>
+                  </>
+                )}
                 {visible.map((s) => (
                   <linearGradient key={s.id} id={`${gid}-${s.id}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={color(s)} className="chart-fill-top" />
@@ -320,14 +325,19 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                         <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
                           {kind === "area" && <path d={areaGen(values[si] ?? []) ?? ""} fill={`url(#${gid}-${s.id})`} />}
                           {(() => {
-                            const line = segments(values[si] ?? []);
-                            const stroke = { fill: "none", stroke: color(s), strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round" } as const;
+                            const stroke = {
+                              d: lineGen(values[si] ?? []) ?? "",
+                              fill: "none",
+                              stroke: color(s),
+                              strokeWidth: 2,
+                              strokeLinejoin: "round",
+                              strokeLinecap: "round",
+                            } as const;
+                            if (!dashedFirst && !dashedLast) return <path {...stroke} />;
                             return (
                               <>
-                                {line.solid && <path d={line.solid} {...stroke} />}
-                                {line.dashed.map((d) => (
-                                  <path key={d} d={d} {...stroke} strokeDasharray="4 4" data-partial="" />
-                                ))}
+                                <path {...stroke} clipPath={`url(#${gid}-whole)`} />
+                                <path {...stroke} clipPath={`url(#${gid}-partial)`} strokeDasharray="4 4" data-partial="" />
                               </>
                             );
                           })()}
