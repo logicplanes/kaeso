@@ -132,8 +132,8 @@ describe("Pagination", () => {
     render(<Pagination variant="pages" page={5} pageCount={10} onPageChange={onPageChange} />);
     const nav = screen.getByRole("navigation", { name: "Pagination" });
     expect(nav).toHaveTextContent("1…456…10");
-    expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-current", "page");
-    await userEvent.click(screen.getByRole("button", { name: "6" }));
+    expect(screen.getByRole("button", { name: "Page 5" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(screen.getByRole("button", { name: "Page 6" }));
     await userEvent.click(screen.getByRole("button", { name: "Next page" }));
     await userEvent.click(screen.getByRole("button", { name: "Previous page" }));
     expect(onPageChange.mock.calls).toEqual([[6], [6], [4]]);

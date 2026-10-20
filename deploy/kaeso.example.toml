@@ -6,6 +6,7 @@ shutdown_grace = "30s"
 
 [server]
 header_read_timeout = "30s"
+body_read_timeout = "30s"
 
 [cors]
 allowed_origins = ""
@@ -73,6 +74,8 @@ stream_idle_timeout = "300s"
 
 [streams]
 keepalive_interval = "15s"
+max_duration = "0s"
+max_bytes = "0"
 
 [continuity]
 reasoning_ttl = "1h"

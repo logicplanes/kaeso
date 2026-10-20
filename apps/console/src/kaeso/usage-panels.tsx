@@ -77,32 +77,35 @@ export function UsageMetrics({
   };
   const rate = sum.requests ? sum.errors / sum.requests : 0;
   const cost = sum.cost ?? (showCost && rows.length === 0 ? "0" : null);
-  const value = (v: string) => (loading ? "—" : v);
   const known = <T extends { trend: number[] }>(props: T): T | { trend: number[] } => (loading ? { trend: [] } : props);
   return (
     <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
       <StatTile
         label={t("common.requests", "Requests")}
-        value={value(formatNumber(sum.requests))}
+        value={formatNumber(sum.requests)}
+        loading={loading}
         {...known({ ...delta(sum.requests, p?.requests), trend: days.map((d) => d.row?.requests ?? 0) })}
       />
       <StatTile
         label={t("common.tokens", "Tokens")}
-        value={value(formatTokens(sum.tokens))}
+        value={formatTokens(sum.tokens)}
+        loading={loading}
         {...known({ ...delta(sum.tokens, p?.tokens), trend: days.map((d) => (d.row ? totalTokens(d.row) : 0)) })}
         trendColor={VIZ[1]}
       />
       {showCost && cost !== null && (
         <StatTile
           label={t("common.cost", "Cost")}
-          value={value(tileUSD(cost))}
+          value={tileUSD(cost)}
+          loading={loading}
           {...known({ ...delta(Number(cost), p?.cost ? Number(p.cost) : undefined), trend: days.map((d) => Number(d.row?.cost ?? 0)) })}
           trendColor={VIZ[2]}
         />
       )}
       <StatTile
         label={t("kaeso.usage.errors", "Errors")}
-        value={value(formatNumber(sum.errors))}
+        value={formatNumber(sum.errors)}
+        loading={loading}
         {...known({
           ...errorChange(rate, p),
           ...(sum.requests ? { detail: t("kaeso.usage.errorRate", "{percent} of requests", { percent: formatPercent(rate) }) } : {}),

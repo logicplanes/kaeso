@@ -61,7 +61,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
                 canUpdate={rights.has("project.update")}
               />
               {rights.has("security.key_policy.project.manage") && <KeyLifetime org={org} project={project} days={p.max_key_lifetime_days ?? null} />}
-              <ContentLogging org={org} project={project} canChange={rights.has("logs.content.disable")} />
+              <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} />
               {rights.has("project.archive") && <Archive org={org} project={project} name={p.name} isDefault={p.is_default} />}
             </>
           )}
@@ -312,7 +312,7 @@ function ContentLogging({ org, project, canChange }: { org: string; project: str
               aria-label={t("project.settings.logContent", "Log request content")}
               checked={!!s?.effective_content_logging}
               disabled={!s || orgOff || !canChange}
-              {...(canChange ? {} : { disabledReason: needs("logs.content.disable") })}
+              {...(canChange ? {} : { disabledReason: needs("logs.content.manage") })}
               onCheckedChange={(on) => toggle.mutate(on)}
             />
           }

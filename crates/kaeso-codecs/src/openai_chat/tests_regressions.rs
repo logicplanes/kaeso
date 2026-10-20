@@ -478,3 +478,117 @@ fn a_tool_call_without_type_is_a_function_call_for_every_app() {
     };
     assert!(matches!(resp.blocks.as_slice(), [Block::Unknown(_)]));
 }
+
+fn chat_reply(extra: Value) -> Value {
+    let mut body = json!({
+        "id": "chatcmpl-9", "object": "chat.completion", "created": 1, "model": "m",
+        "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "Hi"}}],
+        "usage": {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8}
+    });
+    if let (Value::Object(body), Value::Object(extra)) = (&mut body, extra) {
+        body.extend(extra);
+    }
+    body
+}
+
+fn decode_chat_reply(body: &Value) -> kaeso_kpp::Response {
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
+    let bytes = serde_json::to_vec(body).unwrap();
+    match OpenAiChat::decode_response(200, &HeaderList::new(), &bytes, &ctx).unwrap() {
+        kaeso_kpp::Reply::Generate(r) => {
+            let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
+            let out =
+                OpenAiChat::encode_response(&kaeso_kpp::Reply::Generate(r.clone()), &enc).unwrap();
+            assert_json_eq("chat reply", &bytes, &out);
+            r
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn usage_counts_that_are_null_or_larger_than_the_prompt_are_read_safely() {
+    let r = decode_chat_reply(&chat_reply(json!({
+        "usage": {"prompt_tokens": 5, "completion_tokens": null, "total_tokens": null}
+    })));
+    assert_eq!((r.usage.input_tokens, r.usage.output_tokens), (5, 0));
+    let r = decode_chat_reply(&chat_reply(json!({
+        "usage": {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8,
+            "prompt_tokens_details": {"cached_tokens": 9, "cache_write_tokens": 4}}
+    })));
+    assert_eq!(
+        (
+            r.usage.input_tokens,
+            r.usage.cache_read_tokens,
+            r.usage.cache_write_tokens
+        ),
+        (0, 5, 0)
+    );
+}
+
+#[test]
+fn reply_tool_calls_without_an_id_get_one_that_other_formats_can_answer() {
+    let body = chat_reply(json!({
+        "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
+            "role": "assistant", "content": null,
+            "tool_calls": [
+                {"type": "function", "function": {"name": "a", "arguments": "{}"}},
+                {"id": "", "type": "function", "function": {"name": "b", "arguments": "{}"}},
+                {"id": "call_c", "type": "function", "function": {"name": "c", "arguments": "{}"}}
+            ]
+        }}]
+    }));
+    let r = decode_chat_reply(&body);
+    let ids: Vec<&str> = r
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::ToolCall(c) => Some(c.id.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        ids,
+        ["call_kaeso_chatcmpl9_0", "call_kaeso_chatcmpl9_1", "call_c"]
+    );
+}
+
+#[test]
+fn stop_reasons_of_other_formats_become_chat_finish_reasons() {
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
+    let finish = |stop: kaeso_kpp::StopReason, origin: Option<Origin>| {
+        let mut r = kaeso_kpp::Response::new("r", "m", Vec::new());
+        r.stop = stop;
+        if let Some(o) = origin {
+            r.extras = kaeso_kpp::Extras::new(o);
+        }
+        let out = OpenAiChat::encode_response(&kaeso_kpp::Reply::Generate(r), &enc).unwrap();
+        let out: Value = serde_json::from_slice(&out).unwrap();
+        out["choices"][0]["finish_reason"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    let other = |s: &str| kaeso_kpp::StopReason::Other(s.to_owned());
+    assert_eq!(
+        finish(other("model_context_window_exceeded"), Some(anthropic())),
+        "length"
+    );
+    assert_eq!(
+        finish(other("max_output_tokens"), Some(anthropic())),
+        "length"
+    );
+    assert_eq!(finish(other("tool_use"), Some(anthropic())), "tool_calls");
+    assert_eq!(finish(other("something_new"), Some(anthropic())), "stop");
+    assert_eq!(
+        finish(other("function_call"), Some(anthropic())),
+        "function_call"
+    );
+    assert_eq!(
+        finish(
+            other("something_new"),
+            Some(Origin::new(DialectId::OpenAiChat))
+        ),
+        "something_new"
+    );
+}

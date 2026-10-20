@@ -9,7 +9,7 @@ export const meta = {
   import: "Input",
   keyboard: [["Tab", "Moves focus in and out"]],
   a11y: [
-    "Pass label and description and the input wraps itself in Field, wiring aria-describedby; invalid sets aria-invalid. Errors are toasts, never text under the field.",
+    "Pass label and description and the input wraps itself in Field, wiring aria-describedby; invalid sets aria-invalid, and an error shows under the input.",
     "Placeholders are hints, never labels.",
     "Read-only fields stay selectable and focusable.",
   ],

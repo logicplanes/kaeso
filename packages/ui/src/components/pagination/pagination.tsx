@@ -66,6 +66,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
           <button
             type="button"
             aria-current={p === page ? "page" : undefined}
+            aria-label={t("pagination.page", "Page {page}", { page: String(p) })}
             onClick={() => onPageChange?.(p)}
             className={cn(
               "inline-flex h-32 min-w-32 cursor-pointer items-center justify-center rounded-pill px-8 text-body font-medium tabular transition-control focus-ring",

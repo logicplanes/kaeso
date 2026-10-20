@@ -81,6 +81,7 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
+| `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
 
 On a loopback `http` address, such as `http://localhost:8080`, the session cookie goes without `Secure` and the `__Host-` prefix, so the console works over plain HTTP on your computer.
 
@@ -175,11 +176,15 @@ The first three settings only seed a new install. After that, instance admins ch
 
 A model in a project's catalogue can set its own timeouts ([models and aliases](../console/models-and-aliases.md)).
 
+The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` for `http` base URLs, or `ALL_PROXY`) when its environment sets one, except for the hosts in `NO_PROXY`. The proxy sees the provider keys of `http` calls, so use `https` base URLs through it.
+
 ### Streams to apps
 
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | text | `15s` | After this long without output, write a keepalive into an open stream so proxies keep the connection ([long streams](domains-and-tls.md#long-streams)). `0s` turns keepalives off; otherwise 1s to 300s. |
+| `KAESO_STREAMS_MAX_DURATION` | `streams.max_duration` | text | `0s` | Longest time a streamed reply may run before the gateway ends it with an error event. `0s` sets no limit. |
+| `KAESO_STREAMS_MAX_BYTES` | `streams.max_bytes` | text | `0` | Most bytes, such as `64MiB`, a streamed reply may write to the app before the gateway ends it with an error event. `0` sets no limit. |
 
 ### Reasoning continuity
 

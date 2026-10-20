@@ -2,7 +2,7 @@ import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
+import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
@@ -123,7 +123,7 @@ export function useTweened(values: number[], still = false): number[] {
     const start = performance.now();
     let raf = 0;
     const step = () => {
-      const t = Math.max(0, Math.min(1, (performance.now() - start) / 240));
+      const t = Math.max(0, Math.min(1, (performance.now() - start) / motion.duration.chart));
       setTween((s) => (s.key === key ? { ...s, t } : s));
       if (t < 1) raf = requestAnimationFrame(step);
     };
@@ -177,7 +177,9 @@ export function ChartFrame({
     <figure className={cn("flex min-w-0 flex-col gap-12", className)} aria-label={label}>
       {state.error ? (
         <div className="flex flex-col items-center justify-center gap-8 text-center" style={{ height }}>
-          <p className="text-body text-fg-secondary">{t("chartFrame.loadFailed", "Couldn't load this chart")}</p>
+          <p role="alert" className="text-body text-fg-secondary">
+            {t("chartFrame.loadFailed", "Couldn't load this chart")}
+          </p>
           {state.onRetry && (
             <Button size="sm" onClick={state.onRetry}>
               {t("chartFrame.tryAgain", "Try again")}

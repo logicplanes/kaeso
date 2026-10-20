@@ -94,9 +94,14 @@ KPP 把回复解码为规范格式，再编码为应用的格式，流式回复�
 | 服务商发送了错误事件 | 该错误的状态码，否则为 502 | 该错误的类型 |
 | 与服务商的连接中断，或流提前结束 | 502 | `stream_interrupted` |
 | 服务商静默时间超过空闲超时 | 504 | `timeout` |
+| 流达到 `KAESO_STREAMS_MAX_DURATION` 或 `KAESO_STREAMS_MAX_BYTES` | 502 | `stream_limit` |
 | KPP 无法为应用编码某个事件 | 该错误的状态码，否则为 500 | 该错误的类型 |
 
+收到服务商的错误事件后，Kaeso 会停止读取并关闭对服务商的请求，服务商随之停止生成。
+
 用量会把这样的流计为错误。请求日志在 `stream_progress` 中显示它进行到了哪一步：服务商的事件、写入应用的字节数和保活消息，以及到第一批字节的耗时。指标 `kaeso_requests_total` 仍按已发出的状态码把它计为 200（[健康状态和指标](../self-hosting/monitoring.md)）。
+
+如果应用在 `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` 这么长的时间内没有读取其流的任何内容，就视为已断开：Kaeso 会停止对服务商的请求，并将其记录为连接断开。
 
 ## 连接断开
 

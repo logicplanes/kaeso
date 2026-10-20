@@ -273,7 +273,7 @@ pub struct OwnershipTransfer {
 #[utoipa::path(
     post,
     path = "/orgs/{org}/ownership-transfer",
-    summary = "Makes another member an owner; the caller, if an owner, becomes an admin.",
+    summary = "Makes another member an owner; the caller, an owner, becomes an admin.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = OwnershipTransfer,
@@ -287,10 +287,25 @@ pub async fn transfer(
 ) -> ApiResult<Json<crate::platform::orgs::members::MemberView>> {
     let scope = ctx.org()?;
     let me = ctx.user_id()?;
+    if !scope.is_owner() {
+        return Err(ApiError::PermissionDenied(
+            "Only owners can make someone an owner or change an owner's role.".into(),
+        ));
+    }
     if req.user_id == me {
         return Err(ApiError::invalid("user_id", "Choose another member."));
     }
-    let target = members::get_org(&state.pg, scope.org.id, req.user_id.uuid())
+    let mut tx = state.pg.begin().await?;
+    members::lock_owners(&mut tx, scope.org.id).await?;
+    let caller = members::get_org(&mut *tx, scope.org.id, me.uuid())
+        .await?
+        .filter(|m| m.preset == "owner");
+    if caller.is_none() {
+        return Err(ApiError::PermissionDenied(
+            "Only owners can make someone an owner or change an owner's role.".into(),
+        ));
+    }
+    let target = members::get_org(&mut *tx, scope.org.id, req.user_id.uuid())
         .await?
         .filter(|m| m.user_state == "active")
         .ok_or_else(|| {
@@ -299,7 +314,6 @@ pub async fn transfer(
                 "The new owner must be an active member of the organization.",
             )
         })?;
-    let mut tx = state.pg.begin().await?;
     if !members::update_org(
         &mut *tx,
         scope.org.id,
@@ -313,15 +327,13 @@ pub async fn transfer(
             "The new owner must be an active member of the organization.",
         ));
     }
-    if scope.is_owner() {
-        members::update_org(
-            &mut *tx,
-            scope.org.id,
-            me.uuid(),
-            &org_to_store(&OrgGrant::preset(OrgPreset::Admin)),
-        )
-        .await?;
-    }
+    members::update_org(
+        &mut *tx,
+        scope.org.id,
+        me.uuid(),
+        &org_to_store(&OrgGrant::preset(OrgPreset::Admin)),
+    )
+    .await?;
     ctx.audit(Some(scope.id()), "org.ownership_transfer")
         .target("user", req.user_id)
         .before(serde_json::json!({ "preset": target.preset }))
@@ -330,9 +342,7 @@ pub async fn transfer(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget_user_in_org(&state, scope.org.id, target.user_id).await;
-    if scope.is_owner() {
-        crate::services::keys::forget_user_in_org(&state, scope.org.id, me.uuid()).await;
-    }
+    crate::services::keys::forget_user_in_org(&state, scope.org.id, me.uuid()).await;
     if let Some(email) = &target.email {
         let name = users::get(&state.pg, me.uuid()).await?.and_then(|u| u.name);
         let by = name

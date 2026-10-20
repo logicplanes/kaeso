@@ -82,7 +82,7 @@ Legacy function calling has no tool call ids, so its turns do not become KPP too
 | `image_url.detail` | extras `image_url.detail` | On the [extras allowlist](cross-format.md#extras): dropped silently for other dialects. |
 | `file.file_data` (`data:` URL) | `Block::Document { source: Base64 }` | Bare base64 is taken as media type `application/pdf`, the only type in OpenAI's file inputs guide, with form `bare_file_data`, and is written back bare. |
 | `file.file_id` | `Block::Document { source: FileId }` bound to the OpenAI file store ([files](cross-format.md#files)) | With `file_data` too: extras `file.file_id`. |
-| `file.filename` | extras `file.filename` | The file name OpenAI requires next to inline `file_data`, not a title shown to the model, so it never becomes `DocumentBlock::title`. On the [extras allowlist](cross-format.md#extras). |
+| `file.filename` | extras `file.filename` | The file name OpenAI requires next to inline `file_data`, not a title shown to the model, so it never becomes `DocumentBlock::title`. On the [extras allowlist](cross-format.md#extras). Inline documents from other dialects get `document.<subtype>`, such as `document.pdf`, as every example of OpenAI's [file inputs guide](https://developers.openai.com/api/docs/guides/file-inputs) sends one with `file_data`. |
 | `input_audio` | `Unsupported` (`input_audio`) | Audio input is not part of KPP. |
 | `refusal` (assistant) | `Block::Refusal` + form `part` | |
 | other types, and `image_url` and `file` parts outside user messages, `refusal` parts outside assistant messages | `Block::Unknown` | Same dialect only. |
@@ -107,7 +107,7 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 
 | Wire | KPP | Notes |
 |---|---|---|
-| `id`, `function.name` | `ToolCallBlock.id`, `.name` | Names Kaeso rewrote are mapped back when a reply is decoded. |
+| `id`, `function.name` | `ToolCallBlock.id`, `.name` | Names Kaeso rewrote are mapped back when a reply is decoded. A call in a reply without an `id`, or with `""`, gets `call_kaeso_<response id>_<n>` (the id's letters and digits, `n` its position), so apps in other formats can answer it; form `id` keeps the received spelling (`null` for absent) for Chat apps. Streams do the same with `n` the KPP block index and form `tc`. |
 | `function.arguments` | `ToolCallBlock.arguments` raw | The JSON text inside the string, byte for byte. Text that is not valid JSON, or has surrounding whitespace, keeps its literal in form `arguments`; KPP then holds `{}` for blank text and otherwise the text as a JSON string. KPP's convention is that a JSON string in `ToolCallBlock.arguments` means the provider sent text that is not JSON, so for calls from other dialects the string's content is sent as `arguments`; objects, arrays and other JSON values are sent as their JSON text. |
 | unknown keys | extras (`function.<key>` nested) | |
 | `type: custom` | `Block::Unknown` | Sent back in `tool_calls`. |
@@ -122,7 +122,7 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 | `created`, `service_tier`, `system_fingerprint`, `metadata`, `moderation` | extras | A reply without `created` in its extras, such as one from another dialect, gets `EncodeCtx::created_at`, or `0`. |
 | `choices` | `choices[0]` | More than one choice: `Unsupported` (`n`); none: `ProviderError`; an `index` other than 0: extras `choice.index`. |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`: verbatim. |
-| `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`, `length` ⇄ `MaxTokens`, `tool_calls` ⇄ `ToolUse`, `content_filter` ⇄ `ContentFilter`, other values (such as `function_call`) ⇄ `Other`. From other dialects: `StopSequence` and `PauseTurn` become `stop`; `Refusal` becomes `content_filter`, because the answer was withheld. A non-streaming response without `finish_reason`, which the spec requires: `ProviderError`. |
+| `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`, `length` ⇄ `MaxTokens`, `tool_calls` ⇄ `ToolUse`, `content_filter` ⇄ `ContentFilter`, other values (such as `function_call`) ⇄ `Other`. From other dialects: `StopSequence` and `PauseTurn` become `stop`; `Refusal` becomes `content_filter`, because the answer was withheld. Other dialects' own values become the closest Chat one: `max_tokens`, `max_output_tokens` and `model_context_window_exceeded` become `length`, `tool_use` becomes `tool_calls`, `refusal` becomes `content_filter`, and anything else outside the spec enum becomes `stop`. A non-streaming response without `finish_reason`, which the spec requires: `ProviderError`. |
 | `message.content` | `Block::Text` | From other dialects all text blocks are joined without a separator, because Chat has no content parts in responses. There is no separator because Anthropic splits one answer into several text blocks around citations, and the streamed deltas, which carry no separator either, must add up to the same `content`. |
 | `message.annotations` | `TextBlock.citations` (raw, bound to Chat) | Without content: extras `choice.message.annotations`. Citations of other dialects are left out ([replies](cross-format.md#replies)). |
 | `message.refusal` | `Block::Refusal` | |
@@ -139,9 +139,9 @@ The KPP fields follow the [usage](cross-format.md#usage) convention.
 | Wire | KPP |
 |---|---|
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
-| `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
+| `prompt_tokens_details.cached_tokens` | `cache_read_tokens`, at most `prompt_tokens`; `cache_write_tokens` at most what is left |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens` (includes reasoning; when `total_tokens` is `prompt_tokens + completion_tokens + reasoning_tokens`, as SpaceX counts, the reasoning tokens are added to it) |
+| `completion_tokens` | `output_tokens` (includes reasoning; when `total_tokens` is `prompt_tokens + completion_tokens + reasoning_tokens`, as SpaceX counts, the reasoning tokens are added to it); `null`, as for `prompt_tokens` and `total_tokens`, counts as absent (0) and stays in `raw` |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | derived (`prompt_tokens + completion_tokens`); not stored separately, kept in `raw` |
 | `prompt_tokens_details.audio_tokens`, `text_tokens`, `image_tokens`, `completion_tokens_details.audio_tokens`, `text_tokens`, `accepted_prediction_tokens`, `rejected_prediction_tokens` | `raw` only (breakdowns of the typed totals) |
@@ -162,7 +162,7 @@ Bare `data:` frames, one JSON chunk each, ending with `data: [DONE]`.
 | `choices[0].delta.refusal` | `BlockStart(Refusal)` once, then `BlockDelta(Refusal)` | |
 | `choices[0].delta.tool_calls[]` with a new `index` | `BlockStart(ToolCall { id, name })` + `BlockDelta(ToolArguments)` for `arguments` | KPP block indexes follow the order blocks start; the Chat `index` maps to the KPP index. Rewritten names are mapped back. Shape differences (a missing `id`, `type`, `function`, `name` or `arguments`, an unexpected `index`): form `tc`. Unknown keys: extras `tool_call.<key>` and `tool_call.function.<key>`. A `type` other than `function`: `BlockStart(Unknown)`, and its later entries `BlockDelta(Unknown)`. An entry without a non-empty `id` or `name`, which some OpenAI-compatible providers send in a later chunk: the `BlockStart` and every event after it are held until both arrived, the block ends, or the stream ends or breaks; the header then carries the late `id` and `name`, names mapped back. Form `tc` keeps an `id` or `name` the first entry had as `""`. |
 | `choices[0].delta.tool_calls[]` with a known `index` | `BlockDelta(ToolArguments)` | A repeated or late `id`, `type` or `name`: form `tc`. A different non-empty `id` where the call already has one is a new call that reuses the index: the earlier block stops and a new `BlockStart` begins, with form `tc.index`. |
-| `choices[0].finish_reason` | `BlockStop` for every open block, then `ResponseDelta { stop }` | Mapped as for responses. |
+| `choices[0].finish_reason` | `BlockStop` for every open block, then `ResponseDelta { stop }` | Mapped as for responses. `""`, which is no finish reason, counts like `null`: form `chunk.cv`. |
 | `usage` (chunk with `choices: []`) | `ResponseDelta { usage }` | Usage as in [usage](#usage-completionusage), raw kept. `choices` empty or absent: form `chunk.ch`. |
 | `usage` on a chunk before `finish_reason` | held, form `chunk.u` | Running usage, which vLLM-based providers send on every chunk with `stream_options.continuous_usage_stats`. KPP reports usage only after the last block stops, so the decoder keeps the latest and sends it with the finish chunk's `ResponseDelta` when that chunk has none of its own, or as a `ResponseDelta { usage }` before `ResponseStop` when no usage follows the finish. Form `chunk.u` keeps each chunk's object, so a Chat app that asked for usage gets every chunk back as it came; an app that did not ask gets no usage, and a chunk that held only usage is left out for it. The fixture is `fixtures/openai_chat/streams/usage-every-chunk.sse`. |
 | `usage: null`, `logprobs: null`, `finish_reason: null`, `content: null`, `refusal: null` | form `chunk.kv`, `cv`, `dv` | |
@@ -170,7 +170,7 @@ Bare `data:` frames, one JSON chunk each, ending with `data: [DONE]`.
 | `delta.audio`, `delta.function_call`, unknown delta keys | extras `delta.<key>` | A chunk after the first with no typed content at all is an `Extra` (`{"event": null, "data": <chunk>}`). |
 | `obfuscation` | form `chunk.obf` | Not sent to apps when the events came from another dialect. |
 | `moderation`, unknown chunk keys | extras on the chunk's first event | |
-| `data: [DONE]` | `ResponseStop` (after the `BlockStop`s of blocks still open) | A stream that ends after `finish_reason` without `[DONE]`: `ResponseStop` with form `no_done`; one that ends earlier: `Error`. A `[DONE]` frame with SSE fields is an `Extra`, and the stream then ends as one without `[DONE]`. |
+| `data: [DONE]` | `ResponseStop` (after the `BlockStop`s of blocks still open) | A stream that ends after `finish_reason` without `[DONE]`: `ResponseStop` with form `no_done`; one that ends earlier, with or without `[DONE]`: `Error`, because the reply was cut off. A `[DONE]` frame with SSE fields is an `Extra`, and the stream then ends as one without `[DONE]`. |
 | `data: {"error": {…}}` | `Error`, decoded like an error body without a status | The decoder stops. Encoded as the same frame; no `[DONE]` follows. Also when the chunk carries `choices` as well, as OpenRouter sends mid-stream errors ([errors and debugging](https://openrouter.ai/docs/api/reference/errors-and-debugging)); fixture `fixtures/openai_chat/streams/error-in-chunk.sse`. |
 | `choices[0].finish_reason: "error"` without an `error` object | `Error` (`ProviderError`) | Not a finished reply. The chunk is kept in `KppError.raw` and sent back to Chat apps as it came. |
 | `event: error` frames with data, which some OpenAI-compatible providers send | `Error` | Decoded like an error body without a status; encoded as a `data:` frame. Without data, such a frame is an `Extra`. |

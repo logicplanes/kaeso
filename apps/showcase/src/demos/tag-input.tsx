@@ -16,7 +16,7 @@ export const meta = {
   ],
   a11y: [
     "Each tag's remove circle is named “Remove …”.",
-    "Invalid tags stay, marked with the danger ring; each says what is wrong in its tooltip, and the first problem is the field's description for a screen reader. Nothing is drawn under the field.",
+    "Invalid tags stay, marked with the danger ring; each says what is wrong in its tooltip, and the first problem shows under the field.",
   ],
 };
 export const examples = [{ id: "invite", title: "Invite by email", fn: "Invite" }];

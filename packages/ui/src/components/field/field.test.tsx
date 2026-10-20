@@ -25,13 +25,15 @@ describe("labels", () => {
   });
 });
 
-describe("errors are toasts", () => {
-  it("doesn't draw an error under the field, but marks the control and describes it to a screen reader", () => {
+describe("errors", () => {
+  it("shows the error under the control, marks the control and describes it to a screen reader", () => {
     render(<Input label="Monthly budget" error="Enter an amount of 0 or more." />);
     const input = screen.getByLabelText("Monthly budget");
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription("Enter an amount of 0 or more.");
-    expect(screen.getByText("Enter an amount of 0 or more.")).toHaveClass("sr-only");
+    const message = screen.getByText("Enter an amount of 0 or more.");
+    expect(message).not.toHaveClass("sr-only");
+    expect(message).toHaveClass("text-danger-text");
     expect(screen.queryByRole("alert")).toBeNull();
   });
   it("marks a control invalid without any text", () => {

@@ -48,7 +48,12 @@ export function rightsGroups(cat: Catalogue, scope: Scope, opts: GroupOptions): 
       const on = opts.granted.has(r.id);
       const inBase = opts.base?.has(r.id);
       const reason =
-        opts.readOnly ?? (opts.held && !opts.held.has(r.id) && !on ? t("kaeso.rights.notHeld", "You don't hold this right, so you can't grant it") : undefined);
+        opts.readOnly ??
+        (r.owner_only && !opts.sources
+          ? t("kaeso.rights.ownerOnly", "Only owners hold this right; transfer ownership to give it")
+          : opts.held && !opts.held.has(r.id) && !on
+            ? t("kaeso.rights.notHeld", "You don't hold this right, so you can't grant it")
+            : undefined);
       return {
         code: r.id,
         label: r.name,

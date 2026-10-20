@@ -17,6 +17,10 @@ pub fn router(state: AppState) -> Router {
             state.clone(),
             http::metrics::middleware,
         ))
+        .layer(middleware::from_fn_with_state(
+            state.config.server.body_read_timeout,
+            http::body_timeout::middleware,
+        ))
         .with_state(state)
         .layer(middleware::from_fn(http::request_id::middleware));
     if origins.is_empty() {
