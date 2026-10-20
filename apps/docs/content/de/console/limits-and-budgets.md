@@ -48,7 +48,9 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 - Über einer Rate sagt die Meldung, wann ein neuer Versuch möglich ist, und der Header `Retry-After` nennt die Sekunden.
 - Bei einem aufgebrauchten Budget sagt die Meldung, wann das Budget neu beginnt.
 
-Solange noch laufende Anfragen ein Budget fast aufgebraucht haben, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Ein hartes Budget ohne abgeschlossene Anfrage in seinem Zeitraum oder den 30 Tagen davor lässt nur eine Anfrage zugleich zu, bis die erste fertig ist. Bis dahin weiß Kaeso nicht, was eine Anfrage kostet.
+Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann: ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells) zu den Preisen des Modells. Unter einem Budget hält sie mindestens, was eine durchschnittliche Anfrage im Zeitraum oder in den 30 Tagen davor gekostet hat. Ein Stream hält es, solange er läuft.
+
+Eine Anfrage, neben der nichts anderes läuft, kommt immer durch, daher überschreiten gleichzeitige Anfragen ein Limit nie um mehr als eine Anfrage. Um unter einem kleinen Budget mehr Anfragen gleichzeitig auszuführen, senden Sie ein niedrigeres Ausgabelimit. Eine Anfrage an ein Modell ohne Ausgabelimit läuft unter einem harten Budget ohne abgeschlossene Anfrage in seinem Zeitraum oder den 30 Tagen davor allein.
 
 > [!NOTE]
 > Kaeso zählt Limits in Valkey. Solange Valkey nicht erreichbar ist, lassen Raten und weiche Budgets Anfragen durch, und harte Budgets lehnen sie mit Status 503 ab.

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Avatar, Badge, Button, List, Section, Text } from "@logicplanes/kaeso-ui";
@@ -7,13 +8,15 @@ import { useOrgRights } from "~/auth/session";
 import { granularity } from "~/format/buckets";
 import { previousPeriod, type PeriodSearch } from "~/format/period";
 import { comparedWith, presetDays, resolvePeriod } from "~/format/presets";
-import { CostShare } from "~/kaeso/cost-share";
-import { PeriodPicker } from "~/kaeso/period-picker";
 import { RequestsChart, TokensChart, UsageMetrics } from "~/kaeso/usage-panels";
 import { OrgHeader } from "~/shell/org-header";
 import { projectPath } from "~/shell/pages";
-import { OrgUsageBreakdown, type OrgBreakdown } from "./org-usage-breakdown";
+import type { OrgBreakdown } from "./org-usage-breakdown";
 import { t } from "~/i18n";
+
+const CostShare = lazy(() => import("~/kaeso/cost-share").then((m) => ({ default: m.CostShare })));
+const OrgUsageBreakdown = lazy(() => import("./org-usage-breakdown").then((m) => ({ default: m.OrgUsageBreakdown })));
+const PeriodPicker = lazy(() => import("~/kaeso/period-picker").then((m) => ({ default: m.PeriodPicker })));
 
 export type OrgOverviewSearch = PeriodSearch & { by?: OrgBreakdown };
 
@@ -47,7 +50,11 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
         org={org}
         page={t("orgHome.overview", "Overview")}
         actions={
-          canUsage && <PeriodPicker from={from} to={to} period={period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
+          canUsage && (
+            <Suspense fallback={null}>
+              <PeriodPicker from={from} to={to} period={period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
+            </Suspense>
+          )
         }
       />
       <AppFrame.Body padding="page">
@@ -67,26 +74,30 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
               <RequestsChart {...dailyState} />
               <TokensChart {...dailyState} />
               {showCost && (
-                <CostShare
-                  title={t("orgHome.costByProject", "Cost by project")}
-                  description={t("orgHome.costByProjectHint", "USD in the period")}
-                  rows={byProject.data ?? []}
-                  label={name}
-                  loading={byProject.isPending || projects.isPending}
-                  failed={byProject.isError}
-                  onRetry={() => void byProject.refetch()}
-                />
+                <Suspense fallback={null}>
+                  <CostShare
+                    title={t("orgHome.costByProject", "Cost by project")}
+                    description={t("orgHome.costByProjectHint", "USD in the period")}
+                    rows={byProject.data ?? []}
+                    label={name}
+                    loading={byProject.isPending || projects.isPending}
+                    failed={byProject.isError}
+                    onRetry={() => void byProject.refetch()}
+                  />
+                </Suspense>
               )}
-              <OrgUsageBreakdown
-                org={org}
-                from={from}
-                to={to}
-                by={by}
-                onByChange={(b) => setSearch({ by: b })}
-                projects={projects.data ?? (projects.isError ? [] : undefined)}
-                showCost={showCost}
-                ready={ready}
-              />
+              <Suspense fallback={null}>
+                <OrgUsageBreakdown
+                  org={org}
+                  from={from}
+                  to={to}
+                  by={by}
+                  onByChange={(b) => setSearch({ by: b })}
+                  projects={projects.data ?? (projects.isError ? [] : undefined)}
+                  showCost={showCost}
+                  ready={ready}
+                />
+              </Suspense>
             </>
           )}
           <Section
@@ -102,7 +113,6 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
           >
             <List
               aria-label={t("common.projects", "Projects")}
-              className="-mx-24"
               loading={projects.isPending || byProject.isLoading}
               items={(byProject.isLoading ? [] : sorted).map((p) => ({
                 id: p.id,

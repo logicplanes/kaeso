@@ -127,9 +127,12 @@ async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
     .await;
     assert_eq!(r.status, StatusCode::OK);
 
+    env.app.state.in_flight.settled().await;
+
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
     assert_eq!(env.app.state.logs.len(), 0, "the log buffer drained");
     let pg = postgres(&env).await;

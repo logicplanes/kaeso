@@ -37,6 +37,7 @@ import { serviceAccountName, usePartyName } from "../keys/party";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
+import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
 
 type Level = "project" | "member" | "key";
@@ -163,6 +164,8 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
       <AppFrame.Body padding="list">
         {limits.isPending ? (
           <List aria-label={t("limits.title", "Limits")} items={[]} loading />
+        ) : limits.isError ? (
+          <LoadFailed title={t("limits.loadFailed", "The limits couldn't load")} size="md" />
         ) : groups.length === 0 ? (
           <Empty
             size="lg"

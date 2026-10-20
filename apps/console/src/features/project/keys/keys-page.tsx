@@ -10,6 +10,7 @@ import { CreateKeyDialog } from "~/kaeso/create-key-flow";
 import { expiryText } from "./expiry";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
+import { LoadFailed } from "~/features/org/load-failed";
 import { ProjectHeader } from "~/shell/project-header";
 import { KeySheet } from "./key-sheet";
 import { asKeyState, serviceAccountName, usePartyLabel } from "./party";
@@ -122,6 +123,8 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
       <AppFrame.Body padding="list">
         {keys.isPending ? (
           <List aria-label={t("keys.keys", "Keys")} items={[]} loading />
+        ) : keys.isError ? (
+          <LoadFailed title={t("keys.listFailed", "The keys couldn't load")} size="md" />
         ) : list.length > 0 && groups.length === 0 ? (
           <Empty
             size="lg"

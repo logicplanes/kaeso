@@ -352,6 +352,14 @@ impl Encoder {
             }
             StreamEvent::BlockDelta(d) => self.block_delta(d, &mut out)?,
             StreamEvent::BlockStop(s) => self.block_stop(s.index, &s.extras, &mut out)?,
+            StreamEvent::ResponseDelta(d) if d.stop.is_none() && !d.extras.is_from(D) => {
+                self.ensure_started(&mut out)?;
+                if d.usage.is_some() {
+                    self.last_usage.clone_from(&d.usage);
+                    let merged = self.merged.get_or_insert_with(ResponseDelta::default);
+                    merged.usage.clone_from(&d.usage);
+                }
+            }
             StreamEvent::ResponseDelta(d) => {
                 self.ensure_started(&mut out)?;
                 self.close_all(&mut out)?;
@@ -553,20 +561,19 @@ fn write_block_stop(slot: &mut Slot, extras: &Extras, out: &mut Vec<u8>) -> Resu
         };
         write(out, "content_block_delta", &ev, &Extras::default())?;
     }
-    if let Some(args) = slot.tool_args.take() {
-        let is_object = matches!(serde_json::from_str::<Value>(&args), Ok(Value::Object(_)));
-        if is_object {
-            let delta = to_raw(&InputJsonDeltaW {
-                ty: "input_json_delta".into(),
-                partial_json: args,
-            })?;
-            let ev = BlockDeltaW {
-                ty: "content_block_delta".into(),
-                index: slot.wire,
-                delta,
-            };
-            write(out, "content_block_delta", &ev, &Extras::default())?;
-        }
+    if let Some(args) = slot.tool_args.take()
+        && !args.trim().is_empty()
+    {
+        let delta = to_raw(&InputJsonDeltaW {
+            ty: "input_json_delta".into(),
+            partial_json: args,
+        })?;
+        let ev = BlockDeltaW {
+            ty: "content_block_delta".into(),
+            index: slot.wire,
+            delta,
+        };
+        write(out, "content_block_delta", &ev, &Extras::default())?;
     }
     let ev = own_ext(
         BlockStopW {

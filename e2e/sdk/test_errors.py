@@ -58,6 +58,19 @@ def test_provider_4xx_and_5xx(oa, an, mock):
         oa.chat.completions.create(model="claude-haiku-4-5", messages=user("[mock:error=overloaded]"))
 
 
+def test_a_refused_provider_key_is_a_provider_error(install):
+    an = anthropic.Anthropic(base_url=install.url, api_key=install.key, max_retries=0)
+    with pytest.raises(anthropic.InternalServerError) as e:
+        an.messages.create(model="claude-haiku-4-5", max_tokens=10, messages=user("[mock:error=authentication]"))
+    assert e.value.status_code == 502
+    assert "Ask an organization admin" in str(e.value)
+    oa = openai.OpenAI(base_url=f"{install.url}/v1", api_key=install.key, max_retries=0)
+    with pytest.raises(openai.InternalServerError) as e:
+        oa.chat.completions.create(model="gpt-4o", messages=user("[mock:error=invalid-api-key-401]"))
+    assert e.value.status_code == 502
+    assert "sk-proj" not in str(e.value)
+
+
 def test_timeout(oa):
     start = time.monotonic()
     with pytest.raises(openai.InternalServerError) as e:

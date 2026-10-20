@@ -14,7 +14,7 @@ export const KAESO_COLLAPSIBLE_VARIANTS = {
 export const KAESO_COLLAPSIBLE_DEFAULT_VARIANTS = { state: "closed" } as const;
 
 const TRIGGER =
-  "group/dt flex min-h-40 w-full cursor-pointer items-center gap-8 rounded-item px-8 -mx-8 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 focus-ring-inset";
+  "group/dt flex min-h-40 w-full cursor-pointer items-center gap-8 rounded-item px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 focus-ring-inset";
 
 export interface CollapsibleProps {
   title: ReactNode;
@@ -48,7 +48,7 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
         {hint && <span className="text-small font-regular text-fg-secondary">{hint}</span>}
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
-        <div className="pt-4 pb-12 pl-24">{children}</div>
+        <div className="pt-4 pr-12 pb-12 pl-36">{children}</div>
       </BaseCollapsible.Panel>
     </BaseCollapsible.Root>
   );
@@ -91,7 +91,7 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Acc
             </BaseAccordion.Trigger>
           </BaseAccordion.Header>
           <BaseAccordion.Panel className="collapse-motion">
-            <div className="pb-16 text-body text-fg-secondary">{it.content}</div>
+            <div className="px-12 pb-16 text-body text-fg-secondary">{it.content}</div>
           </BaseAccordion.Panel>
         </BaseAccordion.Item>
       ))}

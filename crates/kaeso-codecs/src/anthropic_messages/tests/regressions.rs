@@ -448,31 +448,38 @@ fn messages_name_things_the_user_knows() {
 }
 
 #[test]
-fn tool_arguments_that_are_not_an_object_become_empty_input_in_replies() {
-    let cut = raw(r#""{\"city\": \"Par""#);
+fn tool_arguments_that_are_not_an_object_are_refused_in_replies() {
+    for arguments in [raw(r#""{\"city\": \"Par""#), raw("[1]")] {
+        let mut r = kaeso_kpp::Response::new(
+            "id",
+            "m",
+            vec![
+                Block::tool_call("call_1", "get_weather", arguments),
+                Block::tool_call("call_3", "g", raw(r#"{"ok":true}"#)),
+            ],
+        );
+        r.stop = StopReason::MaxTokens;
+        r.extras = Extras::new(CHAT);
+        let err = AnthropicMessages::encode_response(
+            &kaeso_kpp::Reply::Generate(r),
+            &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+        )
+        .unwrap_err();
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+        assert!(err.message.contains("`get_weather`"), "{}", err.message);
+    }
     let mut r = kaeso_kpp::Response::new(
         "id",
         "m",
-        vec![
-            Block::tool_call("call_1", "get_weather", cut),
-            Block::tool_call("call_2", "f", raw("[1]")),
-            Block::tool_call("call_3", "g", raw(r#"{"ok":true}"#)),
-        ],
+        vec![Block::tool_call("call_3", "g", raw(r#"{"ok":true}"#))],
     );
-    r.stop = StopReason::MaxTokens;
     r.extras = Extras::new(CHAT);
     let body = encode_reply(&kaeso_kpp::Reply::Generate(r));
-    let inputs: Vec<&Value> = body["content"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|b| &b["input"])
-        .collect();
-    assert_eq!(inputs, [&json!({}), &json!({}), &json!({"ok": true})]);
+    assert_eq!(body["content"][0]["input"], json!({"ok": true}));
 }
 
 #[test]
-fn streamed_tool_arguments_that_do_not_form_an_object_become_empty_input() {
+fn streamed_tool_arguments_that_do_not_form_an_object_are_sent_as_they_came() {
     use kaeso_kpp::ToolCallHeader;
     let tool = |i: u32, id: &str| {
         StreamEvent::BlockStart(BlockStart::new(
@@ -491,14 +498,30 @@ fn streamed_tool_arguments_that_do_not_form_an_object_become_empty_input() {
         tool(1, "call_b"),
         args(1, "{\"city\":"),
         args(1, "\"Oslo\"}"),
+        tool(2, "call_c"),
+        args(2, ""),
         StreamEvent::BlockStop(BlockStop::new(0)),
         StreamEvent::BlockStop(BlockStop::new(1)),
+        StreamEvent::BlockStop(BlockStop::new(2)),
         StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::MaxTokens), None)),
         StreamEvent::ResponseStop(ResponseStop::new()),
     ]);
-    let msg = accumulate(&out);
-    assert_eq!(msg["content"][0]["input"], json!({}));
-    assert_eq!(msg["content"][1]["input"], json!({"city": "Oslo"}));
+    let partial: Vec<String> = crate::sse::parse_all(&out)
+        .unwrap()
+        .into_iter()
+        .filter_map(|i| match i {
+            crate::sse::SseItem::Event(e) => {
+                let v: Value = serde_json::from_str(&e.data).ok()?;
+                Some((
+                    v["index"].as_u64()?,
+                    v["delta"]["partial_json"].as_str()?.to_owned(),
+                ))
+            }
+            _ => None,
+        })
+        .map(|(i, p)| format!("{i}:{p}"))
+        .collect();
+    assert_eq!(partial, ["0:{\"city\": \"Par", "1:{\"city\":\"Oslo\"}"]);
     let own = format!(
         "{START}event: content_block_start\ndata: {{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{{\"type\":\"tool_use\",\"id\":\"t\",\"name\":\"f\",\"input\":{{}}}}}}\n\n\
 event: content_block_delta\ndata: {{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{{\"type\":\"input_json_delta\",\"partial_json\":\"{{\\\"a\\\": \"}}}}\n\n\

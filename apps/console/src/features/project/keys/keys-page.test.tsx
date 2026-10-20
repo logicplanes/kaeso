@@ -128,10 +128,10 @@ describe("KeysPage", () => {
     const { user } = await renderApp(projectPath("keys?owner=user:usr_grace"));
 
     expect(await screen.findByText("No keys for this filter")).toBeInTheDocument();
-    expect(keyRequests()).toContainEqual({ user: "usr_grace", limit: "100" });
+    expect(keyRequests()).toContainEqual({ user: "usr_grace", include_archived: "true", limit: "100" });
     await user.click(screen.getByRole("button", { name: "Clear filter" }));
     expect(await screen.findByText("No keys yet")).toBeInTheDocument();
-    expect(keyRequests()).toContainEqual({ limit: "100" });
+    expect(keyRequests()).toContainEqual({ include_archived: "true", limit: "100" });
   });
 
   it("asks for a service account's keys and for archived keys", async () => {
@@ -163,7 +163,23 @@ describe("KeysPage", () => {
     await user.click(screen.getByRole("combobox", { name: "Whose keys" }));
     expect(await screen.findByRole("option", { name: "ci-deploy (service account)" })).toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: "Grace Hopper" }));
-    await waitFor(() => expect(keyRequests()).toContainEqual({ user: "usr_grace", limit: "100" }));
+    await waitFor(() => expect(keyRequests()).toContainEqual({ user: "usr_grace", include_archived: "true", limit: "100" }));
+  });
+
+  it("asks for the service accounts once and offers only active ones as owners", async () => {
+    signedIn();
+    projectData({
+      keys: [apiKey()],
+      members: [projectMember()],
+      accounts: [serviceAccount(), serviceAccount({ id: "sa_old", name: "retired-job", archived_at: NOW })],
+    });
+    const { user } = await renderApp(projectPath("keys"));
+
+    await screen.findByRole("gridcell", { name: /checkout-web/ });
+    await user.click(screen.getByRole("combobox", { name: "Whose keys" }));
+    expect(await screen.findByRole("option", { name: "ci-deploy (service account)" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "retired-job (service account)" })).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/service-accounts").map((r) => r.query.get("include_archived"))).toEqual(["true"]);
   });
 
   it("reads every page of keys", async () => {
@@ -235,6 +251,6 @@ describe("KeysPage", () => {
     await user.clear(picker);
     await user.tab();
     await waitFor(() => expect(router.state.location.search).toEqual({}));
-    await waitFor(() => expect(keyRequests()).toContainEqual({ limit: "100" }));
+    await waitFor(() => expect(keyRequests()).toContainEqual({ include_archived: "true", limit: "100" }));
   });
 });

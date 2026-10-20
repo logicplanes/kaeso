@@ -2,7 +2,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use kaeso_update::Version;
-use kaeso_update::manifest::Service;
+use kaeso_update::manifest::{Image, Service};
 
 pub const MAX_BYTES: usize = 256 << 10;
 
@@ -24,18 +24,33 @@ fn boundary(b: Option<&u8>) -> bool {
     b.is_none_or(|b| !(b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'+' | b'_')))
 }
 
-pub fn retag(text: &[u8], from: &Version, to: &Version) -> Vec<u8> {
+fn digest_len(rest: &[u8]) -> usize {
+    let Some(hex) = rest.strip_prefix(b"@sha256:") else {
+        return 0;
+    };
+    match hex.get(..64) {
+        Some(h) if h.iter().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f')) => 8 + 64,
+        _ => 0,
+    }
+}
+
+pub fn retag(text: &[u8], from: &Version, to: &Version, images: &[Image]) -> Vec<u8> {
     let mut out = text.to_vec();
     for service in Service::ALL {
         let old = format!("{}:{from}", service.image()).into_bytes();
-        let new = format!("{}:{to}", service.image()).into_bytes();
+        let new = match images.iter().find(|i| i.name == service.image()) {
+            Some(image) => format!("{}:{to}@{}", service.image(), image.digest),
+            None => format!("{}:{to}", service.image()),
+        }
+        .into_bytes();
         let mut result = Vec::with_capacity(out.len());
         let mut i = 0;
         while i < out.len() {
             let rest = out.get(i..).unwrap_or_default();
-            if rest.starts_with(&old) && boundary(out.get(i + old.len())) {
+            let pinned = old.len() + digest_len(rest.get(old.len()..).unwrap_or_default());
+            if rest.starts_with(&old) && boundary(out.get(i + pinned)) {
                 result.extend_from_slice(&new);
-                i += old.len();
+                i += pinned;
             } else {
                 result.extend(out.get(i).copied());
                 i += 1;
@@ -114,16 +129,60 @@ mod tests {
         Version::parse(s).unwrap()
     }
 
+    fn images(hex: char) -> Vec<Image> {
+        Service::ALL
+            .iter()
+            .map(|s| Image {
+                name: s.image().into(),
+                digest: format!("sha256:{}", hex.to_string().repeat(64)),
+            })
+            .collect()
+    }
+
     #[test]
     fn retag_changes_exactly_the_kaeso_image_tags() {
         let text = b"services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0\n  console:\n    image: \"ghcr.io/logicplanes/kaeso-console:40.2.0\"\n  updater:\n    image: ghcr.io/logicplanes/kaeso-updater:40.2.0\n  other:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0-rc.1\n    labels: [ghcr.io/logicplanes/kaeso-gateway:40.2.01]\n  caddy:\n    image: caddy:40.2.0\n";
-        let out = String::from_utf8(retag(text, &v("40.2.0"), &v("40.2.1"))).unwrap();
+        let out = String::from_utf8(retag(text, &v("40.2.0"), &v("40.2.1"), &[])).unwrap();
         assert!(out.contains("image: ghcr.io/logicplanes/kaeso-gateway:40.2.1\n"));
         assert!(out.contains("\"ghcr.io/logicplanes/kaeso-console:40.2.1\""));
         assert!(out.contains("kaeso-updater:40.2.1\n"));
         assert!(out.contains("kaeso-gateway:40.2.0-rc.1"));
         assert!(out.contains("kaeso-gateway:40.2.01]"));
         assert!(out.contains("caddy:40.2.0"));
+    }
+
+    #[test]
+    fn retag_pins_each_image_to_the_release_digest() {
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        let text = format!(
+            "  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0@sha256:{a}\n  console:\n    image: ghcr.io/logicplanes/kaeso-console:40.2.0\n  updater:\n    image: \"ghcr.io/logicplanes/kaeso-updater:40.2.0@sha256:{a}\"\n  other:\n    image: ghcr.io/logicplanes/kaeso-gateway:40.2.0@sha256:{a}x\n"
+        );
+        let out = String::from_utf8(retag(
+            text.as_bytes(),
+            &v("40.2.0"),
+            &v("40.2.1"),
+            &images('b'),
+        ))
+        .unwrap();
+        assert!(out.contains(&format!(
+            "image: ghcr.io/logicplanes/kaeso-gateway:40.2.1@sha256:{b}\n"
+        )));
+        assert!(out.contains(&format!(
+            "image: ghcr.io/logicplanes/kaeso-console:40.2.1@sha256:{b}\n"
+        )));
+        assert!(out.contains(&format!(
+            "\"ghcr.io/logicplanes/kaeso-updater:40.2.1@sha256:{b}\""
+        )));
+        assert!(out.contains(&format!("kaeso-gateway:40.2.0@sha256:{a}x")));
+    }
+
+    #[test]
+    fn retag_without_the_release_digests_drops_the_old_ones() {
+        let a = "a".repeat(64);
+        let text = format!("image: ghcr.io/logicplanes/kaeso-gateway:40.2.0@sha256:{a}\n");
+        let out = retag(text.as_bytes(), &v("40.2.0"), &v("40.2.1"), &[]);
+        assert_eq!(out, b"image: ghcr.io/logicplanes/kaeso-gateway:40.2.1\n");
     }
 
     #[test]

@@ -13,6 +13,7 @@
   "limits.keys": "密钥",
   "limits.lastMinute": "最近一分钟",
   "limits.level": "层级",
+  "limits.loadFailed": "无法加载限额",
   "limits.member": "成员",
   "limits.memberOrAccount": "成员或服务账号",
   "limits.membersAndAccounts": "成员和服务账号",

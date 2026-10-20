@@ -5,6 +5,7 @@ use bytes::Bytes;
 use futures::future::BoxFuture;
 use kaeso_core::catalogue::Fields;
 use kaeso_core::id::RequestId;
+use kaeso_core::limits::WorstCase;
 use kaeso_kpp::{DialectId, RequestKind, Response, Usage};
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -44,6 +45,19 @@ pub struct Admission {
     pub kind: RequestKind,
     pub at: OffsetDateTime,
     pub timeout: Duration,
+    pub worst: WorstCase,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Reservation {
+    pub(crate) counters: Vec<String>,
+    pub(crate) ttl: i64,
+}
+
+impl Reservation {
+    pub fn is_held(&self) -> bool {
+        !self.counters.is_empty()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,7 +72,7 @@ pub trait Limits: Send + Sync + std::fmt::Debug {
         &'a self,
         state: &'a AppState,
         a: &'a Admission,
-    ) -> BoxFuture<'a, Result<(), Refusal>>;
+    ) -> BoxFuture<'a, Result<Reservation, Refusal>>;
 }
 
 #[derive(Debug, Default)]
@@ -69,8 +83,8 @@ impl Limits for NoLimits {
         &'a self,
         _state: &'a AppState,
         _a: &'a Admission,
-    ) -> BoxFuture<'a, Result<(), Refusal>> {
-        Box::pin(async { Ok(()) })
+    ) -> BoxFuture<'a, Result<Reservation, Refusal>> {
+        Box::pin(async { Ok(Reservation::default()) })
     }
 }
 
@@ -118,6 +132,7 @@ pub struct Outcome {
     pub cancelled: bool,
     pub stream_progress: Option<StreamProgress>,
     pub usage_estimated: bool,
+    pub content_kept: bool,
 }
 
 impl Outcome {

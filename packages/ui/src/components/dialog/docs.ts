@@ -22,8 +22,9 @@ export const docs = {
   },
   Dialog: {
     description:
-      "A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. It stays centered while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.",
+      'A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. It stays centered (or, with `anchor="top"`, keeps its top edge) while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.',
     props: {
+      anchor: "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.",
       busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       children: "The dialog's content and actions.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
@@ -53,6 +54,7 @@ export const docs = {
     description:
       "A stacked dialog: a second layer slides over the first (add model → review values); back returns. The layers below stay as they were. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. ⌘/Ctrl+Enter calls onSubmit on every layer.",
     props: {
+      anchor: "Where it sits: centered, or with a fixed top edge for layers of different heights.",
       busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       hideClose: "Hide the close circle (rare).",
@@ -69,7 +71,7 @@ export const docs = {
   },
   StepDialog: {
     description:
-      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and stays centered: it grows or shrinks 200ms from the size it has as the step changes, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
+      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and keeps its top edge where it opened: it grows or shrinks 200ms downward from the size it has as the step changes, so the title never jumps, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
     props: {
       defaultStep: "Start on this step (state matrices).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",

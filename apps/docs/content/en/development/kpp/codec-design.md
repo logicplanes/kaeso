@@ -42,7 +42,7 @@ stateDiagram-v2
 - **Block indexes** are KPP's own: 0, 1, 2, … in the order blocks start. Blocks may interleave (OpenAI streams parallel tool calls this way), so every event names its block.
 - **Every lifecycle event carries `Extras`**, so a same-dialect replay reproduces the original events exactly, including per-event fields such as OpenAI's `obfuscation`.
 - **Failures are reported in band:** the events decoded so far, then a final `StreamEvent::Error`, so nothing decoded earlier in the same chunk is lost.
-- **Order never changes, but events may be held back.** OpenAI-compatible providers can send the response `id` and `model`, or a tool call's `id` and `name`, in a later chunk than the first. The OpenAI Chat Completions decoder then holds back the `ResponseStart` and the chunks without content until a chunk carries those values or content. It holds a tool call's `BlockStart`, and every event after it, until both its `id` and `name` have arrived, the block ends, or the stream ends or breaks ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)).
+- **Order never changes, but events may be held back.** OpenAI-compatible providers can send the response `id` and `model`, or a tool call's `id` and `name`, in a later chunk than the first. The OpenAI Chat Completions decoder then holds back the `ResponseStart` and the chunks without content until a chunk carries those values or content. It holds a tool call's `BlockStart`, and every event after it, until both its `id` and `name` have arrived, the block ends, or the stream ends or breaks ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)). Usage that a provider sends while blocks are still open is held until they stop, so `ResponseDelta`s always come after the last `BlockStop`.
 
 ### Stream encoders
 
@@ -53,7 +53,8 @@ Every stream encoder can also write a keepalive frame; [keepalives](cross-format
 - the first block that starts is active and is written as it arrives;
 - blocks that start while another is active are pending and buffered in start order;
 - when the active block stops, the next pending block is written, with its start, its buffered deltas, and its stop if it already came;
-- a `ResponseDelta` or `ResponseStop` closes every open block first, and several `ResponseDelta`s merge into one `message_delta`, because the SDKs overwrite `stop_reason` with each one.
+- a `ResponseDelta` with a stop reason, or `ResponseStop`, closes every open block first, and several `ResponseDelta`s merge into one `message_delta`, because the SDKs overwrite `stop_reason` with each one;
+- a `ResponseDelta` of another dialect without a stop reason only updates the usage that the final `message_delta` reports, and leaves the blocks open.
 
 Anthropic indexes are assigned in the order blocks are written. A stream that doesn't start with `ResponseStart` gets a `message_start` with an empty id.
 

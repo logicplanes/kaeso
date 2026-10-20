@@ -4,19 +4,29 @@ description: 手动、在控制台中或自动更新 Kaeso，并了解更新期�
 order: 8
 ---
 
-每个版本为 Kaeso 的所有组成部分使用同一个版本号，并遵循语义化版本规范。版本的 `compose.yaml` 固定了该版本的镜像。您可以手动更新，这种方式始终可用；也可以通过更新器更新：在控制台中更新，或在您设定的窗口内自动更新。
+每个版本为 Kaeso 的所有组成部分使用同一个版本号，并遵循语义化版本规范。版本的 `compose.yaml` 把每个镜像固定到版本和摘要。您可以手动更新，这种方式始终可用；也可以通过更新器更新：在控制台中更新，或在您设定的窗口内自动更新。
 
 ## 手动更新
 
 1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**设置** › **实例** › **更新**中。
 2. [备份](backups.md) PostgreSQL 和 ClickHouse，以便在需要时[回退](#降级)。
-3. 在实例文件夹中，下载新的 `compose.yaml` 覆盖旧文件。`.env`、`master-keys` 和 `compose.override.yaml` 保持不变。
+3. 在实例文件夹中，下载新的 `compose.yaml` 覆盖旧文件，并把该版本的 `release.json` 下载到旁边。`.env`、`master-keys` 和 `compose.override.yaml` 保持不变。
 
 ```bash
 curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/release.json
 ```
 
-4. 拉取新镜像并启动：
+4. 确认该版本由 Kaeso 的 Release 工作流构建。`release.json` 带有该工作流的签名，并写明 `compose.yaml` 的哈希；`compose.yaml` 则按摘要写明每个 Kaeso 镜像。用已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 先检查签名，再检查哈希：
+
+```bash
+gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
+echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -
+```
+
+只要有任何不一致，两条命令都会失败。之后 Docker 会按 `compose.yaml` 中的摘要检查拉取的每个镜像。
+
+5. 拉取新镜像并启动：
 
 ```bash
 docker compose pull
@@ -25,7 +35,7 @@ docker compose up -d --wait
 
 新的网关和控制台都健康后，命令才会返回；任一不健康时命令失败。网关启动时会迁移数据库。迁移只会向前、按顺序执行，因此可以跨版本升级。
 
-更新器无法安装某个版本时，控制台会显示带有确切版本号的上述命令。
+更新器无法安装某个版本时，控制台会显示第 3 步到第 5 步中带有确切版本号的命令。
 
 ## 新版本
 
@@ -125,7 +135,7 @@ secrets:
 
 | 结果 | 含义 |
 | --- | --- |
-| **已更新** | 新版本正在运行。如果结果说明更新器无法写入 `compose.yaml`，请自行把其中的 Kaeso 镜像标签改为新版本。 |
+| **已更新** | 新版本正在运行。如果结果说明更新器无法写入 `compose.yaml`，请按[手动更新](#手动更新)中的方法，下载新版本的 `compose.yaml` 覆盖它。 |
 | **未安装** | 没有任何变化。 |
 | **已回退** | 新版本没有启动，之前的版本重新运行。 |
 | **回退失败** | 新版本没有启动，之前的版本也没有。 |
@@ -133,19 +143,20 @@ secrets:
 
 只要能安全回退，更新器就会自动回退。如果新网关可能已经迁移了数据库后才失败，就无法回退，因为之前的网关无法在迁移后的数据库上运行。此时更新以**需要处理**结束，新网关和新控制台保留，之前的容器以 `kaeso-gateway-1-previous` 和 `kaeso-console-1-previous` 的名称保持停止状态。请选择一种处理方式：
 
-- 用 `docker compose logs gateway` 查明新网关无法启动的原因，修复后把 `compose.yaml` 中的镜像标签改为新版本。
+- 用 `docker compose logs gateway` 查明新网关无法启动的原因，修复后按[手动更新](#手动更新)中的方法下载新版本的 `compose.yaml`。
 - 或者恢复备份并运行旧版本，见[降级](#降级)。
 
 完成后用 `docker rm` 删除这两个 `…-previous` 容器。只要还有一个存在，更新器就不会开始新的更新。
 
 ### 更新器的权限
 
-更新器可以创建容器，因此控制了更新器，就等于以 root 身份控制了服务器。它的设计让这种能力尽可能受限：
+更新器相当于服务器上的 root。它可以创建容器，而为访问 Docker 套接字以 root 运行的 `docker-proxy` 只检查每个调用的方法和路径。控制了更新器或代理，就控制了服务器。更新器的设计让这种能力尽可能受限：
 
 - 它只在内部网络上响应网关，而且必须带有共享令牌。网关只向它传递一个版本号。
 - 它只能通过 `docker-proxy` 访问 Docker，代理只放行更新所需的调用。
 - 它只替换自己 Compose 项目中的网关和控制台容器，使用的是它验证过的镜像。
-- 它只修改 `compose.yaml` 中的镜像版本；如果文件与该版本的原文件有其他差异，它不会改动。
+- 如果新容器的特权、capabilities、设备、命名空间、网络或挂载与被替换的容器不同，它会拒绝创建；它只按摘要拉取 Kaeso 的镜像。
+- 它只修改 `compose.yaml` 中的镜像版本和摘要；如果文件与该版本的原文件有其他差异，它不会改动。
 
 没有 `updater` profile（配置集）时，Kaeso 中没有任何部分能访问 Docker。
 

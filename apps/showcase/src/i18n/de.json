@@ -991,5 +991,7 @@
   "The release's stored artwork, e.g. from `nextReleaseArt`; it always draws the same picture and wins over `seed`.": "Das gespeicherte Bild des Releases, z. B. aus `nextReleaseArt`; es ergibt immer dasselbe Bild und hat Vorrang vor `seed`.",
   "The artwork's aspect ratio.": "Das Seitenverhältnis des Bildes.",
   "Large text on the artwork, e.g. the version number.": "Großer Text auf dem Bild, z. B. die Versionsnummer.",
-  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "Ein Zeichen vor dem Wort in derselben Farbe, z. B. `icons.success` für „Aktuell“."
+  "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "Ein Zeichen vor dem Wort in derselben Farbe, z. B. `icons.success` für „Aktuell“.",
+  "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.": "Wo er sitzt: mittig oder mit fester Oberkante für Inhalte, die ihre Höhe ändern, damit der Titel nie springt.",
+  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "Wo er sitzt: mittig oder mit fester Oberkante für Ebenen unterschiedlicher Höhe."
 }

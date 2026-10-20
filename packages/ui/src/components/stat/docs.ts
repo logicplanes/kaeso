@@ -30,6 +30,7 @@ export const docs = {
       change: "The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down.",
       detail: 'A quiet line under the number: "vs. the previous 30 days", "0.4% of requests".',
       label: 'What the number is: "Requests", "Cost".',
+      loading: "While the numbers load: the value, the change and the trend show their shape at the tile's final height.",
       trend:
         "One value per day (or step), drawn as a sparkline across the tile. A tile without it has no room for one; pass `[]` while a trend loads to keep it.",
       trendColor: "The trend's color; the first series color by default.",

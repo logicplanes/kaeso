@@ -22,6 +22,12 @@ url.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
+hyper.workspace = true
+hyper-util.workspace = true
+http-body-util.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
+rcgen.workspace = true
 
 [lints]
 workspace = true

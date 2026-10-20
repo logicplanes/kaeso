@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parametersOf, parseModels, searchOf, validatePlaygroundSearch } from "./search";
+import { parseModels, validatePlaygroundSearch } from "~/format/playground-search";
+import { parametersOf, searchOf } from "./search";
 
 describe("validatePlaygroundSearch", () => {
   it("keeps models and parameters that are valid", () => {

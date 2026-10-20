@@ -14,7 +14,7 @@ export function sumUSD(values: (string | null | undefined)[]): string {
 export function periodUSD(amount: string | null | undefined): string {
   if (!amount || !/[1-9]/.test(amount)) return formatUSD("0", { decimals: 2 });
   const n = Number(amount);
-  if (n > 0 && n < 0.005) return `<${formatUSD("0.01", { decimals: 2 })}`;
+  if (n > 0 && n < 0.005) return t("kaeso.usage.lessThan", "<{amount}", { amount: formatUSD("0.01", { decimals: 2 }) });
   return formatUSD(amount, { decimals: 2 });
 }
 

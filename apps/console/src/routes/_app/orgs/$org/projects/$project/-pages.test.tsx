@@ -20,7 +20,7 @@ describe("the project overview address", () => {
     await renderApp(`${BASE}?by=key&period=7d`);
     expect(await screen.findByRole("heading", { name: "Overview", level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(sent("orgs/:org/projects/:project/usage").map((q) => q.group_by)).toContain("key"));
-    expect(screen.getAllByText("Last 7 days").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Last 7 days")).length).toBeGreaterThan(0);
   });
 
   it("ignores a breakdown and period it doesn't know", async () => {
@@ -65,7 +65,7 @@ describe("the API keys address", () => {
     await renderApp(`${BASE}/keys?archived=maybe&create=later&key=1`);
     expect(await screen.findByText("checkout-web")).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Create key" })).not.toBeInTheDocument();
-    expect(sent("orgs/:org/projects/:project/keys").every((q) => q.include_archived === undefined)).toBe(true);
+    expect(sent("orgs/:org/projects/:project/keys")).toEqual([{ include_archived: "true", limit: "100" }]);
   });
 });
 
@@ -284,7 +284,7 @@ describe("the project pages without search", () => {
     on("GET", "orgs/:org/projects/:project/service-accounts", listed([]));
     await renderApp(`${BASE}/keys`);
     expect(await screen.findByRole("heading", { name: "No keys yet" })).toBeInTheDocument();
-    expect(sent("orgs/:org/projects/:project/keys")).toEqual([{ limit: "100" }]);
+    expect(sent("orgs/:org/projects/:project/keys")).toEqual([{ include_archived: "true", limit: "100" }]);
   });
 
   it("starts an owner's archived keys with the loader's request", async () => {

@@ -10,8 +10,12 @@ use redis::Script;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::model_api::hooks::{Admission, Caller, Limits, Refusal};
+use crate::model_api::hooks::{Admission, Caller, Limits, Refusal, Reservation};
 use crate::state::AppState;
+
+mod flights;
+
+pub type Rebuilds = flights::Flights<LimitsError>;
 
 const IN_FLIGHT_MARGIN: Duration = Duration::from_secs(300);
 
@@ -38,12 +42,29 @@ fn in_flight_ttl(timeout: Duration) -> i64 {
 const ADMIT: &str = r"
 local now = tonumber(ARGV[1])
 local req = ARGV[2]
+local ttl = tonumber(ARGV[#ARGV])
 local missing = {}
+local own = {}
+local function flying(key)
+  local f = key .. ':f'
+  local r = key .. ':r'
+  local gone = redis.call('ZRANGEBYSCORE', f, '-inf', now)
+  for _, id in ipairs(gone) do redis.call('HDEL', r, id) end
+  if #gone > 0 then redis.call('ZREMRANGEBYSCORE', f, '-inf', now) end
+  local ids = redis.call('ZRANGE', f, 0, -1)
+  local held = 0
+  for _, id in ipairs(ids) do
+    held = held + tonumber(redis.call('HGET', r, id) or '0')
+  end
+  return #ids, held
+end
 for i = 1, #KEYS do
-  local b = 3 + (i - 1) * 3
+  local b = 3 + (i - 1) * 5
   local t = tonumber(ARGV[b])
   local units = tonumber(ARGV[b + 1])
   local enforced = ARGV[b + 2] == '1'
+  local reserve = tonumber(ARGV[b + 3])
+  local bounded = ARGV[b + 4] == '1'
   local key = KEYS[i]
   if t == 1 or t == 2 then
     local fields = redis.call('HGETALL', key)
@@ -64,6 +85,11 @@ for i = 1, #KEYS do
       if retry < 1 then retry = 1 end
       return {1, i, retry}
     end
+    if t == 2 then
+      local n, held = flying(key)
+      if n > 0 and sum + held + reserve > units then return {3, i} end
+      own[i] = reserve
+    end
   else
     local v = redis.call('HGET', key, 'v')
     if not v then
@@ -71,19 +97,16 @@ for i = 1, #KEYS do
     elseif enforced then
       v = tonumber(v)
       if v >= units then return {1, i, 0} end
-      local f = key .. ':f'
-      redis.call('ZREMRANGEBYSCORE', f, '-inf', now)
-      local flying = redis.call('ZCARD', f)
-      if flying > 0 then
-        local n = tonumber(redis.call('HGET', key, 'n') or '0')
-        local avg = tonumber(redis.call('HGET', key, 'a') or '0')
-        if n > 0 then
-          avg = v / n
-        elseif avg <= 0 then
-          return {1, i, 1}
-        end
-        if v + flying * avg >= units then return {1, i, 1} end
+      local count = tonumber(redis.call('HGET', key, 'n') or '0')
+      local avg = tonumber(redis.call('HGET', key, 'a') or '0')
+      if count > 0 then avg = math.ceil(v / count) end
+      local mine = math.max(avg, reserve)
+      local n, held = flying(key)
+      if n > 0 then
+        if not bounded and avg <= 0 then return {3, i} end
+        if v + held + mine > units then return {3, i} end
       end
+      own[i] = mine
     end
   end
 end
@@ -93,19 +116,34 @@ if #missing > 0 then
   return out
 end
 for i = 1, #KEYS do
-  local b = 3 + (i - 1) * 3
-  local t = tonumber(ARGV[b])
+  local t = tonumber(ARGV[3 + (i - 1) * 5])
   if t == 1 then
     redis.call('HINCRBY', KEYS[i], tostring(now), 1)
     redis.call('EXPIRE', KEYS[i], 120)
-  elseif t == 3 and ARGV[b + 2] == '1' then
+  elseif own[i] ~= nil then
     local f = KEYS[i] .. ':f'
-    local ttl = tonumber(ARGV[#ARGV])
+    local r = KEYS[i] .. ':r'
     redis.call('ZADD', f, now + ttl, req)
+    redis.call('HSET', r, req, own[i])
     if redis.call('TTL', f) < ttl then redis.call('EXPIRE', f, ttl) end
+    if redis.call('TTL', r) < ttl then redis.call('EXPIRE', r, ttl) end
   end
 end
 return {0}
+";
+
+const EXTEND: &str = r"
+local score = tonumber(ARGV[2])
+local ttl = tonumber(ARGV[3])
+for i = 1, #KEYS do
+  local f = KEYS[i] .. ':f'
+  if redis.call('ZADD', f, 'XX', 'CH', score, ARGV[1]) == 1 then
+    local r = KEYS[i] .. ':r'
+    if redis.call('TTL', f) < ttl then redis.call('EXPIRE', f, ttl) end
+    if redis.call('TTL', r) < ttl then redis.call('EXPIRE', r, ttl) end
+  end
+end
+return 1
 ";
 
 const CHARGE: &str = r"
@@ -120,6 +158,8 @@ for i = 1, #KEYS do
   local ttl = tonumber(ARGV[b + 2])
   local key = KEYS[i]
   if t == 2 then
+    redis.call('ZREM', key .. ':f', req)
+    redis.call('HDEL', key .. ':r', req)
     if add > 0 then
       redis.call('HINCRBY', key, tostring(now), add)
       redis.call('EXPIRE', key, 120)
@@ -128,6 +168,7 @@ for i = 1, #KEYS do
     table.insert(out, -1)
   elseif t == 3 then
     redis.call('ZREM', key .. ':f', req)
+    redis.call('HDEL', key .. ':r', req)
     local v = redis.call('HGET', key, 'v')
     if v then
       local after = tonumber(v)
@@ -165,6 +206,7 @@ for i = 1, #KEYS do
   at = at + 1
   for _ = 1, n do
     redis.call('ZREM', KEYS[i] .. ':f', ARGV[at])
+    redis.call('HDEL', KEYS[i] .. ':r', ARGV[at])
     at = at + 1
   end
   redis.call('DEL', KEYS[i])
@@ -179,6 +221,8 @@ static REBUILD_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(REBUILD));
 static INVALIDATE_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(INVALIDATE));
+static EXTEND_SCRIPT: std::sync::LazyLock<Script> =
+    std::sync::LazyLock::new(|| Script::new(EXTEND));
 
 #[derive(Debug, Default)]
 pub struct Distrusted {
@@ -279,25 +323,19 @@ fn noun(subject: Subject) -> &'static str {
     }
 }
 
-fn refusal(l: &Limit, now: OffsetDateTime, retry: i64) -> Refusal {
+enum Why {
+    Over(i64),
+    Busy,
+}
+
+fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
     let scope = if l.model.is_some() {
         " for this model"
     } else {
         ""
     };
-    if l.kind.is_rate() {
-        let secs = u64::try_from(retry.max(1)).unwrap_or(1);
-        Refusal {
-            status: 429,
-            message: format!(
-                "Rate limit reached: {} {}{scope}; retry in {secs} seconds.",
-                noun(l.subject),
-                l.describe()
-            ),
-            retry_after: Some(Duration::from_secs(secs)),
-        }
-    } else if retry > 0 {
-        Refusal {
+    match why {
+        Why::Busy => Refusal {
             status: 429,
             message: format!(
                 "{} {}{scope} is nearly used up by requests in progress; retry in a moment.",
@@ -305,26 +343,39 @@ fn refusal(l: &Limit, now: OffsetDateTime, retry: i64) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
+        },
+        Why::Over(retry) if l.kind.is_rate() => {
+            let secs = u64::try_from(retry.max(1)).unwrap_or(1);
+            Refusal {
+                status: 429,
+                message: format!(
+                    "Rate limit reached: {} {}{scope}; retry in {secs} seconds.",
+                    noun(l.subject),
+                    l.describe()
+                ),
+                retry_after: Some(Duration::from_secs(secs)),
+            }
         }
-    } else {
-        let resets = l.period.resets_at(now).map_or_else(
-            || "it does not reset, so raise the limit to continue.".to_owned(),
-            |t| {
-                format!(
-                    "it resets at {}.",
-                    t.format(&time::format_description::well_known::Rfc3339)
-                        .unwrap_or_default()
-                )
-            },
-        );
-        Refusal {
-            status: 429,
-            message: format!(
-                "Budget used up: {} {}{scope}; {resets}",
-                noun(l.subject),
-                l.describe()
-            ),
-            retry_after: None,
+        Why::Over(_) => {
+            let resets = l.period.resets_at(now).map_or_else(
+                || "it does not reset, so raise the limit to continue.".to_owned(),
+                |t| {
+                    format!(
+                        "it resets at {}.",
+                        t.format(&time::format_description::well_known::Rfc3339)
+                            .unwrap_or_default()
+                    )
+                },
+            );
+            Refusal {
+                status: 429,
+                message: format!(
+                    "Budget used up: {} {}{scope}; {resets}",
+                    noun(l.subject),
+                    l.describe()
+                ),
+                retry_after: None,
+            }
         }
     }
 }
@@ -378,6 +429,22 @@ async fn rebuild(
     Ok(())
 }
 
+async fn rebuild_once(
+    state: &AppState,
+    project: Uuid,
+    l: &Limit,
+    now: OffsetDateTime,
+) -> Result<(), Arc<LimitsError>> {
+    let key = state.valkey.key(&l.counter(now));
+    let (st, limit) = (state.clone(), l.clone());
+    state
+        .rebuilds
+        .run(key, move || async move {
+            rebuild(&st, project, &limit, now).await
+        })
+        .await
+}
+
 #[derive(Debug, Default)]
 pub struct ValkeyLimits;
 
@@ -386,7 +453,7 @@ impl Limits for ValkeyLimits {
         &'a self,
         state: &'a AppState,
         a: &'a Admission,
-    ) -> BoxFuture<'a, Result<(), Refusal>> {
+    ) -> BoxFuture<'a, Result<Reservation, Refusal>> {
         Box::pin(async move {
             let all = match project_limits(state, a.caller.project_id).await {
                 Ok(l) => l,
@@ -409,23 +476,26 @@ impl Limits for ValkeyLimits {
                 a.catalogue_model_id,
             );
             if applicable.is_empty() {
-                return Ok(());
+                return Ok(Reservation::default());
             }
             if let Err(e) = settle(state, &applicable, a.at).await {
                 return fail(&applicable, &e);
             }
             for attempt in 0..2 {
+                let refused = |i: usize, why: Why| {
+                    let l = applicable.get(i).copied().ok_or_else(unavailable)?;
+                    metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
+                    Err(refusal(l, a.at, why))
+                };
                 match run_admit(state, a, &applicable).await {
-                    Ok(Admit::Pass) => return Ok(()),
-                    Ok(Admit::Refused(i, retry)) => {
-                        let l = applicable.get(i).copied().ok_or_else(unavailable)?;
-                        metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
-                        return Err(refusal(l, a.at, retry));
-                    }
+                    Ok(Admit::Pass) => return Ok(reservation(state, a, &applicable)),
+                    Ok(Admit::Refused(i, retry)) => return refused(i, Why::Over(retry)),
+                    Ok(Admit::Busy(i)) => return refused(i, Why::Busy),
                     Ok(Admit::Missing(list)) if attempt == 0 => {
                         for i in list {
                             if let Some(l) = applicable.get(i)
-                                && let Err(e) = rebuild(state, a.caller.project_id, l, a.at).await
+                                && let Err(e) =
+                                    rebuild_once(state, a.caller.project_id, l, a.at).await
                             {
                                 return fail(&applicable, &e);
                             }
@@ -451,7 +521,43 @@ fn unavailable() -> Refusal {
     }
 }
 
-fn fail(applicable: &[&Limit], error: &LimitsError) -> Result<(), Refusal> {
+fn reserves(l: &Limit) -> bool {
+    l.kind == Kind::TokenRate || (!l.kind.is_rate() && l.enforced())
+}
+
+fn reservation(state: &AppState, a: &Admission, applicable: &[&Limit]) -> Reservation {
+    Reservation {
+        counters: applicable
+            .iter()
+            .filter(|l| reserves(l))
+            .map(|l| state.valkey.key(&l.counter(a.at)))
+            .collect(),
+        ttl: in_flight_ttl(a.timeout),
+    }
+}
+
+pub async fn extend(
+    state: &AppState,
+    held: &Reservation,
+    request_id: &str,
+) -> Result<(), LimitsError> {
+    if !held.is_held() {
+        return Ok(());
+    }
+    let until = state.clock.now().unix_timestamp().saturating_add(held.ttl);
+    let mut script = EXTEND_SCRIPT.prepare_invoke();
+    for key in &held.counters {
+        script.key(key);
+    }
+    script.arg(request_id).arg(until).arg(held.ttl);
+    let mut conn = state.valkey.conn();
+    tokio::time::timeout(VALKEY_DEADLINE, script.invoke_async::<i64>(&mut conn))
+        .await
+        .map_err(|_| LimitsError::Timeout)??;
+    Ok(())
+}
+
+fn fail(applicable: &[&Limit], error: &LimitsError) -> Result<Reservation, Refusal> {
     metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "limits").increment(1);
     if applicable.iter().any(|l| !l.kind.is_rate() && l.hard) {
         tracing::warn!(
@@ -465,13 +571,14 @@ fn fail(applicable: &[&Limit], error: &LimitsError) -> Result<(), Refusal> {
             "limit counters unavailable; the request passes unchecked"
         );
         metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
-        Ok(())
+        Ok(Reservation::default())
     }
 }
 
 enum Admit {
     Pass,
     Refused(usize, i64),
+    Busy(usize),
     Missing(Vec<usize>),
 }
 
@@ -488,7 +595,9 @@ async fn run_admit(
             .key(state.valkey.key(&l.counter(a.at)))
             .arg(script_type(l.kind))
             .arg(l.units())
-            .arg(if l.enforced() { "1" } else { "0" });
+            .arg(if l.enforced() { "1" } else { "0" })
+            .arg(a.worst.units(l.kind))
+            .arg(if a.worst.bounded { "1" } else { "0" });
     }
     script.arg(in_flight_ttl(a.timeout));
     let mut conn = state.valkey.conn();
@@ -499,6 +608,7 @@ async fn run_admit(
     Ok(match out.as_slice() {
         [0] => Admit::Pass,
         [1, i, retry] => Admit::Refused(index(*i), *retry),
+        [3, i] => Admit::Busy(index(*i)),
         [2, rest @ ..] => Admit::Missing(rest.iter().map(|i| index(*i)).collect()),
         other => return Err(LimitsError::Protocol(other.to_vec())),
     })

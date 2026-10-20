@@ -445,15 +445,17 @@ impl BlockEncoder {
                 to_raw(&own_ext(w, &b.extras))?
             }
             Block::ToolCall(c) => {
+                if self.side == Side::Reply && !own && !c.arguments.is_object() {
+                    return Err(KppError::provider(format!(
+                        "The provider returned arguments for the tool call `{}` that are not a JSON object, which an Anthropic Messages reply cannot carry; send the request again, or raise `max_tokens` if the reply was cut off.",
+                        c.name
+                    )));
+                }
                 let w = ToolUseW {
                     ty: "tool_use".into(),
                     id: self.id(&c.id),
                     name: self.name(&c.name),
-                    input: if self.side == Side::Reply && !own && !c.arguments.is_object() {
-                        empty_object()
-                    } else {
-                        c.arguments.clone().into_inner()
-                    },
+                    input: c.arguments.clone().into_inner(),
                     cache_control: c.cache.as_ref().map(encode_cache),
                 };
                 to_raw(&own_ext(w, &c.extras))?

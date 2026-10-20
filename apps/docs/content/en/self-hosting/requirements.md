@@ -24,11 +24,16 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Direction | Ports or hosts | For |
 | --- | --- | --- |
 | Incoming | TCP ports 80 and 443, and UDP port 443 for HTTP/3 | The certificate and HTTPS |
-| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai`, `api.groq.com`, `openrouter.ai` | The providers you use; a changed base URL ([provider calls](configuration.md#provider-calls)) replaces its host |
+| Outgoing | `api.openai.com`, `api.anthropic.com`, `api.deepseek.com`, `api.x.ai`, `api.together.ai`, `api.groq.com`, `openrouter.ai`, or the base URL you set for a provider ([provider settings](configuration.md#provider-settings)) | The providers you use |
 | Outgoing | `models.dev` | Model data, refreshed once a day |
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, twice a day |
-| Outgoing | `github.com`, `objects.githubusercontent.com`, `ghcr.io` | The updater |
+| Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |
+| Outgoing | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker pulling Kaeso's images, when you install or update |
+| Outgoing | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker pulling the images of Caddy, PostgreSQL, ClickHouse, Valkey and the updater's socket proxy |
+| Outgoing | `github.com`, `release-assets.githubusercontent.com` | Downloading a release's `compose.yaml` and `release.json`, by hand or by the updater |
+| Outgoing | `api.github.com` | The updater, and `gh attestation verify`, fetching a release's attestations |
 | Outgoing | Your SMTP server | Sign-in links, invitations, alerts and security notices ([email](email.md)) |
+| Outgoing | Your organizations' identity providers | Single sign-on, when an organization connects one ([sign-in](sign-in.md)) |
 
 Without internet access, Kaeso works with the model data built into the release, and you update by hand. Turn off the outgoing checks as [installs without internet access](upgrades.md#installs-without-internet-access) shows.
 

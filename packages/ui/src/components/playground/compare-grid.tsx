@@ -140,7 +140,7 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
   return (
     <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex h-full min-h-0 min-w-0 flex-col", className)}>
       {count > 1 || onAdd ? (
-        <div className="flex h-44 shrink-0 items-center gap-4 px-8 hairline-b md:hidden">
+        <div className="flex h-44 shrink-0 items-center gap-4 px-24 hairline-b md:hidden">
           <IconButton
             icon={icons.chevronLeft}
             aria-label={t("compareGrid.previousColumn", "Previous column")}
@@ -248,7 +248,7 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
         className,
       )}
     >
-      <header className="flex h-52 min-w-0 items-center gap-4 pr-10 pl-8 hairline-b">
+      <header className="flex h-52 min-w-0 items-center gap-4 px-24 hairline-b">
         <div className="flex min-w-0 flex-1 items-center">{header}</div>
         {actions}
         {onRemove && count > 1 && (
@@ -263,11 +263,11 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
         role="region"
         className="relative min-h-0 overflow-y-auto overscroll-contain scrollbar-quiet scroll-fade-y focus-ring-inset"
       >
-        <div ref={content} className="flex min-h-full flex-col px-16 pt-16 pb-24">
+        <div ref={content} className="flex min-h-full flex-col px-24 pt-16 pb-24">
           {children}
         </div>
       </div>
-      {footer !== undefined && footer !== null && <footer className="flex min-h-44 min-w-0 items-center px-16 pt-8 pb-12">{footer}</footer>}
+      {footer !== undefined && footer !== null && <footer className="flex min-h-44 min-w-0 items-center px-24 pt-8 pb-12">{footer}</footer>}
     </section>
   );
 });

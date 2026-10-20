@@ -95,8 +95,9 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   };
 
   const base = useMemo(() => logs.data?.pages.flatMap((p) => p.data) ?? [], [logs.data]);
-  const { rows, pending, fresh, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = logs;
+  const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
+  const { isFetchingNextPage, fetchNextPage } = logs;
+  const hasNextPage = logs.hasNextPage && !cut;
   const loadMore = useEffectEvent(() => void fetchNextPage());
   useEffect(() => {
     const more = scroller.current?.querySelector("nav");
@@ -365,7 +366,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                 }
               />
             }
-            hasMore={logs.hasNextPage}
+            hasMore={hasNextPage}
             loadingMore={logs.isFetchingNextPage}
             onLoadMore={() => void logs.fetchNextPage()}
             onRowClick={(r) => setSearch({ log: r.id })}

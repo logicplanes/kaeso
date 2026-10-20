@@ -547,6 +547,8 @@ async fn a_members_budgets_count_in_each_project_and_org_on_their_own() {
     first.used(&env, &tokens[0], "56").await;
     elsewhere.used(&env, &tokens[2], "0").await;
 
+    env.app.state.in_flight.settled().await;
+
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
@@ -767,6 +769,7 @@ async fn counters_are_rebuilt_from_postgres_after_valkey_loses_them() {
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
     used(&env, lim["id"].as_str().unwrap(), "56").await;
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
@@ -858,8 +861,13 @@ fn held_at(gate: &Gate, text: &str) -> Value {
 }
 
 async fn wave(env: &Env, key: &str, n: usize) -> Vec<Answer> {
+    wave_of(env, key, n, 256).await.0
+}
+
+async fn wave_of(env: &Env, key: &str, n: usize, max_tokens: u64) -> (Vec<Answer>, i64) {
     let mut gate = env.mock.gate();
-    let body = held_at(&gate, "Hi");
+    let body = capped(&format!("Hi {}", gate.marker()), max_tokens);
+    let most = worst(&body);
     let mut calls: FuturesUnordered<_> = (0..n)
         .map(|_| call(env, "/v1/messages", Some(key), true, Some(body.clone())))
         .collect();
@@ -875,7 +883,7 @@ async fn wave(env: &Env, key: &str, n: usize) -> Vec<Answer> {
             () = gate.next_arrival(), if !opened => {}
         }
     }
-    answers
+    (answers, most)
 }
 
 fn passed(answers: &[Answer]) -> usize {
@@ -902,29 +910,48 @@ async fn lose_valkey(env: &Env) {
 }
 
 #[tokio::test]
-async fn a_rebuilt_budget_projects_requests_in_flight_at_the_period_average() {
+async fn a_rebuilt_budget_reserves_at_least_the_period_average() {
+    use kaeso_core::clock::Clock;
     let env = common::v1::env(None, None).await;
-    let (secret, id) = key_of(&env, "k", json!({})).await;
-    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "day", "amount": 400 })).await;
-    for _ in 0..5 {
-        assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
-    }
-    used(&env, lim["id"].as_str().unwrap(), &(5 * TOKENS).to_string()).await;
-    kaeso_server::services::usage::flush(&env.app.state)
-        .await
-        .unwrap();
-    lose_valkey(&env).await;
-    let answers = wave(&env, &secret, 4).await;
+    let id = common::uuid;
+    let (secret, key) = key_of(&env, "k", json!({})).await;
+    kaeso_store::pg::limits::add_usage(
+        &env.app.state.pg,
+        &[kaeso_store::pg::limits::UsageRow {
+            day: env.app.clock.now().date(),
+            org_id: id(&env.owner.org_id),
+            project_id: id(&env.project),
+            user_id: Some(id(&env.owner.user_id)),
+            service_account_id: None,
+            api_key_id: Some(id(&key)),
+            catalogue_model_id: None,
+            model_id: "claude-haiku-4-5".into(),
+            provider: "anthropic".into(),
+            requests: 5,
+            errors: 0,
+            input_tokens: 200,
+            output_tokens: 300,
+            cache_read_tokens: 0,
+            cache_write_tokens: 0,
+            reasoning_tokens: 0,
+            cost: rust_decimal::Decimal::ZERO,
+        }],
+    )
+    .await
+    .unwrap();
+    limit(&env, json!({ "level": "key", "key": key, "kind": "token_budget", "period": "day", "amount": 500 + 3 * 100 + 99 })).await;
+    let (answers, most) = wave_of(&env, &secret, 4, 1).await;
+    assert!(most < 100, "{most}");
     assert_eq!(
         passed(&answers),
-        4,
+        3,
         "{:?}",
         answers.iter().map(Answer::text).collect::<Vec<_>>()
     );
 }
 
 #[tokio::test]
-async fn a_new_period_projects_requests_in_flight_at_the_recent_average() {
+async fn a_new_period_reserves_at_least_the_recent_average() {
     use kaeso_core::clock::Clock;
     let env = common::v1::env(None, None).await;
     let id = common::uuid;
@@ -944,8 +971,8 @@ async fn a_new_period_projects_requests_in_flight_at_the_recent_average() {
             provider: "anthropic".into(),
             requests: 40,
             errors: 30,
-            input_tokens: 100,
-            output_tokens: 180,
+            input_tokens: 200,
+            output_tokens: 300,
             cache_read_tokens: 0,
             cache_write_tokens: 0,
             reasoning_tokens: 0,
@@ -955,17 +982,23 @@ async fn a_new_period_projects_requests_in_flight_at_the_recent_average() {
     .await
     .unwrap();
     limit(&env, json!({ "level": "key", "key": key, "kind": "token_budget", "period": "day", "amount": 200 })).await;
-    let answers = wave(&env, &secret, 9).await;
+    let (answers, most) = wave_of(&env, &secret, 9, 1).await;
+    assert!(most < 50, "{most}");
     assert_eq!(
         passed(&answers),
-        8,
+        4,
         "{:?}",
         answers.iter().map(Answer::text).collect::<Vec<_>>()
     );
     let (fresh, fresh_id) = key_of(&env, "fresh", json!({})).await;
     limit(&env, json!({ "level": "key", "key": fresh_id, "kind": "token_budget", "period": "day", "amount": 200 })).await;
-    let answers = wave(&env, &fresh, 4).await;
-    assert_eq!(passed(&answers), 1);
+    let (answers, most) = wave_of(&env, &fresh, 9, 1).await;
+    assert_eq!(
+        passed(&answers),
+        usize::try_from(200 / most).unwrap().min(9),
+        "{:?}",
+        answers.iter().map(Answer::text).collect::<Vec<_>>()
+    );
     assert!(
         answers
             .iter()
@@ -1095,6 +1128,7 @@ async fn a_free_model_runs_requests_side_by_side_under_a_hard_spend_budget() {
         answers.iter().map(Answer::text).collect::<Vec<_>>()
     );
     used(&env, lim["id"].as_str().unwrap(), "0").await;
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
@@ -1109,47 +1143,59 @@ async fn a_free_model_runs_requests_side_by_side_under_a_hard_spend_budget() {
 }
 
 #[tokio::test]
-async fn a_fresh_budget_runs_one_request_until_one_has_finished() {
+async fn a_request_without_an_output_bound_runs_alone_under_a_fresh_budget() {
+    use kaeso_core::clock::Clock;
+    use kaeso_server::model_api::hooks::{Admission, Caller, Limits};
     let env = common::v1::env(None, None).await;
-    let (secret, id) = key_of(&env, "k", json!({})).await;
-    limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "month", "amount": 1 })).await;
-    let mut gate = env.mock.gate();
-    let first = call(
-        &env,
-        "/v1/messages",
-        Some(&secret),
-        true,
-        Some(held_at(&gate, "Hi")),
-    );
-    let second = async {
-        gate.wait_for(1).await;
-        let refused = ask(&env, &secret).await;
-        gate.open();
-        refused
+    let state = &env.app.state;
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let admit = |key: uuid::Uuid, bounded: bool| {
+        let admission = Admission {
+            request_id: kaeso_core::id::RequestId::new(),
+            caller: Caller {
+                org_id: org.uuid(),
+                project_id: project.uuid(),
+                key_id: Some(key),
+                user_id: None,
+                service_account_id: None,
+            },
+            catalogue_model_id: uuid::Uuid::nil(),
+            kind: kaeso_kpp::RequestKind::Generate,
+            at: env.app.clock.now(),
+            timeout: Duration::from_secs(600),
+            worst: kaeso_core::limits::WorstCase {
+                tokens: 10,
+                nano_usd: 1_000,
+                bounded,
+            },
+        };
+        async move {
+            let limits = kaeso_server::services::limits::ValkeyLimits;
+            limits.admit(state, &admission).await.map(|_| ())
+        }
     };
-    let (first, refused) = tokio::join!(first, second);
-    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
-    assert_eq!(
-        refused.status,
-        StatusCode::TOO_MANY_REQUESTS,
-        "{}",
-        refused.text()
-    );
-    assert_eq!(refused.header("retry-after"), Some("1"));
-    assert!(
-        refused
-            .text()
-            .contains("nearly used up by requests in progress"),
-        "{}",
-        refused.text()
-    );
-    let answers = wave(&env, &secret, 2).await;
-    assert_eq!(
-        passed(&answers),
-        2,
-        "{:?}",
-        answers.iter().map(Answer::text).collect::<Vec<_>>()
-    );
+    for (name, bounded) in [("unbounded", false), ("bounded", true)] {
+        let (_, id) = key_of(&env, name, json!({})).await;
+        limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "month", "amount": 1 })).await;
+        let key: kaeso_core::id::ApiKeyId = id.parse().unwrap();
+        assert_eq!(admit(key.uuid(), bounded).await, Ok(()), "{name}");
+        let second = admit(key.uuid(), bounded).await;
+        if bounded {
+            assert_eq!(second, Ok(()));
+        } else {
+            let r = second.unwrap_err();
+            assert_eq!(
+                (r.status, r.retry_after),
+                (429, Some(Duration::from_secs(1)))
+            );
+            assert!(
+                r.message.contains("nearly used up by requests in progress"),
+                "{}",
+                r.message
+            );
+        }
+    }
 }
 
 #[tokio::test]
@@ -1173,10 +1219,15 @@ async fn requests_count_as_in_flight_for_as_long_as_their_model_may_take() {
             kind: kaeso_kpp::RequestKind::Generate,
             at,
             timeout: Duration::from_secs(timeout),
+            worst: kaeso_core::limits::WorstCase {
+                tokens: 0,
+                nano_usd: 600_000_000,
+                bounded: true,
+            },
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;
-            limits.admit(state, &admission).await
+            limits.admit(state, &admission).await.map(|_| ())
         }
     };
     use kaeso_core::clock::Clock;
@@ -1214,6 +1265,7 @@ async fn requests_are_refused_while_the_limits_cannot_be_loaded() {
         )
     };
     assert_eq!(ask().await.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
     let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
     kaeso_server::services::limits::forget(&env.app.state, project.uuid()).await;
     env.app.state.pg.close().await;
@@ -1277,6 +1329,7 @@ async fn a_budget_charge_lost_to_a_valkey_outage_is_counted_before_the_next_requ
         env.app.state.distrusted.len() == 1
     })
     .await;
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
@@ -1309,6 +1362,7 @@ async fn a_budget_charge_without_an_answer_is_dropped_at_once_and_rebuilt() {
     })
     .await;
     assert!(env.app.state.distrusted.is_empty());
+    env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
         .unwrap();
@@ -1317,4 +1371,199 @@ async fn a_budget_charge_without_an_answer_is_dropped_at_once_and_rebuilt() {
         StatusCode::TOO_MANY_REQUESTS
     );
     used(&env, lim_id, "56").await;
+}
+
+fn capped(text: &str, max_tokens: u64) -> Value {
+    json!({ "model": "claude-haiku-4-5", "max_tokens": max_tokens, "messages": [{ "role": "user", "content": text }] })
+}
+
+fn worst(body: &Value) -> i64 {
+    let bytes = serde_json::to_vec(body).unwrap().len() as u64;
+    let input = kaeso_core::estimate::tokens_of_bytes(bytes);
+    i64::try_from(input + body["max_tokens"].as_u64().unwrap()).unwrap()
+}
+
+fn busy(r: &Answer, what: &str) {
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.header("retry-after"), Some("1"));
+    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
+    assert_eq!(
+        message,
+        format!("This key's {what} is nearly used up by requests in progress; retry in a moment.")
+    );
+}
+
+#[tokio::test]
+async fn requests_in_progress_hold_what_they_may_cost_at_most() {
+    let env = common::v1::env(None, None).await;
+    for (kind, period, what) in [
+        ("token_budget", "day", "daily token budget of"),
+        ("token_rate", "minute", "token rate of"),
+    ] {
+        let (secret, id) = key_of(&env, kind, json!({})).await;
+        let mut gate = env.mock.gate();
+        let big = capped(&format!("Big {}", gate.marker()), 500);
+        let small = capped(&format!("Small {}", gate.marker()), 10);
+        let another = capped("Another", 500);
+        let amount = worst(&big) + worst(&small);
+        assert!(worst(&another) > worst(&small));
+        limit(
+            &env,
+            json!({ "level": "key", "key": id, "kind": kind, "period": period, "amount": amount }),
+        )
+        .await;
+        let first = call(&env, "/v1/messages", Some(&secret), true, Some(big));
+        let others = async {
+            gate.wait_for(1).await;
+            let refused = call(
+                &env,
+                "/v1/messages",
+                Some(&secret),
+                true,
+                Some(another.clone()),
+            )
+            .await;
+            let second = call(&env, "/v1/messages", Some(&secret), true, Some(small));
+            let open = async {
+                gate.wait_for(2).await;
+                gate.open();
+            };
+            let (second, ()) = tokio::join!(second, open);
+            (refused, second)
+        };
+        let (first, (refused, second)) = tokio::join!(first, others);
+        assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+        assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+        busy(
+            &refused,
+            &format!(
+                "{what} {amount} tokens{}",
+                if kind == "token_rate" {
+                    " per minute"
+                } else {
+                    ""
+                }
+            ),
+        );
+        let alone = call(&env, "/v1/messages", Some(&secret), true, Some(another)).await;
+        assert_eq!(alone.status, StatusCode::OK, "{kind}: {}", alone.text());
+    }
+}
+
+#[tokio::test]
+async fn a_budget_used_up_exactly_refuses_the_next_request() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "day", "amount": 2 * TOKENS })).await;
+    for _ in 0..2 {
+        assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    }
+    used(&env, lim["id"].as_str().unwrap(), &(2 * TOKENS).to_string()).await;
+    let r = ask(&env, &secret).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.header("retry-after"), None);
+    assert!(r.text().contains("Budget used up"), "{}", r.text());
+}
+
+#[tokio::test]
+async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
+    use axum::body::Body;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let env = common::v1::env(None, Some(&[("KAESO_STREAMS_KEEPALIVE_INTERVAL", "0")])).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let gate = env.mock.gate();
+    let mut long = capped(&format!("Long {}", gate.steps_marker()), 500);
+    long["stream"] = json!(true);
+    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": worst(&long) + 100 })).await;
+    let req = axum::http::Request::builder()
+        .uri("/v1/messages")
+        .method("POST")
+        .header("x-api-key", &secret)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .body(Body::from(serde_json::to_vec(&long).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let mut body = resp.into_body();
+    assert!(body.frame().await.unwrap().unwrap().is_data());
+    let ttl = i64::try_from(env.app.state.config.upstream.request_timeout.as_secs()).unwrap() + 300;
+    env.app.clock.advance(time::Duration::seconds(ttl - 30));
+    gate.step();
+    assert!(body.frame().await.unwrap().unwrap().is_data());
+    env.app.clock.advance(time::Duration::seconds(60));
+    let refused = ask(&env, &secret).await;
+    assert_eq!(
+        refused.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.header("retry-after"), Some("1"));
+    gate.finish();
+    let mut text = Vec::new();
+    while let Some(frame) = body.frame().await {
+        if let Ok(data) = frame.unwrap().into_data() {
+            text.extend_from_slice(&data);
+        }
+    }
+    assert!(String::from_utf8(text).unwrap().contains("message_stop"));
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_cancelled_request_is_charged_its_input_and_frees_its_reservation() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let mut gate = env.mock.gate();
+    let held = capped(&format!("Held {}", gate.marker()), 500);
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "day", "amount": worst(&held) + 100 })).await;
+    let mut sent = Box::pin(call(&env, "/v1/messages", Some(&secret), true, Some(held)));
+    tokio::select! {
+        r = &mut sent => panic!("the held request answered: {}", r.text()),
+        () = gate.wait_for(1) => {}
+    }
+    let refused = ask(&env, &secret).await;
+    assert_eq!(
+        refused.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        refused.text()
+    );
+    drop(sent);
+    common::eventually("the provider request is cancelled", || async {
+        env.mock.abandoned() == 1
+    })
+    .await;
+    env.app.state.in_flight.settled().await;
+    let upstream = env
+        .mock
+        .received()
+        .into_iter()
+        .rev()
+        .find(|r| r.path == "/v1/messages")
+        .unwrap();
+    let input = kaeso_core::estimate::tokens_of_bytes(upstream.body.len() as u64);
+    used(&env, lim["id"].as_str().unwrap(), &input.to_string()).await;
+    gate.open();
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_wave_after_valkey_loses_a_counter_rebuilds_it_and_counts_every_request() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": 100000 })).await;
+    let lim = lim["id"].as_str().unwrap();
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    used(&env, lim, &TOKENS.to_string()).await;
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
+    lose_valkey(&env).await;
+    let answers = wave(&env, &secret, 20).await;
+    assert_eq!(passed(&answers), 20);
+    used(&env, lim, &(21 * TOKENS).to_string()).await;
+    assert_eq!(env.app.state.rebuilds.len(), 0);
 }

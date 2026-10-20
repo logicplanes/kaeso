@@ -27,18 +27,19 @@ description: 智能体如何使用本组件库构建 Kaeso 界面。编写界面
 
 组件背后的设计系统，位于 `node_modules/@logicplanes/kaeso-ui/foundations/`。按手头的工作阅读对应文件：
 
-| 文件                           | 何时阅读                       |
-| ------------------------------ | ------------------------------ |
-| `foundations/tokens.md`        | 编写任何类名时：只存在令牌值   |
-| `foundations/color.md`         | 选择表面、文字角色或状态色时   |
-| `foundations/typography.md`    | 排版文字、数字、ID 或代码时    |
-| `foundations/shape.md`         | 选择圆角、嵌套表面时           |
-| `foundations/elevation.md`     | 绘制线条、描边环或凸起表面时   |
-| `foundations/motion.md`        | 添加动画或显示加载时           |
-| `foundations/icons.md`         | 放置图标时                     |
-| `foundations/writing.md`       | 编写标签、消息、空状态或错误时 |
-| `foundations/accessibility.md` | 构建任何可交互内容时           |
-| `foundations/psychology.md`    | 审查界面时：27 条感知规则      |
+| 文件                           | 何时阅读                         |
+| ------------------------------ | -------------------------------- |
+| `foundations/tokens.md`        | 编写任何类名时：只存在令牌值     |
+| `foundations/color.md`         | 选择表面、文字角色或状态色时     |
+| `foundations/typography.md`    | 排版文字、数字、ID 或代码时      |
+| `foundations/shape.md`         | 选择圆角、嵌套表面时             |
+| `foundations/elevation.md`     | 绘制线条、描边环或凸起表面时     |
+| `foundations/layout.md`        | 在页面上放置任何内容时：统一边距 |
+| `foundations/motion.md`        | 添加动画或显示加载时             |
+| `foundations/icons.md`         | 放置图标时                       |
+| `foundations/writing.md`       | 编写标签、消息、空状态或错误时   |
+| `foundations/accessibility.md` | 构建任何可交互内容时             |
+| `foundations/psychology.md`    | 审查界面时：27 条感知规则        |
 
 ## 机器可读
 
@@ -88,6 +89,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 9. **使用图标词汇表**：`icons.key`、`icons.model`，绝不按外观挑选图标。
 10. **文案遵循统一语气**：句首大写，按钮以动词开头，不用感叹号或表情符号，错误提示要说明下一步该做什么。
 11. **留出空间。** 让面板保持疏朗：组件自带间距，不要用额外的包裹层、边框或标题塞满界面。元素更少，每个都清晰。
+12. **每页一条边。** 每个带边界的元素，从按钮到行的悬停底色，都从 24px 页边距开始，元素内的文字再向内 12px。不要用负外边距把组件拉进页边距。
 
 ## 哪个组件用于哪项工作
 

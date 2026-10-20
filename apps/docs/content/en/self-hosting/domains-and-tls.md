@@ -57,7 +57,7 @@ Then route these paths:
 Set up the proxy for Kaeso:
 
 - Turn off response buffering for `/v1/`, so streamed replies reach apps as they arrive.
-- Pass `X-Forwarded-For`. The gateway believes it only from `KAESO_TRUSTED_PROXIES`, the private networks by default. Behind an untrusted proxy, logs and [API key throttling](configuration.md#api-key-throttling) see every client as the proxy.
+- Pass `X-Forwarded-For`. The gateway believes it only from `KAESO_TRUSTED_PROXIES`. The Compose package sets it to the loopback and private networks, which only its own containers and the host's published ports reach. Elsewhere it is loopback only, so set it to your proxy's address. Behind an untrusted proxy, logs and [API key throttling](configuration.md#api-key-throttling) see every client as the proxy.
 - If people reach Kaeso at another address than `https://` and `KAESO_DOMAIN`, set `KAESO_PUBLIC_URL` in `.env` to that address.
 - Never route the metrics port, 9100.
 

@@ -456,3 +456,55 @@ fn decode_errors_name_the_field_without_parser_positions() {
         OpenAiChat::decode_response(200, &HeaderList::new(), br#"{"id":1}"#, &ctx).unwrap_err();
     assert!(!err.message.contains("column"), "{}", err.message);
 }
+
+#[test]
+fn a_tool_call_without_type_is_a_function_call_for_every_app() {
+    let body = json!({
+        "id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": "m",
+        "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
+            "role": "assistant", "content": null,
+            "tool_calls": [{"id": "call_1", "function": {"name": "get_weather", "arguments": "{\"city\":\"Oslo\"}"}}]
+        }}],
+        "usage": {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8}
+    });
+    let bytes = serde_json::to_vec(&body).unwrap();
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
+    let reply = OpenAiChat::decode_response(200, &HeaderList::new(), &bytes, &ctx).unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        unreachable!()
+    };
+    let [Block::ToolCall(call)] = resp.blocks.as_slice() else {
+        panic!("{:?}", resp.blocks)
+    };
+    assert_eq!(
+        (call.id.as_str(), call.name.as_str()),
+        ("call_1", "get_weather")
+    );
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
+    assert_json_eq(
+        "no type",
+        &bytes,
+        &OpenAiChat::encode_response(&reply, &enc).unwrap(),
+    );
+    let out = crate::anthropic_messages::AnthropicMessages::encode_response(&reply, &enc).unwrap();
+    let out: Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(
+        out["content"],
+        json!([{"type": "tool_use", "id": "call_1", "name": "get_weather", "input": {"city": "Oslo"}}])
+    );
+    let custom =
+        json!({"id": "call_2", "type": "custom", "custom": {"name": "grep", "input": "x"}});
+    let mut body = body;
+    body["choices"][0]["message"]["tool_calls"] = json!([custom]);
+    let reply = OpenAiChat::decode_response(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&body).unwrap(),
+        &ctx,
+    )
+    .unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        unreachable!()
+    };
+    assert!(matches!(resp.blocks.as_slice(), [Block::Unknown(_)]));
+}

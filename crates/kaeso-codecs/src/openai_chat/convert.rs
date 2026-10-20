@@ -20,6 +20,7 @@ use crate::wire::{
 
 pub(crate) const FORM_BREAKPOINT_MODE: &str = "mode";
 pub(crate) const FORM_ARGUMENTS: &str = "arguments";
+pub(crate) const FORM_NO_TYPE: &str = "no_type";
 pub(crate) const FORM_REFUSAL_PART: &str = "part";
 pub(crate) const FORM_BARE_FILE_DATA: &str = "bare_file_data";
 
@@ -425,7 +426,8 @@ pub(crate) fn decode_tool_call(
     name_back: &dyn Fn(&str) -> String,
 ) -> Result<Block, KppError> {
     let ty = type_tag(raw.as_raw()).ok().flatten();
-    if ty.as_deref() != Some("function") {
+    let untyped = ty.is_none() && has_function(raw);
+    if ty.as_deref() != Some("function") && !untyped {
         return Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone())));
     }
     let call: Ext<ToolCall> = parse_ext(raw.as_raw(), "tool call", from_provider)?;
@@ -448,7 +450,22 @@ pub(crate) fn decode_tool_call(
     if let Some(literal) = literal {
         block.extras.form.insert(FORM_ARGUMENTS.to_owned(), literal);
     }
+    if untyped {
+        block
+            .extras
+            .form
+            .insert(FORM_NO_TYPE.to_owned(), true.into());
+    }
     Ok(Block::ToolCall(block))
+}
+
+fn has_function(raw: &RawJson) -> bool {
+    #[derive(serde::Deserialize)]
+    struct Probe {
+        #[serde(default)]
+        function: Option<serde::de::IgnoredAny>,
+    }
+    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| p.function.is_some())
 }
 
 pub(crate) fn encode_tool_call(call: &ToolCallBlock, name: &str) -> Result<RawJson, KppError> {
@@ -456,9 +473,14 @@ pub(crate) fn encode_tool_call(call: &ToolCallBlock, name: &str) -> Result<RawJs
         name: name.to_owned(),
         arguments: arguments_text(call),
     };
+    let untyped = call.extras.is_from(DIALECT) && call.extras.form_flag(DIALECT, FORM_NO_TYPE);
     let wire = ToolCall {
         id: call.id.clone(),
-        ty: "function".to_owned(),
+        ty: if untyped {
+            String::new()
+        } else {
+            "function".to_owned()
+        },
         function: ext_nested(function, &call.extras, "function"),
     };
     to_raw(&ext_with(wire, &call.extras))

@@ -302,10 +302,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let models = kaeso_server::services::catalogue::project_models(&app.state, project_id.uuid())
         .await
         .unwrap();
-    let resolve = |n: &str| {
-        kaeso_core::catalogue::resolve::resolve(n, &models.entries, &models.aliases)
-            .map(|(e, _)| e.model_id.clone())
-    };
+    let resolve = |n: &str| models.catalogue.resolve(n).map(|(e, _)| e.model_id.clone());
     assert_eq!(resolve("chat-default").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("gpt-5").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("openai/gpt-4o").unwrap(), "gpt-4o");
@@ -324,10 +321,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
         .await
         .unwrap();
     assert_eq!(
-        kaeso_core::catalogue::resolve::resolve("chat-default", &models.entries, &models.aliases)
-            .unwrap()
-            .0
-            .model_id,
+        models.catalogue.resolve("chat-default").unwrap().0.model_id,
         "gpt-4o"
     );
     let gone = app
@@ -671,4 +665,72 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         )
         .await;
     assert_eq!(g.body["listed"], true, "{:?}", g.body);
+}
+
+async fn run_sync_job(app: &App) -> String {
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "models_dev_sync")
+        .unwrap();
+    kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap()
+}
+
+#[tokio::test]
+async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
+    let s = TestServices::start().await;
+    let body = Arc::new(Mutex::new((
+        200u16,
+        kaeso_core::models_dev::EMBEDDED.to_owned(),
+    )));
+    let url = stub_models_dev(body.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_MODELS_DEV_URL", url.as_str()),
+            ("KAESO_MODELS_DEV_SYNC", "true"),
+            ("KAESO_MODELS_DEV_INTERVAL", "6h"),
+        ],
+    )
+    .await;
+
+    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock
+        .advance(time::Duration::hours(6) - time::Duration::SECOND);
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock.advance(time::Duration::SECOND);
+
+    let mut changed: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
+    changed["openai"]["models"]["gpt-new"] = json!({ "id": "gpt-new", "name": "GPT New" });
+    body.lock().unwrap().1 = changed.to_string();
+    assert_eq!(
+        run_sync_job(&app).await,
+        "applied: 0 price changes, 0 delisted, 0 listed again"
+    );
+    assert!(
+        app.state
+            .models_dev
+            .current()
+            .snapshot
+            .model("openai", "gpt-new")
+            .is_some()
+    );
+    assert_eq!(run_sync_job(&app).await, "not due");
+
+    app.clock.advance(time::Duration::hours(6));
+    body.lock().unwrap().0 = 500;
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "models_dev_sync")
+        .unwrap();
+    assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
+    app.clock
+        .advance(time::Duration::hours(1) - time::Duration::SECOND);
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock.advance(time::Duration::SECOND);
+    body.lock().unwrap().0 = 200;
+    assert_eq!(run_sync_job(&app).await, "unchanged");
 }

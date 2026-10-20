@@ -41,7 +41,7 @@ async fn same_provider_calls_send_the_credential_and_only_kpp_output() {
     );
     assert_eq!(sent.header("anthropic-version"), Some("2023-06-01"));
 
-    let outcomes = env.capture.all();
+    let outcomes = env.outcomes().await;
     let o = outcomes.last().unwrap();
     assert_eq!(o.status, 200);
     assert_eq!(o.provider, Some("anthropic"));
@@ -889,4 +889,81 @@ async fn a_provider_response_beyond_the_limit_fails_in_the_apps_format() {
         streamed.text().contains("message_stop"),
         "streams are not capped by it"
     );
+}
+
+#[tokio::test]
+async fn a_request_cancelled_while_the_provider_works_is_charged_its_input() {
+    let env = env().await;
+    let mut gate = env.mock.gate();
+    let held = messages("claude-haiku-4-5", &format!("Hi {}", gate.marker()));
+    let mut sent = Box::pin(call(&env, "/v1/messages", Some(&env.key), true, Some(held)));
+    tokio::select! {
+        r = &mut sent => panic!("the held request answered: {}", r.text()),
+        () = gate.wait_for(1) => {}
+    }
+    drop(sent);
+    common::eventually("the provider request is cancelled", || async {
+        env.mock.abandoned() == 1
+    })
+    .await;
+    let o = env
+        .outcomes()
+        .await
+        .into_iter()
+        .find(|o| o.cancelled)
+        .expect("a cancelled outcome");
+    assert!(!o.stream);
+    assert_eq!(o.status, 499);
+    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
+    assert!(o.usage_estimated);
+    let upstream = env.mock.last().unwrap();
+    let usage = o.usage.unwrap();
+    assert_eq!(
+        (usage.input_tokens, usage.output_tokens),
+        (
+            kaeso_core::estimate::tokens_of_bytes(upstream.body.len() as u64),
+            0
+        )
+    );
+    gate.open();
+}
+
+#[tokio::test]
+async fn large_requests_are_translated_like_small_ones() {
+    let env = env().await;
+    let text = "a long document line\n".repeat(20_000);
+    assert!(text.len() > kaeso_server::model_api::pipeline::OFF_THREAD_BYTES);
+    for (path, anthropic, body) in [
+        (
+            "/v1/chat/completions",
+            false,
+            chat("claude-haiku-4-5", &text),
+        ),
+        ("/v1/messages", true, messages("gpt-4o", &text)),
+    ] {
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent: serde_json::Value =
+            serde_json::from_slice(&env.mock.last().unwrap().body).unwrap();
+        assert!(sent.to_string().contains("a long document line"), "{path}");
+    }
+    let mut broken = serde_json::to_vec(&chat("gpt-4o", &text)).unwrap();
+    broken.truncate(broken.len() - 2);
+    let r = env
+        .app
+        .router
+        .clone()
+        .oneshot(
+            Request::post("/v1/chat/completions")
+                .header("authorization", format!("Bearer {}", env.key))
+                .header("content-type", "application/json")
+                .body(Body::from(broken))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::BAD_REQUEST);
+    let body = r.into_body().collect().await.unwrap().to_bytes();
+    let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body["error"]["type"], "invalid_request_error", "{body}");
 }

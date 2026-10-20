@@ -23,6 +23,7 @@
   "keys.id": "ID",
   "keys.key": "Schlüssel",
   "keys.keys": "Schlüssel",
+  "keys.listFailed": "Die Schlüssel konnten nicht geladen werden",
   "keys.loadFailed": "Schlüssel konnte nicht geladen werden.",
   "keys.neverExpires": "Läuft nie ab",
   "keys.neverUsed": "Nie verwendet",

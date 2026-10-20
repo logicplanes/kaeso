@@ -233,45 +233,33 @@ async fn xai_errors_reach_each_app_in_its_own_error_format() {
 #[tokio::test]
 async fn a_wrong_xai_key_is_reported_as_a_refused_key() {
     let env = env().await;
-    let r = call(
-        &env,
-        "/v1/messages",
-        Some(&env.key),
-        true,
-        Some(messages(
-            "grok-4.3",
-            "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
-        )),
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{}", r.text());
-    let body = r.json();
-    assert_eq!(body["error"]["type"], "authentication_error");
-    assert!(
-        body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .starts_with("Incorrect API key provided")
-    );
-
-    let r = call(
-        &env,
-        "/v1/responses",
-        Some(&env.key),
-        false,
-        Some(json!({
-            "model": "grok-4.3",
-            "input": "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
-        })),
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(
-        r.json()["error"]["message"]
-            .as_str()
-            .unwrap()
-            .starts_with("Incorrect API key provided")
-    );
+    let key_refused = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
+    for (path, anthropic, body, kind) in [
+        (
+            "/v1/messages",
+            true,
+            messages(
+                "grok-4.3",
+                "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
+            ),
+            "api_error",
+        ),
+        (
+            "/v1/responses",
+            false,
+            json!({
+                "model": "grok-4.3",
+                "input": "Hi. [mock:error=providers/xai/recorded-invalid-api-key]",
+            }),
+            "server_error",
+        ),
+    ] {
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{path}: {}", r.text());
+        let error = &r.json()["error"];
+        assert_eq!(error["message"], key_refused, "{path}");
+        assert_eq!(error["type"], kind, "{path}");
+    }
 }
 
 #[tokio::test]

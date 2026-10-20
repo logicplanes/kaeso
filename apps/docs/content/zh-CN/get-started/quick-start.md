@@ -17,7 +17,7 @@ order: 1
 
 ## 下载 Compose 文件
 
-每个版本都会发布一个 `compose.yaml`，其中固定了该版本的网关和控制台镜像。把它下载到一个只有您能读取的新文件夹中：
+每个版本都会发布一个 `compose.yaml`，其中按版本和摘要固定了该版本的镜像。把它下载到一个只有您能读取的新文件夹中：
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
@@ -60,7 +60,7 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 主密钥用于加密 Kaeso 保存的服务商密钥。将一个主密钥生成到 `master-keys` 中，Compose 会把它作为 Docker secret 交给网关：
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:latest master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
 chmod 644 master-keys
 ```
 
