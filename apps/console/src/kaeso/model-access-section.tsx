@@ -9,7 +9,7 @@ import { catalogueQuery } from "~/api/queries/models";
 import { modelAccessQuery, type Principal } from "~/api/queries/members";
 import { joinList } from "~/format/labels";
 import { modelName } from "~/format/models";
-import { catalogueModelOption } from "./model-options";
+import { catalogueModelOption, keepChosen } from "./model-options";
 import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { useApiMutation } from "~/auth/mutation";
@@ -96,7 +96,7 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
             size="md"
             fullWidth
             placeholder={above}
-            options={options}
+            options={keepChosen(options, editing ?? [])}
             providers={providers}
             value={editing}
             onValueChange={setEditing}

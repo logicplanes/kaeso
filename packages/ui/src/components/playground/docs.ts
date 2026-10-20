@@ -43,7 +43,7 @@ export const docs = {
   },
   ModelPicker: {
     description:
-      "A model from a catalogue of any size: a pill showing the chosen model that opens a searchable list, grouped by provider under sticky captions with marks and counts, connected providers first and recent models on top. Each row shows the name, the id, capabilities, context and price; deprecated models wait behind a toggle.",
+      "A model from a catalogue of any size: a pill showing the chosen model that opens a searchable list, grouped by provider under sticky captions with marks and counts, connected providers first and recent models on top, with a Provider filter that lists only the providers whose models match the search. Each row shows the name, the id, capabilities, context and price; deprecated models wait behind a toggle.",
     props: {
       description: "One sentence of help under the label.",
       label: "The visible label.",

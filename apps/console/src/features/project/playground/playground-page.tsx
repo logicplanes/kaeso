@@ -57,7 +57,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   );
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
 
-  const callable = chat.filter((m) => m.provider_key);
+  const callable = chat.filter((m) => m.provider_key && m.availability !== "unavailable");
   const first = callable[0] ?? chat[0];
   const linked = parseModels(search.models);
   const refs = linked.length ? linked : [first ? modelRef(first) : ""];
@@ -73,7 +73,21 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
       }),
     [navigate, org, project],
   );
-  const setRefs = (next: string[]) => setSearch({ models: next.join(",") });
+  const fallback = first ? modelRef(first) : "";
+  const updateRefs = useCallback(
+    (next: (current: string[]) => string[]) =>
+      void navigate({
+        to: "/orgs/$org/projects/$project/playground",
+        params: { org, project },
+        search: (prev: Record<string, unknown>) => {
+          const current = validatePlaygroundSearch(prev);
+          const linkedNow = parseModels(current.models);
+          return patchSearch(current, { models: next(linkedNow.length ? linkedNow : [fallback]).join(",") });
+        },
+        replace: true,
+      }),
+    [navigate, org, project, fallback],
+  );
 
   const linkedParameters = useMemo(() => parametersOf(search), [search]);
   const [parameters, setParameters] = useState(linkedParameters);
@@ -102,14 +116,13 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
 
   const full = refs.length >= MAX_COLUMNS;
   const addColumn = () => {
-    const m = callable.find((x) => !refs.includes(modelRef(x))) ?? first;
-    if (full || !m) return;
+    if (full || !first) return;
     add();
-    setRefs([...refs, modelRef(m)]);
+    updateRefs((current) => [...current, modelRef(callable.find((x) => !current.includes(modelRef(x))) ?? first)]);
   };
   const removeColumn = (i: number) => {
     remove(i);
-    setRefs(refs.filter((_, j) => j !== i));
+    updateRefs((current) => current.filter((_, j) => j !== i));
   };
   const submit = (text: string) => {
     const sends = threads.flatMap((thread, i) => {
@@ -212,7 +225,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           value={m ? ref : null}
                           onValueChange={(v) => {
                             rememberModel(project, v);
-                            setRefs(refs.map((r, j) => (j === i ? v : r)));
+                            updateRefs((current) => current.map((r, j) => (j === i ? v : r)));
                           }}
                           options={options}
                           providers={pickerProviders}

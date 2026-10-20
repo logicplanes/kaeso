@@ -56,6 +56,7 @@ export function playgroundModel(overrides: Partial<PlaygroundModel> = {}): Playg
     cache_read_price: "0.075",
     cache_write_price: null,
     provider_key: true,
+    availability: "available",
     ...overrides,
   };
 }

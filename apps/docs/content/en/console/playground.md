@@ -8,7 +8,7 @@ The **Playground** sends a prompt to up to four of the project's models at once 
 
 ## Compare models
 
-1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project.
+1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider, or narrow the list to one provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project, or one marked [Unavailable](models-and-aliases.md) because the provider doesn't serve it to the project's key.
 2. Send a prompt to every model.
 3. Read the replies. Each shows the time to the first token, the total time, the tokens and the cost. A reply that failed shows the reason in its column, and one the model cut off says why, such as **Stopped at the output limit**; **Retry** sends that turn again.
 

@@ -8,7 +8,7 @@ Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugle
 
 ## Modelle vergleichen
 
-1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Suchen Sie nach Name, ID oder Anbieter; die Modelle sind nach Anbieter gruppiert, und die zuletzt gewählten stehen oben. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen.
+1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Suchen Sie nach Name, ID oder Anbieter, oder beschränken Sie die Liste auf einen Anbieter; die Modelle sind nach Anbieter gruppiert, und die zuletzt gewählten stehen oben. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen, ebenso wenig eines, das als [Nicht verfügbar](models-and-aliases.md) markiert ist, weil der Anbieter es dem Schlüssel des Projekts nicht anbietet.
 2. Senden Sie einen Prompt an alle Modelle.
 3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten. Eine fehlgeschlagene Antwort zeigt den Grund in ihrer Spalte, und eine, die das Modell abgebrochen hat, sagt warum, etwa **Am Ausgabelimit gestoppt**; **Erneut versuchen** sendet diesen Schritt noch einmal.
 
