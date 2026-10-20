@@ -24,6 +24,9 @@ import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { meQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
+import { isApiError } from "~/api/errors";
+import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
+import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk } from "~/features/public/form";
@@ -148,17 +151,6 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const off = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/me/totp");
-    },
-    invalidates: [["me"], ["session"]],
-    onSuccess: () => {
-      setTurningOff(false);
-      toast(t("account.twoFactorTurnedOff", "Two-factor authentication turned off"));
-    },
-    onError: () => setTurningOff(false),
-  });
   const regenerate = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/me/recovery-codes")),
     invalidates: [["me"]],
@@ -170,7 +162,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   return (
     <SettingsSection
       title={t("account.twoFactor", "Two-factor authentication")}
-      description={t("account.twoFactorHint", "An authenticator code at every password sign-in; sign-in links need none.")}
+      description={t("account.twoFactorHint", "An authenticator code at every password sign-in and sign-in link.")}
     >
       <SettingsGroup>
         {enabled ? (
@@ -197,7 +189,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         ) : (
           <SettingsRow
             title={t("account.authenticatorApp", "Authenticator app")}
-            description={t("account.authenticatorOff", "Off; password sign-ins need only the password.")}
+            description={t("account.authenticatorOff", "Off; signing in needs only the password or a sign-in link.")}
             control={
               <Button size="sm" variant="primary" onClick={() => setTwoFactor({ open: true, codes: null })}>
                 {t("account.setUp", "Set up")}
@@ -217,16 +209,9 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
           }}
         />
       </DialogScope>
-      <AlertDialog
-        open={turningOff}
-        onOpenChange={setTurningOff}
-        tone="danger"
-        title={t("account.turnOffConfirm", "Turn off two-factor authentication?")}
-        description={t("account.turnOffConfirmHint", "Password sign-ins need only the password; organizations that require it close to you.")}
-        confirmLabel={t("account.turnOff", "Turn off")}
-        loading={off.isPending}
-        onConfirm={() => off.mutateAsync()}
-      />
+      <DialogScope open={turningOff}>
+        <TurnOffDialog open={turningOff} onOpenChange={setTurningOff} />
+      </DialogScope>
       <AlertDialog
         open={regenerating}
         onOpenChange={setRegenerating}
@@ -239,6 +224,56 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
       />
     </SettingsSection>
   );
+}
+
+function TurnOffDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [factor, setFactor] = useState<SecondFactorValue>(NO_SECOND_FACTOR);
+  const off = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me/totp", { body: secondFactorBody(factor) });
+    },
+    invalidates: [["me"], ["session"]],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("account.twoFactorTurnedOff", "Two-factor authentication turned off"));
+    },
+    onError: () => setFactor((f) => ({ ...f, code: "" })),
+  });
+  const turnOff = () => secondFactorReady(factor) && !off.isPending && off.mutate();
+  return (
+    <Dialog
+      busy={off.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
+      size="sm"
+      title={t("account.turnOffConfirm", "Turn off two-factor authentication?")}
+      description={t("account.turnOffConfirmHint", "Signing in needs only the password or a sign-in link; organizations that require it close to you.")}
+      onSubmit={turnOff}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button variant="danger" disabled={!secondFactorReady(factor)} loading={off.isPending} onClick={turnOff}>
+            {t("account.turnOff", "Turn off")}
+          </Button>
+        </>
+      }
+    >
+      <SecondFactorField value={factor} onChange={setFactor} error={fieldError(off.error, "code")} />
+    </Dialog>
+  );
+}
+
+async function beginTotp() {
+  try {
+    return data(await api.POST("/platform/v1/me/totp"));
+  } catch (error) {
+    if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) {
+      return data(await api.POST("/platform/v1/me/totp"));
+    }
+    throw error;
+  }
 }
 
 function TwoFactorDialog({
@@ -255,7 +290,7 @@ function TwoFactorDialog({
   const [codes, setCodes] = useState(initialCodes);
   const start = useQuery({
     queryKey: ["totp-setup"],
-    queryFn: async () => data(await api.POST("/platform/v1/me/totp")),
+    queryFn: beginTotp,
     staleTime: Infinity,
     gcTime: 0,
     retry: false,

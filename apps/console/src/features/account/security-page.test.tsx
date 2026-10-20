@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
+import { signedInReply } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -107,7 +108,7 @@ describe("turning on two-factor authentication", () => {
     const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Off; password sign-ins need only the password.")).toBeInTheDocument();
+    expect(await screen.findByText("Off; signing in needs only the password or a sign-in link.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
     expect(await within(dialog).findByText(SETUP.secret)).toBeInTheDocument();
@@ -271,8 +272,27 @@ describe("turning on two-factor authentication", () => {
   });
 });
 
+describe("starting two-factor setup after a while", () => {
+  it("asks to sign in again, then shows the setup key", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("POST", "auth/methods", { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, provider: null });
+    on("POST", "auth/password", signedInReply());
+    let calls = 0;
+    on("POST", "me/totp", () => (++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : SETUP));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Set up" }));
+    const again = await screen.findByRole("dialog", { name: "Sign in again to continue" });
+    await user.type(await within(again).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(again).getByRole("button", { name: "Sign in" }));
+    const setup = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    expect(await within(setup).findByText(SETUP.secret)).toBeInTheDocument();
+    expect(requests("POST", "me/totp")).toHaveLength(2);
+  });
+});
+
 describe("with two-factor authentication on", () => {
-  it("turns it off after confirming", async () => {
+  it("turns it off with a code from the app", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true, recovery_codes_left: 7 }));
     on("DELETE", "me/totp", noContent);
@@ -280,23 +300,42 @@ describe("with two-factor authentication on", () => {
     expect(await screen.findByText("On, so organizations that require it accept your sign-ins.")).toBeInTheDocument();
     expect(screen.getByText("7 of 10 left; each works for one sign-in.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Turn off" }));
-    const confirm = await screen.findByRole("alertdialog", { name: "Turn off two-factor authentication?" });
-    await user.click(within(confirm).getByRole("button", { name: "Turn off" }));
+    const confirm = await screen.findByRole("dialog", { name: "Turn off two-factor authentication?" });
+    const turnOff = within(confirm).getByRole("button", { name: "Turn off" });
+    expect(turnOff).toBeDisabled();
+    await user.type(within(confirm).getByLabelText("Code from the app"), "123456");
+    await user.click(turnOff);
     expect(await (await notifications()).findByText("Two-factor authentication turned off")).toBeInTheDocument();
-    expect(requests("DELETE", "me/totp")).toHaveLength(1);
-    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(requests("DELETE", "me/totp").map((r) => r.body)).toEqual([{ code: "123456" }]);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Turn off two-factor authentication?" })).not.toBeInTheDocument());
   });
 
-  it("closes the confirmation when turning off is refused", async () => {
+  it("turns it off with a recovery code instead", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    on("DELETE", "me/totp", noContent);
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Turn off" }));
+    const confirm = await screen.findByRole("dialog", { name: "Turn off two-factor authentication?" });
+    await user.click(within(confirm).getByRole("link", { name: "Use a recovery code" }));
+    await user.type(within(confirm).getByRole("textbox", { name: "Recovery code" }), " abcd-efgh ");
+    await user.click(within(confirm).getByRole("button", { name: "Turn off" }));
+    await waitFor(() => expect(requests("DELETE", "me/totp").map((r) => r.body)).toEqual([{ recovery_code: "abcd-efgh" }]));
+  });
+
+  it("keeps the dialog open with a wrong code, and says why it's refused", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true }));
     on("DELETE", "me/totp", apiError(409, "conflict", "Northwind Labs requires two-factor authentication."));
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Turn off" }));
-    const confirm = await screen.findByRole("alertdialog", { name: "Turn off two-factor authentication?" });
+    const confirm = await screen.findByRole("dialog", { name: "Turn off two-factor authentication?" });
+    const field = within(confirm).getByLabelText("Code from the app");
+    await user.type(field, "123456");
     await user.click(within(confirm).getByRole("button", { name: "Turn off" }));
     expect((await (await notifications()).findAllByText("Northwind Labs requires two-factor authentication.")).length).toBeGreaterThan(0);
-    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(field).toHaveValue(""));
+    expect(screen.getByRole("dialog", { name: "Turn off two-factor authentication?" })).toBeInTheDocument();
   });
 
   it("regenerates the recovery codes", async () => {

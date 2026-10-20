@@ -10,15 +10,66 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::auth::sessions::{self, Method, SignIn};
-use crate::auth::throttle::{self, SIGN_IN_PER_ACCOUNT};
-use crate::auth::totp::{SecondFactorError, aad, check_code, new_recovery_codes};
+use crate::auth::totp::{Factor, SecondFactorError, aad, check_code, new_recovery_codes};
 use crate::platform::access::Ctx;
-use crate::platform::auth::password::account_attempt;
+use crate::platform::auth::password::Attempts;
 use crate::platform::auth::setup::hash_password;
-use crate::platform::auth::start_session;
+use crate::platform::auth::start_session_until;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::state::AppState;
+
+const ALREADY_ON: &str = "Two-factor authentication is already on; turn it off to set it up again.";
+
+#[derive(Debug, Default, Deserialize, ToSchema)]
+#[schema(description = "A second factor, needed while TOTP is on.")]
+pub struct SecondFactor {
+    #[doc = "A 6-digit code from the authenticator app."]
+    #[schema(example = "123456")]
+    pub code: Option<String>,
+    #[doc = "Or one of the recovery codes (each works once)."]
+    #[schema(example = "abcd-efgh-jkmn-pqrs")]
+    pub recovery_code: Option<String>,
+}
+
+pub(crate) async fn require_second_factor(
+    state: &AppState,
+    ctx: &Ctx,
+    user: UserId,
+    given: &SecondFactor,
+) -> ApiResult<()> {
+    if !totp::is_enabled(&state.pg, user.uuid()).await? {
+        return Ok(());
+    }
+    let factor = match (given.code.as_deref(), given.recovery_code.as_deref()) {
+        (Some(code), None) => Factor::Code(code),
+        (None, Some(code)) => Factor::Recovery(code),
+        (None, None) => {
+            return Err(ApiError::invalid(
+                "code",
+                "Enter a code from your authenticator app or a recovery code.",
+            ));
+        }
+        (Some(_), Some(_)) => {
+            return Err(ApiError::bad_request(
+                "Send either `code` or `recovery_code`.",
+            ));
+        }
+    };
+    let attempts = Attempts::new(ctx, &user.to_string());
+    attempts.begin(state).await?;
+    match crate::auth::totp::check(state, user, factor).await {
+        Ok(()) => {
+            attempts.succeeded(state).await;
+            Ok(())
+        }
+        Err(SecondFactorError::Invalid) => Err(ApiError::invalid(
+            "code",
+            "That code isn't valid or was already used.",
+        )),
+        Err(e) => Err(ApiError::internal(e)),
+    }
+}
 
 fn method_of(name: &str) -> Method {
     match name {
@@ -44,10 +95,11 @@ async fn rotate(
         sessions::revoke_all(state, user_id, Some(current)).await?;
     }
     sessions::replace(state, user_id, current).await?;
-    start_session(
+    start_session_until(
         state,
         ctx,
         user,
+        session.expires_at,
         SignIn {
             user_id,
             method: method_of(&session.method),
@@ -93,8 +145,8 @@ pub async fn change_password(
         .ok_or_else(|| ApiError::not_found("user"))?;
     match (&user.password_hash, req.current_password) {
         (Some(stored), Some(current)) => {
-            let attempts = user_id.to_string();
-            account_attempt(&state, &attempts).await?;
+            let attempts = Attempts::new(&ctx, &user_id.to_string());
+            attempts.begin(&state).await?;
             let stored = stored.clone();
             let ok = tokio::task::spawn_blocking(move || {
                 kaeso_crypto::password::verify(&current, &stored)
@@ -107,7 +159,7 @@ pub async fn change_password(
                     "The current password is wrong.",
                 ));
             }
-            throttle::clear(&state, SIGN_IN_PER_ACCOUNT, &attempts).await;
+            attempts.succeeded(&state).await;
         }
         (Some(_), None) => {
             return Err(ApiError::invalid(
@@ -120,7 +172,11 @@ pub async fn change_password(
     let hash = hash_password("new_password", req.new_password).await?;
     let mut tx = state.pg.begin().await?;
     users::set_password(&mut *tx, user.id, &hash).await?;
-    for kind in [TokenKind::PasswordReset, TokenKind::TotpChallenge] {
+    for kind in [
+        TokenKind::PasswordReset,
+        TokenKind::TotpChallenge,
+        TokenKind::MagicLink,
+    ] {
         tokens::retire_all(&mut *tx, kind, Some(user.id), ctx.now).await?;
     }
     ctx.audit(None, "user.password_change")
@@ -154,11 +210,12 @@ pub struct TotpSetup {
     post,
     path = "/me/totp",
     summary = "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\n\
-    Refused while TOTP is on.",
+    Refused while TOTP is on. Needs a recent sign-in.",
     tag = "me",
     responses((status = 200, body = TotpSetup))
 )]
 pub async fn totp_begin(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<TotpSetup>> {
+    ctx.require_recent_sign_in()?;
     let user_id = ctx.user_id()?;
     let user = users::get(&state.pg, user_id.uuid())
         .await?
@@ -180,9 +237,7 @@ pub async fn totp_begin(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Js
     )
     .await?;
     if !stored {
-        return Err(ApiError::Conflict(
-            "Two-factor authentication is already on; turn it off to set it up again.".into(),
-        ));
+        return Err(ApiError::Conflict(ALREADY_ON.into()));
     }
     let account = user.email.unwrap_or_else(|| user_id.to_string());
     Ok(Json(TotpSetup {
@@ -235,8 +290,13 @@ pub async fn totp_confirm(
     Body(req): Body<TotpConfirm>,
 ) -> ApiResult<Response> {
     let user_id = ctx.user_id()?;
+    if totp::is_enabled(&state.pg, user_id.uuid()).await? {
+        return Err(ApiError::Conflict(ALREADY_ON.into()));
+    }
+    let attempts = Attempts::new(&ctx, &user_id.to_string());
+    attempts.begin(&state).await?;
     match check_code(&state, user_id, &req.code, true).await {
-        Ok(()) => {}
+        Ok(()) => attempts.succeeded(&state).await,
         Err(SecondFactorError::Invalid) => {
             return Err(ApiError::invalid(
                 "code",
@@ -278,12 +338,17 @@ pub async fn totp_confirm(
 #[utoipa::path(
     delete,
     path = "/me/totp",
-    summary = "Turns TOTP off. Refused while an org of the user requires 2FA. Needs a\n\
-    recent sign-in.",
+    summary = "Turns TOTP off with a current code or a recovery code. Refused while an\n\
+    org of the user requires 2FA. Needs a recent sign-in.",
     tag = "me",
+    request_body = SecondFactor,
     responses((status = 204, description = "Off."))
 )]
-pub async fn totp_disable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Response> {
+pub async fn totp_disable(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<SecondFactor>,
+) -> ApiResult<Response> {
     ctx.require_recent_sign_in()?;
     let user_id = ctx.user_id()?;
     let orgs = members::orgs_of_user(&state.pg, user_id.uuid()).await?;
@@ -293,6 +358,10 @@ pub async fn totp_disable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<
             org.org_name
         )));
     }
+    if !totp::is_enabled(&state.pg, user_id.uuid()).await? {
+        return Err(ApiError::not_found("TOTP setup"));
+    }
+    require_second_factor(&state, &ctx, user_id, &req).await?;
     let mut tx = state.pg.begin().await?;
     if !totp::remove(&mut tx, user_id.uuid()).await? {
         return Err(ApiError::not_found("TOTP setup"));

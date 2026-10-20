@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import type { Locator, Page } from "@playwright/test";
-import { expect, test, openDefaultProject, signInAsOwner } from "./support";
+import { expect, test, expectSignedIn, NEW_PASSWORD, OWNER, openDefaultProject, signInAsOwner, signInWithPassword } from "./support";
 
 test.describe.configure({ mode: "serial" });
 test.use({ reducedMotion: "no-preference" });
@@ -273,7 +273,8 @@ for (const [viewport, colorScheme] of [
 ] as const) {
   test(`two-factor setup turns into the recovery codes in the same centered dialog (${viewport.width}px, ${colorScheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
-    await signInAsOwner(page);
+    await signInWithPassword(page, OWNER.email, NEW_PASSWORD);
+    await expectSignedIn(page);
     await page.setViewportSize(viewport);
     await page.goto("/settings/account/security");
     await page.getByRole("button", { name: "Set up" }).click();
@@ -290,11 +291,15 @@ for (const [viewport, colorScheme] of [
     if (moved(motion)) expectCentredAndSmooth(motion);
     await centredAtNaturalSize(codes);
     await expect(codes.getByRole("checkbox", { name: "I stored these codes" })).toBeFocused();
+    const recovery = (await codes.locator("pre").first().innerText()).trim().split(/\s+/)[0] ?? "";
     await codes.getByRole("checkbox", { name: "I stored these codes" }).click();
     await codes.getByRole("button", { name: "Done" }).click();
     await expect(codes).toBeHidden();
     await page.getByRole("button", { name: "Turn off" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Turn off" }).click();
+    const off = page.getByRole("dialog", { name: "Turn off two-factor authentication?" });
+    await off.getByRole("link", { name: "Use a recovery code" }).click();
+    await off.getByLabel("Recovery code").fill(recovery);
+    await off.getByRole("button", { name: "Turn off" }).click();
     await expect(page.getByRole("button", { name: "Set up" })).toBeVisible();
   });
 }

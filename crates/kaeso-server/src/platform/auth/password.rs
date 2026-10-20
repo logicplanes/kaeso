@@ -11,9 +11,11 @@ use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 
-use super::{SignedIn, sign_in, throttle_ip};
+use super::{SignedIn, refused, sign_in, throttle_ip};
 use crate::auth::sessions::Method;
-use crate::auth::throttle::{self, SIGN_IN_PER_ACCOUNT, SIGN_IN_PER_IP};
+use crate::auth::throttle::{
+    self, FAILURES_PER_ACCOUNT, FAILURES_PER_ACCOUNT_AND_IP, SIGN_IN_PER_IP, Throttle,
+};
 use crate::auth::totp::{Factor, SecondFactorError};
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
@@ -52,16 +54,73 @@ fn wrong() -> ApiError {
     ApiError::Authentication("The email or password is wrong.".into())
 }
 
-pub(crate) async fn account_attempt(state: &AppState, subject: &str) -> ApiResult<()> {
-    throttle::hit(state, SIGN_IN_PER_ACCOUNT, subject)
-        .await
-        .map_err(|retry_after| ApiError::RateLimited {
-            message: format!(
-                "Too many failed sign-ins; try again in {} minutes or use a sign-in link.",
-                retry_after.div_ceil(60)
-            ),
-            retry_after: Some(retry_after),
-        })
+fn locked(retry_after: u64) -> String {
+    format!(
+        "Too many failed sign-ins; try again in {} minutes or use a sign-in link.",
+        retry_after.div_ceil(60)
+    )
+}
+
+pub(crate) struct Attempts {
+    account: String,
+    pair: String,
+}
+
+impl Attempts {
+    pub(crate) fn new(ctx: &Ctx, account: &str) -> Attempts {
+        let account = account.to_lowercase();
+        let pair = format!("{account}|{}", crate::auth::key_failures::subject(ctx.ip));
+        Attempts { account, pair }
+    }
+
+    fn counters(&self) -> [(Throttle, &str); 2] {
+        [
+            (FAILURES_PER_ACCOUNT_AND_IP, self.pair.as_str()),
+            (FAILURES_PER_ACCOUNT, self.account.as_str()),
+        ]
+    }
+
+    pub(crate) async fn begin(&self, state: &AppState) -> ApiResult<()> {
+        for (t, subject) in self.counters() {
+            throttle::hit(state, t, subject)
+                .await
+                .map_err(|r| refused(r, locked))?;
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn succeeded(&self, state: &AppState) {
+        throttle::clear(state, FAILURES_PER_ACCOUNT_AND_IP, &self.pair).await;
+        throttle::release(state, FAILURES_PER_ACCOUNT, &self.account).await;
+    }
+}
+
+pub(crate) async fn challenge(
+    state: &AppState,
+    ctx: &Ctx,
+    user: &users::User,
+    method: Method,
+) -> ApiResult<Response> {
+    let challenge = random_token();
+    let expires_at = ctx.now + CHALLENGE_LIFETIME;
+    tokens::insert(
+        &state.pg,
+        NewToken {
+            kind: TokenKind::TotpChallenge,
+            hash: &secret::hash(&challenge),
+            user_id: Some(user.id),
+            email: None,
+            data: serde_json::json!({ "method": method.as_str() }),
+            expires_at,
+        },
+    )
+    .await?;
+    let body = TotpRequired {
+        status: "totp_required",
+        challenge,
+        expires_at,
+    };
+    Ok((axum::http::StatusCode::ACCEPTED, Json(body)).into_response())
 }
 
 #[utoipa::path(
@@ -88,7 +147,8 @@ pub async fn password(
     }
     throttle_ip(&state, &ctx, SIGN_IN_PER_IP).await?;
     let email = kaeso_core::email::normalize(&req.email).map_err(|_| wrong())?;
-    account_attempt(&state, &email).await?;
+    let attempts = Attempts::new(&ctx, &email);
+    attempts.begin(&state).await?;
 
     let user = users::get_by_email(&state.pg, &email).await?;
     let stored = user
@@ -108,36 +168,17 @@ pub async fn password(
             "This account is deactivated; contact your Kaeso administrator.".into(),
         ));
     }
-    throttle::clear(&state, SIGN_IN_PER_ACCOUNT, &email).await;
+    attempts.succeeded(&state).await;
     if totp::is_enabled(&state.pg, user.id).await? {
-        let challenge = random_token();
-        let expires_at = ctx.now + CHALLENGE_LIFETIME;
-        tokens::insert(
-            &state.pg,
-            NewToken {
-                kind: TokenKind::TotpChallenge,
-                hash: &secret::hash(&challenge),
-                user_id: Some(user.id),
-                email: None,
-                data: serde_json::json!({}),
-                expires_at,
-            },
-        )
-        .await?;
-        let body = TotpRequired {
-            status: "totp_required",
-            challenge,
-            expires_at,
-        };
-        return Ok((axum::http::StatusCode::ACCEPTED, Json(body)).into_response());
+        return challenge(&state, &ctx, &user, Method::Password).await;
     }
     sign_in(&state, &ctx, &user, Method::Password, false, None).await
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-#[schema(description = "The second step of a password sign-in.")]
+#[schema(description = "The second step of a password or sign-in link sign-in.")]
 pub struct TotpRequest {
-    #[doc = "The challenge from `auth/password`."]
+    #[doc = "The challenge from `auth/password` or `auth/magic-link/verify`."]
     #[schema(value_type = String, write_only)]
     pub challenge: SecretString,
     #[doc = "A 6-digit code from the authenticator app."]
@@ -151,8 +192,8 @@ pub struct TotpRequest {
 #[utoipa::path(
     post,
     path = "/auth/totp",
-    summary = "Completes a password sign-in with a TOTP or recovery code. A code of\n\
-    the same 30-second step is accepted only once.",
+    summary = "Completes a password or sign-in link sign-in with a TOTP or recovery\n\
+    code. A code of the same 30-second step is accepted only once.",
     tag = "auth",
     request_body = TotpRequest,
     responses((status = 200, description = "Signed in; the session cookie is set.", body = SignedIn))
@@ -175,8 +216,8 @@ pub async fn totp(
         .user_id
         .map(UserId::from_uuid)
         .ok_or_else(|| ApiError::internal("challenge without user"))?;
-    let throttle_key = user_id.to_string();
-    account_attempt(&state, &throttle_key).await?;
+    let attempts = Attempts::new(&ctx, &user_id.to_string());
+    attempts.begin(&state).await?;
     let factor = match (&req.code, &req.recovery_code) {
         (Some(code), None) => Factor::Code(code),
         (None, Some(code)) => Factor::Recovery(code),
@@ -204,10 +245,14 @@ pub async fn totp(
             "The sign-in has expired; enter your email and password again.".into(),
         ));
     }
-    throttle::clear(&state, SIGN_IN_PER_ACCOUNT, &throttle_key).await;
+    attempts.succeeded(&state).await;
     let user = users::get(&state.pg, user_id.uuid())
         .await?
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
-    sign_in(&state, &ctx, &user, Method::Password, true, None).await
+    let method = match challenge.data.get("method").and_then(|m| m.as_str()) {
+        Some("magic_link") => Method::MagicLink,
+        _ => Method::Password,
+    };
+    sign_in(&state, &ctx, &user, method, true, None).await
 }

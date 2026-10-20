@@ -20,6 +20,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Session, routes!(crate::platform::avatars::get)))
         .routes(s.route(Access::Session, routes!(profile::change_email)))
         .routes(s.route(Access::Public, routes!(profile::confirm_email)))
+        .routes(s.route(Access::Public, routes!(profile::cancel_email)))
         .routes(s.route(Access::Session, routes!(security::change_password)))
         .routes(s.route(Access::Session, routes!(security::totp_begin)))
         .routes(s.route(Access::Session, routes!(security::totp_confirm)))

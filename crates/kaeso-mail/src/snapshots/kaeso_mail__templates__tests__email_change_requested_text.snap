@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Someone asked to change your Kaeso email address
+
+Your email address is about to change
+
+Your account asked to use new@example.com instead; the change waits until that address confirms it.
+
+Cancel the change:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+If this wasn't you, cancel the change, reset your password and tell your organization's admin.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

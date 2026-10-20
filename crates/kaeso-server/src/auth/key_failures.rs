@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use time::OffsetDateTime;
 
-use super::throttle::{self, Throttle};
+use super::throttle::{self, Outage, Refusal, Throttle};
 use crate::state::AppState;
 
 const NAME: &str = "key_ip";
@@ -53,8 +53,11 @@ impl Gate {
             name: NAME,
             limit: cfg.per_address,
             window: cfg.window,
+            on_outage: Outage::Allow,
         };
-        let Err(retry_after) = throttle::hit(&self.state, t, &self.subject).await else {
+        let Err(Refusal::Limited { retry_after }) =
+            throttle::hit(&self.state, t, &self.subject).await
+        else {
             return Ok(());
         };
         let blocks = &self.state.caches.key_blocks;

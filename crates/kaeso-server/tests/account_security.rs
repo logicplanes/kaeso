@@ -10,6 +10,10 @@ use serde_json::json;
 use common::{PASSWORD, totp_code as code};
 
 async fn turn_on_totp(app: &App, cookie: &str) -> String {
+    turn_on_totp_with_secret(app, cookie).await.0
+}
+
+async fn turn_on_totp_with_secret(app: &App, cookie: &str) -> (String, String) {
     let begin = app.post("/me/totp", json!({}), Some(cookie)).await;
     assert_eq!(begin.status, StatusCode::OK, "{:?}", begin.body);
     let secret = begin.body["secret"].as_str().unwrap().to_owned();
@@ -21,7 +25,7 @@ async fn turn_on_totp(app: &App, cookie: &str) -> String {
         )
         .await;
     assert_eq!(confirm.status, StatusCode::OK, "{:?}", confirm.body);
-    confirm.cookie().unwrap()
+    (confirm.cookie().unwrap(), secret)
 }
 
 #[tokio::test]
@@ -82,11 +86,16 @@ async fn recovery_codes_and_turning_totp_off_follow_the_org_policy() {
         .await;
     assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
     let r = app
-        .call(Method::DELETE, "/me/totp", None, Some(&owner.cookie))
+        .call(
+            Method::DELETE,
+            "/me/totp",
+            Some(json!({})),
+            Some(&owner.cookie),
+        )
         .await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
 
-    let cookie = turn_on_totp(&app, &owner.cookie).await;
+    let (cookie, secret) = turn_on_totp_with_secret(&app, &owner.cookie).await;
     let r = app
         .post("/me/recovery-codes", json!({}), Some(&cookie))
         .await;
@@ -103,7 +112,7 @@ async fn recovery_codes_and_turning_totp_off_follow_the_org_policy() {
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     let r = app
-        .call(Method::DELETE, "/me/totp", None, Some(&cookie))
+        .call(Method::DELETE, "/me/totp", Some(json!({})), Some(&cookie))
         .await;
     assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
 
@@ -117,7 +126,26 @@ async fn recovery_codes_and_turning_totp_off_follow_the_org_policy() {
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     let r = app
-        .call(Method::DELETE, "/me/totp", None, Some(&cookie))
+        .call(Method::DELETE, "/me/totp", Some(json!({})), Some(&cookie))
+        .await;
+    assert_eq!(r.body["error"]["param"], "code", "{:?}", r.body);
+    let r = app
+        .call(
+            Method::DELETE,
+            "/me/totp",
+            Some(json!({ "code": code(&secret, &app) })),
+            Some(&cookie),
+        )
+        .await;
+    assert_eq!(r.body["error"]["param"], "code", "{:?}", r.body);
+    app.clock.advance(time::Duration::seconds(30));
+    let r = app
+        .call(
+            Method::DELETE,
+            "/me/totp",
+            Some(json!({ "code": code(&secret, &app) })),
+            Some(&cookie),
+        )
         .await;
     assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
     let after = r.cookie().unwrap();
@@ -134,11 +162,12 @@ async fn turning_on_totp_keeps_the_time_of_the_last_sign_in() {
     let owner = app.setup().await;
     let signed_in_at =
         app.get("/auth/session", &owner.cookie).await.body["session"]["signed_in_at"].clone();
-    app.clock.advance(time::Duration::minutes(16));
+    app.clock.advance(time::Duration::minutes(10));
     let rotated = turn_on_totp(&app, &owner.cookie).await;
     let who = app.get("/auth/session", &rotated).await;
     assert_eq!(who.body["session"]["signed_in_at"], signed_in_at);
     assert_eq!(who.body["session"]["second_factor"], true);
+    app.clock.advance(time::Duration::minutes(6));
     let r = app
         .post(
             "/me/email",

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Spinner, Text } from "@logicplanes/kaeso-ui";
@@ -6,9 +7,15 @@ import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import { usePageTitle } from "~/shell/title";
 import { useTokenAction } from "./token-action";
+import { EmailCancelPage } from "./email-cancel-page";
 import { t } from "~/i18n";
 
 export function EmailConfirmPage() {
+  const [cancelling] = useState(() => new URLSearchParams(window.location.hash.slice(1)).has("cancel"));
+  return cancelling ? <EmailCancelPage /> : <EmailConfirm />;
+}
+
+function EmailConfirm() {
   usePageTitle(t("public.confirmEmail", "Confirm email address"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();

@@ -18,7 +18,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 
 ## Change your email address
 
-Under **Profile**, choose **Change email** and enter the new address. Kaeso sends a confirmation link to the new address and tells the old one. The change takes effect when you open the link.
+Under **Profile**, choose **Change email** and enter the new address, and with two-factor authentication on, a code from your authenticator app or a recovery code. Kaeso sends a confirmation link to the new address, and a link to cancel the change to the old one. The change takes effect when you open the confirmation link. Signing out the browser that asked for the change, signing out everywhere or resetting your password cancels it too.
 
 ## Change your password
 
@@ -26,14 +26,16 @@ Under **Security**, **Change password** sets a new password and signs out your o
 
 ## Turn on two-factor authentication
 
-Two-factor authentication asks for a code from an authenticator app at every password sign-in. Sign-in links and single sign-on don't ask for one.
+Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead.
+
+A sign-in link first shows the account it signs in to. Choose **Sign in** only if you asked for the link yourself. If this browser is signed in to another account, signing in replaces that session here.
 
 1. Under **Security**, choose **Set up**.
 2. Scan the QR code with your authenticator app, or enter the setup key.
 3. Enter the six-digit code the app shows, and choose **Turn on**.
 4. Store the 10 recovery codes the console shows once: copy them or choose **Download .txt**. Each code signs you in once instead of an app code.
 
-**Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
+Setting it up needs a sign-in from the last 15 minutes. **Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication after you enter a current code or a recovery code. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
 
 ## Sign out other browsers
 
