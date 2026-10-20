@@ -191,7 +191,7 @@ test("provider keys: several per provider, one default, assigned to a project, r
     ["Research", "sk-ant-mock-11111111111111anthropic"],
     ["Batch jobs", "sk-ant-mock-33333333333333anthr0p1x"],
   ] as const) {
-    await page.getByRole("button", { name: "Add key", exact: true }).click();
+    await page.getByRole("button", { name: "Add provider key", exact: true }).click();
     const add = page.getByRole("dialog", { name: "Add provider key" });
     await add.getByRole("option", { name: /^Anthropic/ }).click();
     await add.getByRole("button", { name: "Continue" }).click();
@@ -204,40 +204,40 @@ test("provider keys: several per provider, one default, assigned to a project, r
   }
   const row = (name: string) => page.getByRole("row").filter({ hasText: name });
 
-  await page.getByRole("button", { name: "Actions for Batch jobs" }).click();
+  await page.getByRole("button", { name: "Actions for Anthropic · Batch jobs" }).click();
   await page.getByRole("menuitem", { name: "Make default" }).click();
   await expect(toastText(page, "Batch jobs is the Anthropic default")).toBeVisible();
   await expect(row("Batch jobs").getByText("Default", { exact: true })).toBeVisible();
   await expect(row("Research").getByText("Default", { exact: true })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Actions for Research" }).click();
+  await page.getByRole("button", { name: "Actions for Anthropic · Research" }).click();
   await page.getByRole("menuitem", { name: "Assign to projects" }).click();
-  const assign = page.getByRole("dialog", { name: "Assign Research" });
+  const assign = page.getByRole("dialog", { name: "Assign Anthropic · Research" });
   await assign.getByRole("checkbox").first().click();
   await assign.getByRole("button", { name: "Save" }).click();
-  await expect(toastText(page, "Research assigned to 1 project")).toBeVisible();
+  await expect(toastText(page, "Anthropic · Research assigned to 1 project")).toBeVisible();
 
-  await page.getByRole("button", { name: "Actions for Research" }).click();
+  await page.getByRole("button", { name: "Actions for Anthropic · Research" }).click();
   await page.getByRole("menuitem", { name: "Replace" }).click();
-  const replace = page.getByRole("dialog", { name: "Replace Research" });
+  const replace = page.getByRole("dialog", { name: "Replace Anthropic · Research" });
   await replace.getByLabel("Anthropic API key").fill("  sk-ant-mock-22222222222222anthr0p1c  ");
   await replace.getByRole("button", { name: "Replace key" }).click();
   await expect(toastText(page, "Research replaced")).toBeVisible();
   await expect(page.getByText("…0p1c")).toBeVisible();
 
-  await page.getByRole("button", { name: "Actions for Research" }).click();
+  await page.getByRole("button", { name: "Actions for Anthropic · Research" }).click();
   await page.getByRole("menuitem", { name: "Rename" }).click();
-  const rename = page.getByRole("dialog", { name: "Rename Research" });
+  const rename = page.getByRole("dialog", { name: "Rename Anthropic · Research" });
   await rename.getByLabel("Name").fill("Research v2");
   await rename.getByRole("button", { name: "Rename" }).click();
   await expect(toastText(page, "Renamed to Research v2")).toBeVisible();
 
-  await page.getByRole("button", { name: "Actions for Research v2" }).click();
+  await page.getByRole("button", { name: "Actions for Anthropic · Research v2" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  const confirm = page.getByRole("alertdialog", { name: "Delete Research v2?" });
+  const confirm = page.getByRole("alertdialog", { name: "Delete Anthropic · Research v2?" });
   await expect(confirm.getByText("Its projects switch to the Anthropic default.")).toBeVisible();
   await confirm.getByRole("button", { name: "Delete key" }).click();
-  await expect(toastText(page, "Research v2 deleted")).toBeVisible();
+  await expect(toastText(page, "Anthropic · Research v2 deleted")).toBeVisible();
   await expect(page.getByText("…0p1c")).toHaveCount(0);
 });
 

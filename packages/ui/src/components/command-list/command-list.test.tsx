@@ -290,3 +290,18 @@ describe("CommandList outside a browser", () => {
     }
   });
 });
+
+describe("CommandList inline in a dialog step", () => {
+  it("is as tall as its rows, with no room left below the last one, and keeps that height while searching", async () => {
+    const { container } = render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} height="inline" />);
+    const frame = container.firstElementChild as HTMLElement;
+    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+    await userEvent.type(screen.getByRole("combobox"), "claude");
+    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+  });
+
+  it("stops at 360px and scrolls when the rows are taller", () => {
+    const { container } = render(<CommandList aria-label="Models" groups={many(40)} value={null} onSelect={() => {}} height="inline" />);
+    expect(container.firstElementChild).toHaveClass("max-h-360");
+  });
+});

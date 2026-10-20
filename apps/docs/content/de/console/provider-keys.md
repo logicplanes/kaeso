@@ -8,9 +8,9 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die [Modellanbie
 
 ## Schlüssel hinzufügen
 
-**Anbieter** listet die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an.
+**Anbieter** listet die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an. Ab mehr als acht Schlüsseln findet eine Suche über der Liste sie nach Anbieter, Schlüssel oder Projektname.
 
-1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**.
+1. Wählen Sie unter **Anbieter** **Anbieter-Schlüssel hinzufügen**.
 2. **Für welchen Anbieter ist der Schlüssel?** Suchen Sie den Anbieter und wählen Sie ihn. Anbieter, die schon Schlüssel haben, stehen oben, mit der Anzahl ihrer Schlüssel.
 3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Der Dialog verlinkt die Seite des Anbieters, auf der Sie Schlüssel erstellen; [Unterstützte Anbieter](../concepts/supported-providers.md) nennt sie ebenfalls.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.

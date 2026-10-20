@@ -95,7 +95,7 @@ Open the link and enter your name, your email, a password of 12 to 128 character
 
 Provider keys belong to the organization, and every project uses the provider's default key.
 
-1. Open **Providers** in the sidebar and choose **Add key**.
+1. Open **Providers** in the sidebar and choose **Add provider key**.
 2. Choose the provider and paste its key.
 3. Name it, for example `Production`, and choose **Add key**.
 

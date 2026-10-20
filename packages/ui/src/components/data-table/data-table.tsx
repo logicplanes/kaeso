@@ -75,6 +75,7 @@ export interface DataTableProps<T> {
   className?: string | undefined;
   activeRowId?: string | undefined;
   freshRowIds?: ReadonlySet<string> | undefined;
+  onHiddenColumnsChange?: ((ids: string[]) => void) | undefined;
 }
 
 const ROW_H = { compact: 36, default: 40, comfortable: 48 } as const;
@@ -148,6 +149,7 @@ function DataTableInner<T>(
     className,
     activeRowId,
     freshRowIds,
+    onHiddenColumnsChange,
     "aria-label": ariaLabel,
   }: DataTableProps<T>,
   ref: React.Ref<HTMLDivElement>,
@@ -247,6 +249,9 @@ function DataTableInner<T>(
   const tight = mode.includes("!");
   const overflow = mode.includes(">");
   const hidden = useMemo(() => new Set(hiddenIds.split(" ").filter(Boolean)), [hiddenIds]);
+  const onHiddenRef = useRef(onHiddenColumnsChange);
+  onHiddenRef.current = onHiddenColumnsChange;
+  useLayoutEffect(() => onHiddenRef.current?.([...hidden]), [hidden]);
   const cols = leaf.filter((c) => !hidden.has(c.id));
   const trackMin = (c: (typeof cols)[number]) =>
     c.columnDef.meta?.grow ? (tight ? growMin({ size: c.getSize(), minWidth: c.columnDef.meta.minWidth }) : c.getSize()) : c.getSize();
