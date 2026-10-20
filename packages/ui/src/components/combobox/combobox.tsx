@@ -72,6 +72,7 @@ interface BaseProps extends FieldWrapProps {
   onInputValueChange?: ((value: string) => void) | undefined;
   searchDelay?: number | undefined;
   onCreate?: ((label: string) => void) | undefined;
+  createLabel?: ((label: string) => string) | undefined;
   disabled?: boolean | undefined;
   invalid?: boolean | undefined;
   id?: string | undefined;
@@ -108,6 +109,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
     onInputValueChange,
     searchDelay = 0,
     onCreate,
+    createLabel,
     disabled,
     invalid,
     id,
@@ -295,7 +297,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                   {"__create" in o ? (
                     <>
                       <Icon icon={icons.add} size="sm" className={MENU_ICON} />
-                      <span className="min-w-0 flex-1 truncate">{t("combobox.create", "Create “{label}”", { label: o.label })}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {createLabel ? createLabel(o.label) : t("combobox.add", "Add “{label}”", { label: o.label })}
+                      </span>
                     </>
                   ) : (
                     <>

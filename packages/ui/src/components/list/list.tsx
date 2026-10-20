@@ -62,6 +62,7 @@ export interface ListProps {
   onSelectedChange?: ((selected: Set<string>) => void) | undefined;
   idWidth?: 48 | 64 | 80 | 96 | 120 | undefined;
   density?: keyof typeof KAESO_LIST_VARIANTS.density | undefined;
+  wrapSubtitle?: boolean | undefined;
   virtualizeAbove?: number | undefined;
   selectionActions?: ReactNode | undefined;
   selectionBar?: boolean | undefined;
@@ -98,6 +99,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     onSelectedChange,
     idWidth,
     density = "default",
+    wrapSubtitle = false,
     virtualizeAbove = 100,
     selectionActions,
     selectionBar = true,
@@ -267,6 +269,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
         lastChild={f.lastChild}
         idWidth={idWidth}
         density={density}
+        wrapSubtitle={wrapSubtitle}
         narrow={narrow}
         active={i === tabStop}
         selected={selected.has(f.item.id)}
@@ -379,6 +382,7 @@ export interface ListRowProps {
   lastChild?: boolean | undefined;
   idWidth?: keyof typeof ID_W | undefined;
   density?: keyof typeof KAESO_LIST_VARIANTS.density | undefined;
+  wrapSubtitle?: boolean | undefined;
   narrow?: boolean | undefined;
   active?: boolean | undefined;
   selected?: boolean | undefined;
@@ -398,6 +402,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
     lastChild,
     idWidth,
     density = "default",
+    wrapSubtitle = false,
     narrow = false,
     active,
     selected,
@@ -415,6 +420,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
   const t = useUiText();
   const lines = narrow && !!(item.meta || item.date);
   const stacked = (card || lines) && !!item.subtitle;
+  const wraps = stacked && wrapSubtitle;
   return (
     <div
       role="row"
@@ -439,7 +445,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         className={cn(
           "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset select-none",
           card ? "rounded-none px-20" : "rounded-item px-12",
-          lines ? "min-h-56 py-8" : stacked ? "h-56" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
+          lines || wraps ? "min-h-56 py-8" : stacked ? "h-56" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
           "hover:bg-fill-1 hover:controls-on-fill",
           selected && "bg-fill-2 controls-on-fill hover:bg-fill-2",
           item.disabled && "pointer-events-none text-fg-disabled",
@@ -483,7 +489,9 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
               <span className={cn("min-w-0 truncate font-medium text-fg", stacked && "max-w-full")}>{item.title}</span>
             )}
             {item.subtitle && (
-              <span className={cn("min-w-0 truncate text-fg-secondary", stacked ? "max-w-full text-small" : "flex-1 basis-0")}>{item.subtitle}</span>
+              <span className={cn("min-w-0 text-fg-secondary", wraps ? "text-pretty" : "truncate", stacked ? "max-w-full text-small" : "flex-1 basis-0")}>
+                {item.subtitle}
+              </span>
             )}
           </span>
           {lines && (

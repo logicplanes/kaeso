@@ -85,8 +85,8 @@ describe("a member's sheet", () => {
     membersData([ada, grace]);
     on("PATCH", "orgs/:org/members/:user", ({ body }: { body: { role: string } }) => ({ ...grace, grant: roleGrant(body.role, "Auditor") }));
     const { sheet, user } = await openSheet(OTHER_USER, "Grace Hopper");
-    const save = within(sheet).getByRole("button", { name: "Save role" });
-    expect(save).toBeDisabled();
+    expect(within(sheet).queryByRole("button", { name: "Save role" })).not.toBeInTheDocument();
+    expect(within(sheet).queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
     await user.click(within(sheet).getByRole("combobox", { name: "Role" }));
     await user.click(await screen.findByRole("option", { name: /Auditor/ }));
     await user.click(within(sheet).getByRole("button", { name: "Save role" }));
@@ -101,7 +101,7 @@ describe("a member's sheet", () => {
     await user.click(within(sheet).getByRole("combobox", { name: "Role" }));
     await user.click(await screen.findByRole("option", { name: /Auditor/ }));
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Save role" })).toBeDisabled());
+    await waitFor(() => expect(within(sheet).queryByRole("button", { name: "Save role" })).not.toBeInTheDocument());
     expect(within(sheet).getByRole("combobox", { name: "Role" })).toHaveTextContent("Developer");
     expect(requests("PATCH", "orgs/:org/members/:user")).toHaveLength(0);
   });

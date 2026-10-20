@@ -436,7 +436,8 @@
   "No models match": "没有匹配的模型",
   "Numbered pages, previous and next by cursor, or a Load more button.": "页码分页、按游标的上一页和下一页，或“加载更多”按钮。",
   "Of the output tokens, those spent reasoning. Shown when given, or when `reasoning` is set.": "输出 token 中用于推理的部分。提供时或设置了 `reasoning` 时显示。",
-  "Offers \"Create “…”\" when nothing matches exactly.": "没有完全匹配时提供“新建“…””。",
+  "The words of the offer to add what was typed; `Add “…”` by default.": "添加所输入内容的选项文字；默认为 `添加“…”`。",
+  "Offers \"Add “…”\" when nothing matches exactly.": "没有完全匹配时提供“添加“…””。",
   "On a filled well (`well`) or on the panel itself (`plain`).": "在填充底板上（`well`）或直接在面板上（`plain`）。",
   "On a row": "在行上",
   "On an edge-to-edge page": "在通栏页面上",
@@ -1042,5 +1043,8 @@
   "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.": "服务商：ID、名称、组织是否已连接它，以及简短提示，例如其密钥数量。",
   "Select only: the height of the pill.": "仅限选择框：胶囊按钮的高度。",
   "The chosen provider's id, when you control it.": "受控时选中服务商的 ID。",
-  "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "以表格宽度下被省略的列的 ID 调用，让保留的列可以显示它们的内容。"
+  "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "以表格宽度下被省略的列的 ID 调用，让保留的列可以显示它们的内容。",
+  "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "让标题下的副标题换行显示，而不是以省略号截断，用于需要完整阅读的描述。",
+  "Lets a subtitle under its title wrap. Set by `List`.": "让标题下的副标题换行显示。由 `List` 设置。",
+  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "以已输入但尚未添加为标签的文字调用，让表单在添加前就能计入它。"
 }

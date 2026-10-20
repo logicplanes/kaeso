@@ -96,7 +96,7 @@ Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Akt
 
 ## Projekt erstellen
 
-Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**. Archivierte Projekte stehen unter **Alle**.
+Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**. Archivierte Projekte stehen unter **Archiviert**, alle Projekte unter **Alle**. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
 
 Das Standardprojekt ist das Projekt, dem jedes Mitglied angehört und in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
 

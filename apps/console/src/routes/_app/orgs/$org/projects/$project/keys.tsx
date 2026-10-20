@@ -5,15 +5,15 @@ import { KeysPage, type KeysSearch } from "~/features/project/keys/keys-page";
 const keysSearch = (s: Record<string, unknown>): KeysSearch => ({
   ...(typeof s.key === "string" ? { key: s.key } : {}),
   ...(typeof s.owner === "string" ? { owner: s.owner } : {}),
-  ...(s.archived === true || s.archived === "true" ? { archived: true } : {}),
+  ...(s.scope === "archived" || s.scope === "all" ? { scope: s.scope } : {}),
   ...(s.create === true || s.create === "true" ? { create: true } : {}),
 });
 
 export const Route = createFileRoute("/_app/orgs/$org/projects/$project/keys")({
   validateSearch: keysSearch,
   loaderDeps: ({ search }) => {
-    const { owner, archived } = keysSearch(search);
-    return { owner, archived };
+    const { owner, scope } = keysSearch(search);
+    return { owner, archived: !!scope };
   },
   loader: ({ context, params, deps }) => context.queryClient.prefetchQuery(allKeysQuery(params.org, params.project, keyFilter(deps))),
   component: Keys,

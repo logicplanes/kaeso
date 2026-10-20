@@ -954,7 +954,7 @@
   padding-top: max(16px, 12vh);
 }
 @utility dialog-limits-top {
-  max-height: calc(100dvh - max(16px, 12vh) - 16px);
+  max-height: calc(100dvh - 2 * max(16px, 12vh));
   max-width: calc(100vw - 32px);
 }
 @utility sheet-limits-x {

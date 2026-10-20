@@ -67,10 +67,27 @@ describe("ServiceAccountsPage", () => {
     await screen.findByRole("gridcell", { name: /ci-deploy/ });
     await user.click(screen.getByRole("tab", { name: "All" }));
     expect(await screen.findByRole("gridcell", { name: /old-batch/ })).toHaveTextContent("Archived");
-    expect(router.state.location.search).toEqual({ archived: true });
+    expect(router.state.location.search).toEqual({ scope: "all" });
     await user.click(screen.getByRole("tab", { name: "Active" }));
     await waitFor(() => expect(screen.queryByRole("gridcell", { name: /old-batch/ })).not.toBeInTheDocument());
     expect(router.state.location.search).toEqual({});
+  });
+
+  it("lists only the archived service accounts under Archived, and says when there are none", async () => {
+    signedIn();
+    projectData({ accounts: [serviceAccount(), archived] });
+    const { router } = await renderApp(projectPath("service-accounts?scope=archived"));
+    expect(await screen.findByRole("gridcell", { name: /old-batch/ })).toBeInTheDocument();
+    expect(screen.queryByRole("gridcell", { name: /ci-deploy/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Archived" })).toHaveAttribute("aria-selected", "true");
+    expect(router.state.location.search).toEqual({ scope: "archived" });
+  });
+
+  it("says when no service account is archived", async () => {
+    signedIn();
+    projectData({ accounts: [serviceAccount()] });
+    await renderApp(projectPath("service-accounts?scope=archived"));
+    expect(await screen.findByText("No archived service accounts")).toBeInTheDocument();
   });
 
   it("offers to create the first service account", async () => {
@@ -256,7 +273,7 @@ describe("ServiceAccountSheet", () => {
   it("shows an archived service account read-only", async () => {
     signedIn();
     account(archived, []);
-    const { user } = await renderApp(projectPath("service-accounts?account=sa_old&archived=true"));
+    const { user } = await renderApp(projectPath("service-accounts?account=sa_old&scope=all"));
 
     const sheet = await screen.findByRole("dialog", { name: "old-batch" });
     expect(await within(sheet).findByText("Archived 1 Oct 2026. Its keys were archived with it.")).toBeInTheDocument();

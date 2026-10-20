@@ -121,7 +121,14 @@ export function StepDialog({
           className="flex min-w-0 flex-col gap-16 step-motion"
           onKeyDown={(e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
-            if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && target.tagName === "INPUT" && target.getAttribute("role") !== "combobox") {
+            if (
+              e.key === "Enter" &&
+              !e.defaultPrevented &&
+              !e.metaKey &&
+              !e.ctrlKey &&
+              target.tagName === "INPUT" &&
+              target.getAttribute("role") !== "combobox"
+            ) {
               e.preventDefault();
               next();
             }

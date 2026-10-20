@@ -436,7 +436,8 @@
   "No models match": "Keine passenden Modelle",
   "Numbered pages, previous and next by cursor, or a Load more button.": "Nummerierte Seiten, zurück und weiter per Cursor oder ein Button „Mehr laden“.",
   "Of the output tokens, those spent reasoning. Shown when given, or when `reasoning` is set.": "Der Teil der Ausgabe-Token, der aufs Reasoning entfiel. Angezeigt, wenn angegeben oder wenn `reasoning` gesetzt ist.",
-  "Offers \"Create “…”\" when nothing matches exactly.": "Bietet „„…“ anlegen“ an, wenn nichts genau passt.",
+  "The words of the offer to add what was typed; `Add “…”` by default.": "Der Text des Angebots, das Eingegebene hinzuzufügen; standardmäßig `„…“ hinzufügen`.",
+  "Offers \"Add “…”\" when nothing matches exactly.": "Bietet „„…“ hinzufügen“ an, wenn nichts genau passt.",
   "On a filled well (`well`) or on the panel itself (`plain`).": "Auf einer gefüllten Fläche (`well`) oder direkt auf dem Panel (`plain`).",
   "On a row": "Auf einer Zeile",
   "On an edge-to-edge page": "Auf einer randlosen Seite",
@@ -1042,5 +1043,8 @@
   "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.": "Die Anbieter: ID, Name, ob die Organisation ihn verbunden hat, und ein kurzer Hinweis wie die Anzahl seiner Schlüssel.",
   "Select only: the height of the pill.": "Nur als Auswahlfeld: die Höhe der Pill.",
   "The chosen provider's id, when you control it.": "Die ID des gewählten Anbieters, wenn sie gesteuert wird.",
-  "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "Wird mit den IDs der Spalten aufgerufen, die bei der Breite der Tabelle wegfallen, damit eine verbliebene Spalte ihren Inhalt zeigen kann."
+  "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "Wird mit den IDs der Spalten aufgerufen, die bei der Breite der Tabelle wegfallen, damit eine verbliebene Spalte ihren Inhalt zeigen kann.",
+  "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "Lässt einen Untertitel unter seinem Titel umbrechen, statt ihn mit Auslassungspunkten zu kürzen, für Beschreibungen, die man ganz liest.",
+  "Lets a subtitle under its title wrap. Set by `List`.": "Lässt einen Untertitel unter seinem Titel umbrechen. Wird von `List` gesetzt.",
+  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "Wird mit dem Text aufgerufen, der getippt, aber noch nicht als Tag hinzugefügt ist, damit ein Formular ihn schon mitzählen kann."
 }

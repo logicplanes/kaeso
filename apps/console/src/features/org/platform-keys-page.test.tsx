@@ -48,12 +48,36 @@ describe("platform keys", () => {
     expect(keyQueries()).toEqual(["false", "true"]);
   });
 
+  it("lists only the archived keys under Archived", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", ({ query }: { query: URLSearchParams }) =>
+      paged(
+        query.get("include_archived") === "true" ? [platformKey(), platformKey({ id: "opk_old", name: "Old script", state: "archived" })] : [platformKey()],
+      ),
+    );
+    const { user } = await renderApp(PATH);
+    await cellOf("Terraform");
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await cellOf("Old script")).toBeInTheDocument();
+    expect(within(screen.getByRole("grid", { name: "Platform keys" })).queryByRole("gridcell", { name: /Terraform/ })).not.toBeInTheDocument();
+  });
+
+  it("says when no platform key is archived", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    const { user } = await renderApp(PATH);
+    await cellOf("Terraform");
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByText("No archived platform keys")).toBeInTheDocument();
+  });
+
   it("says when there are no active keys, and none at all under All", async () => {
     signedIn();
     on("GET", "orgs/:org/platform-keys", paged([]));
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("No active platform keys")).toBeInTheDocument();
-    expect(screen.getByText("Create one for scripts that manage the organization; archived keys are under All.")).toBeInTheDocument();
+    expect(screen.getByText("Create one for scripts that manage the organization; archived keys are under Archived.")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "All" }));
     expect(await screen.findByText("No platform keys yet")).toBeInTheDocument();
     expect(screen.getByText("Create one for scripts that manage the organization through the Platform API.")).toBeInTheDocument();
@@ -65,7 +89,7 @@ describe("platform keys", () => {
     on("GET", "orgs/:org/platform-keys", paged([platformKey({ state: "disabled" })]));
     await renderApp(PATH);
     expect(await screen.findByText("No active platform keys")).toBeInTheDocument();
-    expect(screen.getByText("Disabled, expired and archived keys are under All.")).toBeInTheDocument();
+    expect(screen.getByText("Disabled and expired keys are under All.")).toBeInTheDocument();
   });
 
   it("says when the keys couldn't load", async () => {

@@ -55,6 +55,19 @@ describe("organization invitations", () => {
     expect(inviteQueries()).toEqual(["true"]);
   });
 
+  it("offers the pending invitations first and every invitation under All", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged([member()]));
+    on("GET", "orgs/:org/invites", paged([]));
+    await renderApp(PATH);
+    expect(await screen.findByRole("tablist", { name: "Invitations" })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("tablist", { name: "Invitations" }))
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual(["Pending", "All"]);
+  });
+
   it("shows every invitation with its state under All", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));

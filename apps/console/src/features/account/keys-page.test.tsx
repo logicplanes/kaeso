@@ -71,7 +71,7 @@ describe("your API keys", () => {
     keys([]);
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("No active keys")).toBeInTheDocument();
-    expect(screen.getByText("Archived keys are under All; create new ones on a project's API keys page.")).toBeInTheDocument();
+    expect(screen.getByText("Archived keys are under Archived; create new ones on a project's API keys page.")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "All" }));
     expect(await screen.findByText("No keys yet")).toBeInTheDocument();
     expect(keyQueries()).toContainEqual({ limit: "100", include_archived: "true" });
@@ -93,12 +93,32 @@ describe("your API keys", () => {
     expect(within(grid()).getByRole("gridcell", { name: /old-bot/ })).toBeInTheDocument();
   });
 
+  it("lists only archived keys under Archived, and says when there are none", async () => {
+    signedIn();
+    keys([key(), key({ id: "key_gone", name: "gone-bot", state: "archived" })]);
+    const { user } = await renderApp(PATH);
+    await within(await screen.findByRole("grid", { name: "Your keys" })).findByRole("gridcell", { name: /support-bot/ });
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await within(grid()).findByRole("gridcell", { name: /gone-bot/ })).toBeInTheDocument();
+    expect(within(grid()).queryByRole("gridcell", { name: /support-bot/ })).not.toBeInTheDocument();
+  });
+
+  it("says when no key of yours is archived", async () => {
+    signedIn();
+    keys([key()]);
+    const { user } = await renderApp(PATH);
+    await within(await screen.findByRole("grid", { name: "Your keys" })).findByRole("gridcell", { name: /support-bot/ });
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByText("No archived keys")).toBeInTheDocument();
+  });
+
   it("says where the other keys are when none is active", async () => {
     signedIn();
     keys([key({ state: "disabled" })]);
     await renderApp(PATH);
     expect(await screen.findByText("No active keys")).toBeInTheDocument();
-    expect(screen.getByText("Disabled, expired and archived keys are under All.")).toBeInTheDocument();
+    expect(screen.getByText("Disabled and expired keys are under All.")).toBeInTheDocument();
   });
 
   it("says when the keys couldn't load", async () => {

@@ -22,6 +22,25 @@ describe("List", () => {
     );
     expect(screen.getByRole("grid")).toHaveClass("rounded-group");
   });
+  it("lets a description under the title wrap in a card, and keeps one line by default", () => {
+    const items = [{ id: "dev", title: "Developer", subtitle: "Builds with the project's models, keys and logs." }];
+    const { rerender } = render(
+      <InsetContent>
+        <List aria-label="Roles" items={items} wrapSubtitle />
+      </InsetContent>,
+    );
+    const description = screen.getByText("Builds with the project's models, keys and logs.");
+    expect(description).toHaveClass("text-pretty");
+    expect(description).not.toHaveClass("truncate");
+    expect(screen.getByRole("gridcell")).toHaveClass("min-h-56", "py-8");
+    rerender(
+      <InsetContent>
+        <List aria-label="Roles" items={items} />
+      </InsetContent>,
+    );
+    expect(screen.getByText("Builds with the project's models, keys and logs.")).toHaveClass("truncate");
+    expect(screen.getByRole("gridcell")).toHaveClass("h-56");
+  });
   it("puts a leading avatar before the title", () => {
     render(<List aria-label="Members" items={[{ id: "ada", title: "Ada", leading: <span data-testid="avatar" /> }]} />);
     const cell = screen.getByRole("gridcell");

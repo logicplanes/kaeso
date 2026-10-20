@@ -17,7 +17,7 @@ import {
   type CodeTab,
   type StepDialogResult,
 } from "@logicplanes/kaeso-ui";
-import { ScopeTabs } from "~/kaeso/scope-tabs";
+import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
 import type { CreatedKey_OrgKeyView, OrgKeyView } from "~/api/generated/types";
 import { orgQuery, platformKeysQuery } from "~/api/queries/orgs";
@@ -38,8 +38,8 @@ import { LastUsed } from "~/kaeso/last-used";
 export function PlatformKeysPage({ org }: { org: string }) {
   const needs = useNeedsRight(org);
   const rights = useOrgRights(org);
-  const [archived, setArchived] = useState(false);
-  const keys = useQuery({ ...platformKeysQuery(org, archived), enabled: rights.has("platform_keys.view") });
+  const [scope, setScope] = useState<Scope>("active");
+  const keys = useQuery({ ...platformKeysQuery(org, scope !== "active"), enabled: rights.has("platform_keys.view") });
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState<OrgKeyView | null>(null);
   const canCreate = rights.has("platform_keys.create");
@@ -72,7 +72,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
   });
 
   const fetched = keys.data ?? [];
-  const items = (archived ? fetched : fetched.filter((k) => k.state === "active")).map((k) => {
+  const items = (scope === "all" ? fetched : fetched.filter((k) => k.state === scope)).map((k) => {
     const expiry = expiryText(k);
     return {
       id: k.id,
@@ -132,7 +132,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         </Button>
       }
     >
-      <FilterRow tabs={<ScopeTabs label={t("org.platformKeys.title", "Platform keys")} all={archived} onChange={setArchived} />} />
+      <FilterRow tabs={<ScopeTabs label={t("org.platformKeys.title", "Platform keys")} value={scope} onChange={setScope} />} />
       <List
         aria-label={t("org.platformKeys.title", "Platform keys")}
         items={items}
@@ -143,14 +143,23 @@ export function PlatformKeysPage({ org }: { org: string }) {
           ) : (
             <Empty
               size="md"
-              title={archived ? t("org.platformKeys.noneYet", "No platform keys yet") : t("org.platformKeys.noneActive", "No active platform keys")}
-              description={
-                archived
-                  ? t("org.platformKeys.noneYetHint", "Create one for scripts that manage the organization through the Platform API.")
-                  : fetched.length > 0
-                    ? t("org.platformKeys.inactiveHint", "Disabled, expired and archived keys are under All.")
-                    : t("org.platformKeys.noneActiveHint", "Create one for scripts that manage the organization; archived keys are under All.")
+              title={
+                scope === "all"
+                  ? t("org.platformKeys.noneYet", "No platform keys yet")
+                  : scope === "archived"
+                    ? t("org.platformKeys.noneArchived", "No archived platform keys")
+                    : t("org.platformKeys.noneActive", "No active platform keys")
               }
+              {...(scope === "archived"
+                ? {}
+                : {
+                    description:
+                      scope === "all"
+                        ? t("org.platformKeys.noneYetHint", "Create one for scripts that manage the organization through the Platform API.")
+                        : fetched.length > 0
+                          ? t("org.platformKeys.inactiveHint", "Disabled and expired keys are under All.")
+                          : t("org.platformKeys.noneActiveHint", "Create one for scripts that manage the organization; archived keys are under Archived."),
+                  })}
             />
           )
         }

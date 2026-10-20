@@ -90,6 +90,7 @@
   "project.serviceAccounts.noKeys": "No keys yet.",
   "project.serviceAccounts.noLimits": "No limits on this service account; the project's limits apply.",
   "project.serviceAccounts.none": "No service accounts yet",
+  "project.serviceAccounts.noneArchived": "No archived service accounts",
   "project.serviceAccounts.noneHint": "Give a deployment or a pipeline keys that outlast the people who made them.",
   "project.serviceAccounts.notFound": "This service account doesn't exist or was removed.",
   "project.serviceAccounts.one": "Service account",
