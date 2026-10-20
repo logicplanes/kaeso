@@ -29,7 +29,7 @@ describe("buckets", () => {
     expect(bucketLabel("2026-08-01", "month")).toBe("Aug 2026");
     expect(bucketLabel("2026-09-14", "week")).toBe("Week of 14 Sep");
     expect(bucketLabel("2026-09-01", "month")).toBe("Sep 2026");
-    expect(bucketLabel("2026-10-12", "day")).toBe("Oct 12");
+    expect(bucketLabel("2026-10-12", "day")).toBe("12 Oct");
     expect(bucketAxisLabel("2026-08-03", "week")).toBe("3 Aug");
     expect(bucketAxisLabel("2026-08-01", "month")).toBe("Aug");
     expect(bucketAxisLabel("2027-01-01", "month")).toBe("2027");
@@ -75,8 +75,8 @@ describe.each(ZONES)("a new year's first bucket in $tz", ({ tz, offset }) => {
 
   it("names the year of 1 January, and of January by month", () => {
     const days = bucketsBetween("2026-12-30", "2027-01-02", "day");
-    expect(days.map((d) => bucketAxisLabel(d, "day"))).toEqual(["Dec 30", "Dec 31", "Jan 1, 2027", "Jan 2"]);
-    expect(days.map((d) => bucketLabel(d, "day"))).toEqual(["Dec 30", "Dec 31", "Jan 1, 2027", "Jan 2"]);
+    expect(days.map((d) => bucketAxisLabel(d, "day"))).toEqual(["30 Dec", "31 Dec", "1 Jan 2027", "2 Jan"]);
+    expect(days.map((d) => bucketLabel(d, "day"))).toEqual(["30 Dec", "31 Dec", "1 Jan 2027", "2 Jan"]);
     const months = bucketsBetween("2026-11-15", "2027-02-01", "month");
     expect(months.map((m) => bucketAxisLabel(m, "month"))).toEqual(["Nov", "Dec", "2027", "Feb"]);
     expect(months.map((m) => bucketLabel(m, "month"))).toEqual(["Nov 2026", "Dec 2026", "Jan 2027", "Feb 2027"]);
@@ -99,7 +99,7 @@ describe("a period across two years", () => {
     expect(spansYears("2026-04-21", "2026-10-20", "day")).toBe(false);
     expect(bucketLabel("2025-10-20", "week", true)).toBe("Week of 20 Oct 2025");
     expect(bucketLabel("2026-10-19", "week", true)).toBe("Week of 19 Oct 2026");
-    expect(bucketLabel("2025-12-20", "day", true)).toBe("Dec 20, 2025");
+    expect(bucketLabel("2025-12-20", "day", true)).toBe("20 Dec 2025");
     expect(bucketLabel("2026-10-01", "month", true)).toBe("Oct 2026");
   });
 });

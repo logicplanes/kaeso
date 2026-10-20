@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   formatBytes,
+  formatContext,
   formatDate,
   formatDuration,
   formatLocale,
+  formatPrice,
   formatRelative,
   formatTimeZone,
   formatTokens,
@@ -59,8 +61,8 @@ describe("formatRelative", () => {
     expect(formatRelative(new Date(2026, 9, 15, 9, 0), now)).toBe("3 h ago");
     expect(formatRelative(new Date(2026, 9, 17, 12, 0), now)).toBe("in 2 days");
     expect(formatRelative(new Date(2026, 9, 12, 12, 0), now)).toBe("3 days ago");
-    expect(formatRelative(new Date(2026, 8, 1), now)).toBe("1 Sept");
-    expect(formatRelative(new Date(2025, 8, 1), now)).toBe("1 Sept 2025");
+    expect(formatRelative(new Date(2026, 8, 1), now)).toBe("1 Sep");
+    expect(formatRelative(new Date(2025, 8, 1), now)).toBe("1 Sep 2025");
   });
 });
 
@@ -77,9 +79,19 @@ describe("in other languages", () => {
   });
 
   it("uses translated words and the language's dates", () => {
-    setFormatLocale("de", { "format.minutes": "{min} Min." });
+    setFormatLocale("de", { "format.minutes": "{min} Min.", "format.thousands": "{value}\u00a0Tsd." });
     expect(formatDuration(120_000)).toBe("2 Min.");
-    expect(formatTokens(12_400)).toBe("12.400");
+    expect(formatTokens(12_400)).toBe("12,4\u00a0Tsd.");
+    expect(formatTokens(793_640)).toBe("793,6\u00a0Tsd.");
+    expect(formatTokens(3_801)).toBe("3,8\u00a0Tsd.");
+    expect(formatTokens(2_890_000)).toBe("2,89\u00a0Mio.");
+    expect(formatContext(131_072)).toBe("128K");
+    expect(formatContext(8_000)).toBe("8K");
+    expect(formatPrice("0.075")).toBe("0,075\u00a0$");
+    setFormatLocale("zh-CN", { "format.thousands": "{value}千" });
+    expect(formatTokens(3_801)).toBe("3.8千");
+    expect(formatTokens(793_640)).toBe("79.4万");
+    setFormatLocale("de");
     expect(formatDate(Date.UTC(2026, 9, 15, 8, 5, 9), { time: true, seconds: true, utc: true })).toBe("15. Okt. 2026, 08:05:09 UTC");
   });
 });

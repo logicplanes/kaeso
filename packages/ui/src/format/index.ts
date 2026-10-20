@@ -35,20 +35,29 @@ export function formatTimeZone(): string | undefined {
 const inZone = (): { timeZone?: string } => (zone ? { timeZone: zone } : {});
 
 const numberLocale = () => (current === "en" ? "en-US" : current);
-const dateLocale = () => (current === "en" ? "en-GB" : current);
 
 export function formatNumber(value: number, options: Intl.NumberFormatOptions = {}): string {
   return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 2, ...options }).format(value);
 }
 
+const COMPACT = { maximumFractionDigits: 1, maximumSignificantDigits: 3, roundingPriority: "morePrecision" } as const;
+
 export function formatTokens(value: number): string {
   if (Math.abs(value) < 1000) return formatNumber(value, { maximumFractionDigits: 0 });
-  return new Intl.NumberFormat(numberLocale(), {
-    notation: "compact",
-    maximumFractionDigits: 1,
-    maximumSignificantDigits: 3,
-    roundingPriority: "morePrecision",
-  }).format(value);
+  const compact = new Intl.NumberFormat(numberLocale(), { notation: "compact", ...COMPACT }).format(value);
+  // German and Chinese have no short form below a million and ten thousand, so 793,640 would stand in full beside 2.89 million.
+  if (/\p{L}/u.test(compact)) return compact;
+  return t("format.thousands", "{value}K", { value: formatNumber(value / 1000, COMPACT) });
+}
+
+/** A model's context or output limit as models are named: a multiple of 1,024 in binary thousands ("128K" for 131,072, "1M" for 1,048,576), anything else in decimal ones ("128K" for 128,000, "200K"). */
+export function formatContext(tokens: number): string {
+  const binary = tokens % 1000 !== 0 && tokens % 1024 === 0;
+  const k = binary ? tokens / 1024 : tokens / 1000;
+  const unit = binary ? 1024 : 1000;
+  if (tokens < 1000) return formatNumber(tokens, { maximumFractionDigits: 0 });
+  if (k >= unit) return `${formatNumber(k / unit, { maximumFractionDigits: 1 })}M`;
+  return `${formatNumber(k, { maximumFractionDigits: k < 10 ? 1 : 0 })}K`;
 }
 
 export function formatBytes(bytes: number): string {
@@ -76,6 +85,12 @@ export function formatUSD(amount: string, options: { significant?: number; decim
   if (options.decimals === undefined || !/^\s*-?\d*\.?\d*[1-9]/.test(amount) || /[1-9]/.test(text)) return localUSD(text);
   const smallest = localUSD(`$${options.decimals ? `0.${"1".padStart(options.decimals, "0")}` : "1"}`);
   return /^\s*-/.test(amount) ? `>\u00a0−${smallest}` : `<\u00a0${smallest}`;
+}
+
+/** A price per million tokens, exactly as set: at least two decimals and up to six ("$0.075", "$4.00", "$1.25"). */
+export function formatPrice(amount: string): string {
+  const frac = /\.(\d*?)0*\s*$/.exec(amount)?.[1] ?? "";
+  return formatUSD(amount, { decimals: Math.min(6, Math.max(2, frac.length)) });
 }
 
 function localUSD(text: string): string {
@@ -159,26 +174,50 @@ export function formatDuration(ms: number, options: { precise?: boolean | undefi
 type DateInput = Date | string | number;
 const toDate = (d: DateInput) => (d instanceof Date ? d : new Date(d));
 
+const dateFormats = new Map<string, (d: Date) => string>();
+
+/** A cached date formatter in the format locale. English writes the day first with three-letter months ("20 Sep 2026", "Mon 21 Sep"), the console's English everywhere. */
+export function dateFormatter(options: Intl.DateTimeFormatOptions, locale: string = current): (value: DateInput) => string {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let format = dateFormats.get(key);
+  if (!format) {
+    if (locale === "en") {
+      const day = new Intl.DateTimeFormat("en-GB", options);
+      const month =
+        options.month === "short" ? new Intl.DateTimeFormat("en-US", { month: "short", timeZone: options.timeZone ?? day.resolvedOptions().timeZone }) : null;
+      format = (d) =>
+        day
+          .formatToParts(d)
+          .map((p) => (p.type === "month" && month ? month.format(d) : p.type === "weekday" ? p.value.replace(/,$/, "") : p.value))
+          .join("");
+    } else {
+      const f = new Intl.DateTimeFormat(locale, options);
+      format = (d) => f.format(d);
+    }
+    dateFormats.set(key, format);
+  }
+  return (value) => format(toDate(value));
+}
+
 export function formatDate(value: DateInput, options: { time?: boolean; utc?: boolean; seconds?: boolean } = {}): string {
-  const d = toDate(value);
-  const f = new Intl.DateTimeFormat(dateLocale(), {
+  const f = dateFormatter({
     day: "numeric",
     month: "short",
     year: "numeric",
     ...(options.time ? { hour: "2-digit", minute: "2-digit", ...(options.seconds ? { second: "2-digit" } : {}), hourCycle: "h23" } : {}),
     ...(options.utc ? { timeZone: "UTC" } : inZone()),
   });
-  return `${f.format(d)}${options.utc ? " UTC" : ""}`;
+  return `${f(value)}${options.utc ? " UTC" : ""}`;
 }
 
 export function formatDateRange(from: DateInput, to: DateInput): string {
   const a = toDate(from);
   const b = toDate(to);
-  const f = new Intl.DateTimeFormat(numberLocale(), { month: "short", day: "numeric" });
-  const withYear = new Intl.DateTimeFormat(numberLocale(), { month: "short", day: "numeric", year: "numeric" });
-  if (a.getFullYear() !== b.getFullYear()) return `${withYear.format(a)} – ${withYear.format(b)}`;
-  const start = f.format(a);
-  return a.toDateString() === b.toDateString() ? start : `${start} – ${f.format(b)}`;
+  const f = dateFormatter({ day: "numeric", month: "short" });
+  const withYear = dateFormatter({ day: "numeric", month: "short", year: "numeric" });
+  if (a.getFullYear() !== b.getFullYear()) return `${withYear(a)} – ${withYear(b)}`;
+  const start = f(a);
+  return a.toDateString() === b.toDateString() ? start : `${start} – ${f(b)}`;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -219,11 +258,11 @@ export function formatRelative(value: DateInput, now: DateInput = Date.now()): s
       ? t("format.inDays", "{count, plural, one {in # day} other {in # days}}", { count })
       : t("format.daysAgo", "{count, plural, one {# day ago} other {# days ago}}", { count });
   }
-  const year = new Intl.DateTimeFormat("en", { year: "numeric", ...inZone() });
-  return new Intl.DateTimeFormat(dateLocale(), {
+  const year = dateFormatter({ year: "numeric", ...inZone() }, "en");
+  return dateFormatter({
     day: "numeric",
     month: "short",
     ...inZone(),
-    ...(year.format(d) !== year.format(toDate(now)) ? { year: "numeric" } : {}),
-  }).format(d);
+    ...(year(d) !== year(toDate(now)) ? { year: "numeric" } : {}),
+  })(d);
 }

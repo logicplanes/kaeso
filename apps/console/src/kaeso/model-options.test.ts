@@ -23,6 +23,11 @@ describe("model picker options", () => {
     });
   });
 
+  it("write prices exactly, with at least two decimals", () => {
+    expect(catalogueModelOption(entry({ input_price: "0.075", output_price: "0.3" })).price).toBe("$0.075 / $0.30");
+    expect(catalogueModelOption(entry({ input_price: "4", output_price: "20" })).price).toBe("$4.00 / $20.00");
+  });
+
   it("leave out a name that repeats the id, and mark deprecated models", () => {
     expect(catalogueModelOption(entry({ display_name: "gpt-5-mini" }, { deprecated: true }))).toEqual({
       value: "cm_01",

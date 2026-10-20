@@ -1,5 +1,5 @@
 import type { Capability } from "@logicplanes/kaeso-ui";
-import { formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatContext, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { t } from "~/i18n";
 
@@ -24,7 +24,7 @@ export function capabilityOptions(): { value: Capability; label: string }[] {
 }
 
 export function contextLabel(tokens: number | null | undefined): string {
-  return tokens ? formatTokens(tokens) : "—";
+  return tokens ? formatContext(tokens) : "—";
 }
 
 export function priceLabel(f: Fields): string {

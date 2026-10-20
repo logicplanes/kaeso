@@ -3,11 +3,11 @@ import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import { capabilities } from "~/features/project/models/model-fields";
 import { modelName } from "~/format/models";
-import { costUSD } from "~/format/money";
+import { formatPrice } from "@logicplanes/kaeso-ui/format";
 import { recall, remember } from "~/shell/session-memory";
 
 export function pickerPrice(input: string | null | undefined, output: string | null | undefined): string | undefined {
-  return input && output ? `${costUSD(input)} / ${costUSD(output)}` : undefined;
+  return input && output ? `${formatPrice(input)} / ${formatPrice(output)}` : undefined;
 }
 
 export function catalogueModelOption(m: CatalogueModelView): ModelPickerOption {

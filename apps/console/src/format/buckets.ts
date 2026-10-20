@@ -1,5 +1,5 @@
-import { locale, t } from "~/i18n";
-import { dayFormat, dayLabel, daysBetween, utcDay } from "./period";
+import { t } from "~/i18n";
+import { dayFormat, dayLabel, daysBetween, fullDayLabel, monthLabel, utcDay } from "./period";
 
 export type Granularity = "day" | "week" | "month";
 
@@ -27,16 +27,8 @@ export function bucketsBetween(from: string, to: string, g: Granularity): string
   }
 }
 
-const month = dayFormat("en-US", { month: "short" });
-const dayYearName = dayFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
-const dayMonthName = dayFormat("en-GB", { day: "numeric", month: "short" });
-const dayMonthYearName = dayFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const monthYearName = dayFormat("en-US", { month: "short", year: "numeric" });
-const yearName = dayFormat("en-US", { year: "numeric" });
-const english = () => locale() === "en";
-const dayMonth = (day: string) => (english() ? `${Number(day.slice(8, 10))} ${month(day)}` : dayMonthName(day));
-const dayMonthYear = (day: string) => (english() ? `${dayMonth(day)} ${day.slice(0, 4)}` : dayMonthYearName(day));
-const monthYear = (day: string) => (english() ? `${month(day)} ${day.slice(0, 4)}` : monthYearName(day));
+const month = dayFormat({ month: "short" });
+const yearName = dayFormat({ year: "numeric" });
 
 function opensYear(key: string, g: Granularity): boolean {
   if (key.slice(5, 7) !== "01") return false;
@@ -44,14 +36,14 @@ function opensYear(key: string, g: Granularity): boolean {
   return g === "day" ? day === 1 : g === "week" ? day <= 7 : true;
 }
 
-const dayName = (day: string, withYear = false) => (withYear || opensYear(day, "day") ? dayYearName(day) : dayLabel(day));
-const weekName = (day: string, withYear = false) => (withYear || opensYear(day, "week") ? dayMonthYear(day) : dayMonth(day));
+const dayName = (day: string, withYear = false) => (withYear || opensYear(day, "day") ? fullDayLabel(day) : dayLabel(day));
+const weekName = (day: string, withYear = false) => (withYear || opensYear(day, "week") ? fullDayLabel(day) : dayLabel(day));
 
 export const spansYears = (from: string, to: string, g: Granularity) => (bucketsBetween(from, to, g)[0] ?? from).slice(0, 4) !== to.slice(0, 4);
 
 export function bucketLabel(key: string, g: Granularity, withYear = false): string {
   if (g === "day") return dayName(key, withYear);
-  return g === "week" ? t("format.bucket.weekOf", "Week of {date}", { date: weekName(key, withYear) }) : monthYear(key);
+  return g === "week" ? t("format.bucket.weekOf", "Week of {date}", { date: weekName(key, withYear) }) : monthLabel(key);
 }
 
 const lastDay = (key: string, g: Granularity) => {

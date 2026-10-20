@@ -78,7 +78,7 @@ describe("ModelsPage", () => {
     expect(cells()).toEqual([
       "Anthropic2",
       "claude-haiku-4-5No longer listedmessages1.5M$1 / $5Oct 2025",
-      "Claude Sonnet 4.5claude-sonnet-4-5Overridden 1fastdefault+1messages200K$3 / $15Sept 2025",
+      "Claude Sonnet 4.5claude-sonnet-4-5Overridden 1fastdefault+1messages200K$3 / $15Sep 2025",
       "OpenAI2",
       "GPT-5gpt-5responses——Aug 2025",
       "text-embedding-3Customembeddings—$0.13",
@@ -278,8 +278,8 @@ describe("ModelsPage", () => {
     await screen.findByText("claude-3-haiku");
     expect(cells()).toEqual([
       "Anthropic2",
-      "Claude Sonnet 4.5claude-3-haikuDeprecatedmessages200K$3 / $15Sept 2025",
-      "Claude Sonnet 4.5claude-sonnet-4-5UnavailableUnavailablemessages200K$3 / $15Sept 2025",
+      "Claude Sonnet 4.5claude-3-haikuDeprecatedmessages200K$3 / $15Sep 2025",
+      "Claude Sonnet 4.5claude-sonnet-4-5UnavailableUnavailablemessages200K$3 / $15Sep 2025",
     ]);
   });
 

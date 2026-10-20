@@ -1,4 +1,4 @@
-import { formatLocale } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatLocale } from "@logicplanes/kaeso-ui/format";
 
 export function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -19,17 +19,8 @@ export function offsetOf(zone: string, at: Date = new Date()): string {
 }
 
 export function clockIn(zone: string, at: Date = new Date()): string {
-  const tag = formatLocale() === "en" ? "en-GB" : formatLocale();
   try {
-    return new Intl.DateTimeFormat(tag, {
-      timeZone: zone,
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    }).format(at);
+    return dateFormatter({ timeZone: zone, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })(at);
   } catch {
     return "";
   }

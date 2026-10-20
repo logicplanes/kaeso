@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
-import { formatTokens } from "../../format/index.js";
+import { formatContext } from "../../format/index.js";
 import { CommandList, type CommandListGroup, type CommandListItem } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
 import { Highlight } from "../combobox/combobox.js";
@@ -77,7 +77,7 @@ const CHIPS_ABOVE = 1;
 
 function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption; query: string; providerLabel?: string | undefined }) {
   const model = option.model ?? option.value;
-  const details = [option.context ? formatTokens(option.context) : "", option.price ?? ""].filter(Boolean).join(" · ");
+  const details = [option.context ? formatContext(option.context) : "", option.price ?? ""].filter(Boolean).join(" · ");
   return (
     <>
       {providerLabel !== undefined && (

@@ -1,3 +1,4 @@
+import { dateFormatter } from "@logicplanes/kaeso-ui/format";
 import { locale } from "~/i18n";
 import { utcDay } from "./period-search";
 
@@ -13,21 +14,15 @@ export function daysBetween(from: string, to: string): string[] {
   return out;
 }
 
-export function dayFormat(english: "en-US" | "en-GB", options: Intl.DateTimeFormatOptions): (day: string) => string {
-  const made = new Map<string, Intl.DateTimeFormat>();
-  return (day) => {
-    const tag = locale() === "en" ? english : locale();
-    let f = made.get(tag);
-    if (!f) made.set(tag, (f = new Intl.DateTimeFormat(tag, { ...options, timeZone: "UTC" })));
-    return f.format(new Date(`${day}T00:00:00Z`));
-  };
+export function dayFormat(options: Intl.DateTimeFormatOptions): (day: string) => string {
+  return (day) => dateFormatter({ ...options, timeZone: "UTC" }, locale())(`${day}T00:00:00Z`);
 }
 
-export const dayLabel = dayFormat("en-US", { month: "short", day: "numeric" });
+export const dayLabel = dayFormat({ day: "numeric", month: "short" });
 
-export const monthLabel = dayFormat("en-GB", { month: "short", year: "numeric" });
+export const monthLabel = dayFormat({ month: "short", year: "numeric" });
 
-export const fullDayLabel = dayFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+export const fullDayLabel = dayFormat({ day: "numeric", month: "short", year: "numeric" });
 
 export function previousPeriod(from: string, to: string): { from: string; to: string; days: number } {
   const days = daysBetween(from, to).length;
