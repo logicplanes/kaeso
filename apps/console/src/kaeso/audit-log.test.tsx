@@ -87,6 +87,37 @@ describe("AuditLog", () => {
     expect(logQuery()).toEqual([{ limit: "100" }]);
   });
 
+  it("names actions and targets in words, and says the times' zone", async () => {
+    const createdKey = auditEvent({ id: "evt_key", action: "key.create", target_kind: "key", target_id: "key_web", after: values({ name: "checkout-web" }) });
+    const archived = auditEvent({ id: "evt_arch", action: "key.archive", target_kind: "key", target_id: "key_web", after: null, before: null });
+    const sso = auditEvent({ id: "evt_sso", action: "security.sso_delete", target_kind: "org", target_id: ORG, after: null, before: null });
+    orgLog([sso, archived, createdKey]);
+    on("GET", `${ORG_LOG}/:event`, sso);
+    const { user } = await renderApp(PATH);
+
+    const grid = await table();
+    expect(
+      within(grid)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toContain("Time (UTC)");
+    const rows = within(grid).getAllByRole("row").slice(1);
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining("Single sign-on disconnected"),
+      expect.stringContaining("Key archived"),
+      expect.stringContaining("Key created"),
+    ]);
+    expect(rows[1]).toHaveTextContent("checkout-web");
+    expect(rows[1]).not.toHaveTextContent("key_web");
+    expect(grid).not.toHaveTextContent("security.sso_delete");
+
+    await user.click(rows[0] as HTMLElement);
+    const sheet = await screen.findByRole("dialog", { name: "Single sign-on disconnected" });
+    expect(sheet).toHaveTextContent("security.sso_delete");
+    expect(await within(sheet).findByText(/ UTC$/)).toBeInTheDocument();
+    expect(within(sheet).getByText("No before or after values are kept for this kind of change.")).toBeInTheDocument();
+  });
+
   it("shows each actor's picture, or their initial without one", async () => {
     const pictured = member({ user: { id: OTHER_USER, name: "Grace Hopper", email: "grace@example.com", avatar_url: "/avatars/grace.webp" } });
     signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" }, memberships: [membership({ rights: ALL_ORG_RIGHTS })] }) });
@@ -143,8 +174,8 @@ describe("AuditLog", () => {
     await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ actor: OTHER_USER }));
 
-    await user.type(screen.getByRole("combobox", { name: "Action" }), "key.create");
-    await user.click(await screen.findByRole("option", { name: "key.create" }));
+    await user.type(screen.getByRole("combobox", { name: "Action" }), "Key created");
+    await user.click(await screen.findByRole("option", { name: /^Key created/ }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ actor: OTHER_USER, action: "key.create" }));
 
     const target = screen.getByRole("searchbox", { name: "Target id" });
@@ -221,8 +252,8 @@ describe("AuditLog", () => {
     await renderApp(`${PATH}?event=evt_add`);
     const sheet = await screen.findByRole("dialog", { name: "project.created" });
     expect(await within(sheet).findByText("After")).toBeInTheDocument();
-    expect(within(sheet).getByText("proj_new")).toBeInTheDocument();
-    expect(within(sheet).queryByRole("button", { name: "proj_new" })).not.toBeInTheDocument();
+    expect(within(sheet).getByText("New")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: /proj_new/ })).toBeInTheDocument();
   });
 
   it("shows the values an event removed", async () => {
@@ -239,7 +270,7 @@ describe("AuditLog", () => {
     on("GET", `${ORG_LOG}/:event`, old);
     await renderApp(`${PATH}?event=evt_old`);
     const sheet = await screen.findByRole("dialog", { name: "org.updated" });
-    expect(await within(sheet).findByText("This event records no values.")).toBeInTheDocument();
+    expect(await within(sheet).findByText("No before or after values are kept for this kind of change.")).toBeInTheDocument();
     expect(within(sheet).queryByText("IP")).not.toBeInTheDocument();
     expect(within(sheet).queryByRole("heading", { name: "Rights" })).not.toBeInTheDocument();
   });
@@ -266,7 +297,7 @@ describe("AuditLog", () => {
     const { user } = await renderApp(`${PATH}?actor=${OTHER_USER}`);
 
     await table();
-    await user.click(screen.getByRole("button", { name: "Export" }));
+    await user.click(screen.getByRole("button", { name: "Export JSON Lines" }));
     expect(await notifications().findByText("Export started")).toBeInTheDocument();
     expect(logQuery()).toContainEqual({ actor: OTHER_USER, limit: "1" });
   });
@@ -278,7 +309,7 @@ describe("AuditLog", () => {
     );
     await renderApp(PATH);
     await table();
-    expect(screen.queryByRole("button", { name: "Export" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Export JSON Lines" })).not.toBeInTheDocument();
   });
 
   it("opens a project event from the loaded rows", async () => {
@@ -381,11 +412,11 @@ describe("AuditLog", () => {
     const { user } = await renderApp(PATH);
 
     await table();
-    await user.click(screen.getByRole("button", { name: "Export" }));
+    await user.click(screen.getByRole("button", { name: "Export JSON Lines" }));
     expect(await notifications().findAllByText("Exporting audit events")).not.toHaveLength(0);
     stream.push(2048);
     expect(await notifications().findAllByText("Exporting audit events · 2.0 KB")).not.toHaveLength(0);
-    await user.click(screen.getByRole("button", { name: "Export" }));
+    await user.click(screen.getByRole("button", { name: "Export JSON Lines" }));
     expect(requests("GET", `${ORG_LOG}/export`)).toHaveLength(1);
     stream.end();
     expect(await notifications().findByText("Audit log exported")).toBeInTheDocument();

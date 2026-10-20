@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { apply, load } from "~/i18n";
-import { AUDIT_ACTIONS, auditActionOptions, rightsChangeSummary, targetKindLabel } from "./audit";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { AUDIT_ACTIONS, auditActionLabel, auditActionOptions, rightsChangeSummary, snapshotName, targetKindLabel } from "./audit";
 
 const names: Record<string, string> = { "logs.export": "Export logs", "limits.manage": "Manage limits", "logs.metadata.view": "View request logs" };
 const name = (id: string) => names[id] ?? id;
@@ -53,24 +55,58 @@ describe("rights change summary", () => {
 });
 
 describe("audit actions", () => {
-  it("offer every action, each kind first with a choice for all its actions", () => {
+  const gatewayActions = () => {
+    const src = readFileSync(join(__dirname, "../../../../crates/kaeso-server/src/platform/audit.rs"), "utf8");
+    const start = src.indexOf("pub const ACTIONS");
+    return [...src.slice(start, src.indexOf("];", start)).matchAll(/"([a-z0-9_]+\.[a-z0-9_]+)"/g)].map((m) => m[1] ?? "");
+  };
+
+  it("name every action the gateway writes, and no other", () => {
+    const gateway = gatewayActions();
+    expect(gateway.length).toBeGreaterThan(90);
+    expect(Object.values(AUDIT_ACTIONS).flat().sort()).toEqual([...gateway].sort());
+    for (const action of gateway) expect(auditActionLabel(action), action).not.toBe(action);
+    expect(new Set(gateway.map(auditActionLabel)).size).toBe(gateway.length);
+  });
+
+  it("keep an action they don't know as it was written", () => {
+    expect(auditActionLabel("webhook.create")).toBe("webhook.create");
+  });
+
+  it("offer every action by its name, each kind first with a choice for all its actions", () => {
     const options = auditActionOptions();
     expect(options.slice(0, 4)).toEqual([
-      { value: "alias.", label: "alias.*", description: "Every action of this kind" },
-      { value: "alias.create", label: "alias.create" },
-      { value: "alias.update", label: "alias.update" },
-      { value: "alias.delete", label: "alias.delete" },
+      { value: "alias.", label: "Aliases: every action", description: "alias.*" },
+      { value: "alias.create", label: "Alias created", description: "alias.create" },
+      { value: "alias.update", label: "Alias changed", description: "alias.update" },
+      { value: "alias.delete", label: "Alias deleted", description: "alias.delete" },
     ]);
     const kinds = Object.keys(AUDIT_ACTIONS);
     const actions = Object.values(AUDIT_ACTIONS).flat();
     expect(options).toHaveLength(kinds.length + actions.length);
-    expect(options.filter((o) => o.description).map((o) => o.value)).toEqual(kinds.map((k) => `${k}.`));
-    expect(actions.every((a) => kinds.some((k) => a.startsWith(`${k}.`)))).toBe(true);
+    expect(options.filter((o) => o.value.endsWith(".")).map((o) => o.value)).toEqual(kinds.map((k) => `${k}.`));
   });
 
-  it("describe the choice for all actions in German", async () => {
+  it("are named in German and Chinese", async () => {
     apply(await load("de"));
-    expect(auditActionOptions()[0]?.description).toBe("Jede Aktion dieser Art");
+    expect(auditActionLabel("security.sso_delete")).toBe("Single Sign-on getrennt");
+    expect(auditActionOptions()[0]?.label).toBe("Aliasse: jede Aktion");
+    apply(await load("zh-CN"));
+    expect(auditActionLabel("key.archive")).toBe("已归档密钥");
+  });
+});
+
+describe("target names in snapshots", () => {
+  it("come from the event's values, by the kind of target", () => {
+    expect(snapshotName({ target_kind: "key", after: { name: "checkout-web" } })).toBe("checkout-web");
+    expect(snapshotName({ target_kind: "catalogue_model", after: { provider: "deepseek", model_id: "deepseek-flash" } })).toBe("deepseek/deepseek-flash");
+    expect(snapshotName({ target_kind: "invite", after: { email: "sam@example.com" } })).toBe("sam@example.com");
+    expect(snapshotName({ target_kind: "limit", after: { description: "daily token budget of 20000000 tokens" } })).toBe(
+      "daily token budget of 20000000 tokens",
+    );
+    expect(snapshotName({ target_kind: "org", after: { org: { id: "org_1", name: "Northwind Labs" } } })).toBe("Northwind Labs");
+    expect(snapshotName({ target_kind: "role", after: null, before: { name: "Support lead" } })).toBe("Support lead");
+    expect(snapshotName({ target_kind: "key", after: null, before: null })).toBeNull();
   });
 });
 
