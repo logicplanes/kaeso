@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
@@ -86,17 +86,16 @@ export function tokenKindLabel(kind: TokenKind, t: UiText = englishText): string
   }
 }
 
-export function useSize<T extends HTMLElement>(): [RefObject<T | null>, { width: number; height: number }] {
-  const ref = useRef<T | null>(null);
+export function useSize<T extends HTMLElement>(): [(el: T | null) => void, { width: number; height: number }] {
+  const [el, setEl] = useState<T | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   useLayoutEffect(() => {
-    const el = ref.current;
     if (!el) return;
     const set = () => setSize({ width: Math.round(el.clientWidth), height: Math.round(el.clientHeight) });
     set();
     return observeResize([el], set);
-  }, []);
-  return [ref, size];
+  }, [el]);
+  return [setEl, size];
 }
 
 const ease = (t: number) => 1 - Math.pow(1 - t, 3);
