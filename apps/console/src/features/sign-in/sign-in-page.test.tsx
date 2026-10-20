@@ -361,7 +361,7 @@ describe("single sign-on without an address", () => {
     expect(
       await within(await screen.findByRole("region", { name: "Benachrichtigungen" })).findByText("Der Identitätsanbieter hat die Anmeldung abgelehnt."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
     expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
   });
 
