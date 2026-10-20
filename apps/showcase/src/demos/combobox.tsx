@@ -58,7 +58,7 @@ export function States() {
         <Combobox aria-label="Value" options={options} defaultValue="claude-sonnet-4-5" />
         <Combobox multiple aria-label="Chips" options={options} defaultValue={["gpt-5", "gpt-5-mini", "claude-haiku-4-5"]} />
         <Combobox aria-label="Disabled" options={options} disabled defaultValue="gpt-5" />
-        <ModelLabel provider="openai" model="gpt-5" name="GPT-5" />
+        <ModelLabel provider="openai" providerName="OpenAI" model="gpt-5" name="GPT-5" />
       </div>
     </StateSection>
   );

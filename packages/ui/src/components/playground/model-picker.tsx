@@ -82,7 +82,7 @@ function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption;
     <>
       {providerLabel !== undefined && (
         <span aria-hidden className="flex">
-          <ProviderBadge provider={option.provider} />
+          <ProviderBadge provider={option.provider} name={providerLabel} />
         </span>
       )}
       <span className="flex min-w-0 flex-1 items-baseline gap-8">
@@ -149,7 +149,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
 
   const byValue = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
   const provider = useMemo(() => new Map(providers.map((p) => [p.id, p])), [providers]);
-  const nameOf = useCallback((id: string) => provider.get(id)?.name ?? providerName(id), [provider]);
+  const nameOf = useCallback((id: string) => providerName(id, provider.get(id)?.name), [provider]);
   const providerOrder = useMemo(() => {
     const ids = [...new Set(options.map((o) => o.provider))];
     return ids.sort(
@@ -191,7 +191,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
         label: nameOf(id),
         leading: (
           <span aria-hidden className="flex">
-            <ProviderBadge provider={id} size="sm" />
+            <ProviderBadge provider={id} name={nameOf(id)} size="sm" />
           </span>
         ),
         count: models.length,
@@ -240,13 +240,23 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const summary = props.multiple ? (
     first ? (
       chosen.length === 1 ? (
-        <ModelLabel provider={first.provider} model={first.model ?? first.value} {...(first.name ? { name: first.name } : {})} />
+        <ModelLabel
+          provider={first.provider}
+          providerName={nameOf(first.provider)}
+          model={first.model ?? first.value}
+          {...(first.name ? { name: first.name } : {})}
+        />
       ) : (
         t("modelPicker.firstAndMore", "{first} +{count}", { first: first.name ?? first.model ?? first.value, count: String(chosen.length - 1) })
       )
     ) : undefined
   ) : first ? (
-    <ModelLabel provider={first.provider} model={first.model ?? first.value} {...(first.name ? { name: first.name } : {})} />
+    <ModelLabel
+      provider={first.provider}
+      providerName={nameOf(first.provider)}
+      model={first.model ?? first.value}
+      {...(first.name ? { name: first.name } : {})}
+    />
   ) : current === ALL || (current === null && allLabel) ? (
     allLabel
   ) : undefined;

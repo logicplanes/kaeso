@@ -14,6 +14,7 @@ import {
   type ResponseStatus,
 } from "@logicplanes/kaeso-ui/playground";
 import { answers, costOf, instructions, playgroundModels, prompts, tokensOf, type PlaygroundModel } from "~/fixtures/playground";
+import { providers } from "~/fixtures/kaeso";
 
 export interface Metrics {
   ttft?: number | undefined;
@@ -217,6 +218,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
                   <ModelPicker
                     value={c.model}
                     options={playgroundModels}
+                    providers={providers}
                     onValueChange={(v) => setColumns((cs) => cs.map((x) => (x.id === c.id ? { ...x, model: v } : x)))}
                   />
                 }

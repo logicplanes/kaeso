@@ -1,47 +1,34 @@
 import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { CredentialView } from "~/api/generated/types";
+import type { CredentialView, ProviderView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
-import { providerLabel } from "~/format/labels";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
-import { providerOptions } from "./providers";
+import { providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
-const KEY_SITES: Record<string, { url: string; page: string; prefix?: string }> = {
-  openai: { url: "https://platform.openai.com/api-keys", page: "API keys", prefix: "sk-" },
-  anthropic: { url: "https://platform.claude.com/settings/keys", page: "Settings → API keys", prefix: "sk-ant-" },
-  deepseek: { url: "https://platform.deepseek.com/api_keys", page: "API keys", prefix: "sk-" },
-  xai: { url: "https://console.x.ai/team/default/api-keys", page: "API Keys", prefix: "xai-" },
-  togetherai: { url: "https://api.together.ai/settings/projects/~current/api-keys", page: "API Keys", prefix: "tgp_v1_" },
-  groq: { url: "https://console.groq.com/keys", page: "API Keys", prefix: "gsk_" },
-  openrouter: { url: "https://openrouter.ai/settings/keys", page: "API Keys", prefix: "sk-or-v1-" },
-  mistral: { url: "https://console.mistral.ai/api-keys", page: "API keys" },
-};
-
-function keyHelp(provider: string): ReactNode {
-  const where = KEY_SITES[provider];
-  if (!where) return t("kaeso.providerKey.help", "Paste the provider's API key.");
+function keyHelp(provider: ProviderView | undefined): ReactNode {
+  if (!provider) return t("kaeso.providerKey.help", "Paste the provider's API key.");
+  const page = provider.key_page;
   const site = (
-    <Link href={where.url} external>
-      {new URL(where.url).host}
+    <Link href={page.url} external>
+      {new URL(page.url).host}
     </Link>
   );
-  return where.prefix
+  return provider.key_prefix
     ? tRich("kaeso.providerKey.where", "Create one at {site} under {page}; it starts with {prefix}.", {
         site,
-        page: where.page,
-        prefix: <Code className="text-nowrap">{where.prefix}</Code>,
+        page: page.label,
+        prefix: <Code className="text-nowrap">{provider.key_prefix}</Code>,
       })
-    : tRich("kaeso.providerKey.whereSite", "Create one at {site} under {page}.", { site, page: where.page });
+    : tRich("kaeso.providerKey.whereSite", "Create one at {site} under {page}.", { site, page: page.label });
 }
 
-function keyPlaceholder(provider: string): string {
-  const where = KEY_SITES[provider];
-  return `${where ? (where.prefix ?? "") : "sk-"}…`;
+function keyPlaceholder(provider: ProviderView | undefined): string {
+  return `${provider ? (provider.key_prefix ?? "") : "sk-"}…`;
 }
 
 export function ProviderKeyDialog({
@@ -55,13 +42,15 @@ export function ProviderKeyDialog({
   replace?: CredentialView | undefined;
   onClose: () => void;
 }) {
+  const providers = useProviders(org);
   const [provider, setProvider] = useState<string | null>(replace?.provider ?? null);
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
-  const label = provider ? providerLabel(provider) : "";
+  const label = provider ? providers.name(provider) : "";
+  const known = provider ? providers.get(provider) : undefined;
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
-  const choices = useMemo(() => providerOptions(keys), [keys]);
+  const choices = useMemo(() => providerOptions(providers, keys), [providers, keys]);
   const save = useApiMutation({
     mutationFn: async () => {
       if (replace)
@@ -97,7 +86,7 @@ export function ProviderKeyDialog({
     title: replace
       ? t("kaeso.providerKey.pasteNew", "Paste the new {provider} key", { provider: label })
       : t("kaeso.providerKey.paste", "Paste your {provider} API key", { provider: label }),
-    description: provider ? keyHelp(provider) : undefined,
+    description: provider ? keyHelp(known) : undefined,
     blockedReason: !secret.trim()
       ? t("kaeso.providerKey.pasteBlocked", "Paste the {provider} API key", { provider: label })
       : /\s/.test(secret.trim())
@@ -109,7 +98,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={provider ? keyPlaceholder(provider) : undefined}
+          placeholder={provider ? keyPlaceholder(known) : undefined}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"
@@ -180,7 +169,7 @@ export function ProviderKeyDialog({
       onOpenChange={(o) => !o && onClose()}
       title={
         replace
-          ? t("kaeso.providerKey.replaceTitle", "Replace {provider} · {name}", { provider: providerLabel(replace.provider), name: replace.name })
+          ? t("kaeso.providerKey.replaceTitle", "Replace {provider} · {name}", { provider: providers.name(replace.provider), name: replace.name })
           : t("kaeso.providerKey.addTitle", "Add provider key")
       }
       submitLabel={replace ? t("kaeso.providerKey.replace", "Replace key") : t("kaeso.providerKey.add", "Add key")}

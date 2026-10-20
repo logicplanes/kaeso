@@ -30,6 +30,7 @@ import { isApiError } from "~/api/errors";
 import type { LogEntryView } from "~/api/generated/types";
 import { logEntryQuery } from "~/api/queries/logs";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
+import { useProviders } from "~/kaeso/providers";
 import { costUSD } from "~/format/money";
 import { describeUserAgent } from "~/format/user-agent";
 import { catalogueQuery } from "~/api/queries/models";
@@ -219,6 +220,7 @@ function Named({ name, id }: { name: string; id: string }) {
 function Overview({ org, project, e, keyName }: { org: string; project: string; e: LogEntryView; keyName: (id: string) => string }) {
   const partyName = usePartyName(org, project);
   const modelName = useModelName(org, project);
+  const providers = useProviders(org);
   const u = e.usage;
   const tokensIn = inputTokens(u);
   const used = totalTokens(u) > 0;
@@ -302,7 +304,10 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                   : t("logs.inspector.modelRequestedAs", "Model, requested as {model}", { model: e.requested_model }),
               value: e.model ? <Named name={name} id={e.model} /> : "—",
             },
-            { label: common.provider(), value: e.provider ? <ProviderBadge provider={e.provider} withName size="sm" /> : "—" },
+            {
+              label: common.provider(),
+              value: e.provider ? <ProviderBadge provider={e.provider} name={providers.name(e.provider)} withName size="sm" /> : "—",
+            },
             {
               label: t("logs.inspector.upstreamRequest", "Upstream request"),
               value: e.upstream_request_id ? <Long mono>{e.upstream_request_id}</Long> : "—",

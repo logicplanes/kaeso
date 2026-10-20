@@ -1,0 +1,102 @@
+{
+  "data": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "key_page": {
+        "url": "https://platform.openai.com/api-keys",
+        "label": "API keys"
+      },
+      "key_prefix": "sk-",
+      "dialects": ["openai_responses", "openai_chat", "openai_embeddings"],
+      "count_tokens": "openai_responses",
+      "embeddings": "openai_embeddings"
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "key_page": {
+        "url": "https://platform.claude.com/settings/keys",
+        "label": "Settings → API keys"
+      },
+      "key_prefix": "sk-ant-",
+      "dialects": ["anthropic_messages"],
+      "count_tokens": "anthropic_messages",
+      "embeddings": null
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "key_page": {
+        "url": "https://platform.deepseek.com/api_keys",
+        "label": "API keys"
+      },
+      "key_prefix": "sk-",
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null
+    },
+    {
+      "id": "xai",
+      "name": "SpaceX",
+      "key_page": {
+        "url": "https://console.x.ai/team/default/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "xai-",
+      "dialects": ["openai_responses", "openai_chat"],
+      "count_tokens": null,
+      "embeddings": null
+    },
+    {
+      "id": "togetherai",
+      "name": "Together AI",
+      "key_page": {
+        "url": "https://api.together.ai/settings/projects/~current/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "tgp_v1_",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings"
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "key_page": {
+        "url": "https://console.groq.com/keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "gsk_",
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "key_page": {
+        "url": "https://openrouter.ai/settings/keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "sk-or-v1-",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings"
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "key_page": {
+        "url": "https://console.mistral.ai/api-keys",
+        "label": "API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}

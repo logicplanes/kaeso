@@ -8,7 +8,8 @@ import { isApiError } from "~/api/errors";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { catalogueModelQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
-import { dialectLabel, providerLabel } from "~/format/labels";
+import { dialectLabel } from "~/format/labels";
+import { useProviders } from "~/kaeso/providers";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
 import { availabilityLabel, unavailableHint } from "./availability";
@@ -54,6 +55,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   const canManage = rights.has("models.manage");
   const model = useQuery(catalogueModelQuery(org, project, modelId));
   const partyName = usePartyName(org, project);
+  const providers = useProviders(org);
   const [editing, setEditing] = useState<FieldDraft | null>(null);
   const [removing, setRemoving] = useState(false);
 
@@ -101,11 +103,13 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   }
   const m = model.data;
   const shown = inUse(m);
+  const provider = providers.name(m.provider);
+  const dialects = providers.dialects(m.provider);
   const reason = canManage ? undefined : needs("models.manage");
 
   if (editing) {
     const problem = draftProblem(editing, m.custom);
-    const changes = changedFields(editing, shown, m.provider);
+    const changes = changedFields(editing, shown, dialects);
     const save = () =>
       patch.mutate(changes, {
         onSuccess: () => {
@@ -115,7 +119,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       });
     return (
       <div className="flex flex-col gap-20">
-        <ModelForm value={editing} onChange={setEditing} provider={m.provider} />
+        <ModelForm value={editing} onChange={setEditing} dialects={dialects} />
         <div className="flex justify-end gap-8">
           <Button
             onClick={() => {
@@ -143,6 +147,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       <div className="flex items-center justify-between gap-12">
         <ModelLabel
           provider={m.provider}
+          providerName={provider}
           model={m.model_id}
           capabilities={capabilities(m.effective)}
           {...(m.effective.display_name ? { name: m.effective.display_name } : {})}
@@ -163,10 +168,10 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           </Menu.Content>
         </Menu>
       </div>
-      <Flags m={m} />
+      <Flags m={m} provider={provider} />
       <KeyValue
         items={[
-          { label: common.provider(), value: providerLabel(m.provider) },
+          { label: common.provider(), value: provider },
           { label: t("models.modelId", "Model id"), value: m.model_id, mono: true, copy: m.model_id },
           { label: t("models.aliases", "Aliases"), value: m.aliases.length ? m.aliases.join(", ") : common.none() },
           { label: t("models.availability", "Availability"), value: availabilityLabel(m) },
@@ -238,7 +243,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   );
 }
 
-function Flags({ m }: { m: CatalogueModelView }) {
+function Flags({ m, provider }: { m: CatalogueModelView; provider: string }) {
   const count = Object.values(m.overrides).filter((v) => v !== null && v !== undefined).length;
   const flags: ReactNode[] = [];
   const hints: ReactNode[] = [];
@@ -248,7 +253,7 @@ function Flags({ m }: { m: CatalogueModelView }) {
         {t("models.unavailable", "Unavailable")}
       </Badge>,
     );
-    hints.push(unavailableHint(m.provider));
+    hints.push(unavailableHint(provider));
   }
   if (m.deprecated) {
     flags.push(

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Input, KeyValue, LayerDialog, List, ModelLabel, Text, toast } from "@logicplanes/kaeso-ui";
-import { models } from "~/fixtures/kaeso";
+import { models, providerNames } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -48,7 +48,11 @@ export function Wizard() {
         <List
           aria-label="Models on models.dev"
           density="compact"
-          items={models.map((x) => ({ id: x.model, textValue: x.model, title: <ModelLabel provider={x.provider} model={x.model} name={x.name} /> }))}
+          items={models.map((x) => ({
+            id: x.model,
+            textValue: x.model,
+            title: <ModelLabel provider={x.provider} providerName={providerNames[x.provider]} model={x.model} name={x.name} />,
+          }))}
           onOpen={(item) => {
             setModel(item.id);
             setView("review");
@@ -69,7 +73,7 @@ export function Wizard() {
       description: "Prices come from models.dev; you can override them.",
       content: m && (
         <div className="flex flex-col gap-16">
-          <ModelLabel provider={m.provider} model={m.model} name={m.name} capabilities={m.capabilities} />
+          <ModelLabel provider={m.provider} providerName={providerNames[m.provider]} model={m.model} name={m.name} capabilities={m.capabilities} />
           <KeyValue
             items={[
               { label: "Input", value: `$${m.input} / M` },
@@ -122,7 +126,11 @@ export function States() {
         <List
           aria-label="Models on models.dev"
           density="compact"
-          items={models.map((x) => ({ id: x.model, textValue: x.model, title: <ModelLabel provider={x.provider} model={x.model} name={x.name} /> }))}
+          items={models.map((x) => ({
+            id: x.model,
+            textValue: x.model,
+            title: <ModelLabel provider={x.provider} providerName={providerNames[x.provider]} model={x.model} name={x.name} />,
+          }))}
         />
       ),
     },
@@ -131,7 +139,7 @@ export function States() {
       description: "Prices come from models.dev; you can override them.",
       content: (
         <div className="flex flex-col gap-16">
-          <ModelLabel provider={m.provider} model={m.model} name={m.name} capabilities={m.capabilities} />
+          <ModelLabel provider={m.provider} providerName={providerNames[m.provider]} model={m.model} name={m.name} capabilities={m.capabilities} />
           <KeyValue
             items={[
               { label: "Input", value: `$${m.input} / M` },

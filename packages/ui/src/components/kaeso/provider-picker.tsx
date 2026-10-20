@@ -43,7 +43,7 @@ export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: 
   const t = useUiText();
   const locale = useLocale();
   return useMemo(() => {
-    const nameOf = (p: ProviderPickerOption) => p.name ?? providerName(p.id);
+    const nameOf = (p: ProviderPickerOption) => providerName(p.id, p.name);
     const byName = (a: ProviderPickerOption, b: ProviderPickerOption) => nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" });
     const item = (p: ProviderPickerOption) => ({
       value: p.id,
@@ -51,7 +51,7 @@ export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: 
       keywords: [p.id, ...(p.keywords ?? [])],
       leading: (
         <span aria-hidden className="flex">
-          <ProviderBadge provider={p.id} />
+          <ProviderBadge provider={p.id} name={p.name} />
         </span>
       ),
       ...(p.hint !== undefined ? { meta: p.hint } : {}),
@@ -142,9 +142,9 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
           {chosen ? (
             <span className="flex min-w-0 items-center gap-8">
               <span aria-hidden className="flex">
-                <ProviderBadge provider={chosen.id} />
+                <ProviderBadge provider={chosen.id} name={chosen.name} />
               </span>
-              <span className="truncate">{chosen.name ?? providerName(chosen.id)}</span>
+              <span className="truncate">{providerName(chosen.id, chosen.name)}</span>
             </span>
           ) : (
             allLabel

@@ -1,5 +1,5 @@
-import { Button, KeyDisplay, ProviderBadge, ProviderCard, ModelLabel, StatusCode, RequestTimeline, providerName } from "@logicplanes/kaeso-ui";
-import { keys, models } from "~/fixtures/kaeso";
+import { Button, KeyDisplay, ProviderBadge, ProviderCard, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
+import { keys, models, providerNames, providers } from "~/fixtures/kaeso";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -25,6 +25,7 @@ export function Providers() {
     <div className="grid w-full grid-cols-1 gap-16 md:grid-cols-2">
       <ProviderCard
         provider="openai"
+        name="OpenAI"
         connected
         status="The organization's key"
         keyLabel="Production …4f2a"
@@ -33,6 +34,7 @@ export function Providers() {
       />
       <ProviderCard
         provider="anthropic"
+        name="Anthropic"
         connected={false}
         status="No key yet: requests to Anthropic fail"
         actions={
@@ -58,11 +60,11 @@ export function Models() {
   return (
     <div className="flex flex-col gap-12">
       {models.map((m) => (
-        <ModelLabel key={m.id} provider={m.provider} model={m.model} name={m.name} capabilities={m.capabilities} />
+        <ModelLabel key={m.id} provider={m.provider} providerName={providerNames[m.provider]} model={m.model} name={m.name} capabilities={m.capabilities} />
       ))}
       <div className="flex gap-12">
-        <ProviderBadge provider="openai" withName />
-        <ProviderBadge provider="anthropic" withName />
+        <ProviderBadge provider="openai" name="OpenAI" withName />
+        <ProviderBadge provider="anthropic" name="Anthropic" withName />
       </div>
     </div>
   );
@@ -79,18 +81,17 @@ export function Status() {
     </div>
   );
 }
-const PROVIDERS = ["openai", "anthropic", "deepseek", "xai", "togetherai", "groq", "openrouter", "mistral"];
 const BADGE_SIZES = ["sm", "md", "lg", "xl"] as const;
 
 export function States() {
   return (
     <>
       <StateMatrix title="ProviderBadge for every built-in provider, at every size" columns={["sm · 16", "md · 20", "lg · 28", "xl · 40"]}>
-        {PROVIDERS.map((p) => (
-          <StateRow key={p} label={providerName(p)}>
+        {providers.map((p) => (
+          <StateRow key={p.id} label={p.name}>
             {BADGE_SIZES.map((size) => (
-              <StateCell key={size} id={`${p}-${size}`}>
-                <ProviderBadge provider={p} size={size} />
+              <StateCell key={size} id={`${p.id}-${size}`}>
+                <ProviderBadge provider={p.id} name={p.name} size={size} />
               </StateCell>
             ))}
           </StateRow>

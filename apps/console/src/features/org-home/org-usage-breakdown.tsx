@@ -6,6 +6,7 @@ import { serviceAccountLookupQuery } from "~/api/queries/members";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgUsageQuery } from "~/api/queries/usage";
 import { everyProjectRights, useOrgRights, useSession } from "~/auth/session";
+import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { periodUSD } from "~/kaeso/usage-panels";
 import { projectPath } from "~/shell/pages";
@@ -44,6 +45,7 @@ export function OrgUsageBreakdown({
 }) {
   const session = useSession();
   const rights = useOrgRights(org);
+  const providers = useProviders(org);
   const usage = useQuery({ ...orgUsageQuery(org, from, to, by), enabled: ready });
   const members = useQuery({ ...orgMembersQuery(org), enabled: by === "member" && rights.has("members.view") });
   const everyProject = everyProjectRights(session, org).has("service_accounts.view");
@@ -75,7 +77,7 @@ export function OrgUsageBreakdown({
     if (by === "model") {
       const [provider, ...model] = r.key.split("/");
       if (!provider || !model.join("/")) return <Text tone="secondary">{t("orgHome.noModel", "No model")}</Text>;
-      return <ModelLabel provider={provider} model={model.join("/")} />;
+      return <ModelLabel provider={provider} providerName={providers.name(provider)} model={model.join("/")} />;
     }
     const [kind, id = r.key] = r.key.split(":");
     if (kind === "service_account") {

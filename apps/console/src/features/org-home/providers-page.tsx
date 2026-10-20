@@ -31,9 +31,9 @@ import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgPartyName } from "~/features/org/party";
-import { providerLabel } from "~/format/labels";
 import { docsPage } from "~/format/docs";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
+import { useProviders, type Providers } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { OrgHeader } from "~/shell/org-header";
 import { toast } from "~/shell/toast";
@@ -43,8 +43,8 @@ type Row = { id: string; provider: string; key: CredentialView; first: boolean }
 
 export const SEARCH_ABOVE = 8;
 
-function matches(key: CredentialView, query: string): boolean {
-  const words = [providerLabel(key.provider), key.provider, key.name, ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
+function matches(key: CredentialView, query: string, catalog: Providers): boolean {
+  const words = [catalog.name(key.provider), key.provider, key.name, ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
   return query
     .toLocaleLowerCase()
     .split(/\s+/)
@@ -52,8 +52,8 @@ function matches(key: CredentialView, query: string): boolean {
     .every((part) => words.some((w) => w.includes(part)));
 }
 
-function rowsOf(keys: CredentialView[]): Row[] {
-  const providers = [...new Set(keys.map((k) => k.provider))].sort((a, b) => providerLabel(a).localeCompare(providerLabel(b)));
+function rowsOf(keys: CredentialView[], catalog: Providers): Row[] {
+  const providers = [...new Set(keys.map((k) => k.provider))].sort(catalog.byName);
   return providers.flatMap((provider) => keys.filter((k) => k.provider === provider).map((key, i) => ({ id: key.id, provider, key, first: i === 0 })));
 }
 
@@ -77,7 +77,8 @@ function withProjectNames(k: CredentialView, text: ReactElement) {
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
-export const keyTitle = (k: CredentialView) => t("orgHome.keyTitle", "{provider} · {name}", { provider: providerLabel(k.provider), name: k.name });
+export const keyTitle = (k: CredentialView, providers: Providers) =>
+  t("orgHome.keyTitle", "{provider} · {name}", { provider: providers.name(k.provider), name: k.name });
 
 export function OrgProvidersPage({ org }: { org: string }) {
   const rights = useOrgRights(org);
@@ -87,6 +88,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const canChange = rights.has("provider_credentials.replace");
   const canDelete = rights.has("provider_credentials.delete");
   const credentials = useQuery({ ...orgCredentialsQuery(org), enabled: canView });
+  const providers = useProviders(org);
   const partyName = useOrgPartyName(org);
   const [adding, setAdding] = useState(false);
   const [replacing, setReplacing] = useState<CredentialView | null>(null);
@@ -97,8 +99,8 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const [hidden, setHidden] = useState<string[]>([]);
   const keys = useMemo(() => credentials.data ?? [], [credentials.data]);
   const searchable = keys.length > SEARCH_ABOVE;
-  const shown = searchable && query.trim() ? keys.filter((k) => matches(k, query)) : keys;
-  const rows = credentials.data ? rowsOf(shown) : [];
+  const shown = searchable && query.trim() ? keys.filter((k) => matches(k, query, providers)) : keys;
+  const rows = credentials.data ? rowsOf(shown, providers) : [];
   const addReason = canAdd ? undefined : needs("provider_credentials.create");
   const addLabel = t("orgHome.addProviderKey", "Add provider key");
   usePageCreateAction(canView ? { label: addLabel, run: () => setAdding(true), disabledReason: addReason } : null);
@@ -107,7 +109,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
     mutationFn: async (k: CredentialView) =>
       data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/default", { params: { path: { org, credential: k.id } } })),
     invalidates: [["orgs", org, "credentials"]],
-    onSuccess: (k) => toast(t("orgHome.keyMadeDefault", "{name} is the {provider} default", { name: k.name, provider: providerLabel(k.provider) })),
+    onSuccess: (k) => toast(t("orgHome.keyMadeDefault", "{name} is the {provider} default", { name: k.name, provider: providers.name(k.provider) })),
   });
   const remove = useApiMutation({
     mutationFn: async (k: CredentialView) => {
@@ -116,7 +118,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: (_r, k) => {
       setDeleting(null);
-      toast(t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(k) }));
+      toast(t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(k, providers) }));
     },
     onError: () => setDeleting(null),
   });
@@ -126,7 +128,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
     return (
       <Menu>
         <Menu.Trigger>
-          <IconButton icon={icons.more} aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k) })} size="xs" />
+          <IconButton icon={icons.more} aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k, providers) })} size="xs" />
         </Menu.Trigger>
         <Menu.Content align="end">
           {canChange && !k.is_default && (
@@ -167,9 +169,9 @@ export function OrgProvidersPage({ org }: { org: string }) {
       (r: Row) => r,
       (r: Row) => (
         <span className="flex min-w-0 items-center gap-8 sm:gap-12">
-          {r.first ? <ProviderBadge provider={r.provider} size="lg" /> : <span aria-hidden className="w-28 shrink-0" />}
+          {r.first ? <ProviderBadge provider={r.provider} name={providers.name(r.provider)} size="lg" /> : <span aria-hidden className="w-28 shrink-0" />}
           <Text weight={r.first ? "medium" : undefined} tone={r.first ? "default" : "tertiary"} truncate>
-            {providerLabel(r.provider)}
+            {providers.name(r.provider)}
           </Text>
         </span>
       ),
@@ -240,7 +242,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
     ),
   ].map((c) => ({ ...c, enableSorting: false }));
 
-  const deletingProvider = deleting ? providerLabel(deleting.provider) : "";
+  const deletingProvider = deleting ? providers.name(deleting.provider) : "";
   const successor = deleting?.is_default
     ? keys.filter((k) => k.provider === deleting.provider && k.id !== deleting.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
     : undefined;
@@ -330,7 +332,11 @@ export function OrgProvidersPage({ org }: { org: string }) {
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
         tone="danger"
-        title={deleting ? t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(deleting) }) : t("orgHome.deleteThisKey", "Delete this key?")}
+        title={
+          deleting
+            ? t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(deleting, providers) })
+            : t("orgHome.deleteThisKey", "Delete this key?")
+        }
         description={
           !deleting?.is_default
             ? deleting?.projects.length
@@ -349,6 +355,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
 }
 
 function RenameKeyDialog({ org, credential, onClose }: { org: string; credential: CredentialView; onClose: () => void }) {
+  const providers = useProviders(org);
   const [name, setName] = useState(credential.name);
   const trimmed = name.trim();
   const rename = useApiMutation({
@@ -376,7 +383,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
-      title={t("orgHome.renameKey", "Rename {title}", { title: keyTitle(credential) })}
+      title={t("orgHome.renameKey", "Rename {title}", { title: keyTitle(credential, providers) })}
       onSubmit={() => !blocked && rename.mutate()}
       footer={
         <>
@@ -403,7 +410,8 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
 function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; credential: CredentialView; keys: CredentialView[]; onClose: () => void }) {
   const projects = useQuery(orgProjectsQuery(org));
   const [chosen, setChosen] = useState<string[]>(credential.projects.map((p) => p.id));
-  const label = providerLabel(credential.provider);
+  const providers = useProviders(org);
+  const label = providers.name(credential.provider);
   const otherKey = new Map<string, string>();
   for (const k of keys) {
     if (k.provider !== credential.provider || k.id === credential.id) continue;
@@ -425,9 +433,9 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
     onSuccess: (k) => {
       toast(
         k.projects.length === 0
-          ? t("orgHome.keyUnassigned", "No project is assigned to {title}", { title: keyTitle(k) })
+          ? t("orgHome.keyUnassigned", "No project is assigned to {title}", { title: keyTitle(k, providers) })
           : t("orgHome.keyAssigned", "{title} assigned to {count, plural, one {# project} other {# projects}}", {
-              title: keyTitle(k),
+              title: keyTitle(k, providers),
               count: k.projects.length,
             }),
       );
@@ -440,7 +448,7 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
-      title={t("orgHome.assignKey", "Assign {title}", { title: keyTitle(credential) })}
+      title={t("orgHome.assignKey", "Assign {title}", { title: keyTitle(credential, providers) })}
       description={
         credential.is_default
           ? t("orgHome.assignDefaultKeyHint", "These projects keep it for {provider} even when another key becomes the default.", { provider: label })

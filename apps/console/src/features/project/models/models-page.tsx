@@ -28,8 +28,7 @@ import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
-import { providerLabel } from "~/format/labels";
-import { useProviderOptions } from "~/kaeso/providers";
+import { useProviderOptions, useProviders } from "~/kaeso/providers";
 import { usePhone } from "~/shell/use-phone";
 import { monthLabel } from "~/format/period";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -93,6 +92,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   const all = useMemo(() => catalogue.data ?? [], [catalogue.data]);
   const providerIds = useMemo(() => [...new Set(all.map((m) => m.provider))], [all]);
   const providers = useProviderOptions(org, providerIds);
+  const catalog = useProviders(org);
   const phone = usePhone();
   const filtered = useMemo(
     () =>
@@ -113,8 +113,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
       );
       return {
         id: p,
-        title: providerLabel(p),
-        glyph: <ProviderBadge provider={p} size="sm" />,
+        title: catalog.name(p),
+        glyph: <ProviderBadge provider={p} name={catalog.name(p)} size="sm" />,
         count: items.length,
         items: items.map((m) => ({
           id: m.id,
@@ -122,6 +122,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
           title: (
             <ModelLabel
               provider={m.provider}
+              providerName={catalog.name(m.provider)}
               model={m.model_id}
               capabilities={capabilities(m.effective)}
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
@@ -132,7 +133,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         })),
       };
     });
-  }, [filtered, sort]);
+  }, [filtered, sort, catalog]);
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
@@ -140,7 +141,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
     onSuccess: (result) => {
       const first = result.failed[0];
       if (first) {
-        toast.warning(checkFailureLabel(first), {
+        toast.warning(checkFailureLabel(first, catalog.name(first.provider)), {
           description: t("models.checkFailedCount", "{count, plural, one {# model could not be checked.} other {# models could not be checked.}}", {
             count: result.failed.length,
           }),

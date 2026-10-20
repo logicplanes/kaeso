@@ -24,8 +24,8 @@ import { allKeysQuery } from "~/api/queries/keys";
 import { logsInfiniteQuery, type LogFilters, type LogRange } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
-import { ERROR_KIND_IDS, errorKindLabel, providerLabel } from "~/format/labels";
-import { useProviderOptions } from "~/kaeso/providers";
+import { ERROR_KIND_IDS, errorKindLabel } from "~/format/labels";
+import { useProviderOptions, useProviders } from "~/kaeso/providers";
 import { utcDay } from "~/format/period";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
@@ -88,6 +88,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: rights.has("service_accounts.view") });
   const catalogue = useQuery(catalogueQuery(org, project));
   const providers = useProviderOptions(org);
+  const catalog = useProviders(org);
   const partyName = usePartyName(org, project);
   const [columns, setColumns] = useState<ColumnId[]>(storedColumns);
   const [density, setDensity] = useState<"default" | "compact">("default");
@@ -134,7 +135,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const keyName = (id: string) => keys.data?.find((k) => k.id === id)?.name ?? id;
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
   const phone = usePhone();
-  const all = logColumns({ spansDays, phone, keyName, partyName });
+  const all = logColumns({ spansDays, phone, keyName, partyName, providerName: catalog.name });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c)).map((c) => all[c]);
 
   const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));
@@ -143,10 +144,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),
   ];
   const modelOptions = [...(catalogue.data ?? [])]
-    .sort((a, b) => providerLabel(a.provider).localeCompare(providerLabel(b.provider)))
+    .sort((a, b) => catalog.byName(a.provider, b.provider))
     .map((m) => ({
       value: m.model_id,
-      group: providerLabel(m.provider),
+      group: catalog.name(m.provider),
       textValue: m.effective.display_name && m.effective.display_name !== m.model_id ? `${m.effective.display_name} ${m.model_id}` : m.model_id,
       label:
         m.effective.display_name && m.effective.display_name !== m.model_id ? (
@@ -162,14 +163,14 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     }));
   const someConnected = providers.some((p) => p.connected) && providers.some((p) => !p.connected);
   const providerChoices = [...providers]
-    .sort((a, b) => Number(!!b.connected) - Number(!!a.connected) || providerLabel(a.id).localeCompare(providerLabel(b.id)))
+    .sort((a, b) => Number(!!b.connected) - Number(!!a.connected) || catalog.byName(a.id, b.id))
     .map((p) => ({
       value: p.id,
-      label: providerLabel(p.id),
+      label: catalog.name(p.id),
       ...(someConnected ? { group: p.connected ? t("logs.filter.connectedProviders", "Connected") : t("logs.filter.otherProviders", "Other providers") } : {}),
       leading: (
         <span aria-hidden className="flex">
-          <ProviderBadge provider={p.id} size="sm" />
+          <ProviderBadge provider={p.id} name={catalog.name(p.id)} size="sm" />
         </span>
       ),
     }));
@@ -240,6 +241,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             key: filters.key && keyName(filters.key),
             member: memberOptions.find((m) => m.value === filters.member)?.label,
             model: catalogue.data?.find((m) => m.model_id === filters.model)?.effective.display_name ?? undefined,
+            provider: filters.provider && catalog.name(filters.provider),
           }}
           canContent={rights.has("logs.content.view")}
           open={exporting}

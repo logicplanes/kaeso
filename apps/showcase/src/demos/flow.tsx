@@ -5,8 +5,8 @@ const columns = [
   [{ id: "app", label: "Your app", icon: icons.code }],
   [{ id: "kaeso", label: "Kaeso gateway", icon: icons.gateway, emphasis: true }],
   [
-    { id: "openai", label: "gpt-5", leading: <ProviderBadge provider="openai" /> },
-    { id: "anthropic", label: "claude-sonnet-4-5", leading: <ProviderBadge provider="anthropic" /> },
+    { id: "openai", label: "gpt-5", leading: <ProviderBadge provider="openai" name="OpenAI" /> },
+    { id: "anthropic", label: "claude-sonnet-4-5", leading: <ProviderBadge provider="anthropic" name="Anthropic" /> },
   ],
 ];
 const edges: [string, string][] = [

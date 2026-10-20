@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { providersQuery } from "~/api/queries/providers";
 import { OrgGuard } from "~/auth/guards";
 import { writeLast } from "~/shell/last";
 import { RouteError } from "~/shell/route-error";
@@ -6,8 +7,9 @@ import { RouteError } from "~/shell/route-error";
 const IN_PROJECT = /^\/orgs\/[^/]+\/projects\/[^/]+/;
 
 export const Route = createFileRoute("/_app/orgs/$org")({
-  loader: ({ params, location, preload }) => {
+  loader: ({ context, params, location, preload }) => {
     if (!preload && !IN_PROJECT.test(location.pathname)) writeLast({ org: params.org });
+    void context.queryClient.prefetchQuery(providersQuery(params.org));
   },
   component: OrgLayout,
   errorComponent: RouteError,

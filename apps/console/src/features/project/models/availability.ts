@@ -1,10 +1,8 @@
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, CheckFailure } from "~/api/generated/types";
-import { providerLabel } from "~/format/labels";
 import { t } from "~/i18n";
 
-export function checkFailureLabel(f: CheckFailure): string {
-  const provider = providerLabel(f.provider);
+export function checkFailureLabel(f: CheckFailure, provider: string): string {
   switch (f.reason) {
     case "no_key":
       return t("models.check.noKey", "No {provider} key is set up for this project", { provider });
@@ -33,6 +31,6 @@ export function availabilityLabel(m: Pick<CatalogueModelView, "availability" | "
 
 export function unavailableHint(provider: string): string {
   return t("models.unavailableHint", "{provider} doesn't serve it to this project's provider key; check the key's access or remove the model.", {
-    provider: providerLabel(provider),
+    provider,
   });
 }

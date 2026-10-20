@@ -1,6 +1,7 @@
-import type { Membership, MyMembership, OrgView, ProjectRightsView, ProjectView, RightsCatalogue, RoleView, WhoAmI } from "~/api/generated/types";
+import type { Membership, MyMembership, OrgView, ProjectRightsView, ProjectView, ProviderView, RightsCatalogue, RoleView, WhoAmI } from "~/api/generated/types";
 import rightsCatalogue from "./fixtures/rights.json";
 import roleList from "./fixtures/roles.json";
+import providerList from "./fixtures/providers.json";
 import { noContent, on, page } from "./network";
 
 export const ORG = "org_northwind";
@@ -11,6 +12,7 @@ export const NOW = "2026-10-15T12:00:00Z";
 
 export const catalogue = rightsCatalogue as RightsCatalogue;
 export const roles = roleList.data as RoleView[];
+export const providers = providerList.data as ProviderView[];
 
 const idsOf = (scope: "org" | "project") => catalogue[scope].categories.flatMap((c) => c.rights.map((r) => r.id));
 export const ALL_ORG_RIGHTS = idsOf("org");
@@ -156,6 +158,7 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
   on("POST", "me/whats-new/seen", noContent);
   on("GET", "orgs/:org/rights", catalogue);
   on("GET", "orgs/:org/roles", page(roles));
+  on("GET", "orgs/:org/providers", page(providers));
   on("GET", "orgs/:org", ({ params }: { params: Record<string, string> }) => org({ id: params.org ?? ORG }));
   on("GET", "orgs/:org/projects", page(projects));
   on("GET", "orgs/:org/projects/:project", ({ params }: { params: Record<string, string> }) => projects.find((p) => p.id === params.project) ?? project());

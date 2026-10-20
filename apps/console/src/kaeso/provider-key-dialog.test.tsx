@@ -1,9 +1,9 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ORG } from "~/test/fixtures";
+import { ORG, providers } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { credential } from "~/test/fixtures/shell";
-import { apiError, on, requests } from "~/test/network";
+import { apiError, on, page, requests } from "~/test/network";
 import { renderUi } from "~/test/render";
 import { ProviderKeyDialog } from "./provider-key-dialog";
 
@@ -27,6 +27,7 @@ async function choose(user: Awaited<ReturnType<typeof renderUi>>["user"], dialog
 
 async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}) {
   const onClose = vi.fn();
+  on("GET", "orgs/:org/providers", page(providers));
   const view = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} {...props} />);
   const dialog = await screen.findByRole("dialog", { name: /provider key|Replace/ });
   return { ...view, dialog, onClose };

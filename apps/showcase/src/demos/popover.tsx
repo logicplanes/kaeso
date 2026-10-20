@@ -46,7 +46,7 @@ export function Hover() {
       </HoverCard.Trigger>
       <HoverCard.Content>
         <div className="flex flex-col gap-12">
-          <ModelLabel provider="anthropic" model="claude-sonnet-4-5" capabilities={["tools", "reasoning", "vision", "pdf"]} />
+          <ModelLabel provider="anthropic" providerName="Anthropic" model="claude-sonnet-4-5" capabilities={["tools", "reasoning", "vision", "pdf"]} />
           <KeyValue
             items={[
               { label: "Input", value: "$3.00 / M" },

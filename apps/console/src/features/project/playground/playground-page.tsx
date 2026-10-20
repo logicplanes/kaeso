@@ -13,9 +13,8 @@ import {
 } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
-import { providerLabel } from "~/format/labels";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
-import { useModelPickerProviders } from "~/kaeso/providers";
+import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { metricsOf } from "./metrics";
@@ -51,12 +50,10 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const catalogue = useQuery(playgroundModelsQuery(org, project));
+  const providers = useProviders(org);
   const chat = useMemo(
-    () =>
-      [...(catalogue.data ?? [])].sort(
-        (a, b) => providerLabel(a.provider).localeCompare(providerLabel(b.provider)) || a.display_name.localeCompare(b.display_name),
-      ),
-    [catalogue.data],
+    () => [...(catalogue.data ?? [])].sort((a, b) => providers.byName(a.provider, b.provider) || a.display_name.localeCompare(b.display_name)),
+    [catalogue.data, providers],
   );
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
 
@@ -130,8 +127,8 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const empty = threads.every((x) => x.turns.length === 0);
   const options = useMemo(
     () =>
-      chat.map((m) => playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providerLabel(m.provider) }))),
-    [chat],
+      chat.map((m) => playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }))),
+    [chat, providers],
   );
   const providerIds = useMemo(() => [...new Set(chat.map((m) => m.provider))], [chat]);
   const pickerProviders = useModelPickerProviders(org, providerIds);

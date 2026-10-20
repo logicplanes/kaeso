@@ -1,6 +1,6 @@
 import type { ExportFile } from "~/api/download";
 import { logsParams, type LogFilters } from "~/api/queries/logs";
-import { errorKindLabel, providerLabel } from "~/format/labels";
+import { errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -26,14 +26,14 @@ export function exportSummary(f: LogFilters): string {
       );
 }
 
-export type ExportNames = { key?: string | undefined; member?: string | undefined; model?: string | undefined };
+export type ExportNames = { key?: string | undefined; member?: string | undefined; model?: string | undefined; provider?: string | undefined };
 
 export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: string; value: string }[] {
   const filters: { label: string; value: string | false | undefined }[] = [
     { label: t("logs.filter.key", "Key"), value: f.key && (names.key ?? f.key) },
     { label: t("logs.filter.member", "Member"), value: f.member && (names.member ?? f.member.replace(/^(user|sa):/, "")) },
     { label: common.model(), value: f.model && (names.model ?? f.model) },
-    { label: common.provider(), value: f.provider && providerLabel(f.provider) },
+    { label: common.provider(), value: f.provider && (names.provider ?? f.provider) },
     { label: common.status(), value: f.status !== undefined && String(f.status) },
     { label: t("logs.filter.failed", "Failed only"), value: !!f.failed && common.yes() },
     { label: t("logs.filter.error", "Error kind"), value: f.error && errorKindLabel(f.error) },

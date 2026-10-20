@@ -1,5 +1,6 @@
 import { CompareGrid, ModelPicker, ResponseMetrics, ResponseView, Thread, UserMessage } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModels } from "~/fixtures/playground";
+import { providers } from "~/fixtures/kaeso";
 import { PlaygroundWorkspace, answered, type Column } from "./_playground-workspace";
 import { StateSection } from "~/lib/states";
 
@@ -40,7 +41,7 @@ function Columns({ columns, height = 400 }: { columns: Column[]; height?: number
             <CompareGrid.Column
               key={c.id}
               label={model.name}
-              header={<ModelPicker value={c.model} options={playgroundModels} />}
+              header={<ModelPicker value={c.model} options={playgroundModels} providers={providers} />}
               onRemove={() => undefined}
               footer={
                 <ResponseMetrics
