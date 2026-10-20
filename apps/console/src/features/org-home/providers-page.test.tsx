@@ -387,7 +387,7 @@ describe("organization providers", () => {
   describe("on a tablet", () => {
     afterEach(() => vi.restoreAllMocks());
 
-    it("shows each key's projects and last use under its name once their columns give way", async () => {
+    it("shows each key's projects, last use and who added it under its name once their columns give way", async () => {
       vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
         width: 720,
         height: 0,
@@ -407,11 +407,11 @@ describe("organization providers", () => {
         .getAllByRole("columnheader")
         .map((h) => h.textContent);
       expect(headers).not.toContain("Projects");
-      expect(await within(await table()).findByText("Support triage · Never")).toBeInTheDocument();
-      expect(within(await table()).getByText("Checkout assistant, and every unassigned project · Never")).toBeInTheDocument();
+      expect(await within(await table()).findByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026")).toBeInTheDocument();
+      expect(within(await table()).getByText("Checkout assistant, and every unassigned project · Never · Ada Okafor (you), 15 Oct 2026")).toBeInTheDocument();
       act(() => showTooltipsAtOnce(true));
       try {
-        await user.hover(within(await table()).getByText("Support triage · Never"));
+        await user.hover(within(await table()).getByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026"));
         expect(await screen.findAllByText("Support triage", { exact: true })).not.toHaveLength(0);
       } finally {
         act(() => showTooltipsAtOnce(false));

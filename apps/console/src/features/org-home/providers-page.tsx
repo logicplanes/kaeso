@@ -159,6 +159,8 @@ export function OrgProvidersPage({ org }: { org: string }) {
     );
   };
 
+  const addedBy = (k: CredentialView) => t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) });
+
   const columns = [
     col.custom(
       { id: "provider", header: t("common.provider", "Provider"), size: 208, minWidth: 128, priority: 1, grow: true },
@@ -176,9 +178,11 @@ export function OrgProvidersPage({ org }: { org: string }) {
       { id: "key", header: t("orgHome.key", "Key"), size: 240, priority: 1, grow: true },
       (r: Row) => r,
       (r: Row) => {
-        const under = [hidden.includes("projects") ? assignment(r.key) : null, hidden.includes("used") ? lastUsed(r.key) : null].filter(
-          (part): part is string => !!part,
-        );
+        const under = [
+          hidden.includes("projects") ? assignment(r.key) : null,
+          hidden.includes("used") ? lastUsed(r.key) : null,
+          hidden.includes("added") ? addedBy(r.key) : null,
+        ].filter((part): part is string => !!part);
         return (
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-8">
@@ -215,7 +219,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
       (r: Row) => r.key,
       (k: CredentialView) => (
         <Text variant="small" tone="secondary" truncate>
-          {t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) })}
+          {addedBy(k)}
         </Text>
       ),
     ),

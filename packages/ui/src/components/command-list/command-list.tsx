@@ -199,7 +199,10 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     return { rows, options, spans };
   }, [shown]);
   const labelled = shown.some((g) => g.group.label);
-  const unfiltered = useMemo(() => groups.reduce((sum, g) => sum + (g.label ? HEADER : 0) + g.items.length * rowHeight, 0), [groups, rowHeight]);
+  const unfiltered = useMemo(
+    () => visibleGroups(groups, "", match).reduce((sum, { group, items }) => sum + (group.label ? HEADER : 0) + items.length * rowHeight, 0),
+    [groups, match, rowHeight],
+  );
   const fitted = height === "inline" && !toolbar && !footer ? { height: SEARCH[size] + 2 * EDGE + Math.max(unfiltered, EMPTY) } : undefined;
   const offsets = useMemo(() => {
     const out = [EDGE];

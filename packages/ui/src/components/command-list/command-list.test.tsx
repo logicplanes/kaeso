@@ -300,6 +300,12 @@ describe("CommandList inline in a dialog step", () => {
     expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
   });
 
+  it("leaves no room for a labelled group with no rows", () => {
+    const withEmpty = [...groups, { id: "mistral", label: "Mistral", items: [] }];
+    const { container } = render(<CommandList aria-label="Models" groups={withEmpty} value={null} onSelect={() => {}} height="inline" />);
+    expect((container.firstElementChild as HTMLElement).style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+  });
+
   it("stops at 360px and scrolls when the rows are taller", () => {
     const { container } = render(<CommandList aria-label="Models" groups={many(40)} value={null} onSelect={() => {}} height="inline" />);
     expect(container.firstElementChild).toHaveClass("max-h-360");
