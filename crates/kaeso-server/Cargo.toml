@@ -41,6 +41,7 @@ ipnet.workspace = true
 openidconnect.workspace = true
 clickhouse.workspace = true
 reqwest.workspace = true
+hickory-resolver.workspace = true
 percent-encoding.workspace = true
 moka.workspace = true
 redis.workspace = true

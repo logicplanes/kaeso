@@ -31,7 +31,7 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 ## Who signs in through single sign-on
 
-- Only addresses at the connection's email domains. Each domain belongs to one organization on an install.
+- Only addresses at the connection's verified email domains ([verify your email domains](../console/organizations-and-projects.md#verify-your-email-domains)). One organization on an install verifies each domain.
 - Only addresses the provider doesn't mark as unverified.
 - Someone new to Kaeso joins the organization with an invitation to their address, or with the connection's role for people without one. Without either, they get no access. Kaeso creates their account even where the [account creation setting](../console/instance-administration.md#change-install-settings) allows no sign-ups, because the organization's provider vouches for them.
 - Kaeso links each account to its identity at the provider, the provider's issuer and subject. Later sign-ins follow that link, not the email address.
@@ -40,7 +40,7 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 A sign-in through an organization's provider opens only that organization, and reads the person's own account. Other organizations, instance administration and changes to the account's email, password and two-factor authentication need another sign-in ([after signing in through single sign-on](../console/account.md#after-signing-in-through-single-sign-on)).
 
-Don't add a public mail provider's domain to a connection to let such people in. Every address at that domain would then sign in through your provider, and no other organization could use the domain.
+A connection can't list a public mail provider's domain, such as `gmail.com`: every address there would sign in through one organization's provider.
 
 ## Run on single sign-on alone
 

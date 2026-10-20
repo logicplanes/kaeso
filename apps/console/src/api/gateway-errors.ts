@@ -196,7 +196,12 @@ const messages = (): Rule[] => [
   rule("errors.notADomainExample", (v) => t("errors.notADomainExample", "`{domain}` isn't a domain; use example.com or *.example.com.", v)),
   rule("errors.ssoNeedsDomain", () => t("errors.ssoNeedsDomain", "Name at least one email domain whose users sign in through this provider.")),
   rule("errors.ssoNoOwners", () => t("errors.ssoNoOwners", "SSO can't make owners; choose another role.")),
-  rule("errors.domainTaken", (v) => t("errors.domainTaken", "The domain {domain} already signs in through another organization.", v)),
+  rule("errors.domainTaken", (v) => t("errors.domainTaken", "The domain {domain} is verified by another organization.", v)),
+  rule("errors.ssoPublicMail", (v) => t("errors.ssoPublicMail", "{domain} is a public mail domain; name your organization's own domains.", v)),
+  rule("errors.ssoNoVerifiedDomain", () =>
+    t("errors.ssoNoVerifiedDomain", "This organization's SSO has no verified email domain yet; ask an admin to verify one."),
+  ),
+  rule("errors.dnsUnreadable", () => t("errors.dnsUnreadable", "The domain's DNS records couldn't be read; try again shortly.")),
   rule("errors.ssoRequiredStopFirst", () => t("errors.ssoRequiredStopFirst", "SSO is required in this organization; stop requiring it first.")),
   rule("errors.setUpSsoFirst", () => t("errors.setUpSsoFirst", "Set up an SSO connection before requiring SSO.")),
   rule("errors.keyLifetimeRange", () => t("errors.keyLifetimeRange", "Use 1 to 3650 days, or null for no limit.")),

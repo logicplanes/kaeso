@@ -48,6 +48,16 @@ Nach dem Verbinden zeigt die Seite zwei Adressen:
 - Die **Weiterleitungs-URL**: Tragen Sie sie beim Anbieter als Callback der Anmeldung ein.
 - Den **Anmeldelink**: Er öffnet die Anmeldeseite mit dem Button Ihres Anbieters, sodass Mitglieder keine Adresse eingeben. Teilen Sie ihn, etwa im Intranet.
 
+### E-Mail-Domains bestätigen
+
+Single Sign-on meldet nur Adressen bestätigter Domains an und lässt nur sie beitreten, damit keine Organisation eine Domain beansprucht, die ihr nicht gehört. Für jede Domain zeigt **Sicherheit** einen TXT-Eintrag. Legen Sie ihn bei Ihrem DNS-Anbieter an und wählen Sie dann **Domains bestätigen**:
+
+```text
+_kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA"
+```
+
+DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Domains bestätigen** später erneut. Domains öffentlicher Mail-Anbieter wie `gmail.com` lassen sich nicht hinzufügen, ebenso wenig eine Domain, die eine andere Organisation bestätigt hat. Eine Domain, für die das öffentliche DNS nicht antwortet, bestätigt ein Operator auf dem Server mit `kaeso sso verify-domain acme.example`.
+
 **Single Sign-on bearbeiten** ändert die Verbindung, und ein leeres Client-Secret behält das gespeicherte. **Trennen** entfernt sie, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 
 Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)), und nur, wenn das Konto der Organisation angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", c.display_name, c.auto_redirect FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id WHERE c.org_id = $1 GROUP BY c.org_id",
+  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", verification_token, display_name, auto_redirect FROM org_oidc",
   "describe": {
     "columns": [
       {
@@ -88,6 +88,23 @@
       },
       {
         "ordinal": 8,
+        "name": "verified_domains!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "verification_token",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "verification_token"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "display_name",
         "type_info": "Text",
         "origin": {
@@ -98,7 +115,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "auto_redirect",
         "type_info": "Bool",
         "origin": {
@@ -110,9 +127,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -123,9 +138,11 @@
       false,
       false,
       null,
+      null,
+      false,
       true,
       false
     ]
   },
-  "hash": "252992f1ab8aaf125ca8d3ffa73697df92af2cdb59f2b699240eb91acd130a14"
+  "hash": "2cc2b5de572025f11b5bc2f9ebca3cb4f39dc4fdff88aa8454e472465e52d2a0"
 }

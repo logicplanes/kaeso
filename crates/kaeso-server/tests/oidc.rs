@@ -29,6 +29,18 @@ async fn connect_org(
     name: Option<&str>,
     auto_redirect: bool,
 ) {
+    connect_org_with(app, org, idp, domain, name, auto_redirect, true).await;
+}
+
+async fn connect_org_with(
+    app: &App,
+    org: &str,
+    idp: &MockIdp,
+    domain: &str,
+    name: Option<&str>,
+    auto_redirect: bool,
+    verified: bool,
+) {
     let org: OrgId = org.parse().unwrap();
     let sealed = kaeso_crypto::seal(
         &app.state.keyring,
@@ -48,6 +60,8 @@ async fn connect_org(
             wrapped_key: sealed.wrapped_key,
             key_id: sealed.key_id,
             domains: vec![domain.into()],
+            verified_domains: Vec::new(),
+            verification_token: "token".into(),
             display_name: name.map(str::to_owned),
             auto_redirect,
         },
@@ -55,6 +69,13 @@ async fn connect_org(
     .await
     .unwrap();
     assert_eq!(stored, oidc::Upserted::Saved);
+    if verified {
+        assert!(
+            oidc::mark_verified(&mut *conn, org.uuid(), domain, app.clock.now())
+                .await
+                .unwrap()
+        );
+    }
 }
 
 struct Flow {
@@ -1251,5 +1272,50 @@ async fn accounts_an_orgs_sso_created_before_links_existed_link_at_their_next_si
     refused_with(&r, LINK_REQUIRED);
     let r = sso_as(&app, &idp, &owner.org_id, "sub-lin", "lin@acme.example").await;
     assert!(r.cookie().is_some());
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_unverified_domain_neither_signs_in_nor_creates_accounts() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let evil = another_org(&app, "Evil").await;
+    connect_org_with(&app, &evil, &idp, "acme.example", None, false, false).await;
+    set_default_role(&app, &evil, "member").await;
+
+    let r = app
+        .post(
+            "/auth/oidc/start",
+            json!({ "email": "ada@acme.example" }),
+            None,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    let r = sso_as(&app, &idp, &evil, "sub-ada", "ada@acme.example").await;
+    refused_with(
+        &r,
+        "This organization's SSO has no verified email domain yet; ask an admin to verify one.",
+    );
+    let accounts: i64 = sqlx::query_scalar("SELECT count(*) FROM users")
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(accounts, 1);
+
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+    let flow = start(&app, json!({ "email": "ada@acme.example" })).await;
+    let auth = idp.authorize(&flow.url, "ada@acme.example", "Ada");
+    let r = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    let who = app
+        .get("/auth/session", &r.cookie().expect("signed in"))
+        .await;
+    assert_eq!(
+        who.body["session"]["sso_org"],
+        owner.org_id.as_str(),
+        "the address routes to the org that verified its domain"
+    );
     s.cleanup().await;
 }

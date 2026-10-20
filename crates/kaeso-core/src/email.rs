@@ -68,8 +68,84 @@ pub fn domain(email: &str) -> &str {
     email.rsplit_once('@').map_or("", |(_, d)| d)
 }
 
+const PUBLIC_MAIL: &[&str] = &[
+    "126.com",
+    "163.com",
+    "aol.com",
+    "fastmail.com",
+    "foxmail.com",
+    "gmail.com",
+    "gmx.at",
+    "gmx.ch",
+    "gmx.com",
+    "gmx.de",
+    "gmx.net",
+    "googlemail.com",
+    "hey.com",
+    "hotmail.com",
+    "icloud.com",
+    "live.com",
+    "mac.com",
+    "mail.com",
+    "mail.ru",
+    "me.com",
+    "msn.com",
+    "outlook.com",
+    "pm.me",
+    "proton.me",
+    "protonmail.com",
+    "qq.com",
+    "sina.com",
+    "t-online.de",
+    "tuta.io",
+    "tutanota.com",
+    "web.de",
+    "yahoo.com",
+    "yandex.com",
+    "yandex.ru",
+    "ymail.com",
+    "zoho.com",
+];
+
+const PUBLIC_MAIL_BRANDS: &[&str] = &["gmx", "hotmail", "live", "outlook", "yahoo", "yandex"];
+
+pub fn is_public_mail(domain: &str) -> bool {
+    let domain = domain.trim_end_matches('.').to_ascii_lowercase();
+    if PUBLIC_MAIL.contains(&domain.as_str()) {
+        return true;
+    }
+    let mut labels = domain.split('.');
+    let brand = labels.next().unwrap_or_default();
+    let suffix: Vec<&str> = labels.collect();
+    PUBLIC_MAIL_BRANDS.contains(&brand)
+        && (1..=2).contains(&suffix.len())
+        && suffix.iter().all(|l| (2..=3).contains(&l.len()))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn public_mail_domains_are_known_in_every_country() {
+        for public in [
+            "gmail.com",
+            "GMail.com.",
+            "yahoo.co.uk",
+            "hotmail.de",
+            "outlook.com",
+            "proton.me",
+        ] {
+            assert!(is_public_mail(public), "{public}");
+        }
+        for own in [
+            "acme.example",
+            "outlook.acme.com",
+            "mail.acme.example",
+            "yahoo-fans.org",
+        ] {
+            assert!(!is_public_mail(own), "{own}");
+        }
+    }
+
     use super::*;
 
     #[test]

@@ -48,6 +48,16 @@ Once you connect, the page shows two addresses:
 - The **Redirect URL**: register it at your provider as the sign-in callback.
 - The **Sign-in link**: it opens the sign-in page with your provider's button, so members don't type their address. Share it, for example on your intranet.
 
+### Verify your email domains
+
+Single sign-on signs in and admits only addresses at verified domains, so no organization can claim a domain it doesn't hold. For each domain, **Security** shows a TXT record. Add it at your DNS provider, then choose **Verify domains**:
+
+```text
+_kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA"
+```
+
+DNS changes can take a while to show; choose **Verify domains** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
+
 **Edit single sign-on** changes the connection, and an empty client secret keeps the stored one. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
 
 Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.

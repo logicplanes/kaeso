@@ -324,6 +324,8 @@ async fn an_sso_domain_signs_in_through_one_organization() {
         wrapped_key: vec![3],
         key_id: "k1".into(),
         domains: vec!["acme.example".into()],
+        verified_domains: Vec::new(),
+        verification_token: "token".into(),
         display_name: Some("Acme ID".into()),
         auto_redirect: true,
     };
@@ -345,7 +347,52 @@ async fn an_sso_domain_signs_in_through_one_organization() {
     assert!(stored.auto_redirect);
     assert_eq!(
         oidc::upsert(&mut conn, &connection(second)).await.unwrap(),
+        Upserted::Saved,
+        "an unverified domain blocks no other organization"
+    );
+    assert_eq!(
+        oidc::org_for_domain(&mut *conn, "acme.example")
+            .await
+            .unwrap(),
+        None
+    );
+    assert!(
+        oidc::mark_verified(
+            &mut *conn,
+            first,
+            "acme.example",
+            time::OffsetDateTime::now_utc()
+        )
+        .await
+        .unwrap()
+    );
+    assert_eq!(
+        oidc::org_for_domain(&mut *conn, "ACME.example")
+            .await
+            .unwrap(),
+        Some(first)
+    );
+    assert!(
+        oidc::verified_elsewhere(&mut *conn, second, "acme.example")
+            .await
+            .unwrap()
+    );
+    assert_eq!(
+        oidc::upsert(&mut conn, &connection(second)).await.unwrap(),
         Upserted::DomainTaken("acme.example".into())
+    );
+    assert_eq!(
+        oidc::upsert(&mut conn, &connection(first)).await.unwrap(),
+        Upserted::Saved
+    );
+    assert_eq!(
+        oidc::get(&mut *conn, first)
+            .await
+            .unwrap()
+            .unwrap()
+            .verified_domains,
+        ["acme.example"],
+        "saving the connection again keeps its verified domains"
     );
     assert_eq!(
         oidc::connected(&mut *conn).await.unwrap(),
