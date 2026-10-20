@@ -313,20 +313,22 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
 test("audit log: the changes above are recorded, filtered by action, and open with what they changed", async ({ page }) => {
   await openOrgSettings(page, "Audit log");
   const grid = page.getByRole("table", { name: "Audit log" });
-  await expect(grid.getByText("org.update").first()).toBeVisible();
-  await page.getByRole("combobox", { name: "Action" }).fill("platform_key");
-  await page.getByRole("option", { name: "platform_key.*" }).click();
-  await expect(grid.getByText("platform_key.create")).toBeVisible();
-  await expect(grid.getByText("org.update")).toHaveCount(0);
-  await grid.getByText("platform_key.create").click();
-  const sheet = page.getByRole("dialog", { name: "platform_key.create" });
+  await expect(grid.getByText("Organization changed").first()).toBeVisible();
+  await page.getByRole("combobox", { name: "Action" }).fill("Platform keys");
+  await page.getByRole("option", { name: /^Platform keys: every action/ }).click();
+  await expect(grid.getByText("Platform key created")).toBeVisible();
+  await expect(grid.getByText("Organization changed")).toHaveCount(0);
+  await expect(grid.getByText("Terraform")).toBeVisible();
+  await grid.getByText("Platform key created").click();
+  const sheet = page.getByRole("dialog", { name: "Platform key created" });
+  await expect(sheet.getByText("platform_key.create")).toBeVisible();
   await expect(sheet.getByText("Ada Okafor (you)")).toBeVisible();
   await expect(sheet.getByText(/"name": "Terraform"/)).toBeVisible();
   await page.keyboard.press("Escape");
 
   await withoutSaveDialog(page);
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByRole("button", { name: "Export JSON Lines" }).click();
   const file = await download;
   await expect(toastText(page, "Export started")).toBeVisible();
   expect(file.suggestedFilename()).toMatch(/\.jsonl$/);
