@@ -34,7 +34,7 @@ function libraryEntries(): string[] {
     if (!existsSync(dir)) return [];
     return readdirSync(dir)
       .filter((f) => f.endsWith(after) && !f.endsWith(".map"))
-      .map((f) => `${name}${key.slice(1).replace("*", f.slice(0, -after.length))}`);
+      .map((f) => `${name}${key.slice(1).replaceAll("*", f.slice(0, -after.length))}`);
   });
 }
 
