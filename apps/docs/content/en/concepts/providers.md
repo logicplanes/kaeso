@@ -90,4 +90,4 @@ Kaeso sends each request to the one provider its model name leads to, and doesn'
 
 ## Outbound connections
 
-The gateway calls each provider over HTTPS at the provider's base URL. If your network limits outgoing connections, allow the host of every provider your organizations use, such as `api.groq.com` for Groq. [Requirements](../self-hosting/requirements.md#network) lists every connection an install makes, and [provider calls](../self-hosting/configuration.md#provider-calls) gives each provider's default base URL and the setting that changes it.
+The gateway calls each provider over HTTPS at the provider's base URL. If your network limits outgoing connections, allow the host of every provider your organizations use, such as `api.groq.com` for Groq. [Supported providers](supported-providers.md) gives each provider's host, [requirements](../self-hosting/requirements.md#network) lists every connection an install makes, and [provider settings](../self-hosting/configuration.md#provider-settings) change a provider's base URL.

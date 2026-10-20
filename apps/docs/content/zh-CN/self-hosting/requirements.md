@@ -24,7 +24,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 方向 | 端口或主机 | 用途 |
 | --- | --- | --- |
 | 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
-| 出站 | `api.openai.com`、`api.anthropic.com`、`api.deepseek.com`、`api.x.ai`、`api.together.ai`、`api.groq.com`、`openrouter.ai`、`api.mistral.ai`，或您为服务商设置的基础 URL（[服务商设置](configuration.md#服务商设置)） | 您使用的服务商 |
+| 出站 | 您使用的每个服务商的主机（[支持的服务商](../concepts/supported-providers.md)），或您为其设置的基础 URL（[服务商设置](configuration.md#服务商设置)） | 您使用的服务商 |
 | 出站 | `models.dev` | 模型数据，每天刷新一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每天两次 |
 | 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |

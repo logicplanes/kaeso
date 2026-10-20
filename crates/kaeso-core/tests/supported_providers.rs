@@ -40,7 +40,14 @@ fn format_name(dialect: DialectId) -> &'static str {
     name.split_once(' ').map_or(name, |(_, format)| format)
 }
 
-fn expected_row(p: &Provider, language: &Language) -> (String, String) {
+fn host(base_url: &str) -> &str {
+    let rest = base_url
+        .split_once("://")
+        .map_or(base_url, |(_, rest)| rest);
+    rest.split('/').next().unwrap_or(rest)
+}
+
+fn expected_row(p: &Provider, language: &Language) -> (String, String, String) {
     let mut formats = vec![format_name(p.generation)];
     for d in p.dialects.iter().copied().filter(|d| *d != p.generation) {
         formats.push(format_name(d));
@@ -56,10 +63,11 @@ fn expected_row(p: &Provider, language: &Language) -> (String, String) {
     (
         format!("{} `{}`", p.name, p.id),
         formats.join(language.separator),
+        format!("`{}`", host(p.default_base_url)),
     )
 }
 
-fn table_rows(text: &str) -> Vec<(String, String)> {
+fn table_rows(text: &str) -> Vec<(String, String, String)> {
     text.lines()
         .skip_while(|line| !line.starts_with("| ---"))
         .skip(1)
@@ -67,18 +75,18 @@ fn table_rows(text: &str) -> Vec<(String, String)> {
         .map(|line| {
             let mut cells = line.trim_matches('|').split(" | ").map(str::trim);
             let mut next = || cells.next().unwrap_or_default().to_owned();
-            (next(), next())
+            (next(), next(), next())
         })
         .collect()
 }
 
 #[test]
-fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats() {
+fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats_and_host() {
     let mut providers: Vec<&Provider> = PROVIDERS.iter().collect();
     providers.sort_by_key(|p| p.name.to_lowercase());
     for language in &LANGUAGES {
         let (path, text) = page(language);
-        let expected: Vec<(String, String)> = providers
+        let expected: Vec<(String, String, String)> = providers
             .iter()
             .map(|p| expected_row(p, language))
             .collect();
@@ -86,7 +94,7 @@ fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats() 
             table_rows(&text),
             expected,
             "{path} has one row per provider in crates/kaeso-core/src/provider.rs, sorted by name: \
-             the name and the id, then the formats, with the default first"
+             the name and the id, the formats with the default first, then the host of the default base URL"
         );
     }
 }

@@ -90,4 +90,4 @@ Kaeso 把每个请求只发给其模型名称对应的那一个服务商；该�
 
 ## 出站连接
 
-网关通过 HTTPS 访问每个服务商的基础 URL。如果您的网络限制出站连接，请放行组织所用的每个服务商的主机，例如 Groq 的 `api.groq.com`。[系统要求](../self-hosting/requirements.md#网络)列出了实例的所有连接，[服务商调用](../self-hosting/configuration.md#服务商调用)给出了每个服务商的默认基础 URL 以及修改它的设置。
+网关通过 HTTPS 访问每个服务商的基础 URL。如果您的网络限制出站连接，请放行组织所用的每个服务商的主机，例如 Groq 的 `api.groq.com`。[支持的服务商](supported-providers.md)给出了每个服务商的主机，[系统要求](../self-hosting/requirements.md#网络)列出了实例的所有连接，[服务商设置](../self-hosting/configuration.md#服务商设置)可以修改服务商的基础 URL。

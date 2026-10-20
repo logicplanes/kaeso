@@ -141,7 +141,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | `crates/kaeso-codecs/tests/snapshots/` | 跨方言矩阵的结果 | 该方言的映射页面（[KPP 内部实现](kpp/index.md#测试)） |
 | `crates/kaeso-mail/src/snapshots/` | 每封邮件的文本和 HTML | |
 
-另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/kaeso-server/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式，因此添加服务商时要在那里添加一行。
+另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/kaeso-server/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
 
 ## 端到端测试
 

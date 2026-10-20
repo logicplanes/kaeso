@@ -90,4 +90,4 @@ Kaeso sendet jede Anfrage an den einen Anbieter, zu dem ihr Modellname führt, u
 
 ## Ausgehende Verbindungen
 
-Das Gateway ruft jeden Anbieter über HTTPS unter seiner Basis-URL auf. Beschränkt Ihr Netzwerk ausgehende Verbindungen, erlauben Sie den Host jedes Anbieters, den Ihre Organisationen nutzen, etwa `api.groq.com` für Groq. Die [Anforderungen](../self-hosting/requirements.md#netzwerk) listen jede Verbindung einer Installation, und unter [Aufrufe an Anbieter](../self-hosting/configuration.md#aufrufe-an-anbieter) stehen die Standard-Basis-URL jedes Anbieters und die Einstellung, die sie ändert.
+Das Gateway ruft jeden Anbieter über HTTPS unter seiner Basis-URL auf. Beschränkt Ihr Netzwerk ausgehende Verbindungen, erlauben Sie den Host jedes Anbieters, den Ihre Organisationen nutzen, etwa `api.groq.com` für Groq. [Unterstützte Anbieter](supported-providers.md) nennt den Host jedes Anbieters, die [Anforderungen](../self-hosting/requirements.md#netzwerk) listen jede Verbindung einer Installation, und [Anbietereinstellungen](../self-hosting/configuration.md#anbietereinstellungen) ändern die Basis-URL eines Anbieters.
