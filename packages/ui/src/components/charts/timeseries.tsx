@@ -3,12 +3,12 @@ import { forwardRef, useId, useMemo, useState, type ReactNode } from "react";
 import { scaleLinear } from "./linear-scale.js";
 import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack, type SeriesPoint } from "d3-shape";
 import { bisector, max as d3max, min as d3min } from "d3-array";
-import { timeTicks } from "d3-time";
 import { cn } from "../../utils/cn.js";
 import { formatNumber, formatPercent, formatTimeZone } from "../../format/index.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import {
   AXIS,
+  axisLabelIndexes,
   ChartFrame,
   ChartLive,
   ChartTooltip,
@@ -24,6 +24,7 @@ import {
   wholeTicks,
   type ChartState,
 } from "./core.js";
+import { wallClock, wallDay, zoneTicks, type WallClock } from "./time-axis.js";
 
 export const KAESO_TIMESERIES_CHART_VARIANTS = {
   kind: {
@@ -54,26 +55,49 @@ export interface TimeseriesChartProps extends ChartState {
   hideLegend?: boolean | undefined;
   highlight?: number | undefined;
   formatTime?: ((t: Date) => string) | undefined;
+  formatTick?: ((t: Date) => string) | undefined;
+  tickAt?: "time" | "points" | undefined;
+  timeZone?: string | undefined;
+  shares?: boolean | undefined;
+  partial?: { first?: boolean | undefined; last?: boolean | undefined; ongoing?: boolean | undefined } | undefined;
   "aria-label": string;
   className?: string | undefined;
 }
 
 const M = { top: 8, right: 52, bottom: 28, left: 0 };
 
-function timeFormat(locale: string, options: Intl.DateTimeFormatOptions): (d: Date) => string {
-  const timeZone = formatTimeZone();
+function timeFormat(locale: string, options: Intl.DateTimeFormatOptions, timeZone: string | undefined): (d: Date) => string {
   const f = new Intl.DateTimeFormat(locale === "en" ? "en-US" : locale, { ...options, ...(timeZone ? { timeZone } : {}) });
   return (d) => f.format(d);
 }
 const CLOCK = { hour: "2-digit", minute: "2-digit", hourCycle: "h23" } as const;
 const DAY = { month: "short", day: "numeric" } as const;
+const H = 3_600_000;
 
-function tickFormat(locale: string, span: number) {
-  const h = 3_600_000;
-  if (span <= 48 * h) return timeFormat(locale, CLOCK);
-  if (span <= 90 * 24 * h) return timeFormat(locale, DAY);
-  const month = timeFormat(locale, { month: "short" });
-  return (d: Date) => (d.getMonth() === 0 ? String(d.getFullYear()) : month(d));
+function tickFormat(locale: string, span: number, timeZone: string | undefined, clock: WallClock) {
+  if (span <= 48 * H) return timeFormat(locale, CLOCK, timeZone);
+  if (span <= 90 * 24 * H) return timeFormat(locale, DAY, timeZone);
+  const month = timeFormat(locale, { month: "short" }, timeZone);
+  return (d: Date) => {
+    const wall = new Date(clock(d));
+    return wall.getUTCMonth() === 0 ? String(wall.getUTCFullYear()) : month(d);
+  };
+}
+
+type PlacedLabel = { key: number; x: number; anchor: "start" | "middle" | "end"; label: string };
+
+function timeLabels(t0: Date, t1: Date, w: number, right: number, at: (d: Date) => number, label: (d: Date) => string, clock: WallClock): PlacedLabel[] {
+  let fallback: PlacedLabel[] = [];
+  for (let count = Math.max(2, Math.min(10, Math.floor(w / 64))); count >= 1; count--) {
+    const ticks = zoneTicks(t0, t1, count, clock);
+    const placed = placeTimeLabels(
+      ticks.map((d) => ({ key: d.getTime(), at: Math.round(at(d)), label: label(d) })),
+      right,
+    );
+    if (placed.length === ticks.length && placed.length >= 2) return placed;
+    if (placed.length > fallback.length) fallback = placed;
+  }
+  return fallback;
 }
 
 export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(function TimeseriesChart(
@@ -86,6 +110,11 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
     hideLegend,
     highlight,
     formatTime,
+    formatTick,
+    tickAt = "time",
+    timeZone,
+    shares = true,
+    partial,
     className,
     "aria-label": ariaLabel,
     ...state
@@ -119,25 +148,56 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const yScale = axis.copy().domain([0, tween.top || 1]);
   const t0 = d3min(times) ?? new Date();
   const t1 = d3max(times) ?? new Date();
-  const x = scaleLinear().domain([t0.getTime(), t1.getTime()]).range([0, w]);
+  const inset = tickAt === "points" && times.length ? w / times.length / 2 : 0;
+  const x = scaleLinear()
+    .domain([t0.getTime(), t1.getTime()])
+    .range([inset, w - inset]);
   const stackData = stacked
     ? d3stack<number[]>().keys(visible.map((_, i) => String(i)))(times.map((_, ti) => visible.map((_, si) => values[si]?.[ti] ?? 0)))
     : null;
   const y = (v: number) => Math.max(0, yScale(v));
   const yTicks = (state.loading ? axis.ticks(4) : wholeTicks(readableTicks(axis, axisLabel), flatValues)).filter((t) => t <= (tween.top || 1) + 1e-9);
-  const xTicks = timeTicks(t0, t1, Math.max(2, Math.min(8, Math.floor(w / 96))));
+  const zone = timeZone ?? formatTimeZone();
+  const clock = wallClock(zone);
   const span = (times[times.length - 1]?.getTime() ?? 0) - (times[0]?.getTime() ?? 0);
-  const fmt = tickFormat(locale, span);
+  const fmt = formatTick ?? tickFormat(locale, span, zone, clock);
+  const xLabels: PlacedLabel[] =
+    tickAt === "points"
+      ? axisLabelIndexes(
+          times.map(fmt),
+          inset * 2,
+          { start: inset, end: inset + M.right },
+          times.map((d) => wallDay(d, clock)),
+        ).map((i) => ({ key: times[i]!.getTime(), x: Math.round(x(times[i]!)), anchor: "middle", label: fmt(times[i]!) }))
+      : timeLabels(t0, t1, w, w + M.right, (d) => x(d.getTime()), fmt, clock);
   const step = (times[1]?.getTime() ?? 0) - (times[0]?.getTime() ?? 0);
-  const headingFormat =
+  const pointFormat =
     formatTime ??
     timeFormat(
       locale,
       step && step < 86_400_000 ? { weekday: "short", ...DAY, ...CLOCK } : span <= 90 * 86_400_000 ? { weekday: "short", ...DAY } : { ...DAY, year: "numeric" },
+      zone,
     );
-  const lineGen = d3line<number>()
-    .x((_, i) => Math.round(x(times[i] ?? new Date())))
-    .y((v) => y(v))
+  const last = times.length - 1;
+  const headingFormat = (i: number) => {
+    const heading = pointFormat(times[i]!);
+    if (partial?.ongoing && i === last) return t("chart.soFar", "{heading}, so far", { heading });
+    if ((partial?.last && i === last) || (partial?.first && i === 0)) return t("chart.partial", "{heading}, partial", { heading });
+    return heading;
+  };
+  const dashedFirst = !!partial?.first && last >= 1;
+  const dashedLast = !!(partial?.last || partial?.ongoing) && last >= 1;
+  const solid: [number, number] = [dashedFirst ? 1 : 0, dashedLast ? last - 1 : last];
+  const segments = (vals: number[]) => {
+    const part = (from: number, to: number) => lineGen(vals.slice(from, to + 1).map((v, k) => [from + k, v] as [number, number])) ?? "";
+    return {
+      solid: solid[1] >= solid[0] ? part(solid[0], solid[1]) : "",
+      dashed: [dashedFirst ? part(0, 1) : "", dashedLast ? part(last - 1, last) : ""].filter(Boolean),
+    };
+  };
+  const lineGen = d3line<[number, number]>()
+    .x(([i]) => Math.round(x(times[i] ?? new Date())))
+    .y(([, v]) => y(v))
     .curve(curveMonotoneX);
   const areaGen = d3area<number>()
     .x((_, i) => Math.round(x(times[i] ?? new Date())))
@@ -165,7 +225,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
 
   const table = {
     columns: [t("timeseriesChart.time", "Time"), ...series.map((s) => s.label)],
-    rows: times.map((t, i) => [(formatTime ?? fmt)(t), ...series.map((s) => formatValue(s.points[i]?.v ?? 0))]),
+    rows: times.map((_, i) => [headingFormat(i), ...series.map((s) => formatValue(s.points[i]?.v ?? 0))]),
   };
 
   const empty = state.empty ?? series.every((s) => s.points.every((p) => p.v === 0));
@@ -188,7 +248,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
         label: s.label,
         color: color(s),
         value: formatValue(v),
-        ...(visible.length > 1 && total ? { share: formatPercent(Math.round((v / total) * 100) / 100, 0) } : {}),
+        ...(shares && visible.length > 1 && total ? { share: formatPercent(Math.round((v / total) * 100) / 100, 0) } : {}),
       } as { id: string; label: ReactNode; color: string; value: ReactNode; share?: ReactNode | undefined };
     });
 
@@ -239,10 +299,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                   </g>
                 ))}
                 <line x2={w} y1={h + 0.5} y2={h + 0.5} {...AXIS.baseline} />
-                {placeTimeLabels(
-                  xTicks.map((t) => ({ key: t.getTime(), at: Math.round(x(t)), label: fmt(t) })),
-                  w + M.right,
-                ).map((l) => (
+                {xLabels.map((l) => (
                   <text key={l.key} x={l.x} y={h + 20} textAnchor={l.anchor} {...AXIS.label}>
                     {l.label}
                   </text>
@@ -262,14 +319,18 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                     : visible.map((s, si) => (
                         <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
                           {kind === "area" && <path d={areaGen(values[si] ?? []) ?? ""} fill={`url(#${gid}-${s.id})`} />}
-                          <path
-                            d={lineGen(values[si] ?? []) ?? ""}
-                            fill="none"
-                            stroke={color(s)}
-                            strokeWidth={2}
-                            strokeLinejoin="round"
-                            strokeLinecap="round"
-                          />
+                          {(() => {
+                            const line = segments(values[si] ?? []);
+                            const stroke = { fill: "none", stroke: color(s), strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round" } as const;
+                            return (
+                              <>
+                                {line.solid && <path d={line.solid} {...stroke} />}
+                                {line.dashed.map((d) => (
+                                  <path key={d} d={d} {...stroke} strokeDasharray="4 4" data-partial="" />
+                                ))}
+                              </>
+                            );
+                          })()}
                         </g>
                       ))}
                 {threshold && (
@@ -302,10 +363,10 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
             </svg>
           )}
           {active !== null && times[active] && (
-            <ChartTooltip x={activeX} y={activeY} width={size.width} visible heading={headingFormat(times[active]!)} rows={rowsFor(active)} />
+            <ChartTooltip x={activeX} y={activeY} width={size.width} visible heading={headingFormat(active)} rows={rowsFor(active)} />
           )}
           <ChartLive>
-            {keys.index !== null && active !== null && times[keys.index] ? liveLine(headingFormat(times[keys.index]!), rowsFor(keys.index), t) : null}
+            {keys.index !== null && active !== null && times[keys.index] ? liveLine(headingFormat(keys.index), rowsFor(keys.index), t) : null}
           </ChartLive>
         </div>
       </ChartFrame>
