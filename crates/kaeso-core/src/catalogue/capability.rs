@@ -264,21 +264,16 @@ fn check_budget(budget: u32, ingress: DialectId, eff: &Effective) -> Result<(), 
         .rposition(|band| supported(&band))
         .and_then(|i| bands.get(i + 1));
     let model = &eff.model_id;
-    let levels = levels
-        .iter()
-        .map(|l| format!("`{l}`"))
-        .collect::<Vec<_>>()
-        .join(", ");
     let effort = effort.as_wire();
     let message = match (above, below) {
         (Some((_, min)), _) => format!(
-            "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so send a `budget_tokens` of at least {min}."
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}."
         ),
         (None, Some((_, max))) => format!(
-            "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so send a `budget_tokens` below {max}."
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs less than {max}."
         ),
         (None, None) => format!(
-            "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so turn `thinking` off."
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs `thinking` off."
         ),
     };
     Err(refuse(

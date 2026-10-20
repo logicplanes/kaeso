@@ -493,34 +493,17 @@ const messages = (): Rule[] => [
   rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),
   rule(
     "errors.model.budgetAtLeast",
-    (v) =>
-      t(
-        "errors.model.budgetAtLeast",
-        "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so send a `budget_tokens` of at least {min}.",
-        v,
-      ),
-    { levels: "codeList", budget: "number", min: "number" },
+    (v) => t("errors.model.budgetAtLeast", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}.", v),
+    { budget: "number", min: "number" },
   ),
   rule(
     "errors.model.budgetBelow",
-    (v) =>
-      t(
-        "errors.model.budgetBelow",
-        "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so send a `budget_tokens` below {max}.",
-        v,
-      ),
-    { levels: "codeList", budget: "number", max: "number" },
+    (v) => t("errors.model.budgetBelow", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs less than {max}.", v),
+    { budget: "number", max: "number" },
   ),
-  rule(
-    "errors.model.budgetOff",
-    (v) =>
-      t(
-        "errors.model.budgetOff",
-        "The model `{model}` supports the effort levels {levels}; a thinking budget of {budget} tokens becomes `{effort}`, so turn `thinking` off.",
-        v,
-      ),
-    { levels: "codeList", budget: "number" },
-  ),
+  rule("errors.model.budgetOff", (v) => t("errors.model.budgetOff", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs `thinking` off.", v), {
+    budget: "number",
+  }),
   rule(
     "errors.model.effortLevels",
     (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),

@@ -94,16 +94,15 @@ describe("a refusal from the Playground's capability checks", () => {
     expect((await errorFromResponse(refusal(plain))).message).toBe(plain);
   });
 
-  it("tells which thinking budget the model's effort levels take, with the numbers in the language's format", async () => {
-    const message =
-      "The model `mistral-small-latest` supports the effort levels `none`, `high`; a thinking budget of 2048 tokens becomes `low`, so send a `budget_tokens` of at least 16384.";
+  it("tells which thinking budget the model takes, with the numbers in the language's format", async () => {
+    const message = "A `budget_tokens` of 2048 means `low`; `mistral-small-latest` needs at least 16384.";
     await speak("de");
     expect((await errorFromResponse(refusal(message))).message).toBe(
-      "Das Modell `mistral-small-latest` unterstützt die Aufwandsstufen `none` und `high`; ein Thinking-Budget von 2.048 Token wird zu `low`, senden Sie daher ein `budget_tokens` von mindestens 16.384.",
+      "`budget_tokens` von 2.048 ergibt `low`; `mistral-small-latest` braucht mindestens 16.384.",
     );
     await speak("zh-CN");
-    expect((await errorFromResponse(refusal(message.replace("so send a `budget_tokens` of at least 16384", "so turn `thinking` off")))).message).toBe(
-      "模型 `mistral-small-latest` 支持的推理强度为 `none` 和 `high`；2,048 个 Token 的思考预算会换算为 `low`，请关闭 `thinking`。",
+    expect((await errorFromResponse(refusal("A `budget_tokens` of 2048 means `low`; `gpt-5` needs `thinking` off."))).message).toBe(
+      "`budget_tokens` 为 2,048 即 `low`；`gpt-5` 需要关闭 `thinking`。",
     );
   });
 

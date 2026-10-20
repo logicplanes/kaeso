@@ -570,7 +570,7 @@ fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
     let a = DialectId::AnthropicMessages;
     assert_eq!(
         check(with_budget(2_048, ReasoningMode::Enabled), a, &small).unwrap_err(),
-        "The model `mistral-small-latest` supports the effort levels `none`, `high`; a thinking budget of 2048 tokens becomes `low`, so send a `budget_tokens` of at least 16384."
+        "A `budget_tokens` of 2048 means `low`; `mistral-small-latest` needs at least 16384."
     );
     let mut req = Request::Generate(with_budget(2_048, ReasoningMode::Enabled));
     assert_eq!(
@@ -595,7 +595,7 @@ fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
             &with_efforts(&["low"])
         )
         .unwrap_err(),
-        "The model `gpt-5` supports the effort levels `low`; a thinking budget of 20000 tokens becomes `high`, so send a `budget_tokens` below 4096."
+        "A `budget_tokens` of 20000 means `high`; `gpt-5` needs less than 4096."
     );
     assert_eq!(
         check(
@@ -604,7 +604,7 @@ fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
             &with_efforts(&["none"])
         )
         .unwrap_err(),
-        "The model `gpt-5` supports the effort levels `none`; a thinking budget of 2048 tokens becomes `low`, so turn `thinking` off."
+        "A `budget_tokens` of 2048 means `low`; `gpt-5` needs `thinking` off."
     );
     assert!(
         check(
@@ -613,7 +613,7 @@ fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
             &with_efforts(&["low", "high"])
         )
         .unwrap_err()
-        .ends_with("so send a `budget_tokens` of at least 16384.")
+        .ends_with("needs at least 16384.")
     );
 }
 
