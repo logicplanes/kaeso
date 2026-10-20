@@ -7,7 +7,7 @@ import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
 import { Markdown } from "../markdown/markdown.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
-import { useUiText } from "../../i18n/context.js";
+import { useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_RESPONSE_VIEW_VARIANTS = {
   status: {
@@ -15,7 +15,8 @@ export const KAESO_RESPONSE_VIEW_VARIANTS = {
     streaming: { classes: "", description: "Arriving: the text grows, earlier lines never re-wrap; Thinking is live" },
     done: { classes: "", description: "Complete (default)" },
     stopped: { classes: "", description: "Stopped by the person: the text so far and “Stopped”" },
-    error: { classes: "", description: "Failed: “No response” and Retry. The error itself is a toast" },
+    incomplete: { classes: "", description: "Cut off by the model: the text so far and why, such as “Stopped at the output limit”" },
+    error: { classes: "", description: "Failed: the error in place of the response, and Retry" },
   },
 } as const;
 export const KAESO_RESPONSE_VIEW_DEFAULT_VARIANTS = { status: "done" } as const;
@@ -30,10 +31,18 @@ export interface ResponseViewProps {
   reasoningOpen?: boolean | undefined;
   defaultReasoningOpen?: boolean | undefined;
   onReasoningOpenChange?: ((open: boolean) => void) | undefined;
+  incompleteReason?: string | undefined;
+  error?: string | undefined;
   onRetry?: (() => void) | undefined;
   footer?: ReactNode | undefined;
   "aria-label"?: string | undefined;
   className?: string | undefined;
+}
+
+function incompleteText(t: UiText, reason: string | undefined): string {
+  if (reason === "max_output_tokens") return t("responseView.outputLimit", "Stopped at the output limit");
+  if (reason === "content_filter") return t("responseView.contentFilter", "Stopped by the provider's content filter");
+  return t("responseView.incomplete", "The model ended the response early");
 }
 
 function lastLine(text: string) {
@@ -104,6 +113,8 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
     reasoningOpen,
     defaultReasoningOpen,
     onReasoningOpenChange,
+    incompleteReason,
+    error,
     onRetry,
     footer,
     "aria-label": ariaLabelProp,
@@ -153,13 +164,24 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
           )}
         </div>
       )}
-      {status === "error" && (
+      {status === "incomplete" && (
         <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4">
-          <span className="text-small text-fg-secondary">
+          <span className="text-small text-fg-secondary">{incompleteText(t, incompleteReason)}</span>
+          {onRetry && (
+            <Button size="xs" variant="ghost" onClick={onRetry}>
+              {t("responseView.retry", "Retry")}
+            </Button>
+          )}
+        </div>
+      )}
+      {status === "error" && (
+        <div role="alert" className="flex min-h-24 flex-col items-start gap-4">
+          <span className="text-small font-medium text-fg">
             {hasText ? t("responseView.stoppedEarly", "The response stopped early") : t("responseView.noResponse", "No response")}
           </span>
+          {error && <Markdown text={error} size="small" tone="secondary" className="max-w-prose min-w-0" />}
           {onRetry && (
-            <Button size="xs" variant="secondary" onClick={onRetry}>
+            <Button size="xs" variant="secondary" onClick={onRetry} className="mt-4">
               {t("responseView.retry", "Retry")}
             </Button>
           )}

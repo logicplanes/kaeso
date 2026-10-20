@@ -138,17 +138,21 @@ export const docs = {
   },
   ResponseView: {
     description:
-      'A model\'s response as it arrives: Markdown text for reading (15/22), the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams), and calm states for a stop or a failure. Errors themselves are toasts; the response says only that there is none.',
+      'A model\'s response as it arrives: Markdown text for reading (15/22), the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams), and calm states for a stop, a cut-off reply or a failure, which shows its error in place.',
     props: {
       "aria-label": 'The response\'s accessible name ("GPT-5 response" in a comparison). Defaults to "Response" in the provider\'s language.',
       defaultReasoningOpen: "Whether the reasoning starts expanded.",
+      error:
+        'Why the reply failed, shown under "No response" with status "error": the gateway\'s message in the reader\'s language; `code` spans render as code.',
       footer: "Under the response: its metrics, actions.",
+      incompleteReason:
+        'Why the model cut the reply off, with status "incomplete": `max_output_tokens` reads "Stopped at the output limit", `content_filter` names the filter.',
       onReasoningOpenChange: "Called when the reasoning is expanded or collapsed.",
-      onRetry: "Sends the turn again; shown with an error or a stop.",
+      onRetry: "Sends the turn again; shown with an error, a stop or a cut-off reply.",
       reasoning: 'The reasoning summary so far, as Markdown. A "Thinking" disclosure shows it, closed by default.',
       reasoningDuration: 'How long the model reasoned, in milliseconds: "Thought for 4.2 s".',
       reasoningOpen: "Whether the reasoning is expanded, when you control it.",
-      status: "Where the reply stands: waiting, streaming, done, stopped or failed.",
+      status: "Where the reply stands: waiting, streaming, done, stopped, cut off by the model (incomplete) or failed.",
       text: "The output text so far, as Markdown.",
     },
   },

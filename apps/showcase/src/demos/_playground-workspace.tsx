@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, icons, toast } from "@logicplanes/kaeso-ui";
+import { Button, icons } from "@logicplanes/kaeso-ui";
 import {
   CompareGrid,
   Composer,
@@ -29,6 +29,7 @@ export interface Response {
   reasoning: string;
   reasoningDuration?: number | undefined;
   startedAt?: number | undefined;
+  error?: string | undefined;
   metrics: Metrics;
 }
 export interface Entry {
@@ -116,8 +117,7 @@ function useFakeGateway(setColumns: (f: (c: Column[]) => Column[]) => void) {
       if (model.value === "claude-haiku-4-5" && !limited.current.has(col.id)) {
         limited.current.add(col.id);
         step(() => {
-          patch(col.id, (r) => ({ ...r, status: "error" }));
-          toast.error("Claude Haiku 4.5 is rate limited", { description: "The project allows 60 requests a minute to it. Try again in 20 seconds." });
+          patch(col.id, (r) => ({ ...r, status: "error", error: "The project allows 60 requests a minute to Claude Haiku 4.5. Try again in 20 seconds." }));
         }, 420);
         return;
       }
@@ -253,6 +253,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
                           text={e.response.text}
                           reasoning={e.response.reasoning}
                           reasoningDuration={e.response.reasoningDuration}
+                          error={e.response.error}
                           {...(i === c.thread.length - 1 ? { onRetry: () => retry(c.id) } : {})}
                         />
                       </div>

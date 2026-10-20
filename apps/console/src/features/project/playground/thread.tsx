@@ -29,6 +29,10 @@ export default function Thread({
               text={r.text}
               reasoning={r.reasoning}
               status={statusOf(r)}
+              {...(r.incompleteReason ? { incompleteReason: r.incompleteReason } : {})}
+              {...(r.error
+                ? { error: r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error }
+                : {})}
               {...(r.reasoning && r.firstTextAt !== null && r.firstTokenAt !== null ? { reasoningDuration: r.firstTextAt - r.firstTokenAt } : {})}
               {...(latest && onRetry ? { onRetry } : {})}
               {...(latest ? {} : { footer: <ResponseMetrics {...metricsOf(r, model)} /> })}
@@ -41,4 +45,4 @@ export default function Thread({
 }
 
 const statusOf = (r: ResponseState): ResponseStatus =>
-  r.status === "waiting" ? "pending" : r.status === "completed" || r.status === "incomplete" ? "done" : r.status === "failed" ? "error" : r.status;
+  r.status === "waiting" ? "pending" : r.status === "completed" ? "done" : r.status === "failed" ? "error" : r.status;

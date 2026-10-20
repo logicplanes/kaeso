@@ -10,7 +10,7 @@ Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugle
 
 1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Suchen Sie nach Name, ID oder Anbieter; die Modelle sind nach Anbieter gruppiert, und die zuletzt gewählten stehen oben. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen.
 2. Senden Sie einen Prompt an alle Modelle.
-3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten.
+3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten. Eine fehlgeschlagene Antwort zeigt den Grund in ihrer Spalte, und eine, die das Modell abgebrochen hat, sagt warum, etwa **Am Ausgabelimit gestoppt**; **Erneut versuchen** sendet diesen Schritt noch einmal.
 
 **Leeren** leert das Gespräch jeder Spalte.
 

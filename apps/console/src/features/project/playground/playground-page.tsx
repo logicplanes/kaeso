@@ -117,12 +117,12 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const submit = (text: string) => {
     const sends = threads.flatMap((thread, i) => {
       const m = models[i];
-      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters), label: m.display_name }] : [];
+      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters) }] : [];
     });
     send(text, sends);
     changePrompt("");
   };
-  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) => retry(i, requestFor(m, earlier, last.prompt, parameters), m.display_name);
+  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) => retry(i, requestFor(m, earlier, last.prompt, parameters));
 
   const noModels = catalogue.isSuccess && chat.length === 0;
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });

@@ -21,6 +21,7 @@ export interface ResponseState {
   output: OutputItem[];
   usage: ResponseUsage | null;
   error: string | null;
+  requestId: string | null;
   incompleteReason: string | null;
   startedAt: number;
   firstTokenAt: number | null;
@@ -38,6 +39,7 @@ export const newResponse = (startedAt: number): ResponseState => ({
   output: [],
   usage: null,
   error: null,
+  requestId: null,
   incompleteReason: null,
   startedAt,
   firstTokenAt: null,
@@ -141,9 +143,9 @@ export function applyEvent(state: ResponseState, event: string, data: Json, now:
   }
 }
 
-export function endResponse(state: ResponseState, status: "stopped" | "failed", now: number, error?: string): ResponseState {
+export function endResponse(state: ResponseState, status: "stopped" | "failed", now: number, error?: string, requestId?: string | null): ResponseState {
   if (!isLive(state)) return state;
-  return { ...state, status, endedAt: now, error: error ?? null, output: state.output.filter(Boolean) };
+  return { ...state, status, endedAt: now, error: error ?? null, requestId: requestId ?? null, output: state.output.filter(Boolean) };
 }
 
 export type InputItem = { role: "user" | "assistant"; content: string } | OutputItem;
