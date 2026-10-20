@@ -67,4 +67,18 @@ describe("logColumns", () => {
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
     expect(parts).toEqual(["gpt-5.4-mini", "Client disconnected", "Playground", "The app closed the connection."]);
   });
+
+  it("starts with the outcome when a request was refused before a model was chosen", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[logRow({ status: 400, model: "", provider: "", error_kind: "invalid_request" })]}
+        columns={[all.model]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
+    expect(parts).toEqual(["Invalid request"]);
+  });
 });

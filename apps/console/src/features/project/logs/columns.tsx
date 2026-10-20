@@ -234,12 +234,14 @@ export function logColumns({
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
 function ModelCell({ row }: { row: LogView }) {
-  const aliased = row.requested_model !== row.model && !row.requested_model.endsWith(`/${row.model}`);
+  const aliased = !!row.model && row.requested_model !== row.model && !row.requested_model.endsWith(`/${row.model}`);
   return (
     <span className="@container flex w-full min-w-0 items-center gap-8">
-      <Text mono variant="small" truncate>
-        {row.model}
-      </Text>
+      {row.model && (
+        <Text mono variant="small" truncate>
+          {row.model}
+        </Text>
+      )}
       {row.error_kind && (
         <Badge tone={errorTone(row)} className="hidden shrink-0 @cell-sm:inline-flex">
           {errorKindLabel(row.error_kind)}
