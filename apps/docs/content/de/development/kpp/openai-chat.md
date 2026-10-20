@@ -134,6 +134,7 @@ Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unte
 | Anbieter | Einstellungen | Quellen |
 |---|---|---|
 | DeepSeek (`deepseek`) | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`: DeepSeek beantwortet die Rolle `developer` mit 422 `unknown variant` |
+| Groq (`groq`) | `system_role()`; lehnt `logit_bias`, `logprobs` und `top_logprobs` ab, dazu `name` und `refusal` in Nachrichten | Groqs Seite zur OpenAI-Kompatibilität (https://console.groq.com/docs/openai, die `logprobs`, `logit_bias`, `top_logprobs` und `messages[].name` als nicht unterstützt nennt); `fixtures/openai_chat/providers/groq/errors/`: `recorded-logit-bias`, `recorded-logprobs-top-logprobs-doc`, `recorded-tools-results-parallel-error` (`refusal` in einer Assistentennachricht) und `recorded-tools-single` (Qwens Chat-Template lehnt die Rolle `developer` ab) |
 
 ## Antwort: `CreateChatCompletionResponse`
 

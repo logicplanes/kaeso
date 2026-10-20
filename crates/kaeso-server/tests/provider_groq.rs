@@ -178,6 +178,59 @@ async fn groq_refusals_reach_each_app_in_its_own_error_format() {
 }
 
 #[tokio::test]
+async fn fields_groq_refuses_are_refused_before_anything_is_sent_and_developer_is_sent_as_system() {
+    let env = env().await;
+    env.mock.clear();
+    let mut body = chat("openai/gpt-oss-20b", "Yes or no?");
+    body["logprobs"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "`logprobs` is not supported by Groq; remove it from the request."
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "openai/gpt-oss-20b",
+            "messages": [{ "role": "user", "content": "Hi", "name": "alice" }],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "messages[0].name");
+    assert!(env.mock.received().is_empty());
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "openai/gpt-oss-20b",
+            "messages": [
+                { "role": "developer", "content": "Answer in one word." },
+                { "role": "user", "content": "Hi [mock:fixture=providers/groq/recorded-plain-developer-string]" }
+            ],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let (_, _, sent) = sent(&env);
+    assert_eq!(sent["messages"][0]["role"], "system");
+}
+
+#[tokio::test]
 async fn token_counts_for_groq_models_are_refused_before_anything_is_sent() {
     let env = env().await;
     env.mock.clear();

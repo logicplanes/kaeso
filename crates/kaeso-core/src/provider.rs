@@ -220,7 +220,10 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
-        chat: ChatProfile::compatible("Groq"),
+        chat: ChatProfile::compatible("Groq")
+            .system_role()
+            .refusing(&["logit_bias", "logprobs", "top_logprobs"])
+            .refusing_in_messages(&["name", "refusal"]),
     },
     Provider {
         id: "openrouter",

@@ -53,8 +53,8 @@ Every reply, stream and error below is a live recording made with `cargo xtask r
 | `reasoning_effort` values differ per model (`none` and `default` only for Qwen, `low`/`medium`/`high` for GPT-OSS) | the gateway refuses a value outside the model's models.dev `reasoning_options` before sending; Groq answers 400 for any other value the model does not take | api-reference; live |
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time`; top-level `usage_breakdown`, `x_groq` (`id`, `seed`), `service_tier: "on_demand"` | extras, round-trip | live; api-reference example |
 | streams: `x_groq` on the first chunk, `x_groq.usage` and `usage` on the finish chunk even without `include_usage`; with `include_usage` also a usage chunk with empty `choices` | extras; the typed usage comes from the chunk's `usage` | live |
-| `logprobs`, `top_logprobs`, `logit_bias`, `messages[].name`: 400; `n` above 1: 400 | Groq's error, passed to the app in its format; `n` above 1 is refused by KPP before sending | openai compatibility page; live |
-| Qwen's chat template refuses `developer` messages; `refusal` on assistant messages is refused | Groq's 400, passed through | live |
+| `logprobs`, `top_logprobs`, `logit_bias`, `messages[].name`: 400; `n` above 1: 400 | refused before sending by the `chat` profile (`refusing`, `refusing_in_messages`); `n` above 1 is refused by KPP before sending | openai compatibility page; live |
+| Qwen's chat template refuses `developer` messages; `refusal` on assistant messages is refused | the `chat` profile sends `developer` messages as `system` (`system_role()`) and refuses `refusal` before sending | live |
 | extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features`, …) | extras of the model, round-trip | live |
 | no embeddings and no token-count endpoint | `embeddings` and `count_tokens` are `None` | api-reference |
 | Responses (beta) answers, but refuses `previous_response_id` and has no `/v1/responses/input_tokens` | not in `dialects` | live probe |

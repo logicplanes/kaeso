@@ -134,6 +134,7 @@ nav: OpenAI Chat
 | 服务商 | 设置 | 来源 |
 |---|---|---|
 | DeepSeek（`deepseek`） | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
+| Groq（`groq`） | `system_role()`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色） |
 
 ## 回复：`CreateChatCompletionResponse`
 
