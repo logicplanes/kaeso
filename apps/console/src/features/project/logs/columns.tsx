@@ -1,5 +1,5 @@
 import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col } from "@logicplanes/kaeso-ui";
-import { formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
 import { requestUSD } from "~/format/money";
@@ -8,7 +8,6 @@ import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
-import { dateLocale } from "./timing";
 
 export const COLUMNS = [
   "time",
@@ -78,14 +77,17 @@ export function logColumns({
   providerName: (id: string) => string;
 }) {
   const time = (iso: string) =>
-    new Date(iso).toLocaleString(dateLocale(), {
-      ...(spansDays ? { day: "numeric", month: "short" } : {}),
-      hour: "2-digit",
-      minute: "2-digit",
-      ...(phone && spansDays ? {} : { second: "2-digit" }),
-      hourCycle: "h23",
-      ...inZone(),
-    });
+    dateFormatter(
+      {
+        ...(spansDays ? { day: "numeric", month: "short" } : {}),
+        hour: "2-digit",
+        minute: "2-digit",
+        ...(phone && spansDays ? {} : { second: "2-digit" }),
+        hourCycle: "h23",
+        ...inZone(),
+      },
+      locale(),
+    )(iso);
   return {
     time: col.custom(
       { id: "time", header: columnLabel("time"), size: timeWidth(spansDays, phone), priority: 1 },

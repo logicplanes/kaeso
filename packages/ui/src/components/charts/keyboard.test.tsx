@@ -87,7 +87,7 @@ describe("TimeseriesChart from the keyboard", () => {
     await userEvent.tab();
     expect(screen.getByRole("group", { name: "Spend" })).toHaveFocus();
     await userEvent.keyboard("{Home}{ArrowRight}");
-    expect(live()).toMatch(/Oct 11: GPT-5 7$/);
+    expect(live()).toMatch(/11 Oct: GPT-5 7$/);
   });
   it("has nothing to step through while empty", async () => {
     render(<TimeseriesChart aria-label="Spend" series={series.map((s) => ({ ...s, points: s.points.map((p) => ({ ...p, v: 0 })) }))} />);

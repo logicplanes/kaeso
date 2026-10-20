@@ -45,13 +45,13 @@ describe.each(["Europe/Berlin", "America/Los_Angeles", "Asia/Tokyo", "UTC"])("in
         series={[{ id: "r", label: "Requests", points: times.map((t, i) => ({ t, v: i === 0 ? 2249 : 100 })) }]}
       />,
     );
-    expect(axisText(container).every((l) => /^(Sep|Oct) \d+$/.test(l ?? ""))).toBe(true);
-    expect(axisText(container)).not.toContain("Sep 20");
+    expect(axisText(container).every((l) => /^\d+ (Sep|Oct)$/.test(l ?? ""))).toBe(true);
+    expect(axisText(container)).not.toContain("20 Sep");
     hoverAt(container, 0);
-    expect(tooltip(container)).toMatch(/^Mon, Sep 21Requests2,249/);
+    expect(tooltip(container)).toMatch(/^Mon 21 SepRequests2,249/);
     hoverAt(container, width - 52);
-    expect(tooltip(container)).toMatch(/^Tue, Oct 20/);
-    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Mon, Sep 21");
+    expect(tooltip(container)).toMatch(/^Tue 20 Oct/);
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Mon 21 Sep");
   });
 
   it("puts each month on its own tick over a long span", () => {
@@ -192,9 +192,9 @@ describe("partial points and shares", () => {
     const clip = container.querySelector(dashed[0]!.getAttribute("clip-path")!.replace(/^url\((.*)\)$/, "$1"));
     expect(clip?.querySelectorAll("rect")).toHaveLength(2);
     hoverAt(container, width - 52);
-    expect(tooltip(container)).toMatch(/^Tue, Oct 20, so far/);
+    expect(tooltip(container)).toMatch(/^Tue 20 Oct, so far/);
     hoverAt(container, 0);
-    expect(tooltip(container)).toMatch(/^Wed, Oct 14, partial/);
+    expect(tooltip(container)).toMatch(/^Wed 14 Oct, partial/);
   });
 
   it("dashes every stacked top line to a partial point", () => {
@@ -255,7 +255,7 @@ describe("partial points and shares", () => {
       />,
     );
     expect(container.querySelectorAll("path[data-partial]")).toHaveLength(1);
-    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Fri, Oct 16, partial");
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Fri 16 Oct, partial");
     render(
       <BarChart
         aria-label="Weeks"

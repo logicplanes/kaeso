@@ -21,7 +21,7 @@ import {
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
-import { formatDate } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatDate } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { AuditEventView } from "~/api/generated/types";
 import { auditEventQuery, auditLogQuery, auditParams, type AuditFilters, type AuditScope, type AuditSearch } from "~/api/queries/audit";
@@ -37,24 +37,15 @@ import { dayKey, inZone, yearOf } from "~/format/zone";
 import { usePhone } from "~/shell/use-phone";
 
 const dateTag = () => (locale() === "en" ? "en-GB" : locale());
-const shortTimes = new Map<string, Intl.DateTimeFormat>();
-function shortTime(v: string): string {
-  const tag = dateTag();
-  const zone = inZone();
-  const key = `${tag}|${String(zone.timeZone)}`;
-  let f = shortTimes.get(key);
-  if (!f)
-    shortTimes.set(key, (f = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...zone })));
-  return f.format(new Date(v));
-}
+const shortTime = (v: string) =>
+  dateFormatter({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(v);
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
 function compactTime(v: string): string {
   const at = new Date(v);
-  const tag = dateTag();
-  if (dayKey(at) === dayKey(new Date())) return new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }).format(at);
+  if (dayKey(at) === dayKey(new Date())) return dateFormatter({ hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(at);
   const thisYear = yearOf(at) === yearOf(new Date());
-  return new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", ...(thisYear ? {} : { year: "2-digit" }), ...inZone() }).format(at);
+  return dateFormatter({ day: "numeric", month: "short", ...(thisYear ? {} : { year: "2-digit" }), ...inZone() }, locale())(at);
 }
 function zoneName(at: Date): string {
   const parts = new Intl.DateTimeFormat(dateTag(), { timeZoneName: "short", ...inZone() }).formatToParts(at);

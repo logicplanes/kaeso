@@ -16,7 +16,7 @@ async function open(period?: "7d") {
 describe("PeriodPicker", () => {
   it("shows the chosen days and picks a named period", async () => {
     const { user, dialog, onChange } = await open();
-    expect(screen.getByRole("button", { name: "Period" })).toHaveTextContent("Oct 1 – Oct 7");
+    expect(screen.getByRole("button", { name: "Period" })).toHaveTextContent("1 Oct – 7 Oct");
     expect(within(dialog).getByRole("option", { name: "Custom" })).toHaveAttribute("aria-selected", "true");
     await user.click(within(dialog).getByRole("option", { name: "Last 7 days" }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith({ period: "7d", from: undefined, to: undefined }));

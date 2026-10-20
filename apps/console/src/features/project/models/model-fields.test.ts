@@ -7,18 +7,17 @@ const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 describe("contextLabel", () => {
   afterEach(() => setFormatLocale("en"));
 
-  it("shows a context window in English short form", () => {
-    expect(limits.map(contextLabel)).toEqual(["8.19K", "128K", "200K", "1.05M", "2M"]);
+  it("names a context window as models are named", () => {
+    expect(limits.map(contextLabel)).toEqual(["8K", "128K", "200K", "1M", "2M"]);
+    expect(contextLabel(131_072)).toBe("128K");
   });
 
-  it("follows German number words", () => {
+  it("keeps the same short form in German and Chinese", () => {
     setFormatLocale("de");
-    expect(limits.map(contextLabel)).toEqual(["8192", "128.000", "200.000", "1,05 Mio.", "2 Mio."]);
-  });
-
-  it("counts in ten-thousands in Chinese", () => {
+    expect(limits.map(contextLabel)).toEqual(["8K", "128K", "200K", "1M", "2M"]);
+    expect(contextLabel(1_536)).toBe("1,5K");
     setFormatLocale("zh-CN");
-    expect(limits.map(contextLabel)).toEqual(["8192", "12.8万", "20万", "104.9万", "200万"]);
+    expect(limits.map(contextLabel)).toEqual(["8K", "128K", "200K", "1M", "2M"]);
   });
 
   it("shows a dash when the limit is unknown", () => {
