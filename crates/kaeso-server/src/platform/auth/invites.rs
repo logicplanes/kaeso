@@ -164,7 +164,9 @@ pub async fn accept_invite(
             )));
         }
         let user = UserId::from_uuid(me.id);
-        let org = finish(&state, &ctx, &invite, user).await?;
+        let mut tx = state.pg.begin().await?;
+        let org = finish(&state, &ctx, &mut tx, &invite, user).await?;
+        tx.commit().await?;
         return Ok(Json(AcceptedView {
             status: "accepted",
             org_id: org,
@@ -184,7 +186,7 @@ pub async fn accept_invite(
     };
     let user = UserId::new();
     let mut tx = state.pg.begin().await?;
-    users::insert(
+    let created = users::insert(
         &mut *tx,
         &users::NewUser {
             id: user.uuid(),
@@ -196,14 +198,20 @@ pub async fn accept_invite(
         },
     )
     .await?;
+    if !created {
+        return Err(ApiError::Conflict(format!(
+            "An account with {} exists; sign in to accept the invitation.",
+            invite.email
+        )));
+    }
     ctx.audit(None, "user.create_by_invite")
         .by(user)
         .target("user", user)
         .after(serde_json::json!({ "email": invite.email }))
         .write(&mut tx)
         .await?;
+    finish(&state, &ctx, &mut tx, &invite, user).await?;
     tx.commit().await?;
-    finish(&state, &ctx, &invite, user).await?;
     let row = users::get(&state.pg, user.uuid())
         .await?
         .ok_or_else(|| ApiError::internal("new user vanished"))?;
@@ -213,14 +221,14 @@ pub async fn accept_invite(
 async fn finish(
     state: &AppState,
     ctx: &Ctx,
+    tx: &mut sqlx::PgConnection,
     invite: &Invite,
     user: UserId,
 ) -> ApiResult<Option<OrgId>> {
     if let Some(org) = invite.org_id {
         crate::services::orgs::ensure_changeable(&state.pg, org).await?;
     }
-    let mut tx = state.pg.begin().await?;
-    let outcome = accept(&mut tx, invite, user, ctx.now).await?;
+    let outcome = accept(&mut *tx, invite, user, ctx.now).await?;
     let org = match outcome {
         Accepted::Gone => {
             return Err(ApiError::NotFound(
@@ -233,8 +241,7 @@ async fn finish(
     ctx.audit(org, "invite.accept")
         .by(user)
         .target("invite", kaeso_core::id::InviteId::from_uuid(invite.id))
-        .write(&mut tx)
+        .write(tx)
         .await?;
-    tx.commit().await?;
     Ok(org)
 }

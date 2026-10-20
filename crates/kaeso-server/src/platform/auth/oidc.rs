@@ -5,7 +5,7 @@ use kaeso_core::id::{OrgId, UserId};
 use kaeso_core::secret;
 use kaeso_crypto::{ExposeSecret, Sealed, random_token};
 use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
-use kaeso_store::pg::{invites, members, oidc, orgs, users};
+use kaeso_store::pg::{invites, members, oidc, orgs, sso_identities, users};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 use utoipa::{IntoParams, ToSchema};
@@ -23,6 +23,7 @@ use crate::services::{invites as invite_service, orgs as org_service};
 use crate::state::AppState;
 
 const FLOW_LIFETIME: Duration = Duration::minutes(10);
+const LINKED_PAGE: &str = "settings/account/security";
 const BINDING_COOKIE: &str = "__Host-kaeso_oidc";
 const DEV_BINDING_COOKIE: &str = "kaeso_oidc";
 
@@ -119,6 +120,28 @@ struct Begun {
 struct Back {
     org: Option<OrgId>,
     next: Option<String>,
+    link: bool,
+}
+
+pub(crate) struct Linking {
+    pub authorization_url: String,
+    pub cookie: HeaderValue,
+}
+
+pub(crate) async fn begin_link(
+    state: &AppState,
+    ctx: &Ctx,
+    org: OrgId,
+    user: UserId,
+    next: Option<String>,
+) -> ApiResult<Linking> {
+    sso_on(state)?;
+    throttle_ip(state, ctx, TOKENS_PER_IP).await?;
+    let begun = begin(state, ctx, org, false, next, Some(user)).await?;
+    Ok(Linking {
+        authorization_url: begun.authorization_url,
+        cookie: begun.cookie,
+    })
 }
 
 async fn begin(
@@ -127,6 +150,7 @@ async fn begin(
     org: OrgId,
     named: bool,
     next: Option<String>,
+    link: Option<UserId>,
 ) -> ApiResult<Begun> {
     let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
     let provider = provider(state, org, &connection).await?;
@@ -146,6 +170,7 @@ async fn begin(
                 "binding": crate::cache::hex(&secret::hash(&binding)),
                 "next": next,
                 "sign_in_org": named.then(|| org.to_string()),
+                "link_user": link.map(|u| u.to_string()),
             }),
             expires_at: ctx.now + FLOW_LIFETIME,
         },
@@ -189,7 +214,7 @@ pub async fn start(
         }
         _ => return Err(ApiError::bad_request("Send either `org` or `email`.")),
     };
-    let begun = begin(&state, &ctx, org, named, next).await?;
+    let begun = begin(&state, &ctx, org, named, next, None).await?;
     Ok((
         [(header::SET_COOKIE, begun.cookie)],
         axum::Json(StartResponse {
@@ -238,7 +263,7 @@ pub async fn start_link(
                 }
             },
         };
-        begin(&state, &ctx, org, link.org.is_some(), next).await
+        begin(&state, &ctx, org, link.org.is_some(), next, None).await
     };
     match begun.await {
         Ok(begun) => {
@@ -252,6 +277,7 @@ pub async fn start_link(
             let back = Back {
                 org: link.org,
                 next: link.next,
+                link: false,
             };
             refused(&state, &e, &back, false)
         }
@@ -305,6 +331,17 @@ fn signed_in_location(state: &AppState, next: Option<&str>) -> String {
 }
 
 fn failed_location(state: &AppState, message: &str, back: &Back) -> String {
+    let reason = percent_encoding::utf8_percent_encode(message, FRAGMENT).to_string();
+    if back.link {
+        let mut page = back
+            .next
+            .as_deref()
+            .and_then(|n| next::target(&state.config.public_url, n))
+            .or_else(|| state.config.public_url.join(LINKED_PAGE).ok())
+            .unwrap_or_else(|| state.config.public_url.clone());
+        page.set_fragment(Some(&format!("sso_error={reason}")));
+        return page.to_string();
+    }
     let next = back
         .next
         .as_deref()
@@ -323,9 +360,8 @@ fn failed_location(state: &AppState, message: &str, back: &Back) -> String {
         format!("?{}", query.join("&"))
     };
     format!(
-        "{}sign-in{query}#sso_error={}",
-        state.config.public_url,
-        percent_encoding::utf8_percent_encode(message, FRAGMENT)
+        "{}sign-in{query}#sso_error={reason}",
+        state.config.public_url
     )
 }
 
@@ -434,6 +470,7 @@ struct Flow {
     org: OrgId,
     nonce: String,
     verifier: String,
+    link_user: Option<UserId>,
     back: Back,
 }
 
@@ -472,15 +509,56 @@ async fn take_flow(
     let (Some(nonce), Some(verifier)) = (field("nonce"), field("pkce_verifier")) else {
         return Err(expired());
     };
+    let link_user = match field("link_user") {
+        Some(u) => Some(u.parse::<UserId>().map_err(|_| expired())?),
+        None => None,
+    };
     Ok(Flow {
         org,
         nonce,
         verifier,
+        link_user,
         back: Back {
             org: field("sign_in_org").and_then(|o| o.parse().ok()),
             next: field("next"),
+            link: link_user.is_some(),
         },
     })
+}
+
+fn link_required() -> ApiError {
+    ApiError::PermissionDenied(
+        "Your account isn't linked to this SSO; sign in another way and link it under Account."
+            .into(),
+    )
+}
+
+fn linked_elsewhere() -> ApiError {
+    ApiError::Conflict("This SSO identity is already linked to another Kaeso account.".into())
+}
+
+fn deactivated() -> ApiError {
+    ApiError::PermissionDenied("This account is deactivated.".into())
+}
+
+fn check_domain(connection: &oidc::Connection, email: &str) -> ApiResult<()> {
+    let domain = kaeso_core::email::domain(email);
+    if connection
+        .domains
+        .iter()
+        .any(|d| d.eq_ignore_ascii_case(domain))
+    {
+        return Ok(());
+    }
+    Err(ApiError::PermissionDenied(format!(
+        "This organization's SSO only signs in addresses of {}.",
+        connection
+            .domains
+            .iter()
+            .map(|d| kaeso_core::email::display_domain(d))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )))
 }
 
 async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiResult<Response> {
@@ -499,21 +577,9 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     let email = kaeso_core::email::normalize(&identity.email).map_err(|_| {
         ApiError::Authentication("The identity provider sent an invalid email address.".into())
     })?;
-    let domain = kaeso_core::email::domain(&email).to_owned();
-    if !connection
-        .domains
-        .iter()
-        .any(|d| d.eq_ignore_ascii_case(&domain))
-    {
-        return Err(ApiError::PermissionDenied(format!(
-            "This organization's SSO only signs in addresses of {}.",
-            connection
-                .domains
-                .iter()
-                .map(|d| kaeso_core::email::display_domain(d))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )));
+    check_domain(&connection, &email)?;
+    if let Some(user) = flow.link_user {
+        return link(state, ctx, flow, &connection, &identity, user).await;
     }
     let org_row = orgs::get(&state.pg, org.uuid())
         .await?
@@ -521,45 +587,58 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     let scheduled = org_row.state != "active";
 
     let mut tx = state.pg.begin().await?;
-    let (user, new_account) = match users::get_by_email(&mut *tx, &email).await? {
-        Some(u) if u.state != "active" => {
-            return Err(ApiError::PermissionDenied(
-                "This account is deactivated.".into(),
-            ));
-        }
-        Some(u) => (u, false),
-        None if scheduled => return Err(ApiError::OrgScheduledForDeletion),
-        None => {
-            let id = UserId::new();
-            let name = identity
-                .name
-                .as_deref()
-                .and_then(crate::platform::validate::display_name)
-                .unwrap_or_else(|| email.split('@').next().unwrap_or(&email).to_owned());
-            users::insert(
-                &mut *tx,
-                &users::NewUser {
-                    id: id.uuid(),
-                    email: &email,
-                    name: &name,
-                    password_hash: None,
-                    email_verified_at: Some(ctx.now),
-                    is_instance_admin: false,
-                },
-            )
+    let linked =
+        sso_identities::user_of(&mut *tx, org.uuid(), &connection.issuer, &identity.subject)
             .await?;
-            ctx.audit(None, "user.create_by_sso")
-                .by(id)
-                .target("user", id)
-                .after(serde_json::json!({ "email": email, "org": org.to_string() }))
-                .write(&mut tx)
-                .await?;
-            let user = users::get(&mut *tx, id.uuid())
+    let (user, new_account) = match linked {
+        Some(id) => (
+            users::get(&mut *tx, id)
                 .await?
-                .ok_or_else(|| ApiError::internal("new user vanished"))?;
-            (user, true)
-        }
+                .ok_or_else(|| ApiError::internal("linked user vanished"))?,
+            false,
+        ),
+        None => match users::get_by_email(&mut *tx, &email).await? {
+            Some(u) if u.state != "active" => return Err(deactivated()),
+            Some(u) => {
+                if !sso_identities::bind_pending(
+                    &mut *tx,
+                    org.uuid(),
+                    u.id,
+                    &connection.issuer,
+                    &identity.subject,
+                    ctx.now,
+                )
+                .await?
+                {
+                    return Err(link_required());
+                }
+                ctx.audit(Some(org), "user.sso_link")
+                    .by(UserId::from_uuid(u.id))
+                    .target("user", UserId::from_uuid(u.id))
+                    .after(serde_json::json!({ "issuer": connection.issuer, "email": email }))
+                    .write(&mut tx)
+                    .await?;
+                (u, false)
+            }
+            None if scheduled => return Err(ApiError::OrgScheduledForDeletion),
+            None => {
+                let user = create_account(&mut tx, ctx, org, &email, &identity).await?;
+                sso_identities::link(
+                    &mut *tx,
+                    org.uuid(),
+                    user.id,
+                    &connection.issuer,
+                    &identity.subject,
+                    ctx.now,
+                )
+                .await?;
+                (user, true)
+            }
+        },
     };
+    if user.state != "active" {
+        return Err(deactivated());
+    }
     let user_id = UserId::from_uuid(user.id);
     if members::get_org(&mut *tx, org.uuid(), user.id)
         .await?
@@ -601,7 +680,9 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             return Err(no_access());
         }
     }
-    users::mark_verified(&mut *tx, user.id, ctx.now).await?;
+    if user.email.as_deref() == Some(email.as_str()) {
+        users::mark_verified(&mut *tx, user.id, ctx.now).await?;
+    }
     let created = sessions::create(
         &mut tx,
         ctx.now,
@@ -624,5 +705,97 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     let cookie =
         cookies::set(state, &created.token).ok_or_else(|| ApiError::internal("session cookie"))?;
     response.headers_mut().append(header::SET_COOKIE, cookie);
+    Ok(response)
+}
+
+async fn create_account(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ctx: &Ctx,
+    org: OrgId,
+    email: &str,
+    identity: &crate::auth::oidc::Identity,
+) -> ApiResult<users::User> {
+    let id = UserId::new();
+    let name = identity
+        .name
+        .as_deref()
+        .and_then(crate::platform::validate::display_name)
+        .unwrap_or_else(|| email.split('@').next().unwrap_or(email).to_owned());
+    users::insert(
+        &mut **tx,
+        &users::NewUser {
+            id: id.uuid(),
+            email,
+            name: &name,
+            password_hash: None,
+            email_verified_at: Some(ctx.now),
+            is_instance_admin: false,
+        },
+    )
+    .await?;
+    ctx.audit(None, "user.create_by_sso")
+        .by(id)
+        .target("user", id)
+        .after(serde_json::json!({ "email": email, "org": org.to_string() }))
+        .write(tx)
+        .await?;
+    users::get(&mut **tx, id.uuid())
+        .await?
+        .ok_or_else(|| ApiError::internal("new user vanished"))
+}
+
+async fn link(
+    state: &AppState,
+    ctx: &Ctx,
+    flow: &Flow,
+    connection: &oidc::Connection,
+    identity: &crate::auth::oidc::Identity,
+    user: UserId,
+) -> ApiResult<Response> {
+    let org = flow.org;
+    let mut tx = state.pg.begin().await?;
+    let account = users::get(&mut *tx, user.uuid())
+        .await?
+        .filter(|u| u.state == "active")
+        .ok_or_else(deactivated)?;
+    if members::get_org(&mut *tx, org.uuid(), account.id)
+        .await?
+        .is_none()
+    {
+        return Err(no_access());
+    }
+    match sso_identities::user_of(&mut *tx, org.uuid(), &connection.issuer, &identity.subject)
+        .await?
+    {
+        Some(other) if other != account.id => return Err(linked_elsewhere()),
+        _ => {}
+    }
+    sso_identities::link(
+        &mut *tx,
+        org.uuid(),
+        account.id,
+        &connection.issuer,
+        &identity.subject,
+        ctx.now,
+    )
+    .await?;
+    ctx.audit(Some(org), "user.sso_link")
+        .by(user)
+        .target("user", user)
+        .after(serde_json::json!({ "issuer": connection.issuer, "email": identity.email }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    let to = flow
+        .back
+        .next
+        .as_deref()
+        .and_then(|n| next::target(&state.config.public_url, n))
+        .or_else(|| state.config.public_url.join(LINKED_PAGE).ok())
+        .map_or_else(|| state.config.public_url.to_string(), |u| u.to_string());
+    let mut response = redirect(&to);
+    if let Ok(v) = binding_cookie(state, "", 0) {
+        response.headers_mut().append(header::SET_COOKIE, v);
+    }
     Ok(response)
 }

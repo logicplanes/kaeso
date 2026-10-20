@@ -121,7 +121,7 @@ The `id` and `status` of message and function call items (`msg_…`, `fc_…`) a
 | `output[]` `function_call` | `Block::ToolCall` | `id` (`fc_…`): form on the block; names and ids rewritten on the way out are mapped back. |
 | `output[]` `reasoning` | `Block::Reasoning` | As for input items. |
 | `output[]` other types (`web_search_call`, …) | `Block::Unknown` | |
-| `usage` (`ResponseUsage`) | `usage` typed | As described under [usage](cross-format.md#usage): `input_tokens` = wire `input_tokens` − `cached_tokens` − `cache_write_tokens`, since wire `input_tokens` counts cache reads and cache writes; `cache_read_tokens` = `cached_tokens`; `cache_write_tokens`; `output_tokens` (includes reasoning); `reasoning_tokens`; the object in `raw`. Encoding writes the typed fields and overlays `raw` from this dialect. `null`: form. |
+| `usage` (`ResponseUsage`) | `usage` typed | As described under [usage](cross-format.md#usage): `input_tokens` = wire `input_tokens` − `cached_tokens` − `cache_write_tokens`, since wire `input_tokens` counts cache reads and cache writes; `cache_read_tokens` = `cached_tokens`; `cache_write_tokens`; `output_tokens` (includes reasoning); `reasoning_tokens`; the object in `raw`. Encoding writes the typed fields and overlays `raw` from this dialect. `null`: form. A usage object Kaeso can't read, such as a count that is not a non-negative integer, is `ProviderError` (in a stream, an `Error` event) rather than zero usage, so a paid reply is never logged as free. |
 | `object`, `created_at`, `completed_at`, `error: null`, echoed request parameters (`instructions`, `tools`, `tool_choice`, `text`, `reasoning`, `temperature`, `top_p`, `store`, `truncation`, `metadata`, `service_tier`, …), unknown keys | extras of the response (overrides) | Form `native` marks a response decoded from this dialect. |
 
 A reply from another dialect is written as a complete `Response` object:
@@ -154,9 +154,9 @@ There is one KPP block per message content part, function call, reasoning item a
 | `response.output_text.delta` | `BlockDelta` `Text`; `logprobs` extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`, `response.refusal.done` | attached to the part's `BlockStop` (`@done`) |
+| `response.output_text.done`, `response.refusal.done` | attached to the part's `BlockStop` (`@done`); when the part had no deltas, its `text` or `refusal` becomes the part's `BlockDelta`, so other dialects see it; Responses apps get the event back as it came. `response.function_call_arguments.done` without deltas likewise becomes the call's `ToolArguments`. |
 | `response.content_part.done` (message) | `BlockStop` |
-| `response.output_item.done` (`message`) | attached to the next lifecycle event (`@close`) |
+| `response.output_item.done` (`message`) | attached to the next lifecycle event (`@close`); a message whose parts were never streamed (no `content_part.added`): each `output_text` or `refusal` part of the item becomes a `BlockStart`, `BlockDelta` and `BlockStop`, skipped when written back to Responses apps (form `skip`). |
 | `response.output_item.added` (`function_call`) | `BlockStart` `ToolCall` (`call_id`, `name`) |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | attached to the `BlockStop` (`@done`) |

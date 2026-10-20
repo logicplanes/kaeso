@@ -114,13 +114,15 @@ KPP 把回复解码为规范格式，再编码为应用的格式，流式回复�
 
 非流式请求一旦由 Kaeso 发送给服务商，就会按其大小估算的输入计费。
 
-这些日志条目注明 `usage.estimated: true`，费用和限额使用相同的数字。对于服务商不以流式发送的推理内容，输出估算会偏低。
+回复或流结束时服务商完全没有报告用量（某些 OpenAI 兼容服务商会省略），也按同样方式估算，输出根据整个回复估算。
+
+这些日志条目注明 `usage.estimated: true`，费用和限额使用相同的数字。对于服务商不以流式发送的推理内容，输出估算会偏低。指标 `kaeso_usage_estimates_total` 按服务商和原因统计它们（[健康状态和指标](../self-hosting/monitoring.md)）。
 
 ## 关闭
 
 收到关闭信号时，网关不再接受新连接。已打开的请求和流有 `KAESO_SHUTDOWN_GRACE` 的时间完成，默认 30 秒。
 
-届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始的流则改为以错误事件结束。Kaeso 以错误类型 `shutdown` 为两者计费并记录日志，流的用量为估算值。
+届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始的流则改为以错误事件结束。Kaeso 以错误类型 `shutdown` 为两者计费并记录日志，流的用量为估算值。一秒后，Kaeso 会关闭仍然打开的连接。
 
 ## 用量和日志
 

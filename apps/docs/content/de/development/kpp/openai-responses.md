@@ -121,7 +121,7 @@ Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen i
 | `output[]` `function_call` | `Block::ToolCall` | `id` (`fc_…`): Form am Block; auf dem Hinweg umgeschriebene Namen und IDs werden zurückübersetzt. |
 | `output[]` `reasoning` | `Block::Reasoning` | Wie bei Eingabe-Items. |
 | `output[]` andere Typen (`web_search_call`, …) | `Block::Unknown` | |
-| `usage` (`ResponseUsage`) | `usage` typisiert | Wie unter [Nutzung](cross-format.md#nutzung) beschrieben: `input_tokens` = Wire-`input_tokens` − `cached_tokens` − `cache_write_tokens`, weil das Wire-`input_tokens` Cache-Lesezugriffe und Cache-Schreibzugriffe mitzählt; `cache_read_tokens` = `cached_tokens`; `cache_write_tokens`; `output_tokens` (einschließlich Reasoning); `reasoning_tokens`; das Objekt in `raw`. Beim Kodieren werden die typisierten Felder geschrieben und `raw` aus diesem Dialekt darübergelegt. `null`: Form. |
+| `usage` (`ResponseUsage`) | `usage` typisiert | Wie unter [Nutzung](cross-format.md#nutzung) beschrieben: `input_tokens` = Wire-`input_tokens` − `cached_tokens` − `cache_write_tokens`, weil das Wire-`input_tokens` Cache-Lesezugriffe und Cache-Schreibzugriffe mitzählt; `cache_read_tokens` = `cached_tokens`; `cache_write_tokens`; `output_tokens` (einschließlich Reasoning); `reasoning_tokens`; das Objekt in `raw`. Beim Kodieren werden die typisierten Felder geschrieben und `raw` aus diesem Dialekt darübergelegt. `null`: Form. Ein Nutzungsobjekt, das Kaeso nicht lesen kann, etwa eine Zahl, die keine nicht negative ganze Zahl ist, ist `ProviderError` (im Stream ein `Error`-Event) statt einer Nutzung von null, damit eine bezahlte Antwort nie als kostenlos protokolliert wird. |
 | `object`, `created_at`, `completed_at`, `error: null`, zurückgegebene Anfrageparameter (`instructions`, `tools`, `tool_choice`, `text`, `reasoning`, `temperature`, `top_p`, `store`, `truncation`, `metadata`, `service_tier`, …), unbekannte Schlüssel | Extras der Antwort (Overrides) | Die Form `native` kennzeichnet eine aus diesem Dialekt dekodierte Antwort. |
 
 Eine Antwort aus einem anderen Dialekt wird als vollständiges `Response`-Objekt geschrieben:
@@ -154,9 +154,9 @@ Es gibt einen KPP-Block pro Inhaltsteil einer Nachricht, Funktionsaufruf, Reason
 | `response.output_text.delta` | `BlockDelta` `Text`; `logprobs` Extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`, `response.refusal.done` | an den `BlockStop` des Parts angehängt (`@done`) |
+| `response.output_text.done`, `response.refusal.done` | an den `BlockStop` des Parts angehängt (`@done`); hatte der Part keine Deltas, wird sein `text` oder `refusal` zum `BlockDelta` des Parts, damit andere Dialekte ihn sehen; Responses-Apps bekommen das Event so zurück, wie es kam. `response.function_call_arguments.done` ohne Deltas wird ebenso zu den `ToolArguments` des Aufrufs. |
 | `response.content_part.done` (Nachricht) | `BlockStop` |
-| `response.output_item.done` (`message`) | an das nächste Lebenszyklus-Event angehängt (`@close`) |
+| `response.output_item.done` (`message`) | an das nächste Lebenszyklus-Event angehängt (`@close`); bei einer Nachricht, deren Parts nie gestreamt wurden (kein `content_part.added`), wird jeder `output_text`- oder `refusal`-Part des Items zu `BlockStart`, `BlockDelta` und `BlockStop`, die beim Zurückschreiben an Responses-Apps übersprungen werden (Form `skip`). |
 | `response.output_item.added` (`function_call`) | `BlockStart` `ToolCall` (`call_id`, `name`) |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | an den `BlockStop` angehängt (`@done`) |

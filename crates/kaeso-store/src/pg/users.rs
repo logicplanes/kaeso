@@ -272,6 +272,9 @@ pub async fn delete_personal_data(
     )
     .execute(&mut *db)
     .await?;
+    sqlx::query!("DELETE FROM sso_identities WHERE user_id = $1", id)
+        .execute(&mut *db)
+        .await?;
     Ok(avatar)
 }
 

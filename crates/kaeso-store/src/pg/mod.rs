@@ -24,6 +24,7 @@ pub mod projects;
 pub mod roles;
 pub mod service_accounts;
 pub mod sessions;
+pub mod sso_identities;
 pub mod tokens;
 pub mod totp;
 pub mod updates;
@@ -63,6 +64,7 @@ pub async fn migrate(pool: &PgPool) -> Result<(), StoreError> {
         MigrateError::VersionMismatch(version) => StoreError::Migrate(format!(
             "migration {version} was changed after it was applied; migrations are forward-only"
         )),
+        MigrateError::Execute(e) => StoreError::Postgres(e),
         other => StoreError::Migrate(other.to_string()),
     })
 }

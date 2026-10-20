@@ -100,6 +100,22 @@ describe("profile page", () => {
     expect(requests("POST", "me/email")).toHaveLength(1);
   });
 
+  it("asks for an authenticator code while two-factor authentication is on", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    on("POST", "me/email", { status: "sent" });
+    const { user } = await renderApp("/settings/account/profile");
+    await user.click(await screen.findByRole("button", { name: "Change email" }));
+    const dialog = await screen.findByRole("dialog", { name: "Change email" });
+    const send = within(dialog).getByRole("button", { name: "Send confirmation link" });
+    await user.type(within(dialog).getByLabelText("New email"), "ada@example.org");
+    expect(send).toBeDisabled();
+    await user.type(within(dialog).getByLabelText("Code from the app"), "654321");
+    await user.click(send);
+    expect(await notifications().findByText("Confirmation link sent; your old address was notified")).toBeInTheDocument();
+    expect(requests("POST", "me/email").map((r) => r.body)).toEqual([{ email: "ada@example.org", code: "654321" }]);
+  });
+
   it("sends the confirmation link from its button", async () => {
     signedIn();
     on("GET", "me", me());

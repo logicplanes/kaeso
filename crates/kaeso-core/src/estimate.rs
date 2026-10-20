@@ -1,4 +1,4 @@
-use kaeso_kpp::{Delta, StreamEvent, Usage};
+use kaeso_kpp::{Block, Delta, StreamEvent, Usage};
 
 pub const BYTES_PER_TOKEN: u64 = 4;
 
@@ -32,6 +32,22 @@ impl Tally {
             },
             StreamEvent::ResponseDelta(d) if d.usage.is_some() => self.final_usage = true,
             _ => {}
+        }
+    }
+
+    pub fn feed_blocks(&mut self, blocks: &[Block]) {
+        for block in blocks {
+            match block {
+                Block::Text(t) => self.add(t.text.len(), false),
+                Block::Refusal(r) => self.add(r.text.len(), false),
+                Block::ToolCall(c) => self.add(c.arguments.get().len(), false),
+                Block::Reasoning(r) => {
+                    for part in r.summary.iter().chain(&r.text) {
+                        self.add(part.len(), true);
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -154,5 +170,27 @@ mod tests {
         assert_eq!(tokens_of_bytes(1), 1);
         assert_eq!(tokens_of_bytes(8), 2);
         assert_eq!(tokens_of_bytes(9), 3);
+    }
+    #[test]
+    fn a_whole_reply_counts_like_its_stream() {
+        use kaeso_kpp::{RawJson, ReasoningBlock, RefusalBlock, TextBlock, ToolCallBlock};
+        let mut reasoning = ReasoningBlock::default();
+        reasoning.summary.push("Thinking".into());
+        reasoning.text.push("Let me think about this.".into());
+        let blocks = [
+            Block::Reasoning(reasoning),
+            Block::Text(TextBlock::new("Here is a long story about ")),
+            Block::ToolCall(ToolCallBlock::new(
+                "call_1",
+                "get_weather",
+                RawJson::from_string("{\"city\": \"Paris\"}".to_owned()).unwrap(),
+            )),
+            Block::Refusal(RefusalBlock::new("No.")),
+        ];
+        let mut t = Tally::new();
+        t.feed_blocks(&blocks);
+        assert_eq!(t.reasoning_tokens(), (8 + 24_u64).div_ceil(4));
+        assert_eq!(t.output_tokens(), (8 + 24 + 27 + 17 + 3_u64).div_ceil(4));
+        assert!(!t.has_final_usage());
     }
 }

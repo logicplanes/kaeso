@@ -20,7 +20,7 @@ export function SettingsSidebar() {
   const orgRights = useOrgRights(org);
   const [query, setQuery] = useState("");
   const pathname = useLocation({ select: (l) => l.pathname });
-  const updates = useQuery({ ...updatesQuery, enabled: session.user.is_instance_admin });
+  const updates = useQuery({ ...updatesQuery, enabled: session.can_administer_instance });
   const trailing = (p: SettingsPage) =>
     p.id === "updates" && updates.data?.latest ? <Badge tone="info">{t("shell.settings.updateNew", "New")}</Badge> : undefined;
   const back = last ? placePath(last) : org ? orgPath(org) : "/";

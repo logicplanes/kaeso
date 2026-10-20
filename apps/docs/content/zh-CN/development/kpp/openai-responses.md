@@ -121,7 +121,7 @@ order: 6
 | `output[]` `function_call` | `Block::ToolCall` | `id`（`fc_…`）：块上的形式标记；发出时改写过的名称和 ID 会映射回原值。 |
 | `output[]` `reasoning` | `Block::Reasoning` | 与输入项相同。 |
 | `output[]` 其他类型（`web_search_call` 等） | `Block::Unknown` | |
-| `usage`（`ResponseUsage`） | `usage` 类型化 | 按[用量](cross-format.md#用量)中的约定：`input_tokens` = 线路中的 `input_tokens` − `cached_tokens` − `cache_write_tokens`，因为线路中的 `input_tokens` 包含缓存读取和缓存写入；`cache_read_tokens` = `cached_tokens`；`cache_write_tokens`；`output_tokens`（包含推理）；`reasoning_tokens`；原对象存于 `raw`。编码时写出类型化字段，并叠加来自本方言的 `raw`。`null`：形式标记。 |
+| `usage`（`ResponseUsage`） | `usage` 类型化 | 按[用量](cross-format.md#用量)中的约定：`input_tokens` = 线路中的 `input_tokens` − `cached_tokens` − `cache_write_tokens`，因为线路中的 `input_tokens` 包含缓存读取和缓存写入；`cache_read_tokens` = `cached_tokens`；`cache_write_tokens`；`output_tokens`（包含推理）；`reasoning_tokens`；原对象存于 `raw`。编码时写出类型化字段，并叠加来自本方言的 `raw`。`null`：形式标记。Kaeso 无法读取的用量对象（例如某个计数不是非负整数）是 `ProviderError`（在流中是 `Error` 事件），而不是零用量，因此付费的回复绝不会被记录为免费。 |
 | `object`、`created_at`、`completed_at`、`error: null`、回显的请求参数（`instructions`、`tools`、`tool_choice`、`text`、`reasoning`、`temperature`、`top_p`、`store`、`truncation`、`metadata`、`service_tier` 等）、未知键 | 回复的 extras（覆盖项） | 形式标记 `native` 标记从本方言解码的回复。 |
 
 来自其他方言的回复会写成一个完整的 `Response` 对象：
@@ -154,9 +154,9 @@ order: 6
 | `response.output_text.delta` | `BlockDelta` `Text`；`logprobs` 为 extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`、`response.refusal.done` | 附加到该部分的 `BlockStop`（`@done`） |
+| `response.output_text.done`、`response.refusal.done` | 附加到该部分的 `BlockStop`（`@done`）；该部分没有增量时，其 `text` 或 `refusal` 成为该部分的 `BlockDelta`，使其他方言能看到它；Responses 应用会原样收到该事件。没有增量的 `response.function_call_arguments.done` 同样成为该调用的 `ToolArguments`。 |
 | `response.content_part.done`（消息） | `BlockStop` |
-| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`） |
+| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`）；其部分从未以流式发送（没有 `content_part.added`）的消息：该项的每个 `output_text` 或 `refusal` 部分成为 `BlockStart`、`BlockDelta` 和 `BlockStop`，写回 Responses 应用时跳过（形式标记 `skip`）。 |
 | `response.output_item.added`（`function_call`） | `BlockStart` `ToolCall`（`call_id`、`name`） |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | 附加到 `BlockStop`（`@done`） |

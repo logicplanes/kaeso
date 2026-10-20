@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sso_identities SET issuer = $3, subject = $4, linked_at = $5 WHERE org_id = $1 AND user_id = $2 AND subject IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b585cb0b9d7483d6295d65614ace520d559528aa3c7c6fb6bcefd51c1f1c82cf"
+}

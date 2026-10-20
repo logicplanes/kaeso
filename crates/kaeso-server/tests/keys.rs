@@ -681,7 +681,11 @@ async fn own_keys_follow_the_orgs_sign_in_requirements() {
     }
     let r = app.get(&format!("/me/keys/{id}"), &password).await;
     assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
-    let r = app.get(&format!("/me/keys/{id}"), &owner.cookie).await;
-    assert_eq!(r.body["state"], "active", "{:?}", r.body);
+    let untouched: bool =
+        sqlx::query_scalar("SELECT disabled_at IS NULL AND archived_at IS NULL FROM api_keys")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    assert!(untouched);
     s.cleanup().await;
 }

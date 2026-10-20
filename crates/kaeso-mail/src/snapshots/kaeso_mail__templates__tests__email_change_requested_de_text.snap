@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Jemand möchte Ihre E-Mail-Adresse für Kaeso ändern
+
+Ihre E-Mail-Adresse soll sich ändern
+
+Ihr Konto soll künftig new@example.com verwenden; die Änderung wartet auf die Bestätigung von dort.
+
+Änderung abbrechen:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Waren Sie das nicht, brechen Sie ab, setzen Sie Ihr Passwort zurück und informieren Sie Ihren Admin.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

@@ -2357,6 +2357,7 @@ dependencies = [
  "kaeso-server",
  "secrecy",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
