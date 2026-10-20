@@ -146,3 +146,15 @@ test("tapping the prompt on a phone does not zoom the page", async ({ page, brow
   await expect(prompt).toHaveCSS("font-size", "16px");
   await context.close();
 });
+
+test("the playground's own controls are in the reader's language", async ({ page, browser }) => {
+  await signInAsOwner(page);
+  const origin = new URL(page.url()).origin;
+  const context = await browser.newContext({ locale: "de-DE", storageState: await page.context().storageState() });
+  const german = await context.newPage();
+  await german.goto(`${origin}/orgs/${org}/projects/${project}/playground?models=openai/gpt-5.4-mini`);
+  await expect(german.getByRole("button", { name: "Senden", exact: true })).toBeVisible();
+  await german.getByRole("button", { name: "Parameter", exact: true }).click();
+  await expect(german.getByRole("dialog", { name: "Parameter" }).getByRole("textbox", { name: "Systemanweisungen" })).toBeVisible();
+  await context.close();
+});
