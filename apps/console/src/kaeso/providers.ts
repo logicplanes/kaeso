@@ -34,9 +34,12 @@ export function useProviders(org: string): Providers {
   return useMemo(() => providerCatalog(providers.data ?? []), [providers.data]);
 }
 
-export function providerOptions(providers: Providers, keys: readonly CredentialView[], ids?: readonly string[]): ProviderPickerOption[] {
-  const all = ids ?? [...new Set([...providers.list.map((p) => p.id), ...keys.map((k) => k.provider)])];
-  return all.map((id) => {
+export function providerOptions(
+  providers: Providers,
+  keys: readonly CredentialView[],
+  ids: readonly string[] = providers.list.map((p) => p.id),
+): ProviderPickerOption[] {
+  return ids.map((id) => {
     const count = keys.filter((k) => k.provider === id).length;
     return {
       id,
@@ -56,6 +59,12 @@ export function useProviderOptions(org: string, ids?: readonly string[]): Provid
   const providers = useProviders(org);
   const { keys } = useOrgProviderKeys(org);
   return useMemo(() => providerOptions(providers, keys, ids), [providers, keys, ids]);
+}
+
+export function useProviderFilterOptions(org: string): ProviderPickerOption[] {
+  const providers = useProviders(org);
+  const { keys } = useOrgProviderKeys(org);
+  return useMemo(() => providerOptions(providers, keys, [...new Set([...providers.list.map((p) => p.id), ...keys.map((k) => k.provider)])]), [providers, keys]);
 }
 
 export function useModelPickerProviders(org: string, ids: readonly string[]): ModelPickerProvider[] {

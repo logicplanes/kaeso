@@ -25,7 +25,7 @@ import { logsInfiniteQuery, type LogFilters, type LogRange } from "~/api/queries
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
 import { ERROR_KIND_IDS, errorKindLabel } from "~/format/labels";
-import { useProviderOptions, useProviders } from "~/kaeso/providers";
+import { useProviderFilterOptions, useProviders } from "~/kaeso/providers";
 import { utcDay } from "~/format/period";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
@@ -87,7 +87,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: rights.has("service_accounts.view") });
   const catalogue = useQuery(catalogueQuery(org, project));
-  const providers = useProviderOptions(org);
+  const providers = useProviderFilterOptions(org);
   const catalog = useProviders(org);
   const partyName = usePartyName(org, project);
   const [columns, setColumns] = useState<ColumnId[]>(storedColumns);

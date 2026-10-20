@@ -24,12 +24,12 @@ describe("the provider catalog", () => {
     expect(["xai", "togetherai", "openrouter"].sort(catalog.byName)).toEqual(["openrouter", "xai", "togetherai"]);
   });
 
-  it("offers every provider the gateway lists and those the organization still has keys for", () => {
+  it("offers only the providers the gateway lists, with the organization's key counts", () => {
     const keys = [credential({ provider: "openai" }), credential({ id: "cred_two", provider: "openai" }), credential({ id: "cred_old", provider: "cohere" })];
     const options = providerOptions(catalog, keys);
-    expect(options.map((o) => o.id)).toEqual([...providers.map((p) => p.id), "cohere"]);
+    expect(options.map((o) => o.id)).toEqual(providers.map((p) => p.id));
     expect(options[0]).toEqual({ id: "openai", name: "OpenAI", connected: true, hint: "2 keys" });
-    expect(options.at(-1)).toMatchObject({ id: "cohere", name: "Cohere", connected: true });
+    expect(providerOptions(catalog, keys, ["cohere"])).toEqual([{ id: "cohere", name: "Cohere", connected: true, hint: "1 key" }]);
     expect(providerOptions(catalog, keys, ["groq"])).toEqual([{ id: "groq", name: "Groq" }]);
     expect(providerOptions(providerCatalog([]), [])).toEqual([]);
   });

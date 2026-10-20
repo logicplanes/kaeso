@@ -62,6 +62,29 @@ describe("ProviderKeyDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("offers only the providers the gateway lists, even when the organization still has a key for another", async () => {
+    const { dialog } = await open({ keys: [credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" })] });
+    expect(within(dialog).getByRole("option", { name: "OpenAI" })).toHaveAttribute("aria-selected", "true");
+    expect(
+      within(dialog)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toHaveLength(providers.length);
+    expect(within(dialog).queryByRole("option", { name: /Cohere/ })).not.toBeInTheDocument();
+  });
+
+  it("says when the providers can't load and loads them again", async () => {
+    let calls = 0;
+    on("GET", "orgs/:org/providers", () => (++calls === 1 ? apiError(429, "rate_limited", "Too many requests; try again in a minute.") : page(providers)));
+    const onClose = vi.fn();
+    const { user } = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} />);
+    const dialog = await screen.findByRole("dialog", { name: /provider key/ });
+    expect(within(dialog).queryByRole("option")).not.toBeInTheDocument();
+    expect(await notifications().findByText("Too many requests; try again in a minute.")).toBeInTheDocument();
+    await user.click(notifications().getByRole("button", { name: "Try again", hidden: true }));
+    expect(await within(dialog).findByRole("option", { name: "OpenAI" })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("adds a DeepSeek key", async () => {
     on("POST", CREDENTIALS, credential({ provider: "deepseek", name: "Reasoning", is_default: true }));
     const { user, dialog } = await open();

@@ -7,5 +7,4 @@ export const providersQuery = (org: string) =>
     queryKey: ["orgs", org, "providers"],
     queryFn: async (): Promise<ProviderView[]> => data(await api.GET("/platform/v1/orgs/{org}/providers", { params: { path: { org } } })).data,
     staleTime: 60 * 60_000,
-    meta: { quiet: true },
   });

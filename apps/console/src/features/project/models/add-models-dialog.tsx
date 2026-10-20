@@ -196,7 +196,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </Banner>
         )}
         <div className="flex min-h-0 flex-col">
-          {hits.isPending ? (
+          {hits.isPending && provider ? (
             <List aria-label={t("models.onModelsDev", "Models on models.dev")} density="compact" items={[]} loading />
           ) : list.length === 0 ? (
             <Empty
