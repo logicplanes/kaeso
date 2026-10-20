@@ -149,7 +149,10 @@ describe("partial points and shares", () => {
         series={[{ id: "r", label: "Requests", points: times.map((t) => ({ t, v: 5 })) }]}
       />,
     );
-    expect(container.querySelectorAll("path[data-partial]")).toHaveLength(2);
+    const dashed = container.querySelectorAll("path[data-partial]");
+    expect(dashed).toHaveLength(1);
+    const clip = container.querySelector(dashed[0]!.getAttribute("clip-path")!.replace(/^url\((.*)\)$/, "$1"));
+    expect(clip?.querySelectorAll("rect")).toHaveLength(2);
     hoverAt(container, width - 52);
     expect(tooltip(container)).toMatch(/^Tue, Oct 20, so far/);
     hoverAt(container, 0);
