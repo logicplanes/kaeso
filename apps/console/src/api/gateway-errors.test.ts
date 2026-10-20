@@ -94,6 +94,18 @@ describe("a refusal from the Playground's capability checks", () => {
     expect((await errorFromResponse(refusal(plain))).message).toBe(plain);
   });
 
+  it("tells which thinking budget the model takes, with the numbers in the language's format", async () => {
+    const message = "A `budget_tokens` of 2048 means `low`; `mistral-small-latest` needs at least 16384.";
+    await speak("de");
+    expect((await errorFromResponse(refusal(message))).message).toBe(
+      "`budget_tokens` von 2.048 ergibt `low`; `mistral-small-latest` braucht mindestens 16.384.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal("A `budget_tokens` of 2048 means `low`; `gpt-5` needs `thinking` off."))).message).toBe(
+      "`budget_tokens` 为 2,048 即 `low`；`gpt-5` 需要关闭 `thinking`。",
+    );
+  });
+
   it("translates the named tool choice and keeps a choice written as code", async () => {
     await speak("de");
     const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and ask for the tool in the prompt.";

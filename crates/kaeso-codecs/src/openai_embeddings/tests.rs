@@ -11,6 +11,12 @@ use crate::test_support::{assert_json_eq, fixtures, sidecar};
 const DIR: &str = "openai_embeddings";
 const E: DialectId = DialectId::OpenAiEmbeddings;
 
+const FOREIGN_ERROR_BODIES: &[&str] = &[
+    "providers/mistral/recorded-embed-output-dimension",
+    "providers/mistral/recorded-string-input",
+    "providers/mistral/recorded-token-ids",
+];
+
 fn fixture(folder: &str, name: &str) -> Vec<u8> {
     fixtures(DIR, folder, "json")
         .into_iter()
@@ -56,8 +62,57 @@ fn every_response_fixture_round_trips() {
 }
 
 #[test]
+fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
+    for name in FOREIGN_ERROR_BODIES {
+        let body = fixture("errors", name);
+        let status = u16::try_from(
+            sidecar(DIR, "errors", name, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err = OpenAiEmbeddings::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!(
+            (&err.kind, err.status),
+            (&ErrorKind::InvalidRequest, Some(status)),
+            "{name}"
+        );
+        let quoted: String = String::from_utf8_lossy(&body).chars().take(200).collect();
+        assert!(
+            err.message.contains(quoted.trim()),
+            "{name}: {}",
+            err.message
+        );
+        let out = OpenAiEmbeddings::encode_error(&err);
+        assert_eq!(out.status, 400, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+}
+
+#[test]
+fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_without_its_newline() {
+    let err = OpenAiEmbeddings::decode_error(
+        401,
+        &HeaderList::new(),
+        b"{\"detail\":\"Invalid API Key\"}\n",
+    );
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (
+            &ErrorKind::Authentication,
+            "The provider returned HTTP 401 with a body Kaeso could not read: {\"detail\":\"Invalid API Key\"}"
+        )
+    );
+    assert_eq!(OpenAiEmbeddings::encode_error(&err).status, 401);
+}
+
+#[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
+        if FOREIGN_ERROR_BODIES.contains(&name.as_str()) {
+            continue;
+        }
         let meta = sidecar(DIR, "errors", &name, "meta").unwrap();
         let status = u16::try_from(meta["status"].as_u64().unwrap()).unwrap();
         let headers: HeaderList = meta

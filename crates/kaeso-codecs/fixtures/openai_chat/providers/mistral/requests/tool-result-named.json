@@ -1,0 +1,55 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a concise travel assistant."
+    },
+    {
+      "role": "user",
+      "content": "What is the weather in Lisbon right now?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "D681PevKs",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\": \"Lisbon\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "D681PevKs",
+      "name": "get_weather",
+      "content": "{\"temperature_c\": 21, \"sky\": \"clear\"}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Current weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name, such as Lisbon"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "max_tokens": 100
+}

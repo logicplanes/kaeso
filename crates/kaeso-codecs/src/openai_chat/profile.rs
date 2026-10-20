@@ -11,6 +11,7 @@ use serde_json::value::RawValue;
 pub struct ChatProfile {
     pub provider: &'static str,
     pub request: RequestProfile,
+    pub reply: ReplyProfile,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -23,6 +24,19 @@ pub struct RequestProfile {
     pub assistant_prefill: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct ReplyProfile {
+    pub reasoning: ReplyReasoning,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum ReplyReasoning {
+    AsSent,
+    ThinkingParts,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -51,10 +65,17 @@ impl RequestProfile {
     };
 }
 
+impl ReplyProfile {
+    pub const OPENAI: ReplyProfile = ReplyProfile {
+        reasoning: ReplyReasoning::AsSent,
+    };
+}
+
 impl ChatProfile {
     pub const OPENAI: ChatProfile = ChatProfile {
         provider: "OpenAI",
         request: RequestProfile::OPENAI,
+        reply: ReplyProfile::OPENAI,
     };
 
     pub const fn compatible(provider: &'static str) -> Self {
@@ -91,6 +112,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn without_prefill(mut self) -> Self {
         self.request.assistant_prefill = false;
+        self
+    }
+
+    #[must_use]
+    pub const fn thinking_parts(mut self) -> Self {
+        self.reply.reasoning = ReplyReasoning::ThinkingParts;
         self
     }
 

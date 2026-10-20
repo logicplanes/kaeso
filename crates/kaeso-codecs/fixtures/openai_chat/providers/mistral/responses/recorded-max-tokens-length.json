@@ -1,0 +1,29 @@
+{
+  "id": "d39b725efad54dc78629373a5d771c2a",
+  "created": 1792370123,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 30,
+    "total_tokens": 46,
+    "completion_tokens": 16,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "length",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "**Haiku:**\n*Waves crash on the shore—*\n*white foam"
+      }
+    }
+  ]
+}

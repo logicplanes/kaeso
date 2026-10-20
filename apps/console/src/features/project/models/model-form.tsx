@@ -32,6 +32,7 @@ const PROVIDER_DIALECTS: Record<string, string[]> = {
   togetherai: ["openai_chat", "openai_embeddings"],
   groq: ["openai_chat"],
   openrouter: ["openai_chat", "openai_embeddings"],
+  mistral: ["openai_chat", "openai_embeddings"],
 };
 export const providerDialects = (provider: string) => PROVIDER_DIALECTS[provider] ?? DIALECT_IDS;
 

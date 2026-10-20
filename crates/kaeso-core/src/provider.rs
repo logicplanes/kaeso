@@ -237,6 +237,37 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         chat: ChatProfile::compatible("OpenRouter"),
     },
+    Provider {
+        id: "mistral",
+        name: "Mistral",
+        default_base_url: "https://api.mistral.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        chat: ChatProfile::compatible("Mistral")
+            .max_tokens()
+            .system_role()
+            .random_seed()
+            .without_end_user()
+            .without_prefill()
+            .thinking_parts()
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "moderation",
+                "prompt_cache_options",
+                "prompt_cache_retention",
+                "store",
+                "verbosity",
+                "web_search_options",
+            ])
+            .refusing_in_messages(&["name", "refusal"]),
+    },
 ];
 
 const _: () = {
@@ -318,7 +349,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral"
         );
     }
 
@@ -334,7 +365,7 @@ mod tests {
         use kaeso_codecs::dispatch;
         use kaeso_codecs::{EgressCtx, HeaderList};
         let path = format!(
-            "{}/../kaeso-codecs/fixtures/openai_chat/requests/{request}.json",
+            "{}/../kaeso-codecs/fixtures/openai_chat/{request}.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let body = std::fs::read(&path).unwrap();
@@ -355,11 +386,11 @@ mod tests {
     #[test]
     fn each_profile_setting_answers_the_request_the_provider_was_recorded_refusing() {
         for (provider_id, request, param) in [
-            ("groq", "logit-bias", "logit_bias"),
-            ("groq", "logprobs-top-logprobs-doc", "logprobs"),
+            ("groq", "requests/logit-bias", "logit_bias"),
+            ("groq", "requests/logprobs-top-logprobs-doc", "logprobs"),
             (
                 "groq",
-                "tools-results-parallel-error",
+                "requests/tools-results-parallel-error",
                 "messages[2].refusal",
             ),
         ] {
@@ -370,8 +401,8 @@ mod tests {
             );
         }
         for (provider_id, request) in [
-            ("deepseek", "plain-developer-string"),
-            ("groq", "tools-single"),
+            ("deepseek", "requests/plain-developer-string"),
+            ("groq", "requests/tools-single"),
         ] {
             let sent = sent_with_profile(provider_id, request).unwrap();
             let roles: Vec<&str> = sent["messages"]
@@ -389,6 +420,47 @@ mod tests {
                 "{provider_id} {request}: {roles:?}"
             );
         }
+    }
+
+    #[test]
+    fn mistrals_profile_answers_each_request_mistral_was_recorded_refusing() {
+        for (request, param) in [
+            ("requests/logit-bias", "logit_bias"),
+            ("providers/mistral/requests/store-field", "store"),
+            (
+                "providers/mistral/requests/function-call-field",
+                "function_call",
+            ),
+            ("providers/mistral/requests/audio-field", "audio"),
+            (
+                "providers/mistral/requests/assistant-refusal-field",
+                "messages[1].refusal",
+            ),
+            (
+                "providers/mistral/requests/assistant-prefill",
+                "messages[1]",
+            ),
+            ("requests/system-name-multiturn", "messages[0].name"),
+        ] {
+            assert_eq!(
+                sent_with_profile("mistral", request).unwrap_err(),
+                param,
+                "{request}"
+            );
+        }
+        let limit =
+            sent_with_profile("mistral", "requests/max-completion-tokens-legacy-null").unwrap();
+        assert!(limit.get("max_completion_tokens").is_none(), "{limit}");
+        assert!(limit.get("max_tokens").is_some(), "{limit}");
+        let seed = sent_with_profile("mistral", "requests/stop-string-seed-penalties").unwrap();
+        assert!(
+            seed.get("seed").is_none() && seed.get("random_seed").is_some(),
+            "{seed}"
+        );
+        let user = sent_with_profile("mistral", "providers/mistral/requests/user-field").unwrap();
+        assert!(user.get("user").is_none(), "{user}");
+        let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
+        assert_eq!(developer["messages"][0]["role"], "system");
     }
 
     #[test]
@@ -494,7 +566,8 @@ mod tests {
                 "xai",
                 "togetherai",
                 "groq",
-                "openrouter"
+                "openrouter",
+                "mistral"
             ]
         );
         assert_eq!(

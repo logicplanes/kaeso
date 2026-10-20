@@ -1,0 +1,39 @@
+{
+  "id": "70c1666cb00d4791ba3e37dfbd3f3f0d",
+  "created": 1792370250,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 111,
+    "total_tokens": 125,
+    "completion_tokens": 14,
+    "prompt_tokens_details": {
+      "cached_tokens": 80
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "yVjSUoKG6",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Lisbon\"}"
+            },
+            "index": 0
+          }
+        ],
+        "content": ""
+      }
+    }
+  ]
+}

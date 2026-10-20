@@ -1,0 +1,20 @@
+{
+  "object": "error",
+  "message": {
+    "detail": [
+      {
+        "type": "extra_forbidden",
+        "loc": [
+          "body",
+          "verbosity"
+        ],
+        "msg": "Extra inputs are not permitted",
+        "input": "low"
+      }
+    ]
+  },
+  "type": "invalid_request_error",
+  "param": null,
+  "code": null,
+  "raw_status_code": 422
+}

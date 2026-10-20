@@ -2,6 +2,8 @@ use kaeso_kpp::{
     DialectId, GenerateRequest, ModelInfo, ReasoningEffort, ReasoningMode, Request, ToolChoice,
 };
 
+use kaeso_codecs::cross::reasoning_map;
+
 use super::Effective;
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -23,6 +25,7 @@ fn refuse(capability: &'static str, param: Option<&'static str>, message: String
 fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
     use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
     match (field, ingress) {
+        ("budget", _) => "thinking.budget_tokens",
         ("effort", A) => "output_config.effort",
         ("effort", R) => "reasoning.effort",
         ("effort", _) => "reasoning_effort",
@@ -221,8 +224,63 @@ fn check_generation(
     }
     if let Some(effort) = g.reasoning.as_ref().and_then(|r| r.effort.as_ref()) {
         check_effort(effort, ingress, eff)?;
+    } else if let Some(budget) = budget_sent_as_effort(g, eff) {
+        check_budget(budget, ingress, eff)?;
     }
     Ok(())
+}
+
+fn budget_sent_as_effort(g: &GenerateRequest, eff: &Effective) -> Option<u32> {
+    let r = g.reasoning.as_ref()?;
+    let openai = matches!(
+        eff.dialect,
+        DialectId::OpenAiChat | DialectId::OpenAiResponses
+    );
+    (openai && r.mode != Some(ReasoningMode::Disabled))
+        .then_some(r.budget_tokens)
+        .flatten()
+}
+
+fn check_budget(budget: u32, ingress: DialectId, eff: &Effective) -> Result<(), Unsupported> {
+    let levels = effort_levels(eff, ingress);
+    let effort = reasoning_map::effort_for_budget(budget);
+    if levels.is_empty() || levels.iter().any(|l| l == effort.as_wire()) {
+        return Ok(());
+    }
+    let bands = [
+        ("low", 0),
+        ("medium", reasoning_map::MEDIUM_FROM),
+        ("high", reasoning_map::HIGH_FROM),
+    ];
+    let supported = |band: &&(&str, u32)| levels.iter().any(|l| l == band.0);
+    let at = bands
+        .iter()
+        .position(|(level, _)| *level == effort.as_wire())
+        .unwrap_or(0);
+    let above = bands.iter().skip(at + 1).find(supported);
+    let below = bands
+        .iter()
+        .take(at)
+        .rposition(|band| supported(&band))
+        .and_then(|i| bands.get(i + 1));
+    let model = &eff.model_id;
+    let effort = effort.as_wire();
+    let message = match (above, below) {
+        (Some((_, min)), _) => format!(
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}."
+        ),
+        (None, Some((_, max))) => format!(
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs less than {max}."
+        ),
+        (None, None) => format!(
+            "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs `thinking` off."
+        ),
+    };
+    Err(refuse(
+        "effort",
+        Some(app_param(ingress, "budget")),
+        message,
+    ))
 }
 
 fn kpp_turns_thinking_on(g: &GenerateRequest, ingress: DialectId, eff: &Effective) -> bool {

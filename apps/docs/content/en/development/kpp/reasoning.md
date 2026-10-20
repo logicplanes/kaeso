@@ -35,7 +35,7 @@ The conversion lives in `kaeso_codecs::cross::reasoning_map`.
 | 4,096 to 16,383 | `medium` |
 | 16,384 and more | `high` |
 
-An explicit effort in the same request wins over the budget.
+An explicit effort in the same request wins over the budget. When the budget becomes an effort the model does not list among its effort levels, the gateway refuses the request before sending it, naming `thinking.budget_tokens` and the nearest budget that maps to one of the model's levels, or asking to turn thinking off when none does: `mistral-small-latest` takes only `none` and `high`, so it needs a `budget_tokens` of 16,384 or more.
 
 | OpenAI effort | Anthropic `budget_tokens` |
 | --- | --- |

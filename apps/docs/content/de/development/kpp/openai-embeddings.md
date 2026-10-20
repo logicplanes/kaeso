@@ -81,3 +81,7 @@ Quellen: die [OpenAI-Kompatibilität](https://docs.together.ai/docs/inference/op
 ### OpenRouter
 
 Quelle: die [Embeddings-Referenz](https://openrouter.ai/docs/api_reference/embeddings) von OpenRouter, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_embeddings/providers/openrouter/` mit `nvidia/nemotron-3-embed-1b:free`. Das `model` der Antwort nennt das ausgelieferte Modell, nicht die angefragte ID; `usage.cost`, `usage.is_byok`, `usage.cost_details` sowie `provider` und `id` auf oberster Ebene bleiben in den Extras und kommen unverändert zurück. Ein Fehler des dahinterliegenden Anbieters kommt als 400, dessen `message` den Fehler-Body dieses Anbieters als Text enthält.
+
+### Mistral
+
+Quellen: Mistrals [API-Referenz](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), gelesen am 2026-10-19, und die Live-Aufnahmen in `fixtures/openai_embeddings/providers/mistral/` mit `mistral-embed`. Mistral nimmt `encoding_format: base64` an, antwortet aber mit Gleitkommazahlen; für eine App, die base64 verlangt hat, kodiert der Codec sie als base64. Mistral lehnt OpenAIs `dimensions` und Token-IDs als Eingabe mit 422 ab und `output_dimension` bei `mistral-embed` mit 400; diese Fehler-Bodys haben kein `error`-Objekt, daher erhalten Apps einen OpenAI-Fehler, der sie zitiert.

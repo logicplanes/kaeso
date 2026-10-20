@@ -1,0 +1,33 @@
+{
+  "id": "ministral-3b-latest",
+  "object": "model",
+  "created": 1792370306,
+  "owned_by": "mistralai",
+  "capabilities": {
+    "completion_chat": true,
+    "function_calling": true,
+    "reasoning": false,
+    "completion_fim": false,
+    "fine_tuning": true,
+    "vision": true,
+    "ocr": false,
+    "classification": false,
+    "moderation": false,
+    "audio": false,
+    "audio_transcription": false,
+    "audio_transcription_realtime": false,
+    "audio_speech": false,
+    "unified_resources": false
+  },
+  "name": "ministral-3b-2512",
+  "description": "Ministral 3 (a.k.a. Tinystral) 3B Instruct.",
+  "max_context_length": 131072,
+  "aliases": [
+    "ministral-3b-2512"
+  ],
+  "deprecation": null,
+  "deprecation_replacement_model": null,
+  "default_model_temperature": 0.3,
+  "billing_model_name": "ministral-3b-2512",
+  "type": "base"
+}

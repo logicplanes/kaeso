@@ -1,20 +1,26 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
     BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras, KppError, Origin, RawItem,
-    RawJson, ResponseDelta, ResponseStart, ResponseStop, StreamEvent, ToolCallHeader, Usage,
+    RawJson, ReasoningHeader, ResponseDelta, ResponseStart, ResponseStop, StreamEvent,
+    ToolCallHeader, Usage,
 };
 use serde_json::{Map, Value};
 
 use super::DIALECT;
-use super::convert::{nulls_to_verbatim, parse_ext};
+use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::decode_body;
-use super::response::{decode_finish, decode_usage};
+use super::profile::ReplyReasoning;
+use super::response::{decode_finish, decode_usage, plain_text_part, thinking_part};
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::sse::{SseEvent, SseItem, SseParser};
 use crate::wire::Ext;
+use crate::wire::StringOr;
 
 pub(crate) const FORM_CHUNK: &str = "chunk";
+pub(crate) const FORM_CONTENT_SLOTS: &str = "cs";
+pub(crate) const FORM_REASONING_SLOT: &str = "r";
+pub(crate) const FORM_EMPTY_TEXT: &str = "et";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
 pub(crate) const FORM_ENV: &str = "env";
 pub(crate) const FORM_ENV_ABSENT: &str = "env_absent";
@@ -143,6 +149,8 @@ pub(crate) struct ChatStreamDecoder {
     next_block: u32,
     text: Option<u32>,
     refusal: Option<u32>,
+    reasoning: Option<u32>,
+    thinking_parts: bool,
     tools: IndexMap<u32, ToolState>,
     running_usage: Option<Usage>,
     finished: bool,
@@ -164,6 +172,8 @@ impl ChatStreamDecoder {
             next_block: 0,
             text: None,
             refusal: None,
+            reasoning: None,
+            thinking_parts: ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts,
             tools: IndexMap::new(),
             running_usage: None,
             finished: false,
@@ -335,6 +345,7 @@ impl ChatStreamDecoder {
             .map(|t| t.block)
             .chain(self.text)
             .chain(self.refusal)
+            .chain(self.reasoning)
             .collect();
         open.sort_unstable();
         for index in open {
@@ -344,6 +355,7 @@ impl ChatStreamDecoder {
         }
         self.text = None;
         self.refusal = None;
+        self.reasoning = None;
         self.tools.clear();
     }
 
@@ -352,6 +364,14 @@ impl ChatStreamDecoder {
             let mut delta = ResponseDelta::new(None, Some(usage));
             delta.extras = self.extras();
             out.push(StreamEvent::ResponseDelta(delta));
+        }
+    }
+
+    fn stop_reasoning(&mut self, out: &mut Vec<StreamEvent>) {
+        if let Some(index) = self.reasoning.take() {
+            let mut stop = BlockStop::new(index);
+            stop.extras = self.extras();
+            out.push(StreamEvent::BlockStop(stop));
         }
     }
 
@@ -552,7 +572,70 @@ impl ChatStreamDecoder {
         if let Some(role) = delta.role {
             form.insert("role".to_owned(), Value::String(role));
         }
-        if let Some(text) = delta.content {
+        let mut thoughts: Vec<String> = Vec::new();
+        let text = match delta.content {
+            Some(StringOr::String(text)) => Some(text),
+            Some(StringOr::List(parts)) => {
+                let mut text: Option<String> = None;
+                let mut slots = Vec::new();
+                let mut others = Vec::new();
+                for part in parts {
+                    if let Some(t) = plain_text_part(&part) {
+                        slots.push(Value::from(t.len()));
+                        text.get_or_insert_with(String::new).push_str(&t);
+                    } else if let Some(thought) =
+                        self.thinking_parts.then(|| thinking_part(&part)).flatten()
+                    {
+                        let mut slot = thought.rest;
+                        slot.insert(
+                            FORM_REASONING_SLOT.to_owned(),
+                            thought.text.iter().map(|t| Value::from(t.len())).collect(),
+                        );
+                        slots.push(Value::Object(slot));
+                        thoughts.extend(thought.text);
+                    } else {
+                        slots.push(Value::Null);
+                        others.push(part);
+                    }
+                }
+                form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
+                if !others.is_empty() {
+                    fields.insert("delta.content".to_owned(), to_raw(&others)?);
+                }
+                text
+            }
+            None => None,
+        };
+        for thought in thoughts.into_iter().filter(|t| !t.is_empty()) {
+            let index = match self.reasoning {
+                Some(index) => index,
+                None => {
+                    let index = self.new_block();
+                    self.reasoning = Some(index);
+                    let mut start = BlockStart::new(
+                        index,
+                        BlockHeader::Reasoning(ReasoningHeader::new(self.origin.clone())),
+                    );
+                    start.extras = self.extras();
+                    events.push(StreamEvent::BlockStart(start));
+                    index
+                }
+            };
+            let mut d = BlockDelta::new(index, Delta::ReasoningText(thought));
+            d.extras = self.extras();
+            events.push(StreamEvent::BlockDelta(d));
+        }
+        let text = match text {
+            Some(t) if t.is_empty() && self.text.is_none() && self.thinking_parts => {
+                form.insert(FORM_EMPTY_TEXT.to_owned(), Value::Bool(true));
+                None
+            }
+            other => other,
+        };
+        if text.is_some() || delta.refusal.is_some() || !delta.tool_calls.is_empty() {
+            self.stop_reasoning(events);
+        }
+        if let Some(text) = text {
             let index = match self.text {
                 Some(index) => index,
                 None => {

@@ -1,0 +1,29 @@
+{
+  "id": "6e1bf00fa656433e959b54ea574dfd8a",
+  "created": 1792370268,
+  "model": "magistral-medium-latest",
+  "usage": {
+    "prompt_tokens": 28,
+    "total_tokens": 62,
+    "completion_tokens": 34,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "No, 91 is not a prime number because it can be divided by 7 and 13 (7 × 13 = 91)."
+      }
+    }
+  ]
+}

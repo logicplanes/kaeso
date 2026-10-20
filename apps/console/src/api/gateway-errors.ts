@@ -492,6 +492,19 @@ const messages = (): Rule[] => [
   rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
   rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),
   rule(
+    "errors.model.budgetAtLeast",
+    (v) => t("errors.model.budgetAtLeast", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}.", v),
+    { budget: "number", min: "number" },
+  ),
+  rule(
+    "errors.model.budgetBelow",
+    (v) => t("errors.model.budgetBelow", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs less than {max}.", v),
+    { budget: "number", max: "number" },
+  ),
+  rule("errors.model.budgetOff", (v) => t("errors.model.budgetOff", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs `thinking` off.", v), {
+    budget: "number",
+  }),
+  rule(
     "errors.model.effortLevels",
     (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),
     { levels: "codeList" },

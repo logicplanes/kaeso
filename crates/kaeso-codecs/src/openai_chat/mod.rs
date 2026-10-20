@@ -25,6 +25,8 @@ mod tests_profile;
 mod tests_regressions;
 #[cfg(test)]
 mod tests_stream;
+#[cfg(test)]
+mod tests_thinking;
 
 use kaeso_kpp::{
     DialectId, GenerateRequest, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request,
@@ -37,7 +39,9 @@ use crate::codec::{
 };
 use crate::wire::to_body;
 
-pub use profile::{ChatProfile, OutputLimit, RequestProfile, SeedField};
+pub use profile::{
+    ChatProfile, OutputLimit, ReplyProfile, ReplyReasoning, RequestProfile, SeedField,
+};
 
 pub(crate) const DIALECT: DialectId = DialectId::OpenAiChat;
 

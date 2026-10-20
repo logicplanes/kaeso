@@ -1,0 +1,8 @@
+{
+  "object": "error",
+  "message": "This model does not support output_dimension.",
+  "type": "invalid_request_invalid_args",
+  "param": null,
+  "code": "3051",
+  "raw_status_code": 400
+}

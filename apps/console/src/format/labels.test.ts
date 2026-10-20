@@ -111,7 +111,7 @@ describe("labels", () => {
   it("keep product names as they are in every language", async () => {
     await speak("zh-CN");
     expect(DIALECT_IDS.map(dialectLabel)).toEqual(["Anthropic Messages", "OpenAI Chat Completions", "OpenAI Responses", "OpenAI Embeddings"]);
-    expect(PROVIDER_IDS.map(providerLabel)).toEqual(["OpenAI", "Anthropic", "DeepSeek", "SpaceX", "Together AI", "Groq", "OpenRouter"]);
+    expect(PROVIDER_IDS.map(providerLabel)).toEqual(["OpenAI", "Anthropic", "DeepSeek", "SpaceX", "Together AI", "Groq", "OpenRouter", "Mistral"]);
     expect(sessionMethodLabel("oidc")).toBe("SSO");
     expect(limitUnit("spend_budget")).toBe("USD");
   });

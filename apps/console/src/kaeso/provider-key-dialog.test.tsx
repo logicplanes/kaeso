@@ -191,6 +191,30 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "openai", name: "Backup", secret: "sk-new", make_default: true }]);
   });
 
+  it("adds a Mistral key, which has no fixed prefix, with Mistral's console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "mistral", name: "Mistral prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Mistral");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Mistral API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: (name) => name.startsWith("console.mistral.ai") });
+    expect(link).toHaveAttribute("href", "https://console.mistral.ai/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create one at console.mistral.ai under API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Mistral API key");
+    expect(secret).toHaveAttribute("placeholder", "…");
+    await user.type(secret, "AbCdEf0123456789AbCdEf0123456789");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Mistral prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Mistral prod is the Mistral default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "mistral", name: "Mistral prod", secret: "AbCdEf0123456789AbCdEf0123456789", make_default: false },
+    ]);
+  });
+
   it("asks only for the provider's key for a provider it has no hint for", async () => {
     const cohere = credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" });
     const { dialog } = await open({ keys: [cohere], replace: cohere });

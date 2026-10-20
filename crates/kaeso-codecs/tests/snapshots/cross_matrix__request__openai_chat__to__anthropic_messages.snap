@@ -578,6 +578,320 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/mistral/assistant-prefill": {
+    "body": {
+      "max_tokens": 30,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name a colour.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "The colour is",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/assistant-prefix": {
+    "message": "`messages[1].prefix` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].prefix"
+  },
+  "providers/mistral/assistant-refusal-field": {
+    "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "refusal block"
+  },
+  "providers/mistral/audio-field": {
+    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "audio"
+  },
+  "providers/mistral/function-call-field": {
+    "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "function_call"
+  },
+  "providers/mistral/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/mistral/invalid-api-key": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/magistral-medium": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "magistral-medium-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/mistral/model-not-found": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-tiny-nonexistent"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/moderation-field": {
+    "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "moderation"
+  },
+  "providers/mistral/prompt-cache-options-field": {
+    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_cache_options"
+  },
+  "providers/mistral/prompt-cache-retention-field": {
+    "message": "`prompt_cache_retention` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_cache_retention"
+  },
+  "providers/mistral/prompt-mode-reasoning": {
+    "message": "`prompt_mode` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_mode"
+  },
+  "providers/mistral/reasoning-effort-high": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "output_config": {
+        "effort": "high"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/reasoning-effort-high-stream": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/safe-prompt-random-seed": {
+    "message": "`safe_prompt` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safe_prompt"
+  },
+  "providers/mistral/safety-identifier-field": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "metadata": {
+        "user_id": "user-1234"
+      },
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/mistral/stream-no-options": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/stream-tool-call": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Lisbon right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/system-tool-choice-any": {
+    "message": "tool_choice `any` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `any`"
+  },
+  "providers/mistral/tool-result-named": {
+    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "messages[2].blocks[0].name"
+  },
+  "providers/mistral/user-field": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "metadata": {
+        "user_id": "user-1234"
+      },
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/verbosity-field": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
+  "providers/mistral/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/openrouter/free-basic": {
     "body": {
       "max_tokens": 256,

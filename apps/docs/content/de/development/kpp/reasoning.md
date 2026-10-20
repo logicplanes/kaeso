@@ -35,7 +35,7 @@ Die Umrechnung steckt in `kaeso_codecs::cross::reasoning_map`.
 | 4.096 bis 16.383 | `medium` |
 | 16.384 und mehr | `high` |
 
-Ein ausdrücklicher Aufwand in derselben Anfrage hat Vorrang vor dem Budget.
+Ein ausdrücklicher Aufwand in derselben Anfrage hat Vorrang vor dem Budget. Wird das Budget zu einem Aufwand, den das Modell nicht unter seinen Aufwandsstufen führt, lehnt das Gateway die Anfrage ab, bevor es sie sendet, und nennt `thinking.budget_tokens` sowie das nächste Budget, das zu einer Stufe des Modells führt, oder bittet darum, das Thinking auszuschalten, wenn keines dazu führt: `mistral-small-latest` kennt nur `none` und `high` und braucht daher ein `budget_tokens` von 16.384 oder mehr.
 
 | OpenAI-Aufwand | Anthropic `budget_tokens` |
 | --- | --- |

@@ -1,0 +1,29 @@
+{
+  "id": "0eca016673b94106980cb573ae599c73",
+  "created": 1792380566,
+  "model": "mistral-small-latest",
+  "usage": {
+    "prompt_tokens": 22,
+    "total_tokens": 31,
+    "completion_tokens": 9,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "service_tier": "standard"
+  },
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "The colour is **cerulean**."
+      }
+    }
+  ]
+}

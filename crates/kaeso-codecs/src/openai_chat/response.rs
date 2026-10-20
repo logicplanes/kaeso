@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, Citation, Extras, KppError, Origin, RawUsage, Reply, RequestKind, Response, StopReason,
-    TextBlock, Usage,
+    Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage, ReasoningBlock, Reply,
+    RequestKind, Response, StopReason, TextBlock, Usage,
 };
 use serde_json::Value;
 
@@ -9,14 +9,17 @@ use super::convert::{
     add_nested, decode_tool_call, encode_tool_call, ext_nested, ext_with, extras_of,
     is_tool_call_item, parse_ext, to_raw,
 };
+use super::profile::ReplyReasoning;
 use super::wire::{
     ChatResponse, Choice, CompletionTokensDetails, PromptTokensDetails, ResponseMessage, UsageWire,
 };
 use crate::codec::{EgressCtx, EncodeCtx};
 use crate::cross::{ReplyPolicy, reply_policy};
-use crate::wire::{Ext, to_body};
+use crate::wire::{Ext, StringOr, to_body};
 
 pub(crate) const FORM_OBJECT: &str = "object";
+pub(crate) const FORM_CONTENT_PARTS: &str = "content_parts";
+pub(crate) const FORM_THINKING: &str = "thinking";
 pub(crate) const CHOICE: &str = "choice";
 pub(crate) const MESSAGE: &str = "choice.message";
 
@@ -97,11 +100,41 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         .map(|a| Citation::new(origin.clone(), a.clone()))
         .collect();
     match message.content {
-        Some(text) => {
+        Some(StringOr::String(text)) => {
             let mut block = TextBlock::new(text);
             block.citations = citations;
             block.extras = Extras::new(origin.clone());
             blocks.push(Block::Text(block));
+        }
+        Some(StringOr::List(parts)) => {
+            extras
+                .form
+                .insert(FORM_CONTENT_PARTS.to_owned(), Value::Bool(true));
+            let thinking = ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts;
+            for part in parts {
+                if let Some(text) = plain_text_part(&part) {
+                    let mut block = TextBlock::new(text);
+                    block.extras = Extras::new(origin.clone());
+                    blocks.push(Block::Text(block));
+                } else if let Some(thought) = thinking.then(|| thinking_part(&part)).flatten() {
+                    let mut block = ReasoningBlock::new(origin.clone());
+                    block.text = thought.text;
+                    block.extras = Extras::new(origin.clone());
+                    block
+                        .extras
+                        .form
+                        .insert(FORM_THINKING.to_owned(), Value::Object(thought.rest));
+                    blocks.push(Block::Reasoning(block));
+                } else {
+                    blocks.push(Block::Unknown(RawItem::new(origin.clone(), part)));
+                }
+            }
+            if !citations.is_empty() {
+                extras.fields.insert(
+                    format!("{MESSAGE}.annotations"),
+                    to_raw(&message.annotations)?,
+                );
+            }
         }
         None if !citations.is_empty() => {
             extras.fields.insert(
@@ -149,6 +182,8 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         ));
     };
     let own = resp.extras.is_from(DIALECT);
+    let as_parts = own && resp.extras.form_flag(DIALECT, FORM_CONTENT_PARTS);
+    let mut parts: Vec<RawJson> = Vec::new();
     let mut text: Option<String> = None;
     let mut citations = Vec::new();
     let mut refusal: Option<String> = None;
@@ -156,7 +191,13 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     for block in &resp.blocks {
         match block {
             Block::Text(t) => {
-                text.get_or_insert_with(String::new).push_str(&t.text);
+                if as_parts {
+                    parts.push(to_raw(
+                        &serde_json::json!({"type": "text", "text": t.text}),
+                    )?);
+                } else {
+                    text.get_or_insert_with(String::new).push_str(&t.text);
+                }
                 citations.extend(
                     t.citations
                         .iter()
@@ -172,6 +213,14 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             {
                 tool_calls.push(item.raw.clone());
             }
+            Block::Unknown(item) if as_parts && item.origin.is(DIALECT) => {
+                parts.push(item.raw.clone());
+            }
+            Block::Reasoning(r) if as_parts && r.extras.is_from(DIALECT) => {
+                if let Some(Value::Object(rest)) = r.extras.form_value(DIALECT, FORM_THINKING) {
+                    parts.push(encode_thinking_part(&r.text, rest)?);
+                }
+            }
             Block::Reasoning(_)
             | Block::Unknown(_)
             | Block::Image(_)
@@ -180,9 +229,14 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             _ => {}
         }
     }
+    let content = if as_parts {
+        Some(StringOr::List(parts))
+    } else {
+        text.map(StringOr::String)
+    };
     let message = ResponseMessage {
         role: "assistant".to_owned(),
-        content: text,
+        content,
         refusal,
         tool_calls,
         annotations: citations,
@@ -376,4 +430,70 @@ fn overlay(base: &mut Value, top: Value) {
         }
         (slot, top) => *slot = top,
     }
+}
+
+pub(crate) fn plain_text_part(part: &RawJson) -> Option<String> {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct TextOnly {
+        #[serde(rename = "type")]
+        ty: String,
+        text: String,
+    }
+    serde_json::from_str::<TextOnly>(part.get())
+        .ok()
+        .filter(|p| p.ty == "text")
+        .map(|p| p.text)
+}
+
+pub(crate) struct Thought {
+    pub(crate) text: Vec<String>,
+    pub(crate) rest: serde_json::Map<String, Value>,
+}
+
+pub(crate) fn thinking_part(part: &RawJson) -> Option<Thought> {
+    let Ok(Value::Object(mut fields)) = part.to_value() else {
+        return None;
+    };
+    if fields.get("type").and_then(Value::as_str) != Some("thinking") {
+        return None;
+    }
+    if fields
+        .keys()
+        .any(|k| !matches!(k.as_str(), "type" | "thinking" | "closed"))
+    {
+        return None;
+    }
+    if fields.get("closed").is_some_and(|c| !c.is_boolean()) {
+        return None;
+    }
+    let Some(Value::Array(inner)) = fields.remove("thinking") else {
+        return None;
+    };
+    let text = inner
+        .iter()
+        .map(|item| plain_text_part(&RawJson::from_serialize(item).ok()?))
+        .collect::<Option<Vec<String>>>()?;
+    fields.remove("type");
+    Some(Thought { text, rest: fields })
+}
+
+pub(crate) fn encode_thinking_part(
+    text: &[String],
+    rest: &serde_json::Map<String, Value>,
+) -> Result<RawJson, KppError> {
+    let mut part = serde_json::Map::new();
+    part.insert("type".to_owned(), Value::from("thinking"));
+    part.insert(
+        "thinking".to_owned(),
+        Value::Array(
+            text.iter()
+                .map(|t| serde_json::json!({"type": "text", "text": t}))
+                .collect(),
+        ),
+    );
+    for (key, value) in rest {
+        part.insert(key.clone(), value.clone());
+    }
+    to_raw(&Value::Object(part))
 }

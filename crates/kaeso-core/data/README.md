@@ -9,9 +9,9 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 | | |
 |---|---|
 | Source | `https://models.dev/api.json` |
-| Fetched | 2026-10-19T02:55:32Z |
-| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `openai`, `openrouter`, `togetherai`, `xai`), unchanged otherwise; 525 models |
-| SHA-256 | `31eb63fd724c4c74ad81fe69d35f6595d4cc8ce72ec9a4f4007d50fd9e375105` |
+| Fetched | 2026-10-20T03:36:12Z |
+| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `mistral`, `openai`, `openrouter`, `togetherai`, `xai`), unchanged otherwise; 561 models |
+| SHA-256 | `ae3a986a6fa919956b01ff02d2779365b4b9261e03e6d3e9a5ef7071f1c2e241` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 The file keeps models.dev's shape (`{provider: {id, name, models: {id: model}}}`), pretty-printed with sorted keys. Only providers in `crates/kaeso-core/src/provider.rs` are kept; the full file lists over 200 providers Kaeso cannot call. When the gateway syncs (every 24 hours by default, `KAESO_MODELS_DEV_SYNC`), it applies the same filter and stores the result in PostgreSQL; the newer of the stored and the built-in snapshot wins at startup.
@@ -48,3 +48,4 @@ Every entry comes from one of these sources, checked on 2026-10-11:
 | `claude-fable-5-1`, `claude-opus-5-5`, `claude-sonnet-5-5` | no forced tool choice | Anthropic, [migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide) (forced tool use returns 400 `tool_choice: type "tool" and "any" are not supported for this model.`, token counting included; Claude Fable 5 and Opus 5 accept it); a live run on 2026-10-17 got that 400 from all three for `any` and `tool`, while `auto` worked |
 | `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
 | `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |
+| `mistral-embed` | the Embeddings endpoint only | Mistral, [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`); live check on 2026-10-19: `POST /v1/embeddings` answers with 1024 floats, and `GET /v1/models` lists it with `completion_chat: false` |

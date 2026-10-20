@@ -1,0 +1,5 @@
+{
+  "model": "mistral-embed",
+  "input": "The food was delicious and the waiter was friendly.",
+  "encoding_format": "float"
+}

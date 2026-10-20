@@ -35,8 +35,8 @@ pub mod reasoning_map {
     use kaeso_kpp::{ReasoningConfig, ReasoningEffort, ReasoningMode};
 
     pub(crate) const MIN_BUDGET: u32 = 1_024;
-    pub(crate) const MEDIUM_FROM: u32 = 4_096;
-    pub(crate) const HIGH_FROM: u32 = 16_384;
+    pub const MEDIUM_FROM: u32 = 4_096;
+    pub const HIGH_FROM: u32 = 16_384;
     pub(crate) const LOW_BUDGET: u32 = 2_048;
     pub(crate) const MEDIUM_BUDGET: u32 = 8_192;
     pub(crate) const HIGH_BUDGET: u32 = 24_576;

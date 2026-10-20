@@ -1,0 +1,10 @@
+{
+  "model": "magistral-medium-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 91 a prime number? Answer in one sentence."
+    }
+  ],
+  "max_tokens": 1500
+}

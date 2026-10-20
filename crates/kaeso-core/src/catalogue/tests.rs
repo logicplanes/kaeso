@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use kaeso_kpp::{
     Block, DialectId, DocumentBlock, EmbedInput, EmbedRequest, FunctionTool, GenerateRequest,
-    JsonSchemaSpec, Message, OutputSpec, RawJson, ReasoningConfig, ReasoningEffort, Request, Role,
-    Source, ToolChoice, ToolDef,
+    JsonSchemaSpec, Message, OutputSpec, RawJson, ReasoningConfig, ReasoningEffort, ReasoningMode,
+    Request, Role, Source, ToolChoice, ToolDef,
 };
 use rust_decimal_macros::dec;
 use uuid::Uuid;
@@ -553,6 +553,87 @@ fn efforts_are_refused_not_replaced() {
     kept("max", DialectId::OpenAiResponses, &sonnet46);
     kept("none", DialectId::OpenAiResponses, &sonnet46);
     refused("turbo", DialectId::OpenAiResponses, &sonnet46);
+}
+
+fn with_budget(budget: u32, mode: ReasoningMode) -> GenerateRequest {
+    let mut g = user(vec![Block::text("hi")]);
+    let mut r = ReasoningConfig::default();
+    r.mode = Some(mode);
+    r.budget_tokens = Some(budget);
+    g.reasoning = Some(r);
+    g
+}
+
+#[test]
+fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
+    let small = eff(&entry("mistral", "mistral-small-latest"));
+    let a = DialectId::AnthropicMessages;
+    assert_eq!(
+        check(with_budget(2_048, ReasoningMode::Enabled), a, &small).unwrap_err(),
+        "A `budget_tokens` of 2048 means `low`; `mistral-small-latest` needs at least 16384."
+    );
+    let mut req = Request::Generate(with_budget(2_048, ReasoningMode::Enabled));
+    assert_eq!(
+        prepare(&mut req, a, &small).unwrap_err().param,
+        Some("thinking.budget_tokens")
+    );
+    assert!(check(with_budget(16_384, ReasoningMode::Enabled), a, &small).is_ok());
+    assert!(check(with_budget(2_048, ReasoningMode::Disabled), a, &small).is_ok());
+    let gpt5 = eff(&entry("openai", "gpt-5"));
+    assert!(check(with_budget(2_048, ReasoningMode::Enabled), a, &gpt5).is_ok());
+    let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
+    assert!(check(with_budget(2_048, ReasoningMode::Enabled), a, &haiku).is_ok());
+    let with_efforts = |efforts: &[&str]| {
+        let mut e = entry("openai", "gpt-5");
+        e.overrides.efforts = Some(efforts.iter().map(|&l| l.to_owned()).collect());
+        eff(&e)
+    };
+    assert_eq!(
+        check(
+            with_budget(20_000, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["low"])
+        )
+        .unwrap_err(),
+        "A `budget_tokens` of 20000 means `high`; `gpt-5` needs less than 4096."
+    );
+    assert_eq!(
+        check(
+            with_budget(2_048, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["none"])
+        )
+        .unwrap_err(),
+        "A `budget_tokens` of 2048 means `low`; `gpt-5` needs `thinking` off."
+    );
+    assert!(
+        check(
+            with_budget(8_000, ReasoningMode::Enabled),
+            a,
+            &with_efforts(&["low", "high"])
+        )
+        .unwrap_err()
+        .ends_with("needs at least 16384.")
+    );
+}
+
+#[test]
+fn mistral_models_speak_chat_completions_and_mistral_embed_embeds() {
+    let small = eff(&entry("mistral", "mistral-small-latest"));
+    assert_eq!(small.dialect, DialectId::OpenAiChat);
+    assert_eq!(small.provider.chat.provider, "Mistral");
+    assert!(!small.is_embeddings());
+    let embed = eff(&entry("mistral", "mistral-embed"));
+    assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        effort_levels(&small, DialectId::AnthropicMessages),
+        ["none", "high"]
+    );
+    kept("high", DialectId::AnthropicMessages, &small);
+    kept("none", DialectId::OpenAiResponses, &small);
+    let err = refused("medium", DialectId::AnthropicMessages, &small);
+    assert!(err.contains("`none`, `high`"), "{err}");
 }
 
 #[test]

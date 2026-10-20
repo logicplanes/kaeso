@@ -21,6 +21,93 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
+const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
+    (
+        "providers/mistral/recorded-assistant-prefill",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-function-call-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-functions-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-prompt-cache-options-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-prompt-cache-retention-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-verbosity-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-assistant-refusal-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-moderation-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-safety-identifier-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-store-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-user-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-web-search-options-field",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/mistral/recorded-logit-bias",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-max-completion-tokens-legacy-null",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-model-not-found",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-plain-developer-string",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-prompt-mode-reasoning",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-reasoning-cached-usage",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-stop-string-seed-penalties",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/recorded-system-name-multiturn",
+        ErrorKind::InvalidRequest,
+    ),
+];
+
 pub(super) fn raw(s: &str) -> RawJson {
     RawJson::from_string(s.to_owned()).unwrap()
 }
@@ -138,8 +225,48 @@ fn meta_headers(meta: &Value) -> HeaderList {
 }
 
 #[test]
+fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
+    for (name, kind) in FOREIGN_ERROR_BODIES {
+        let (_, body) = fixtures(D, "errors", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"));
+        let status = u16::try_from(
+            sidecar(D, "errors", name, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!((&err.kind, err.status), (kind, Some(status)), "{name}");
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
+        let quoted: String = String::from_utf8_lossy(&body)
+            .trim()
+            .chars()
+            .take(400)
+            .collect();
+        let prefix = format!(
+            "The provider returned an error (HTTP {status}) that is not in the OpenAI error format: "
+        );
+        assert!(
+            err.message.starts_with(&prefix) && err.message.contains(&quoted),
+            "{name}: {}",
+            err.message
+        );
+        let out = OpenAiChat::encode_error(&err);
+        assert_eq!(out.status, status, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+}
+
+#[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(D, "errors", "json") {
+        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name) {
+            continue;
+        }
         let meta = sidecar(D, "errors", &name, "meta").unwrap();
         let status = u16::try_from(meta["status"].as_u64().unwrap()).unwrap();
         let headers = meta_headers(&meta);

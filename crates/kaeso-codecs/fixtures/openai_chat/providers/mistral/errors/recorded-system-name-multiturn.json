@@ -1,0 +1,40 @@
+{
+  "detail": [
+    {
+      "type": "extra_forbidden",
+      "loc": [
+        "body",
+        "messages",
+        0,
+        "system",
+        "name"
+      ],
+      "msg": "Extra inputs are not permitted",
+      "input": "house_rules"
+    },
+    {
+      "type": "extra_forbidden",
+      "loc": [
+        "body",
+        "messages",
+        1,
+        "user",
+        "name"
+      ],
+      "msg": "Extra inputs are not permitted",
+      "input": "alice"
+    },
+    {
+      "type": "extra_forbidden",
+      "loc": [
+        "body",
+        "messages",
+        3,
+        "user",
+        "name"
+      ],
+      "msg": "Extra inputs are not permitted",
+      "input": "alice"
+    }
+  ]
+}

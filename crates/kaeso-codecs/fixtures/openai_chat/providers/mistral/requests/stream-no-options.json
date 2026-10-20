@@ -1,0 +1,11 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello."
+    }
+  ],
+  "max_tokens": 10,
+  "stream": true
+}

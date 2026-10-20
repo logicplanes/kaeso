@@ -1,0 +1,34 @@
+{
+  "detail": [
+    {
+      "type": "enum",
+      "loc": [
+        "body",
+        "service_tier"
+      ],
+      "msg": "Input should be 'auto' or 'standard_only'",
+      "input": "priority",
+      "ctx": {
+        "expected": "'auto' or 'standard_only'"
+      }
+    },
+    {
+      "type": "union_tag_invalid",
+      "loc": [
+        "body",
+        "messages",
+        0
+      ],
+      "msg": "Input tag 'developer' found using 'role' does not match any of the expected tags: <Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'>",
+      "input": {
+        "role": "developer",
+        "content": "You are the support assistant for Northwind Mobile. Policy summary: plans renew monthly on the signup date; customers may cancel online at any time before renewal; no fees apply for cancellation; partial months are not refunded; roaming add-ons expire with the plan. Always answer in plain language and cite the relevant policy point."
+      },
+      "ctx": {
+        "discriminator": "'role'",
+        "tag": "developer",
+        "expected_tags": "<Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'>"
+      }
+    }
+  ]
+}

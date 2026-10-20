@@ -695,6 +695,14 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
         ],
     )
     .await;
+    let due = kaeso_core::models_dev::EMBEDDED_FETCHED_AT + time::Duration::hours(6);
+    app.clock.set(
+        due.max(
+            time::OffsetDateTime::now_utc()
+                .replace_nanosecond(0)
+                .unwrap(),
+        ),
+    );
 
     assert_eq!(run_sync_job(&app).await, "unchanged");
     assert_eq!(run_sync_job(&app).await, "not due");

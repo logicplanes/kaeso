@@ -217,16 +217,16 @@ describe("ModelSheet", () => {
   it("shows a model of another provider by its id, with every format to send it as", async () => {
     setUp([
       catalogueModel({
-        id: "cm_large",
-        provider: "mistral",
-        model_id: "mistral-large",
+        id: "cm_acme",
+        provider: "acme",
+        model_id: "acme-large",
         egress_dialect: "openai_chat",
         effective: { ...catalogueModel().effective, display_name: null, input_modalities: ["text", "file"] },
       }),
     ]);
-    const { user } = await renderApp(projectPath("models?model=cm_large"));
+    const { user } = await renderApp(projectPath("models?model=cm_acme"));
 
-    const s = await sheet("mistral-large");
+    const s = await sheet("acme-large");
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
     expect(s).toHaveTextContent("Text, file");
     await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
@@ -237,6 +237,25 @@ describe("ModelSheet", () => {
       "OpenAI Responses",
       "OpenAI Embeddings",
     ]);
+  });
+
+  it("offers a Mistral model only the formats Mistral speaks", async () => {
+    setUp([
+      catalogueModel({
+        id: "cm_small",
+        provider: "mistral",
+        model_id: "mistral-small-latest",
+        egress_dialect: "openai_chat",
+        effective: { ...catalogueModel().effective, display_name: null },
+      }),
+    ]);
+    const { user } = await renderApp(projectPath("models?model=cm_small"));
+
+    const s = await sheet("mistral-small-latest");
+    expect(await within(s).findByText("Values in use")).toBeInTheDocument();
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    await user.click(within(s).getByRole("combobox", { name: "Sends as" }));
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions", "OpenAI Embeddings"]);
   });
 
   it("says when someone else changed the model meanwhile, and reloads it", async () => {

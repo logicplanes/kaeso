@@ -1,0 +1,15 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name a colour."
+    },
+    {
+      "role": "assistant",
+      "content": "The colour is",
+      "prefix": true
+    }
+  ],
+  "max_tokens": 30
+}

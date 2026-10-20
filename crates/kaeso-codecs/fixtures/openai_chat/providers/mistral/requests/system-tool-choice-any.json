@@ -1,0 +1,36 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a concise travel assistant. Use the tools for live data."
+    },
+    {
+      "role": "user",
+      "content": "What is the weather in Lisbon right now?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Current weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name, such as Lisbon"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "any",
+  "max_tokens": 200
+}

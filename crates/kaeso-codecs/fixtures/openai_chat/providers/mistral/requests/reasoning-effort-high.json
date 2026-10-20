@@ -1,0 +1,11 @@
+{
+  "model": "mistral-small-latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 91 a prime number? Answer in one sentence."
+    }
+  ],
+  "reasoning_effort": "high",
+  "max_tokens": 1500
+}
