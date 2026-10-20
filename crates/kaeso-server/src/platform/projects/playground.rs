@@ -68,7 +68,7 @@ pub struct PlaygroundRequest {
     request_body = PlaygroundRequest,
     responses(
         (status = 200, description = "OpenAI Responses stream events.", content_type = "text/event-stream", body = String),
-        (status = 404, description = "The provider does not serve the model to the project's provider key (`not_found`).", body = crate::platform::error::ErrorEnvelope),
+        (status = 404, description = "The provider does not serve the model to the project's provider key, or answered 404 for something else the request names (`not_found`).", body = crate::platform::error::ErrorEnvelope),
         (status = 502, description = "The provider failed or refused the provider key (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
         (status = 504, description = "The provider did not answer in time (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
     )
