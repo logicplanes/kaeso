@@ -171,7 +171,12 @@ impl ChatProfile {
         };
         let index = req.messages.len() - 1;
         let calls_tools = last.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)));
-        let own_prefix = last.extras.is_from(DIALECT) && last.extras.fields.contains_key("prefix");
+        let own_prefix = last.extras.is_from(DIALECT)
+            && last
+                .extras
+                .fields
+                .get("prefix")
+                .is_some_and(|p| p.get().trim() == "true");
         if last.role != Role::Assistant || calls_tools || own_prefix {
             return Ok(());
         }

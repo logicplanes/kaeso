@@ -393,6 +393,15 @@ fn a_profile_without_prefill_refuses_a_conversation_that_ends_with_the_assistant
     )
     .unwrap();
     assert_eq!(own_prefix["messages"][1]["prefix"], true);
+    let not_a_prefix = encode_with(
+        &chat(json!({"model": "m", "messages": [
+            {"role": "user", "content": "Name a colour."},
+            {"role": "assistant", "content": "The colour is", "prefix": false}
+        ]})),
+        STRICT,
+    )
+    .unwrap_err();
+    assert_eq!(refusal(&not_a_prefix).1, Some("messages[1]"));
 
     let after_tool_call = encode_with(
         &chat(json!({"model": "m", "messages": [

@@ -123,7 +123,7 @@ nav: OpenAI Chat
 | `system_role()` | 把 `developer` 消息以 `system` 消息发送。 | 角色的写法是形式标记；两者都承载指令。 |
 | `random_seed()` | 把 `seed` 以 `random_seed` 发送，`seed: null` 也一样。负数 seed，或同时带 `seed` 和 `random_seed`（任一可为 `null`）的请求，为 `Unsupported`（`seed`）。此规则依据 Mistral 的 `random_seed`，其 OpenAPI 文档规定 `minimum: 0`。 | `seed` 仍是语义字段：只会被改名或拒绝，绝不会被丢弃。 |
 | `without_end_user()` | 省略 KPP `user`，而不是以 `user` 或 `safety_identifier` 发送；Chat 应用与 `safety_identifier` 一起发送的第二个 `user` 以及它们的 `null` 写法也一并省略。 | `user` 是提示字段（[字段类别](index.md#字段类别)）。 |
-| `without_prefill()` | 拒绝以 assistant 消息结尾的对话，除非该消息调用工具，或是带有自身 `prefix` 键的 Chat 应用消息：`Unsupported`（`assistant prefill`，param `messages[i]`）。 | 只能借助 `prefix: true` 续写此类消息的服务商会在回复中重复预填内容，应用因此得不到续写。 |
+| `without_prefill()` | 拒绝以 assistant 消息结尾的对话，除非该消息调用工具，或是带有 `prefix: true` 的 Chat 应用消息：`Unsupported`（`assistant prefill`，param `messages[i]`）。 | 只能借助 `prefix: true` 续写此类消息的服务商会在回复中重复预填内容，应用因此得不到续写。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
 
