@@ -174,13 +174,15 @@ Routes are relative to `/platform/v1`. [`openapi.json`](#openapi-document) lists
 | --- | --- |
 | `auth/*` | First-start setup, sign-in methods, password and two-factor sign-in, sign-in links, password reset, single sign-on, sessions, sign-up where the instance allows the address, and invitations. `auth/session` returns the user, their memberships with roles and rights, and whether they may create organizations (`can_create_orgs`). |
 | `me`, `me/*` | Your profile, picture and language (`locale`: `auto`, `en`, `de` or `zh-CN`), email, password, two-factor authentication and recovery codes. Also your sessions, memberships, keys and notifications, creating an organization and deleting your account. |
-| `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also provider keys, security settings, platform keys, log settings and storage, usage, the audit log, ownership transfer, deletion and restoring. |
+| `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also the providers Kaeso calls, provider keys, security settings, platform keys, log settings and storage, usage, the audit log, ownership transfer, deletion and restoring. |
 | `orgs/{org}/projects/{project}/*` | The project and its picture, members with their model access, service accounts, keys with their models and limits, and key policy. Also the catalogue and aliases, limits, content logging, request logs and exports, usage, the audit log and the [Playground](#playground). |
 | `instance/*` | For instance admins: users, organizations, instance settings, the models.dev sync, system health and storage, updates and the instance audit log. |
 
 Instance admins see every organization's metadata, never its content. They create, rename, schedule for deletion, restore and delete organizations under `instance/orgs`. `POST instance/orgs/{org}/owner` makes any active user an owner, the admin included, which is how an instance admin gets in to manage an organization. The organization's audit log records it.
 
 Only instance admins reset a user's two-factor authentication, with `POST instance/users/{user}/reset-2fa`. There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
+
+`GET orgs/{org}/providers` needs `org.view` and lists every provider Kaeso calls, the same in every organization. Each has its id and name, the page where you create its keys (`key_page`), how its keys start (`key_prefix`, `null` without a fixed prefix) and the formats Kaeso calls it with, the default first. [Supported providers](../concepts/supported-providers.md) shows the same list as a table.
 
 ## Roles and rights
 

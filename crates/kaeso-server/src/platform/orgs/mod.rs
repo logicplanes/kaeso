@@ -115,6 +115,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::RolesManage), routes!(roles::update)))
         .routes(s.route(Access::Org(R::RolesManage), routes!(roles::delete)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::rights::catalogue)))
+        .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::providers::list)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

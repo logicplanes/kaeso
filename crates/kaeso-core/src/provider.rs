@@ -132,9 +132,17 @@ pub enum AuthStyle {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KeyPage {
+    pub url: &'static str,
+    pub label: &'static str,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Provider {
     pub id: &'static str,
     pub name: &'static str,
+    pub key_page: KeyPage,
+    pub key_prefix: Option<&'static str>,
     pub default_base_url: &'static str,
     pub auth: AuthStyle,
     pub generation: DialectId,
@@ -150,6 +158,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "openai",
         name: "OpenAI",
+        key_page: KeyPage {
+            url: "https://platform.openai.com/api-keys",
+            label: "API keys",
+        },
+        key_prefix: Some("sk-"),
         default_base_url: "https://api.openai.com",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiResponses,
@@ -167,6 +180,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "anthropic",
         name: "Anthropic",
+        key_page: KeyPage {
+            url: "https://platform.claude.com/settings/keys",
+            label: "Settings → API keys",
+        },
+        key_prefix: Some("sk-ant-"),
         default_base_url: "https://api.anthropic.com",
         auth: AuthStyle::XApiKey,
         generation: DialectId::AnthropicMessages,
@@ -180,6 +198,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "deepseek",
         name: "DeepSeek",
+        key_page: KeyPage {
+            url: "https://platform.deepseek.com/api_keys",
+            label: "API keys",
+        },
+        key_prefix: Some("sk-"),
         default_base_url: "https://api.deepseek.com",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
@@ -196,6 +219,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "xai",
         name: "SpaceX",
+        key_page: KeyPage {
+            url: "https://console.x.ai/team/default/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("xai-"),
         default_base_url: "https://api.x.ai",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiResponses,
@@ -209,6 +237,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "togetherai",
         name: "Together AI",
+        key_page: KeyPage {
+            url: "https://api.together.ai/settings/projects/~current/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("tgp_v1_"),
         default_base_url: "https://api.together.ai",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
@@ -223,6 +256,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "groq",
         name: "Groq",
+        key_page: KeyPage {
+            url: "https://console.groq.com/keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("gsk_"),
         default_base_url: "https://api.groq.com/openai",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
@@ -240,6 +278,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "openrouter",
         name: "OpenRouter",
+        key_page: KeyPage {
+            url: "https://openrouter.ai/settings/keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk-or-v1-"),
         default_base_url: "https://openrouter.ai/api",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
@@ -253,6 +296,11 @@ pub const PROVIDERS: &[Provider] = &[
     Provider {
         id: "mistral",
         name: "Mistral",
+        key_page: KeyPage {
+            url: "https://console.mistral.ai/api-keys",
+            label: "API keys",
+        },
+        key_prefix: None,
         default_base_url: "https://api.mistral.ai",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
@@ -502,6 +550,41 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
+    }
+
+    #[test]
+    fn every_provider_has_what_people_see_of_it() {
+        for p in PROVIDERS {
+            assert!(!p.name.is_empty() && p.name.trim() == p.name, "{}", p.id);
+            let page = p
+                .key_page
+                .url
+                .strip_prefix("https://")
+                .unwrap_or_else(|| panic!("{}: the key page is not https", p.id));
+            assert!(
+                page.split('/')
+                    .next()
+                    .is_some_and(|host| host.contains('.')),
+                "{}: {page}",
+                p.id
+            );
+            assert!(
+                !p.key_page.label.is_empty() && p.key_page.label.trim() == p.key_page.label,
+                "{}",
+                p.id
+            );
+            if let Some(prefix) = p.key_prefix {
+                assert!(
+                    !prefix.is_empty() && !prefix.contains(char::is_whitespace),
+                    "{}: {prefix:?}",
+                    p.id
+                );
+            }
+            assert_eq!(p.dialects.first(), Some(&p.generation), "{}", p.id);
+            for d in [p.count_tokens, p.embeddings].into_iter().flatten() {
+                assert!(p.dialects.contains(&d), "{}: {d}", p.id);
+            }
+        }
     }
 
     #[test]

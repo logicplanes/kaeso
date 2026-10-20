@@ -174,13 +174,15 @@ Die Routen sind relativ zu `/platform/v1`. [`openapi.json`](#openapi-dokument) n
 | --- | --- |
 | `auth/*` | Einrichtung beim ersten Start, Anmeldemethoden, Anmeldung mit Passwort und zweitem Faktor, Anmeldelinks, Passwort-Reset, Single Sign-on, Sitzungen, Registrierung, wo die Instanz die Adresse zulässt, und Einladungen. `auth/session` liefert den Benutzer, seine Mitgliedschaften mit Rollen und Rechten und ob er Organisationen erstellen darf (`can_create_orgs`). |
 | `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel und Benachrichtigungen, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
-| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Inhaberwechsel, Löschen und Wiederherstellen. |
+| `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem die Anbieter, die Kaeso aufruft, Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Inhaberwechsel, Löschen und Wiederherstellen. |
 | `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder mit ihrem Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits und die Schlüsselrichtlinie. Außerdem der Katalog und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log und der [Playground](#playground). |
 | `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen, der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
 
 Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, auch den Admin selbst; so gelangt ein Instanz-Admin in eine Organisation, um sie zu verwalten. Das Audit-Log der Organisation hält das fest.
 
 Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zurück, mit `POST instance/users/{user}/reset-2fa`. Abrechnungsrouten gibt es nicht: Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
+
+`GET orgs/{org}/providers` braucht `org.view` und listet jeden Anbieter, den Kaeso aufruft, in jeder Organisation gleich. Jeder hat seine ID und seinen Namen, die Seite, auf der Sie seine Schlüssel erstellen (`key_page`), womit seine Schlüssel beginnen (`key_prefix`, `null` ohne festes Präfix) und die Formate, mit denen Kaeso ihn aufruft, das Standardformat zuerst. [Unterstützte Anbieter](../concepts/supported-providers.md) zeigt dieselbe Liste als Tabelle.
 
 ## Rollen und Rechte
 

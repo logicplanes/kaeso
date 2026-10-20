@@ -14050,6 +14050,70 @@
         "x-kaeso-access": "right:usage.view"
       }
     },
+    "/platform/v1/orgs/{org}/providers": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Every model provider Kaeso calls, with its name, key page, key prefix and formats.",
+        "description": "The same list for every organization of the install. A provider key, a\ncatalogue model and a setting name a provider by its `id`.\n\n**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgProviders",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProviderView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      }
+    },
     "/platform/v1/orgs/{org}/restore": {
       "post": {
         "tags": [
@@ -17505,6 +17569,26 @@
         },
         "additionalProperties": false
       },
+      "KeyPageView": {
+        "type": "object",
+        "description": "A page on the provider's own site.",
+        "required": [
+          "url",
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "The page's name as the provider's site shows it, in English.",
+            "example": "API Keys"
+          },
+          "url": {
+            "type": "string",
+            "description": "The page, an `https` URL.",
+            "example": "https://console.groq.com/keys"
+          }
+        }
+      },
       "KeyPolicy": {
         "type": "object",
         "description": "A key lifetime policy.",
@@ -19447,6 +19531,90 @@
                 "org_id": {
                   "$ref": "#/components/schemas/OrgId",
                   "description": "The org."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ProviderView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A model provider Kaeso calls, with what the console shows of it.",
+              "required": [
+                "id",
+                "name",
+                "key_page",
+                "dialects"
+              ],
+              "properties": {
+                "count_tokens": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The format in which the provider counts tokens for\n`/v1/messages/count_tokens` and `/v1/responses/input_tokens`; `null` when\nit counts none.",
+                  "example": null
+                },
+                "dialects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The formats Kaeso can call the provider with, the default first; a model's\n`egress_dialect` is one of them.",
+                  "example": [
+                    "openai_chat"
+                  ]
+                },
+                "embeddings": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
+                  "example": null
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ProviderId",
+                  "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
+                },
+                "key_page": {
+                  "$ref": "#/components/schemas/KeyPageView",
+                  "description": "The provider's page for creating API keys."
+                },
+                "key_prefix": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
+                  "example": "gsk_"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name people see.",
+                  "example": "Groq"
                 }
               }
             },
@@ -21830,6 +21998,65 @@
           "openai"
         ],
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "ProviderView": {
+        "type": "object",
+        "description": "A model provider Kaeso calls, with what the console shows of it.",
+        "required": [
+          "id",
+          "name",
+          "key_page",
+          "dialects"
+        ],
+        "properties": {
+          "count_tokens": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The format in which the provider counts tokens for\n`/v1/messages/count_tokens` and `/v1/responses/input_tokens`; `null` when\nit counts none.",
+            "example": null
+          },
+          "dialects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The formats Kaeso can call the provider with, the default first; a model's\n`egress_dialect` is one of them.",
+            "example": [
+              "openai_chat"
+            ]
+          },
+          "embeddings": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
+            "example": null
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
+          },
+          "key_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The provider's page for creating API keys."
+          },
+          "key_prefix": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
+            "example": "gsk_"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see.",
+            "example": "Groq"
+          }
+        }
       },
       "ReleaseArtView": {
         "type": "object",
