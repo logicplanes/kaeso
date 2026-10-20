@@ -95,6 +95,29 @@ describe.each(["Europe/Berlin", "America/Los_Angeles", "Asia/Tokyo", "UTC"])("in
   });
 });
 
+describe("points at equal steps", () => {
+  it("spaces months evenly, however long each month is, and finds the one under the pointer", () => {
+    const times = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2026, i, 1)));
+    const { container } = render(
+      <TimeseriesChart
+        aria-label="Requests"
+        timeZone="UTC"
+        tickAt="points"
+        formatTick={(d) => String(d.getUTCMonth() + 1)}
+        formatTime={(d) => `month ${d.getUTCMonth() + 1}`}
+        series={[{ id: "r", label: "Requests", points: times.map((t, i) => ({ t, v: i + 1 })) }]}
+      />,
+    );
+    const xs = [...container.querySelectorAll("svg text[text-anchor=middle]")].map((t) => Number(t.getAttribute("x")));
+    const steps = new Set(xs.slice(1).map((v, i) => Math.round((v - xs[i]!) / 2)));
+    expect(xs.length).toBeGreaterThan(2);
+    expect(steps.size).toBe(1);
+    const slot = (width - 52) / 12;
+    hoverAt(container, slot * 2.9);
+    expect(tooltip(container)).toMatch(/^month 3/);
+  });
+});
+
 describe("the time axis", () => {
   it("keeps at least two evenly fitted labels on a phone", () => {
     process.env.TZ = "Europe/Berlin";
@@ -116,6 +139,21 @@ describe("the time axis", () => {
     expect(labels.length).toBeGreaterThanOrEqual(2);
     expect(labels.every((l) => /^\d{2}:00$/.test(l ?? ""))).toBe(true);
     expect(labels).toContain("06:00");
+  });
+
+  it("skips the hour clocks spring past", () => {
+    const berlin = wallClock("Europe/Berlin");
+    const ticks = zoneTicks(new Date("2026-03-28T22:00:00Z"), new Date("2026-03-29T04:00:00Z"), 6, berlin).map((t) => t.toISOString());
+    expect(new Set(ticks).size).toBe(ticks.length);
+    expect(ticks.map((t) => new Date(berlin(new Date(t))).toISOString().slice(11, 16))).toEqual([
+      "23:00",
+      "00:00",
+      "01:00",
+      "03:00",
+      "04:00",
+      "05:00",
+      "06:00",
+    ]);
   });
 
   it("finds wall-clock times across a daylight saving change", () => {
@@ -157,6 +195,23 @@ describe("partial points and shares", () => {
     expect(tooltip(container)).toMatch(/^Tue, Oct 20, so far/);
     hoverAt(container, 0);
     expect(tooltip(container)).toMatch(/^Wed, Oct 14, partial/);
+  });
+
+  it("dashes every stacked top line to a partial point", () => {
+    const times = utcDays("2026-10-14", 5);
+    const { container } = render(
+      <TimeseriesChart
+        aria-label="Tokens"
+        kind="stacked"
+        timeZone="UTC"
+        partial={{ ongoing: true }}
+        series={[
+          { id: "a", label: "Input", points: times.map((t) => ({ t, v: 5 })) },
+          { id: "b", label: "Output", points: times.map((t) => ({ t, v: 3 })) },
+        ]}
+      />,
+    );
+    expect(container.querySelectorAll("path[data-partial]")).toHaveLength(2);
   });
 
   it("leaves shares out when one series is part of another", () => {

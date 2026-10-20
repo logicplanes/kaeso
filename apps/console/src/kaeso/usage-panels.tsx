@@ -140,7 +140,7 @@ export function bucketNames(days: { day: string }[], { from, to, granularity: g 
   return {
     label: (day: string) => bucketLabel(day, g, withYear),
     axis: (day: string) => bucketAxisLabel(day, g),
-    partial: days.length > 1 ? partialBuckets(from, to, g, utcDay(new Date())) : { first: false, last: false, ongoing: false },
+    partial: partialBuckets(from, to, g, utcDay(new Date())),
   };
 }
 

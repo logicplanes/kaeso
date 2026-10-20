@@ -34,7 +34,11 @@ export function fromWall(wall: number, clock: WallClock): Date {
 }
 
 export function zoneTicks(from: Date, to: Date, count: number, clock: WallClock): Date[] {
-  return utcTicks(new Date(clock(from)), new Date(clock(to)), count).map((w) => fromWall(w.getTime(), clock));
+  return utcTicks(new Date(clock(from)), new Date(clock(to)), count).flatMap((w) => {
+    const d = fromWall(w.getTime(), clock);
+    // A wall time skipped when clocks spring forward has no instant; it would land on the next tick.
+    return clock(d) === w.getTime() ? [d] : [];
+  });
 }
 
 export const wallDay = (d: Date, clock: WallClock) => new Date(clock(d)).toISOString().slice(0, 10);
