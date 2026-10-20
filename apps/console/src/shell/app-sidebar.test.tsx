@@ -92,7 +92,7 @@ describe("the sidebar in a project", () => {
     const nav = await screen.findByRole("navigation", { name: "Console" });
     expect(await within(nav).findByRole("link", { name: "Organization" })).toHaveAttribute("href", "/orgs/org_other");
     release();
-    expect(await notifications().findByText("You don't belong to that organization")).toBeInTheDocument();
+    expect(await notifications().findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
@@ -137,7 +137,7 @@ describe("the sidebar in an organization", () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
     await user.click(await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" }));
-    expect(await screen.findByPlaceholderText("Search pages, actions, keys, models and members")).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText("Search pages, actions, projects, members and keys")).toBeInTheDocument();
   });
 });
 

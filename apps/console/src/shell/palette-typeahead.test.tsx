@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ORG, signedIn } from "~/test/fixtures";
 import { renderApp } from "~/test/render";
 
-const PLACEHOLDER = "Search pages, actions, keys, models and members";
+const PLACEHOLDER = "Search pages, actions, projects, members and keys";
 
 describe("the command palette before it has loaded", () => {
   it("keeps what is typed while it loads, leaves out shortcuts and starts empty the next time", async () => {

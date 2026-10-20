@@ -146,6 +146,7 @@
   "logs.range.month": "最近 30 天",
   "logs.range.week": "最近 7 天",
   "logs.reasoning.signedBytes": "{count} 字节的服务商签名数据，不可读取。",
+  "logs.recentDetail": "{project}，{time}",
   "logs.role.assistant": "助手",
   "logs.role.developer": "开发者",
   "logs.role.system": "系统",

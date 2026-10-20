@@ -8,6 +8,7 @@ export interface RecentEntity {
   id: string;
   label: string;
   href: string;
+  detail?: string | undefined;
 }
 
 export const RECENT_KEY = "kaeso:recent";
@@ -45,7 +46,8 @@ export function useRememberRecent(entity: RecentEntity | null): void {
   const id = entity?.id;
   const label = entity?.label;
   const href = entity?.href;
+  const detail = entity?.detail;
   useEffect(() => {
-    if (kind && id && label && href) rememberRecent({ kind, id, label, href });
-  }, [kind, id, label, href]);
+    if (kind && id && label && href) rememberRecent({ kind, id, label, href, ...(detail ? { detail } : {}) });
+  }, [kind, id, label, href, detail]);
 }

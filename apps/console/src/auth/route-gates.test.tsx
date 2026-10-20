@@ -78,7 +78,7 @@ describe("a project page the person can't open", () => {
     signedIn();
     on("GET", "orgs/:org/projects/:project/my-rights", apiError(404, "not_found", "No such project."));
     await renderApp(`/orgs/org_contoso/projects/${PROJECT}/keys`);
-    expect(await (await notifications()).findByText("You don't belong to that organization")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
   });
 
