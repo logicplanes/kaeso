@@ -326,6 +326,7 @@ async fn a_usage_row_postgres_refuses_never_blocks_the_others() {
             .status,
         StatusCode::OK
     );
+    state.in_flight.settled().await;
     state
         .usage
         .add(usage_row(today, Uuid::new_v4(), Uuid::new_v4(), 5));

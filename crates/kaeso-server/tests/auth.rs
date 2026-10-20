@@ -949,16 +949,15 @@ async fn sensitive_account_changes_need_a_recent_sign_in() {
         (confirmed.status, confirmed.body["email"].as_str()),
         (StatusCode::OK, Some("new@example.com"))
     );
-    app.wait_for_mail("owner@example.com", 1).await;
-    assert_eq!(
-        app.mail
-            .to("owner@example.com")
-            .last()
-            .unwrap()
-            .kind
-            .as_str(),
-        "email_changed"
-    );
+    app.wait_for_mail("owner@example.com", 2).await;
+    let mut kinds: Vec<&str> = app
+        .mail
+        .to("owner@example.com")
+        .into_iter()
+        .map(|m| m.kind.as_str())
+        .collect();
+    kinds.sort();
+    assert_eq!(kinds, ["email_change_requested", "email_changed"]);
     assert_eq!(
         sign_in(&app, "new@example.com", PASSWORD).await.status,
         StatusCode::OK
