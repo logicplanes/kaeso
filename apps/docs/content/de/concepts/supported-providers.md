@@ -20,6 +20,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 | Anthropic `anthropic` | Messages, Token-Zählung | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
+| Mistral `mistral` | Chat Completions, Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys), kein festes Präfix |
 | OpenAI `openai` | Responses, Chat Completions, Embeddings, Token-Zählung | `api.openai.com` | [platform.openai.com](https://platform.openai.com/api-keys), `sk-` |
 | OpenRouter `openrouter` | Chat Completions, Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys), `sk-or-v1-` |
 | SpaceX `xai` | Responses, Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai/team/default/api-keys), `xai-` |
@@ -27,7 +28,10 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 
 ## Hinweise
 
-Was Sie über manche Anbieter noch wissen sollten:
+Was Sie über manche Anbieter noch wissen sollten. Die [Anbieterprofile](../development/kpp/openai-chat.md#anbieterprofile) nennen jedes Feld von Chat Completions, das ein Anbieter umbenennt oder ablehnt:
 
+- **DeepSeek.** Erhält `developer`-Nachrichten als `system`-Nachrichten.
+- **Groq.** Erhält `developer`-Nachrichten als `system`-Nachrichten und lehnt manche Felder ab, etwa `logit_bias`.
+- **Mistral.** Erhält manche Felder unter eigenem Namen, etwa `seed` als `random_seed`, und lehnt andere ab, etwa `logit_bias`, ebenso ein Gespräch, das mit einer Assistentennachricht endet.
 - **OpenRouter.** Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`. Rufen Sie sie als `openrouter/anthropic/claude-sonnet-4.5` auf, damit sie nie beim eigenen Anbieter des Herstellers landen ([Wie eine Anfrage ein Modell nennt](../console/models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt)). Kaeso berechnet die Kosten mit den Preisen des Katalogs, nicht mit dem `usage.cost`, das OpenRouter meldet. OpenRouter listet seine Modelle, ohne den Schlüssel zu prüfen, daher erkennt **Verfügbarkeit prüfen** keinen falschen Schlüssel; die erste Anfrage damit meldet den abgelehnten Schlüssel.
 - **SpaceX.** Die API von xAI, mit Modellen wie Grok.

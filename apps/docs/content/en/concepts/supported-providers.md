@@ -20,6 +20,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 | Anthropic `anthropic` | Messages, token counts | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
+| Mistral `mistral` | Chat Completions, Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys), no fixed prefix |
 | OpenAI `openai` | Responses, Chat Completions, Embeddings, token counts | `api.openai.com` | [platform.openai.com](https://platform.openai.com/api-keys), `sk-` |
 | OpenRouter `openrouter` | Chat Completions, Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys), `sk-or-v1-` |
 | SpaceX `xai` | Responses, Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai/team/default/api-keys), `xai-` |
@@ -27,7 +28,10 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 ## Notes
 
-What else to know about some providers:
+What else to know about some providers. [Provider profiles](../development/kpp/openai-chat.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
 
+- **DeepSeek.** Gets `developer` messages as `system` messages.
+- **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.
+- **Mistral.** Gets some fields under its own names, such as `seed` as `random_seed`, and refuses others, such as `logit_bias`, and a conversation that ends with an assistant message.
 - **OpenRouter.** Model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`. Call them as `openrouter/anthropic/claude-sonnet-4.5`, so they never reach the maker's own provider ([how a request names a model](../console/models-and-aliases.md#how-a-request-names-a-model)). Kaeso records costs at the catalogue's prices, not at the `usage.cost` OpenRouter reports. OpenRouter lists its models without checking the key, so **Check availability** can't spot a wrong key; the first request with it reports the refused key.
 - **SpaceX.** xAI's API, with models such as Grok.
