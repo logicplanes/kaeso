@@ -33,9 +33,12 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 
 - Nur Adressen unter den E-Mail-Domains der Verbindung. Jede Domain gehört auf einer Installation zu einer Organisation.
 - Nur Adressen, die der Anbieter nicht als unbestätigt kennzeichnet.
-- Wer neu bei Kaeso ist, tritt der Organisation mit einer Einladung an seine Adresse bei oder mit der Rolle, die die Verbindung Personen ohne Einladung gibt. Ohne beides erhält er keinen Zugang.
-- Ein bestehendes Konto meldet sich über Single Sign-on nur dort an, wo es bereits Mitglied ist. Um eine Einladung anzunehmen, meldet es sich zuerst auf anderem Weg an.
+- Wer neu bei Kaeso ist, tritt der Organisation mit einer Einladung an seine Adresse bei oder mit der Rolle, die die Verbindung Personen ohne Einladung gibt. Ohne beides erhält er keinen Zugang. Kaeso legt das Konto auch an, wo die [Einstellung zur Kontoerstellung](../console/instance-administration.md#installationseinstellungen-ändern) keine Registrierungen erlaubt, denn der Anbieter der Organisation bürgt für die Person.
+- Kaeso verknüpft jedes Konto mit seiner Identität beim Anbieter, dem Aussteller und dem Subjekt des Anbieters. Spätere Anmeldungen folgen dieser Verknüpfung, nicht der E-Mail-Adresse.
+- Ein bestehendes Konto meldet sich über Single Sign-on erst an, wenn seine Inhaberin oder sein Inhaber es nach einer Anmeldung auf anderem Weg unter **Konto** › **Sicherheit** verknüpft ([Single Sign-on verknüpfen](../console/account.md#single-sign-on-verknüpfen)), und nur dort, wo es Mitglied ist. Um eine Einladung anzunehmen, meldet es sich zuerst auf anderem Weg an.
 - Eine Adresse unter einer anderen Domain, etwa der eines öffentlichen Mail-Anbieters, kann sich nicht über den Anbieter der Organisation anmelden, auch nicht mit Einladung.
+
+Eine Anmeldung über den Anbieter einer Organisation öffnet nur diese Organisation und liest das eigene Konto der Person. Andere Organisationen, die Verwaltung der Instanz und Änderungen an E-Mail, Passwort und Zwei-Faktor-Authentifizierung des Kontos brauchen eine weitere Anmeldung ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
 
 Fügen Sie der Verbindung nicht die Domain eines öffentlichen Mail-Anbieters hinzu, um solche Personen hereinzulassen. Sonst würde sich jede Adresse unter dieser Domain über Ihren Anbieter anmelden, und keine andere Organisation könnte die Domain nutzen.
 
@@ -53,7 +56,10 @@ services:
 
 1. Geben Sie dem ersten Admin eine Adresse unter einer Domain, die der Identitätsanbieter abdecken wird, damit er sich später darüber anmelden kann.
 2. Öffnen Sie den Einrichtungslink. Die Einrichtungsseite fragt nach keinem Passwort und öffnet danach die Seite **Sicherheit** der Organisation.
-3. Verbinden Sie den Identitätsanbieter in derselben Sitzung und melden Sie sich einmal darüber an, um zu prüfen, dass es funktioniert.
+3. Verbinden Sie den Identitätsanbieter in derselben Sitzung.
+4. Wählen Sie unter **Konto** › **Sicherheit** die Option **Verknüpfen** neben der Organisation und melden Sie sich beim Anbieter an. Das verknüpft Ihr Konto und prüft, dass die Verbindung funktioniert.
+
+Eine Anmeldung über Single Sign-on verwaltet die Instanz nicht. Für die Verwaltung der Instanz melden Sie sich mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
 
 > [!IMPORTANT]
 > Lassen Sie **Single Sign-on verlangen** ausgeschaltet, bis die Verbindung funktioniert. Auf einer Installation ohne Passwörter bringt es nichts, und es lehnt jede andere Sitzung ab, auch eine über den Anmeldelink eines Betreibers.
@@ -66,7 +72,7 @@ Wenn kein Weg hinein funktioniert, geben Sie auf dem Server einen einmaligen Anm
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 
-Der Link funktioniert einmal, innerhalb von 15 Minuten, auch wenn Anmeldelinks per E-Mail abgeschaltet sind; Passwörter müssen Sie also nie wieder einschalten. Wer den Link hat, kann sich als diese Person anmelden. Kaeso gibt ihn nur in Ihrem Terminal aus, protokolliert oder sendet ihn nie, und das Audit-Log hält ihn als `user.sign_in_link` fest. Ein deaktiviertes Konto erhält erst einen Link, wenn Sie es wieder aktivieren.
+Der Link funktioniert einmal, innerhalb von 15 Minuten, auch wenn Anmeldelinks per E-Mail abgeschaltet sind; Passwörter müssen Sie also nie wieder einschalten. Wer den Link hat, kann sich als diese Person anmelden. Kaeso gibt ihn nur in Ihrem Terminal aus, protokolliert oder sendet ihn nie, und das Audit-Log hält ihn als `user.sign_in_link` fest. Ein deaktiviertes Konto erhält erst einen Link, wenn Sie es wieder aktivieren. Bei eingeschalteter Zwei-Faktor-Authentifizierung fragt auch der Link nach einem Code; hat die Person ihren Authenticator verloren, entfernt `kaeso user reset-2fa` sie zuerst.
 
 ## Nächste Schritte
 

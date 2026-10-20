@@ -46,8 +46,13 @@ pub(super) fn item_scope(i: usize) -> String {
     format!("@out{i}")
 }
 
-pub(super) fn decode_usage(raw: &RawValue, origin: &Origin) -> Option<Usage> {
-    let w: wire::UsageWire = serde_json::from_str(raw.get()).ok()?;
+pub(super) fn decode_usage(raw: &RawValue, origin: &Origin) -> Result<Usage, KppError> {
+    let w: wire::UsageWire = serde_json::from_str(raw.get()).map_err(|e| {
+        KppError::provider(format!(
+            "The provider sent an OpenAI Responses usage object that Kaeso cannot read: {}.",
+            crate::wire::without_position(&e)
+        ))
+    })?;
     let cached = w
         .input_tokens_details
         .as_ref()
@@ -70,7 +75,7 @@ pub(super) fn decode_usage(raw: &RawValue, origin: &Origin) -> Option<Usage> {
     usage.raw = serde_json::from_str::<Value>(raw.get())
         .ok()
         .map(|v| RawUsage::new(origin.clone(), v));
-    Some(usage)
+    Ok(usage)
 }
 
 pub(super) fn usage_node(u: &Usage) -> Node {
@@ -348,11 +353,10 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
             .insert(MESSAGES.to_owned(), Value::Array(ranges));
         extras.form.insert(BLOCKS.to_owned(), blocks.len().into());
     }
-    let usage = w
-        .usage
-        .as_deref()
-        .and_then(|u| decode_usage(u, origin))
-        .unwrap_or_default();
+    let usage = match w.usage.as_deref() {
+        Some(u) => decode_usage(u, origin).map_err(Decoded::Failed)?,
+        None => Usage::default(),
+    };
     let mut resp = Response::new(w.id.clone(), w.model.clone(), blocks);
     resp.stop = stop;
     resp.usage = usage;

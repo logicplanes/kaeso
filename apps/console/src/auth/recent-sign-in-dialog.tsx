@@ -4,7 +4,7 @@ import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kae
 import { toastApiError } from "~/api/toast-error";
 import { meQuery } from "~/api/queries/me";
 import { t } from "~/i18n";
-import { settleRecentSignIn } from "./recent-sign-in-store";
+import { settleRecentSignIn, signInAgainKind } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
 import { here, sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso } from "./sign-in-api";
 
@@ -29,6 +29,7 @@ export function waysToSignIn(options: {
 }
 
 export default function RecentSignInDialog() {
+  const [withoutSso] = useState(() => signInAgainKind() === "without-sso");
   const session = useSession();
   const me = useQuery(meQuery);
   const queryClient = useQueryClient();
@@ -42,8 +43,8 @@ export default function RecentSignInDialog() {
   const ways = waysToSignIn({
     email,
     hasPassword: me.data?.has_password ?? false,
-    ssoSession: session.session.method === "oidc",
-    methods: methods.data,
+    ssoSession: !withoutSso && session.session.method === "oidc",
+    methods: withoutSso && methods.data ? { ...methods.data, sso: false, sso_required: false } : methods.data,
   });
   const hasPassword = ways.primary === "password";
 
@@ -120,8 +121,12 @@ export default function RecentSignInDialog() {
       open
       onOpenChange={(o) => !o && cancel()}
       size="sm"
-      title={t("auth.recent.title", "Sign in again to continue")}
-      description={t("auth.recent.description", "This action needs a sign-in from the last 15 minutes.")}
+      title={withoutSso ? t("auth.other.title", "Sign in another way") : t("auth.recent.title", "Sign in again to continue")}
+      description={
+        withoutSso
+          ? t("auth.other.description", "You signed in with SSO; this needs your password or an email link.")
+          : t("auth.recent.description", "This action needs a sign-in from the last 15 minutes.")
+      }
       onSubmit={step.kind === "password" && !loading && hasPassword ? submitPassword : step.kind === "totp" ? () => submitCode(step) : undefined}
       footer={footer}
     >

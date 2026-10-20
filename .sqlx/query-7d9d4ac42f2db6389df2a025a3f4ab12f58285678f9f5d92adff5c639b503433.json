@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO sso_identities (org_id, user_id, issuer, subject, linked_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (org_id, user_id) DO UPDATE SET issuer = $3, subject = $4, linked_at = $5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7d9d4ac42f2db6389df2a025a3f4ab12f58285678f9f5d92adff5c639b503433"
+}

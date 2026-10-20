@@ -114,13 +114,15 @@ Kaeso charges such a request, and a stream that broke off, what the provider rep
 
 A request that isn't streamed is charged its input, estimated from its size, once Kaeso has sent it to the provider.
 
-These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning that the provider doesn't stream.
+A reply or stream that finished without any usage from the provider, which some OpenAI-compatible providers leave out, is estimated the same way, with the output from the whole reply.
+
+These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning that the provider doesn't stream. The metric `kaeso_usage_estimates_total` counts them by provider and reason ([health and metrics](../self-hosting/monitoring.md)).
 
 ## Shutdown
 
 On a shutdown signal, the gateway takes no new connections. Open requests and streams get `KAESO_SHUTDOWN_GRACE`, 30 seconds by default, to finish.
 
-A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead. Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage.
+A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead. Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage. A second later, Kaeso closes the connections that are still open.
 
 ## Usage and logs
 

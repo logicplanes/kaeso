@@ -7,7 +7,7 @@ use kaeso_store::pg::{instance, members, users};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::platform::access::Ctx;
+use crate::platform::access::{Ctx, from_sso};
 use crate::platform::auth::setup::validate_name;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
@@ -175,6 +175,10 @@ pub async fn leave(
 ) -> ApiResult<StatusCode> {
     let me = ctx.user_id()?;
     let org: OrgId = org.parse().map_err(|_| ApiError::not_found("membership"))?;
+    let session = ctx.session()?;
+    if from_sso(session) && session.oidc_org_id != Some(org.uuid()) {
+        return Err(ApiError::OtherSignInRequired);
+    }
     let membership = members::get_org(&state.pg, org.uuid(), me.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("membership"))?;

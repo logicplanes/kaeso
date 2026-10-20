@@ -50,7 +50,7 @@ Der Router teilt die Routen auf (`autoCodeSplitting`), sodass der Code einer Sei
 
 Was das erste Zeichnen nicht braucht, lädt bei Gebrauch: der Toaster, die Befehlspalette, der Dialog für eine erneute Anmeldung, die Liste der Tastenkürzel, „Organisation erstellen“, die Menüs der Seitenleiste, Tooltips und der Kalender der Datumsauswahl. Die Menüs der Seitenleiste und der Kalender laden außerdem, sobald die Seite untätig ist, damit sie sich beim ersten Klick sofort öffnen. Aufschlüsselung, Kostenanteil und Zeitraumauswahl der Projekt- und Organisationsübersicht sowie die Anmeldeschritte nach der E-Mail-Adresse laden zusammen mit den Daten, auf die sie warten. Das Anfrageprotokoll, das Audit-Log eines Projekts und die Übersicht eines Projekts starten ihre Daten im Loader der Route, aus einem eigenen Modul (`src/api/queries/route-prefetch.ts`), das nur diese Routen laden.
 
-`pnpm build` schlägt fehl, wenn das erste Zeichnen einer Route ihre Obergrenze in `scripts/budget.mjs` überschreitet oder Seitencode aus `src/features` in den Einstiegspunkt gerät. Es misst jeden Chunk mit Nullen statt der Hashes in den Chunk-Namen, damit sich eine Größe mit dem Code ändert, nicht mit den Namen. So kommen Sie wieder darunter:
+`pnpm build` schlägt fehl, wenn das erste Zeichnen einer Route ihre Obergrenze in `scripts/budget.mjs` überschreitet oder Seitencode aus `src/features` in den Einstiegspunkt gerät. So kommen Sie wieder darunter:
 
 - Importieren Sie in eine Routendatei nur Typen aus ihrer Seite. Der Routenbaum steckt im Einstiegspunkt, ein Wert-Import zieht die Seite also in jede Seite.
 - Geben Sie Code, den der Einstiegspunkt importiert, den aber erst spätere Seiten nutzen, ein eigenes Modul.

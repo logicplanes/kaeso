@@ -26,6 +26,15 @@ async fn postgres_migrations_are_idempotent_and_refuse_newer_databases() {
 }
 
 #[tokio::test]
+async fn migrating_an_unreachable_postgres_is_an_outage_to_retry() {
+    let url = secrecy::SecretString::from("postgres://kaeso:kaeso@127.0.0.1:1/kaeso");
+    let pool = kaeso_store::pg::connect(&url, 1).unwrap();
+    let err = kaeso_store::pg::migrate(&pool).await.unwrap_err();
+    assert!(matches!(err, StoreError::Postgres(_)), "{err:?}");
+    assert!(err.is_unavailable(), "{err:?}");
+}
+
+#[tokio::test]
 async fn provider_columns_accept_exactly_the_provider_id_rule() {
     let s = TestServices::start().await;
     kaeso_store::pg::migrate(&s.pg).await.unwrap();

@@ -54,8 +54,15 @@ impl Batch {
     }
 
     pub fn take(&self) -> Vec<UsageRow> {
-        let mut rows = self.rows.lock().unwrap_or_else(PoisonError::into_inner);
-        rows.drain().map(|(_, r)| r).collect()
+        let mut rows: Vec<UsageRow> = self
+            .rows
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .drain()
+            .map(|(_, r)| r)
+            .collect();
+        rows.sort_by(|a, b| unique_key(a).cmp(&unique_key(b)));
+        rows
     }
 
     pub fn restore(&self, rows: Vec<UsageRow>) {
@@ -95,6 +102,28 @@ impl Batch {
     }
 }
 
+fn unique_key(
+    r: &UsageRow,
+) -> (
+    Uuid,
+    Date,
+    Option<Uuid>,
+    Option<Uuid>,
+    Option<Uuid>,
+    &str,
+    &str,
+) {
+    (
+        r.project_id,
+        r.day,
+        r.api_key_id,
+        r.user_id,
+        r.service_account_id,
+        &r.provider,
+        &r.model_id,
+    )
+}
+
 fn merge(into: &mut UsageRow, add: &UsageRow) {
     into.requests = into.requests.saturating_add(add.requests);
     into.errors = into.errors.saturating_add(add.errors);
@@ -125,7 +154,7 @@ pub async fn flush(state: &AppState) -> Result<usize, StoreError> {
     let n = rows.len();
     match store::add_usage(&state.pg, &rows).await {
         Ok(()) => Ok(n),
-        Err(e) if e.is_unavailable() => {
+        Err(e) if e.is_unavailable() || e.is_conflict() => {
             state.usage.restore(rows);
             Err(e)
         }
@@ -391,6 +420,56 @@ async fn key_owner(
 mod tests {
 
     use super::*;
+
+    fn row(project: u128, day: u8, model: &str) -> UsageRow {
+        UsageRow {
+            day: Date::from_calendar_date(2026, time::Month::October, day).unwrap(),
+            org_id: Uuid::nil(),
+            project_id: Uuid::from_u128(project),
+            user_id: None,
+            service_account_id: None,
+            api_key_id: None,
+            catalogue_model_id: None,
+            model_id: model.into(),
+            provider: "anthropic".into(),
+            requests: 1,
+            errors: 0,
+            input_tokens: 1,
+            output_tokens: 1,
+            cache_read_tokens: 0,
+            cache_write_tokens: 0,
+            reasoning_tokens: 0,
+            cost: Decimal::ZERO,
+        }
+    }
+
+    #[test]
+    fn batches_are_written_in_the_order_of_their_unique_key() {
+        let batch = Batch::default();
+        for (p, d, m) in [
+            (2, 1, "b"),
+            (1, 2, "a"),
+            (2, 1, "a"),
+            (1, 1, "z"),
+            (1, 2, "a"),
+        ] {
+            batch.add(row(p, d, m));
+        }
+        let taken: Vec<(u128, u8, String, i64)> = batch
+            .take()
+            .into_iter()
+            .map(|r| (r.project_id.as_u128(), r.day.day(), r.model_id, r.requests))
+            .collect();
+        assert_eq!(
+            taken,
+            [
+                (1, 1, "z".into(), 1),
+                (1, 2, "a".into(), 2),
+                (2, 1, "a".into(), 1),
+                (2, 1, "b".into(), 1)
+            ]
+        );
+    }
 
     #[test]
     fn budget_alerts_describe_limits_as_they_always_did() {

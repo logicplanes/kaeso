@@ -79,7 +79,7 @@ pub async fn use_step(
     let done = sqlx::query!(
         "UPDATE user_totp SET last_used_step = $2, enabled_at = COALESCE(enabled_at, $3), updated_at = now() \
          WHERE user_id = $1 AND (last_used_step IS NULL OR last_used_step < $2) \
-         AND (enabled_at IS NOT NULL OR $3::timestamptz IS NOT NULL)",
+         AND (enabled_at IS NULL) = ($3::timestamptz IS NOT NULL)",
         user_id,
         step,
         confirm

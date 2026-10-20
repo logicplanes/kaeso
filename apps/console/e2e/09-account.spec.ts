@@ -51,7 +51,8 @@ test("profile, notifications, sessions and memberships", async ({ page }) => {
 });
 
 test("two-factor authentication: a setup cancelled half-way starts again with a new key and an empty code", async ({ page }) => {
-  await signInAsOwner(page);
+  await signInWithPassword(page, OWNER.email, NEW_PASSWORD);
+  await expectSignedIn(page);
   await page.goto("/settings/account/security");
   const setUp = page.getByRole("button", { name: "Set up" });
   const dialog = page.getByRole("dialog", { name: "Set up two-factor authentication" });
@@ -77,7 +78,8 @@ test("two-factor authentication: a setup cancelled half-way starts again with a 
 });
 
 test("two-factor authentication: set up with the QR code's key, sign in with a code and a recovery code, then off", async ({ page, browser }) => {
-  await signInAsOwner(page);
+  await signInWithPassword(page, OWNER.email, NEW_PASSWORD);
+  await expectSignedIn(page);
   await page.goto("/settings/account/security");
   await page.getByRole("button", { name: "Set up" }).click();
   const dialog = page.getByRole("dialog", { name: "Set up two-factor authentication" });
@@ -90,7 +92,9 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
   const codes = page.getByRole("dialog", { name: "Store your recovery codes" });
   await expect(codes).toBeVisible();
   await expect(codes.getByRole("button", { name: "Done" })).toBeDisabled();
-  const recovery = (await codes.locator("pre").first().innerText()).trim().split(/\s+/)[0] ?? "";
+  const recoveryCodes = (await codes.locator("pre").first().innerText()).trim().split(/\s+/);
+  const recovery = recoveryCodes[0] ?? "";
+  const spare = recoveryCodes[1] ?? "";
   expect(recovery).toMatch(/^[a-z0-9]{4,}(-[a-z0-9]{4,})*$/i);
   await codes.getByRole("checkbox", { name: "I stored these codes" }).click();
   await codes.getByRole("button", { name: "Done" }).click();
@@ -119,7 +123,10 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
   await expect(page.getByText("9 of 10 left", { exact: false })).toBeVisible();
 
   await page.getByRole("button", { name: "Turn off" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Turn off" }).click();
+  const off = page.getByRole("dialog", { name: "Turn off two-factor authentication?" });
+  await off.getByRole("link", { name: "Use a recovery code" }).click();
+  await off.getByLabel("Recovery code").fill(spare);
+  await off.getByRole("button", { name: "Turn off" }).click();
   await expect(page.getByText("Two-factor authentication turned off")).toBeVisible();
   ownerTwoFactorMayBeOn = false;
   await expect(page.getByRole("button", { name: "Set up" })).toBeVisible();

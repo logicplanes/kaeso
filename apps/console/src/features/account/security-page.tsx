@@ -22,8 +22,13 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
-import { meQuery } from "~/api/queries/me";
+import { meQuery, ssoLinksQuery } from "~/api/queries/me";
+import { takeFragment } from "~/auth/fragment";
+import { translateGatewayMessage } from "~/api/errors";
 import { useApiMutation } from "~/auth/mutation";
+import { isApiError } from "~/api/errors";
+import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
+import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk } from "~/features/public/form";
@@ -43,6 +48,7 @@ export function SecurityPage() {
         <>
           <PasswordSection hasPassword={m.has_password} />
           <TwoFactorSection enabled={m.totp_enabled} codesLeft={m.recovery_codes_left} />
+          <SingleSignOnSection />
         </>
       )}
     </SettingsPage>
@@ -148,17 +154,6 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const off = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/me/totp");
-    },
-    invalidates: [["me"], ["session"]],
-    onSuccess: () => {
-      setTurningOff(false);
-      toast(t("account.twoFactorTurnedOff", "Two-factor authentication turned off"));
-    },
-    onError: () => setTurningOff(false),
-  });
   const regenerate = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/me/recovery-codes")),
     invalidates: [["me"]],
@@ -170,7 +165,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   return (
     <SettingsSection
       title={t("account.twoFactor", "Two-factor authentication")}
-      description={t("account.twoFactorHint", "An authenticator code at every password sign-in; sign-in links need none.")}
+      description={t("account.twoFactorHint", "An authenticator code at every password sign-in and sign-in link.")}
     >
       <SettingsGroup>
         {enabled ? (
@@ -197,7 +192,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
         ) : (
           <SettingsRow
             title={t("account.authenticatorApp", "Authenticator app")}
-            description={t("account.authenticatorOff", "Off; password sign-ins need only the password.")}
+            description={t("account.authenticatorOff", "Off; signing in needs only the password or a sign-in link.")}
             control={
               <Button size="sm" variant="primary" onClick={() => setTwoFactor({ open: true, codes: null })}>
                 {t("account.setUp", "Set up")}
@@ -217,16 +212,9 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
           }}
         />
       </DialogScope>
-      <AlertDialog
-        open={turningOff}
-        onOpenChange={setTurningOff}
-        tone="danger"
-        title={t("account.turnOffConfirm", "Turn off two-factor authentication?")}
-        description={t("account.turnOffConfirmHint", "Password sign-ins need only the password; organizations that require it close to you.")}
-        confirmLabel={t("account.turnOff", "Turn off")}
-        loading={off.isPending}
-        onConfirm={() => off.mutateAsync()}
-      />
+      <DialogScope open={turningOff}>
+        <TurnOffDialog open={turningOff} onOpenChange={setTurningOff} />
+      </DialogScope>
       <AlertDialog
         open={regenerating}
         onOpenChange={setRegenerating}
@@ -239,6 +227,56 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
       />
     </SettingsSection>
   );
+}
+
+function TurnOffDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [factor, setFactor] = useState<SecondFactorValue>(NO_SECOND_FACTOR);
+  const off = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me/totp", { body: secondFactorBody(factor) });
+    },
+    invalidates: [["me"], ["session"]],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("account.twoFactorTurnedOff", "Two-factor authentication turned off"));
+    },
+    onError: () => setFactor((f) => ({ ...f, code: "" })),
+  });
+  const turnOff = () => secondFactorReady(factor) && !off.isPending && off.mutate();
+  return (
+    <Dialog
+      busy={off.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
+      size="sm"
+      title={t("account.turnOffConfirm", "Turn off two-factor authentication?")}
+      description={t("account.turnOffConfirmHint", "Signing in needs only the password or a sign-in link; organizations that require it close to you.")}
+      onSubmit={turnOff}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button variant="danger" disabled={!secondFactorReady(factor)} loading={off.isPending} onClick={turnOff}>
+            {t("account.turnOff", "Turn off")}
+          </Button>
+        </>
+      }
+    >
+      <SecondFactorField value={factor} onChange={setFactor} error={fieldError(off.error, "code")} />
+    </Dialog>
+  );
+}
+
+async function beginTotp() {
+  try {
+    return data(await api.POST("/platform/v1/me/totp"));
+  } catch (error) {
+    if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) {
+      return data(await api.POST("/platform/v1/me/totp"));
+    }
+    throw error;
+  }
 }
 
 function TwoFactorDialog({
@@ -255,7 +293,7 @@ function TwoFactorDialog({
   const [codes, setCodes] = useState(initialCodes);
   const start = useQuery({
     queryKey: ["totp-setup"],
-    queryFn: async () => data(await api.POST("/platform/v1/me/totp")),
+    queryFn: beginTotp,
     staleTime: Infinity,
     gcTime: 0,
     retry: false,
@@ -365,5 +403,83 @@ function TwoFactorDialog({
         </Field>
       </div>
     </Dialog>
+  );
+}
+
+const LINKED_PAGE = "/settings/account/security";
+
+function SingleSignOnSection() {
+  const links = useQuery(ssoLinksQuery);
+  const [failed] = useState(() => takeFragment("sso_error"));
+  const [unlinking, setUnlinking] = useState(false);
+  const [target, setTarget] = useState({ org_id: "", org_name: "" });
+  useEffect(() => {
+    if (failed) void translateGatewayMessage(failed).then((message) => toast.error(message, { id: "sso-link-error" }));
+  }, [failed]);
+  const link = useApiMutation({
+    mutationFn: async (org: string) => data(await api.POST("/platform/v1/me/sso-links", { body: { org, next: LINKED_PAGE } })),
+    onSuccess: (r) => window.location.assign(r.authorization_url),
+  });
+  const unlink = useApiMutation({
+    mutationFn: async (org: string) => {
+      await api.DELETE("/platform/v1/me/sso-links/{org}", { params: { path: { org } } });
+    },
+    invalidates: [ssoLinksQuery.queryKey],
+    onSuccess: () => {
+      setUnlinking(false);
+      toast(t("account.ssoUnlinked", "Unlinked from single sign-on"));
+    },
+    onError: () => setUnlinking(false),
+  });
+  const rows = links.data?.data ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <SettingsSection
+      title={t("account.sso", "Single sign-on")}
+      description={t("account.ssoHint", "Only a linked account signs in through an organization's identity provider.")}
+    >
+      <SettingsGroup>
+        {rows.map((r) => (
+          <SettingsRow
+            key={r.org_id}
+            title={r.org_name}
+            description={
+              r.linked
+                ? t("account.ssoLinked", "Linked; you can sign in through {provider}.", { provider: r.provider_name ?? t("account.ssoProvider", "its SSO") })
+                : t("account.ssoNotLinked", "Not linked; link it to sign in through {provider}.", {
+                    provider: r.provider_name ?? t("account.ssoProvider", "its SSO"),
+                  })
+            }
+            control={
+              r.linked ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setTarget({ org_id: r.org_id, org_name: r.org_name });
+                    setUnlinking(true);
+                  }}
+                >
+                  {t("account.ssoUnlink", "Unlink")}
+                </Button>
+              ) : (
+                <Button size="sm" loading={link.isPending && link.variables === r.org_id} onClick={() => link.mutate(r.org_id)}>
+                  {t("account.ssoLink", "Link")}
+                </Button>
+              )
+            }
+          />
+        ))}
+      </SettingsGroup>
+      <AlertDialog
+        open={unlinking}
+        onOpenChange={setUnlinking}
+        tone="warning"
+        title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
+        description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in until you link the account again.")}
+        confirmLabel={t("account.ssoUnlink", "Unlink")}
+        loading={unlink.isPending}
+        onConfirm={() => unlink.mutateAsync(target.org_id)}
+      />
+    </SettingsSection>
   );
 }

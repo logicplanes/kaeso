@@ -1034,7 +1034,8 @@ async fn required_two_factor_and_sso_show_in_the_session() {
         .unwrap();
     assert_eq!(
         app.get("/auth/session", &magic).await.body["memberships"][0]["access"],
-        "ok"
+        "needs_2fa",
+        "a sign-in link is no second factor"
     );
     sqlx::query("UPDATE organizations SET require_sso = true")
         .execute(&app.state.pg)

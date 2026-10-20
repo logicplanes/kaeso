@@ -63,6 +63,10 @@ pub struct SessionView {
     pub method: String,
     #[doc = "Whether a second factor was used."]
     pub second_factor: bool,
+    #[doc = "The org whose SSO signed this session in; `null` for other ways in.\n\
+        Such a session opens only that org and reads the user's own account;\n\
+        anything else answers `other_sign_in_required`."]
+    pub sso_org: Option<OrgId>,
     #[doc = "When the user last signed in on this session."]
     #[serde(with = "time::serde::rfc3339")]
     pub signed_in_at: OffsetDateTime,

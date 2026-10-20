@@ -46,12 +46,23 @@ export function membership(overrides: Partial<Membership> = {}): Membership {
 }
 
 export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
+  const who = overrides.user ?? user();
+  const sso = overrides.session?.method === "oidc";
   return {
-    user: user(),
+    user: who,
     totp_enabled: false,
-    session: { id: "ses_current", method: "password", second_factor: false, signed_in_at: NOW, last_used_at: NOW, expires_at: "2026-11-14T12:00:00Z" },
+    session: {
+      id: "ses_current",
+      method: "password",
+      second_factor: false,
+      sso_org: null,
+      signed_in_at: NOW,
+      last_used_at: NOW,
+      expires_at: "2026-11-14T12:00:00Z",
+    },
     memberships: [membership()],
     can_create_orgs: true,
+    can_administer_instance: who.is_instance_admin && !sso,
     org_deletion: { allowed: true, grace_days: 7 },
     locale: "auto",
     timezone: "UTC",

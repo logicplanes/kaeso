@@ -11,7 +11,7 @@ use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::resolve::{ResolveError, access_message};
 use kaeso_core::catalogue::{Availability, Effective, capability};
-use kaeso_core::estimate;
+use kaeso_core::estimate::{self, Tally};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
 use kaeso_core::limits::WorstCase;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
@@ -318,6 +318,28 @@ pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
         UpstreamError::TooLarge(_) => "too_large",
         UpstreamError::Client(_) | UpstreamError::Method(_) => "client",
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum EstimateReason {
+    Unreported,
+    Cancelled,
+    Failed,
+}
+
+impl EstimateReason {
+    fn as_str(self) -> &'static str {
+        match self {
+            EstimateReason::Unreported => "unreported",
+            EstimateReason::Cancelled => "cancelled",
+            EstimateReason::Failed => "failed",
+        }
+    }
+}
+
+pub(super) fn count_estimate(reason: EstimateReason, provider: &'static str) {
+    metrics::counter!(crate::metrics::USAGE_ESTIMATES, "reason" => reason.as_str(), "provider" => provider)
+        .increment(1);
 }
 
 pub(super) fn count_upstream_error(kind: &'static str, provider: &'static str) {
@@ -708,6 +730,19 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         availability::record(state, &learnt(Availability::Available)).await;
     }
 
+    let counter = InputCounter {
+        state: state.clone(),
+        credential: credential.clone(),
+        provider,
+        auth: eff.provider.auth,
+        dialect: plan.dialect,
+        asked: (eff.provider.count_tokens == Some(plan.dialect)).then_some((app_req, req)),
+        adaptive_thinking: plan.adaptive_thinking,
+        reasoning: plan.reasoning,
+        timeouts,
+        sent_bytes,
+    };
+
     match resp.body {
         ResponseBody::Stream(chunks) if success => {
             let decoder =
@@ -724,18 +759,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 sent_input: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
-            let counter = InputCounter {
-                state: state.clone(),
-                credential,
-                provider,
-                auth: eff.provider.auth,
-                dialect: plan.dialect,
-                asked: (eff.provider.count_tokens == Some(plan.dialect)).then_some((app_req, req)),
-                adaptive_thinking: plan.adaptive_thinking,
-                reasoning: plan.reasoning,
-                timeouts,
-                sent_bytes,
-            };
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
             let parts = stream::Parts {
                 chunks,
@@ -809,31 +832,21 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let headers = resp.headers;
             let (reply, out) = off_thread(bytes.len(), move || {
                 let reply = dispatch::decode_response(dialect, status, &headers, &bytes, &ectx)?;
-                let out = dispatch::encode_response(ingress, &reply, &encode_ctx)?;
+                let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
             })
             .await
             .and_then(|r| r)
             .map_err(fail(Stage::Reply))?;
+            record_usage(rec, &reply, counter).await;
+            let out = out.map_err(fail(Stage::Reply))?;
             if let Some(key_id) = carry
                 && let Reply::Generate(r) = &reply
             {
                 continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
             }
-            {
-                let o = rec.outcome();
-                match reply {
-                    Reply::Generate(r) => {
-                        o.usage = Some(r.usage.clone());
-                        o.response_model = Some(r.model.clone());
-                        o.reply = Some(r);
-                    }
-                    Reply::Embed(e) => {
-                        o.usage = Some(e.usage);
-                        o.response_model = Some(e.model);
-                    }
-                    _ => {}
-                }
+            if let Reply::Generate(r) = reply {
+                rec.outcome().reply = Some(r);
             }
             let mut resp = Response::new(Body::from(out));
             resp.headers_mut().insert(
@@ -854,4 +867,31 @@ pub(crate) fn declared_key_refusal(
         err.kind = ErrorKind::Authentication;
     }
     err
+}
+
+async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter) {
+    let (usage, model) = match reply {
+        Reply::Generate(r) => (&r.usage, &r.model),
+        Reply::Embed(e) => (&e.usage, &e.model),
+        _ => return,
+    };
+    let o = rec.outcome();
+    o.usage = Some(usage.clone());
+    o.response_model = Some(model.clone());
+    if usage.raw.is_some() {
+        return;
+    }
+    let mut tally = Tally::new();
+    if let Reply::Generate(r) = reply {
+        tally.feed_blocks(&r.blocks);
+    }
+    let input = if usage.total_input_tokens() == 0 {
+        Some(counter.count().await.tokens())
+    } else {
+        None
+    };
+    let o = rec.outcome();
+    o.usage = Some(estimate::complete(usage, &tally, input));
+    o.usage_estimated = true;
+    count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }

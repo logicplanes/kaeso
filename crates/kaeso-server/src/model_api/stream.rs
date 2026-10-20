@@ -16,7 +16,8 @@ const INCOMPLETE: &str = "incomplete";
 use super::hooks::{SHUT_DOWN, STREAM_INTERRUPTED, STREAM_LIMIT, StreamProgress};
 use super::input_count::InputCounter;
 use super::pipeline::{
-    Recording, count_upstream_error, shutting_down, transport_kind, upstream_error,
+    EstimateReason, Recording, count_estimate, count_upstream_error, shutting_down, transport_kind,
+    upstream_error,
 };
 use crate::services::continuity::StreamCarry;
 
@@ -427,9 +428,8 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         })
     };
     app.progress.bytes += tail.len() as u64;
-    let estimate = !assembled.complete
-        && !tally.has_final_usage()
-        && (gone || (broken.is_some() && assembled.response.is_some()));
+    let estimate = !tally.has_final_usage()
+        && (assembled.complete || gone || (broken.is_some() && assembled.response.is_some()));
     let ended = app.arrived.elapsed();
     {
         let o = rec.outcome();
@@ -457,9 +457,17 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         } else {
             None
         };
+        let reason = if gone {
+            EstimateReason::Cancelled
+        } else if broken.is_some() {
+            EstimateReason::Failed
+        } else {
+            EstimateReason::Unreported
+        };
         let o = rec.outcome();
         o.usage = Some(estimate::complete(&reported, &tally, input));
         o.usage_estimated = true;
+        count_estimate(reason, o.provider.unwrap_or_default());
     }
     if gone {
         rec.finish_cancelled().await;

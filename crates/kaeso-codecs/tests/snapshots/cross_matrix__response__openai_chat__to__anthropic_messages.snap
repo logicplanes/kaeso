@@ -1593,5 +1593,27 @@ expression: outcomes
         "thinking_tokens": 0
       }
     }
+  },
+  "without-usage": {
+    "content": [
+      {
+        "text": "Hello! How can I assist you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-3f8a1c2e9b7d4e60",
+    "model": "gpt-6-astra",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
   }
 }
