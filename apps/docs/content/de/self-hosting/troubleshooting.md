@@ -72,7 +72,7 @@ Der Einrichtungslink funktioniert einmal, 24 Stunden lang, und nur, solange die 
 docker compose exec gateway kaeso setup-link
 ```
 
-Ist Kaeso schon eingerichtet, sagt der Befehl das; melden Sie sich dann unter Ihrer Domain an.
+Ist Kaeso schon eingerichtet, sagt der Befehl das, und die Einrichtungsseite meldet, dass Kaeso eingerichtet ist, mit einem Link zur Anmeldung; melden Sie sich dann unter Ihrer Domain an.
 
 ## E-Mails kommen nicht an
 

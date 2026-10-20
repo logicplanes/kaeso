@@ -74,7 +74,7 @@
   "shell.routeError.noAccessTitle": "您无权访问此页面",
   "shell.routeError.start": "前往首页",
   "shell.routeError.title": "此页面未能加载",
-  "shell.routeError.unexpected": "此页面发生意外错误，请刷新重试",
+  "shell.routeError.unexpected": "此页面发生意外错误，请刷新重试。",
   "shell.searchSettings": "搜索设置",
   "shell.settings.appearance": "外观",
   "shell.settings.general": "常规",

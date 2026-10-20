@@ -2,6 +2,8 @@
   "public.acceptInvitation": "接受邀请",
   "public.acceptToJoin": "{target, select, role {接受邀请，加入 {org}（角色：{role}）。} org {接受邀请，加入 {org}。} other {接受邀请，加入此 Kaeso 实例。}}",
   "public.accountExists": "{target, select, role {{email} 已有账户。登录后即可接受邀请，加入 {org}（角色：{role}）。} org {{email} 已有账户。登录后即可接受邀请，加入 {org}。} other {{email} 已有账户。登录后即可接受邀请，加入此 Kaeso 实例。}}",
+  "public.alreadySetUp": "Kaeso 已设置完成",
+  "public.alreadySetUpHint": "请使用您的账户登录；设置链接仅在第一个用户创建之前有效。",
   "public.alreadySignedInAs": "您已经以 {email} 身份登录；此链接会在这里重新登录。",
   "public.backToSignIn": "返回登录",
   "public.byInvitation": "此处仅限受邀注册",

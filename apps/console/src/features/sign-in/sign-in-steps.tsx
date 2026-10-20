@@ -59,7 +59,7 @@ export function ProviderStep({
         </Button>
         {onEmail && (
           <Text variant="small" tone="secondary" className="text-center">
-            <Link href="#" variant="quiet" onClick={(e) => (e.preventDefault(), onEmail())}>
+            <Link href="#" onClick={(e) => (e.preventDefault(), onEmail())}>
               {t("signIn.useEmail", "Sign in with your email instead")}
             </Link>
           </Text>
@@ -74,6 +74,7 @@ export function MethodsStep({
   address,
   methods: m,
   password,
+  passwordError,
   onPasswordChange,
   busy,
   onPassword,
@@ -81,10 +82,12 @@ export function MethodsStep({
   onLink,
   onSignUp,
   onOtherEmail,
+  onForgotPassword,
 }: {
   address: string;
   methods: SignInMethods;
   password: string;
+  passwordError?: string | undefined;
   onPasswordChange: (password: string) => void;
   busy: Busy | null;
   onPassword: () => void;
@@ -92,6 +95,7 @@ export function MethodsStep({
   onLink: () => void;
   onSignUp: () => void;
   onOtherEmail: () => void;
+  onForgotPassword: () => void;
 }) {
   const none = !m.password && !m.magic_link && !m.sso;
   return (
@@ -118,6 +122,7 @@ export function MethodsStep({
               onChange={(e) => onPasswordChange(e.target.value)}
               autoComplete="current-password"
               autoFocus
+              error={passwordError}
             />
             <Button type="submit" variant="primary" size="xl" fullWidth loading={busy === "password"} disabled={!password}>
               {t("signIn.title", "Sign in")}
@@ -132,13 +137,13 @@ export function MethodsStep({
         <Text variant="small" tone="secondary" className="text-center">
           {m.password && (
             <>
-              <Link href="/auth/password-reset" variant="quiet">
+              <Link href="/auth/password-reset" onClick={(e) => (e.preventDefault(), onForgotPassword())}>
                 {t("signIn.forgotPassword", "Forgot your password?")}
               </Link>
               {" · "}
             </>
           )}
-          <Link href="#" variant="quiet" onClick={(e) => (e.preventDefault(), onOtherEmail())}>
+          <Link href="#" onClick={(e) => (e.preventDefault(), onOtherEmail())}>
             {t("signIn.otherEmail", "Use another email")}
           </Link>
         </Text>

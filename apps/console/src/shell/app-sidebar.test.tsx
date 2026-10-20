@@ -1,8 +1,20 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembership, project, signedIn, user as person, whoAmI } from "~/test/fixtures";
+import {
+  ALL_PROJECT_RIGHTS,
+  ORG,
+  OTHER_PROJECT,
+  PROJECT,
+  membership,
+  myMembership,
+  project,
+  signedIn,
+  signedOut,
+  user as person,
+  whoAmI,
+} from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
-import { apiError, on, page, requests } from "~/test/network";
+import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { atFixtureTime } from "~/test/clock";
 
@@ -243,8 +255,9 @@ describe("the organization switcher", () => {
 
   it("goes to the sign-in page when the session had already ended", async () => {
     signedIn();
-    on("POST", "auth/logout", apiError(401, "authentication", "Sign in to continue."));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
+    signedOut();
+    on("POST", "auth/logout", apiError(401, "authentication", "Sign in to continue."));
     await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/sign-in"));
@@ -252,7 +265,10 @@ describe("the organization switcher", () => {
 
   it("forgets the person's recent items and drafts on sign-out and keeps the theme", async () => {
     signedIn();
-    on("POST", "auth/logout", undefined);
+    on("POST", "auth/logout", () => {
+      signedOut();
+      return noContent();
+    });
     window.localStorage.setItem("kaeso:recent", JSON.stringify([{ kind: "key", id: "key_web", label: "checkout-web", href: "/" }]));
     window.localStorage.setItem("kaeso:playground-draft:proj_checkout", "Where is order 4471?");
     window.localStorage.setItem("kaeso:theme", "dark");
@@ -277,7 +293,10 @@ describe("the organization switcher", () => {
 
   it("signs out and goes to the sign-in page", async () => {
     signedIn();
-    on("POST", "auth/logout", undefined);
+    on("POST", "auth/logout", () => {
+      signedOut();
+      return noContent();
+    });
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
     await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));

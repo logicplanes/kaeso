@@ -32,7 +32,7 @@ Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmel
 
 1. Wählen Sie unter **Sicherheit** die Option **Einrichten**.
 2. Scannen Sie den QR-Code mit Ihrer Authenticator-App, oder geben Sie den Einrichtungsschlüssel ein.
-3. Geben Sie den sechsstelligen Code aus der App ein und wählen Sie **Einschalten**.
+3. Geben Sie den 6-stelligen Code aus der App ein und wählen Sie **Einschalten**.
 4. Bewahren Sie die 10 Wiederherstellungscodes auf, die die Konsole einmal zeigt: Kopieren Sie sie oder wählen Sie **.txt herunterladen**. Jeder Code meldet Sie einmal an, statt eines Codes aus der App.
 
 Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung, nachdem Sie einen aktuellen Code oder einen Wiederherstellungscode eingegeben haben. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.

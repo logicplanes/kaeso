@@ -72,7 +72,7 @@ Caddy 无法为 `KAESO_DOMAIN` 获取证书，通常是 DNS 或防火墙的原�
 docker compose exec gateway kaeso setup-link
 ```
 
-如果 Kaeso 已经设置完成，命令会提示这一点；请直接在您的域名上登录。
+如果 Kaeso 已经设置完成，命令会提示这一点，设置页面也会显示 Kaeso 已设置完成并提供登录链接；请直接在您的域名上登录。
 
 ## 收不到邮件
 

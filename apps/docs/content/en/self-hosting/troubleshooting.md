@@ -72,7 +72,7 @@ The setup link works once, for 24 hours, and only while the install has no users
 docker compose exec gateway kaeso setup-link
 ```
 
-If Kaeso is already set up, the command says so; sign in at your domain instead.
+If Kaeso is already set up, the command says so, and the setup page says Kaeso is set up with a link to sign in; sign in at your domain instead.
 
 ## Email doesn't arrive
 

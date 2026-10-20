@@ -142,7 +142,7 @@ export function SignUpVerifyPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
-          description={password ? passwordHint(password) : t("public.passwordOptionalHint", "Leave empty to sign in with a link by email.")}
+          description={passwordHint(password, t("public.passwordOptionalHint", "Leave empty to sign in with a link by email."))}
           error={fieldError(error, "password")}
         />
         <Button type="submit" variant="primary" size="xl" fullWidth loading={busy} disabled={!ready}>

@@ -49,7 +49,15 @@ export const SensitiveInput = forwardRef<HTMLInputElement, SensitiveInputProps>(
       trailing={
         <InputGroup.Button
           icon={revealed ? icons.hide : icons.show}
-          aria-label={revealed ? t("sensitiveInput.hide", "Hide") : t("sensitiveInput.show", "Show")}
+          aria-label={
+            kind === "password"
+              ? revealed
+                ? t("sensitiveInput.hidePassword", "Hide password")
+                : t("sensitiveInput.showPassword", "Show password")
+              : revealed
+                ? t("sensitiveInput.hide", "Hide")
+                : t("sensitiveInput.show", "Show")
+          }
           onClick={() => setRevealed((r) => !r)}
           disabled={props.disabled}
         />

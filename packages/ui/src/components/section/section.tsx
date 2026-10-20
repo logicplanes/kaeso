@@ -58,7 +58,7 @@ export const AuthLayout = forwardRef<
 >(function AuthLayout({ title, description, children, footer, className }, ref) {
   return (
     <div ref={ref} className={cn("relative flex min-h-dvh flex-col items-center bg-panel px-16 py-64 text-fg", className)}>
-      <div className="absolute top-0 left-0 mt-8 flex h-52 items-center px-28">
+      <div className="absolute top-0 left-0 mt-8 flex h-52 items-center px-16 sm:px-28">
         <NavWordmark />
       </div>
       <div className="flex w-full max-w-auth flex-1 flex-col justify-center">

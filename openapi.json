@@ -802,6 +802,65 @@
         "x-kaeso-access": "public"
       }
     },
+    "/platform/v1/auth/password-reset/lookup": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Names the account a reset link sets the password of, without using the\nlink, so the console can show the address and offer it to password managers.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "postAuthPasswordResetLookup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
     "/platform/v1/auth/password-reset/verify": {
       "post": {
         "tags": [
@@ -22171,6 +22230,40 @@
         ],
         "pattern": "^req_[0-9a-hjkmnp-tv-z]{26}$"
       },
+      "ResetAccount": {
+        "type": "object",
+        "description": "The account whose password a reset link sets.",
+        "required": [
+          "email",
+          "expires_at"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The account's email address.",
+            "example": "owner@example.com"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link expires."
+          }
+        }
+      },
+      "ResetLookupRequest": {
+        "type": "object",
+        "description": "The token from a reset link.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The token from `…/auth/password-reset#token=…`.",
+            "writeOnly": true
+          }
+        }
+      },
       "ResetRequest": {
         "type": "object",
         "description": "The address to send a reset link to.",
@@ -23077,7 +23170,8 @@
           "magic_link",
           "sso",
           "sso_required",
-          "sign_up"
+          "sign_up",
+          "set_up"
         ],
         "properties": {
           "magic_link": {
@@ -23098,6 +23192,10 @@
                 "type": "null"
               }
             ]
+          },
+          "set_up": {
+            "type": "boolean",
+            "description": "The install is set up: its first user exists, so a setup link no longer\nworks and people sign in instead."
           },
           "sign_up": {
             "type": "boolean",

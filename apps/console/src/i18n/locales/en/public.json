@@ -2,6 +2,8 @@
   "public.acceptInvitation": "Accept invitation",
   "public.acceptToJoin": "{target, select, role {Accept to join {org} as {role}.} org {Accept to join {org}.} other {Accept to join this Kaeso install.}}",
   "public.accountExists": "{target, select, role {An account with {email} exists. Sign in to accept and join {org} as {role}.} org {An account with {email} exists. Sign in to accept and join {org}.} other {An account with {email} exists. Sign in to accept and join this Kaeso install.}}",
+  "public.alreadySetUp": "Kaeso is set up",
+  "public.alreadySetUpHint": "Sign in with your account; a setup link works only until the first user exists.",
   "public.alreadySignedInAs": "You're already signed in as {email}; the link signs you in again here.",
   "public.backToSignIn": "Back to sign in",
   "public.byInvitation": "Accounts here are by invitation",

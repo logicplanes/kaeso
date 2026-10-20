@@ -1,22 +1,25 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Input, Link, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
-import { api } from "~/api/client";
+import { api, data } from "~/api/client";
+import { isApiError } from "~/api/errors";
 import { takeFragment } from "~/auth/fragment";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
+import { takeResetAddress } from "./reset-address";
 import { t } from "~/i18n";
 
 export function PasswordResetPage() {
   const [token] = useState(() => takeFragment("token"));
-  return token ? <NewPassword token={token} /> : <RequestReset />;
+  return token ? <NewPassword key={token} token={token} /> : <RequestReset />;
 }
 
 function RequestReset() {
   usePageTitle(t("public.resetPassword", "Reset your password"));
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(takeResetAddress);
   const [sent, setSent] = useState<string | null>(null);
   const { busy, error, submit } = useSubmit();
   if (sent) {
@@ -72,7 +75,14 @@ function NewPassword({ token }: { token: string }) {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const { busy, error, submit } = useSubmit();
-  const expired = error?.type === "authentication";
+  const account = useQuery({
+    queryKey: ["password-reset", token],
+    queryFn: async () => data(await api.POST("/platform/v1/auth/password-reset/lookup", { body: { token } })),
+    retry: false,
+    staleTime: Infinity,
+    meta: { quiet: true },
+  });
+  const expired = error?.type === "authentication" || (isApiError(account.error) && account.error.type === "authentication");
   if (expired) {
     return (
       <PublicPage
@@ -101,6 +111,7 @@ function NewPassword({ token }: { token: string }) {
           });
         }}
       >
+        {account.data && <input type="email" name="username" autoComplete="username" value={account.data.email} readOnly hidden />}
         <SensitiveInput
           label={t("public.newPassword", "New password")}
           kind="password"
