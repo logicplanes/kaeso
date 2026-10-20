@@ -139,6 +139,11 @@ describe("DataTable", () => {
       expect(onHidden).toHaveBeenLastCalledWith(expect.arrayContaining(["key", "cost"]));
       expect(onHidden.mock.lastCall?.[0]).not.toContain("model");
     });
+    it("lets the growing column's cell fill its track, for content that adapts to its width", () => {
+      narrow(800);
+      render(<DataTable aria-label="Costs" data={rows} columns={growing} getRowId={(r) => r.id} />);
+      expect(screen.getByText("staging").closest("[role=cell] > span")).toHaveClass("flex-1");
+    });
     it("keeps the selection boxes when columns give way", () => {
       narrow(300);
       render(<DataTable aria-label="Request logs" data={logs} columns={logColumns} getRowId={(r) => r.id} selectable />);

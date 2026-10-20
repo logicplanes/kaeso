@@ -105,6 +105,62 @@ function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption;
   );
 }
 
+function modelItem(o: ModelPickerOption, nameOf: (provider: string) => string, withBadge: boolean): CommandListItem {
+  const model = o.model ?? o.value;
+  const providerLabel = nameOf(o.provider);
+  return {
+    value: o.value,
+    label: o.name ?? model,
+    keywords: [model, providerLabel, o.provider],
+    render: ({ query: q }) => <ModelRow option={o} query={q} {...(withBadge ? { providerLabel } : {})} />,
+    ...(o.disabled ? { disabled: true } : {}),
+  };
+}
+
+function modelGroups(options: ModelPickerOption[], providerOrder: string[], grouped: boolean, nameOf: (provider: string) => string): CommandListGroup[] {
+  if (!grouped) return [{ id: "models", items: options.map((o) => modelItem(o, nameOf, true)) }];
+  return providerOrder.flatMap((id) => {
+    const models = options.filter((o) => o.provider === id);
+    if (!models.length) return [];
+    return [
+      {
+        id: `provider:${id}`,
+        label: nameOf(id),
+        leading: (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={id} name={nameOf(id)} size="sm" />
+          </span>
+        ),
+        count: models.length,
+        items: models.map((o) => modelItem(o, nameOf, false)),
+      },
+    ];
+  });
+}
+
+function useProviderOrder(options: ModelPickerOption[], providers: ModelPickerProvider[]) {
+  const locale = useLocale();
+  const provider = useMemo(() => new Map(providers.map((p) => [p.id, p])), [providers]);
+  const nameOf = useCallback((id: string) => providerName(id, provider.get(id)?.name), [provider]);
+  const providerOrder = useMemo(() => {
+    const ids = [...new Set(options.map((o) => o.provider))];
+    return ids.sort(
+      (a, b) =>
+        Number(!!provider.get(b)?.connected) - Number(!!provider.get(a)?.connected) || nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" }),
+    );
+  }, [options, provider, nameOf, locale]);
+  return { nameOf, providerOrder };
+}
+
+export function useModelGroups(
+  options: ModelPickerOption[],
+  { providers = [], groupByProvider }: { providers?: ModelPickerProvider[] | undefined; groupByProvider?: boolean | undefined } = {},
+): CommandListGroup[] {
+  const { nameOf, providerOrder } = useProviderOrder(options, providers);
+  const grouped = groupByProvider ?? providerOrder.length > 1;
+  return useMemo(() => modelGroups(options, providerOrder, grouped, nameOf), [options, providerOrder, grouped, nameOf]);
+}
+
 export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(function ModelPicker(props, ref) {
   const {
     options,
@@ -130,7 +186,6 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
     layout,
   } = props;
   const t = useUiText();
-  const locale = useLocale();
   const field = useField();
   const fc = useFieldControl(props);
   const [ownOpen, setOwnOpen] = useState(false);
@@ -148,15 +203,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const [showDeprecated, setShowDeprecated] = useState(false);
 
   const byValue = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
-  const provider = useMemo(() => new Map(providers.map((p) => [p.id, p])), [providers]);
-  const nameOf = useCallback((id: string) => providerName(id, provider.get(id)?.name), [provider]);
-  const providerOrder = useMemo(() => {
-    const ids = [...new Set(options.map((o) => o.provider))];
-    return ids.sort(
-      (a, b) =>
-        Number(!!provider.get(b)?.connected) - Number(!!provider.get(a)?.connected) || nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" }),
-    );
-  }, [options, provider, nameOf, locale]);
+  const { nameOf, providerOrder } = useProviderOrder(options, providers);
   const grouped = groupByProvider ?? providerOrder.length > 1;
   const hasDeprecated = options.some((o) => o.deprecated && !chosen.includes(o.value));
 
@@ -164,41 +211,12 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const groups = useMemo<CommandListGroup[]>(() => {
     const kept = new Set(chosenKey.split("\u0000"));
     const visible = (o: ModelPickerOption) => (showDeprecated || !o.deprecated || kept.has(o.value)) && (!only || o.provider === only);
-    const item = (o: ModelPickerOption, withBadge: boolean): CommandListItem => {
-      const model = o.model ?? o.value;
-      const providerLabel = nameOf(o.provider);
-      return {
-        value: o.value,
-        label: o.name ?? model,
-        keywords: [model, providerLabel, o.provider],
-        render: ({ query: q }) => <ModelRow option={o} query={q} {...(withBadge ? { providerLabel } : {})} />,
-        ...(o.disabled ? { disabled: true } : {}),
-      };
-    };
     const out: CommandListGroup[] = [];
     if (allLabel && !only) out.push({ id: "all", items: [{ value: ALL, label: allLabel }] });
-    const recentItems = query.trim() || only ? [] : recent.flatMap((v) => (byValue.get(v) && visible(byValue.get(v)!) ? [item(byValue.get(v)!, true)] : []));
+    const recentItems =
+      query.trim() || only ? [] : recent.flatMap((v) => (byValue.get(v) && visible(byValue.get(v)!) ? [modelItem(byValue.get(v)!, nameOf, true)] : []));
     if (recentItems.length) out.push({ id: "recent", label: t("modelPicker.recent", "Recent"), items: recentItems });
-    if (!grouped) {
-      out.push({ id: "models", items: options.filter(visible).map((o) => item(o, true)) });
-      return out;
-    }
-    for (const id of providerOrder) {
-      const models = options.filter((o) => o.provider === id && visible(o));
-      if (!models.length) continue;
-      out.push({
-        id: `provider:${id}`,
-        label: nameOf(id),
-        leading: (
-          <span aria-hidden className="flex">
-            <ProviderBadge provider={id} name={nameOf(id)} size="sm" />
-          </span>
-        ),
-        count: models.length,
-        items: models.map((o) => item(o, false)),
-      });
-    }
-    return out;
+    return [...out, ...modelGroups(options.filter(visible), providerOrder, grouped, nameOf)];
   }, [options, providerOrder, grouped, recent, byValue, query, only, showDeprecated, chosenKey, allLabel, t, nameOf]);
 
   const pick = (v: string) => {

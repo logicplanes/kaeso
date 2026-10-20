@@ -108,6 +108,8 @@ const de: Readonly<Record<string, string>> = {
   "dialog.back": "Zurück",
   "dialog.close": "Schließen",
   "displayOptions.displayOptions": "Anzeigeoptionen",
+  "displayOptions.doesNotFit": "Passt bei dieser Breite nicht",
+  "displayOptions.hiddenProperties": "{count, plural, one {{properties} passt bei dieser Breite nicht.} other {{properties} passen bei dieser Breite nicht.}}",
   "displayOptions.properties": "Angezeigte Eigenschaften",
   "displayOptions.view": "Ansicht",
   "donut.legend": "Legende",

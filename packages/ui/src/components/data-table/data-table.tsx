@@ -360,7 +360,7 @@ function DataTableInner<T>(
                   {text}
                 </Text>
               ) : (
-                <span className="min-w-0 truncate cell-fit">{content}</span>
+                <span className={cn("min-w-0 truncate cell-fit", meta?.grow && "flex-1")}>{content}</span>
               )}
             </div>
           );

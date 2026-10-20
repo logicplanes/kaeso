@@ -4,7 +4,7 @@ import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Menu } from "../menu/menu.js";
 import { CommandList, type CommandListGroup } from "../command-list/command-list.js";
-import { PickerPopover } from "../command-list/picker-popover.js";
+import { PickerPopover, type PickerPopoverProps } from "../command-list/picker-popover.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 
 export const KAESO_FILTER_CHIP_VARIANTS = {
@@ -66,11 +66,15 @@ export interface FilterChipProps {
   onOperatorChange?: ((operator: string) => void) | undefined;
   value: ReactNode;
   values?: FilterChipChoice[] | undefined;
+  groups?: CommandListGroup[] | undefined;
+  searchable?: boolean | undefined;
+  width?: PickerPopoverProps["width"] | undefined;
   selected?: string[] | undefined;
   multiple?: boolean | undefined;
   onSelectedChange?: ((selected: string[]) => void) | undefined;
   onRemove?: (() => void) | undefined;
   defaultValuesOpen?: boolean | undefined;
+  onValuesOpenChange?: ((open: boolean) => void) | undefined;
   className?: string | undefined;
   "data-force"?: string | undefined;
 }
@@ -89,11 +93,15 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
     onOperatorChange,
     value,
     values,
+    groups: givenGroups,
+    searchable: forceSearch,
+    width,
     selected = [],
     multiple,
     onSelectedChange,
     onRemove,
     defaultValuesOpen,
+    onValuesOpenChange,
     className,
     "data-force": force,
   },
@@ -101,12 +109,17 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
 ) {
   const t = useUiText();
   const locale = useLocale();
-  const [open, setOpen] = useState(!!defaultValuesOpen && !!values?.length);
+  const choices = givenGroups ? givenGroups.reduce((n, g) => n + g.items.length, 0) : (values?.length ?? 0);
+  const [open, setOwnOpen] = useState(!!defaultValuesOpen && choices > 0);
+  const setOpen = (o: boolean) => {
+    setOwnOpen(o);
+    onValuesOpenChange?.(o);
+  };
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement | null>(null);
-  const searchable = (values?.length ?? 0) > SEARCH_ABOVE;
-  const long = (values?.length ?? 0) > LIST_ABOVE;
-  const groups = useMemo(() => (long && values ? choiceGroups(values) : []), [long, values]);
+  const searchable = !!forceSearch || choices > SEARCH_ABOVE;
+  const long = !!givenGroups || choices > LIST_ABOVE;
+  const groups = useMemo(() => givenGroups ?? (long && values ? choiceGroups(values) : []), [givenGroups, long, values]);
   const q = query.trim().toLowerCase();
   const shown = searchable && q ? (values ?? []).filter((v) => textOf(v).toLowerCase().includes(q) || v.value.toLowerCase().includes(q)) : (values ?? []);
   useEffect(() => {
@@ -148,11 +161,12 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           </Menu.Content>
         )}
       </Menu>
-      {long && values ? (
+      {long && (givenGroups || values) ? (
         <PickerPopover
           title={typeof property === "string" ? property : t("filterChip.filter", "Filter")}
           open={open}
           onOpenChange={setOpen}
+          {...(width ? { width } : {})}
           trigger={
             <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")}>
               {value}
@@ -189,7 +203,7 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           }}
         >
           <Menu.Trigger>
-            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={!values?.length}>
+            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={choices === 0}>
               {value}
             </button>
           </Menu.Trigger>

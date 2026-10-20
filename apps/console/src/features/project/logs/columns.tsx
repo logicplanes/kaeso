@@ -1,4 +1,4 @@
-import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col } from "@logicplanes/kaeso-ui";
+import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, VisuallyHidden, col } from "@logicplanes/kaeso-ui";
 import { formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
@@ -45,11 +45,47 @@ export const columnLabel = (id: ColumnId): string =>
     agent: t("logs.column.userAgent", "User agent"),
   })[id];
 const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
-const PHONE_DAY_TIME_WIDTH: Record<Locale, number> = { en: 120, de: 136, "zh-CN": 128 };
+const SHORT_DAY_TIME_WIDTH: Record<Locale, number> = { en: 128, de: 136, "zh-CN": 144 };
+const TIME_WIDTH: Record<Locale, number> = { en: 128, de: 128, "zh-CN": 144 };
+const STACKED_WIDTH = 96;
+const PHONE_TIME_WIDTH = 96;
+const PROVIDER_WIDTH = 144;
+const PROVIDER_MARK_WIDTH = 64;
+const MODEL_WIDTH = 280;
+const NARROW_MODEL_WIDTH = 160;
+const NARROW_BELOW = 800;
 
-function timeWidth(spansDays: boolean, phone: boolean): number {
-  if (!spansDays) return phone ? 96 : 100;
-  return (phone ? PHONE_DAY_TIME_WIDTH : DAY_TIME_WIDTH)[locale()];
+export type LogsLayout = "wide" | "medium" | "narrow" | "phone";
+
+function timeWidth(spansDays: boolean, layout: LogsLayout): number {
+  if (layout === "phone" && spansDays) return STACKED_WIDTH;
+  if (layout === "phone") return PHONE_TIME_WIDTH;
+  if (!spansDays) return TIME_WIDTH[locale()];
+  return (layout === "narrow" ? SHORT_DAY_TIME_WIDTH : DAY_TIME_WIDTH)[locale()];
+}
+
+const ROW_END_RESERVE = 48;
+const STATUS_WIDTH = 80;
+const KEPT_WIDTHS = { duration: 104, tokens: 136, cost: 120 } as const;
+
+export function logsLayout(width: number, phone: boolean, spansDays: boolean, shown: readonly ColumnId[]): LogsLayout {
+  if (phone) return "phone";
+  if (!width) return "wide";
+  if (width < NARROW_BELOW) return "narrow";
+  const kept = (Object.keys(KEPT_WIDTHS) as (keyof typeof KEPT_WIDTHS)[]).filter((c) => shown.includes(c));
+  const full =
+    ROW_END_RESERVE +
+    (shown.includes("time") ? timeWidth(spansDays, "wide") : 0) +
+    (shown.includes("status") ? STATUS_WIDTH : 0) +
+    (shown.includes("model") ? MODEL_WIDTH : 0) +
+    (shown.includes("provider") ? PROVIDER_WIDTH : 0) +
+    kept.reduce((sum, c) => sum + KEPT_WIDTHS[c], 0);
+  return width < full ? "medium" : "wide";
+}
+
+function zoneName(): string {
+  const parts = new Intl.DateTimeFormat(dateLocale(), { timeZoneName: "short", ...inZone() }).formatToParts(new Date());
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
 }
 const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => c !== "request" && c !== "agent");
 
@@ -66,51 +102,86 @@ export function storeColumns(next: ColumnId[]): void {
 
 export function logColumns({
   spansDays,
-  phone = false,
+  layout = "wide",
   keyName,
   partyName,
   providerName,
 }: {
   spansDays: boolean;
-  phone?: boolean | undefined;
+  layout?: LogsLayout | undefined;
   keyName: (id: string) => string;
   partyName: (p: Party) => string;
   providerName: (id: string) => string;
 }) {
+  const stacked = layout === "phone" && spansDays;
+  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString(dateLocale(), { ...parts, hourCycle: "h23", ...inZone() });
   const time = (iso: string) =>
-    new Date(iso).toLocaleString(dateLocale(), {
+    format(iso, {
       ...(spansDays ? { day: "numeric", month: "short" } : {}),
       hour: "2-digit",
       minute: "2-digit",
-      ...(phone && spansDays ? {} : { second: "2-digit" }),
-      hourCycle: "h23",
-      ...inZone(),
+      ...(layout === "narrow" && spansDays ? {} : { second: "2-digit" }),
     });
+  const markOnly = layout !== "wide";
   return {
     time: col.custom(
-      { id: "time", header: columnLabel("time"), size: timeWidth(spansDays, phone), priority: 1 },
+      {
+        id: "time",
+        header: layout === "phone" ? columnLabel("time") : t("logs.column.startedIn", "Started ({zone})", { zone: zoneName() }),
+        size: timeWidth(spansDays, layout),
+        priority: 1,
+      },
       (r: LogView) => r.started_at,
-      (v) => (
-        <Text tabular>
-          <time dateTime={v}>{time(v)}</time>
-        </Text>
-      ),
+      (v) =>
+        stacked ? (
+          <time dateTime={v} className="flex flex-col">
+            <Text tabular>{format(v, { hour: "2-digit", minute: "2-digit" })}</Text>
+            <Text variant="caption" tone="tertiary">
+              {format(v, { day: "numeric", month: "short" })}
+            </Text>
+          </time>
+        ) : (
+          <Text tabular>
+            <time dateTime={v}>{time(v)}</time>
+          </Text>
+        ),
     ),
     status: col.custom(
-      { id: "status", header: columnLabel("status"), size: 80, priority: 1 },
+      { id: "status", header: columnLabel("status"), size: STATUS_WIDTH, priority: 1 },
       (r: LogView) => r.status,
       (v) => <StatusCode code={v} />,
     ),
     endpoint: col.mono({ id: "endpoint", header: columnLabel("endpoint"), size: 152, priority: 3 }, (r: LogView) => r.endpoint),
     model: col.custom(
-      { id: "model", header: columnLabel("model"), size: 240, minWidth: 104, priority: 1, grow: true },
+      {
+        id: "model",
+        header: columnLabel("model"),
+        size: layout === "narrow" || layout === "phone" ? NARROW_MODEL_WIDTH : MODEL_WIDTH,
+        minWidth: 104,
+        priority: 1,
+        grow: true,
+      },
       (r: LogView) => r.model,
       (_v, r) => <ModelCell row={r} />,
     ),
     provider: col.custom(
-      { id: "provider", header: columnLabel("provider"), size: 144, priority: 3 },
+      {
+        id: "provider",
+        header: markOnly ? <VisuallyHidden>{columnLabel("provider")}</VisuallyHidden> : columnLabel("provider"),
+        size: markOnly ? PROVIDER_MARK_WIDTH : PROVIDER_WIDTH,
+        priority: layout === "phone" ? 2 : 1,
+      },
       (r: LogView) => r.provider,
-      (v) => <ProviderBadge provider={v} name={providerName(v)} withName size="sm" />,
+      (v) =>
+        !v ? null : markOnly ? (
+          <Tooltip content={providerName(v)}>
+            <Text tabIndex={0} className="flex">
+              <ProviderBadge provider={v} name={providerName(v)} size="sm" />
+            </Text>
+          </Tooltip>
+        ) : (
+          <ProviderBadge provider={v} name={providerName(v)} withName size="sm" />
+        ),
     ),
     stream: col.custom(
       { id: "stream", header: columnLabel("stream"), size: 104, priority: 4 },
@@ -122,7 +193,7 @@ export function logColumns({
           </Pill>
         ) : null,
     ),
-    duration: col.duration({ id: "duration", header: columnLabel("duration"), size: 104, priority: 2 }, (r: LogView) => r.duration_ms),
+    duration: col.duration({ id: "duration", header: columnLabel("duration"), size: KEPT_WIDTHS.duration, priority: 2 }, (r: LogView) => r.duration_ms),
     ttfb: col.custom(
       { id: "ttfb", header: columnLabel("ttfb"), size: 104, priority: 4 },
       (r: LogView) => r.ttfb_ms ?? null,
@@ -130,13 +201,13 @@ export function logColumns({
       { align: "end" },
     ),
     tokens: col.custom(
-      { id: "tokens", header: t("logs.column.tokensInOut", "Tokens in / out"), size: 136, priority: 2 },
+      { id: "tokens", header: t("logs.column.tokensInOut", "Tokens in / out"), size: KEPT_WIDTHS.tokens, priority: 2 },
       (r: LogView) => totalTokens(r.usage),
       (_v, r) => <TokensCell row={r} />,
       { align: "end" },
     ),
     cost: col.custom(
-      { id: "cost", header: columnLabel("cost"), size: 120, priority: 2 },
+      { id: "cost", header: columnLabel("cost"), size: KEPT_WIDTHS.cost, priority: 2 },
       (r: LogView) => r.cost,
       (v) => requestUSD(v),
       { align: "end" },
@@ -165,27 +236,27 @@ const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? 
 function ModelCell({ row }: { row: LogView }) {
   const aliased = row.requested_model !== row.model && !row.requested_model.endsWith(`/${row.model}`);
   return (
-    <span className="flex min-w-0 items-center gap-8">
+    <span className="@container flex w-full min-w-0 items-center gap-8">
       <Text mono variant="small" truncate>
         {row.model}
       </Text>
-      {aliased && (
-        <Text mono variant="small" tone="secondary" truncate className="hidden sm:block">
-          {t("logs.fromModel", "from {model}", { model: row.requested_model })}
-        </Text>
-      )}
-      {row.source === "playground" && (
-        <Pill size="sm" variant="outline" className="hidden shrink-0 sm:inline-flex">
-          {t("logs.source.playground", "Playground")}
-        </Pill>
-      )}
       {row.error_kind && (
-        <Badge tone={errorTone(row)} className="hidden shrink-0 sm:inline-flex">
+        <Badge tone={errorTone(row)} className="hidden shrink-0 @cell-sm:inline-flex">
           {errorKindLabel(row.error_kind)}
         </Badge>
       )}
+      {row.source === "playground" && (
+        <Pill size="sm" variant="outline" className="hidden shrink-0 @cell-lg:inline-flex">
+          {t("logs.source.playground", "Playground")}
+        </Pill>
+      )}
+      {aliased && (
+        <Text mono variant="small" tone="secondary" truncate className="hidden max-w-240 @cell-lg:block">
+          {t("logs.fromModel", "from {model}", { model: row.requested_model })}
+        </Text>
+      )}
       {row.error_message && (
-        <Text variant="small" tone="secondary" truncate className="hidden min-w-0 flex-1 sm:block">
+        <Text variant="small" tone="secondary" truncate className="hidden min-w-0 flex-1 basis-0 @cell-md:block">
           {row.error_message}
         </Text>
       )}

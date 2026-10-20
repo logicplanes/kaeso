@@ -62,7 +62,7 @@ describe("LogsPage", () => {
     expect(lastQuery().to).toBeUndefined();
   });
 
-  it("on a phone, drops the seconds from the start time and folds Add filter into an icon", async () => {
+  it("on a phone, writes the start time above its day and folds Add filter into an icon", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",
       media: query,
@@ -77,9 +77,10 @@ describe("LogsPage", () => {
     await renderApp(projectPath("logs"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    const [started] = within(row).getAllByRole("cell");
-    expect(started?.textContent).toMatch(/\d{1,2}:\d{2}$/);
-    expect(started?.textContent).not.toMatch(/\d{1,2}:\d{2}:\d{2}/);
+    const started = within(row).getAllByRole("cell")[0] as HTMLElement;
+    expect(within(started).getByText(/^\d{2}:\d{2}$/)).toBeInTheDocument();
+    expect(within(started).getByText(/^\d{1,2} [A-Z][a-z]{2,3}$/)).toBeInTheDocument();
+    expect(within(requestsTable()).getAllByRole("columnheader")[0]).toHaveTextContent(/^Started$/);
     const add = screen.getByRole("button", { name: "Add filter" });
     expect(add).not.toHaveTextContent("Add filter");
     vi.unstubAllGlobals();
@@ -218,9 +219,10 @@ describe("LogsPage", () => {
     await screen.findByRole("row", { name: /key_web/ });
     await user.click(screen.getByRole("button", { name: "Add filter" }));
     await user.click(within(await screen.findByRole("menu", { name: "Add filter" })).getByRole("menuitem", { name: "Provider" }));
-    expect(within(await screen.findByRole("group", { name: "Connected" })).getByRole("menuitemradio")).toHaveAccessibleName("DeepSeek");
-    expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("menuitemradio", { name: "Anthropic" }));
-    const providers = screen.getAllByRole("menuitemradio");
+    expect(within(await screen.findByRole("group", { name: "Connected" })).getByRole("option")).toHaveAccessibleName("DeepSeek");
+    expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("option", { name: "Anthropic" }));
+    expect(screen.getByRole("combobox", { name: "Search provider values" })).toBeInTheDocument();
+    const providers = screen.getAllByRole("option");
     expect(providers[0]).toHaveAccessibleName("DeepSeek");
     const others = providerList
       .filter((p) => p.id !== "deepseek")
@@ -234,7 +236,7 @@ describe("LogsPage", () => {
     const list = await screen.findByRole("listbox", { name: "Model" });
     expect(within(list).getByRole("group", { name: "Anthropic" })).toBeInTheDocument();
     await user.type(screen.getByRole("combobox", { name: "Search model values" }), "model-59");
-    await user.click(within(list).getByRole("option", { name: "model-59" }));
+    await user.click(within(list).getByRole("option", { name: /^model-59/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ model: "model-59" }));
   });
 
@@ -253,7 +255,7 @@ describe("LogsPage", () => {
     const menu = await screen.findByRole("menu", { name: "Add filter" });
     expect(within(menu).queryByRole("menuitem", { name: "Failed only" })).not.toBeInTheDocument();
     await user.click(within(menu).getByRole("menuitem", { name: "Provider" }));
-    await user.click(await screen.findByRole("menuitemradio", { name: "OpenAI" }));
+    await user.click(await screen.findByRole("option", { name: "OpenAI" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true, provider: "openai" }));
     await waitFor(() => expect(lastQuery()).toMatchObject({ provider: "openai", failed: "true" }));
 
@@ -291,9 +293,9 @@ describe("LogsPage", () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ stream: "false" }));
   });
 
-  it("drops a filter that was added but never chosen", async () => {
+  it("drops a filter that was added but closed without a value", async () => {
     signedIn();
-    projectData();
+    projectData({ models: [catalogueModel()] });
     logsData({ rows: [logRow()] });
     const { user } = await renderApp(projectPath("logs"));
 
@@ -302,10 +304,59 @@ describe("LogsPage", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Source" }));
     expect(await screen.findByRole("menuitemradio", { name: "API" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
-    const chip = screen.getByRole("group", { name: "Filter: Source" });
-    expect(chip).toHaveTextContent("any");
-    await user.click(within(chip).getByRole("button", { name: "Remove the Source filter" }));
     await waitFor(() => expect(screen.queryByRole("group", { name: "Filter: Source" })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Model" }));
+    expect(await screen.findByRole("listbox", { name: "Model" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("group", { name: "Filter: Model" })).not.toBeInTheDocument());
+  });
+
+  it("puts a filter just added after the ones already there", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?status=429"));
+
+    await screen.findByRole("row", { name: /checkout-web/ });
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Key" }));
+    expect(await screen.findByRole("searchbox", { name: "Search key values" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("menuitemradio", { name: "checkout-web" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ key: "key_web" }));
+    const chips = within(screen.getByRole("toolbar", { name: "Filter requests" })).getAllByRole("group", { name: /^Filter: / });
+    expect(chips.map((c) => c.getAttribute("aria-label"))).toEqual(["Filter: Status", "Filter: Key"]);
+  });
+
+  it("offers only the chosen provider's models, under their names", async () => {
+    signedIn();
+    projectData({
+      models: [
+        catalogueModel({
+          id: "cm_1",
+          provider: "mistral",
+          model_id: "mistral-small-latest",
+          effective: { ...catalogueModel().effective, display_name: "Mistral Small" },
+        }),
+        catalogueModel({ id: "cm_2", provider: "groq", model_id: "llama-3.1-8b-instant", effective: { ...catalogueModel().effective, display_name: null } }),
+      ],
+    });
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?provider=mistral"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Model" }));
+    const list = await screen.findByRole("listbox", { name: "Model" });
+    expect(
+      within(list)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual([expect.stringMatching(/^Mistral Small/)]);
+    await user.click(within(list).getByRole("option", { name: /Mistral Small/ }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ provider: "mistral", model: "mistral-small-latest" }));
+    expect(screen.getByRole("group", { name: "Filter: Model" })).toHaveTextContent("Mistral Small");
   });
 
   it("switches the time range, including a custom span of days", async () => {
@@ -416,7 +467,7 @@ describe("LogsPage", () => {
     const headers = within(requestsTable())
       .getAllByRole("columnheader")
       .map((h) => h.textContent);
-    expect(headers).toEqual(["Started", "Status", "Request id", "User agent"]);
+    expect(headers).toEqual(["Started (UTC)", "Status", "Request id", "User agent"]);
     expect(screen.getByRole("button", { name: "req_0001" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Display options" }));
@@ -428,6 +479,33 @@ describe("LogsPage", () => {
     await user.click(within(options).getByRole("combobox", { name: "Density" }));
     await user.click(await screen.findByRole("option", { name: "Compact" }));
     expect(within(options).getByRole("combobox", { name: "Density" })).toHaveTextContent("Compact");
+  });
+
+  it("shows the provider's mark alone on a tablet and says which chosen columns don't fit", async () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 700,
+      height: 0,
+      top: 0,
+      left: 0,
+      right: 700,
+      bottom: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user } = await renderApp(projectPath("logs"));
+
+    const row = await screen.findByRole("row", { name: /200 OK/ });
+    expect(within(row).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    expect(within(requestsTable()).queryByRole("columnheader", { name: /Endpoint/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Display options" }));
+    const options = await screen.findByRole("dialog", { name: "Display options" });
+    expect(within(options).getByRole("button", { name: "Endpoint" })).toHaveAttribute("aria-description", "Doesn't fit at this width");
+    expect(within(options).getByText(/^Endpoint, .* don't fit at this width\.$/)).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it("says which right export needs and names keys only with the right to see them", async () => {

@@ -48,6 +48,27 @@ describe("DisplayOptions", () => {
     expect(screen.getByRole("combobox", { name: "Grouping" })).toBeInTheDocument();
   });
 
+  it("marks the properties that are on but don't fit, and says so in a sentence", () => {
+    const properties = (hidden: string[]) => ({
+      options: [
+        { value: "stream", label: "Stream" },
+        { value: "key", label: "Key" },
+        { value: "agent", label: "User agent" },
+      ],
+      value: ["stream", "key"],
+      onChange: vi.fn(),
+      hidden,
+    });
+    const { rerender } = render(<DisplayOptions inline properties={properties(["stream", "key", "agent"])} />);
+    expect(screen.getByRole("button", { name: "Stream" })).toHaveAttribute("aria-description", "Doesn't fit at this width");
+    expect(screen.getByRole("button", { name: "User agent" })).not.toHaveAttribute("aria-description");
+    expect(screen.getByText("Stream and Key don't fit at this width.")).toBeInTheDocument();
+    rerender(<DisplayOptions inline properties={properties(["key"])} />);
+    expect(screen.getByText("Key doesn't fit at this width.")).toBeInTheDocument();
+    rerender(<DisplayOptions inline properties={properties([])} />);
+    expect(screen.queryByText(/fit at this width/)).toBeNull();
+  });
+
   it("renders inline and warns when it has nothing to show", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const { container } = render(<DisplayOptions inline />);

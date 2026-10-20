@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ModelPicker, type ModelPickerOption } from "./model-picker.js";
+import { ModelPicker, useModelGroups, type ModelPickerOption } from "./model-picker.js";
 
 const options: ModelPickerOption[] = [
   { value: "gpt-5", provider: "openai", name: "GPT-5", capabilities: ["tools", "reasoning"], context: 400_000, price: "$1.25 / $10" },
@@ -133,5 +133,25 @@ describe("ModelPicker", () => {
     expect(screen.getAllByRole("option").length).toBeLessThan(80);
     await user.paste("model-9999");
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("model-9999");
+  });
+});
+
+describe("useModelGroups", () => {
+  it("builds the picker's groups for other lists: providers under their marks, connected ones first", () => {
+    const { result } = renderHook(() => useModelGroups(options, { providers: [{ id: "deepseek", connected: true }] }));
+    expect(result.current.map((g) => [g.id, g.label, g.count])).toEqual([
+      ["provider:deepseek", "DeepSeek", 1],
+      ["provider:anthropic", "Anthropic", 1],
+      ["provider:openai", "OpenAI", 3],
+    ]);
+    expect(result.current[0]?.leading).toBeTruthy();
+    expect(result.current[2]?.items.map((i) => i.label)).toEqual(["GPT-5", "GPT-5 mini", "GPT-4"]);
+  });
+  it("lists one provider's models without a heading, each with its mark", () => {
+    const { result } = renderHook(() => useModelGroups(options.filter((o) => o.provider === "openai")));
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0]?.label).toBeUndefined();
+    const { container } = render(<>{result.current[0]?.items[0]?.render?.({ query: "", active: false, selected: false })}</>);
+    expect(container.querySelector("[aria-label=OpenAI]")).toBeInTheDocument();
   });
 });
