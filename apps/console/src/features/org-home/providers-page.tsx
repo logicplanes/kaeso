@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -69,6 +69,10 @@ function assignment(k: CredentialView): string {
   if (names.length > 0)
     return k.is_default ? t("orgHome.projectsAndUnassigned", "{projects}, and every unassigned project", { projects: namesLine(names) }) : namesLine(names);
   return k.is_default ? t("orgHome.everyUnassignedProject", "Every unassigned project") : t("orgHome.noProject", "No project");
+}
+
+function withProjectNames(k: CredentialView, text: ReactElement) {
+  return k.projects.length > 0 ? <Tooltip content={joined(k.projects.map((p) => p.name))}>{text}</Tooltip> : text;
 }
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
@@ -184,11 +188,13 @@ export function OrgProvidersPage({ org }: { org: string }) {
               </Tooltip>
               {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
             </span>
-            {under.length > 0 && (
-              <Text variant="small" tone="secondary" truncate>
-                {under.join(t("orgHome.partSeparator", " · "))}
-              </Text>
-            )}
+            {under.length > 0 &&
+              withProjectNames(
+                r.key,
+                <Text variant="small" tone="secondary" truncate>
+                  {under.join(t("orgHome.partSeparator", " · "))}
+                </Text>,
+              )}
           </span>
         );
       },
@@ -196,13 +202,13 @@ export function OrgProvidersPage({ org }: { org: string }) {
     col.custom(
       { id: "projects", header: t("common.projects", "Projects"), size: 220, priority: 2 },
       (r: Row) => r.key,
-      (k: CredentialView) => (
-        <Tooltip content={k.projects.length > 0 ? joined(k.projects.map((p) => p.name)) : undefined}>
+      (k: CredentialView) =>
+        withProjectNames(
+          k,
           <Text variant="small" tone={k.projects.length > 0 || k.is_default ? "secondary" : "tertiary"} truncate>
             {assignment(k)}
-          </Text>
-        </Tooltip>
-      ),
+          </Text>,
+        ),
     ),
     col.custom(
       { id: "added", header: t("orgHome.added", "Added"), size: 216, priority: 3 },

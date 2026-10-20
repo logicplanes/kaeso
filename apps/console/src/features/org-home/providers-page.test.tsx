@@ -1,9 +1,10 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CredentialView } from "~/api/generated/types";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
 import { OTHER_USER, credential, hoverReason, member, notifications } from "~/test/fixtures/org";
+import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -400,7 +401,7 @@ describe("organization providers", () => {
       });
       signedIn();
       keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
-      await renderApp(PATH);
+      const { user } = await renderApp(PATH);
       await row("Staging");
       const headers = within(await table())
         .getAllByRole("columnheader")
@@ -408,6 +409,33 @@ describe("organization providers", () => {
       expect(headers).not.toContain("Projects");
       expect(await within(await table()).findByText("Support triage · Never")).toBeInTheDocument();
       expect(within(await table()).getByText("Checkout assistant, and every unassigned project · Never")).toBeInTheDocument();
+      act(() => showTooltipsAtOnce(true));
+      try {
+        await user.hover(within(await table()).getByText("Support triage · Never"));
+        expect(await screen.findAllByText("Support triage", { exact: true })).not.toHaveLength(0);
+      } finally {
+        act(() => showTooltipsAtOnce(false));
+      }
+    });
+
+    it("shows a tooltip only for keys with assigned projects", async () => {
+      signedIn();
+      keys([credential({ projects: [] }), { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+      const { user } = await renderApp(PATH);
+      await row("Staging");
+      act(() => showTooltipsAtOnce(true));
+      try {
+        await user.hover(within(await table()).getByText("Every unassigned project"));
+        await user.hover(within(await table()).getByText("Support triage"));
+        await waitFor(() => expect(screen.getAllByText("Support triage", { exact: true }).length).toBeGreaterThan(1));
+        expect(within(await table()).getByText("Support triage")).toHaveAttribute("data-popup-open");
+        await user.unhover(within(await table()).getByText("Support triage"));
+        await user.hover(within(await table()).getByText("Every unassigned project"));
+        expect(screen.getAllByText("Every unassigned project", { exact: true })).toHaveLength(1);
+        expect(within(await table()).getByText("Every unassigned project")).not.toHaveAttribute("data-popup-open");
+      } finally {
+        act(() => showTooltipsAtOnce(false));
+      }
     });
   });
 });
