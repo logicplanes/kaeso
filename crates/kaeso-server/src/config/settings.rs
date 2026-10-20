@@ -97,7 +97,7 @@ const ROWS: &[Row] = &[
     s("auth.password", "KAESO_AUTH_PASSWORD", Bool, Some("true"), false, "Allow sign-in with email and password."),
     s("auth.magic_link", "KAESO_AUTH_MAGIC_LINK", Bool, Some("true"), false, "Allow sign-in with a sign-in link sent by email."),
     s("auth.oidc", "KAESO_AUTH_OIDC", Bool, Some("true"), false, "Allow sign-in through an organization's OIDC identity provider."),
-    s("auth.oidc_allow_private_networks", "KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", Bool, Some("true"), false, "Allow OIDC discovery and token requests to private and loopback addresses. Turn off on hosted installs to prevent server-side request forgery."),
+    s("auth.oidc_allow_private_networks", "KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", Bool, Some("false"), false, "Allow OIDC discovery and token requests to private and loopback addresses, for an identity provider on your own network; link-local and cloud metadata addresses stay refused."),
     s("key_failures.per_address", "KAESO_KEY_FAILURES_PER_ADDRESS", Integer, Some("100"), false, "Failed API key lookups (well-formed keys that match no key) allowed per client address and window, on the model API and the Platform API together; beyond it, keys that are not cached are refused with 429 until the window ends. IPv6 addresses count per /64. Valid keys never count. `0` turns the throttle off."),
     s("key_failures.window", "KAESO_KEY_FAILURES_WINDOW", Text, Some("1m"), false, "The window of `key_failures.per_address`: 1s to 1h."),
     s("models_dev.sync", "KAESO_MODELS_DEV_SYNC", Bool, Some("true"), false, "Fetch models.dev periodically. Off for installs without internet; the built-in snapshot is used."),

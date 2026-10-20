@@ -8,18 +8,20 @@ order: 3
 
 ## 添加密钥
 
-1. 在**服务商**页面上选择**添加密钥**，或在尚无密钥的服务商旁选择**连接**。
-2. **此密钥属于哪个服务商？** 选择服务商。
-3. 粘贴密钥并为其命名，例如 `Production`。下表列出各服务商的密钥从哪里获取。
+**服务商**页面列出组织已有密钥的服务商。在组织添加第一个密钥之前，该页面会介绍服务商密钥，并提供**添加服务商密钥**。
+
+1. 在**服务商**页面上选择**添加密钥**。
+2. **此密钥属于哪个服务商？** 搜索并选择服务商。已有密钥的服务商排在前面，并显示其密钥数量。
+3. 粘贴密钥并为其命名，例如 `Production`。对话框会链接到服务商创建密钥的页面，下表也列出了这些页面。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
 
 | 服务商 | 在此创建密钥 | 密钥开头 |
 | --- | --- | --- |
-| OpenAI | platform.openai.com | `sk-` |
-| Anthropic | console.anthropic.com | `sk-ant-` |
-| DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | console.x.ai（xAI 控制台） | `xai-` |
-| Together AI | api.together.ai | `tgp_v1_` |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
+| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
+| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai)（xAI 控制台）的 **API Keys** | `xai-` |
+| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys) 的 **API Keys** | `tgp_v1_` |
 
 对服务商密钥的每种操作都需要相应的权限：
 

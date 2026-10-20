@@ -486,7 +486,9 @@ jobs:
           file: deploy/${{ matrix.image }}.Dockerfile
           target: ${{ matrix.target }}
           platforms: linux/${{ matrix.arch }}
-          build-args: VERSION=${{ needs.validate.outputs.version }}
+          build-args: |
+            VERSION=${{ needs.validate.outputs.version }}
+            ${{ matrix.image == 'gateway' && 'PROFILE=dist' || '' }}
           provenance: mode=max
           sbom: true
           outputs: type=image,name=ghcr.io/logicplanes/kaeso-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true

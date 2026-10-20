@@ -54,6 +54,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
             routes!(security::delete_sso),
         ))
         .routes(s.route(
+            Access::Org(R::SecuritySsoManage),
+            routes!(security::verify_domains),
+        ))
+        .routes(s.route(
             Access::Org(R::SecuritySsoRequire),
             routes!(security::require_sso),
         ))

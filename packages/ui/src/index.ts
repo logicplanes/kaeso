@@ -50,6 +50,7 @@ export * from "./components/display-options/index.js";
 export * from "./components/dialog/index.js";
 export * from "./components/sheet/index.js";
 export * from "./components/command-palette/index.js";
+export * from "./components/command-list/index.js";
 export * from "./components/toast/index.js";
 export * from "./components/pagination/index.js";
 export * from "./components/toc/index.js";

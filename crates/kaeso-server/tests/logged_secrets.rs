@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use common::App;
+use kaeso_core::clock::Clock;
 use kaeso_core::id::OrgId;
 use kaeso_testkit::oidc::MockIdp;
 use kaeso_testkit::services::TestServices;
@@ -62,12 +63,18 @@ async fn connect(app: &App, org: &str, idp: &MockIdp) {
             wrapped_key: sealed.wrapped_key,
             key_id: sealed.key_id,
             domains: vec!["example.com".into()],
+            verified_domains: Vec::new(),
+            verification_token: "token".into(),
             display_name: None,
             auto_redirect: false,
+            require_email_verified: true,
         },
     )
     .await
     .unwrap();
+    kaeso_store::pg::oidc::mark_verified(&mut *conn, org.uuid(), "example.com", app.clock.now())
+        .await
+        .unwrap();
 }
 
 async fn callback(app: &App, code: &str, state: &str, binding: &str) -> common::Resp {

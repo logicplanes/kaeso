@@ -12,7 +12,7 @@
   "playground.full": "最多同时比较 {count} 个模型",
   "playground.loadingModels": "正在加载模型",
   "playground.modelError": "模型因出错而停止，请重试。",
-  "playground.noProviderKey": "此项目没有 {provider} 密钥",
+  "playground.noProviderKeyShort": "没有 {provider} 密钥",
   "playground.parameters": "参数",
   "playground.prompt": "发送提示词",
   "playground.promptEvery": "向所有模型发送提示词",

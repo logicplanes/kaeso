@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use kaeso_core::net::is_public;
+use kaeso_core::net::{is_link_local_or_metadata, is_public};
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, HttpRequest, HttpResponse, IssuerUrl,
@@ -24,18 +24,21 @@ pub enum OidcError {
     Token(String),
     #[error("the SSO connection is misconfigured: {0}")]
     Config(String),
+    #[error("the ID token doesn't mark the email address as verified")]
+    UnverifiedEmail,
 }
 
 impl OidcError {
     pub fn message(&self) -> &'static str {
         match self {
-            OidcError::Provider(_) => "The identity provider could not be reached.",
-            OidcError::PrivateNetwork => {
-                "The identity provider is on a private network, which this install doesn't allow."
+            OidcError::Provider(_) | OidcError::PrivateNetwork | OidcError::PlainHttp => {
+                "The identity provider could not be reached."
             }
-            OidcError::PlainHttp => "The identity provider must use https.",
             OidcError::Token(_) => "The identity provider's answer could not be verified.",
             OidcError::Config(_) => "The SSO connection doesn't work with this identity provider.",
+            OidcError::UnverifiedEmail => {
+                "The identity provider didn't confirm that the email address is verified."
+            }
         }
     }
 }
@@ -79,14 +82,15 @@ pub async fn fetch(allow_private: bool, request: HttpRequest) -> Result<HttpResp
         .to_owned();
     let https = uri.scheme_str() == Some("https");
     let port = uri.port_u16().unwrap_or(if https { 443 } else { 80 });
-    let addrs: Vec<SocketAddr> = tokio::net::lookup_host((host.as_str(), port))
+    let bare = host.trim_start_matches('[').trim_end_matches(']');
+    let addrs: Vec<SocketAddr> = tokio::net::lookup_host((bare, port))
         .await
         .map_err(|e| FetchError(format!("cannot resolve {host}: {e}")))?
         .collect();
     let addr = addrs
         .iter()
         .copied()
-        .find(|a| allow_private || is_public(a.ip()))
+        .find(|a| reachable(a.ip(), allow_private))
         .ok_or_else(|| FetchError(OidcError::PrivateNetwork.to_string()))?;
     if !https && is_public(addr.ip()) {
         return Err(FetchError(OidcError::PlainHttp.to_string()));
@@ -127,6 +131,17 @@ pub async fn fetch(allow_private: bool, request: HttpRequest) -> Result<HttpResp
     *out.status_mut() = status;
     *out.headers_mut() = headers;
     Ok(out)
+}
+
+fn email_verified(claim: Option<bool>, required: bool) -> bool {
+    match claim {
+        Some(verified) => verified,
+        None => !required,
+    }
+}
+
+fn reachable(ip: std::net::IpAddr, allow_private: bool) -> bool {
+    !is_link_local_or_metadata(ip) && (allow_private || is_public(ip))
 }
 
 pub struct Provider {
@@ -221,6 +236,7 @@ impl Provider {
         code: &str,
         pkce_verifier: &str,
         nonce: &str,
+        require_email_verified: bool,
     ) -> Result<Identity, OidcError> {
         let allow_private = self.allow_private;
         let http = move |req: HttpRequest| fetch(allow_private, req);
@@ -238,10 +254,8 @@ impl Provider {
         let claims = id_token
             .claims(&client.id_token_verifier(), &Nonce::new(nonce.to_owned()))
             .map_err(|e| OidcError::Token(e.to_string()))?;
-        if claims.email_verified() == Some(false) {
-            return Err(OidcError::Token(
-                "the email address is not verified by the identity provider".into(),
-            ));
+        if !email_verified(claims.email_verified(), require_email_verified) {
+            return Err(OidcError::UnverifiedEmail);
         }
         let email = claims
             .email()
@@ -315,6 +329,32 @@ mod tests {
                 "{page}"
             );
         }
+    }
+
+    #[test]
+    fn an_address_counts_as_verified_only_when_the_token_says_so() {
+        assert!(email_verified(Some(true), true));
+        assert!(!email_verified(Some(false), true));
+        assert!(!email_verified(Some(false), false));
+        assert!(!email_verified(None, true));
+        assert!(email_verified(None, false));
+    }
+
+    #[test]
+    fn link_local_and_metadata_addresses_stay_out_of_reach_even_on_private_networks() {
+        for ip in [
+            "169.254.169.254",
+            "fe80::1",
+            "fd00:ec2::254",
+            "::ffff:169.254.169.254",
+        ] {
+            let ip = ip.parse().unwrap();
+            assert!(!reachable(ip, true), "{ip}");
+            assert!(!reachable(ip, false), "{ip}");
+        }
+        assert!(reachable("10.0.0.2".parse().unwrap(), true));
+        assert!(!reachable("10.0.0.2".parse().unwrap(), false));
+        assert!(reachable("1.1.1.1".parse().unwrap(), false));
     }
 
     #[tokio::test]

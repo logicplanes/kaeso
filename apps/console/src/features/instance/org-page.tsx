@@ -343,6 +343,7 @@ function AppointOwnerDialog({
           }))}
         loading={users.isFetching}
         onInputValueChange={setQuery}
+        searchDelay={250}
         value={user}
         onValueChange={(v: string | null) => setUser(v)}
         disabled={appoint.isPending}

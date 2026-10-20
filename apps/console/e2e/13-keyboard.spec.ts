@@ -39,7 +39,7 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   await expect(dialog.getByRole("radio", { name: "Inference", exact: true })).toBeFocused();
   await page.keyboard.press("ControlOrMeta+Enter");
   await expect(dialog.getByText("Step 4 of 4", { exact: true })).toBeVisible();
-  await expect(dialog.getByRole("combobox", { name: "Models" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Models" })).toBeFocused();
   await page.keyboard.press("ControlOrMeta+Enter");
   const reveal = page.getByRole("dialog", { name: "Key created" });
   await expect(reveal).toBeVisible();

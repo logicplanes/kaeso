@@ -114,7 +114,7 @@ describe("LimitsSection", () => {
     await user.clear(amount);
     await user.type(amount, "1000");
     await user.click(within(section).getByRole("radio", { name: "Total" }));
-    await user.click(within(section).getByRole("combobox", { name: "Model" }));
+    await user.click(within(section).getByRole("button", { name: "Model" }));
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     const hard = within(section).getByRole("switch", { name: /Refuse requests when used up/ });
     expect(within(section).getByText("A hard budget: requests are refused once it is used up.")).toBeInTheDocument();

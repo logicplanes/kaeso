@@ -116,7 +116,7 @@ describe("CommandPalette", () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
   });
 
-  it("keeps its top while the results change, and watches each row so its height follows them smoothly", async () => {
+  it("keeps its top while the results change, and watches its list so its height follows them smoothly", async () => {
     const watched: Element[] = [];
     vi.stubGlobal(
       "ResizeObserver",
@@ -136,9 +136,11 @@ describe("CommandPalette", () => {
     const palette = await screen.findByRole("dialog", { name: "Command palette" });
     expect(palette.parentElement).toHaveClass("items-start", "pt-palette");
     expect(palette).toHaveClass("flex", "flex-col");
-    expect(watched).toContain(screen.getByRole("option", { name: /API keys/ }));
+    const rows = screen.getByRole("listbox").firstElementChild;
+    expect(watched).toContain(rows);
     await userEvent.type(screen.getByRole("combobox"), "keys");
-    expect(watched.filter((el) => el.getAttribute("role") === "option").map((el) => el.textContent)).toEqual(["API keys"]);
+    expect(screen.getAllByRole("option").map((el) => el.textContent)).toEqual(["API keys"]);
+    expect(watched).toContain(screen.getByRole("listbox").firstElementChild);
     vi.unstubAllGlobals();
   });
   it("follows a controlled open and ignores the hotkey when it is turned off", () => {
@@ -147,6 +149,26 @@ describe("CommandPalette", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("keeps its groups' order while filtering, marks its field and captions a group that is still loading", async () => {
+    render(
+      <CommandPalette
+        inline
+        groups={[
+          { label: "Pages", items: [{ id: "models", label: "Models", keywords: ["alias"] }] },
+          { label: "Headings", items: [{ id: "aliases", label: "Aliases" }] },
+          { label: "Find", loading: true, items: [] },
+        ]}
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    expect(input).toHaveAttribute("data-palette-input");
+    expect(screen.getByText("Find")).toBeInTheDocument();
+    await userEvent.type(input, "alias");
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Models", "Aliases"]);
+    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Find")).toBeInTheDocument();
   });
 
   it("makes the hovered row active", () => {

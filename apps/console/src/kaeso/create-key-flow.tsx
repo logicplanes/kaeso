@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import {
   AlertDialog,
   Button,
-  Combobox,
   DialogScope,
   Input,
   Radio,
@@ -23,7 +23,7 @@ import { orgQuery } from "~/api/queries/orgs";
 import { projectQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
-import { modelOption } from "~/format/models";
+import { catalogueModelOption } from "./model-options";
 import { t } from "~/i18n";
 import { ExpiryPicker, defaultExpiry, expiryRequest, type Expiry } from "./expiry-picker";
 import { LimitEditor, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
@@ -202,12 +202,15 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
             blockedReason: problems[0] ?? undefined,
             content: (
               <div className="flex flex-col gap-16">
-                <Combobox
+                <ModelPicker
                   label={t("common.models", "Models")}
                   multiple
-                  options={allowedModels.map(modelOption)}
+                  appearance="default"
+                  size="md"
+                  fullWidth
+                  options={allowedModels.map(catalogueModelOption)}
                   value={keptModels}
-                  onValueChange={(v: string[]) => setModels(v)}
+                  onValueChange={setModels}
                   placeholder={t("kaeso.limits.allModels", "All models")}
                 />
                 {keptLimits.map((l, i) => (

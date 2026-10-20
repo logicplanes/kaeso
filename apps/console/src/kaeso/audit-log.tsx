@@ -144,6 +144,7 @@ export function AuditLog({
             }))}
             value={filters.actor ?? null}
             onInputValueChange={onActorSearch}
+            searchDelay={250}
             loading={actorsLoading}
             onValueChange={(v: string | null) => set({ actor: v ?? undefined, event: undefined })}
           />

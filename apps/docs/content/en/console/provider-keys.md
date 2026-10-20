@@ -8,18 +8,20 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 
 ## Add a key
 
-1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose the provider.
-3. Paste the key and give it a name, such as `Production`. The table below says where each provider's keys come from.
+**Providers** lists the providers your organization has keys for. Until it has one, the page explains provider keys and offers **Add provider key**.
+
+1. On **Providers**, choose **Add key**.
+2. **Which provider is the key for?** Search for the provider and choose it. Providers that already have keys come first, with their key counts.
+3. Paste the key and give it a name, such as `Production`. The dialog links the provider's page for creating keys, and the table below lists them too.
 4. If the provider already has a default key, choose whether the new key becomes the default.
 
 | Provider | Create a key at | The key starts with |
 | --- | --- | --- |
-| OpenAI | platform.openai.com | `sk-` |
-| Anthropic | console.anthropic.com | `sk-ant-` |
-| DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | console.x.ai, the xAI console | `xai-` |
-| Together AI | api.together.ai | `tgp_v1_` |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
+| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
+| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai), the xAI console, under **API Keys** | `xai-` |
+| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), under **API Keys** | `tgp_v1_` |
 
 Each action on provider keys needs its own right:
 

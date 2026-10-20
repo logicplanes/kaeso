@@ -1,8 +1,10 @@
-import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Menu } from "../menu/menu.js";
+import { CommandList, type CommandListGroup } from "../command-list/command-list.js";
+import { PickerPopover } from "../command-list/picker-popover.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 
 export const KAESO_FILTER_CHIP_VARIANTS = {
@@ -18,9 +20,43 @@ export interface FilterChipChoice {
   icon?: IconData | undefined;
   leading?: ReactNode | undefined;
   textValue?: string | undefined;
+  group?: string | undefined;
 }
 
 const SEARCH_ABOVE = 8;
+const LIST_ABOVE = 50;
+
+function inRuns(values: FilterChipChoice[], item: (v: FilterChipChoice) => ReactNode): ReactNode {
+  if (!values.some((v) => v.group)) return values.map(item);
+  const runs: { group: string | undefined; values: FilterChipChoice[] }[] = [];
+  for (const v of values) {
+    const last = runs[runs.length - 1];
+    if (last && last.group === v.group) last.values.push(v);
+    else runs.push({ group: v.group, values: [v] });
+  }
+  return runs.map((r, i) => (
+    <Menu.Group key={`${r.group ?? ""}:${i}`} label={r.group}>
+      {r.values.map(item)}
+    </Menu.Group>
+  ));
+}
+
+function choiceGroups(values: FilterChipChoice[]): CommandListGroup[] {
+  const groups = new Map<string, CommandListGroup>();
+  for (const v of values) {
+    const key = v.group ?? "";
+    const group = groups.get(key) ?? { id: key || "values", ...(key ? { label: key } : {}), items: [] };
+    group.items.push({
+      value: v.value,
+      label: textOf(v),
+      keywords: [v.value],
+      ...(v.leading || v.icon ? { leading: v.leading ?? (v.icon ? <Icon icon={v.icon} size="sm" className="text-fg-secondary" /> : undefined) } : {}),
+      ...(typeof v.label === "string" ? {} : { render: () => <span className="min-w-0 flex-1 truncate">{v.label}</span> }),
+    });
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
 
 export interface FilterChipProps {
   property: ReactNode;
@@ -69,13 +105,15 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement | null>(null);
   const searchable = (values?.length ?? 0) > SEARCH_ABOVE;
+  const long = (values?.length ?? 0) > LIST_ABOVE;
+  const groups = useMemo(() => (long && values ? choiceGroups(values) : []), [long, values]);
   const q = query.trim().toLowerCase();
   const shown = searchable && q ? (values ?? []).filter((v) => textOf(v).toLowerCase().includes(q) || v.value.toLowerCase().includes(q)) : (values ?? []);
   useEffect(() => {
-    if (!open || !searchable) return;
+    if (!open || !searchable || long) return;
     const timer = setTimeout(() => search.current?.focus(), 0);
     return () => clearTimeout(timer);
-  }, [open, searchable]);
+  }, [open, searchable, long]);
   return (
     <div
       ref={ref}
@@ -110,75 +148,109 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           </Menu.Content>
         )}
       </Menu>
-      <Menu
-        open={open}
-        onOpenChange={(o) => {
-          setOpen(o);
-          if (!o) setQuery("");
-        }}
-      >
-        <Menu.Trigger>
-          <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={!values?.length}>
-            {value}
-          </button>
-        </Menu.Trigger>
-        {values && (
-          <Menu.Content
-            {...(searchable ? { className: "w-280" } : {})}
-            {...(searchable
-              ? {
-                  header: (
-                    <input
-                      ref={search}
-                      type="search"
-                      aria-label={
-                        typeof property === "string"
-                          ? t("filterChip.searchNamedValues", "Search {property} values", { property: locale === "en" ? property.toLowerCase() : property })
-                          : t("filterChip.searchValues", "Search values")
-                      }
-                      placeholder={t("filterChip.search", "Search")}
-                      autoComplete="off"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (!["ArrowDown", "ArrowUp", "Escape", "Tab", "Enter"].includes(e.key)) e.stopPropagation();
-                      }}
-                      className="h-28 w-full bg-transparent text-body text-fg outline-none placeholder:text-fg-tertiary coarse:h-36"
-                    />
-                  ),
-                  ...(shown.length === 0 ? { footer: t("filterChip.noMatches", "No values match") } : {}),
-                }
-              : {})}
-          >
-            {multiple ? (
-              shown.map((v) => (
-                <Menu.CheckboxItem
-                  key={v.value}
-                  checked={selected.includes(v.value)}
-                  onCheckedChange={(c) => onSelectedChange?.(c ? [...selected, v.value] : selected.filter((s) => s !== v.value))}
-                  {...(v.icon ? { icon: v.icon } : {})}
-                >
-                  <span className="inline-flex items-center gap-8">
-                    {v.leading}
-                    {v.label}
-                  </span>
-                </Menu.CheckboxItem>
-              ))
-            ) : (
-              <Menu.RadioGroup value={selected[0] ?? ""} onValueChange={(s) => onSelectedChange?.([s])}>
-                {shown.map((v) => (
-                  <Menu.RadioItem key={v.value} value={v.value} closeOnClick {...(v.icon ? { icon: v.icon } : {})}>
+      {long && values ? (
+        <PickerPopover
+          title={typeof property === "string" ? property : t("filterChip.filter", "Filter")}
+          open={open}
+          onOpenChange={setOpen}
+          trigger={
+            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")}>
+              {value}
+            </button>
+          }
+        >
+          <CommandList
+            groups={groups}
+            aria-label={typeof property === "string" ? property : t("filterChip.filter", "Filter")}
+            value={selected}
+            {...(multiple ? { multiple: true } : {})}
+            autoFocus
+            placeholder={
+              typeof property === "string"
+                ? t("filterChip.searchNamedValues", "Search {property} values", { property: locale === "en" ? property.toLowerCase() : property })
+                : t("filterChip.searchValues", "Search values")
+            }
+            emptyText={t("filterChip.noMatches", "No values match")}
+            onSelect={(v) => {
+              if (multiple) onSelectedChange?.(selected.includes(v) ? selected.filter((s) => s !== v) : [...selected, v]);
+              else {
+                onSelectedChange?.([v]);
+                setOpen(false);
+              }
+            }}
+          />
+        </PickerPopover>
+      ) : (
+        <Menu
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) setQuery("");
+          }}
+        >
+          <Menu.Trigger>
+            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={!values?.length}>
+              {value}
+            </button>
+          </Menu.Trigger>
+          {values && (
+            <Menu.Content
+              {...(searchable ? { className: "w-280" } : {})}
+              {...(searchable
+                ? {
+                    header: (
+                      <input
+                        ref={search}
+                        type="search"
+                        aria-label={
+                          typeof property === "string"
+                            ? t("filterChip.searchNamedValues", "Search {property} values", { property: locale === "en" ? property.toLowerCase() : property })
+                            : t("filterChip.searchValues", "Search values")
+                        }
+                        placeholder={t("filterChip.search", "Search")}
+                        autoComplete="off"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (!["ArrowDown", "ArrowUp", "Escape", "Tab", "Enter"].includes(e.key)) e.stopPropagation();
+                        }}
+                        className="h-28 w-full bg-transparent text-body text-fg outline-none placeholder:text-fg-tertiary coarse:h-36"
+                      />
+                    ),
+                    ...(shown.length === 0 ? { footer: t("filterChip.noMatches", "No values match") } : {}),
+                  }
+                : {})}
+            >
+              {multiple ? (
+                inRuns(shown, (v) => (
+                  <Menu.CheckboxItem
+                    key={v.value}
+                    checked={selected.includes(v.value)}
+                    onCheckedChange={(c) => onSelectedChange?.(c ? [...selected, v.value] : selected.filter((s) => s !== v.value))}
+                    {...(v.icon ? { icon: v.icon } : {})}
+                  >
                     <span className="inline-flex items-center gap-8">
                       {v.leading}
                       {v.label}
                     </span>
-                  </Menu.RadioItem>
-                ))}
-              </Menu.RadioGroup>
-            )}
-          </Menu.Content>
-        )}
-      </Menu>
+                  </Menu.CheckboxItem>
+                ))
+              ) : (
+                <Menu.RadioGroup value={selected[0] ?? ""} onValueChange={(s) => onSelectedChange?.([s])}>
+                  {inRuns(shown, (v) => (
+                    <Menu.RadioItem key={v.value} value={v.value} closeOnClick {...(v.icon ? { icon: v.icon } : {})}>
+                      <span className="inline-flex items-center gap-8">
+                        {v.leading}
+                        {v.label}
+                      </span>
+                    </Menu.RadioItem>
+                  ))}
+                </Menu.RadioGroup>
+              )}
+            </Menu.Content>
+          )}
+        </Menu>
+      )}
       {onRemove && (
         <span className="flex items-center pr-4 divider-l pl-4">
           <button

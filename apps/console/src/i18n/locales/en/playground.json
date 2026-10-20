@@ -12,7 +12,7 @@
   "playground.full": "Compare up to {count} models at once",
   "playground.loadingModels": "Loading models",
   "playground.modelError": "The model stopped with an error. Try again.",
-  "playground.noProviderKey": "No {provider} key for this project",
+  "playground.noProviderKeyShort": "No {provider} key",
   "playground.parameters": "Parameters",
   "playground.prompt": "Send a prompt",
   "playground.promptEvery": "Send a prompt to every model",

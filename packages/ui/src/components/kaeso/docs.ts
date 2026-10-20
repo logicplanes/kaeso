@@ -71,6 +71,12 @@ export const docs = {
       withName: "Writes the provider's name next to its mark.",
     },
   },
+  CapabilityIcons: {
+    description: "A model's capabilities as small icons, each named in a tooltip and read as one list by screen readers.",
+    props: {
+      capabilities: "The capabilities: tools, reasoning, vision, pdf, structuredOutput.",
+    },
+  },
   ProviderCard: {
     description: "A provider and how this place reaches it: its mark, name and connection, the key in use, and the actions to connect, replace or remove one.",
     props: {
@@ -80,6 +86,31 @@ export const docs = {
       keyLabel: "The key: its name and last four characters, and when it was last used.",
       provider: "The provider id, such as `openai` or `anthropic`.",
       status: 'Where the key comes from, or what\'s missing: "The organization\'s key", "No key yet".',
+    },
+  },
+  ProviderPicker: {
+    description:
+      "Choosing a provider from any number of them: a search field over every provider, connected ones first with their key counts, then the rest from A to Z, each with its mark. Always open in a dialog step, or a pill that opens it in forms and toolbars.",
+    props: {
+      description: "One sentence of help under the label.",
+      label: "The visible label.",
+      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
+      optional: "Adds “Optional” to the label, for forms where most fields are required.",
+      required: "Marks it as required in a form.",
+      allLabel: 'Select only: a first option for no provider in particular, such as "All providers"; choosing it reports `null`.',
+      appearance: "An always-open list for a dialog step, or a pill that opens it.",
+      "aria-label": "The accessible name, for when there is no visible label.",
+      autoFocus: "List only: focuses the search field when it appears.",
+      disabled: "Turns it off: it can't be used, and it looks dimmed.",
+      onValueChange: "Called with the chosen provider's id, or `null` for `allLabel`.",
+      placeholder: "The search field's placeholder; in a pill without `allLabel`, also the text shown while nothing is chosen.",
+      providers: "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.",
+      size: "Select only: the height of the pill.",
+      value: "The chosen provider's id, when you control it.",
+    },
+    deprecated: {
+      error:
+        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
     },
   },
   RequestTimeline: {

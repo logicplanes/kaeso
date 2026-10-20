@@ -29,7 +29,7 @@ expression: settings_reference()
 | `KAESO_AUTH_PASSWORD` | `auth.password` | bool | `true` | Allow sign-in with email and password. |
 | `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | bool | `true` | Allow sign-in with a sign-in link sent by email. |
 | `KAESO_AUTH_OIDC` | `auth.oidc` | bool | `true` | Allow sign-in through an organization's OIDC identity provider. |
-| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | bool | `true` | Allow OIDC discovery and token requests to private and loopback addresses. Turn off on hosted installs to prevent server-side request forgery. |
+| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC discovery and token requests to private and loopback addresses, for an identity provider on your own network; link-local and cloud metadata addresses stay refused. |
 | `KAESO_KEY_FAILURES_PER_ADDRESS` | `key_failures.per_address` | integer | `100` | Failed API key lookups (well-formed keys that match no key) allowed per client address and window, on the model API and the Platform API together; beyond it, keys that are not cached are refused with 429 until the window ends. IPv6 addresses count per /64. Valid keys never count. `0` turns the throttle off. |
 | `KAESO_KEY_FAILURES_WINDOW` | `key_failures.window` | text | `1m` | The window of `key_failures.per_address`: 1s to 1h. |
 | `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | bool | `true` | Fetch models.dev periodically. Off for installs without internet; the built-in snapshot is used. |

@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
@@ -155,16 +155,42 @@ describe("ModelsPage", () => {
     await waitFor(() => expect(rowsOf("Anthropic")).toEqual(["claude-opus-4-1", "claude-sonnet-4-5", "claude-haiku-4-5"]));
   });
 
+  it("on a phone, gathers the filters under one Filters button that counts them", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    setUp();
+    const { user, router } = await renderApp(projectPath("models"));
+
+    await screen.findByText("claude-haiku-4-5");
+    expect(screen.queryByRole("button", { name: "Provider" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    const panel = await screen.findByRole("dialog", { name: "Filter models" });
+    await user.click(within(panel).getByRole("switch", { name: "Only overridden" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true }));
+    expect(screen.getByRole("button", { name: "Filters · 1" })).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Provider" })).toHaveTextContent("All providers");
+    vi.unstubAllGlobals();
+  });
+
   it("filters by provider, capability and overrides in the URL", async () => {
     setUp();
     const { user, router } = await renderApp(projectPath("models"));
 
     await screen.findByText("gpt-5");
-    await user.click(screen.getByRole("combobox", { name: "Provider" }));
-    await user.click(await screen.findByRole("option", { name: "OpenAI" }));
+    const provider = screen.getByRole("button", { name: "Provider" });
+    expect(provider).toHaveTextContent("All providers");
+    await user.click(provider);
+    await user.click(await screen.findByRole("option", { name: /^OpenAI/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ provider: "openai" }));
     expect(screen.queryByText("claude-haiku-4-5")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(provider).toHaveTextContent("OpenAI");
+    await user.click(provider);
     await user.click(await screen.findByRole("option", { name: "All providers" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
 

@@ -64,6 +64,7 @@ pub struct Overrides {
     pub mail: Option<Transport>,
     pub limits: Option<Arc<dyn crate::model_api::hooks::Limits>>,
     pub sink: Option<Arc<dyn crate::model_api::hooks::Sink>>,
+    pub dns: Option<Arc<dyn crate::services::dns::TxtLookup>>,
 }
 
 pub async fn prepare(config: Config) -> Result<AppState, ServeError> {
@@ -95,6 +96,7 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
         mailer,
         limits: overrides.limits,
         sink: overrides.sink,
+        dns: overrides.dns,
     });
     crate::services::models_dev::init(&state).await?;
     Ok(state)
