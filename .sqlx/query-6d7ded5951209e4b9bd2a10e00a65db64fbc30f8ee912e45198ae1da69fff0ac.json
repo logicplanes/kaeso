@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE api_keys SET disabled_at = $3, disabled_reason = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE 'manual' END, disabled_by_kind = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $4 END, disabled_by_id = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE $5::uuid END, updated_at = now() WHERE project_id = $1 AND id = $2 AND archived_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d7ded5951209e4b9bd2a10e00a65db64fbc30f8ee912e45198ae1da69fff0ac"
+}
