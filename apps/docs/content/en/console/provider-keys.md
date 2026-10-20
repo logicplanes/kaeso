@@ -8,8 +8,10 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 
 ## Add a key
 
-1. On **Providers**, choose **Add key**, or **Connect** next to a provider that has no key yet.
-2. **Which provider is the key for?** Choose the provider.
+**Providers** lists the providers your organization has keys for. Until it has one, the page explains provider keys and offers **Add provider key**.
+
+1. On **Providers**, choose **Add key**.
+2. **Which provider is the key for?** Search for the provider and choose it. Providers that already have keys come first, with their key counts.
 3. Paste the key and give it a name, such as `Production`. The table below says where each provider's keys come from.
 4. If the provider already has a default key, choose whether the new key becomes the default.
 

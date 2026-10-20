@@ -9,10 +9,15 @@ import { ProviderKeyDialog } from "./provider-key-dialog";
 
 const CREDENTIALS = "orgs/:org/credentials";
 
+async function choose(user: Awaited<ReturnType<typeof renderUi>>["user"], dialog: HTMLElement, provider: string) {
+  await user.click(within(dialog).getByRole("option", { name: (name) => name.startsWith(provider) }));
+  await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+}
+
 async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}) {
   const onClose = vi.fn();
   const view = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} {...props} />);
-  const dialog = await screen.findByRole("dialog", { name: /provider key|Connect|Replace/ });
+  const dialog = await screen.findByRole("dialog", { name: /provider key|Replace/ });
   return { ...view, dialog, onClose };
 }
 
@@ -22,17 +27,11 @@ describe("ProviderKeyDialog", () => {
     const { user, dialog, onClose } = await open({ keys: [credential(), credential({ id: "cred_two", is_default: false })] });
 
     expect(within(dialog).getByRole("heading", { name: "Add provider key" })).toBeInTheDocument();
-    expect(
-      within(dialog)
-        .getByRole("radio", { name: /OpenAI/ })
-        .closest("label"),
-    ).toHaveTextContent("2 keys");
-    expect(
-      within(dialog)
-        .getByRole("radio", { name: /Anthropic/ })
-        .closest("label"),
-    ).toHaveTextContent("Not connected yet");
-    await user.click(within(dialog).getByRole("radio", { name: /Anthropic/ }));
+    expect(within(dialog).getByRole("combobox", { name: "Search providers" })).toBeInTheDocument();
+    expect(within(within(dialog).getByRole("group", { name: "Connected" })).getByRole("option")).toHaveAccessibleName("OpenAI 2 keys");
+    expect(within(dialog).getByRole("option", { name: "OpenAI 2 keys" })).toHaveAttribute("aria-selected", "true");
+    expect(within(dialog).getByRole("group", { name: "Other providers" })).toContainElement(within(dialog).getByRole("option", { name: "Anthropic" }));
+    await user.click(within(dialog).getByRole("option", { name: "Anthropic" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
@@ -54,7 +53,7 @@ describe("ProviderKeyDialog", () => {
     on("POST", CREDENTIALS, credential({ provider: "deepseek", name: "Reasoning", is_default: true }));
     const { user, dialog } = await open();
 
-    await user.click(within(dialog).getByRole("radio", { name: /DeepSeek/ }));
+    await user.click(within(dialog).getByRole("option", { name: "DeepSeek" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your DeepSeek API key" })).toBeVisible();
@@ -72,7 +71,8 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("says what the key step still needs", async () => {
-    const { user, dialog } = await open({ provider: "anthropic" });
+    const { user, dialog } = await open();
+    await choose(user, dialog, "Anthropic");
     const secret = within(dialog).getByLabelText("Anthropic API key");
     const add = () => within(dialog).getByRole("button", { name: "Add key" });
     await hoverReason(user, add(), "Paste the Anthropic API key");
@@ -85,12 +85,12 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS)).toHaveLength(0);
   });
 
-  it("connects a chosen provider and can make the new key its default", async () => {
+  it("adds another key for a connected provider and can make it the default", async () => {
     on("POST", CREDENTIALS, credential({ name: "Backup", is_default: true }));
-    const { user, dialog } = await open({ provider: "openai", keys: [credential()] });
+    const { user, dialog } = await open({ keys: [credential()] });
 
-    expect(within(dialog).getByRole("heading", { name: "Connect OpenAI" })).toBeInTheDocument();
-    expect(within(dialog).queryByRole("radio", { name: /Anthropic/ })).not.toBeInTheDocument();
+    await choose(user, dialog, "OpenAI");
+    expect(within(dialog).getByText("Step 2 of 3")).toBeInTheDocument();
     expect(within(dialog).getByText("Create one at platform.openai.com under API keys; it starts with sk-.")).toBeInTheDocument();
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-new");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Backup{Enter}");
@@ -105,8 +105,9 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("asks only for the provider's key for a provider it has no hint for", async () => {
-    const { dialog } = await open({ provider: "mistral" });
-    expect(within(dialog).getByRole("heading", { name: "Connect Mistral" })).toBeInTheDocument();
+    const mistral = credential({ id: "cred_mistral", provider: "mistral", name: "Mistral main" });
+    const { dialog } = await open({ keys: [mistral], replace: mistral });
+    expect(within(dialog).getByRole("heading", { name: "Paste the new Mistral key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
     expect(within(dialog).getByLabelText("Mistral API key")).toHaveAttribute("placeholder", "sk-…");
   });
@@ -128,8 +129,9 @@ describe("ProviderKeyDialog", () => {
 
   it("shows the API's message and keeps the dialog open when the key is refused", async () => {
     on("POST", CREDENTIALS, apiError(422, "invalid_request", "OpenAI rejected this key.", { param: "secret" }));
-    const { user, dialog, onClose } = await open({ provider: "openai" });
+    const { user, dialog, onClose } = await open();
 
+    await choose(user, dialog, "OpenAI");
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-bad");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bad{Enter}");
     expect((await notifications().findAllByText("OpenAI rejected this key.")).length).toBeGreaterThan(0);

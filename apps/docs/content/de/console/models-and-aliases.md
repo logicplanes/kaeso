@@ -8,7 +8,7 @@ Der Katalog eines Projekts auf seiner Seite **Modelle** listet die Modelle, die 
 
 ## Modelle hinzufügen
 
-Wählen Sie **Modelle hinzufügen** und durchsuchen Sie die Modelle eines Anbieters. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
+Wählen Sie **Modelle hinzufügen**, wählen Sie in der durchsuchbaren Liste neben dem Suchfeld einen Anbieter, die von Ihrer Organisation verbundenen zuerst, und durchsuchen Sie seine Modelle. Der Dialog merkt sich den Anbieter, bis Sie die Konsole neu laden oder sich abmelden. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
 
 Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen. Zwei Abkürzungen decken den Rest ab:
 

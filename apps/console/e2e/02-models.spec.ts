@@ -47,9 +47,9 @@ test("every current model of a provider is added at once, and models already the
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.6");
   await expect(hit(page, "gpt-5.6").getByText("Already in catalogue")).toBeVisible();
-  await expect(async () => {
-    await dialog.getByRole("radio", { name: "Anthropic" }).check({ timeout: 2000 });
-  }).toPass({ timeout: 10_000 });
+  await dialog.getByRole("button", { name: "Provider" }).click();
+  await page.getByRole("option", { name: /^Anthropic/ }).click();
+  await expect(dialog.getByRole("button", { name: "Provider" })).toHaveText(/Anthropic/);
   await dialog.getByRole("button", { name: "Add every current Anthropic model" }).click();
   await expect(dialog.getByText(/skips ones already here/)).toBeVisible();
   await dialog.getByRole("button", { name: "Add every current Anthropic model" }).click();
@@ -164,7 +164,7 @@ test("aliases: create, the shadow warning, rename, delete", async ({ page }) => 
   await page.getByRole("button", { name: "Create alias" }).first().click();
   let dialog = page.getByRole("dialog", { name: "Create alias" });
   await dialog.getByLabel("Name").fill("fast");
-  await dialog.getByRole("combobox", { name: "Target" }).click();
+  await dialog.getByRole("button", { name: "Target" }).click();
   await page.getByRole("option", { name: /^GPT-5\.4 mini/ }).click();
   await dialog.getByRole("button", { name: "Create alias" }).click();
   await expect(page.getByText("Alias fast created")).toBeVisible();
@@ -173,7 +173,7 @@ test("aliases: create, the shadow warning, rename, delete", async ({ page }) => 
   dialog = page.getByRole("dialog", { name: "Create alias" });
   await dialog.getByLabel("Name").fill("gpt-5.4-nano");
   await expect(dialog.getByText("Apps that send `gpt-5.4-nano` get this alias, not the model with the same name.")).toBeVisible();
-  await dialog.getByRole("combobox", { name: "Target" }).click();
+  await dialog.getByRole("button", { name: "Target" }).click();
   await page.getByRole("option", { name: /^GPT-5\.6/ }).click();
   await dialog.getByRole("button", { name: "Create alias" }).click();
   await expect(row(page, "gpt-5.4-nano", "Aliases").getByText("Shadows a model")).toBeVisible();

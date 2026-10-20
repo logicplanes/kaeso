@@ -29,22 +29,19 @@ import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgPartyName } from "~/features/org/party";
-import { PROVIDER_IDS, providerLabel } from "~/format/labels";
+import { providerLabel } from "~/format/labels";
+import { docsPage } from "~/format/docs";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
 import { usePageCreateAction } from "~/shell/create-action";
 import { OrgHeader } from "~/shell/org-header";
 import { toast } from "~/shell/toast";
 import { t } from "~/i18n";
 
-type Row = { id: string; provider: string; key: CredentialView | undefined; first: boolean };
+type Row = { id: string; provider: string; key: CredentialView; first: boolean };
 
 function rowsOf(keys: CredentialView[]): Row[] {
-  const providers = [...PROVIDER_IDS, ...keys.map((k) => k.provider).filter((p) => !PROVIDER_IDS.includes(p))].filter((p, i, all) => all.indexOf(p) === i);
-  return providers.flatMap((provider): Row[] => {
-    const own = keys.filter((k) => k.provider === provider);
-    if (own.length === 0) return [{ id: provider, provider, key: undefined, first: true }];
-    return own.map((key, i) => ({ id: key.id, provider, key, first: i === 0 }));
-  });
+  const providers = [...new Set(keys.map((k) => k.provider))].sort((a, b) => providerLabel(a).localeCompare(providerLabel(b)));
+  return providers.flatMap((provider) => keys.filter((k) => k.provider === provider).map((key, i) => ({ id: key.id, provider, key, first: i === 0 })));
 }
 
 const joined = (names: string[]) => names.join(t("orgHome.listSeparator", ", "));
@@ -63,7 +60,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const canDelete = rights.has("provider_credentials.delete");
   const credentials = useQuery({ ...orgCredentialsQuery(org), enabled: canView });
   const partyName = useOrgPartyName(org);
-  const [adding, setAdding] = useState<{ provider?: string } | null>(null);
+  const [adding, setAdding] = useState(false);
   const [replacing, setReplacing] = useState<CredentialView | null>(null);
   const [renaming, setRenaming] = useState<CredentialView | null>(null);
   const [assigning, setAssigning] = useState<CredentialView | null>(null);
@@ -71,7 +68,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const keys = credentials.data ?? [];
   const rows = credentials.data ? rowsOf(keys) : [];
   const addReason = canAdd ? undefined : needs("provider_credentials.create");
-  usePageCreateAction(canView ? { label: t("orgHome.addProviderKey", "Add provider key"), run: () => setAdding({}), disabledReason: addReason } : null);
+  usePageCreateAction(canView ? { label: t("orgHome.addProviderKey", "Add provider key"), run: () => setAdding(true), disabledReason: addReason } : null);
 
   const makeDefault = useApiMutation({
     mutationFn: async (k: CredentialView) =>
@@ -131,11 +128,11 @@ export function OrgProvidersPage({ org }: { org: string }) {
 
   const columns = [
     col.custom(
-      { id: "provider", header: t("common.provider", "Provider"), size: 148, priority: 1 },
+      { id: "provider", header: t("common.provider", "Provider"), size: 232, minWidth: 128, priority: 1, grow: true },
       (r: Row) => r,
       (r: Row) =>
         r.first ? (
-          <span className="flex min-w-0 items-center gap-12">
+          <span className="flex min-w-0 items-center gap-8 sm:gap-12">
             <ProviderBadge provider={r.provider} size="lg" />
             <Text weight="medium" truncate>
               {providerLabel(r.provider)}
@@ -146,30 +143,26 @@ export function OrgProvidersPage({ org }: { org: string }) {
     col.custom(
       { id: "key", header: t("orgHome.key", "Key"), size: 260, priority: 1, grow: true },
       (r: Row) => r,
-      (r: Row) =>
-        r.key ? (
-          <span className="flex min-w-0 items-center gap-8">
-            <Text truncate>{r.key.name}</Text>
-            <Tooltip
-              content={t(
-                "orgHome.masterKeyHint",
-                "The master key that wraps this provider key. Back up the master keys separately from the database. This one: {id}.",
-                { id: r.key.key_id },
-              )}
-            >
-              <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
-            </Tooltip>
-            {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
-          </span>
-        ) : (
-          <Badge>{t("orgHome.notConnected", "Not connected")}</Badge>
-        ),
+      (r: Row) => (
+        <span className="flex min-w-0 items-center gap-8">
+          <Text truncate>{r.key.name}</Text>
+          <Tooltip
+            content={t(
+              "orgHome.masterKeyHint",
+              "The master key that wraps this provider key. Back up the master keys separately from the database. This one: {id}.",
+              { id: r.key.key_id },
+            )}
+          >
+            <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
+          </Tooltip>
+          {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
+        </span>
+      ),
     ),
     col.custom(
       { id: "projects", header: t("common.projects", "Projects"), size: 220, priority: 2 },
       (r: Row) => r.key,
-      (k: CredentialView | undefined) => {
-        if (!k) return null;
+      (k: CredentialView) => {
         const names = k.projects.map((p) => p.name);
         if (names.length > 0)
           return (
@@ -191,34 +184,25 @@ export function OrgProvidersPage({ org }: { org: string }) {
     col.custom(
       { id: "added", header: t("orgHome.added", "Added"), size: 240, priority: 3 },
       (r: Row) => r.key,
-      (k: CredentialView | undefined) =>
-        k ? (
-          <Text variant="small" tone="secondary" truncate>
-            {t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) })}
-          </Text>
-        ) : null,
+      (k: CredentialView) => (
+        <Text variant="small" tone="secondary" truncate>
+          {t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) })}
+        </Text>
+      ),
     ),
     col.custom(
       { id: "used", header: t("common.lastUsed", "Last used"), size: 152, priority: 2 },
       (r: Row) => r.key,
-      (k: CredentialView | undefined) =>
-        k ? (
-          <Text variant="small" tone={k.last_used_at ? "secondary" : "tertiary"}>
-            {k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never")}
-          </Text>
-        ) : null,
+      (k: CredentialView) => (
+        <Text variant="small" tone={k.last_used_at ? "secondary" : "tertiary"}>
+          {k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never")}
+        </Text>
+      ),
     ),
     col.custom(
-      { id: "actions", header: "", size: canAdd && rows.some((r) => !r.key) ? 136 : 56, priority: 1 },
-      (r: Row) => r,
-      (r: Row) =>
-        r.key ? (
-          menu(r.key)
-        ) : canAdd ? (
-          <Button size="sm" variant="ghost" leadingIcon={icons.add} onClick={() => setAdding({ provider: r.provider })}>
-            {t("orgHome.connect", "Connect")}
-          </Button>
-        ) : null,
+      { id: "actions", header: "", size: 56, priority: 1 },
+      (r: Row) => r.key,
+      (k: CredentialView) => menu(k),
       { align: "end" },
     ),
   ].map((c) => ({ ...c, enableSorting: false }));
@@ -241,7 +225,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
               leadingIcon={icons.add}
               disabled={!canAdd}
               {...(addReason ? { disabledReason: addReason } : {})}
-              onClick={() => setAdding({})}
+              onClick={() => setAdding(true)}
             >
               {t("orgHome.addKey", "Add key")}
             </Button>
@@ -261,10 +245,28 @@ export function OrgProvidersPage({ org }: { org: string }) {
             loading={credentials.isPending}
             error={credentials.isError && rows.length === 0 ? t("orgHome.providerKeysFailed", "The provider keys couldn't load") : undefined}
             onRetry={() => void credentials.refetch()}
+            empty={
+              <Empty
+                title={t("orgHome.noProviderKeys", "No provider keys yet")}
+                description={t("orgHome.noProviderKeysHint", "A provider key lets this organization's projects call that provider's models.")}
+                actions={
+                  <>
+                    {canAdd && (
+                      <Button variant="primary" leadingIcon={icons.add} onClick={() => setAdding(true)}>
+                        {t("orgHome.addProviderKey", "Add provider key")}
+                      </Button>
+                    )}
+                    <Button variant="ghost" href={docsPage("/console/provider-keys")}>
+                      {t("orgHome.aboutProviderKeys", "About provider keys")}
+                    </Button>
+                  </>
+                }
+              />
+            }
           />
         )}
       </AppFrame.Body>
-      {adding && <ProviderKeyDialog org={org} provider={adding.provider} keys={keys} onClose={() => setAdding(null)} />}
+      {adding && <ProviderKeyDialog org={org} keys={keys} onClose={() => setAdding(false)} />}
       {replacing && <ProviderKeyDialog org={org} keys={keys} replace={replacing} onClose={() => setReplacing(null)} />}
       {renaming && <RenameKeyDialog org={org} credential={renaming} onClose={() => setRenaming(null)} />}
       {assigning && <AssignKeyDialog org={org} credential={assigning} keys={keys} onClose={() => setAssigning(null)} />}

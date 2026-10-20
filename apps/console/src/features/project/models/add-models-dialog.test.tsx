@@ -26,6 +26,11 @@ const open = async () => {
   return { ...view, dialog };
 };
 
+async function pickProvider(user: Awaited<ReturnType<typeof open>>["user"], dialog: HTMLElement, name: string) {
+  await user.click(within(dialog).getByRole("button", { name: "Provider" }));
+  await user.click(await screen.findByRole("option", { name: new RegExp(`^${name}`) }));
+}
+
 const BATCH = "orgs/:org/projects/:project/models/batch";
 const MODELS = "orgs/:org/projects/:project/models";
 const SEARCH = "orgs/:org/projects/:project/models/search";
@@ -152,9 +157,16 @@ describe("AddModelsDialog", () => {
     expect(await within(dialog).findByText("No models found")).toBeInTheDocument();
     expect(within(dialog).getByText("Try another name, or include deprecated models.")).toBeInTheDocument();
     await user.clear(within(dialog).getByRole("searchbox", { name: "Search models" }));
-    await user.click(within(dialog).getByRole("radio", { name: "Anthropic" }));
+    await pickProvider(user, dialog, "Anthropic");
     expect(await within(dialog).findByText("claude-opus-4-1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Add every current Anthropic model" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Provider" })).toHaveTextContent("Anthropic");
+
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add models/ })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Add models" }));
+    const again = await screen.findByRole("dialog", { name: /Add models/ });
+    expect(within(again).getByRole("button", { name: "Provider" })).toHaveTextContent("Anthropic");
   });
 
   it("says when models.dev lists no models for the provider", async () => {
@@ -303,7 +315,7 @@ describe("AddModelsDialog", () => {
     on("POST", MODELS, catalogueModel({ id: "cm_opus", model_id: "claude-opus-4-1" }));
     const { user, dialog } = await open();
 
-    await user.click(within(dialog).getByRole("radio", { name: "Anthropic" }));
+    await pickProvider(user, dialog, "Anthropic");
     await user.click(await within(dialog).findByRole("button", { name: "Add a custom model" }));
     const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
     expect(within(custom).getByText("The id Anthropic uses, sent as `model`.")).toBeInTheDocument();

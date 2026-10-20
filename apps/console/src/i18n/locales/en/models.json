@@ -92,6 +92,8 @@
   "models.field.timeout": "Timeout",
   "models.fieldReset": "{field} reset to models.dev",
   "models.filter": "Filter models",
+  "models.filters": "Filters",
+  "models.filtersCount": "Filters · {count}",
   "models.inCatalogue": "Already in catalogue",
   "models.includeDeprecated": "Include deprecated",
   "models.listSeparator": ", ",

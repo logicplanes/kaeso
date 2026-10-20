@@ -12,6 +12,7 @@ import {
   type FilterChipChoice,
   IconButton,
   Menu,
+  ProviderBadge,
   SearchInput,
   Select,
   Text,
@@ -23,7 +24,8 @@ import { allKeysQuery } from "~/api/queries/keys";
 import { logsInfiniteQuery, type LogFilters, type LogRange } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
-import { ERROR_KIND_IDS, PROVIDER_IDS, errorKindLabel, providerLabel } from "~/format/labels";
+import { ERROR_KIND_IDS, errorKindLabel, providerLabel } from "~/format/labels";
+import { useProviderOptions } from "~/kaeso/providers";
 import { utcDay } from "~/format/period";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
@@ -85,6 +87,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: rights.has("service_accounts.view") });
   const catalogue = useQuery(catalogueQuery(org, project));
+  const providers = useProviderOptions(org);
   const partyName = usePartyName(org, project);
   const [columns, setColumns] = useState<ColumnId[]>(storedColumns);
   const [density, setDensity] = useState<"default" | "compact">("default");
@@ -139,21 +142,37 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name })),
     ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),
   ];
-  const modelOptions = (catalogue.data ?? []).map((m) => ({
-    value: m.model_id,
-    textValue: m.effective.display_name && m.effective.display_name !== m.model_id ? `${m.effective.display_name} ${m.model_id}` : m.model_id,
-    label:
-      m.effective.display_name && m.effective.display_name !== m.model_id ? (
-        <span className="flex min-w-0 items-baseline gap-8">
-          {m.effective.display_name}
-          <Text mono variant="small" tone="secondary">
-            {m.model_id}
-          </Text>
+  const modelOptions = [...(catalogue.data ?? [])]
+    .sort((a, b) => providerLabel(a.provider).localeCompare(providerLabel(b.provider)))
+    .map((m) => ({
+      value: m.model_id,
+      group: providerLabel(m.provider),
+      textValue: m.effective.display_name && m.effective.display_name !== m.model_id ? `${m.effective.display_name} ${m.model_id}` : m.model_id,
+      label:
+        m.effective.display_name && m.effective.display_name !== m.model_id ? (
+          <span className="flex min-w-0 items-baseline gap-8">
+            {m.effective.display_name}
+            <Text mono variant="small" tone="secondary">
+              {m.model_id}
+            </Text>
+          </span>
+        ) : (
+          m.model_id
+        ),
+    }));
+  const someConnected = providers.some((p) => p.connected) && providers.some((p) => !p.connected);
+  const providerChoices = [...providers]
+    .sort((a, b) => Number(!!b.connected) - Number(!!a.connected) || providerLabel(a.id).localeCompare(providerLabel(b.id)))
+    .map((p) => ({
+      value: p.id,
+      label: providerLabel(p.id),
+      ...(someConnected ? { group: p.connected ? t("logs.filter.connectedProviders", "Connected") : t("logs.filter.otherProviders", "Other providers") } : {}),
+      leading: (
+        <span aria-hidden className="flex">
+          <ProviderBadge provider={p.id} size="sm" />
         </span>
-      ) : (
-        m.model_id
       ),
-  }));
+    }));
   const choice = (id: ChoiceFilterId): FilterChipChoice[] =>
     id === "key"
       ? keyOptions
@@ -162,7 +181,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         : id === "model"
           ? modelOptions
           : id === "provider"
-            ? PROVIDER_IDS.map((p) => ({ value: p, label: providerLabel(p) }))
+            ? providerChoices
             : id === "status"
               ? STATUSES.map((s) => ({ value: String(s), label: String(s) }))
               : id === "error"
