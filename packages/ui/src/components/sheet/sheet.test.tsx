@@ -1,11 +1,48 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createRef } from "react";
+import { createRef, useState } from "react";
 import { Sheet } from "./sheet.js";
 import { Button } from "../button/button.js";
 
+function MembersPage() {
+  const [member, setMember] = useState<string | null>(null);
+  return (
+    <>
+      <Button onClick={() => setMember("Lin Park")}>Open Lin Park</Button>
+      <Sheet open={!!member} onOpenChange={(o) => !o && setMember(null)} title={member ?? "Member"}>
+        {member && <p>{member} joined on 3 March</p>}
+      </Sheet>
+    </>
+  );
+}
+
 describe("Sheet", () => {
+  it("keeps showing the row it was opened for while it slides out, after the page has let go of the row", async () => {
+    let finish = () => undefined as void;
+    const finished = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const spy = vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.closest("[data-ending-style]") ? [{ finished } as unknown as Animation] : [];
+    });
+    try {
+      render(<MembersPage />);
+      await userEvent.click(screen.getByRole("button", { name: "Open Lin Park" }));
+      await screen.findByRole("dialog", { name: "Lin Park" });
+      await userEvent.click(screen.getByRole("button", { name: "Close" }));
+      await waitFor(() => expect(document.querySelector("[data-ending-style]")).not.toBeNull());
+      const closing = screen.getByRole("dialog", { hidden: true });
+      expect(closing).toHaveTextContent("Lin Park");
+      expect(closing).toHaveTextContent("Lin Park joined on 3 March");
+      expect(closing).not.toHaveTextContent("Member");
+      finish();
+      await waitFor(() => expect(screen.queryByRole("dialog", { hidden: true })).toBeNull());
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("opens from its trigger with a title, subtitle, actions and footer, and closes", async () => {
     const onOpenChange = vi.fn();
     render(

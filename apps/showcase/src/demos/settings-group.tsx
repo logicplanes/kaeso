@@ -98,6 +98,11 @@ export function States() {
             <SettingsRow title="Hover" description="A navigation row under the pointer." value="Value" href="#" data-force="hover" />
             <SettingsRow title="Focus" value="Value" href="#" data-force="focus" />
             <SettingsRow
+              title="Organization id"
+              description="Used by the Platform API."
+              control={<InlineCopyText value="org_01m5btmm86ee096rh834eenxs1" label="Copy organization id" />}
+            />
+            <SettingsRow
               title="Delete organization"
               description="Projects, keys and logs are deleted after 30 days."
               danger

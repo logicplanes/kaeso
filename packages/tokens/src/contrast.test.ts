@@ -39,6 +39,7 @@ const neutralRules: readonly (readonly [keyof typeof neutral, keyof typeof neutr
   ["toast-fg-secondary", "toast-bg", 4.5],
   ["focus", "bg-panel", 3],
   ["line-strong", "bg-panel", 1.3],
+  ...(["line-field", "line-field-hover"] as const).flatMap((edge) => surfaces.map((bg) => [edge, bg, 3] as const)),
 ];
 
 describe.each(MODES)("contrast in %s mode", (mode) => {

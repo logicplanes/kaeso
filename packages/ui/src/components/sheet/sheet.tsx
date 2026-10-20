@@ -73,7 +73,14 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   );
 }
 
-export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(props, ref) {
+function useShownContent(props: SheetProps): SheetProps {
+  const [shown, setShown] = useState(props);
+  if (props.open !== false && shown !== props) setShown(props);
+  return props.open === false ? { ...shown, open: false, onOpenChange: props.onOpenChange } : props;
+}
+
+export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(current, ref) {
+  const props = useShownContent(current);
   const { open, defaultOpen, onOpenChange, trigger, size = "sm", side = "right", modal = true, inline } = props;
   const box = cn(
     "flex flex-col overflow-hidden rounded-sheet bg-raised text-fg shadow-dialog outline-none",

@@ -262,14 +262,14 @@
 @utility material-field {
   background-color: var(--k-fill-control, var(--k-bg-raised));
   color: var(--k-text);
-  box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control));
+  box-shadow: var(--k-shadow-field);
   @media (hover: hover) {
     &:hover:not(:disabled, [data-disabled], [aria-disabled="true"], :focus-within) {
-      box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
+      box-shadow: var(--k-shadow-field-hover);
     }
   }
   &[data-force~="hover"] {
-    box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
+    box-shadow: var(--k-shadow-field-hover);
   }
   &:focus-visible,
   &:has(:focus-visible),
@@ -306,17 +306,17 @@
 @utility material-composer {
   background-color: var(--k-fill-control, var(--k-bg-raised));
   color: var(--k-text);
-  box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control));
+  box-shadow: var(--k-shadow-field);
   @media (hover: hover) {
     &:hover:not(:has(textarea:disabled), :has(textarea:focus)) {
-      box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
+      box-shadow: var(--k-shadow-field-hover);
     }
   }
   &[data-force~="hover"] {
-    box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
+    box-shadow: var(--k-shadow-field-hover);
   }
   &:has(textarea:focus) {
-    box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
+    box-shadow: var(--k-shadow-field-hover);
   }
   :root:not([data-k-pointer]) &:has(textarea:focus-visible),
   &[data-force~="focus"] {

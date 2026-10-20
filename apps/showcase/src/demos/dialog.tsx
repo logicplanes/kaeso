@@ -6,14 +6,15 @@ import { StateSection } from "~/lib/states";
 export const meta = {
   title: "Dialog",
   description:
-    "A modal dialog: 440, 560 or 720 wide, radius 20; title, description, body, actions. ⌘Enter submits. Longer forms use StepDialog: one question per step.",
+    "A modal dialog: 440, 560 or 720 wide, radius 20; title, description, body, actions. Enter in a field and ⌘Enter submit. Longer forms use StepDialog: one question per step.",
   group: "Components",
   entry: "dialog",
   import: "Dialog",
   keyboard: [
     ["Escape", "Closes and returns focus to the trigger"],
     ["Tab", "Moves within the dialog"],
-    ["mod Enter", "Submits"],
+    ["Enter", "Submits from a single-line field"],
+    ["mod Enter", "Submits from anywhere in the dialog"],
   ],
   a11y: [
     "Focus moves into the dialog and returns to the trigger when it closes. It lands on the first field (or the control marked data-autofocus); without one, on the primary action, or on the safe one, such as Cancel, when the primary action destroys or is unavailable; then on the first control. Never on the dialog box itself.",
