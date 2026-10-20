@@ -94,11 +94,14 @@ Sind die Header eines Streams gesendet, kann sich sein Status nicht mehr ändern
 | Der Anbieter sendet ein Fehler-Event | Der Status des Fehlers, sonst 502 | Die Art des Fehlers |
 | Die Verbindung zum Anbieter bricht ab, oder der Stream endet zu früh | 502 | `stream_interrupted` |
 | Der Anbieter schweigt länger als das Leerlauf-Zeitlimit | 504 | `timeout` |
+| Der Stream erreicht `KAESO_STREAMS_MAX_DURATION` oder `KAESO_STREAMS_MAX_BYTES` | 502 | `stream_limit` |
 | KPP kann ein Event nicht für die App codieren | Der Status des Fehlers, sonst 500 | Die Art des Fehlers |
 
 Nach einem Fehler-Event des Anbieters hört Kaeso auf zu lesen und schließt die Anfrage beim Anbieter, sodass der Anbieter aufhört zu generieren.
 
 Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives und die Zeit bis zu den ersten Bytes. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
+
+Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem Stream liest, gilt als getrennt: Kaeso stoppt die Anfrage beim Anbieter und protokolliert einen Verbindungsabbruch.
 
 ## Verbindungsabbrüche
 

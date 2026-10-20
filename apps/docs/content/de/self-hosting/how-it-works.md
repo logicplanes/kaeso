@@ -69,7 +69,6 @@ Die Dienste teilen so wenig wie möglich:
 - PostgreSQL, ClickHouse und Valkey bekommen nur die Capabilities zurück, die ihre Images beim Start brauchen. Damit übergibt jeder sein Datenverzeichnis dem eigenen Benutzer und läuft danach nicht mehr als root. `caddy-init` bekommt nur die Rechte, jedes Verzeichnis zu lesen und Eigentümer zu ändern, und `updater-init` zusätzlich das Recht, die Rechte einer Datei zu ändern.
 - Jeder Dienst hat eine Speicher- und eine Prozessgrenze, und Docker rotiert sein Log bei 10 MB und behält fünf Dateien ([Container-Grenzen](configuration.md#container-grenzen)).
 - Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort, das es aus einer Datei liest statt von seiner Befehlszeile.
-- Cache-Einträge, die Instanzen über Valkey teilen, tragen eine Signatur mit einem aus dem Master-Schlüssel abgeleiteten Schlüssel, und ein Eintrag ohne sie wird erneut aus PostgreSQL geladen. Valkey hält trotzdem die Zähler der Limits und meldet jeder Instanz, was sich geändert hat, teilen Sie es also nie mit etwas außerhalb der Vertrauensgrenze der Installation.
 - Caddy sendet `Strict-Transport-Security` und leitet den Metrik-Port des Gateways, 9100, nie weiter.
 
 ## Mehrere Gateways

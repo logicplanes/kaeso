@@ -81,6 +81,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
+| `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
 
 在 `http` 回环地址上（例如 `http://localhost:8080`），会话 Cookie 不带 `Secure` 和 `__Host-` 前缀，因此控制台可以在您的电脑上通过普通 HTTP 使用。
 
@@ -101,7 +102,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | 文本，机密 | 必填 | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。 |
 | `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
 | `KAESO_VALKEY_URL` | `valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
-| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于相互信任的多个安装共用一个 Valkey。 |
+| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于多个实例共用一个 Valkey。 |
 
 ### 主密钥
 
@@ -174,11 +175,15 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 项目目录中的模型可以设置自己的超时（[模型和别名](../console/models-and-aliases.md)）。
 
+当网关的环境设置了代理时，网关会通过 `HTTPS_PROXY`（`http` 基础 URL 用 `HTTP_PROXY`，或 `ALL_PROXY`）中的代理调用服务商，`NO_PROXY` 中的主机除外。代理能看到 `http` 调用中的服务商密钥，因此通过代理时请使用 `https` 基础 URL。
+
 ### 发往应用的流
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
 | `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
+| `KAESO_STREAMS_MAX_DURATION` | `streams.max_duration` | 文本 | `0s` | 流式回复最长可运行的时间，超时后网关以错误事件结束它。`0s` 表示不限制。 |
+| `KAESO_STREAMS_MAX_BYTES` | `streams.max_bytes` | 文本 | `0` | 流式回复最多可写给应用的字节数，例如 `64MiB`，超出后网关以错误事件结束它。`0` 表示不限制。 |
 
 ### 推理连续性
 

@@ -94,11 +94,14 @@ Once a stream's headers are sent, its status can't change. A stream that fails a
 | The provider sends an error event | The error's status, or else 502 | The error's kind |
 | The connection to the provider breaks, or the stream ends early | 502 | `stream_interrupted` |
 | The provider is silent for longer than the idle timeout | 504 | `timeout` |
+| The stream reaches `KAESO_STREAMS_MAX_DURATION` or `KAESO_STREAMS_MAX_BYTES` | 502 | `stream_limit` |
 | KPP can't encode an event for the app | The error's status, or else 500 | The error's kind |
 
 After an error event from the provider, Kaeso stops reading and closes the provider request, so the provider stops generating.
 
 Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, and the time to the first bytes. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
+
+An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` counts as gone: Kaeso stops the provider request and logs it as a disconnect.
 
 ## Disconnects
 

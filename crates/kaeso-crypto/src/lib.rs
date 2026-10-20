@@ -2,14 +2,12 @@
 
 mod envelope;
 mod keyring;
-mod mac;
 pub mod password;
 mod random;
 pub mod totp;
 
 pub use envelope::{Sealed, open, rewrap, seal};
 pub use keyring::{KeyRing, KeyRingError, MasterKey, generate_master_key};
-pub use mac::MacKey;
 pub use random::{random_bytes, random_token};
 pub use secrecy::{ExposeSecret, SecretBox, SecretString};
 
