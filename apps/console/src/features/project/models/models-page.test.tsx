@@ -6,12 +6,7 @@ import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/te
 import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
-const withoutBadges = (cell: HTMLElement) => {
-  const copy = cell.cloneNode(true) as HTMLElement;
-  for (const badge of copy.querySelectorAll("[role='img']")) badge.remove();
-  return copy.textContent;
-};
-const cells = () => screen.getAllByRole("gridcell").map(withoutBadges);
+const cells = () => screen.getAllByRole("gridcell").map((c) => c.textContent);
 
 const catalogue = () => [
   catalogueModel({ aliases: ["fast", "default", "cheap"], overrides: { input_price: "2.5", output_price: null } }),
