@@ -25,7 +25,11 @@ export function NotificationsPage() {
   });
   const n = save.isPending ? save.variables : current.data;
   return (
-    <SettingsPage title={t("account.notifications", "Notifications")} context={t("account.title", "Account")}>
+    <SettingsPage
+      title={t("account.notifications", "Notifications")}
+      context={t("account.title", "Account")}
+      description={t("account.notificationsPageHint", "The emails Kaeso sends you about budgets and keys.")}
+    >
       {current.isError ? (
         <LoadFailed title={t("account.notificationsFailed", "Your notification settings couldn't load")} />
       ) : !n ? (

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertDialog, Avatar, Badge, Button, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { useMemberships } from "~/auth/session";
+import { orgOwnersQuery } from "~/api/queries/orgs";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { projectPath } from "~/shell/pages";
 import { SettingsPage } from "~/shell/settings-page";
@@ -39,13 +40,7 @@ export function MembershipsPage() {
           key={m.org_id}
           title={m.org_name}
           description={t("account.orgRole", "{role} of the organization", { role: m.role.name })}
-          actions={
-            m.org_state === "scheduled_for_deletion" ? undefined : (
-              <Button size="sm" variant="ghost" onClick={() => setLeaving(m)}>
-                {t("account.leaveOrg", "Leave organization")}
-              </Button>
-            )
-          }
+          actions={m.org_state === "scheduled_for_deletion" ? undefined : <LeaveButton membership={m} onLeave={() => setLeaving(m)} />}
         >
           <SettingsGroup aria-label={t("account.projectsIn", "Projects in {org}", { org: m.org_name })}>
             {m.org_state === "scheduled_for_deletion" && (
@@ -91,5 +86,21 @@ export function MembershipsPage() {
         onConfirm={() => (leaving ? leave.mutateAsync(leaving) : undefined)}
       />
     </SettingsPage>
+  );
+}
+
+function LeaveButton({ membership: m, onLeave }: { membership: MyMembership; onLeave: () => void }) {
+  const owners = useQuery({ ...orgOwnersQuery(m.org_id), enabled: m.role.id === "owner" });
+  const soleOwner = m.role.id === "owner" && owners.data?.length === 1;
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={soleOwner || (m.role.id === "owner" && owners.isPending)}
+      disabledReason={soleOwner ? t("account.soleOwner", "You're its only owner; make someone else an owner first.") : undefined}
+      onClick={onLeave}
+    >
+      {t("account.leaveOrg", "Leave organization")}
+    </Button>
   );
 }

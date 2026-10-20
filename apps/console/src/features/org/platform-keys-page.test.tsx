@@ -43,7 +43,7 @@ describe("platform keys", () => {
     expect(within(screen.getByRole("grid", { name: "Platform keys" })).queryByRole("gridcell", { name: /CI deploy/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "All" }));
     const ci = await cellOf("CI deploy");
-    expect(ci).toHaveTextContent("Expires in 3 d");
+    expect(ci).toHaveTextContent("Expires in 3 days");
     expect(ci).toHaveTextContent("Never used");
     expect(keyQueries()).toEqual(["false", "true"]);
   });

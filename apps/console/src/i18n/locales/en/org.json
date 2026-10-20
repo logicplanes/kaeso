@@ -22,6 +22,7 @@
   "org.general.copyId": "Copy organization id",
   "org.general.enterName": "Enter a name",
   "org.general.hidden": "You can't see the general settings here",
+  "org.general.hint": "The organization's name, picture and id, who owns it, and its deletion.",
   "org.general.id": "Organization id",
   "org.general.idHint": "For the Platform API and support.",
   "org.general.loadFailed": "The organization couldn't load",
@@ -422,7 +423,7 @@
   "org.twoFactor.require": "Require two-factor authentication",
   "org.twoFactor.requireConfirm": "Require two-factor authentication?",
   "org.twoFactor.requireConfirmHint": "You don't use it yet: the organization closes for you, and for every member without it, until you set it up in your account's security settings.",
-  "org.twoFactor.requireHint": "Applies to password sign-in, not to sign-in links or SSO.",
+  "org.twoFactor.requireHint": "Needs a code at sign-in, or this organization's own SSO.",
   "org.twoFactor.requiredOff": "Two-factor authentication is no longer required",
   "org.twoFactor.requiredOn": "Two-factor authentication is required",
   "org.wholeDays": "Enter whole days, at least 1"

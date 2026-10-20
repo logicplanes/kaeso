@@ -76,7 +76,7 @@ Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automati
 - **Schlüssel stehen in `Authorization`.** Die Platform API liest nie `x-api-key`.
 - **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`. Standard ist `inference`, und Plattformzugriff erfordert das Recht `keys.platform_access.grant` ([API-Schlüssel](../console/api-keys.md)).
 - **Plattform-Schlüssel entstehen nur in einer Sitzung**, durch jemanden, der jedes Recht der Rolle Admin hat. Sie rufen nie Modelle auf.
-- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet andere Sitzungen mit 403. Eine, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Passwortsitzungen ohne zweiten Faktor mit 403.
+- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet andere Sitzungen mit 403. Eine, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Sitzungen ohne zweiten Faktor mit 403, außer denen aus ihrem eigenen Single Sign-on.
 - **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene Schlüsselprüfungen](../self-hosting/configuration.md#fehlgeschlagene-schlüsselprüfungen)).
 
 ### Websiteübergreifende Anfragen

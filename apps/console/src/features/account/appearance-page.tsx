@@ -25,7 +25,11 @@ export function AppearancePage() {
   });
   const choice = choose.isPending && choose.variables ? choose.variables : session.locale;
   return (
-    <SettingsPage title={t("account.appearance", "Appearance")} context={t("account.title", "Account")}>
+    <SettingsPage
+      title={t("account.appearance", "Appearance")}
+      context={t("account.title", "Account")}
+      description={t("account.appearanceHint", "How the console looks in this browser, and the language it speaks to you.")}
+    >
       <SettingsSection>
         <SettingsGroup>
           <SettingsRow

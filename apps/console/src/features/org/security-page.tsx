@@ -505,7 +505,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
         />
         <SettingsRow
           title={t("org.twoFactor.require", "Require two-factor authentication")}
-          description={t("org.twoFactor.requireHint", "Applies to password sign-in, not to sign-in links or SSO.")}
+          description={t("org.twoFactor.requireHint", "Needs a code at sign-in, or this organization's own SSO.")}
           control={
             <Switch
               aria-label={t("org.twoFactor.require", "Require two-factor authentication")}

@@ -86,7 +86,7 @@ Produktnamen und Modell-IDs bleiben in jeder Sprache, wie sie sind.
 
 ## Organisation verlassen oder Konto löschen
 
-**Organisation verlassen** unter **Mitgliedschaften** nimmt Sie aus der Organisation und ihren Projekten und archiviert Ihre Schlüssel dort.
+**Organisation verlassen** unter **Mitgliedschaften** nimmt Sie aus der Organisation und ihren Projekten und archiviert Ihre Schlüssel dort. Ihr einziger Inhaber kann sie erst verlassen, wenn jemand anderes ebenfalls Inhaber ist.
 
 **Konto löschen** unter **Profil** nimmt Sie aus jeder Organisation und archiviert alle Ihre Schlüssel. Der Verlauf zeigt Sie als gelöschten Benutzer. Bestätigen Sie mit Ihrer E-Mail-Adresse.
 

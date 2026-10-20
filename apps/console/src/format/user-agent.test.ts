@@ -16,8 +16,15 @@ describe("describeUserAgent", () => {
     ).toBe("Safari on iOS");
     expect(describeUserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0")).toBe("Firefox on Linux");
   });
+  it("names the API clients scripts and SDKs send", () => {
+    expect(describeUserAgent("node")).toBe("Node.js (API client)");
+    expect(describeUserAgent("curl/8.7.1")).toBe("curl (API client)");
+    expect(describeUserAgent("python-requests/2.32.3")).toBe("Python Requests (API client)");
+    expect(describeUserAgent("OpenAI/Python 1.54.0")).toBe("OpenAI Python SDK (API client)");
+    expect(describeUserAgent("Go-http-client/2.0")).toBe("Go (API client)");
+  });
   it("keeps what it can't read, and says when there is nothing", () => {
-    expect(describeUserAgent("curl/8.7.1")).toBe("curl/8.7.1");
+    expect(describeUserAgent("checkout-worker/3.1")).toBe("checkout-worker/3.1");
     expect(describeUserAgent(null)).toBe("Unknown device");
   });
   it("names Opera, Android and ChromeOS", () => {

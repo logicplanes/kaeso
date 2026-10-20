@@ -111,8 +111,10 @@ describe("turning on two-factor authentication", () => {
     expect(await screen.findByText("Off; signing in needs only the password or a sign-in link.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    expect(await within(dialog).findByText(SETUP.secret)).toBeInTheDocument();
-    expect(within(dialog).getByRole("link", { name: /^Open in an authenticator app on this device/ })).toHaveAttribute("href", SETUP.otpauth_uri);
+    expect(await within(dialog).findByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
+    const app = within(dialog).getByRole("link", { name: "Open in an authenticator app on this device" });
+    expect(app).toHaveAttribute("href", SETUP.otpauth_uri);
+    expect(app).not.toHaveAttribute("target");
     expect(within(dialog).getByRole("button", { name: "Turn on" })).toBeDisabled();
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
@@ -146,7 +148,7 @@ describe("turning on two-factor authentication", () => {
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    await within(dialog).findByText(SETUP.secret);
+    await within(dialog).findByText("JBSW Y3DP EHPK 3PXP");
     const field = within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement;
     await user.type(field, "123456");
     await waitFor(() => expect(requests("POST", "me/totp/confirm")).toHaveLength(1));
@@ -166,7 +168,7 @@ describe("turning on two-factor authentication", () => {
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    await within(dialog).findByText(SETUP.secret);
+    await within(dialog).findByText("JBSW Y3DP EHPK 3PXP");
     const field = within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement;
     await user.type(field, "000000");
     expect((await (await notifications()).findAllByText("That code didn't work.")).length).toBeGreaterThan(0);
@@ -183,7 +185,7 @@ describe("turning on two-factor authentication", () => {
     const view = await renderApp(PATH);
     await view.user.click(await screen.findByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    await within(dialog).findByText(SETUP.secret);
+    await within(dialog).findByText("JBSW Y3DP EHPK 3PXP");
     await view.user.type(within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement, "123456");
     const again = await screen.findByRole("dialog", { name: "Sign in again to continue" });
     await view.user.click(within(again).getByRole("button", { name: "Cancel" }));
@@ -215,7 +217,7 @@ describe("turning on two-factor authentication", () => {
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    await within(dialog).findByText(SETUP.secret);
+    await within(dialog).findByText("JBSW Y3DP EHPK 3PXP");
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Set up" })).toBeInTheDocument();
@@ -245,7 +247,7 @@ describe("turning on two-factor authentication", () => {
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Set up" }));
     const dialog = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    await within(dialog).findByText(SETUP.secret);
+    await within(dialog).findByText("JBSW Y3DP EHPK 3PXP");
     await user.type(within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement, "123");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Set up two-factor authentication" })).not.toBeInTheDocument());
@@ -253,7 +255,7 @@ describe("turning on two-factor authentication", () => {
     await user.click(screen.getByRole("button", { name: "Set up" }));
     const again = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
     expect(await within(again).findByText(second.secret)).toBeInTheDocument();
-    expect(screen.queryByText(SETUP.secret)).not.toBeInTheDocument();
+    expect(screen.queryByText("JBSW Y3DP EHPK 3PXP")).not.toBeInTheDocument();
     expect((within(again).getAllByLabelText("Code from the app")[0] as HTMLInputElement).value).toBe("");
     expect(within(again).getByRole("button", { name: "Turn on" })).toBeDisabled();
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
@@ -286,7 +288,7 @@ describe("starting two-factor setup after a while", () => {
     await user.type(await within(again).findByLabelText("Password"), "correct horse battery");
     await user.click(within(again).getByRole("button", { name: "Sign in" }));
     const setup = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
-    expect(await within(setup).findByText(SETUP.secret)).toBeInTheDocument();
+    expect(await within(setup).findByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
     expect(requests("POST", "me/totp")).toHaveLength(2);
   });
 });

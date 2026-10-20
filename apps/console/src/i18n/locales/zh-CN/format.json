@@ -65,6 +65,7 @@
   "format.targetKind.platformKey": "平台密钥",
   "format.targetKind.serviceAccount": "服务账号",
   "format.targetKind.user": "用户",
+  "format.userAgent.apiClient": "{client}（API 客户端）",
   "format.userAgent.browserOnOs": "{os} 上的 {browser}",
   "format.userAgent.unknown": "未知设备",
   "format.userState.deactivated": "已停用",

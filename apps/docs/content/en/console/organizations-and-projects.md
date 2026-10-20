@@ -69,7 +69,7 @@ Under **Security**, you can tighten how members get into the organization:
 | Setting | What it does |
 | --- | --- |
 | Require single sign-on | Members get into the organization only through its identity provider. Their other sessions keep working for their other organizations. It needs a connected provider |
-| Require two-factor authentication | Members need a password sign-in with a code from their authenticator. A sign-in link isn't enough; a sign-in through the organization's own identity provider is |
+| Require two-factor authentication | Members need a sign-in with a code from their authenticator, with a password or a sign-in link. A sign-in through the organization's own identity provider is enough too |
 | Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 
 Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console warns you before it saves. Disconnecting the identity provider turns off **Require single sign-on** as well.

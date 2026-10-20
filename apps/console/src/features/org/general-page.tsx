@@ -36,7 +36,13 @@ export function OrgGeneralPage({ org }: { org: string }) {
   const view = useQuery(orgQuery(org));
   const o = view.data;
   return (
-    <OrgPage org={org} title={t("org.general.title", "General")} hidden={t("org.general.hidden", "You can't see the general settings here")} right="org.view">
+    <OrgPage
+      org={org}
+      title={t("org.general.title", "General")}
+      description={t("org.general.hint", "The organization's name, picture and id, who owns it, and its deletion.")}
+      hidden={t("org.general.hidden", "You can't see the general settings here")}
+      right="org.view"
+    >
       {view.isError ? (
         <LoadFailed title={t("org.general.loadFailed", "The organization couldn't load")} />
       ) : !o ? (

@@ -39,7 +39,12 @@ export function SessionsPage() {
       toast(t("account.signedOutOthers", "{count, plural, one {Signed out of # other session} other {Signed out of # other sessions}}", { count: r.revoked }));
     },
   });
-  const list = [...(sessions.data ?? [])].sort((a, b) => Number(b.current) - Number(a.current) || b.last_used_at.localeCompare(a.last_used_at));
+  const list = [...(sessions.data ?? [])].sort(
+    (a, b) =>
+      Number(b.current) - Number(a.current) ||
+      Date.parse(b.last_used_at) - Date.parse(a.last_used_at) ||
+      Date.parse(b.signed_in_at) - Date.parse(a.signed_in_at),
+  );
   const others = list.filter((s) => !s.current).length;
   return (
     <SettingsPage
