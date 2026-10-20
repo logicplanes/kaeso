@@ -9,6 +9,17 @@ import { ProviderKeyDialog } from "./provider-key-dialog";
 
 const CREDENTIALS = "orgs/:org/credentials";
 
+function expectKeyHint(dialog: HTMLElement, host: string, url: string, page: string, prefix: string) {
+  const link = within(dialog).getByRole("link", { name: (name) => name.startsWith(host) });
+  expect(link).toHaveAttribute("href", url);
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link.getAttribute("rel")).toContain("noreferrer");
+  const hint = link.closest("p") as HTMLElement;
+  expect(hint.textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(`Create one at ${host} under ${page}; it starts with ${prefix}.`);
+  expect(link).toHaveAccessibleName(`${host} (opens in a new tab)`);
+  expect(within(hint).getByText(prefix)).toHaveClass("text-nowrap");
+}
+
 async function choose(user: Awaited<ReturnType<typeof renderUi>>["user"], dialog: HTMLElement, provider: string) {
   await user.click(within(dialog).getByRole("option", { name: (name) => name.startsWith(provider) }));
   await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -35,7 +46,7 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
-    expect(within(dialog).getByText("Create one at console.anthropic.com under API keys; it starts with sk-ant-.")).toBeInTheDocument();
+    expectKeyHint(dialog, "platform.claude.com", "https://platform.claude.com/settings/keys", "Settings → API keys", "sk-ant-");
     const secret = within(dialog).getByLabelText("Anthropic API key");
     expect(secret).toHaveAttribute("placeholder", "sk-ant-…");
     await user.type(secret, "  sk-ant-123  ");
@@ -57,7 +68,7 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your DeepSeek API key" })).toBeVisible();
-    expect(within(dialog).getByText("Create one at platform.deepseek.com under API keys; it starts with sk-.")).toBeInTheDocument();
+    expectKeyHint(dialog, "platform.deepseek.com", "https://platform.deepseek.com/api_keys", "API keys", "sk-");
     const secret = within(dialog).getByLabelText("DeepSeek API key");
     expect(secret).toHaveAttribute("placeholder", "sk-…");
     await user.type(secret, "sk-deepseek-123");
@@ -91,7 +102,7 @@ describe("ProviderKeyDialog", () => {
 
     await choose(user, dialog, "OpenAI");
     expect(within(dialog).getByText("Step 2 of 3")).toBeInTheDocument();
-    expect(within(dialog).getByText("Create one at platform.openai.com under API keys; it starts with sk-.")).toBeInTheDocument();
+    expectKeyHint(dialog, "platform.openai.com", "https://platform.openai.com/api-keys", "API keys", "sk-");
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-new");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Backup{Enter}");
 
@@ -105,11 +116,11 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("asks only for the provider's key for a provider it has no hint for", async () => {
-    const mistral = credential({ id: "cred_mistral", provider: "mistral", name: "Mistral main" });
-    const { dialog } = await open({ keys: [mistral], replace: mistral });
-    expect(within(dialog).getByRole("heading", { name: "Paste the new Mistral key" })).toBeInTheDocument();
+    const cohere = credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" });
+    const { dialog } = await open({ keys: [cohere], replace: cohere });
+    expect(within(dialog).getByRole("heading", { name: "Paste the new Cohere key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Mistral API key")).toHaveAttribute("placeholder", "sk-…");
+    expect(within(dialog).getByLabelText("Cohere API key")).toHaveAttribute("placeholder", "sk-…");
   });
 
   it("replaces a key's secret", async () => {

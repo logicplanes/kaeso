@@ -20,10 +20,11 @@ import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview } from "~/api/generated/types";
-import { modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
+import { CURRENT_MODELS_LIMIT, currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { providerLabel } from "~/format/labels";
-import { useProviderOptions } from "~/kaeso/providers";
+import { useOrgProviderKeys, useProviderOptions } from "~/kaeso/providers";
+import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
 import { ModelForm, allFields, changedFields, draftFrom, draftProblem, type FieldDraft } from "./model-form";
@@ -34,6 +35,7 @@ import { common } from "~/i18n/common";
 type View = "search" | "review" | "custom" | "all";
 
 const LAST_PROVIDER = ["add-models", "provider"];
+const MANY_MODELS = 50;
 
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
@@ -64,6 +66,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [view, setView] = useState<View>("search");
   const [provider, setProvider] = useState(() => recall<string>(LAST_PROVIDER) ?? "openai");
   const providers = useProviderOptions(org);
+  const orgKeys = useOrgProviderKeys(org);
+  const noKey = orgKeys.known && !orgKeys.keys.some((k) => k.provider === provider);
   const [q, setQ] = useState("");
   const [deprecated, setDeprecated] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -71,6 +75,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft }>(emptyCustom());
   const search = useDebounced(q.trim(), 250);
   const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open });
+  const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open });
+  const addable = (current.data ?? []).filter((h) => !h.catalogue_model_id).length;
 
   const invalidates = [["orgs", org, "projects", project, "models"]];
 
@@ -175,6 +181,18 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </div>
           <Switch size="sm" label={t("models.includeDeprecated", "Include deprecated")} checked={deprecated} onCheckedChange={setDeprecated} />
         </div>
+        {noKey && (
+          <Banner
+            tone="warning"
+            actions={
+              <Button size="sm" href={`${orgPath(org)}/providers`}>
+                {t("models.openProviders", "Open Providers")}
+              </Button>
+            }
+          >
+            {t("models.noProviderKey", "Requests to these models fail until someone adds a key for {provider} on the Providers page.", { provider: name })}
+          </Banner>
+        )}
         <div className="flex min-h-0 flex-col">
           {hits.isPending ? (
             <List aria-label={t("models.onModelsDev", "Models on models.dev")} density="compact" items={[]} loading />
@@ -304,9 +322,20 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       provider: name,
     }),
     content: (
-      <Text variant="small" tone="secondary">
-        {t("models.addAllCurrentLater", "Models that models.dev adds later aren't added here on their own.")}
-      </Text>
+      <div className="flex flex-col gap-12">
+        {addable >= MANY_MODELS && (
+          <Banner tone="warning">
+            {addable >= CURRENT_MODELS_LIMIT
+              ? t("models.addAllMany", "This can add {count} or more models at once; adding the ones you need keeps the catalogue short.", {
+                  count: CURRENT_MODELS_LIMIT,
+                })
+              : t("models.addAllUpTo", "This adds up to {count} models at once; adding the ones you need keeps the catalogue short.", { count: addable })}
+          </Banner>
+        )}
+        <Text variant="small" tone="secondary">
+          {t("models.addAllCurrentLater", "Models that models.dev adds later aren't added here on their own.")}
+        </Text>
+      </div>
     ),
     footer: (
       <Button variant="primary" loading={batch.isPending} onClick={addAll}>
