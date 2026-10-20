@@ -120,7 +120,7 @@ KPP 把回复解码为规范格式，再编码为应用的格式，流式回复�
 
 收到关闭信号时，网关不再接受新连接。已打开的请求和流有 `KAESO_SHUTDOWN_GRACE` 的时间完成，默认 30 秒。
 
-届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始的流则改为以错误事件结束。Kaeso 以错误类型 `shutdown` 为两者计费并记录日志，流的用量为估算值。
+届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始的流则改为以错误事件结束。Kaeso 以错误类型 `shutdown` 为两者计费并记录日志，流的用量为估算值。一秒后，Kaeso 会关闭仍然打开的连接。
 
 ## 用量和日志
 

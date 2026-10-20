@@ -209,7 +209,7 @@ impl ChatStreamEncoder {
             StreamEvent::BlockStop(_) => {}
             StreamEvent::ResponseDelta(delta) => {
                 if let Some(stop) = &delta.stop {
-                    chunk.finish = Some(encode_finish(stop, own).to_owned());
+                    chunk.finish = Some(encode_finish(stop).to_owned());
                     chunk.has_choice = true;
                 }
                 if let Some(usage) = &delta.usage {
