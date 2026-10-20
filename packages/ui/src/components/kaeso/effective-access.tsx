@@ -72,7 +72,7 @@ export const EffectiveAccess = forwardRef<HTMLDivElement, EffectiveAccessProps>(
             );
           })}
         {empty.length > 0 && (
-          <Row term={empty.length === groups.length ? t("effectiveAccess.noRights", "No rights") : t("effectiveAccess.noneIn", "None in")} quiet>
+          <Row term={empty.length === groups.length ? t("effectiveAccess.noRights", "No rights") : t("effectiveAccess.noRightsIn", "No rights in")} quiet>
             {empty.map((g) => g.label).join(t("effectiveAccess.listSeparator", ", "))}
           </Row>
         )}

@@ -17,7 +17,7 @@ test("an identity provider is connected, and a new person signs in through it", 
   await stepTo(dialog, domains);
   await domains.click();
   await domains.fill("example.com");
-  await expect(page.getByRole("option", { name: "Create “example.com”" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "Add “example.com”" })).toBeVisible();
   await domains.press("Enter");
   await expect(dialog.getByText("example.com", { exact: true })).toBeVisible();
   await stepTo(dialog, dialog.getByRole("combobox", { name: "People without an invitation" }));

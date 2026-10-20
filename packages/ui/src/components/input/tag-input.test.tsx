@@ -5,6 +5,15 @@ import { createRef } from "react";
 import { TagInput } from "./tag-input.js";
 
 describe("TagInput", () => {
+  it("reports the text typed before it becomes a tag, and an empty draft once it does", async () => {
+    const onDraft = vi.fn();
+    render(<TagInput aria-label="Emails" onInputValueChange={onDraft} />);
+    await userEvent.type(screen.getByRole("textbox", { name: "Emails" }), "ada@example.com");
+    expect(onDraft).toHaveBeenLastCalledWith("ada@example.com");
+    await userEvent.tab();
+    expect(onDraft).toHaveBeenLastCalledWith("");
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+  });
   it("adds a tag at a separator or Enter, skips duplicates, and removes the last with Backspace", async () => {
     const onChange = vi.fn();
     render(<TagInput aria-label="Emails" placeholder="Add emails" onValueChange={onChange} />);

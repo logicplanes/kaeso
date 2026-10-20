@@ -10,13 +10,13 @@ What you see in the console depends on your rights. A page you have no right to 
 
 ## Invite people
 
-Open **Organization settings** › **Members** and choose **Invite member**. Then answer three steps:
+Open **Organization settings** › **Members** and choose **Invite members**. Then answer three steps:
 
-1. **Who are you inviting?** Type an address and press Enter, or paste several.
+1. **Who are you inviting?** Type or paste one or more addresses. An address you typed counts as soon as you continue; one that isn't an email address is marked until you remove or fix it.
 2. **What can they do in the organization?** Choose their organization role.
 3. **Which projects?** Add the projects they join, each with a role. They always join the default project.
 
-**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**.
+**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**. On **Members**, search by name or email address, or choose a role to see who holds it.
 
 An organization with [single sign-on](organizations-and-projects.md#single-sign-on) can also let people from its email domains join without an invitation. That works only for people new to Kaeso. Someone who already has an account needs an invitation, and links the account to the identity provider from their **Account**.
 

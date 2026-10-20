@@ -5,7 +5,10 @@ import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
 import { StepDialog } from "./step-dialog.js";
 import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
+import { TagInput } from "../input/tag-input.js";
 import { useState } from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 beforeEach(() => vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] }));
 afterEach(() => vi.useRealTimers());
@@ -596,6 +599,27 @@ describe("StepDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create key" }));
     expect(onSubmit).toHaveBeenCalledOnce();
   });
+  it("leaves Enter to a field that takes it, such as one that adds what was typed as a tag", async () => {
+    render(
+      <StepDialog
+        open
+        title="Invite members"
+        submitLabel="Send"
+        onSubmit={() => {}}
+        steps={[
+          { id: "who", title: "Who?", content: <TagInput aria-label="Email addresses" /> },
+          { id: "role", title: "Which role?", content: <input aria-label="Role" /> },
+        ]}
+      />,
+    );
+    await frames();
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(screen.getByRole("textbox", { name: "Email addresses" }), "ada@example.com{Enter}");
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    await userEvent.keyboard("{Enter}");
+    expect(dialog).toHaveAccessibleDescription("Step 2 of 2");
+  });
   describe.each([
     ["⌘Enter", "{Meta>}{Enter}{/Meta}"],
     ["Ctrl+Enter", "{Control>}{Enter}{/Control}"],
@@ -762,6 +786,11 @@ describe("StepDialog", () => {
       expect(fixedSizes(dialog)).toEqual([]);
       expect(shownStep(dialog)).toHaveAttribute("data-enter", "back");
       expect(screen.getByRole("textbox", { name: "Field 1" })).toHaveFocus();
+    });
+    it("leaves as much room under a tall step as above it", () => {
+      const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
+      expect(css).toMatch(/@utility pt-dialog-top \{\s*padding-top: max\(16px, 12vh\);/);
+      expect(css).toMatch(/@utility dialog-limits-top \{\s*max-height: calc\(100dvh - 2 \* max\(16px, 12vh\)\);/);
     });
     it("keeps its top edge between steps: the popup hangs from a fixed top offset, its frame fills it and nothing else pins it", async () => {
       render(<Heights heights={[40, 300]} />);

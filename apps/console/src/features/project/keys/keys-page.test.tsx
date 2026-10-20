@@ -32,7 +32,7 @@ describe("KeysPage", () => {
         apiKey({ id: "key_old", name: "old-key", state: "expired", expires_at: "2026-09-01T12:00:00Z" }),
       ],
     });
-    await renderApp(projectPath("keys?archived=true"));
+    await renderApp(projectPath("keys?scope=all"));
 
     await screen.findByRole("gridcell", { name: /checkout-web/ });
     const grid = screen.getByRole("grid", { name: "Keys" });
@@ -95,9 +95,9 @@ describe("KeysPage", () => {
     const { user, router } = await renderApp(projectPath("keys"));
 
     expect(await screen.findByText("No active keys")).toBeInTheDocument();
-    expect(screen.getByText("Disabled, expired and archived keys are under All.")).toBeInTheDocument();
+    expect(screen.getByText("Disabled and expired keys are under All.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show all keys" }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ archived: true }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ scope: "all" }));
     expect(await screen.findByRole("gridcell", { name: /nightly-batch/ })).toBeInTheDocument();
   });
 
@@ -137,7 +137,7 @@ describe("KeysPage", () => {
   it("asks for a service account's keys and for archived keys", async () => {
     signedIn();
     projectData({ accounts: [serviceAccount()] });
-    await renderApp(projectPath("keys?owner=sa:sa_deploy&archived=true"));
+    await renderApp(projectPath("keys?owner=sa:sa_deploy&scope=all"));
 
     expect(await screen.findByText("No keys for this filter")).toBeInTheDocument();
     expect(keyRequests()).toContainEqual({ service_account: "sa_deploy", include_archived: "true", limit: "100" });
@@ -152,6 +152,25 @@ describe("KeysPage", () => {
     await screen.findByRole("gridcell", { name: /checkout-web/ });
     await user.click(screen.getByRole("tab", { name: "All" }));
     await waitFor(() => expect(keyRequests()).toContainEqual({ include_archived: "true", limit: "100" }));
+  });
+
+  it("lists only the archived keys under Archived, and says when there are none", async () => {
+    signedIn();
+    projectData({ keys: [apiKey(), apiKey({ id: "key_old", name: "old-batch", state: "archived" })] });
+    const { user, router } = await renderApp(projectPath("keys"));
+    await screen.findByRole("gridcell", { name: /checkout-web/ });
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByRole("gridcell", { name: /old-batch/ })).toBeInTheDocument();
+    expect(screen.queryByRole("gridcell", { name: /checkout-web/ })).not.toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ scope: "archived" });
+  });
+
+  it("says when no key is archived", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    await renderApp(projectPath("keys?scope=archived"));
+    expect(await screen.findByText("No archived keys")).toBeInTheDocument();
   });
 
   it("filters by a member chosen in the owner picker", async () => {
@@ -233,7 +252,7 @@ describe("KeysPage", () => {
   it("goes back to the active keys from the All tab", async () => {
     signedIn();
     projectData({ keys: [apiKey()] });
-    const { user, router } = await renderApp(projectPath("keys?archived=true"));
+    const { user, router } = await renderApp(projectPath("keys?scope=all"));
 
     await screen.findByRole("gridcell", { name: /checkout-web/ });
     await user.click(screen.getByRole("tab", { name: "Active" }));

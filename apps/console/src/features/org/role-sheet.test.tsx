@@ -51,7 +51,7 @@ describe("a built-in role's sheet", () => {
     expect(within(sheet).getByText("Built-in")).toBeInTheDocument();
     expect(within(sheet).getByText("The organization")).toBeInTheDocument();
     expect(within(sheet).getByText("30 rights, 31 in projects")).toBeInTheDocument();
-    expect(within(sheet).getByRole("link", { name: "1 member or account" })).toHaveAttribute("href", `/settings/orgs/${ORG}/members?role=admin`);
+    expect(within(sheet).getByRole("link", { name: "1 member" })).toHaveAttribute("href", `/settings/orgs/${ORG}/members?role=admin`);
     expect(within(sheet).getByText(/Manages the organization and every project/)).toBeInTheDocument();
     expect(within(sheet).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
     expect(within(sheet).getByText("What it gives in every project of the organization.")).toBeInTheDocument();
@@ -101,8 +101,8 @@ describe("a built-in role's sheet", () => {
     on("GET", "orgs/:org/members", paged(holders));
     const { sheet } = await openSheet("project:viewer", "Viewer");
     expect(within(sheet).getByText("A project")).toBeInTheDocument();
-    expect(within(sheet).getByText("4 members or accounts")).toBeInTheDocument();
-    expect(within(sheet).queryByRole("link", { name: "4 members or accounts" })).not.toBeInTheDocument();
+    expect(within(sheet).getByText("4 members and service accounts")).toBeInTheDocument();
+    expect(within(sheet).queryByRole("link", { name: "4 members and service accounts" })).not.toBeInTheDocument();
     expect(within(sheet).getByText("In a project")).toBeInTheDocument();
     expect(within(sheet).queryByText("Who has it")).not.toBeInTheDocument();
   });

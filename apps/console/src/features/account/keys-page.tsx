@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertDialog, Empty, FilterRow, IconButton, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
-import { ScopeTabs } from "~/kaeso/scope-tabs";
+import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { KeyView } from "~/api/generated/types";
@@ -28,8 +28,8 @@ const myKeysQuery = (includeArchived: boolean) => ({
 export function AccountKeysPage() {
   const navigate = useNavigate();
   const memberships = useMemberships();
-  const [archived, setArchived] = useState(false);
-  const keys = useQuery(myKeysQuery(archived));
+  const [scope, setScope] = useState<Scope>("active");
+  const keys = useQuery(myKeysQuery(scope !== "active"));
   const [archiving, setArchiving] = useState<KeyView | null>(null);
   const where = useMemo(() => {
     const map = new Map<string, { org: string; label: string }>();
@@ -63,7 +63,7 @@ export function AccountKeysPage() {
   });
 
   const fetched = keys.data ?? [];
-  const list = archived ? fetched : fetched.filter((k) => k.state === "active");
+  const list = scope === "all" ? fetched : fetched.filter((k) => k.state === scope);
   const groups: ListGroup[] = [...new Set(list.map((k) => k.project_id))].map((projectId) => {
     const items = list.filter((k) => k.project_id === projectId);
     return {
@@ -118,7 +118,7 @@ export function AccountKeysPage() {
       context={t("account.title", "Account")}
       description={t("account.apiKeysHint", "Your own keys in every project; each opens in its project.")}
     >
-      <FilterRow tabs={<ScopeTabs label={t("account.yourKeys", "Your keys")} all={archived} onChange={setArchived} />} />
+      <FilterRow tabs={<ScopeTabs label={t("account.yourKeys", "Your keys")} value={scope} onChange={setScope} />} />
       <List
         aria-label={t("account.yourKeys", "Your keys")}
         groups={groups}
@@ -134,14 +134,23 @@ export function AccountKeysPage() {
           ) : (
             <Empty
               size="md"
-              title={archived ? t("account.noKeys", "No keys yet") : t("account.noActiveKeys", "No active keys")}
-              description={
-                archived
-                  ? t("account.noKeysHint", "Create keys on a project's API keys page; they're listed here across projects.")
-                  : fetched.length > 0
-                    ? t("account.inactiveKeysHint", "Disabled, expired and archived keys are under All.")
-                    : t("account.noActiveKeysHint", "Archived keys are under All; create new ones on a project's API keys page.")
+              title={
+                scope === "all"
+                  ? t("account.noKeys", "No keys yet")
+                  : scope === "archived"
+                    ? t("account.noArchivedKeys", "No archived keys")
+                    : t("account.noActiveKeys", "No active keys")
               }
+              {...(scope === "archived"
+                ? {}
+                : {
+                    description:
+                      scope === "all"
+                        ? t("account.noKeysHint", "Create keys on a project's API keys page; they're listed here across projects.")
+                        : fetched.length > 0
+                          ? t("account.inactiveKeysHint", "Disabled and expired keys are under All.")
+                          : t("account.noActiveKeysHint", "Archived keys are under Archived; create new ones on a project's API keys page."),
+                  })}
             />
           )
         }

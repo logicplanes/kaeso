@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertDialog, Badge, Empty, FilterRow, IconButton, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
-import { ScopeTabs } from "~/kaeso/scope-tabs";
+import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
 import type { InviteView } from "~/api/generated/types";
 import { invitesQuery, orgMembersQuery } from "~/api/queries/orgs";
@@ -30,7 +30,8 @@ function expiresIn(expiresAt: string, now: number): { text: string; soon: boolea
 
 export function InvitesPanel({ org }: { org: string }) {
   const rights = useOrgRights(org);
-  const [all, setAll] = useState(false);
+  const [scope, setScope] = useState<Scope>("active");
+  const all = scope === "all";
   const invites = useQuery({ ...invitesQuery(org, !all), enabled: rights.has("members.view") });
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const projects = useQuery(orgProjectsQuery(org, true));
@@ -126,7 +127,15 @@ export function InvitesPanel({ org }: { org: string }) {
   return (
     <>
       <FilterRow
-        tabs={<ScopeTabs label={t("org.invites.title", "Invitations")} all={all} onChange={setAll} activeLabel={t("org.invites.pending", "Pending")} />}
+        tabs={
+          <ScopeTabs
+            label={t("org.invites.title", "Invitations")}
+            value={scope}
+            onChange={setScope}
+            activeLabel={t("org.invites.pending", "Pending")}
+            archivedLabel={null}
+          />
+        }
       />
       <List
         aria-label={t("org.invites.title", "Invitations")}

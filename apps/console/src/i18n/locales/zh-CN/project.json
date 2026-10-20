@@ -90,6 +90,7 @@
   "project.serviceAccounts.noKeys": "暂无密钥。",
   "project.serviceAccounts.noLimits": "此服务账号没有限额，适用项目的限额。",
   "project.serviceAccounts.none": "暂无服务账号",
+  "project.serviceAccounts.noneArchived": "没有已归档的服务账号",
   "project.serviceAccounts.noneHint": "为部署或流水线创建密钥，不随创建者离开而失效。",
   "project.serviceAccounts.notFound": "此服务账号不存在或已被移除。",
   "project.serviceAccounts.one": "服务账号",

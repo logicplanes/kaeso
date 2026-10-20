@@ -17,10 +17,10 @@ test("an invited person accepts and joins the organization", async ({ page, brow
   await clearMail();
   await signInAsOwner(page);
   await page.goto(`/settings/orgs/${orgOf(page)}/members?tab=invites`);
-  await page.getByRole("button", { name: "Invite member" }).click();
+  await page.getByRole("button", { name: "Invite members" }).click();
   const dialog = page.getByRole("dialog", { name: "Invite members" });
-  await dialog.getByRole("combobox", { name: "Email addresses" }).fill(DEVELOPER.email);
-  await dialog.getByRole("combobox", { name: "Email addresses" }).press("Enter");
+  await dialog.getByRole("textbox", { name: "Email addresses" }).fill(DEVELOPER.email);
+  await dialog.getByRole("textbox", { name: "Email addresses" }).press("Enter");
   await submitSteps(dialog, "Send invitation");
   await expect(toastText(page, `Invitation sent to ${DEVELOPER.email}`)).toBeVisible();
 

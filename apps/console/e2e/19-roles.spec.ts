@@ -85,10 +85,10 @@ test("a custom project role is created, with what its rights need", async ({ pag
 test("a new member joins as Member and sees what a Viewer may not do, with who can give it", async ({ page, browser }) => {
   await clearMail();
   const org = await openSettings(page, "members");
-  await page.getByRole("button", { name: "Invite member" }).first().click();
+  await page.getByRole("button", { name: "Invite members" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Invite members" });
-  await dialog.getByRole("combobox", { name: "Email addresses" }).fill(NOOR.email);
-  await dialog.getByRole("combobox", { name: "Email addresses" }).press("Enter");
+  await dialog.getByRole("textbox", { name: "Email addresses" }).fill(NOOR.email);
+  await dialog.getByRole("textbox", { name: "Email addresses" }).press("Enter");
   await dialog.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(dialog.getByRole("radio", { name: "Owner" })).toHaveAttribute("aria-disabled", "true");
   await expect(dialog.getByText("Only owners can make someone an owner")).toBeVisible();

@@ -25,7 +25,10 @@ interface Draft {
 }
 
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
-const heldShort = (count: number) => t("org.role.holders", "{count, plural, one {# member or account} other {# members or accounts}}", { count });
+const heldShort = (role: RoleView) =>
+  role.scope === "org"
+    ? t("org.role.memberHolders", "{count, plural, one {# member} other {# members}}", { count: role.holders })
+    : t("org.role.projectHolders", "{count, plural, one {# member or service account} other {# members and service accounts}}", { count: role.holders });
 
 function cantManage(
   cat: Catalogue | undefined,
@@ -169,9 +172,9 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
             label: t("org.role.heldBy", "Held by"),
             value:
               role.scope === "org" && role.holders && rights.has("members.view") ? (
-                <Link href={`/settings/orgs/${org}/members?role=${role.id}`}>{heldShort(role.holders)}</Link>
+                <Link href={`/settings/orgs/${org}/members?role=${role.id}`}>{heldShort(role)}</Link>
               ) : role.holders ? (
-                heldShort(role.holders)
+                heldShort(role)
               ) : (
                 t("org.roles.nobodyYet", "Nobody yet")
               ),

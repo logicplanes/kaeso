@@ -26,13 +26,14 @@ import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
-export type ServiceAccountsSearch = { account?: string; archived?: boolean; create?: boolean };
+export type ServiceAccountsSearch = { account?: string; scope?: "archived" | "all"; create?: boolean };
 
 export function ServiceAccountsPage({ org, project, search }: { org: string; project: string; search: ServiceAccountsSearch }) {
   const needs = useNeedsRight(org, project);
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
-  const accounts = useQuery(serviceAccountsQuery(org, project, !!search.archived));
+  const scope = search.scope ?? "active";
+  const accounts = useQuery(serviceAccountsQuery(org, project, scope !== "active"));
   const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const [creating, setCreating] = useState(!!search.create);
@@ -49,7 +50,10 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
     });
   };
 
-  const list = useMemo(() => [...(accounts.data ?? [])].sort((a, b) => compareNames(a.name, b.name)), [accounts.data]);
+  const list = useMemo(
+    () => [...(accounts.data ?? [])].filter((a) => scope !== "archived" || a.archived_at).sort((a, b) => compareNames(a.name, b.name)),
+    [accounts.data, scope],
+  );
   const keyCount = (id: string) => (keys.data ?? []).filter((k) => k.principal.kind === "service_account" && k.principal.id === id).length;
   const items = list.map((a) => {
     const n = keyCount(a.id);
@@ -84,8 +88,8 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
         tabs={
           <ScopeTabs
             label={t("project.serviceAccounts.title", "Service accounts")}
-            all={!!search.archived}
-            onChange={(v) => setSearch({ archived: v || undefined })}
+            value={scope}
+            onChange={(v) => setSearch({ scope: v === "active" ? undefined : v })}
           />
         }
         actions={
@@ -106,6 +110,8 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
           <List aria-label={t("project.serviceAccounts.title", "Service accounts")} items={[]} loading />
         ) : accounts.isError ? (
           <LoadFailed title={t("project.serviceAccounts.listFailed", "The service accounts couldn't load")} size="md" />
+        ) : scope === "archived" && list.length === 0 ? (
+          <Empty size="lg" title={t("project.serviceAccounts.noneArchived", "No archived service accounts")} />
         ) : list.length === 0 ? (
           <Empty
             size="lg"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Combobox, IconButton, RolePicker, Select, StepDialog, Text, icons } from "@logicplanes/kaeso-ui";
+import { Button, IconButton, RolePicker, Select, StepDialog, TagInput, Text, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError, type ApiError } from "~/api/errors";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -29,6 +29,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
   const giver = useOrgGiver(org);
   const queryClient = useQueryClient();
   const [emails, setEmails] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
   const [role, setRole] = useState("member");
   const [roles, setRoles] = useState<ProjectRole[]>([]);
   const held = useQueries({ queries: roles.map((r) => projectRightsQuery(session, org, r.project_id)) });
@@ -71,21 +72,17 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
     },
   });
 
-  const addEmail = (raw: string) => {
-    const found = raw.split(/[\s,;]+/).filter(Boolean);
-    const valid = found.filter(looksLikeEmail).map((e) => e.toLowerCase());
-    const invalid = found.filter((e) => !looksLikeEmail(e));
-    if (invalid.length)
-      toast.warning(
-        t("org.invite.notEmails", "{count, plural, one {{addresses} isn't an email address} other {{addresses} aren't email addresses}}", {
-          count: invalid.length,
-          addresses: invalid.join(", "),
-        }),
-      );
-    if (valid.length) setEmails((list) => [...new Set([...list, ...valid])]);
-  };
+  const invalid = emails.filter((e) => !looksLikeEmail(e));
   const nextProject = extra.find((p) => !roles.some((r) => r.project_id === p.id));
-  const reason = emails.length ? undefined : t("org.invite.addEmail", "Add at least one email address");
+  const reason =
+    !emails.length && !looksLikeEmail(draft.trim())
+      ? t("org.invite.addEmail", "Add at least one email address")
+      : invalid.length
+        ? t("org.invite.notEmails", "{count, plural, one {{addresses} isn't an email address} other {{addresses} aren't email addresses}}", {
+            count: invalid.length,
+            addresses: invalid.join(", "),
+          })
+        : undefined;
 
   return (
     <StepDialog
@@ -103,18 +100,16 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
         {
           id: "who",
           title: t("org.invite.who", "Who are you inviting?"),
-          description: t("org.invite.whoHint", "Type an address and press Enter, or paste several; each link works for 21 days."),
+          description: t("org.invite.whoHint", "Type or paste one or more addresses; each link works for 21 days."),
           blockedReason: reason,
           content: (
-            <Combobox
-              multiple
+            <TagInput
               label={t("org.invite.emails", "Email addresses")}
               placeholder={t("org.invite.emailExample", "name@example.com")}
-              options={emails.map((e) => ({ value: e, label: e }))}
               value={emails}
-              onValueChange={setEmails}
-              onCreate={addEmail}
-              emptyText={t("org.invite.typeAddress", "Type a full address")}
+              onValueChange={(next) => setEmails([...new Set(next.map((e) => e.toLowerCase()))])}
+              onInputValueChange={setDraft}
+              validate={(e) => looksLikeEmail(e) || t("org.invite.notAnEmail", "Not an email address; remove it or fix it")}
             />
           ),
         },

@@ -53,9 +53,9 @@ test("invites: an invitation is sent, resent and revoked on the Members page's I
   await expect(page.locator(`nav[aria-label="Settings"] a[href^="/settings/orgs/"]`).getByText("Invites", { exact: true })).toHaveCount(0);
   await page.getByRole("tab", { name: "Invites", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/orgs\/[^/]+\/members\?tab=invites$/);
-  await page.getByRole("button", { name: "Invite member" }).click();
+  await page.getByRole("button", { name: "Invite members" }).click();
   const dialog = page.getByRole("dialog", { name: "Invite members" });
-  const emails = dialog.getByRole("combobox", { name: "Email addresses" });
+  const emails = dialog.getByRole("textbox", { name: "Email addresses" });
   await emails.fill("temp@example.com");
   await emails.press("Enter");
   await expect(dialog.getByText("temp@example.com")).toBeVisible();
@@ -86,9 +86,9 @@ test("invites: an invitation is sent, resent and revoked on the Members page's I
 test("invites: the dialog opens empty on its first step after a cancelled or a sent invitation", async ({ page }) => {
   await openOrgSettings(page, "Members");
   await page.getByRole("tab", { name: "Invites", exact: true }).click();
-  const invite = page.getByRole("button", { name: "Invite member" });
+  const invite = page.getByRole("button", { name: "Invite members" });
   const dialog = page.getByRole("dialog", { name: "Invite members" });
-  const emails = dialog.getByRole("combobox", { name: "Email addresses" });
+  const emails = dialog.getByRole("textbox", { name: "Email addresses" });
   await invite.click();
   await emails.fill("fresh@example.com");
   await emails.press("Enter");

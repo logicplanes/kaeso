@@ -90,6 +90,7 @@
   "project.serviceAccounts.noKeys": "Noch keine Schlüssel.",
   "project.serviceAccounts.noLimits": "Keine Limits für dieses Dienstkonto; es gelten die Limits des Projekts.",
   "project.serviceAccounts.none": "Noch keine Dienstkonten",
+  "project.serviceAccounts.noneArchived": "Keine archivierten Dienstkonten",
   "project.serviceAccounts.noneHint": "Schlüssel für Deployments und Pipelines, die unabhängig von ihren Erstellern bestehen.",
   "project.serviceAccounts.notFound": "Dieses Dienstkonto existiert nicht oder wurde entfernt.",
   "project.serviceAccounts.one": "Dienstkonto",

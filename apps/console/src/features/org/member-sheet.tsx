@@ -135,14 +135,16 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
       <Section title={common.role()} description={t("org.member.roleHint", "What they can do in the organization and in every project.")} spacing="none">
         <div className="flex flex-col gap-12">
           <GrantEditor cat={cat} scope="org" roles={rolesOfScope(roles, "org")} value={editing} onChange={setGrant} giver={giver} readOnly={roleReason} />
-          <div className="flex gap-8">
-            <Button size="sm" variant="primary" disabled={!changed} loading={save.isPending} onClick={() => grant && save.mutate(grant)}>
-              {t("org.saveRole", "Save role")}
-            </Button>
-            <Button size="sm" disabled={!changed} onClick={() => setGrant(null)}>
-              {common.cancel()}
-            </Button>
-          </div>
+          {changed && (
+            <div className="flex gap-8">
+              <Button size="sm" variant="primary" loading={save.isPending} onClick={() => grant && save.mutate(grant)}>
+                {t("org.saveRole", "Save role")}
+              </Button>
+              <Button size="sm" onClick={() => setGrant(null)}>
+                {common.cancel()}
+              </Button>
+            </div>
+          )}
         </div>
       </Section>
       {rights.has("members.view") && (

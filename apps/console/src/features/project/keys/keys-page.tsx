@@ -19,7 +19,7 @@ import { t } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
 import { LastUsed } from "~/kaeso/last-used";
 
-export type KeysSearch = { key?: string; owner?: string; archived?: boolean; create?: boolean };
+export type KeysSearch = { key?: string; owner?: string; scope?: "archived" | "all"; create?: boolean };
 
 const STATES = ["active", "disabled", "expired", "archived"] as const;
 
@@ -29,8 +29,8 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
   const rights = useProjectRights(org, project);
   const [creating, setCreating] = useState(!!search.create);
   const owner = search.owner;
-  const all = !!search.archived;
-  const keys = useQuery(allKeysQuery(org, project, keyFilter({ owner, archived: all })));
+  const scope = search.scope ?? "active";
+  const keys = useQuery(allKeysQuery(org, project, keyFilter({ owner, archived: scope !== "active" })));
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project), enabled: rights.has("service_accounts.view") });
   const partyLabel = usePartyLabel(org, project);
@@ -49,7 +49,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
   const list = useMemo(() => keys.data ?? [], [keys.data]);
   const groups: ListGroup[] = useMemo(
     () =>
-      (all ? STATES : (["active"] as const))
+      (scope === "all" ? STATES : ([scope] as const))
         .map((state) => ({
           id: state,
           title: keyStateLabel(state),
@@ -77,7 +77,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
             }),
         }))
         .filter((g) => g.items.length > 0),
-    [all, list, partyLabel],
+    [scope, list, partyLabel],
   );
 
   const ownerOptions = [
@@ -92,7 +92,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
         project={project}
         page={t("keys.title", "API keys")}
         path="keys"
-        tabs={<ScopeTabs label={t("keys.keys", "Keys")} all={all} onChange={(v) => setSearch({ archived: v || undefined })} />}
+        tabs={<ScopeTabs label={t("keys.keys", "Keys")} value={scope} onChange={(v) => setSearch({ scope: v === "active" ? undefined : v })} />}
         actions={
           <>
             {ownerOptions.length > 0 && (
@@ -125,12 +125,14 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
           <List aria-label={t("keys.keys", "Keys")} items={[]} loading />
         ) : keys.isError ? (
           <LoadFailed title={t("keys.listFailed", "The keys couldn't load")} size="md" />
+        ) : scope === "archived" && groups.length === 0 ? (
+          <Empty size="lg" title={t("keys.noneArchived", "No archived keys")} />
         ) : list.length > 0 && groups.length === 0 ? (
           <Empty
             size="lg"
             title={t("keys.noneActive", "No active keys")}
-            description={t("keys.noneActiveHint", "Disabled, expired and archived keys are under All.")}
-            actions={<Button onClick={() => setSearch({ archived: true })}>{t("keys.showAll", "Show all keys")}</Button>}
+            description={t("keys.noneActiveHint", "Disabled and expired keys are under All.")}
+            actions={<Button onClick={() => setSearch({ scope: "all" })}>{t("keys.showAll", "Show all keys")}</Button>}
           />
         ) : groups.length === 0 ? (
           <Empty
@@ -154,7 +156,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
         ) : (
           <List
             aria-label={t("keys.keys", "Keys")}
-            {...(all ? { groups } : { items: groups.flatMap((g) => g.items) })}
+            {...(scope === "all" ? { groups } : { items: groups.flatMap((g) => g.items) })}
             onOpen={(item) => setSearch({ key: item.id })}
           />
         )}

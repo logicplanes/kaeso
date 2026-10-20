@@ -48,7 +48,12 @@ export function RolesPanel({
             description={t("org.roles.orgRolesHint", "One per member: their rights in the organization, and in every project.")}
             spacing="none"
           >
-            <List aria-label={t("org.roles.orgRoles", "Organization roles")} items={rows(rolesOfScope(roles, "org"))} onOpen={(item) => open(item.id)} />
+            <List
+              aria-label={t("org.roles.orgRoles", "Organization roles")}
+              items={rows(rolesOfScope(roles, "org"))}
+              wrapSubtitle
+              onOpen={(item) => open(item.id)}
+            />
           </Section>
           <Section
             title={t("org.roles.projectRoles", "Project roles")}
@@ -58,6 +63,7 @@ export function RolesPanel({
             <List
               aria-label={t("org.roles.projectRoles", "Project roles")}
               items={rows(rolesOfScope(roles, "project"))}
+              wrapSubtitle
               onOpen={(item) => open(item.id)}
               empty={<Empty size="compact" title={t("org.roles.noProjectRoles", "No project roles")} />}
             />

@@ -25,7 +25,7 @@ describe("inviting members", () => {
     const { user, dialog, router } = await openDialog();
     expect(within(dialog).getByText("Who are you inviting?")).toBeInTheDocument();
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Add at least one email address");
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "Grace@Example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "Grace@Example.com");
     await user.keyboard("{Enter}");
     expect(await within(dialog).findByText("grace@example.com")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -47,11 +47,23 @@ describe("inviting members", () => {
     expect(router.state.location.search).toEqual({});
   });
 
+  it("takes an address that was typed but not added yet when Continue is pressed", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged([member()]));
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByText("What can they do in the organization?")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    expect(await within(dialog).findByText("grace@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  });
+
   it("adds a project and takes it out again", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -73,7 +85,7 @@ describe("inviting members", () => {
     on("GET", "orgs/:org/members", paged([member()]));
     on("POST", "orgs/:org/invites", ({ body }: { body: InviteBody }) => invite({ email: body.email }));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -106,7 +118,7 @@ describe("inviting members", () => {
     on("GET", "orgs/:org/members", paged([member()]));
     on("POST", "orgs/:org/invites", apiError(403, "recent_sign_in_required", "Sign in again to do this."));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -133,9 +145,8 @@ describe("inviting members", () => {
       return invite({ email: body.email });
     });
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "a@example.com, b@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "a@example.com, b@example.com");
     await user.keyboard("{Enter}");
-    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("button", { name: "Send 2 invitations" }));
     const again = await screen.findByRole("dialog", { name: "Sign in again to continue" });
@@ -149,11 +160,16 @@ describe("inviting members", () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace");
     await user.keyboard("{Enter}");
-    expect(await notifications().findByText("grace isn't an email address")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Not an email address; remove it or fix it")).toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "grace isn't an email address");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     expect(within(dialog).getByText("Who are you inviting?")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Remove grace" }));
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByText("What can they do in the organization?")).toBeInTheDocument();
   });
 
   it("sends several invitations at once and keeps the ones that failed", async () => {
@@ -163,11 +179,12 @@ describe("inviting members", () => {
       body.email === "taken@example.com" ? apiError(409, "conflict", "Already a member.") : invite({ email: body.email }),
     );
     const { user, dialog } = await openDialog();
-    const emails = within(dialog).getByRole("combobox", { name: "Email addresses" });
+    const emails = within(dialog).getByRole("textbox", { name: "Email addresses" });
     await user.click(emails);
-    await user.paste("a@example.com, taken@example.com; b@example.com nope bad");
-    await user.keyboard("{Enter}");
-    expect(await notifications().findByText("nope, bad aren't email addresses")).toBeInTheDocument();
+    await user.paste("A@example.com, taken@example.com; b@example.com nope bad a@example.com");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "nope, bad aren't email addresses");
+    await user.click(within(dialog).getByRole("button", { name: "Remove nope" }));
+    await user.click(within(dialog).getByRole("button", { name: "Remove bad" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("button", { name: "Send 3 invitations" }));
@@ -184,7 +201,7 @@ describe("inviting members", () => {
     on("GET", "orgs/:org/members", paged([member()]));
     on("POST", "orgs/:org/invites", apiError(422, "invalid_request", "That address can't be invited.", { param: "email" }));
     const { user, dialog } = await openDialog();
-    await user.type(within(dialog).getByRole("combobox", { name: "Email addresses" }), "a@example.com{Enter}b@example.com{Enter}");
+    await user.type(within(dialog).getByRole("textbox", { name: "Email addresses" }), "a@example.com{Enter}b@example.com{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("button", { name: "Send 2 invitations" }));
@@ -200,7 +217,7 @@ describe("inviting members", () => {
       body.email === "a@example.com" ? invite({ email: body.email }) : apiError(503, "unavailable", "Kaeso is busy; try again."),
     );
     const { user, dialog } = await openDialog();
-    await user.type(within(dialog).getByRole("combobox", { name: "Email addresses" }), "a@example.com{Enter}b@example.com{Enter}c@example.com{Enter}");
+    await user.type(within(dialog).getByRole("textbox", { name: "Email addresses" }), "a@example.com{Enter}b@example.com{Enter}c@example.com{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("button", { name: "Send 3 invitations" }));
@@ -216,7 +233,7 @@ describe("inviting members", () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog, router } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -231,7 +248,7 @@ describe("inviting members", () => {
     signedIn({ projects: [project()] });
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -242,7 +259,7 @@ describe("inviting members", () => {
     signedIn({ projects: [project({ is_default: false }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
-    await fill(user, within(dialog).getByRole("combobox", { name: "Email addresses" }), "grace@example.com");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));

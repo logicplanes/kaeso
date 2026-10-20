@@ -39,6 +39,27 @@ describe("organization members", () => {
     expect(linus).toHaveTextContent("Joined 15 Oct 2026");
   });
 
+  it("finds members by name or email address, and says when none match", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged(people));
+    const { user } = await renderApp(PATH);
+    const grid = await screen.findByRole("grid", { name: "Members" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")).toHaveLength(3));
+    const search = screen.getByRole("searchbox", { name: "Search members" });
+    await user.type(search, "GRACE@");
+    await waitFor(() => expect(rowNames(screen.getByRole("grid", { name: "Members" }))).toHaveLength(1));
+    expect(screen.getByRole("gridcell", { name: /Grace Hopper/ })).toBeInTheDocument();
+    await user.clear(search);
+    await user.type(search, "linus");
+    expect(await screen.findByRole("gridcell", { name: /Linus Park/ })).toBeInTheDocument();
+    await user.clear(search);
+    await user.type(search, "nobody");
+    expect(await screen.findByText("No members match")).toBeInTheDocument();
+    expect(screen.getByText("Search by another name or email address.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    await waitFor(() => expect(rowNames(screen.getByRole("grid", { name: "Members" }))).toHaveLength(3));
+  });
+
   it("marks a member whose account was deleted", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member({ user: { id: THIRD_USER, name: "Linus Park", state: "deleted" }, grant: roleGrant("member", "Member") })]));
@@ -157,7 +178,7 @@ describe("organization members", () => {
     expect(await screen.findByRole("button", { name: "Create role" })).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Members" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
-    expect(await screen.findByRole("button", { name: "Invite member" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Invite members" })).toBeInTheDocument();
   });
 
   it("sends the old invites address to the invites tab", async () => {
@@ -174,7 +195,7 @@ describe("organization members", () => {
     signedIn();
     on("GET", "orgs/:org/members", paged(people));
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Invite member" }));
+    await user.click(await screen.findByRole("button", { name: "Invite members" }));
     const dialog = await screen.findByRole("dialog", { name: "Invite members" });
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Invite members" })).not.toBeInTheDocument());
@@ -202,7 +223,7 @@ describe("organization members", () => {
     withRights(["org.view", "members.view"], { role: "member" });
     on("GET", "orgs/:org/members", paged(people));
     const { user } = await renderApp(PATH);
-    const invite = await screen.findByRole("button", { name: "Invite member" });
+    const invite = await screen.findByRole("button", { name: "Invite members" });
     expect(invite).toHaveAttribute("aria-disabled", "true");
     await hoverReason(user, invite, "You need Invite members; ask an owner or admin for it.");
     await user.click(screen.getByRole("tab", { name: "Roles" }));

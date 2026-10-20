@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Avatar, Badge, Button, Empty, FilterRow, List, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
+import { Avatar, Badge, Button, Empty, FilterRow, List, SearchInput, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { useOrgRights, useSession } from "~/auth/session";
@@ -38,7 +38,7 @@ export function OrgMembersPage({ org, search }: { org: string; search: OrgMember
   const reason = can ? undefined : needs(right);
   const run = () => (roles ? setDraft(emptyDraft) : setInviting(true));
   const createRole = t("org.roles.create", "Create role");
-  const inviteMember = t("org.members.invite", "Invite member");
+  const inviteMember = t("org.members.invite", "Invite members");
   usePageCreateAction({ label: roles ? createRole : inviteMember, run, disabledReason: reason });
 
   const setSearch = (patch: SearchPatch<OrgMembersSearch>) => {
@@ -122,9 +122,15 @@ function MembersPanel({
   const rights = useOrgRights(org);
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const roles = rolesOfScope(useRoles(org), "org");
+  const [query, setQuery] = useState("");
+  const words = query.trim().toLocaleLowerCase();
   const list = useMemo(
-    () => [...(members.data ?? [])].filter((m) => !role || m.grant.role.id === role).sort((a, b) => compareNames(a.user.name, b.user.name)),
-    [members.data, role],
+    () =>
+      [...(members.data ?? [])]
+        .filter((m) => !role || m.grant.role.id === role)
+        .filter((m) => !words || m.user.name.toLocaleLowerCase().includes(words) || !!m.user.email?.toLocaleLowerCase().includes(words))
+        .sort((a, b) => compareNames(a.user.name, b.user.name)),
+    [members.data, role, words],
   );
   const items = list.map((m) => ({
     id: m.user.id,
@@ -162,6 +168,15 @@ function MembersPanel({
             ...(role && !roles.some((r) => r.id === role) ? [{ value: role, label: role }] : []),
           ]}
         />
+        <div className="w-240">
+          <SearchInput
+            aria-label={t("org.members.search", "Search members")}
+            placeholder={t("org.members.nameOrEmail", "Name or email")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClear={() => setQuery("")}
+          />
+        </div>
       </FilterRow>
       <List
         aria-label={common.members()}
@@ -175,11 +190,17 @@ function MembersPanel({
             <Empty
               size="md"
               title={
-                role
-                  ? t("org.members.noneWithRole", "No members with the {role} role", { role: roles.find((r) => r.id === role)?.name ?? role })
-                  : t("org.members.none", "No members")
+                words
+                  ? t("org.members.noneMatch", "No members match")
+                  : role
+                    ? t("org.members.noneWithRole", "No members with the {role} role", { role: roles.find((r) => r.id === role)?.name ?? role })
+                    : t("org.members.none", "No members")
               }
-              {...(role ? { description: t("org.members.noneWithRoleHint", "Choose another role, or every role, to see the others.") } : {})}
+              {...(words
+                ? { description: t("org.members.searchAnother", "Search by another name or email address.") }
+                : role
+                  ? { description: t("org.members.noneWithRoleHint", "Choose another role, or every role, to see the others.") }
+                  : {})}
             />
           )
         }

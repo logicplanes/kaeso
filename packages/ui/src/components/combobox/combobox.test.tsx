@@ -27,6 +27,14 @@ describe("Combobox", () => {
     expect(onCreate).toHaveBeenCalledWith("lin@example.com");
   });
 
+  it("offers to add what was typed, in its own words when it has them", async () => {
+    const { rerender } = render(<Combobox aria-label="Teams" options={[]} onCreate={() => {}} />);
+    await userEvent.type(screen.getByRole("combobox", { name: "Teams" }), "Billing");
+    expect(await screen.findByRole("option", { name: "Add “Billing”" })).toBeInTheDocument();
+    rerender(<Combobox aria-label="Teams" options={[]} onCreate={() => {}} createLabel={(label) => `Invite ${label}`} />);
+    expect(await screen.findByRole("option", { name: "Invite Billing" })).toBeInTheDocument();
+  });
+
   it("keeps its choice when Escape is pressed with the list closed", async () => {
     const onChange = vi.fn();
     render(

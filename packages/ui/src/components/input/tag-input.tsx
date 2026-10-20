@@ -16,6 +16,7 @@ export interface TagInputProps extends FieldWrapProps {
   value?: string[] | undefined;
   defaultValue?: string[] | undefined;
   onValueChange?: ((value: string[]) => void) | undefined;
+  onInputValueChange?: ((draft: string) => void) | undefined;
   placeholder?: string | undefined;
   validate?: ((tag: string) => true | string) | undefined;
   separators?: string[] | undefined;
@@ -32,6 +33,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
     value,
     defaultValue = [],
     onValueChange,
+    onInputValueChange,
     placeholder,
     validate,
     separators = [",", " ", ";"],
@@ -52,7 +54,11 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
   const fc = useFieldControl(props);
   const t = useUiText();
   const [inner, setInner] = useState<string[]>(defaultValue);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraftState] = useState("");
+  const setDraft = (next: string) => {
+    setDraftState(next);
+    onInputValueChange?.(next);
+  };
   const input = useRef<HTMLInputElement | null>(null);
   const tags = value ?? inner;
   const set = (next: string[]) => {

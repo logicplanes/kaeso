@@ -44,7 +44,7 @@ describe("the API keys address", () => {
     );
     on("GET", "orgs/:org/projects/:project/members", listed([]));
     on("GET", "orgs/:org/projects/:project/service-accounts", listed([]));
-    await renderApp(`${BASE}/keys?archived=true&owner=user:usr_ada&create=true`);
+    await renderApp(`${BASE}/keys?scope=all&owner=user:usr_ada&create=true`);
     expect(await screen.findByRole("dialog", { name: "Create key" })).toBeInTheDocument();
     expect(await screen.findByText("old-batch")).toBeInTheDocument();
     expect(screen.getByText("checkout-web")).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe("the service accounts address", () => {
         : listed([serviceAccount()], "cur_2"),
     );
     on("GET", "orgs/:org/projects/:project/keys", listed([]));
-    await renderApp(`${BASE}/service-accounts?archived=true&create=true`);
+    await renderApp(`${BASE}/service-accounts?scope=all&create=true`);
     expect(await screen.findByRole("dialog", { name: "Create service account" })).toBeInTheDocument();
     expect(await screen.findByText("old-runner")).toBeInTheDocument();
     expect(sent("orgs/:org/projects/:project/service-accounts")).toContainEqual({ limit: "100", include_archived: "true", after: "cur_2" });
@@ -203,7 +203,7 @@ describe("the service accounts address", () => {
       listed([serviceAccount({ id: "sa_old", name: "old-runner", archived_at: "2026-10-01T00:00:00Z" })]),
     );
     on("GET", "orgs/:org/projects/:project/keys", listed([]));
-    await renderApp(`${BASE}/service-accounts?archived=true`);
+    await renderApp(`${BASE}/service-accounts?scope=all`);
     expect(await screen.findByText("old-runner")).toBeInTheDocument();
     expect(sent("orgs/:org/projects/:project/service-accounts")).toEqual([{ limit: "100", include_archived: "true" }]);
   });
@@ -292,7 +292,7 @@ describe("the project pages without search", () => {
     on("GET", "orgs/:org/projects/:project/keys", listed([apiKey({ state: "archived" })]));
     on("GET", "orgs/:org/projects/:project/members", listed([]));
     on("GET", "orgs/:org/projects/:project/service-accounts", listed([]));
-    await renderApp(`${BASE}/keys?owner=sa:sa_deploy&archived=true`);
+    await renderApp(`${BASE}/keys?owner=sa:sa_deploy&scope=all`);
     expect(await screen.findByText("checkout-web")).toBeInTheDocument();
     expect(sent("orgs/:org/projects/:project/keys")).toEqual([{ service_account: "sa_deploy", include_archived: "true", limit: "100" }]);
   });

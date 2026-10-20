@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, OTHER_PROJECT, project, signedIn, withRights } from "~/test/fixtures";
-import { hoverReason, notifications } from "~/test/fixtures/org";
+import { hoverReason, notifications, usageRow } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -25,6 +25,55 @@ describe("organization projects", () => {
     expect(requests("GET", PROJECTS)[0]?.query.get("include_archived")).toBe("true");
     await user.click(within(await list()).getByRole("gridcell", { name: /Alpha/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
+  });
+
+  it("says how many requests each project served in the last 30 days", async () => {
+    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+    on("GET", "orgs/:org/usage", { data: [usageRow(OTHER_PROJECT, { requests: 12_345 })] });
+    await renderApp(PATH);
+    expect(await within(await list()).findByText("12,345 requests in 30 days")).toBeInTheDocument();
+    expect(within(await list()).getByText("No requests in 30 days")).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/usage")[0]?.query.get("group_by")).toBe("project");
+  });
+
+  it("asks for no usage from people who can't see the organization's usage", async () => {
+    withRights(["org.view"]);
+    await renderApp(PATH);
+    await within(await list()).findByRole("gridcell", { name: /Checkout assistant/ });
+    expect(requests("GET", "orgs/:org/usage")).toHaveLength(0);
+  });
+
+  it("finds projects by name and says when none match", async () => {
+    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+    const { user } = await renderApp(PATH);
+    await within(await list()).findByRole("gridcell", { name: /Support triage/ });
+    const search = screen.getByRole("searchbox", { name: "Search projects" });
+    await user.type(search, "SUPPORT");
+    await waitFor(() => expect(within(screen.getByRole("grid", { name: "Projects" })).getAllByRole("gridcell")).toHaveLength(1));
+    await user.clear(search);
+    await user.type(search, "billing");
+    expect(await screen.findByText("No projects match")).toBeInTheDocument();
+    expect(screen.getByText("Search by another project name.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(await within(await list()).findByRole("gridcell", { name: /Support triage/ })).toBeInTheDocument();
+  });
+
+  it("lists only the archived projects under Archived, after Active and before All", async () => {
+    signedIn({ projects: [project(), project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T00:00:00Z" })] });
+    const { user } = await renderApp(PATH);
+    await within(await list()).findByRole("gridcell", { name: /Checkout assistant/ });
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await within(await list()).findByRole("gridcell", { name: /Old pilot/ })).toBeInTheDocument();
+    expect(within(await list()).queryByRole("gridcell", { name: /Checkout assistant/ })).not.toBeInTheDocument();
+  });
+
+  it("says when no project is archived", async () => {
+    signedIn();
+    const { user } = await renderApp(PATH);
+    await within(await list()).findByRole("gridcell", { name: /Checkout assistant/ });
+    await user.click(screen.getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByText("No archived projects")).toBeInTheDocument();
   });
 
   it("shows archived projects under All", async () => {

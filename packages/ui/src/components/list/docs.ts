@@ -38,6 +38,7 @@ export const docs = {
       selected: "The ids of the selected rows.",
       selectionActions: "Actions in the floating selection bar.",
       selectionBar: "The floating selection bar; off where the host shows the count itself, as in a dialog.",
+      wrapSubtitle: "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.",
       virtualizeAbove: "Virtualize above this many rows (100).",
     },
   },
@@ -58,6 +59,7 @@ export const docs = {
       selectable: "Shows the row's checkbox.",
       selected: "Marks the row as selected.",
       selecting: "Shows checkboxes on every row while some are selected.",
+      wrapSubtitle: "Lets a subtitle under its title wrap. Set by `List`.",
     },
   },
   SelectionAction: {

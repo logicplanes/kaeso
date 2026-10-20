@@ -88,7 +88,7 @@ export function RoleDialog({ org, draft, onClose, onCreated }: { org: string; dr
         <div className="flex flex-col gap-16">
           <Input
             label={common.name()}
-            placeholder={t("org.role.namePlaceholder", "Support lead")}
+            placeholder={t("org.role.namePlaceholder", "Billing reviewer")}
             value={role.name}
             maxLength={50}
             onChange={(e) => setRole({ ...role, name: e.target.value })}
@@ -97,7 +97,7 @@ export function RoleDialog({ org, draft, onClose, onCreated }: { org: string; dr
           <Input
             label={t("org.role.description", "Description")}
             optional
-            placeholder={t("org.role.descriptionPlaceholder", "Reads logs and usage to help customers")}
+            placeholder={t("org.role.descriptionPlaceholder", "Reads usage and costs to check invoices")}
             value={role.description}
             maxLength={200}
             onChange={(e) => setRole({ ...role, description: e.target.value })}

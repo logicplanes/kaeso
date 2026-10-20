@@ -115,6 +115,7 @@ export const docs = {
       label: "The visible label.",
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
       name: "The field name the value is sent under in a form.",
+      onInputValueChange: "Called with the text typed but not added as a tag yet, so a form can count it before it is added.",
       onValueChange: "Called with the tags whenever one is added or removed.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       placeholder: "Text shown while there is no value.",
