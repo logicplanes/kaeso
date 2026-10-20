@@ -22352,7 +22352,8 @@
         "description": "The org's security settings.",
         "required": [
           "require_2fa",
-          "require_sso"
+          "require_sso",
+          "sso_redirect_url"
         ],
         "properties": {
           "max_key_lifetime_days": {
@@ -22400,6 +22401,10 @@
                 "type": "null"
               }
             ]
+          },
+          "sso_redirect_url": {
+            "type": "string",
+            "description": "Where an identity provider must send users back: the redirect URL\nto register in its OpenID Connect app, also before a connection exists."
           }
         }
       },

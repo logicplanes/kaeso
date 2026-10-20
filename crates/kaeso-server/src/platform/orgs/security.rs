@@ -87,6 +87,9 @@ pub struct SecurityView {
     pub sso_default_role: Option<RoleRef>,
     #[doc = "The SSO connection, if one is set up."]
     pub sso: Option<SsoView>,
+    #[doc = "Where an identity provider must send users back: the redirect URL\n\
+        to register in its OpenID Connect app, also before a connection exists."]
+    pub sso_redirect_url: String,
 }
 
 async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
@@ -137,6 +140,7 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         sso_default_preset: org.sso_default_preset.clone(),
         sso_default_role,
         sso,
+        sso_redirect_url: crate::auth::oidc::redirect_url(state),
     })
 }
 

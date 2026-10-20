@@ -37,7 +37,7 @@ Ein Bild ist eine PNG-, JPEG- oder WebP-Datei, die die Konsole quadratisch zusch
 
 Mit Single Sign-on melden sich Mitglieder über Ihren OpenID-Connect-Identitätsanbieter an. Legen Sie zuerst beim Anbieter eine App für Kaeso an. Wählen Sie dann unter **Sicherheit** **Identitätsanbieter verbinden** und beantworten Sie fünf Schritte:
 
-1. **Wo ist Ihr Identitätsanbieter?** Geben Sie die Issuer-URL der App ein, etwa `https://login.example.com`.
+1. **Wo ist Ihr Identitätsanbieter?** Der Schritt zeigt die **Weiterleitungs-URL**, die Sie in der App als Callback der Anmeldung eintragen. Geben Sie die Issuer-URL der App ein, etwa `https://login.example.com`.
 2. **Welche App meldet Personen an?** Geben Sie ihre Client-ID und ihr Client-Secret ein.
 3. **Welche E-Mail-Domains melden sich darüber an?** Die Anmeldeseite leitet Personen mit einer Adresse unter diesen Domains zu Ihrem Anbieter. Internationalisierte Domains funktionieren in beiden Schreibweisen, `bücher.example` oder `xn--bcher-kva.example`.
 4. **Beitritt ohne Einladung möglich?** Wählen Sie **Nur mit Einladung** oder die Rolle, mit der Personen ohne Kaeso-Konto beitreten. Diese Rolle kann nicht Inhaber sein.
@@ -50,13 +50,13 @@ Nach dem Verbinden zeigt die Seite zwei Adressen:
 
 ### E-Mail-Domains bestätigen
 
-Single Sign-on meldet nur Adressen bestätigter Domains an und lässt nur sie beitreten, damit keine Organisation eine Domain beansprucht, die ihr nicht gehört. Für jede Domain zeigt **Sicherheit** einen TXT-Eintrag. Legen Sie ihn bei Ihrem DNS-Anbieter an und wählen Sie dann **Domains bestätigen**:
+Single Sign-on meldet nur Adressen bestätigter Domains an und lässt nur sie beitreten, damit keine Organisation eine Domain beansprucht, die ihr nicht gehört. Für jede Domain zeigt **Sicherheit**, ob sie **Bestätigt** oder **Nicht bestätigt** ist, und den TXT-Eintrag, den eine nicht bestätigte braucht. Legen Sie ihn bei Ihrem DNS-Anbieter an und wählen Sie dann **Bestätigen** neben der Domain:
 
 ```text
 _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA"
 ```
 
-DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Domains bestätigen** später erneut. Domains öffentlicher Mail-Anbieter wie `gmail.com` lassen sich nicht hinzufügen, ebenso wenig eine Domain, die eine andere Organisation bestätigt hat. Eine Domain, für die das öffentliche DNS nicht antwortet, bestätigt ein Operator auf dem Server mit `kaeso sso verify-domain acme.example`.
+DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Bestätigen** später erneut. Domains öffentlicher Mail-Anbieter wie `gmail.com` lassen sich nicht hinzufügen, ebenso wenig eine Domain, die eine andere Organisation bestätigt hat. Eine Domain, für die das öffentliche DNS nicht antwortet, bestätigt ein Operator auf dem Server mit `kaeso sso verify-domain acme.example`.
 
 **Single Sign-on bearbeiten** ändert die Verbindung. Ein leeres Client-Secret behält das gespeicherte, solange Issuer und Client-ID gleich bleiben. **Trennen** entfernt sie, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 

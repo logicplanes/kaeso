@@ -291,7 +291,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
   await openOrgSettings(page, "Logging");
   const content = page.getByRole("textbox", { name: "Content retention" });
   await content.fill("7");
-  await page.getByRole("button", { name: "Save retention" }).click();
+  await page.getByRole("button", { name: "Save content retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
 
   await page.getByRole("tab", { name: "Storage" }).click();

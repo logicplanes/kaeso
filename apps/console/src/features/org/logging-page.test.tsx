@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
+import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, user, whoAmI, withRights } from "~/test/fixtures";
 import { hoverReason, logJob, logSettings, notifications, storage, fill } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -18,7 +18,8 @@ describe("log settings", () => {
     expect(screen.getByRole("textbox", { name: "Content retention" })).toHaveValue("30");
     expect(screen.getByText("Timing, tokens, cost and errors; up to 365 days.")).toBeInTheDocument();
     expect(screen.getByText("Bodies, up to 180 days, no longer than metadata.")).toBeInTheDocument();
-    await hoverReason(user, screen.getByRole("button", { name: "Save retention" }), "No change to save");
+    await hoverReason(user, screen.getByRole("button", { name: "Save metadata retention" }), "No change to save");
+    await hoverReason(user, screen.getByRole("button", { name: "Save content retention" }), "No change to save");
   });
 
   it("turns content logging off and on", async () => {
@@ -46,7 +47,7 @@ describe("log settings", () => {
     );
     const { user } = await renderApp(PATH);
     const toggle = () => screen.getByRole("switch", { name: "Log request content" });
-    const save = () => screen.getByRole("button", { name: "Save retention" });
+    const save = () => screen.getByRole("button", { name: "Save metadata retention" });
     await user.click(await screen.findByRole("switch", { name: "Log request content" }));
     await waitFor(() => expect(toggle()).toHaveAttribute("aria-busy", "true"));
     expect(save()).not.toHaveAttribute("aria-busy");
@@ -70,26 +71,28 @@ describe("log settings", () => {
     const { user } = await renderApp(PATH);
     const metadata = await screen.findByRole("textbox", { name: "Metadata retention" });
     const content = screen.getByRole("textbox", { name: "Content retention" });
-    const save = () => screen.getByRole("button", { name: "Save retention" });
+    const saveMetadata = () => screen.getByRole("button", { name: "Save metadata retention" });
+    const saveContent = () => screen.getByRole("button", { name: "Save content retention" });
     await user.clear(metadata);
     await user.type(metadata, "400");
-    await hoverReason(user, save(), "Metadata can be kept up to 365 days on this install");
+    await hoverReason(user, saveMetadata(), "Metadata can be kept up to 365 days on this install");
     await user.clear(metadata);
     await user.type(metadata, "0");
-    await hoverReason(user, save(), "Enter whole days, at least 1");
+    await hoverReason(user, saveMetadata(), "Enter whole days, at least 1");
     await user.clear(metadata);
-    await user.type(metadata, "60");
+    await user.type(metadata, "20");
+    await hoverReason(user, saveMetadata(), "Metadata can't be kept shorter than content; shorten content first");
     await user.clear(content);
     await user.type(content, "200");
-    await hoverReason(user, save(), "Content can be kept up to 180 days on this install");
+    await hoverReason(user, saveContent(), "Content can be kept up to 180 days on this install");
     await user.clear(content);
-    await user.type(content, "90");
-    await hoverReason(user, save(), "Content can't be kept longer than metadata");
+    await user.type(content, "120");
+    await hoverReason(user, saveContent(), "Content can't be kept longer than metadata");
     await user.clear(content);
     await user.type(content, "14");
-    await user.click(save());
+    await user.click(saveContent());
     expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
-    expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ metadata_retention_days: 60, content_retention_days: 14 }]);
+    expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ content_retention_days: 14 }]);
   });
 
   it("locks the settings for people who can't manage them", async () => {
@@ -100,7 +103,7 @@ describe("log settings", () => {
     await hoverReason(user, toggle, "You need Manage log settings; ask an owner or admin for it.");
     expect(screen.getByRole("textbox", { name: "Metadata retention" })).toBeDisabled();
     expect(screen.getByRole("textbox", { name: "Content retention" })).toBeDisabled();
-    await hoverReason(user, screen.getByRole("button", { name: "Save retention" }), "You need Manage log settings; ask an owner or admin for it.");
+    await hoverReason(user, screen.getByRole("button", { name: "Save metadata retention" }), "You need Manage log settings; ask an owner or admin for it.");
     expect(screen.getByRole("tab", { name: "Storage" })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("tab", { name: "Deletions" })).toHaveAttribute("aria-disabled", "true");
     expect(requests("GET", "orgs/:org/logs/storage")).toHaveLength(0);
@@ -160,6 +163,15 @@ describe("log storage", () => {
     expect(rows[0]).toHaveTextContent("1,200");
     expect(rows[0]).toHaveTextContent("800");
     expect(screen.getByText("Back up the master keys")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Backups/ })).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/backups");
+  });
+
+  it("leaves the master keys to instance admins", async () => {
+    signedIn({ session: whoAmI({ user: user({ is_instance_admin: false }) }) });
+    on("GET", "orgs/:org/logs/storage", storage());
+    await renderApp(`${PATH}?tab=storage`);
+    await screen.findByRole("table", { name: "Storage by project" });
+    expect(screen.queryByText("Back up the master keys")).not.toBeInTheDocument();
   });
 
   it("says when there are no request logs yet", async () => {

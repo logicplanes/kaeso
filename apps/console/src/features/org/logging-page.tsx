@@ -8,6 +8,7 @@ import {
   DateRangePicker,
   Empty,
   Input,
+  Link,
   NumberInput,
   Select,
   SettingsGroup,
@@ -30,8 +31,10 @@ import { projectLogSettings, projectViews } from "~/api/queries/invalidation";
 import { logDeletionsQuery, logSettingsQuery, logStorageQuery, orgViewKey } from "~/api/queries/orgs";
 import { orgProjectsQuery, projectListKey } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
-import { useOrgRights } from "~/auth/session";
+import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
+import { tRich } from "~/i18n/rich";
+import { docsPage } from "~/format/docs";
 import { common } from "~/i18n/common";
 import { fullDayLabel, utcDay } from "~/format/period";
 import { afterToday, DAY_PRESETS, pickedDay } from "~/format/picked-day";
@@ -121,23 +124,44 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
   const m = Number(metadata);
   const c = Number(content);
   const whole = (n: number) => Number.isInteger(n) && n >= 1;
-  const changed = m !== settings.metadata_retention_days || c !== settings.content_retention_days;
   const maxMetadata = t("org.days", "{count, plural, one {# day} other {# days}}", { count: settings.max_metadata_retention_days });
   const maxContent = t("org.days", "{count, plural, one {# day} other {# days}}", { count: settings.max_content_retention_days });
   const days = t("org.daysUnit", "days");
-  const reason = !canManage
+  const metadataReason = !canManage
     ? needs("logs.settings.manage")
-    : !whole(m) || !whole(c)
+    : !whole(m)
       ? t("org.wholeDays", "Enter whole days, at least 1")
       : m > settings.max_metadata_retention_days
         ? t("org.logging.metadataMax", "Metadata can be kept up to {days} on this install", { days: maxMetadata })
-        : c > settings.max_content_retention_days
-          ? t("org.logging.contentMax", "Content can be kept up to {days} on this install", { days: maxContent })
-          : c > m
-            ? t("org.logging.contentLonger", "Content can't be kept longer than metadata")
-            : !changed
-              ? t("org.noChange", "No change to save")
-              : undefined;
+        : m < settings.content_retention_days
+          ? t("org.logging.metadataShorter", "Metadata can't be kept shorter than content; shorten content first")
+          : m === settings.metadata_retention_days
+            ? t("org.noChange", "No change to save")
+            : undefined;
+  const contentReason = !canManage
+    ? needs("logs.settings.manage")
+    : !whole(c)
+      ? t("org.wholeDays", "Enter whole days, at least 1")
+      : c > settings.max_content_retention_days
+        ? t("org.logging.contentMax", "Content can be kept up to {days} on this install", { days: maxContent })
+        : c > settings.metadata_retention_days
+          ? t("org.logging.contentLonger", "Content can't be kept longer than metadata")
+          : c === settings.content_retention_days
+            ? t("org.noChange", "No change to save")
+            : undefined;
+  const saving = (field: "metadata_retention_days" | "content_retention_days") => save.isPending && save.variables?.[field] !== undefined;
+  const saveButton = (reason: string | undefined, field: "metadata_retention_days" | "content_retention_days", value: number, label: string) => (
+    <Button
+      size="sm"
+      aria-label={label}
+      disabled={!!reason}
+      {...(reason ? { disabledReason: reason } : {})}
+      loading={saving(field)}
+      onClick={() => save.mutate({ [field]: value })}
+    >
+      {common.save()}
+    </Button>
+  );
   return (
     <div>
       <SettingsSection title={t("org.logging.content", "Content logging")}>
@@ -167,17 +191,20 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
             title={t("org.logging.metadata", "Metadata")}
             description={t("org.logging.metadataHint", "Timing, tokens, cost and errors; up to {days}.", { days: maxMetadata })}
             control={
-              <div className="w-160">
-                <NumberInput
-                  aria-label={t("org.logging.metadataRetention", "Metadata retention")}
-                  size="sm"
-                  value={metadata}
-                  onValueChange={setMetadata}
-                  min="1"
-                  step="1"
-                  unit={days}
-                  disabled={!canManage}
-                />
+              <div className="flex min-w-0 items-center gap-8">
+                <div className="w-160 min-w-0">
+                  <NumberInput
+                    aria-label={t("org.logging.metadataRetention", "Metadata retention")}
+                    size="sm"
+                    value={metadata}
+                    onValueChange={setMetadata}
+                    min="1"
+                    step="1"
+                    unit={days}
+                    disabled={!canManage}
+                  />
+                </div>
+                {saveButton(metadataReason, "metadata_retention_days", m, t("org.logging.saveMetadata", "Save metadata retention"))}
               </div>
             }
           />
@@ -185,33 +212,24 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
             title={t("org.logging.contentTitle", "Content")}
             description={t("org.logging.contentHint", "Bodies, up to {days}, no longer than metadata.", { days: maxContent })}
             control={
-              <div className="w-160">
-                <NumberInput
-                  aria-label={t("org.logging.contentRetention", "Content retention")}
-                  size="sm"
-                  value={content}
-                  onValueChange={setContent}
-                  min="1"
-                  step="1"
-                  unit={days}
-                  disabled={!canManage}
-                />
+              <div className="flex min-w-0 items-center gap-8">
+                <div className="w-160 min-w-0">
+                  <NumberInput
+                    aria-label={t("org.logging.contentRetention", "Content retention")}
+                    size="sm"
+                    value={content}
+                    onValueChange={setContent}
+                    min="1"
+                    step="1"
+                    unit={days}
+                    disabled={!canManage}
+                  />
+                </div>
+                {saveButton(contentReason, "content_retention_days", c, t("org.logging.saveContent", "Save content retention"))}
               </div>
             }
           />
         </SettingsGroup>
-        <div className="mt-12 flex justify-end">
-          <Button
-            size="sm"
-            variant="primary"
-            disabled={!!reason}
-            {...(reason ? { disabledReason: reason } : {})}
-            loading={save.isPending && save.variables?.content_logging === undefined}
-            onClick={() => save.mutate({ metadata_retention_days: m, content_retention_days: c })}
-          >
-            {t("org.logging.saveRetention", "Save retention")}
-          </Button>
-        </div>
       </SettingsSection>
     </div>
   );
@@ -221,6 +239,7 @@ const NUMBER = "text-nowrap";
 const PHONE_HIDDEN = "hidden text-nowrap sm:table-cell";
 
 function Storage({ org }: { org: string }) {
+  const session = useSession();
   const storage = useQuery(logStorageQuery(org));
   const projects = useQuery(orgProjectsQuery(org, true));
   const s = storage.data;
@@ -303,12 +322,11 @@ function Storage({ org }: { org: string }) {
           )}
         </>
       )}
-      {(s || storage.isError) && (
+      {session.user.is_instance_admin && (s || storage.isError) && (
         <Banner tone="neutral" title={t("org.logging.backupTitle", "Back up the master keys")}>
-          {t(
-            "org.logging.backupText",
-            "Provider keys are encrypted with the install's master keys. Database backups are useless for provider keys without them: back the master keys up separately.",
-          )}
+          {tRich("org.logging.backupText", "As an instance admin, keep the master keys apart from database backups; {backups} explains how.", {
+            backups: <Link href={docsPage("/self-hosting/backups")}>{t("org.logging.backupsGuide", "Backups")}</Link>,
+          })}
         </Banner>
       )}
     </div>

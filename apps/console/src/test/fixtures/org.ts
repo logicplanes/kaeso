@@ -117,7 +117,15 @@ export function sso(overrides: Partial<SsoView> = {}): SsoView {
 }
 
 export function security(overrides: Partial<SecurityView> = {}): SecurityView {
-  return { require_2fa: false, require_sso: false, sso: null, sso_default_role: null, max_key_lifetime_days: null, ...overrides };
+  return {
+    require_2fa: false,
+    require_sso: false,
+    sso: null,
+    sso_default_role: null,
+    sso_redirect_url: "https://console.northwind.test/sso/callback",
+    max_key_lifetime_days: null,
+    ...overrides,
+  };
 }
 
 export function logSettings(overrides: Partial<OrgLogSettings> = {}): OrgLogSettings {
