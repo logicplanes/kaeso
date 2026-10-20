@@ -281,7 +281,7 @@ for (const [viewport, colorScheme] of [
     const dialog = page.getByRole("dialog", { name: "Set up two-factor authentication" });
     await expect(dialog.getByRole("img", { name: "QR code to add Kaeso to an authenticator app" })).toBeVisible();
     await centredAtNaturalSize(dialog);
-    const secret = (await dialog.locator("code").first().textContent()) ?? "";
+    const secret = ((await dialog.locator("code").first().textContent()) ?? "").replace(/ /g, "");
     const motion = await record(page, async () => {
       await dialog.getByRole("textbox", { name: "Code from the app" }).fill(totp(secret));
       await expect(page.getByRole("dialog", { name: "Store your recovery codes" })).toBeVisible();

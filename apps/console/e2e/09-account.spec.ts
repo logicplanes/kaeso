@@ -59,7 +59,7 @@ test("two-factor authentication: a setup cancelled half-way starts again with a 
   const key = dialog.locator("code").first();
   const code = dialog.getByRole("textbox", { name: "Code from the app" });
   await setUp.click();
-  await expect(key).toHaveText(/^[A-Z2-7]+=*$/);
+  await expect(key).toHaveText(/^[A-Z2-7]{4}( [A-Z2-7=]{1,4})*$/);
   const first = (await key.textContent()) ?? "";
   await code.fill("123");
   await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -67,7 +67,7 @@ test("two-factor authentication: a setup cancelled half-way starts again with a 
   expect(await page.content()).not.toContain(first);
 
   await setUp.click();
-  await expect(key).toHaveText(/^[A-Z2-7]+=*$/);
+  await expect(key).toHaveText(/^[A-Z2-7]{4}( [A-Z2-7=]{1,4})*$/);
   await expect(key).not.toHaveText(first);
   await expect(code).toHaveValue("");
   await expect(dialog.getByRole("button", { name: "Turn on" })).toBeDisabled();
@@ -84,7 +84,7 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
   await page.getByRole("button", { name: "Set up" }).click();
   const dialog = page.getByRole("dialog", { name: "Set up two-factor authentication" });
   await expect(dialog.getByRole("img", { name: "QR code to add Kaeso to an authenticator app" })).toBeVisible();
-  const secret = (await dialog.locator("code").first().textContent()) ?? "";
+  const secret = ((await dialog.locator("code").first().textContent()) ?? "").replace(/ /g, "");
   expect(secret).toMatch(/^[A-Z2-7]+=*$/);
   ownerTwoFactorMayBeOn = true;
   await dialog.getByRole("textbox", { name: "Code from the app" }).fill(totp(secret));
