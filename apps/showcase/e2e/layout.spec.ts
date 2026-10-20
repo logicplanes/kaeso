@@ -123,3 +123,11 @@ test("table rows keep their padding when text and links wrap, and one-line rows 
   expect(links.every((l) => l.display === "inline")).toBe(true);
   expect(links.some((l) => l.fragments > 1)).toBe(true);
 });
+
+test("an id that copies itself shows in full beside a settings row when the row has room", async ({ page }) => {
+  await open(page, "/components/settings-group/states");
+  const text = page.locator("main button.cursor-copy", { hasText: "org_01m5btmm86ee096rh834eenxs1" }).first().locator("span").first();
+  await expect(text).toBeVisible();
+  const { scroll, client } = await text.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+  expect(scroll).toBeLessThanOrEqual(client);
+});

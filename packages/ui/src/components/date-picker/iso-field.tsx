@@ -24,7 +24,11 @@ export function IsoField({ label, value, onCommit }: { label: string; value: Dat
           const d = parseISODate(text);
           if (!d || onCommit(d) === false) setText(value ? formatISODate(value) : "");
         }}
-        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }}
       />
     </InputGroup>
   );

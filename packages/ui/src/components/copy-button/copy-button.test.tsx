@@ -25,7 +25,7 @@ describe("InlineCopyText", () => {
   it("never grows wider than its container: a long value ends in an ellipsis", () => {
     render(<InlineCopyText value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" />);
     const button = screen.getByRole("button", { name: /Mozilla/ });
-    expect(button).toHaveClass("max-w-full", "min-w-0");
+    expect(button).toHaveClass("max-w-full-bleed-4", "min-w-0");
     expect(screen.getByText(/^Mozilla/)).toHaveClass("truncate");
   });
 });

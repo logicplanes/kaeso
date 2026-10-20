@@ -128,7 +128,7 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
           if (await copy(value)) onCopy?.(value);
         }}
         className={cn(
-          "group/copy relative -mx-4 inline-flex max-w-full min-w-0 items-center gap-4 rounded-code px-4 align-baseline mono text-small text-fg transition-control focus-ring tap-target",
+          "group/copy relative -mx-4 inline-flex max-w-full-bleed-4 min-w-0 items-center gap-4 rounded-code px-4 align-baseline mono text-small text-fg transition-control focus-ring tap-target",
           "hover:bg-fill-1 active:bg-fill-2 cursor-copy",
           className,
         )}

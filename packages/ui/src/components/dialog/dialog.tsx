@@ -80,6 +80,15 @@ function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
   });
 }
 
+const SINGLE_LINE = new Set(["text", "email", "password", "search", "tel", "url", "number"]);
+
+function submitsOnEnter(e: KeyboardEvent): boolean {
+  if (e.key !== "Enter" || e.altKey || e.nativeEvent.isComposing) return false;
+  if (e.metaKey || e.ctrlKey) return true;
+  const target = e.target as HTMLElement;
+  return !e.defaultPrevented && !e.shiftKey && target instanceof HTMLInputElement && SINGLE_LINE.has(target.type) && target.getAttribute("role") !== "combobox";
+}
+
 function useBox(inline: boolean | undefined) {
   const [box, setBox] = useState<HTMLElement | null>(null);
   const ref = useCallback((el: HTMLElement | null) => setBox(inline ? el : (el?.parentElement ?? null)), [inline]);
@@ -140,7 +149,7 @@ function DialogFrame({
           className,
         )}
         onKeyDown={(e: KeyboardEvent) => {
-          if (onSubmit && !busy && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          if (onSubmit && !busy && submitsOnEnter(e)) {
             e.preventDefault();
             onSubmit();
           }

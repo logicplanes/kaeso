@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
 import { StepDialog } from "./step-dialog.js";
@@ -144,6 +144,70 @@ describe("Dialog", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
     expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  it("Enter in a single-line field submits, like a form", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog defaultOpen title="Sign in again to continue" onSubmit={onSubmit}>
+        <input aria-label="Password" type="password" />
+      </Dialog>,
+    );
+    await frames();
+    await userEvent.type(screen.getByLabelText("Password"), "correct horse{Enter}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  it("Enter keeps its own meaning in a text area, a combobox, on a button and while an input method composes", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog defaultOpen title="Edit prompt" onSubmit={onSubmit}>
+        <textarea aria-label="Prompt" />
+        <input aria-label="Model" role="combobox" />
+        <input aria-label="Tag" onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} />
+        <input aria-label="Notify" type="checkbox" />
+        <button type="button">Preview</button>
+      </Dialog>,
+    );
+    await frames();
+    await userEvent.type(screen.getByLabelText("Prompt"), "one{Enter}two");
+    expect(screen.getByLabelText("Prompt")).toHaveValue("one\ntwo");
+    await userEvent.type(screen.getByRole("combobox", { name: "Model" }), "{Enter}");
+    await userEvent.type(screen.getByLabelText("Tag"), "eu{Enter}");
+    screen.getByLabelText("Notify").focus();
+    await userEvent.keyboard("{Enter}");
+    screen.getByRole("button", { name: "Preview" }).focus();
+    await userEvent.keyboard("{Enter}");
+    const field = screen.getByRole("combobox", { name: "Model" });
+    fireEvent.keyDown(field, { key: "Enter", isComposing: true });
+    expect(onSubmit).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByLabelText("Prompt"), "{Control>}{Enter}{/Control}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  it("⌘Enter submits from a control that handles Enter itself", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog defaultOpen title="Edit limit" onSubmit={onSubmit}>
+        <button type="button" role="switch" aria-checked="false" onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}>
+          Hard limit
+        </button>
+      </Dialog>,
+    );
+    await frames();
+    screen.getByRole("switch").focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  it("Enter does nothing while the dialog is busy", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog defaultOpen busy title="Rename project" onSubmit={onSubmit}>
+        <input aria-label="Name" />
+      </Dialog>,
+    );
+    await frames();
+    await userEvent.type(screen.getByLabelText("Name"), "Atlas{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });
 

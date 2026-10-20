@@ -127,7 +127,13 @@ export default function RecentSignInDialog() {
           ? t("auth.other.description", "You signed in with SSO; this needs your password or an email link.")
           : t("auth.recent.description", "This action needs a sign-in from the last 15 minutes.")
       }
-      onSubmit={step.kind === "password" && !loading && hasPassword ? submitPassword : step.kind === "totp" ? () => submitCode(step) : undefined}
+      onSubmit={
+        step.kind === "password" && !loading && hasPassword && password
+          ? submitPassword
+          : step.kind === "totp" && (step.recovery ? code.trim() : code.length === 6)
+            ? () => submitCode(step)
+            : undefined
+      }
       footer={footer}
     >
       <div className="flex flex-col gap-16">

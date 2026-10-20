@@ -22,10 +22,10 @@ export const docs = {
   },
   Dialog: {
     description:
-      'A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. ⌘Enter submits. It stays centered (or, with `anchor="top"`, keeps its top edge) while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.',
+      'A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. Enter in a single-line field and ⌘/Ctrl+Enter anywhere submit; Enter in a text area adds a line. It stays centered (or, with `anchor="top"`, keeps its top edge) while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.',
     props: {
       anchor: "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.",
-      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
+      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close, Enter and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       children: "The dialog's content and actions.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       description: "One sentence under the title.",
@@ -35,7 +35,8 @@ export const docs = {
       hideClose: "Hide the close circle (rare).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
       onOpenChange: "Called when it opens or closes.",
-      onSubmit: "⌘Enter calls this (usually the primary action).",
+      onSubmit:
+        "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a combobox or a picker keeps its own meaning.",
       open: "Whether it is open, when you control it.",
       size: "The dialog's width.",
       title: "The dialog's heading, also its accessible name.",
@@ -52,10 +53,10 @@ export const docs = {
   },
   LayerDialog: {
     description:
-      "A stacked dialog: a second layer slides over the first (add model → review values); back returns. The layers below stay as they were. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. ⌘/Ctrl+Enter calls onSubmit on every layer.",
+      "A stacked dialog: a second layer slides over the first (add model → review values); back returns. The layers below stay as they were. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. Enter in a single-line field and ⌘/Ctrl+Enter call onSubmit on every layer.",
     props: {
       anchor: "Where it sits: centered, or with a fixed top edge for layers of different heights.",
-      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
+      busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close, Enter and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       hideClose: "Hide the close circle (rare).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
@@ -63,7 +64,7 @@ export const docs = {
       layers: "The layers, each with its title, content and footer; one shows at a time, and the ones below it stay mounted and hidden.",
       onLayerChange: "Called with the index of the layer shown.",
       onOpenChange: "Called when it opens or closes.",
-      onSubmit: "⌘/Ctrl+Enter calls this on every layer; pass the action of the layer shown.",
+      onSubmit: "Enter in a single-line field and ⌘/Ctrl+Enter call this on every layer; pass the action of the layer shown.",
       open: "Whether it is open, when you control it.",
       size: "The dialog's width.",
       trigger: "The trigger, a single element.",
