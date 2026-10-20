@@ -482,8 +482,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "The identity provider returns here. On success the session cookie is\nset and the browser goes to the console; on failure to the sign-in page\nwith the reason in `#sso_error=`.",
-        "description": "**Access:** public; no authentication.",
+        "summary": "The identity provider returns here. On success the session cookie is\nset and the browser goes to the console; on failure to the sign-in page\nwith an error code in `#sso_error=`.",
+        "description": "The codes: `sso_off`, `no_sso`, `name_org`, `invalid_link`, `expired`, `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, `linked_elsewhere`, `org_scheduled`, `throttled` and `failed`. Show your own message for each; new codes may appear, so show a general one for a code you don't know.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthOidcCallback",
         "parameters": [
           {
@@ -560,7 +560,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "A link that starts SSO: sends the browser straight to the identity\nprovider, with the flow bound to this browser as `POST auth/oidc/start`\nbinds it. On failure, to the sign-in page with the reason in `#sso_error=`.",
+        "summary": "A link that starts SSO: sends the browser straight to the identity\nprovider, with the flow bound to this browser as `POST auth/oidc/start`\nbinds it. On failure, to the sign-in page with an error code in `#sso_error=`.",
         "description": "For links from an intranet page or a bookmark. It only begins a sign-in in the browser that follows it, and whoever signs in at the provider is who is signed in afterwards, so it needs no `Origin` header.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthOidcStart",
         "parameters": [
@@ -4987,7 +4987,7 @@
           "me"
         ],
         "summary": "Starts linking the account to an org's identity provider: answers with\nthe provider's URL. Whoever signs in there is linked to this account, and\nthe browser comes back to `next` signed in as before.",
-        "description": "Needs a sign-in within the last 15 minutes. On failure the browser comes back to `next` with the reason in `#sso_error=`.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "Needs a sign-in within the last 15 minutes. On failure the browser comes back to `next` with an error code in `#sso_error=`.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeSsoLinks",
         "requestBody": {
           "content": {

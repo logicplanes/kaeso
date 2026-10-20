@@ -265,8 +265,8 @@ describe("arriving at sign-in", () => {
   it("shows why single sign-on failed and drops it from the address", async () => {
     signedOut();
     on("GET", "auth/methods", methods());
-    await renderApp("/sign-in#sso_error=Your%20identity%20provider%20refused%20the%20sign-in.");
-    expect(await (await notifications()).findByText("Your identity provider refused the sign-in.")).toBeInTheDocument();
+    await renderApp("/sign-in#sso_error=provider_refused");
+    expect(await (await notifications()).findByText("The identity provider refused the sign-in.")).toBeInTheDocument();
     expect(window.location.hash).toBe("");
   });
 
@@ -357,11 +357,11 @@ describe("single sign-on without an address", () => {
   it("waits for a click after the provider refused, and says why in the person's language", async () => {
     signedOut();
     on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
-    await renderApp("/sign-in#sso_error=The%20identity%20provider%20refused%20the%20sign-in.", { locale: "de" });
+    await renderApp("/sign-in#sso_error=provider_refused", { locale: "de" });
     expect(
       await within(await screen.findByRole("region", { name: "Benachrichtigungen" })).findByText("Der Identitätsanbieter hat die Anmeldung abgelehnt."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
     expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
   });
 

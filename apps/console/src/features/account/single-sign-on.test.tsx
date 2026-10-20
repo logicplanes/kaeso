@@ -80,8 +80,8 @@ describe("single sign-on links", () => {
     signedIn();
     on("GET", "me", me());
     on("GET", "me/sso-links", links(false));
-    await renderApp(`${PATH}#sso_error=This%20SSO%20identity%20is%20already%20linked%20to%20another%20Kaeso%20account.`);
-    expect((await (await notifications()).findAllByText("This SSO identity is already linked to another Kaeso account.")).length).toBeGreaterThan(0);
+    await renderApp(`${PATH}#sso_error=linked_elsewhere`);
+    expect((await (await notifications()).findAllByText("This identity is already linked to another Kaeso account.")).length).toBeGreaterThan(0);
   });
 
   it("shows no section without an organization that uses single sign-on", async () => {

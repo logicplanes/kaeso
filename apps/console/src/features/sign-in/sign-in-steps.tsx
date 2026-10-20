@@ -7,6 +7,9 @@ import { startSso, type SignInMethods, type SsoProvider } from "~/auth/sign-in-a
 import { PublicPage } from "~/shell/public-page";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
+export { showSsoError } from "~/auth/sso-errors";
+
+export const linkSent = (email: string): string => t("signIn.linkSent", "If an account exists for {email}, a sign-in link is on its way.", { email });
 
 export type Busy = "continue" | "password" | "magic_link" | "sso" | "code" | "sign_up";
 

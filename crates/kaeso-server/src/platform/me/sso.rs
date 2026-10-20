@@ -86,7 +86,7 @@ pub struct LinkRequest {
     the provider's URL. Whoever signs in there is linked to this account, and\n\
     the browser comes back to `next` signed in as before.",
     description = "Needs a sign-in within the last 15 minutes. On failure the browser comes \
-    back to `next` with the reason in `#sso_error=`.",
+    back to `next` with an error code in `#sso_error=`.",
     tag = "me",
     request_body = LinkRequest,
     responses((status = 200, body = StartResponse))

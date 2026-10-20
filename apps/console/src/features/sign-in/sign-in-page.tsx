@@ -5,7 +5,6 @@ import { Button, Input } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { toast } from "~/shell/toast";
 import { toastApiError } from "~/api/toast-error";
-import { translateGatewayMessage } from "~/api/errors";
 import { sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso, type SignInMethods } from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
 import { safeNext } from "~/auth/next";
@@ -71,7 +70,7 @@ export function SignInPage({
     field?.select();
   }, [busy]);
   useEffect(() => {
-    if (ssoError) void translateGatewayMessage(ssoError).then((message) => toast.error(message, { id: "sso-error" }));
+    if (ssoError) void loadSteps().then((m) => m.showSsoError(ssoError));
   }, [ssoError]);
   useEffect(() => {
     if (!notice) return;
@@ -119,7 +118,7 @@ export function SignInPage({
   const withLink = () =>
     run("magic_link", async () => {
       await sendMagicLink(address);
-      setStep({ kind: "link-sent", message: t("signIn.linkSent", "If an account exists for {email}, a sign-in link is on its way.", { email: address }) });
+      setStep({ kind: "link-sent", message: (await loadSteps()).linkSent(address) });
     });
   const withSignUp = () =>
     run("sign_up", async () => {

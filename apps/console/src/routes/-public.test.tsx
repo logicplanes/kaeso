@@ -35,9 +35,17 @@ describe("the sign-in address", () => {
   it("shows why single sign-on failed from the address fragment", async () => {
     signedOut();
     on("GET", "auth/methods", methods());
-    await renderApp("/sign-in#sso_error=The%20identity%20provider%20said%20no.");
-    expect((await (await notifications()).findAllByText("The identity provider said no.")).length).toBeGreaterThan(0);
+    await renderApp("/sign-in#sso_error=no_access");
+    expect((await (await notifications()).findAllByText("You have no access to this organization yet; ask an admin to invite you.")).length).toBeGreaterThan(0);
     expect(window.location.hash).toBe("");
+  });
+
+  it("shows its own words, never text from the address", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods());
+    await renderApp("/sign-in#sso_error=Call%20555-0100%20to%20restore%20your%20account.");
+    expect((await (await notifications()).findAllByText("Single sign-on didn't work; try again.")).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/555-0100/)).not.toBeInTheDocument();
   });
 });
 
