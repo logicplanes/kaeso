@@ -361,7 +361,8 @@ fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_pre
     let free = entry("openrouter", "nvidia/nemotron-3.5-lightning:free");
     let sonnet = entry("openrouter", "anthropic/claude-sonnet-4.5");
     let entries = vec![free.clone(), sonnet.clone()];
-    let r = |n: &str| resolve(n, &entries, &[]).map(|(e, v)| (e.id, v));
+    let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
+    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
     assert_eq!(
         r("nvidia/nemotron-3.5-lightning:free"),
         Ok((free.id, Via::Native))
@@ -385,7 +386,8 @@ fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
     let routed = entry("openrouter", "openai/gpt-4o");
     let direct = entry("openai", "gpt-4o");
     let both = vec![routed.clone(), direct.clone()];
-    let r = |n: &str| resolve(n, &both, &[]).map(|(e, v)| (e.id, v));
+    let catalogue_both = Catalogue::new(both.clone(), vec![]);
+    let r = |n: &str| catalogue_both.resolve(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("openai/gpt-4o"), Ok((direct.id, Via::Prefixed)));
     assert_eq!(
         r("openrouter/openai/gpt-4o"),
@@ -393,7 +395,8 @@ fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
     );
     assert_eq!(r("gpt-4o"), Ok((direct.id, Via::Native)));
     let only = vec![routed.clone()];
-    let r = |n: &str| resolve(n, &only, &[]).map(|(e, v)| (e.id, v));
+    let catalogue_only = Catalogue::new(only.clone(), vec![]);
+    let r = |n: &str| catalogue_only.resolve(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("openai/gpt-4o"), Ok((routed.id, Via::Native)));
 }
 
