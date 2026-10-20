@@ -24,7 +24,8 @@ export const docs = {
     },
   },
   Combobox: {
-    description: "A pill input with a filtered list: matched characters highlighted, async, chips for many, create.",
+    description:
+      "A pill input with a filtered list: matched characters highlighted, async, chips for many, create. It shows the first 100 matches and says how many more there are; for lists people scroll through, use `CommandList`.",
     props: {
       "aria-label": "The accessible name, for when there is no visible label.",
       defaultValue: "The value on first render, when the component keeps its own value.",
@@ -41,6 +42,7 @@ export const docs = {
       onCreate: 'Offers "Create “…”" when nothing matches exactly.',
       onInputValueChange: "Called with the text typed into the input.",
       onValueChange: "Called with the chosen value, or the list of values with `multiple`.",
+      searchDelay: "Milliseconds of quiet typing before `onInputValueChange` is called, so a server search runs once per pause, not per keystroke.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       options: "The options to choose from.",
       placeholder: "Text shown while there is no value.",

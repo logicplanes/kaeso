@@ -66,6 +66,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso setup-link` | 在实例还没有用户时打印设置链接。链接仅可使用一次，24 小时内有效，新链接会让旧链接失效 |
 | `kaeso user sign-in-link <email>` | 为有效用户打印一次性登录链接，15 分钟内有效（[重新登录](sign-in.md#重新登录)） |
 | `kaeso user reset-2fa <email>` | 移除用户的双重验证和恢复码，结束其会话并发邮件通知。实例审计日志会记录此操作 |
+| `kaeso sso verify-domain <domain>` | 无需 TXT 记录即可将单点登录的邮箱域名标记为已验证，适用于公共 DNS 无法解析的域名。有多个组织列出该域名时，用 `--org <org>` 指定组织。组织的审计日志会记录此操作 |
 | `kaeso master-key generate` | 以 `id:base64` 格式打印一个新主密钥 |
 | `kaeso master-key rewrap` | 用第一个主密钥重新加密已保存的机密，并报告哪些密钥 ID 仍在使用（[轮换主密钥](backups.md#轮换主密钥)） |
 | `kaeso migrate` | 运行 PostgreSQL 和 ClickHouse 迁移，然后退出 |

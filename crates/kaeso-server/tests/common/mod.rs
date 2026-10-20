@@ -20,6 +20,7 @@ use kaeso_core::clock::{ManualClock, SharedClock};
 use kaeso_mail::MemorySink;
 use kaeso_server::config::{self, Config, MapSource};
 use kaeso_server::serve::Overrides;
+use kaeso_server::services::dns::StaticRecords;
 use kaeso_server::state::AppState;
 use kaeso_testkit::services::TestServices;
 use secrecy::ExposeSecret;
@@ -43,6 +44,7 @@ pub fn config(s: &TestServices, extra: &[(&str, &str)]) -> Config {
         )
         .set("KAESO_MAIL_TRANSPORT", "log")
         .set("KAESO_MODELS_DEV_SYNC", "false")
+        .set("KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", "true")
         .set("KAESO_UPDATES_CHECK", "false")
         .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases");
     for (k, v) in extra {
@@ -90,6 +92,7 @@ pub struct App {
     pub router: Router,
     pub mail: MemorySink,
     pub clock: ManualClock,
+    pub dns: StaticRecords,
 }
 
 #[derive(Debug)]
@@ -150,6 +153,7 @@ impl App {
     ) -> App {
         let (clock, shared) = manual_clock();
         let mail = MemorySink::new();
+        let dns = StaticRecords::default();
         let state = kaeso_server::serve::prepare_with(
             config(s, extra),
             Overrides {
@@ -157,12 +161,13 @@ impl App {
                 mail: Some(kaeso_mail::Transport::Memory(mail.clone())),
                 limits,
                 sink,
+                dns: Some(Arc::new(dns.clone())),
             },
         )
         .await
         .unwrap();
         let valkey_reachable = !extra.iter().any(|(k, _)| *k == "KAESO_VALKEY_URL");
-        App::from_state(state, mail, clock, valkey_reachable).await
+        App::from_state(state, mail, clock, dns, valkey_reachable).await
     }
 
     pub async fn second_instance(&self, s: &TestServices) -> App {
@@ -171,18 +176,27 @@ impl App {
             Overrides {
                 clock: Some(Arc::new(self.clock.clone())),
                 mail: Some(kaeso_mail::Transport::Memory(self.mail.clone())),
+                dns: Some(Arc::new(self.dns.clone())),
                 ..Overrides::default()
             },
         )
         .await
         .unwrap();
-        App::from_state(state, self.mail.clone(), self.clock.clone(), true).await
+        App::from_state(
+            state,
+            self.mail.clone(),
+            self.clock.clone(),
+            self.dns.clone(),
+            true,
+        )
+        .await
     }
 
     async fn from_state(
         state: AppState,
         mail: MemorySink,
         clock: ManualClock,
+        dns: StaticRecords,
         valkey_reachable: bool,
     ) -> App {
         kaeso_server::services::models_dev::spawn_reloader(&state);
@@ -199,6 +213,7 @@ impl App {
             router,
             mail,
             clock,
+            dns,
         }
     }
 

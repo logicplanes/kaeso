@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT domain, verified_at AS \"verified_at!\" FROM org_oidc_domains WHERE org_id = $1 AND verified_at IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "domain",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_oidc_domains",
+            "name": "domain"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "verified_at!",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "org_oidc_domains",
+            "name": "verified_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "dfdd7f7e2ac8c69cbdc0e2f658fd008cc995f5278db13173e90647e2b44e9470"
+}

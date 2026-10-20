@@ -39,6 +39,21 @@ export const modelSearchQuery = (org: string, project: string, q: { q: string; p
     staleTime: 60_000,
   });
 
+export const currentModelsQuery = (org: string, project: string, provider: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "models", "search", { provider, current: true }],
+    queryFn: async ({ signal }): Promise<SearchHit[]> =>
+      data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/models/search", {
+          params: { path: { org, project }, query: { provider, include_deprecated: false, limit: CURRENT_MODELS_LIMIT } },
+          signal,
+        }),
+      ).data,
+    staleTime: 60_000,
+  });
+
+export const CURRENT_MODELS_LIMIT = 200;
+
 export const modelPreviewQuery = (org: string, project: string, provider: string, model: string) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "models", "preview", provider, model],

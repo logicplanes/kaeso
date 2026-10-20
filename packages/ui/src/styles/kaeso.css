@@ -972,6 +972,9 @@
 @utility palette-limits {
   max-height: min(560px, calc(100dvh - 25vh));
 }
+@utility picker-limits {
+  max-height: min(480px, 70dvh);
+}
 
 .base-ui-disable-scrollbar {
   scrollbar-width: none;

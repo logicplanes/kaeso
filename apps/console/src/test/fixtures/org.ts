@@ -91,15 +91,26 @@ export function credential(overrides: Partial<CredentialView> = {}): CredentialV
   };
 }
 
+export function ssoDomain(domain: string, verified = true): SsoView["domains"][number] {
+  return {
+    domain,
+    verified,
+    verified_at: verified ? NOW : null,
+    record_name: `_kaeso-verify.${domain}`,
+    record_value: "kaeso-verify=northwind-token",
+  };
+}
+
 export function sso(overrides: Partial<SsoView> = {}): SsoView {
   return {
     issuer: "https://login.northwind.test",
     client_id: "client-123",
-    domains: ["northwind.test"],
+    domains: [ssoDomain("northwind.test")],
     key_id: "mk_sso",
     redirect_url: "https://console.northwind.test/sso/callback",
     name: null,
     auto_redirect: false,
+    require_email_verified: true,
     sign_in_url: "https://console.northwind.test/sign-in?org=org_northwind",
     ...overrides,
   };

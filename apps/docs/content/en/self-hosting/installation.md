@@ -66,6 +66,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso setup-link` | Prints the setup link while the install has no users. The link works once, for 24 hours, and a new one retires the older ones |
 | `kaeso user sign-in-link <email>` | Prints a one-time sign-in link for an active user, valid for 15 minutes ([get back in](sign-in.md#get-back-in)) |
 | `kaeso user reset-2fa <email>` | Removes a user's two-factor authentication and recovery codes, ends their sessions and emails them. The instance audit log records it |
+| `kaeso sso verify-domain <domain>` | Marks an SSO email domain verified without its TXT record, for a domain that public DNS doesn't answer for. `--org <org>` names the organization when several list the domain. The organization's audit log records it |
 | `kaeso master-key generate` | Prints a new master key as `id:base64` |
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotate-the-master-key)) |
 | `kaeso migrate` | Runs the PostgreSQL and ClickHouse migrations, then exits |

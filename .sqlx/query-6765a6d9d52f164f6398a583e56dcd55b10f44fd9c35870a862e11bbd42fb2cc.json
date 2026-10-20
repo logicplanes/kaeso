@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO org_oidc_domains (domain, org_id) VALUES ($1, $2) ON CONFLICT (org_id, domain) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6765a6d9d52f164f6398a583e56dcd55b10f44fd9c35870a862e11bbd42fb2cc"
+}

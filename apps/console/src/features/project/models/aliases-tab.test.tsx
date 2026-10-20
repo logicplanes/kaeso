@@ -70,7 +70,7 @@ describe("AliasesTab", () => {
     expect(within(dialog).getByText("Apps that send `claude-sonnet-4-5` get this alias, not the model with the same name.")).toBeInTheDocument();
     await user.clear(name);
     await user.type(name, " smart ");
-    await user.click(within(dialog).getByRole("combobox", { name: "Target" }));
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
     await user.click(await screen.findByRole("option", { name: /claude-haiku-4-5/ }));
     await user.keyboard("{Meta>}{Enter}{/Meta}");
 
@@ -88,7 +88,7 @@ describe("AliasesTab", () => {
     await user.click(screen.getByRole("button", { name: "Create alias" }));
     const dialog = await screen.findByRole("dialog", { name: "Create alias" });
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "fast");
-    await user.click(within(dialog).getByRole("combobox", { name: "Target" }));
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
     await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
     await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
     expect((await notifications().findAllByText("An alias with that name exists.")).length).toBeGreaterThan(0);
@@ -102,7 +102,7 @@ describe("AliasesTab", () => {
     await user.click(await screen.findByRole("gridcell", { name: /^fast/ }));
     const dialog = await screen.findByRole("dialog", { name: "Edit fast" });
     expect(within(dialog).getByRole("button", { name: "Save alias" })).toBeDisabled();
-    await user.click(within(dialog).getByRole("combobox", { name: "Target" }));
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
     await user.click(await screen.findByRole("option", { name: /claude-haiku-4-5/ }));
     await user.click(within(dialog).getByRole("button", { name: "Save alias" }));
 

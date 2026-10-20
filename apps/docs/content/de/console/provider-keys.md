@@ -8,17 +8,19 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 
 ## Schlüssel hinzufügen
 
-1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**, oder **Verbinden** neben einem Anbieter, der noch keinen Schlüssel hat.
-2. **Für welchen Anbieter ist der Schlüssel?** Wählen Sie den Anbieter.
-3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Die Tabelle unten nennt, woher die Schlüssel jedes Anbieters kommen.
+**Anbieter** listet die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an.
+
+1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**.
+2. **Für welchen Anbieter ist der Schlüssel?** Suchen Sie den Anbieter und wählen Sie ihn. Anbieter, die schon Schlüssel haben, stehen oben, mit der Anzahl ihrer Schlüssel.
+3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Der Dialog verlinkt die Seite des Anbieters, auf der Sie Schlüssel erstellen; die Tabelle unten nennt sie ebenfalls.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
 
 | Anbieter | Schlüssel erstellen unter | Der Schlüssel beginnt mit |
 | --- | --- | --- |
-| OpenAI | platform.openai.com | `sk-` |
-| Anthropic | console.anthropic.com | `sk-ant-` |
-| DeepSeek | platform.deepseek.com | `sk-` |
-| SpaceX | console.x.ai (xAI-Konsole) | `xai-` |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
+| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
+| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai) (xAI-Konsole), unter **API Keys** | `xai-` |
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 
