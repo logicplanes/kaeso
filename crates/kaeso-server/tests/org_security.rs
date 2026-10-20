@@ -179,6 +179,18 @@ async fn an_sso_connection_is_checked_before_it_is_stored() {
         (with("default_role", json!("owner")), "default_role"),
         (with("client_secret", Value::Null), "client_secret"),
         (with("issuer", json!("http://127.0.0.1:9")), "issuer"),
+        (
+            with("issuer", json!("https://login.acme.example/?x=1")),
+            "issuer",
+        ),
+        (
+            with("issuer", json!("https://login.acme.example/#x")),
+            "issuer",
+        ),
+        (
+            with("issuer", json!("https://user:pass@login.acme.example")),
+            "issuer",
+        ),
     ];
     for (body, param) in refused {
         let r = put(&app, &owner.cookie, &sso, body.clone()).await;
@@ -649,5 +661,59 @@ async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
     .await
     .unwrap();
     assert_eq!(audit, 2);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_stored_secret_is_kept_only_for_the_same_issuer_and_client() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let other = MockIdp::start("kaeso", "client-secret").await;
+    let sso = format!("{}/sso", security(&owner));
+    let cookie = owner.cookie.as_str();
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": idp.issuer(), "client_id": "kaeso", "client_secret": "client-secret", "domains": ["acme.example"] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["require_email_verified"], true);
+    for body in [
+        json!({ "issuer": other.issuer(), "client_id": "kaeso", "domains": ["acme.example"] }),
+        json!({ "issuer": idp.issuer(), "client_id": "someone-else", "domains": ["acme.example"] }),
+    ] {
+        let r = put(&app, cookie, &sso, body.clone()).await;
+        assert_eq!(
+            (r.status, r.body["error"]["param"].as_str()),
+            (StatusCode::BAD_REQUEST, Some("client_secret")),
+            "{body}"
+        );
+    }
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": idp.issuer(), "client_id": "kaeso", "domains": ["acme.example"], "require_email_verified": false }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["require_email_verified"], false);
+    let r = put(
+        &app,
+        cookie,
+        &sso,
+        json!({ "issuer": other.issuer(), "client_id": "kaeso", "client_secret": "client-secret", "domains": ["acme.example"] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso"]["issuer"], other.issuer());
+    assert_eq!(
+        r.body["sso"]["require_email_verified"], false,
+        "kept when left out"
+    );
     s.cleanup().await;
 }

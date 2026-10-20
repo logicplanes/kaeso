@@ -32,7 +32,7 @@ https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6
 ## Who signs in through single sign-on
 
 - Only addresses at the connection's verified email domains ([verify your email domains](../console/organizations-and-projects.md#verify-your-email-domains)). One organization on an install verifies each domain.
-- Only addresses the provider doesn't mark as unverified.
+- Only addresses the provider marks as verified with `email_verified`. For a provider that never sends the claim, a connection can turn off **Require verified addresses**; an address marked unverified is still refused.
 - Someone new to Kaeso joins the organization with an invitation to their address, or with the connection's role for people without one. Without either, they get no access. Kaeso creates their account even where the [account creation setting](../console/instance-administration.md#change-install-settings) allows no sign-ups, because the organization's provider vouches for them.
 - Kaeso links each account to its identity at the provider, the provider's issuer and subject. Later sign-ins follow that link, not the email address.
 - An existing account signs in through single sign-on only once its owner links it, from **Account** › **Security** after signing in another way ([link single sign-on](../console/account.md#link-single-sign-on)), and only where it is a member. To accept an invitation, it signs in another way first.

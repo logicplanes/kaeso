@@ -17,6 +17,7 @@ pub struct Connection {
     pub verification_token: String,
     pub display_name: Option<String>,
     pub auto_redirect: bool,
+    pub require_email_verified: bool,
 }
 
 pub async fn get(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Option<Connection>, StoreError> {
@@ -25,7 +26,7 @@ pub async fn get(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Option<Connect
         "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, \
          COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", \
          COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.verified_at IS NOT NULL), '{}') AS \"verified_domains!\", \
-         c.verification_token, c.display_name, c.auto_redirect \
+         c.verification_token, c.display_name, c.auto_redirect, c.require_email_verified \
          FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id \
          WHERE c.org_id = $1 GROUP BY c.org_id",
         org_id
@@ -73,10 +74,10 @@ pub enum Upserted {
 pub async fn upsert(db: &mut sqlx::PgConnection, c: &Connection) -> Result<Upserted, StoreError> {
     sqlx::query!(
         "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, \
-         display_name, auto_redirect, verification_token) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, \
+         display_name, auto_redirect, verification_token, require_email_verified) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, \
          secret_ciphertext = $4, secret_nonce = $5, wrapped_key = $6, key_id = $7, display_name = $8, \
-         auto_redirect = $9, updated_at = now()",
+         auto_redirect = $9, require_email_verified = $11, updated_at = now()",
         c.org_id,
         c.issuer,
         c.client_id,
@@ -86,7 +87,8 @@ pub async fn upsert(db: &mut sqlx::PgConnection, c: &Connection) -> Result<Upser
         c.key_id,
         c.display_name,
         c.auto_redirect,
-        c.verification_token
+        c.verification_token,
+        c.require_email_verified
     )
     .execute(&mut *db)
     .await?;
@@ -187,7 +189,7 @@ pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<Connection>, Stor
         Connection,
         "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, \
          '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", \
-         verification_token, display_name, auto_redirect FROM org_oidc"
+         verification_token, display_name, auto_redirect, require_email_verified FROM org_oidc"
     )
     .fetch_all(db)
     .await?)

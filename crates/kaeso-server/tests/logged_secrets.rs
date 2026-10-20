@@ -67,6 +67,7 @@ async fn connect(app: &App, org: &str, idp: &MockIdp) {
             verification_token: "token".into(),
             display_name: None,
             auto_redirect: false,
+            require_email_verified: true,
         },
     )
     .await

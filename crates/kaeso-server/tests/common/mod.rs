@@ -44,6 +44,7 @@ pub fn config(s: &TestServices, extra: &[(&str, &str)]) -> Config {
         )
         .set("KAESO_MAIL_TRANSPORT", "log")
         .set("KAESO_MODELS_DEV_SYNC", "false")
+        .set("KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", "true")
         .set("KAESO_UPDATES_CHECK", "false")
         .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases");
     for (k, v) in extra {
