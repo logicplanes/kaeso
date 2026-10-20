@@ -229,6 +229,12 @@ describe("the period still running", () => {
   beforeEach(drawn);
   afterEach(undrawn);
 
+  it("says a lone today counts so far", async () => {
+    await renderUi(<RequestsChart rows={[usage({ key: "2026-10-20", requests: 30 })]} from="2026-10-20" to="2026-10-20" />);
+    expect(await screen.findByRole("columnheader", { name: "Category" })).toBeInTheDocument();
+    expect(rowsOf("Requests and errors per day")).toEqual([["Oct 20, so far", "30", "5"]]);
+  });
+
   it("says today counts so far, and leaves the share of errors out", async () => {
     await renderUi(<RequestsChart rows={[usage({ key: "2026-10-19" }), usage({ key: "2026-10-20", requests: 30 })]} from="2026-10-19" to="2026-10-20" />);
     expect(rowsOf("Requests and errors per day").map((r) => r[0])).toEqual(["Oct 19", "Oct 20, so far"]);

@@ -14,6 +14,7 @@ export function DayBars(props: DailyProps & { label: string; days: { day: string
       series={props.series.map((s) => ({ id: s.id, label: s.label, color: s.color, values: s.points.map((p) => p.v) }))}
       layout="grouped"
       shares={false}
+      partial={names.partial}
       height={240}
       formatValue={formatNumber}
       empty={props.rows.length === 0}

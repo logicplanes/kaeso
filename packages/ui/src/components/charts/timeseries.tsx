@@ -148,10 +148,10 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const yScale = axis.copy().domain([0, tween.top || 1]);
   const t0 = d3min(times) ?? new Date();
   const t1 = d3max(times) ?? new Date();
-  const inset = tickAt === "points" && times.length ? w / times.length / 2 : 0;
-  const x = scaleLinear()
-    .domain([t0.getTime(), t1.getTime()])
-    .range([inset, w - inset]);
+  const ordinal = tickAt === "points" && times.length > 0;
+  const slot = ordinal ? w / times.length : 0;
+  const x = scaleLinear().domain([t0.getTime(), t1.getTime()]).range([0, w]);
+  const at = (i: number) => (ordinal ? (i + 0.5) * slot : x(times[i] ?? t0));
   const stackData = stacked
     ? d3stack<number[]>().keys(visible.map((_, i) => String(i)))(times.map((_, ti) => visible.map((_, si) => values[si]?.[ti] ?? 0)))
     : null;
@@ -165,10 +165,10 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
     tickAt === "points"
       ? axisLabelIndexes(
           times.map(fmt),
-          inset * 2,
-          { start: inset, end: inset + M.right },
+          slot,
+          { start: slot / 2, end: slot / 2 + M.right },
           times.map((d) => wallDay(d, clock)),
-        ).map((i) => ({ key: times[i]!.getTime(), x: Math.round(x(times[i]!)), anchor: "middle", label: fmt(times[i]!) }))
+        ).map((i) => ({ key: times[i]!.getTime(), x: Math.round(at(i)), anchor: "middle", label: fmt(times[i]!) }))
       : timeLabels(t0, t1, w, w + M.right, (d) => x(d.getTime()), fmt, clock);
   const step = (times[1]?.getTime() ?? 0) - (times[0]?.getTime() ?? 0);
   const pointFormat =
@@ -187,25 +187,34 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   };
   const dashedFirst = !!partial?.first && last >= 1;
   const dashedLast = !!(partial?.last || partial?.ongoing) && last >= 1;
-  const cutStart = dashedFirst ? Math.round(x(times[1]!)) : -M.left;
-  const cutEnd = dashedLast ? Math.round(x(times[last - 1]!)) : w + M.right;
+  const cutStart = dashedFirst ? Math.round(at(1)) : -M.left;
+  const cutEnd = dashedLast ? Math.round(at(last - 1)) : w + M.right;
+  const partialLine = (stroke: React.SVGProps<SVGPathElement>) => {
+    if (!dashedFirst && !dashedLast) return <path {...stroke} />;
+    return (
+      <>
+        <path {...stroke} clipPath={`url(#${gid}-whole)`} />
+        <path {...stroke} clipPath={`url(#${gid}-partial)`} strokeDasharray="4 4" data-partial="" />
+      </>
+    );
+  };
   const lineGen = d3line<number>()
-    .x((_, i) => Math.round(x(times[i] ?? new Date())))
+    .x((_, i) => Math.round(at(i)))
     .y((v) => y(v))
     .curve(curveMonotoneX);
   const areaGen = d3area<number>()
-    .x((_, i) => Math.round(x(times[i] ?? new Date())))
+    .x((_, i) => Math.round(at(i)))
     .y0(h)
     .y1((v) => y(v))
     .curve(curveMonotoneX);
   const stackArea = d3area<SeriesPoint<number[]>>()
-    .x((_, i) => Math.round(x(times[i] ?? new Date())))
+    .x((_, i) => Math.round(at(i)))
     .y0((d) => y(d[0]))
     .y1((d) => y(d[1]))
     .curve(curveMonotoneX);
 
   const stackTop = d3line<SeriesPoint<number[]>>()
-    .x((_, i) => Math.round(x(times[i] ?? new Date())))
+    .x((_, i) => Math.round(at(i)))
     .y((d) => y(d[1]))
     .curve(curveMonotoneX);
   const palette = useMemo(() => seriesColors(series.map((s) => s.id)), [series]);
@@ -213,7 +222,8 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const bis = bisector((d: Date) => d.getTime()).center;
   const onMove = (e: React.PointerEvent<SVGRectElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const i = bis(times, x.invert(e.clientX - r.left));
+    const px = e.clientX - r.left;
+    const i = ordinal ? Math.max(0, Math.min(times.length - 1, Math.floor(px / slot))) : bis(times, x.invert(px));
     setHover({ i, y: Math.round(e.clientY - r.top + M.top) });
   };
 
@@ -226,7 +236,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const blank = !!state.loading || empty;
   const keys = useChartKeys(blank || state.error ? 0 : times.length);
   const active = blank || !!state.error ? null : (hover?.i ?? keys.index ?? (highlight !== undefined && highlight < times.length ? highlight : null));
-  const activeX = active === null ? 0 : Math.round(x(times[active]!)) + M.left;
+  const activeX = active === null ? 0 : Math.round(at(active)) + M.left;
   const activeY =
     active === null
       ? 0
@@ -317,30 +327,28 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                         return (
                           <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
                             <path d={stackArea(layer) ?? ""} fill={color(s)} className="chart-stack-fill" />
-                            <path d={stackTop(layer) ?? ""} fill="none" stroke={color(s)} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+                            {partialLine({
+                              d: stackTop(layer) ?? "",
+                              fill: "none",
+                              stroke: color(s),
+                              strokeWidth: 1.5,
+                              strokeLinejoin: "round",
+                              strokeLinecap: "round",
+                            })}
                           </g>
                         );
                       })
                     : visible.map((s, si) => (
                         <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
                           {kind === "area" && <path d={areaGen(values[si] ?? []) ?? ""} fill={`url(#${gid}-${s.id})`} />}
-                          {(() => {
-                            const stroke = {
-                              d: lineGen(values[si] ?? []) ?? "",
-                              fill: "none",
-                              stroke: color(s),
-                              strokeWidth: 2,
-                              strokeLinejoin: "round",
-                              strokeLinecap: "round",
-                            } as const;
-                            if (!dashedFirst && !dashedLast) return <path {...stroke} />;
-                            return (
-                              <>
-                                <path {...stroke} clipPath={`url(#${gid}-whole)`} />
-                                <path {...stroke} clipPath={`url(#${gid}-partial)`} strokeDasharray="4 4" data-partial="" />
-                              </>
-                            );
-                          })()}
+                          {partialLine({
+                            d: lineGen(values[si] ?? []) ?? "",
+                            fill: "none",
+                            stroke: color(s),
+                            strokeWidth: 2,
+                            strokeLinejoin: "round",
+                            strokeLinecap: "round",
+                          })}
                         </g>
                       ))}
                 {threshold && (
