@@ -66,6 +66,13 @@ describe("TimeseriesChart", () => {
     fireEvent.keyDown(plot, { key: "x" });
   });
 
+  it("draws once its data arrives after loading without any", () => {
+    const { rerender } = render(<TimeseriesChart aria-label="Requests" series={[]} loading />);
+    expect(screen.getByRole("figure", { name: "Requests" }).querySelector("svg")).toBeNull();
+    rerender(<TimeseriesChart aria-label="Requests" series={series(hours(24))} />);
+    expect(screen.getByRole("figure", { name: "Requests" }).querySelector("svg")).not.toBeNull();
+  });
+
   it("shows loading, empty and failed states", async () => {
     const onRetry = vi.fn();
     const { rerender } = render(<TimeseriesChart aria-label="Spend" series={series(hours(4))} loading />);
@@ -106,6 +113,12 @@ describe("BarChart", () => {
     fireEvent.keyDown(screen.getByRole("group", { name: "Tokens" }), { key: "ArrowDown" });
     rerender(<BarChart aria-label="Tokens" layout="horizontal" categories={categories} series={bars} highlight={3} />);
     fireEvent.mouseEnter(within(screen.getByRole("list", { name: "Legend" })).getByText("Input"));
+  });
+
+  it("draws once its data arrives after loading without any", () => {
+    const { rerender } = render(<BarChart aria-label="Tokens" categories={[]} series={[]} loading />);
+    rerender(<BarChart aria-label="Tokens" categories={categories} series={bars} />);
+    expect(screen.getByRole("figure", { name: "Tokens" }).querySelectorAll("svg rect").length).toBeGreaterThan(0);
   });
 
   it("keeps quiet while loading and with no data", () => {
