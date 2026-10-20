@@ -34,6 +34,7 @@ export function useThreads(org: string, project: string, columns: number) {
   }
 
   const controllers = useRef(new Map<string, AbortController>());
+  const finished = useRef(new Set<string>());
   const live = useRef(new Map<string, ResponseState>());
   const frame = useRef<number | null>(null);
   const mounted = useRef(true);
@@ -99,7 +100,7 @@ export function useThreads(org: string, project: string, columns: number) {
             continue;
           }
           settled = true;
-          controllers.current.delete(turn.id);
+          finished.current.add(turn.id);
           void settle(turn, state);
         }
         if (isLive(state))
@@ -117,7 +118,8 @@ export function useThreads(org: string, project: string, columns: number) {
             isApiError(e) && e.status >= 500 ? e.requestId : null,
           );
       } finally {
-        if (controllers.current.get(turn.id) === controller) controllers.current.delete(turn.id);
+        controllers.current.delete(turn.id);
+        finished.current.delete(turn.id);
       }
       if (!settled) await settle(turn, state);
     },
@@ -149,7 +151,7 @@ export function useThreads(org: string, project: string, columns: number) {
   );
 
   const stop = useCallback(() => {
-    for (const c of controllers.current.values()) c.abort();
+    for (const [turn, c] of controllers.current) if (!finished.current.has(turn)) c.abort();
   }, []);
 
   const add = useCallback(() => setThreads((ts) => [...ts, newThread()]), []);

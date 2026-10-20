@@ -74,6 +74,21 @@ describe("useThreads", () => {
     expect(result.current.threads[0]?.turns[0]?.response).toMatchObject({ status: "completed", text: "Done.", error: null });
   });
 
+  it("still hangs up on a finished reply whose stream stays open when the page goes", async () => {
+    const s = streamingFetch();
+    fetchMock = s.fetch;
+    const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 1));
+    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    await waitFor(() => expect(s.fetch).toHaveBeenCalled());
+    const sent = s.fetch.mock.calls[0]?.[0] as Request;
+    act(() => s.push(event("response.completed", { response: {} })));
+    await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.status).toBe("completed"));
+    act(() => result.current.stop());
+    expect(sent.signal.aborted).toBe(false);
+    unmount();
+    expect(sent.signal.aborted).toBe(true);
+  });
+
   it("stops every stream and keeps what arrived, without an error", async () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
