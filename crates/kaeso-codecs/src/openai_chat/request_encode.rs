@@ -1,6 +1,7 @@
+use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, GenerateRequest, KppError, Message, OutputSpec, RawJson, Role, StreamMode, TextBlock,
-    ToolChoice, ToolDef, ToolResultBlock,
+    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, Role, StreamMode,
+    TextBlock, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 
@@ -9,10 +10,11 @@ use super::convert::{
     FORM_REFUSAL_PART, encode_file_part, encode_image_part, encode_refusal_part, encode_text_part,
     encode_tool_call, ext_nested, ext_with, is_tool_call_item, nested_keys, safe_tool_name, to_raw,
 };
+use super::profile::{ChatProfile, OutputLimit, SeedField};
 use super::request::{
     CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_RESPONSE_FORMAT_TEXT,
     FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE, FORM_STREAM_OPTIONS,
-    FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE, MESSAGE_PREFIX,
+    FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE, KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX,
 };
 use super::wire::{
     AssistantMessage, ChatRequest, FunctionObject, FunctionToolWire, InstructionMessage,
@@ -29,6 +31,8 @@ pub(crate) fn encode_generate(
 ) -> Result<Ext<ChatRequest>, KppError> {
     let own = req.extras.is_from(DIALECT);
     let form = |key: &str| req.extras.form_value(DIALECT, key);
+    let profile = ctx.chat_profile;
+    let rules = profile.request;
     let mut names = Names { ctx };
     let mut w = ChatRequest {
         model: req.model.clone(),
@@ -41,11 +45,15 @@ pub(crate) fn encode_generate(
     };
     w.temperature = number(s.temperature, "temperature");
     w.top_p = number(s.top_p, "top_p");
-    w.seed = s.seed;
+    let seed = s.seed.map(|seed| profile.checked_seed(seed)).transpose()?;
+    if rules.seed == SeedField::Seed {
+        w.seed = seed;
+    }
     w.frequency_penalty = number(s.frequency_penalty, "frequency_penalty");
     w.presence_penalty = number(s.presence_penalty, "presence_penalty");
     if let Some(max) = s.max_output_tokens {
         match form(FORM_MAX_TOKENS).and_then(Value::as_str) {
+            _ if rules.output_limit == OutputLimit::MaxTokens => w.max_tokens = Some(max),
             Some("max_tokens") => w.max_tokens = Some(max),
             Some("both") => {
                 w.max_tokens = Some(max);
@@ -64,7 +72,7 @@ pub(crate) fn encode_generate(
     if form(FORM_N).is_some() {
         w.n = Some(1);
     }
-    if let Some(user) = &req.user {
+    if let Some(user) = req.user.as_ref().filter(|_| rules.end_user) {
         if own && req.extras.form_flag(DIALECT, FORM_USER) {
             w.user = Some(user.clone());
         } else {
@@ -123,7 +131,7 @@ pub(crate) fn encode_generate(
     };
     w.parallel_tool_calls = req.parallel_tool_calls;
 
-    encode_system(&req.system, &mut w.messages)?;
+    encode_system(&req.system, rules.developer_role, &mut w.messages)?;
     for message in &req.messages {
         encode_message(message, &mut names, &mut w.messages)?;
     }
@@ -139,7 +147,70 @@ pub(crate) fn encode_generate(
             (wire, value)
         })
         .collect();
-    Ok(Ext::with(w, extra, verbatim))
+    let mut out = Ext::with(w, extra, verbatim);
+    apply_profile(&profile, seed, &req.extras, &mut out)?;
+    Ok(out)
+}
+
+fn apply_profile(
+    profile: &ChatProfile,
+    seed: Option<i64>,
+    extras: &Extras,
+    out: &mut Ext<ChatRequest>,
+) -> Result<(), KppError> {
+    if profile.request.output_limit == OutputLimit::MaxTokens {
+        if extras
+            .fields_for(DIALECT)
+            .is_some_and(|f| f.contains_key(KEY_MAX_TOKENS_CONFLICT))
+        {
+            return Err(KppError::unsupported(
+                "max_tokens",
+                format!(
+                    "{} takes one output limit; send `max_tokens` or `max_completion_tokens`, not both with different values.",
+                    profile.provider
+                ),
+            )
+            .with_param("max_tokens"));
+        }
+        rename_null(
+            &mut out.verbatim,
+            "max_completion_tokens",
+            Some("max_tokens"),
+        );
+    }
+    if profile.request.seed == SeedField::RandomSeed {
+        let sent_seed = seed.is_some() || out.verbatim.contains_key("seed");
+        let sent_random_seed =
+            out.extra.contains_key("random_seed") || out.verbatim.contains_key("random_seed");
+        if sent_seed && sent_random_seed {
+            return Err(KppError::unsupported(
+                "seed",
+                format!(
+                    "{} takes one seed; send `seed` or `random_seed`, not both.",
+                    profile.provider
+                ),
+            )
+            .with_param("seed"));
+        }
+        rename_null(&mut out.verbatim, "seed", Some("random_seed"));
+        if let Some(seed) = seed {
+            out.extra.insert("random_seed".to_owned(), to_raw(&seed)?);
+        }
+    }
+    if !profile.request.end_user {
+        out.extra.shift_remove("user");
+        rename_null(&mut out.verbatim, "user", None);
+        rename_null(&mut out.verbatim, "safety_identifier", None);
+    }
+    Ok(())
+}
+
+fn rename_null(verbatim: &mut IndexMap<String, RawJson>, from: &str, to: Option<&str>) {
+    if let Some(null) = verbatim.shift_remove(from)
+        && let Some(to) = to
+    {
+        verbatim.entry(to.to_owned()).or_insert(null);
+    }
 }
 
 struct Names<'a> {
@@ -243,7 +314,19 @@ fn encode_response_format(req: &GenerateRequest) -> Result<Option<RawJson>, KppE
     }
 }
 
-fn encode_system(system: &[Block], out: &mut Vec<RawJson>) -> Result<(), KppError> {
+fn instruction_role(written: Option<&str>, developer_role: bool) -> &str {
+    match written {
+        Some("developer") if !developer_role => "system",
+        Some(role) => role,
+        None => "system",
+    }
+}
+
+fn encode_system(
+    system: &[Block],
+    developer_role: bool,
+    out: &mut Vec<RawJson>,
+) -> Result<(), KppError> {
     let mut groups: Vec<Vec<&Block>> = Vec::new();
     for block in system {
         let starts = block
@@ -257,10 +340,10 @@ fn encode_system(system: &[Block], out: &mut Vec<RawJson>) -> Result<(), KppErro
     for group in groups {
         let first = group.first().and_then(|b| b.extras());
         let marker = first.and_then(|e| e.form_value(DIALECT, FORM_MESSAGE));
-        let role = marker
-            .and_then(|m| m.get("role"))
-            .and_then(Value::as_str)
-            .unwrap_or("system");
+        let role = instruction_role(
+            marker.and_then(|m| m.get("role")).and_then(Value::as_str),
+            developer_role,
+        );
         let spelling = marker
             .and_then(|m| m.get("content"))
             .and_then(Value::as_str);
@@ -328,10 +411,10 @@ fn encode_message(
 ) -> Result<(), KppError> {
     match message.role {
         Role::System => {
-            let role = message
-                .extras
-                .form_str(DIALECT, FORM_ROLE)
-                .unwrap_or("system");
+            let role = instruction_role(
+                message.extras.form_str(DIALECT, FORM_ROLE),
+                names.ctx.chat_profile.request.developer_role,
+            );
             let blocks: Vec<&Block> = message
                 .blocks
                 .iter()

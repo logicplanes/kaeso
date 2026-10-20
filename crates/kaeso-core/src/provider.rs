@@ -3,6 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -141,6 +142,7 @@ pub struct Provider {
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
+    pub chat: ChatProfile,
 }
 
 pub const PROVIDERS: &[Provider] = &[
@@ -158,6 +160,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
+        chat: ChatProfile::OPENAI,
     },
     Provider {
         id: "anthropic",
@@ -169,6 +172,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Anthropic"),
     },
     Provider {
         id: "deepseek",
@@ -180,6 +184,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("DeepSeek").system_role(),
     },
     Provider {
         id: "xai",
@@ -191,6 +196,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
+        chat: ChatProfile::compatible("SpaceX"),
     },
     Provider {
         id: "togetherai",
@@ -202,6 +208,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Together AI"),
     },
     Provider {
         id: "groq",
@@ -213,6 +220,10 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("Groq")
+            .system_role()
+            .refusing(&["logit_bias", "logprobs", "top_logprobs"])
+            .refusing_in_messages(&["name", "refusal"]),
     },
     Provider {
         id: "openrouter",
@@ -224,6 +235,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        chat: ChatProfile::compatible("OpenRouter"),
     },
 ];
 
@@ -316,6 +328,75 @@ mod tests {
             assert_eq!(provider(p.id), Some(p));
         }
         assert_eq!(BY_ID.len(), PROVIDERS.len());
+    }
+
+    fn sent_with_profile(provider_id: &str, request: &str) -> Result<serde_json::Value, String> {
+        use kaeso_codecs::dispatch;
+        use kaeso_codecs::{EgressCtx, HeaderList};
+        let path = format!(
+            "{}/../kaeso-codecs/fixtures/openai_chat/requests/{request}.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let body = std::fs::read(&path).unwrap();
+        let req = dispatch::decode_request(
+            DialectId::OpenAiChat,
+            kaeso_kpp::RequestKind::Generate,
+            &body,
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let profile = provider(provider_id).unwrap().chat;
+        let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+        dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx)
+            .map(|out| serde_json::from_slice(&out.body).unwrap())
+            .map_err(|e| e.param.unwrap_or_default())
+    }
+
+    #[test]
+    fn each_profile_setting_answers_the_request_the_provider_was_recorded_refusing() {
+        for (provider_id, request, param) in [
+            ("groq", "logit-bias", "logit_bias"),
+            ("groq", "logprobs-top-logprobs-doc", "logprobs"),
+            (
+                "groq",
+                "tools-results-parallel-error",
+                "messages[2].refusal",
+            ),
+        ] {
+            assert_eq!(
+                sent_with_profile(provider_id, request).unwrap_err(),
+                param,
+                "{provider_id} {request}"
+            );
+        }
+        for (provider_id, request) in [
+            ("deepseek", "plain-developer-string"),
+            ("groq", "tools-single"),
+        ] {
+            let sent = sent_with_profile(provider_id, request).unwrap();
+            let roles: Vec<&str> = sent["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter_map(|m| m["role"].as_str())
+                .collect();
+            assert!(
+                !roles.contains(&"developer"),
+                "{provider_id} {request}: {roles:?}"
+            );
+            assert!(
+                roles.contains(&"system"),
+                "{provider_id} {request}: {roles:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn every_provider_names_itself_in_its_chat_profile() {
+        for p in PROVIDERS {
+            assert_eq!(p.chat.provider, p.name, "{}", p.id);
+        }
+        assert_eq!(provider("openai").unwrap().chat, ChatProfile::OPENAI);
     }
 
     #[test]

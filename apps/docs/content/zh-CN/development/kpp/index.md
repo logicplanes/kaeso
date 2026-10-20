@@ -135,7 +135,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `sampling.stop` | 语义 | OpenAI Chat Completions 最多接受四个；OpenAI Responses 没有该参数，返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `sampling.seed` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `sampling.frequency_penalty`、`.presence_penalty` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
-| `user` | 提示 | 用于滥用监控的最终用户 ID，从不改变输出。 |
+| `user` | 提示 | 用于滥用监控的最终用户 ID，从不改变输出。Chat 配置中没有最终用户字段的服务商收不到它，Chat 应用与 `safety_identifier` 一起发送的 `user` 也不会发送（[服务商配置](openai-chat.md#服务商配置)）。 |
 | `stream` | 语义 | |
 | `extras.fields` | 语义 | 只写回来源方言；发往其他方言时返回 `Unsupported`，除非该字段在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `extras.form` | 提示 | 用于呈现的形式标记，其他方言会忽略。 |

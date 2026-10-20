@@ -49,7 +49,7 @@ No recording has DeepSeek's keep-alive lines or its HTTP 402, because neither ca
 | `thinking` in a request | extras of the request; `Unsupported` towards other formats | API reference, `thinking` |
 | `usage.prompt_cache_hit_tokens`, `usage.prompt_cache_miss_tokens` | kept in the raw usage; the typed cache read comes from `prompt_tokens_details.cached_tokens`, which DeepSeek sets to the same value | API reference, `usage` |
 | `tool_calls[].index` in a reply that doesn't stream | extras of the tool call | `responses/recorded-thinking-tools-auto.json` |
-| no `developer` role | DeepSeek's 422 reaches the app; Kaeso writes `system` for other formats | `errors/recorded-plain-developer-string.json` |
+| no `developer` role | the `chat` profile's `system_role()` sends a Chat app's `developer` messages as `system`, as Kaeso writes them for other formats | `errors/recorded-plain-developer-string.json` |
 | `: keep-alive` comments in streams, empty lines before a body that doesn't stream | stream extras that round-trip; whitespace JSON ignores | rate-limit page |
 | HTTP 402 for an exhausted balance | `Billing` | error codes page |
 | `finish_reason` `insufficient_system_resource`, `aborted` | `StopReason::Other` | API reference, `finish_reason` |

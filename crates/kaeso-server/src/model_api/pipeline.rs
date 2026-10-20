@@ -663,7 +663,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         continuity::restore(state, key_id, g).await;
     }
 
-    let mut ectx = EgressCtx::new(&app_req).with_provider(eff.provider.id);
+    let mut ectx = EgressCtx::new(&app_req)
+        .with_provider(eff.provider.id)
+        .with_chat_profile(eff.provider.chat);
     if let Some(a) = plan.adaptive_thinking {
         ectx = ectx.with_adaptive_thinking(a);
     }

@@ -29,10 +29,10 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 | `model` | `GenerateRequest.model` typed | |
 | `messages` | `system` + `messages` typed | See [messages](#messages-chatcompletionrequestmessage). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typed | Written as integers (`1`): form `integers`, the list of keys so written. The encoder writes such a key as an integer while its value is still a whole number, so `temperature: 1` comes back as `1`, not `1.0`; a changed value is written as the new value. From other dialects: the `f64` spelling (`1.0`). |
-| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect. `CreateChatCompletionRequest` sets no minimum for it or for `max_tokens`, so every non-negative integer is kept, `0` included; a negative one is `InvalidRequest`. |
+| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect, unless the provider's profile asks for `max_tokens` ([provider profiles](#provider-profiles)). `CreateChatCompletionRequest` sets no minimum for it or for `max_tokens`, so every non-negative integer is kept, `0` included; a negative one is `InvalidRequest`. |
 | `max_tokens` (deprecated) | `sampling.max_output_tokens` typed | Form `max_tokens: "max_tokens"`. Both present with the same value: form `"both"`. With different values `max_completion_tokens` wins and `max_tokens` becomes the extra `max_tokens (differs from max_completion_tokens)`, sent back as `max_tokens`; the key names the conflict when another dialect refuses it. |
 | `stop` | `sampling.stop` typed | String spelling: form `stop: "string"`; `[]`: form `"array"`. More than four sequences: `Unsupported` (`stop`). |
-| `seed` | `sampling.seed` typed | |
+| `seed` | `sampling.seed` typed | Sent as `random_seed` when the provider's profile says so ([provider profiles](#provider-profiles)). |
 | `frequency_penalty`, `presence_penalty` | `sampling.*` typed | Integer spelling as for `temperature` (form `integers`). |
 | `n` | form `n` when `1` | `n > 1`: `Unsupported` (`n`, see [sampling](cross-format.md#sampling)); `0`: `InvalidRequest`. |
 | `reasoning_effort` | `reasoning.effort` typed | From other dialects ([effort and budget](reasoning.md#effort-and-budget)): an explicit effort as is; Anthropic `thinking.disabled` becomes `none`; a budget becomes `low` (below 4,096), `medium` (4,096 to 16,383) or `high` (16,384 and more). Values `none` to `max`; unknown values are kept as `ReasoningEffort::Other` and passed through for Chat apps, while for requests from other dialects `check()` refuses values outside the spec enum (`reasoning.effort`). |
@@ -47,7 +47,7 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 | `tool_choice` `allowed_tools`, `custom`, other strings | `ToolChoice::Unknown` | Same dialect only. |
 | `parallel_tool_calls` | `parallel_tool_calls` typed | |
 | `safety_identifier` | `user` typed | KPP `user` is the end-user id for abuse monitoring, which is what `safety_identifier` is. |
-| `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user`); otherwise the extra `user (sent alongside safety_identifier)`, sent back as `user` | KPP `user` from other dialects is sent as `safety_identifier`. |
+| `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user`); otherwise the extra `user (sent alongside safety_identifier)`, sent back as `user` | KPP `user` from other dialects is sent as `safety_identifier`. A provider whose profile has no end-user field gets neither ([provider profiles](#provider-profiles)). |
 | `stream` | `stream` typed | `false`: form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typed | `stream_options` absent: form `stream_options: "absent"`; without `include_usage`: form `"no_include_usage"`; other keys (`include_obfuscation`) are extras `stream_options.<key>`; with `stream` off: the whole object as form `stream_options_off`. Requests from other dialects always ask for `include_usage: true`. The gateway needs usage, so it sets `include_usage: true` on every streaming request and keeps the app's own request in `EncodeCtx`; the app's stream encoder then hides the usage chunk from apps that did not ask for it. |
 | `audio`, `functions` and `function_call` (deprecated, top level), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | extras | No KPP equivalent; refused across dialects ([extras](cross-format.md#extras), [sampling](cross-format.md#sampling)), except `prompt_cache_key`, which is on the [extras allowlist](cross-format.md#extras) and dropped. `null` values are form. Towards Anthropic, for example, `functions` fails with `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
@@ -112,6 +112,29 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 | unknown keys | extras (`function.<key>` nested) | |
 | `type: custom` | `Block::Unknown` | Sent back in `tool_calls`. |
 | `type` absent, with a `function` object | `Block::ToolCall`, form `no_type` | `ChatCompletionMessageToolCall` requires `type`, but some OpenAI-compatible providers leave it out; only function calls have a `function` object, so the call reaches every app. Written back without `type`. |
+
+## Provider profiles
+
+Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field: the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below. The gateway hands it to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
+
+| Setting | What the encoder does | Why it is allowed |
+|---|---|---|
+| `max_tokens()` | Sends the output limit as `max_tokens`, and a `max_completion_tokens: null` as `max_tokens: null`. A Chat request with both at different values is `Unsupported` (`max_tokens`). | Only the spelling changes; the value is the same. |
+| `system_role()` | Sends `developer` messages as `system` messages. | The role spelling is form; both carry the instructions. |
+| `random_seed()` | Sends `seed` as `random_seed`, a `seed: null` too. A negative seed, or a request with both `seed` and `random_seed` (either may be `null`), is `Unsupported` (`seed`). The rule follows Mistral's `random_seed`, which its OpenAPI document gives `minimum: 0`. | `seed` stays semantic: it is renamed or refused, never dropped. |
+| `without_end_user()` | Leaves KPP `user` out instead of sending it as `user` or `safety_identifier`, together with a second `user` a Chat app sent alongside `safety_identifier`, and their `null` spellings. | `user` is a hint ([field classes](index.md#field-classes)). |
+| `without_prefill()` | Refuses a conversation that ends with an assistant message, unless it calls tools or is a Chat app's message with `prefix: true`: `Unsupported` (`assistant prefill`, param `messages[i]`). | A provider that only continues such a message with `prefix: true` repeats the prefill in its reply, so the app would not get a continuation. |
+| `refusing(fields)` | Refuses a request whose body would contain one of these top-level keys, such as `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras are semantic, so they are refused, not dropped. |
+| `refusing_in_messages(fields)` | The same for keys of system, user and assistant messages. Tool messages are not checked. | As above. |
+
+`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it: a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`). Refusals happen while the request is encoded, on the request the encoder built and before it is written out, so nothing is sent, and they reach the app in its own format.
+
+Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`.
+
+| Provider | Settings | Sources |
+|---|---|---|
+| DeepSeek (`deepseek`) | `system_role()` | `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`: DeepSeek answers the `developer` role with 422 `unknown variant` |
+| Groq (`groq`) | `system_role()`; refuses `logit_bias`, `logprobs` and `top_logprobs`, and `name` and `refusal` on messages | Groq's OpenAI compatibility page (https://console.groq.com/docs/openai, which lists `logprobs`, `logit_bias`, `top_logprobs` and `messages[].name` as unsupported); `fixtures/openai_chat/providers/groq/errors/`: `recorded-logit-bias`, `recorded-logprobs-top-logprobs-doc`, `recorded-tools-results-parallel-error` (`refusal` on an assistant message) and `recorded-tools-single` (Qwen's chat template refuses the `developer` role) |
 
 ## Response: `CreateChatCompletionResponse`
 

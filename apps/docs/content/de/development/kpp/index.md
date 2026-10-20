@@ -135,7 +135,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](cross-format.md#sampling)). |
 | `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
 | `sampling.frequency_penalty`, `.presence_penalty` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
-| `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. |
+| `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. Ein Anbieter, dessen Chat-Profil kein Feld für den Endbenutzer hat, erhält keine, auch nicht das `user` einer Chat-App neben `safety_identifier` ([Anbieterprofile](openai-chat.md#anbieterprofile)). |
 | `stream` | semantisch | |
 | `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](cross-format.md#extras). |
 | `extras.form` | Hinweis | Form-Markierungen für die Darstellung; andere Dialekte ignorieren sie. |
