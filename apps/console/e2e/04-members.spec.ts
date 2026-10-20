@@ -30,7 +30,7 @@ test("an invited person accepts and joins the organization", async ({ page, brow
   await invitee.goto(link);
   await expect(invitee).toHaveURL(/\/invite$/);
   await invitee.getByLabel("Name").fill(DEVELOPER.name);
-  await invitee.getByLabel("Password").fill(NEW_PASSWORD);
+  await invitee.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
   await invitee.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(invitee);
   await expect(invitee.getByRole("button", { name: `${OWNER.org}: switch or open settings` })).toBeVisible();

@@ -1,4 +1,4 @@
-import { expect, test, NEW_PASSWORD, OWNER, PASSWORD, clearMail, enterEmail, expectSignedIn, mailLink, signInWithPassword, toastText } from "./support";
+import { expect, test, NEW_PASSWORD, OWNER, PASSWORD, clearMail, enterEmail, expectSignedIn, mailLink, signInWithPassword } from "./support";
 import { setupLinkToken } from "./stack";
 
 test.describe.configure({ mode: "serial" });
@@ -10,9 +10,9 @@ test("setup creates the first user and organization", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Set up Kaeso" })).toBeVisible();
   await page.getByLabel("Name", { exact: true }).fill(OWNER.name);
   await page.getByLabel("Email").fill(OWNER.email);
-  await page.getByLabel("Password").fill("short");
+  await page.getByLabel("Password", { exact: true }).fill("short");
   await expect(page.getByText("7 more characters to go.")).toBeVisible();
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Organization name").fill(OWNER.org);
   await page.getByRole("button", { name: "Set up Kaeso" }).click();
   await expectSignedIn(page);
@@ -20,14 +20,12 @@ test("setup creates the first user and organization", async ({ page }) => {
   await expect(page.getByRole("button", { name: `${OWNER.org}: switch or open settings` })).toBeVisible();
 });
 
-test("a used setup link explains how to get a new one", async ({ page }) => {
+test("the setup page of a set-up install says so and leads to sign-in", async ({ page }) => {
   await page.goto(`/setup#token=${setupLinkToken()}`);
-  await page.getByLabel("Name", { exact: true }).fill("Someone");
-  await page.getByLabel("Email").fill("someone@example.com");
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByLabel("Organization name").fill("Other");
-  await page.getByRole("button", { name: "Set up Kaeso" }).click();
-  await expect(page.getByText("kaeso setup-link")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kaeso is set up" })).toBeVisible();
+  await expect(page.getByLabel("Organization name")).toHaveCount(0);
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
 });
 
 test("sign out, a wrong password, then sign in", async ({ page }) => {
@@ -39,7 +37,8 @@ test("sign out, a wrong password, then sign in", async ({ page }) => {
   await enterEmail(page, OWNER.email);
   await page.getByLabel("Password", { exact: true }).fill("not the password at all");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(toastText(page, "The email or password is wrong.")).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAccessibleDescription("The email or password is wrong.");
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expectSignedIn(page);
@@ -73,12 +72,13 @@ test("a password reset ends with a new password", async ({ page }) => {
   await enterEmail(page, OWNER.email);
   await page.getByRole("link", { name: "Forgot your password?" }).click();
   await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
-  await page.getByLabel("Email").fill(OWNER.email);
+  await expect(page.getByLabel("Email")).toHaveValue(OWNER.email);
   await page.getByRole("button", { name: "Email me a link" }).click();
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   const link = await mailLink(OWNER.email, /\/auth\/password-reset#token=/);
   await page.goto("about:blank");
   await page.goto(new URL(link).pathname + new URL(link).hash);
+  await expect(page.locator('input[autocomplete="username"]')).toHaveValue(OWNER.email);
   await page.getByLabel("New password").fill(NEW_PASSWORD);
   await page.getByRole("button", { name: "Set password" }).click();
   await expect(page.getByText("Password changed; sign in with the new one")).toBeVisible();

@@ -17,7 +17,7 @@ async function signInAtProvider(page: Page, email: string, name: string): Promis
 test("the first admin sets up an install without passwords and connects the identity provider", async ({ page }) => {
   await page.goto(`/setup#token=${setupLinkToken("gateway-sso")}`);
   await expect(page.getByText("Create the first user, an instance admin, and the organization they own; passwords are off here.")).toBeVisible();
-  await expect(page.getByLabel("Password")).toHaveCount(0);
+  await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
   await expect(page.getByText("kaeso user sign-in-link")).toBeVisible();
   await page.getByLabel("Name", { exact: true }).fill(ADMIN.name);
   await page.getByLabel("Email").fill(ADMIN.email);

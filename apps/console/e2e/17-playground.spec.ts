@@ -111,7 +111,7 @@ test("a viewer has no playground: no sidebar item, and its address says which ri
   const viewer = await other.newPage();
   await viewer.goto(await mailLink(VIEWER.email, /\/invite/));
   await viewer.getByLabel("Name").fill(VIEWER.name);
-  await viewer.getByLabel("Password").fill(NEW_PASSWORD);
+  await viewer.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
   await viewer.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(viewer);
   const members = (await (await page.request.get(`/platform/v1/orgs/${org}/members?limit=100`)).json()) as { data: { user: { id: string; email: string } }[] };
