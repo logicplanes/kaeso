@@ -245,7 +245,8 @@ Fehler vor dem Beginn des Streams sind Fehler der Platform API:
 
 | Status | `type` | Ursache |
 | --- | --- | --- |
-| 400 | `invalid_request` | `param` ist `model` bei einem Modell außerhalb des Katalogs oder einem, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt. Bei `"stream": false` ist es `stream`. |
+| 400 | `invalid_request` | `param` ist `model` bei einem Modell außerhalb des Katalogs. Bei `"stream": false` ist es `stream`. |
+| 404 | `not_found` | Der Anbieter stellt das Modell dem Anbieter-Schlüssel des Projekts nicht bereit, mit der Meldung, die Apps auf `/v1` erhalten ([Modelle, die der Anbieter nicht bereitstellt](errors.md#modelle-die-der-anbieter-nicht-bereitstellt)). |
 | 403 | `permission_denied` | Das Modell liegt außerhalb des Modellzugriffs des Mitglieds. |
 | 409 | `conflict` | Das Projekt ist archiviert, oder es hat keinen Anbieter-Schlüssel für den Anbieter des Modells. |
 | 409 | `org_scheduled_for_deletion` | Die Organisation ist zur Löschung vorgemerkt. |

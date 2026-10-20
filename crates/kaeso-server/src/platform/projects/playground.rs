@@ -68,6 +68,7 @@ pub struct PlaygroundRequest {
     request_body = PlaygroundRequest,
     responses(
         (status = 200, description = "OpenAI Responses stream events.", content_type = "text/event-stream", body = String),
+        (status = 404, description = "The provider does not serve the model to the project's provider key (`not_found`).", body = crate::platform::error::ErrorEnvelope),
         (status = 502, description = "The provider failed or refused the provider key (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
         (status = 504, description = "The provider did not answer in time (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
     )
@@ -228,14 +229,13 @@ fn refusal(f: &Failure) -> ApiError {
             "Kaeso cannot reach the provider right now; try again shortly.",
             e,
         ),
+        Stage::Provider if e.kind == ErrorKind::NotFound => ApiError::NotFound(
+            "The provider does not serve this model to this project's key; check the key's access."
+                .into(),
+        ),
         Stage::Provider => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
-        Stage::Unserved(m) => ApiError::invalid(
-            "model",
-            format!(
-                "The provider does not serve `{m}` to this project's key; check the key's access."
-            ),
-        ),
+        Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
         Stage::Reply => provider_error(
             StatusCode::BAD_GATEWAY,
             "The provider's answer could not be read; try again.",
