@@ -246,7 +246,7 @@ Errors before the stream starts are Platform API errors:
 | Status | `type` | Cause |
 | --- | --- | --- |
 | 400 | `invalid_request` | `param` is `model` for a model outside the catalogue. It is `stream` for `"stream": false`. |
-| 404 | `not_found` | The provider doesn't serve the model to the project's provider key, with the message `/v1` apps get ([models the provider doesn't serve](errors.md#models-the-provider-doesnt-serve)). |
+| 404 | `not_found` | The provider doesn't serve the model to the project's provider key, with the message `/v1` apps get ([models the provider doesn't serve](errors.md#models-the-provider-doesnt-serve)), or the provider answered 404 for something else the request names. |
 | 403 | `permission_denied` | The model is outside the member's model access. |
 | 409 | `conflict` | The project is archived, or it has no provider key for the model's provider. |
 | 409 | `org_scheduled_for_deletion` | The organization is scheduled for deletion. |

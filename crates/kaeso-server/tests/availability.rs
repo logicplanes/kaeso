@@ -1059,6 +1059,6 @@ async fn the_playground_refuses_a_model_the_provider_does_not_serve_as_v1_does()
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
     assert_eq!(
         r.body["error"]["message"],
-        "The provider does not serve this model to this project's key; check the key's access."
+        "The provider did not find something the request names; check the model and its ids."
     );
 }

@@ -229,10 +229,6 @@ fn refusal(f: &Failure) -> ApiError {
             "Kaeso cannot reach the provider right now; try again shortly.",
             e,
         ),
-        Stage::Provider if e.kind == ErrorKind::NotFound => ApiError::NotFound(
-            "The provider does not serve this model to this project's key; check the key's access."
-                .into(),
-        ),
         Stage::Provider => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
         Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
@@ -262,13 +258,15 @@ fn from_provider(e: &KppError) -> ApiError {
         ErrorKind::RequestTooLarge => {
             ApiError::TooLarge("The provider refused the request as too large.".into())
         }
-        ErrorKind::InvalidRequest | ErrorKind::NotFound | ErrorKind::Unsupported { .. } => {
-            ApiError::InvalidRequest {
-                message: "The provider refused the request as invalid; check the model's settings."
-                    .into(),
-                param: e.param.clone(),
-            }
-        }
+        ErrorKind::NotFound => ApiError::NotFound(
+            "The provider did not find something the request names; check the model and its ids."
+                .into(),
+        ),
+        ErrorKind::InvalidRequest | ErrorKind::Unsupported { .. } => ApiError::InvalidRequest {
+            message: "The provider refused the request as invalid; check the model's settings."
+                .into(),
+            param: e.param.clone(),
+        },
         ErrorKind::Authentication | ErrorKind::PermissionDenied => provider_error(
             StatusCode::BAD_GATEWAY,
             "The provider refused the project's provider key; an org admin can replace it.",

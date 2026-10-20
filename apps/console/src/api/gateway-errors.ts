@@ -433,7 +433,7 @@ const messages = (): Rule[] => [
   rule("errors.contentFiltered", () => t("errors.contentFiltered", "The provider's content filter refused the request.")),
   rule("errors.providerTooLarge", () => t("errors.providerTooLarge", "The provider refused the request as too large.")),
   rule("errors.providerInvalid", () => t("errors.providerInvalid", "The provider refused the request as invalid; check the model's settings.")),
-  rule("errors.providerNotFound", () => t("errors.providerNotFound", "The provider does not serve this model to this project's key; check the key's access.")),
+  rule("errors.providerNotFound", () => t("errors.providerNotFound", "The provider did not find something the request names; check the model and its ids.")),
   rule("errors.providerKeyRefused", () => t("errors.providerKeyRefused", "The provider refused the project's provider key; an org admin can replace it.")),
   rule("errors.providerBilling", () => t("errors.providerBilling", "The provider refused the request for billing reasons; check the provider account.")),
   rule("errors.providerRateLimited", () => t("errors.providerRateLimited", "The provider is rate limiting the provider key; try again shortly.")),

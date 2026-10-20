@@ -278,7 +278,7 @@
   "errors.providerKeyRefused": "服务商拒绝了项目的服务商密钥，组织管理员可以更换。",
   "errors.providerKeyUnavailable": "Kaeso 暂时无法加载项目的服务商密钥，请稍后重试。",
   "errors.providerIdForm": "`provider` 必须是服务商 ID，例如 `openai`。",
-  "errors.providerNotFound": "服务商不向此项目的密钥提供此模型；请检查密钥的访问权限。",
+  "errors.providerNotFound": "服务商未找到请求中指定的内容；请检查模型及其 ID。",
   "errors.providerOneOf": "服务商必须是 {providers} 之一。",
   "errors.providerOverloaded": "服务商当前过载，请稍后重试。",
   "errors.providerRateLimited": "服务商正在限制该服务商密钥的速率，请稍后重试。",
