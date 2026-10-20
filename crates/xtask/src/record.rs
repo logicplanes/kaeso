@@ -541,6 +541,7 @@ mod tests {
     use super::*;
     use crate::testing::{Reply, TempDir, serve_once};
     use kaeso_codecs::openai_chat::ChatProfile;
+    use kaeso_core::provider::KeyPage;
 
     #[derive(Parser)]
     struct Cli {
@@ -587,6 +588,11 @@ mod tests {
     static EXAMPLE: Provider = Provider {
         id: "example-cloud",
         name: "Example Cloud",
+        key_page: KeyPage {
+            url: "https://console.example.com/keys",
+            label: "API keys",
+        },
+        key_prefix: None,
         default_base_url: "https://api.example.com/compat",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
