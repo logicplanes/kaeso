@@ -1,4 +1,5 @@
 import { t } from "~/i18n";
+import { toast } from "~/shell/toast";
 
 const MESSAGES: Record<string, () => string> = {
   sso_off: () => t("signIn.ssoError.off", "Single sign-on is turned off on this install."),
@@ -27,4 +28,8 @@ const MESSAGES: Record<string, () => string> = {
 
 export function ssoErrorMessage(code: string): string {
   return Object.hasOwn(MESSAGES, code) ? (MESSAGES[code] as () => string)() : t("signIn.ssoError.failed", "Single sign-on didn't work; try again.");
+}
+
+export function showSsoError(code: string, id = "sso-error"): void {
+  toast.error(ssoErrorMessage(code), { id });
 }
