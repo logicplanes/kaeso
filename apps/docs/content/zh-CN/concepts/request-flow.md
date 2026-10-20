@@ -1,7 +1,7 @@
 ---
 title: 请求流程
 description: 跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
-order: 1
+order: 2
 ---
 
 每个模型请求都按相同的顺序经过相同的检查。了解这些检查，就知道请求会得到哪种错误，以及何时计费。
@@ -68,12 +68,7 @@ Kaeso 使用项目为该模型的服务商指定的服务商密钥，没有时�
 
 KPP 按服务商的格式检查请求并编码。该格式无法表达的内容，Kaeso 会在任何内容到达服务商之前拒绝（[格式转换](format-translation.md)）。对于通过其他格式提供服务的 Chat Completions 应用，Kaeso 会先放回之前轮次中保存的推理内容（[轮次之间的推理](format-translation.md#轮次之间的推理)）。
 
-Kaeso 调用每个服务商自己的 API：
-
-| 服务商 | API |
-| --- | --- |
-| OpenAI | Responses，或在目录如此指定时使用 Chat Completions。嵌入模型使用 Embeddings |
-| Anthropic | Messages |
+Kaeso 以每个服务商自己的 API 格式调用它，例如 Anthropic 用 Messages，Groq 用 Chat Completions。各服务商的格式见[支持的服务商](supported-providers.md)。
 
 四个超时限制这次调用：建立连接、整个请求、流的首字节，以及两个数据块之间的静默时间。目录中模型自身的超时会取代请求超时和首字节超时。超时会得到 504，无法连接服务商则得到 502。[配置](../self-hosting/configuration.md)列出了这些设置及其默认值。
 

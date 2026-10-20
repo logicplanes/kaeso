@@ -10,7 +10,7 @@ Installieren Sie Kaeso auf einem Server, verbinden Sie einen Modellanbieter wie 
 
 - Ein Server mit Docker Engine und Docker Compose 2.24 oder neuer, 2 vCPUs, 4 GB Arbeitsspeicher und 20 GB Festplatte ([Anforderungen](../self-hosting/requirements.md)).
 - Eine Domain wie `kaeso.example.com`, deren DNS-Eintrag auf den Server zeigt. Die Ports 80 und 443 müssen zum Internet offen sein, damit Caddy ein Zertifikat erhält.
-- Ein API-Schlüssel eines Modellanbieters, den Kaeso aufruft, etwa OpenAI oder Anthropic ([Anbieter-Schlüssel](../console/provider-keys.md)).
+- Ein API-Schlüssel eines [Modellanbieters, den Kaeso aufruft](../concepts/supported-providers.md), etwa OpenAI oder Anthropic.
 
 > [!TIP]
 > Um Kaeso auf Ihrem eigenen Rechner auszuprobieren, verwenden Sie `localhost` als Domain und öffnen `https://localhost`. Caddy signiert das Zertifikat dann selbst, und Ihr Browser fragt einmal, ob er es akzeptieren soll. [Auf dem eigenen Rechner ausprobieren](../self-hosting/installation.md#auf-dem-eigenen-rechner-ausprobieren) zeigt, wie curl und die SDKs ihm vertrauen.

@@ -1,7 +1,7 @@
 ---
 title: 权限
 description: 查阅组织和项目中的每项权限、哪些角色拥有它，以及授予权限的规则。
-order: 3
+order: 4
 ---
 
 一项权限允许一类操作，写作 `resource.action`，例如 `keys.all.view`。`orgs/{org}` 下的每个 Platform API 操作都只检查一项权限，检查对象为其路径中的组织或项目。[成员和角色](../console/members-and-roles.md)介绍如何在控制台中授予角色和权限。

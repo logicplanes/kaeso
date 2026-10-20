@@ -1,7 +1,7 @@
 ---
 title: Rights
 description: Look up every right in an organization and a project, which roles hold it, and the rules for giving it.
-order: 3
+order: 4
 ---
 
 A right allows one kind of action and is written `resource.action`, such as `keys.all.view`. Every Platform API operation under `orgs/{org}` checks exactly one right, on the organization or the project in its path. [Members and roles](../console/members-and-roles.md) shows how to give roles and rights in the console.

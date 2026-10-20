@@ -97,7 +97,7 @@ for (const block of message.content) if (block.type === "text") console.log(bloc
 | `GET /v1/models` | 该密钥可调用的模型 |
 | `GET /v1/models/{model}` | 其中某一个模型 |
 
-`/v1/embeddings` 只服务嵌入模型，这类模型只有 OpenAI 提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
+`/v1/embeddings` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/supported-providers.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
 
 `/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式，否则采用 OpenAI 格式。
 

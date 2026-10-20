@@ -97,7 +97,7 @@ Any format reaches any generation model in the project's catalogue. [Calling mod
 | `GET /v1/models` | The models the key may call |
 | `GET /v1/models/{model}` | One of them |
 
-`/v1/embeddings` serves only embeddings models, which only OpenAI offers, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them.
+`/v1/embeddings` serves only embeddings models, which only some [providers](../concepts/supported-providers.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them.
 
 Any other path under `/v1` gets 404, and a known path called with the wrong method gets 405. Both errors are in the Anthropic format when the request has an `anthropic-version` header, and in the OpenAI format otherwise.
 

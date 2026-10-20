@@ -4,7 +4,7 @@ description: 连接组织的模型服务商密钥，并选择各项目使用哪�
 order: 3
 ---
 
-服务商密钥是组织用于 Kaeso 所调用的模型服务商的密钥。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
+服务商密钥是组织用于 [Kaeso 所调用的模型服务商](../concepts/supported-providers.md)的密钥。Kaeso 使用实例的主密钥加密存储它们，添加后不再显示。应用永远看不到这些密钥，而是使用 [API 密钥](api-keys.md)调用 Kaeso。
 
 ## 添加密钥
 
@@ -12,21 +12,8 @@ order: 3
 
 1. 在**服务商**页面上选择**添加密钥**。
 2. **此密钥属于哪个服务商？** 搜索并选择服务商。已有密钥的服务商排在前面，并显示其密钥数量。
-3. 粘贴密钥并为其命名，例如 `Production`。对话框会链接到服务商创建密钥的页面，下表也列出了这些页面。
+3. 粘贴密钥并为其命名，例如 `Production`。对话框会链接到服务商创建密钥的页面，[支持的服务商](../concepts/supported-providers.md)也列出了这些页面。
 4. 如果该服务商已有默认密钥，选择新密钥是否成为默认密钥。
-
-| 服务商 | 在此创建密钥 | 密钥开头 |
-| --- | --- | --- |
-| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
-| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
-| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
-| SpaceX | [console.x.ai](https://console.x.ai/team/default/api-keys)（xAI 控制台）的 **API Keys** | `xai-` |
-| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys) 的 **API Keys** | `tgp_v1_` |
-| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
-| OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |
-| Mistral | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) | 无固定前缀 |
-
-OpenRouter 将请求转发给众多服务商的模型。它的模型 ID 包含模型厂商，例如 `anthropic/claude-sonnet-4.5`。请以 `openrouter/anthropic/claude-sonnet-4.5` 的形式调用，这样请求不会发往该厂商自己的服务商；参见[请求如何指定模型](models-and-aliases.md#请求如何指定模型)。Kaeso 按目录中的价格计算 OpenRouter 请求的费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。OpenRouter 列出模型时不检查密钥，因此**检查可用性**无法发现错误的 OpenRouter 密钥；使用该密钥的第一个请求会报告密钥被拒绝。
 
 对服务商密钥的每种操作都需要相应的权限：
 

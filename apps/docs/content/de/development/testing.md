@@ -141,7 +141,7 @@ Manche Tests vergleichen mit geprüften `insta`-Snapshots. Ändert sich einer, p
 | `crates/kaeso-codecs/tests/snapshots/` | Die Ergebnisse der dialektübergreifenden Matrix | Die Mapping-Seite des Dialekts ([KPP-Interna](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | Text und HTML jeder E-Mail | |
 
-Zwei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/kaeso-server/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt.
+Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/kaeso-server/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
 
 ## End-to-End-Tests
 

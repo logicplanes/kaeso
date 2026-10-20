@@ -6,6 +6,12 @@ order: 2
 
 These pages explain how Kaeso works, so you know what to expect before you rely on it. Every page of this documentation uses the terms below in the same sense.
 
+- [Providers](providers.md): See which providers Kaeso calls, how to use one and what differs between them.
+- [Supported providers](supported-providers.md): Look up every provider's id, formats and keys.
+- [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
+- [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
+- [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.
+
 ## Terms
 
 | Term | Meaning |
@@ -19,6 +25,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | Right, role | A right allows one kind of action, such as `keys.all.view`. A role is a named set of rights ([rights](rights.md)) |
 | API key | `sk-kso-…`, the key of a member or service account in one project. With inference access it calls models, and with platform access it manages the project ([API keys](../console/api-keys.md)) |
 | Platform key | `sk-kso-org-…`, a key that manages a whole organization on the Platform API. It never calls models |
+| Provider | A company whose models Kaeso calls, such as OpenAI, Anthropic or Groq. Its id, such as `groq`, names it in model names and settings ([providers](providers.md)) |
 | Provider key | The organization's key for a model provider, such as OpenAI or Anthropic, which Kaeso uses to call the provider. Apps never see it ([provider keys](../console/provider-keys.md)) |
 | Master key | The install's own key, which encrypts the secrets it stores, such as provider keys ([backups and master keys](../self-hosting/backups.md)) |
 | Catalogue | The models a project may call, with their prices, limits and capabilities. They come from models.dev, and a project can add custom models or override fields ([models and aliases](../console/models-and-aliases.md)) |
@@ -28,9 +35,3 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | API format | The shape of a request and its reply: OpenAI Chat Completions, Responses or Embeddings, or Anthropic Messages |
 | KPP | The Kaeso Provider Protocol, the one format the gateway translates every API format into and out of ([format translation](format-translation.md)) |
 | Model API, Platform API | The two APIs of an install. Apps call models on `/v1`, and the console and scripts manage the install on `/platform/v1` ([API](../api/index.md)) |
-
-## Next steps
-
-- [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
-- [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
-- [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.

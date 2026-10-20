@@ -4,7 +4,7 @@ description: Verbinden Sie die Schlüssel Ihrer Organisation für Modellanbieter
 order: 3
 ---
 
-Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbieter, die Kaeso aufruft. Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
+Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die [Modellanbieter, die Kaeso aufruft](../concepts/supported-providers.md). Kaeso speichert sie verschlüsselt mit dem Hauptschlüssel der Installation und zeigt sie nie wieder an. Apps sehen sie nie: Sie rufen Kaeso stattdessen mit [API-Schlüsseln](api-keys.md) auf.
 
 ## Schlüssel hinzufügen
 
@@ -12,21 +12,8 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 
 1. Wählen Sie unter **Anbieter** **Schlüssel hinzufügen**.
 2. **Für welchen Anbieter ist der Schlüssel?** Suchen Sie den Anbieter und wählen Sie ihn. Anbieter, die schon Schlüssel haben, stehen oben, mit der Anzahl ihrer Schlüssel.
-3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Der Dialog verlinkt die Seite des Anbieters, auf der Sie Schlüssel erstellen; die Tabelle unten nennt sie ebenfalls.
+3. Fügen Sie den Schlüssel ein und geben Sie ihm einen Namen, etwa `Production`. Der Dialog verlinkt die Seite des Anbieters, auf der Sie Schlüssel erstellen; [Unterstützte Anbieter](../concepts/supported-providers.md) nennt sie ebenfalls.
 4. Hat der Anbieter schon einen Standardschlüssel, wählen Sie, ob der neue Schlüssel zum Standard wird.
-
-| Anbieter | Schlüssel erstellen unter | Der Schlüssel beginnt mit |
-| --- | --- | --- |
-| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
-| Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
-| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
-| SpaceX | [console.x.ai](https://console.x.ai/team/default/api-keys) (xAI-Konsole), unter **API Keys** | `xai-` |
-| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), unter **API Keys** | `tgp_v1_` |
-| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
-| OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |
-| Mistral | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) | kein festes Präfix |
-
-OpenRouter leitet an Modelle vieler Anbieter weiter. Seine Modell-IDs nennen den Hersteller des Modells, etwa `anthropic/claude-sonnet-4.5`. Rufen Sie eines als `openrouter/anthropic/claude-sonnet-4.5` auf, damit die Anfrage nie beim Anbieter des Herstellers landet; siehe [Wie eine Anfrage ein Modell nennt](models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt). Kaeso berechnet die Kosten von OpenRouter-Anfragen mit den Preisen des Katalogs, nicht mit dem `usage.cost`, das OpenRouter meldet. OpenRouter listet seine Modelle, ohne den Schlüssel zu prüfen, daher erkennt **Verfügbarkeit prüfen** keinen falschen OpenRouter-Schlüssel; die erste Anfrage damit meldet den abgelehnten Schlüssel.
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

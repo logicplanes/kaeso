@@ -1,7 +1,7 @@
 ---
 title: Request flow
 description: Follow a model request through the gateway, and learn which error it gets and what it is charged.
-order: 1
+order: 2
 ---
 
 Every model request passes the same checks in the same order. Knowing them tells you which error a request gets, and when it is charged.
@@ -68,12 +68,7 @@ Kaeso uses the provider key assigned to the project for the model's provider, or
 
 KPP checks the request against the provider's format and encodes it. Kaeso refuses what that format can't express before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions app served through another format, Kaeso first puts back the reasoning kept from earlier turns ([reasoning between turns](format-translation.md#reasoning-between-turns)).
 
-Kaeso calls each provider's own API:
-
-| Provider | API |
-| --- | --- |
-| OpenAI | Responses, or Chat Completions when the catalogue says so. Embeddings for embeddings models |
-| Anthropic | Messages |
+Kaeso calls each provider in its own API format, such as Messages for Anthropic and Chat Completions for Groq. [Supported providers](supported-providers.md) lists the formats of every provider.
 
 Four timeouts limit the call: connecting, a whole request, the first byte of a stream, and the silence between two chunks. A model's own timeout in the catalogue replaces the request and first-byte timeouts. A timeout gets 504, and a provider that can't be reached gets 502. [Configuration](../self-hosting/configuration.md) lists the settings and their defaults.
 

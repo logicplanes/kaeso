@@ -97,7 +97,7 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts. [Modelle
 | `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf |
 | `GET /v1/models/{model}` | Eines davon |
 
-`/v1/embeddings` bedient nur Embeddings-Modelle, die nur OpenAI anbietet, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
+`/v1/embeddings` bedient nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/supported-providers.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
 
 Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, sonst im OpenAI-Format.
 

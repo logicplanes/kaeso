@@ -4,7 +4,7 @@ description: Call any model in your project with the OpenAI or Anthropic SDK, or
 order: 2
 ---
 
-Point the official OpenAI or Anthropic SDK at your install and give it a Kaeso API key. Any SDK can call any chat model in your project, so the OpenAI SDK can call Claude.
+Point the official OpenAI or Anthropic SDK at your install and give it a Kaeso API key. Any SDK can call any chat model in your project, whichever [provider](../concepts/providers.md) serves it, so the OpenAI SDK can call Claude.
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
