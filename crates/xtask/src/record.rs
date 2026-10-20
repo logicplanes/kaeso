@@ -592,6 +592,7 @@ mod tests {
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        refused_key_messages: &[],
     };
 
     fn known(id: &str) -> &'static Provider {
@@ -641,7 +642,10 @@ mod tests {
             id(&["openai_chat", "--provider", "example-cloud", "--all"])
                 .unwrap_err()
                 .to_string(),
-            "`example-cloud` is not a provider Kaeso knows; the providers are openai, anthropic, deepseek"
+            format!(
+                "`example-cloud` is not a provider Kaeso knows; the providers are {}",
+                kaeso_core::provider::ids()
+            )
         );
         assert_eq!(
             id(&["openai_chat", "--provider", "Example_Cloud", "--all"])

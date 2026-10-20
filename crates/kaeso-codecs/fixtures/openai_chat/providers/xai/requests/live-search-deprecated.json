@@ -1,0 +1,14 @@
+{
+  "model": "grok-4.20-0309-non-reasoning",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the capital of France? One word."
+    }
+  ],
+  "search_parameters": {
+    "mode": "on",
+    "return_citations": true,
+    "max_search_results": 2
+  }
+}

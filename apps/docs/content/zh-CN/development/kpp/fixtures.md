@@ -23,13 +23,13 @@ order: 8
 | `requests/<name>.headers.json` | 随该请求发送、在允许列表中的转发请求头 |
 | `responses/<name>.json` | 原样的 200 响应体 |
 | `streams/<name>.sse` | 原样的 SSE 字节 |
-| `errors/<name>.json` 和 `errors/<name>.meta.json` | 错误响应体，以及 `{"status": …, "headers": {…}}` |
+| `errors/<name>.json` 和 `errors/<name>.meta.json` | 错误响应体，以及 `{"status": …, "headers": {…}}`。当编解码器以另一种响应体回复应用时（例如把 SpaceX 的字符串 `error` 改为 OpenAI 错误格式），`"encoded"` 保存该响应体，往返测试与它比较 |
 
 部分端点有自己的子文件夹：Anthropic 的 `count_tokens/` 和 OpenAI Responses 的 `input_tokens/`，分别位于 `requests/` 和 `responses/` 中；以及用于模型列表的 `models/`（`anthropic_messages/models/`，以及三个 OpenAI 编解码器共用的 `openai_chat/models/`）。
 
 其他使用某个方言的服务商（例如兼容 OpenAI 的 API）的录制内容放在 `<dialect>/providers/<id>/` 中，以该服务商在 `crates/kaeso-core/src/provider.rs` 中的 ID 命名。该文件夹有同样的 `requests/`、`responses/`、`streams/` 和 `errors/` 子文件夹，只在服务商有对应文件时才创建。`requests/` 存放只有该服务商接受的请求；其中每个名称都必须与该方言自己的请求 fixture 不同。
 
-往返测试、解码器测试和跨方言矩阵会连同方言自己的 fixture 一起读取每个服务商文件夹，并把其中的文件命名为 `providers/<id>/<name>`。因此，新的服务商录制会给矩阵快照添加条目；审查这些条目，并用 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` 接受它们。SDK 一致性测试套件和网关的模拟服务商仍然只提供方言自己的 fixture。
+往返测试、解码器测试和跨方言矩阵会连同方言自己的 fixture 一起读取每个服务商文件夹，并把其中的文件命名为 `providers/<id>/<name>`。因此，新的服务商录制会给矩阵快照添加条目；审查这些条目，并用 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` 接受它们。SDK 一致性测试套件只提供方言自己的 fixture；当测试以 `providers/<id>/<name>` 指定某个服务商的文件时，网关的模拟服务商会提供该文件。
 
 - `unknown-*` fixture 有意带有虚构的字段、块或事件，用于测试 `Extras` 和 `Unknown` 的处理。
 - 编解码器必须拒绝的 fixture（`stateful-*`、`n-2*`、`input-audio*`）测试的是它们的 `Unsupported` 错误，而不是往返。

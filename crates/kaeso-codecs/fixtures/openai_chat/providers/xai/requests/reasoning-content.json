@@ -1,0 +1,10 @@
+{
+  "model": "grok-4.3",
+  "reasoning_effort": "low",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 * 24? Answer with the number only."
+    }
+  ]
+}

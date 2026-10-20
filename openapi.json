@@ -16158,7 +16158,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider's id, such as `openai` or `anthropic`."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek` or `xai`."
           },
           "secret": {
             "type": "string",

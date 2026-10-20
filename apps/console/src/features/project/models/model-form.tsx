@@ -28,6 +28,7 @@ const PROVIDER_DIALECTS: Record<string, string[]> = {
   openai: ["openai_responses", "openai_chat", "openai_embeddings"],
   anthropic: ["anthropic_messages"],
   deepseek: ["openai_chat"],
+  xai: ["openai_responses", "openai_chat"],
 };
 
 const INPUTS = ["text", "image", "pdf", "audio", "video"];

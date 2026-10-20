@@ -216,6 +216,214 @@ expression: outcomes
       "total_tokens": 251
     }
   },
+  "providers/xai/recorded-presence-penalty-ignored": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hi! 😊",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "94fd764f-fa88-9392-b8ee-bd267db1d75a",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 132,
+      "completion_tokens_details": {
+        "reasoning_tokens": 128
+      },
+      "prompt_tokens": 195,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "total_tokens": 327
+    }
+  },
+  "providers/xai/recorded-reasoning-effort-high": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "If a woodchuck could chuck wood, it would chuck as much wood as a woodchuck could chuck—if a woodchuck could chuck wood. \n\n(Realistically, groundhogs don't chuck wood at all, so the answer is zero.)",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "e22bb510-28c1-94a0-a300-baccc57d26b5",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 499,
+      "completion_tokens_details": {
+        "reasoning_tokens": 448
+      },
+      "prompt_tokens": 196,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 695
+    }
+  },
+  "providers/xai/recorded-text-input-string": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Once upon a time, in a shimmering meadow under the silver moon, a gentle unicorn named Luna pranced through fields of glowing flowers. She collected starlight in her horn to light the way for sleepy fireflies returning home. As the night grew quiet, Luna curled up on a cloud of soft moss and drifted into peaceful dreams.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "6bf1a8b4-c2be-9d5a-9bc6-59c591bba072",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 304,
+      "completion_tokens_details": {
+        "reasoning_tokens": 238
+      },
+      "prompt_tokens": 203,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "total_tokens": 507
+    }
+  },
+  "providers/xai/recorded-tools-function": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"location\":\"Boston, MA\",\"unit\":\"fahrenheit\"}",
+                "name": "get_current_weather"
+              },
+              "id": "call-c39f2f60-a874-4891-805c-6b84a702fb9c-0",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "29365b27-6656-91c2-8295-5b1f17a57883",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 200,
+      "completion_tokens_details": {
+        "reasoning_tokens": 182
+      },
+      "prompt_tokens": 320,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "total_tokens": 520
+    }
+  },
+  "providers/xai/recorded-tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call-d82aac74-51da-4a34-9f01-441131452d11-0",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\"city\":\"Tokyo\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call-d82aac74-51da-4a34-9f01-441131452d11-1",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "078df29c-62b4-9f74-9aec-24ae2cb25924",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 173,
+      "completion_tokens_details": {
+        "reasoning_tokens": 144
+      },
+      "prompt_tokens": 410,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "total_tokens": 583
+    }
+  },
+  "providers/xai/recorded-web-search": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "**The official opening hours of the Lisbon Oceanarium (Oceanário de Lisboa), according to its official website (oceanario.pt), are as follows:**[[1]](https://oceanario.pt/en/)\n\n- **Daily (standard hours)**: 10:00 AM – 8:00 PM (last entry at 7:00 PM).[[2]](https://oceanario.pt/en/plan-your-visit/)\n- **24 and 31 December**: 10:00 AM – 7:00 PM (last entry at 6:00 PM).\n- **25 December and 1 January**: 11:00 AM – 8:00 PM (last entry at 7:00 PM).\n\nThese details are available on the official English-language site at [https://oceanario.pt/en/](https://oceanario.pt/en/) (under “Plan your visit” or the homepage) and equivalent pages in other languages. Hours can vary slightly by season or special events, so it’s best to check the official site directly before visiting for the most up-to-date information.[[1]](https://oceanario.pt/en/)\n\nThe official Portuguese site is at [https://oceanario.pt/](https://oceanario.pt/).",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "9948e2d4-ba76-9f93-acf5-5a1e076788ff",
+    "model": "grok-4.3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 544,
+      "completion_tokens_details": {
+        "reasoning_tokens": 255
+      },
+      "prompt_tokens": 11196,
+      "prompt_tokens_details": {
+        "cached_tokens": 2048
+      },
+      "total_tokens": 11740
+    }
+  },
   "reasoning-effort-high": {
     "choices": [
       {

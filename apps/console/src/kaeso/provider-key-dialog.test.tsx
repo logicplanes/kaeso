@@ -81,6 +81,24 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a SpaceX key with the xAI console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "xai", name: "Grok prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "SpaceX");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your SpaceX API key" })).toBeVisible();
+    expectKeyHint(dialog, "console.x.ai", "https://console.x.ai", "API Keys", "xai-");
+    const secret = within(dialog).getByLabelText("SpaceX API key");
+    expect(secret).toHaveAttribute("placeholder", "xai-…");
+    await user.type(secret, "xai-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Grok prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Grok prod is the SpaceX default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "xai", name: "Grok prod", secret: "xai-123", make_default: false }]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "Anthropic");

@@ -805,7 +805,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
             };
             if !success {
-                let err = dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes);
+                let err = declared_key_refusal(
+                    eff.provider,
+                    dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes),
+                );
                 count_upstream_error(err.kind.as_str(), provider);
                 if err.kind == ErrorKind::NotFound
                     && let Probe::Unserved =
@@ -854,6 +857,16 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Ok(Done::Complete(resp, StatusCode::OK.as_u16()))
         }
     }
+}
+
+pub(crate) fn declared_key_refusal(
+    provider: &kaeso_core::provider::Provider,
+    mut err: KppError,
+) -> KppError {
+    if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
+        err.kind = ErrorKind::Authentication;
+    }
+    err
 }
 
 async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter) {

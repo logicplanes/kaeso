@@ -20,6 +20,7 @@ order: 3
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai)（xAI 控制台）的 **API Keys** | `xai-` |
 
 对服务商密钥的每种操作都需要相应的权限：
 

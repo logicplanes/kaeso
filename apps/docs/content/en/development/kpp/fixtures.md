@@ -23,13 +23,13 @@ Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint
 | `requests/<name>.headers.json` | Allowlisted forwarded headers sent with that request |
 | `responses/<name>.json` | The exact 200 body |
 | `streams/<name>.sse` | The exact SSE bytes |
-| `errors/<name>.json` and `errors/<name>.meta.json` | An error body, and `{"status": …, "headers": {…}}` |
+| `errors/<name>.json` and `errors/<name>.meta.json` | An error body, and `{"status": …, "headers": {…}}`. When the codec answers apps with another body, such as the OpenAI error shape for SpaceX's string `error`, `"encoded"` holds that body and the round trip compares against it |
 
 Some endpoints have subfolders of their own: `count_tokens/` for Anthropic and `input_tokens/` for OpenAI Responses, inside `requests/` and `responses/`, and `models/` for model listings (`anthropic_messages/models/`, and `openai_chat/models/`, which all three OpenAI codecs use).
 
 Recordings from other providers that speak a dialect, such as an OpenAI-compatible API, go into `<dialect>/providers/<id>/`, named by the provider's id in `crates/kaeso-core/src/provider.rs`. That folder has the same `requests/`, `responses/`, `streams/` and `errors/` subfolders, each only where the provider has files. `requests/` holds requests that only this provider accepts; every name in it must differ from the dialect's own request fixtures.
 
-The round-trip tests, the decoder tests and the cross-dialect matrix read every provider folder along with the dialect's own, and name its files `providers/<id>/<name>`. A new provider recording therefore adds entries to the matrix snapshots; review them and accept them with `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. The SDK conformance suite and the gateway's mock provider keep serving only the dialect's own fixtures.
+The round-trip tests, the decoder tests and the cross-dialect matrix read every provider folder along with the dialect's own, and name its files `providers/<id>/<name>`. A new provider recording therefore adds entries to the matrix snapshots; review them and accept them with `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. The SDK conformance suite serves only the dialect's own fixtures; the gateway's mock provider serves a provider's file when a test names it as `providers/<id>/<name>`.
 
 - `unknown-*` fixtures carry made-up fields, blocks or events on purpose, to test `Extras` and `Unknown` handling.
 - Fixtures a codec must refuse (`stateful-*`, `n-2*`, `input-audio*`) are tested for their `Unsupported` error instead of a round trip.

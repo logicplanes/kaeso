@@ -15,6 +15,7 @@ const KEY_SITES: Record<string, { url: string; page: string; prefix: string }> =
   openai: { url: "https://platform.openai.com/api-keys", page: "API keys", prefix: "sk-" },
   anthropic: { url: "https://platform.claude.com/settings/keys", page: "Settings → API keys", prefix: "sk-ant-" },
   deepseek: { url: "https://platform.deepseek.com/api_keys", page: "API keys", prefix: "sk-" },
+  xai: { url: "https://console.x.ai", page: "API Keys", prefix: "xai-" },
 };
 
 function keyHelp(provider: string): ReactNode {

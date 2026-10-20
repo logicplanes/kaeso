@@ -198,7 +198,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 
 | Marker | Effect |
 | --- | --- |
-| `[mock:fixture=NAME]` in the prompt | Replies with that fixture of the provider's format |
+| `[mock:fixture=NAME]` in the prompt | Replies with that fixture of the provider's format; `providers/<id>/<name>` picks a provider's recording |
 | `[mock:gate=NAME]` in the prompt | Holds the request until the test opens the gate |
 | `[mock:steps=NAME]` in the prompt | Sends a stream's first event, then one more each time the test steps the gate |
 | A model id starting with `unserved-` | The format's model not found |

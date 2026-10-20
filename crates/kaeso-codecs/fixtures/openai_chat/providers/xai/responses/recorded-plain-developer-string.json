@@ -1,0 +1,38 @@
+{
+  "id": "e34069c1-b99d-9b5c-9bd0-31ba872ac79a",
+  "object": "chat.completion",
+  "created": 1792370187,
+  "model": "grok-4.20-0309-non-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! 👋 Nice to see you! How's it going?",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 195,
+    "completion_tokens": 14,
+    "total_tokens": 209,
+    "prompt_tokens_details": {
+      "text_tokens": 195,
+      "audio_tokens": 0,
+      "image_tokens": 0,
+      "cached_tokens": 128
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "num_sources_used": 0,
+    "cost_in_usd_ticks": 1443500
+  },
+  "system_fingerprint": "fp_41d52165d8",
+  "service_tier": "default"
+}

@@ -140,6 +140,7 @@ pub struct Provider {
     pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
+    pub refused_key_messages: &'static [&'static str],
 }
 
 pub const PROVIDERS: &[Provider] = &[
@@ -156,6 +157,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiChat,
             DialectId::OpenAiEmbeddings,
         ],
+        refused_key_messages: &[],
     },
     Provider {
         id: "anthropic",
@@ -166,6 +168,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
+        refused_key_messages: &[],
     },
     Provider {
         id: "deepseek",
@@ -176,6 +179,18 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+    },
+    Provider {
+        id: "xai",
+        name: "SpaceX",
+        default_base_url: "https://api.x.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiResponses,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
+        refused_key_messages: &["Incorrect API key provided"],
     },
 ];
 
@@ -219,6 +234,12 @@ impl Provider {
     pub fn provider_id(&self) -> ProviderId {
         ProviderId(self.id.to_owned())
     }
+
+    pub fn refuses_key(&self, message: &str) -> bool {
+        self.refused_key_messages
+            .iter()
+            .any(|refusal| message.starts_with(refusal))
+    }
 }
 
 pub fn known_ids() -> Vec<ProviderId> {
@@ -250,7 +271,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, deepseek");
+        assert_eq!(ids(), "openai, anthropic, deepseek, xai");
     }
 
     #[test]
@@ -317,11 +338,28 @@ mod tests {
     }
 
     #[test]
+    fn a_provider_names_the_messages_with_which_it_refuses_a_key() {
+        let xai = provider("xai").unwrap();
+        assert!(xai.refuses_key(
+            "Incorrect API key provided. You can obtain an API key from https://console.x.ai."
+        ));
+        assert!(!xai.refuses_key("Model grok-4.3 does not support parameter presencePenalty."));
+        assert!(
+            !provider("openai")
+                .unwrap()
+                .refuses_key("Incorrect API key provided: sk-…")
+        );
+    }
+
+    #[test]
     fn lookup_tells_malformed_from_unknown_ids() {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
             lookup("together-ai").unwrap_err().to_string(),
-            "`together-ai` is not a provider Kaeso knows; the providers are openai, anthropic, deepseek"
+            format!(
+                "`together-ai` is not a provider Kaeso knows; the providers are {}",
+                ids()
+            )
         );
         assert_eq!(
             lookup("Together_AI").unwrap_err().to_string(),
@@ -332,7 +370,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "deepseek"]
+            ["openai", "anthropic", "deepseek", "xai"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

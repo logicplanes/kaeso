@@ -20,6 +20,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die Modellanbiet
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai) (xAI-Konsole), unter **API Keys** | `xai-` |
 
 Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 

@@ -247,6 +247,7 @@ Every remaining property of the covered schemas, by name:
 | 408, 504, `vector_store_timeout` | `Timeout` |
 | other statuses | `ProviderError` |
 | a body that is not an OpenAI error, at any status (such as a proxy's HTML 429) | the kind of the status by the rows above (a proxy's 429 is `RateLimited`, a 502 `ProviderError`), with the message ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``; status and raw body kept |
+| `{"error": "<message>"}`, as SpaceX sends it (with `"code": "invalid-argument"` on a 400) | the kind of the status, with the string as the message; the gateway makes SpaceX's answer to a wrong key (`Incorrect API key provided`, in its `refused_key_messages`) `Authentication`. An unchanged one is encoded in the OpenAI shape with its own status |
 
 The `type` and `code` rows win over the status. Other codes don't decide here; the status does: `rate_limit_exceeded`, `rate_limit_error` and `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` and the image codes (starting with `invalid_image` or `image_`, or ending in `_image`; `InvalidRequest`). They decide only where there is no status: in a stream `error` event and in the `error.code` of a failed response. An error object without a message gets `The provider returned HTTP <status> without a message.`
 
@@ -293,3 +294,19 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 ## Models
 
 `GET /v1/models` and `GET /v1/models/{model}` use the same shape in every OpenAI API. This codec encodes and decodes it with the shared implementation described on the [OpenAI Chat Completions](openai-chat.md) page (fixtures `fixtures/openai_chat/models/`). Decoded extras carry the origin `openai_responses`.
+
+## Providers that use this format
+
+Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### SpaceX
+
+Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-reference/inference/responses) and [comparison with Chat Completions](https://docs.x.ai/developers/model-capabilities/text/comparison), read 2026-10-19, and the live recordings in `fixtures/openai_responses/providers/xai/`. Responses is SpaceX's `generation` dialect.
+
+| SpaceX field | KPP | Notes |
+|---|---|---|
+| `reasoning` items with `summary`, and `encrypted_content`, which `grok-4.3` always sends | as OpenAI's | SpaceX refuses an `encrypted_content` that another provider wrote with a 400 `invalid-argument`. |
+| `web_search_call` items, `url_citation` annotations | as OpenAI's | |
+| `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as above. |
+| `presence_penalty` (request) | extras | SpaceX ignores it and echoes `0.0`. |
+| `{"error": "<message>"}` | `KppError` | See the error table above. |

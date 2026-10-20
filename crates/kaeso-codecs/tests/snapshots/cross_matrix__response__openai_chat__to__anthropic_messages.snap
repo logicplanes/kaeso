@@ -500,6 +500,157 @@ expression: outcomes
       }
     }
   },
+  "providers/xai/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{\n  \"name\": \"science fair\",\n  \"date\": \"2026-10-16\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "type": "text"
+      }
+    ],
+    "id": "93c7eef6-8cff-9dfa-9b2d-d8b59bf44807",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 164,
+      "output_tokens": 333,
+      "output_tokens_details": {
+        "thinking_tokens": 301
+      }
+    }
+  },
+  "providers/xai/recorded-plain-developer-string": {
+    "content": [
+      {
+        "text": "Hello! 👋 Nice to see you! How's it going?",
+        "type": "text"
+      }
+    ],
+    "id": "e34069c1-b99d-9b5c-9bd0-31ba872ac79a",
+    "model": "grok-4.20-0309-non-reasoning",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 67,
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/xai/recorded-reasoning-content": {
+    "content": [
+      {
+        "text": "408",
+        "type": "text"
+      }
+    ],
+    "id": "7d66a40f-51d4-93df-81a4-2399cb277169",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 78,
+      "output_tokens": 179,
+      "output_tokens_details": {
+        "thinking_tokens": 178
+      }
+    }
+  },
+  "providers/xai/recorded-tools-parallel": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
+        "input": {
+          "timezone": "Asia/Tokyo"
+        },
+        "name": "get_local_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "7b4647dd-256f-96ec-bae7-2f264ac87131",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 294,
+      "output_tokens": 29,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/xai/recorded-tools-single": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "a590f19d-ffce-94c0-a90c-1d5c897dd3cd",
+    "model": "grok-4.3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 221,
+      "output_tokens": 17,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "reasoning-cached-usage": {
     "content": [
       {

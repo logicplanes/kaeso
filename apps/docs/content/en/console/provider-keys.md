@@ -20,6 +20,7 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `sk-` |
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
+| SpaceX | [console.x.ai](https://console.x.ai), the xAI console, under **API Keys** | `xai-` |
 
 Each action on provider keys needs its own right:
 
