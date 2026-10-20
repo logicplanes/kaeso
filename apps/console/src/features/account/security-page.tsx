@@ -22,7 +22,9 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
-import { meQuery } from "~/api/queries/me";
+import { meQuery, ssoLinksQuery } from "~/api/queries/me";
+import { takeFragment } from "~/auth/fragment";
+import { translateGatewayMessage } from "~/api/errors";
 import { useApiMutation } from "~/auth/mutation";
 import { isApiError } from "~/api/errors";
 import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
@@ -46,6 +48,7 @@ export function SecurityPage() {
         <>
           <PasswordSection hasPassword={m.has_password} />
           <TwoFactorSection enabled={m.totp_enabled} codesLeft={m.recovery_codes_left} />
+          <SingleSignOnSection />
         </>
       )}
     </SettingsPage>
@@ -400,5 +403,83 @@ function TwoFactorDialog({
         </Field>
       </div>
     </Dialog>
+  );
+}
+
+const LINKED_PAGE = "/settings/account/security";
+
+function SingleSignOnSection() {
+  const links = useQuery(ssoLinksQuery);
+  const [failed] = useState(() => takeFragment("sso_error"));
+  const [unlinking, setUnlinking] = useState(false);
+  const [target, setTarget] = useState({ org_id: "", org_name: "" });
+  useEffect(() => {
+    if (failed) void translateGatewayMessage(failed).then((message) => toast.error(message, { id: "sso-link-error" }));
+  }, [failed]);
+  const link = useApiMutation({
+    mutationFn: async (org: string) => data(await api.POST("/platform/v1/me/sso-links", { body: { org, next: LINKED_PAGE } })),
+    onSuccess: (r) => window.location.assign(r.authorization_url),
+  });
+  const unlink = useApiMutation({
+    mutationFn: async (org: string) => {
+      await api.DELETE("/platform/v1/me/sso-links/{org}", { params: { path: { org } } });
+    },
+    invalidates: [ssoLinksQuery.queryKey],
+    onSuccess: () => {
+      setUnlinking(false);
+      toast(t("account.ssoUnlinked", "Unlinked from single sign-on"));
+    },
+    onError: () => setUnlinking(false),
+  });
+  const rows = links.data?.data ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <SettingsSection
+      title={t("account.sso", "Single sign-on")}
+      description={t("account.ssoHint", "Only a linked account signs in through an organization's identity provider.")}
+    >
+      <SettingsGroup>
+        {rows.map((r) => (
+          <SettingsRow
+            key={r.org_id}
+            title={r.org_name}
+            description={
+              r.linked
+                ? t("account.ssoLinked", "Linked; you can sign in through {provider}.", { provider: r.provider_name ?? t("account.ssoProvider", "its SSO") })
+                : t("account.ssoNotLinked", "Not linked; link it to sign in through {provider}.", {
+                    provider: r.provider_name ?? t("account.ssoProvider", "its SSO"),
+                  })
+            }
+            control={
+              r.linked ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setTarget({ org_id: r.org_id, org_name: r.org_name });
+                    setUnlinking(true);
+                  }}
+                >
+                  {t("account.ssoUnlink", "Unlink")}
+                </Button>
+              ) : (
+                <Button size="sm" loading={link.isPending && link.variables === r.org_id} onClick={() => link.mutate(r.org_id)}>
+                  {t("account.ssoLink", "Link")}
+                </Button>
+              )
+            }
+          />
+        ))}
+      </SettingsGroup>
+      <AlertDialog
+        open={unlinking}
+        onOpenChange={setUnlinking}
+        tone="warning"
+        title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
+        description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in until you link the account again.")}
+        confirmLabel={t("account.ssoUnlink", "Unlink")}
+        loading={unlink.isPending}
+        onConfirm={() => unlink.mutateAsync(target.org_id)}
+      />
+    </SettingsSection>
   );
 }

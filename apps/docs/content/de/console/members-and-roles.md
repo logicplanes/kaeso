@@ -18,7 +18,7 @@ Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die 
 
 **Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**.
 
-Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen, die neu bei Kaeso sind. Wer schon ein Konto hat, braucht eine Einladung.
+Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen, die neu bei Kaeso sind. Wer schon ein Konto hat, braucht eine Einladung und verknüpft das Konto unter **Konto** mit dem Identitätsanbieter.
 
 ## Rolle wählen
 

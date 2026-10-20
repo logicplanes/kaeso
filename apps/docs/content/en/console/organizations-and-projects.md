@@ -50,7 +50,7 @@ Once you connect, the page shows two addresses:
 
 **Edit single sign-on** changes the connection, and an empty client secret keeps the stored one. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
 
-Single sign-on lets an existing Kaeso account into an organization only if the account already belongs to it. Invite the person, and they accept by signing in another way. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
+Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
 ## Require single sign-on or two-factor authentication
 
@@ -59,7 +59,7 @@ Under **Security**, you can tighten how members get into the organization:
 | Setting | What it does |
 | --- | --- |
 | Require single sign-on | Members get into the organization only through its identity provider. Their other sessions keep working for their other organizations. It needs a connected provider |
-| Require two-factor authentication | Members who sign in with a password need two-factor authentication. Sign-in links and single sign-on don't |
+| Require two-factor authentication | Members need a password sign-in with a code from their authenticator. A sign-in link isn't enough; a sign-in through the organization's own identity provider is |
 | Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 
 Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console warns you before it saves. Disconnecting the identity provider turns off **Require single sign-on** as well.

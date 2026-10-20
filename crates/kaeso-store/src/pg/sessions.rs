@@ -28,6 +28,7 @@ pub struct SessionListing {
     pub id: Uuid,
     pub method: String,
     pub second_factor: bool,
+    pub oidc_org_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
     pub signed_in_at: OffsetDateTime,
     pub last_used_at: OffsetDateTime,
@@ -203,7 +204,7 @@ pub async fn list_for_user(
 ) -> Result<Vec<SessionListing>, StoreError> {
     Ok(sqlx::query_as!(
         SessionListing,
-        "SELECT id, method, second_factor, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent \
+        "SELECT id, method, second_factor, oidc_org_id, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent \
          FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2 AND last_used_at > $3 \
          ORDER BY id DESC",
         user_id,

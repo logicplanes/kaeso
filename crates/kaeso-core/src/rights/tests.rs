@@ -502,6 +502,27 @@ fn sensitive_rights_need_a_recent_sign_in() {
 }
 
 #[test]
+fn only_a_session_changes_single_sign_on() {
+    let org: Vec<&str> = OrgRight::ALL
+        .iter()
+        .filter(|r| r.needs_session())
+        .map(|r| r.as_str())
+        .collect();
+    assert_eq!(org, ["security.sso.manage", "security.sso.require"]);
+    assert!(
+        OrgRight::ALL
+            .iter()
+            .filter(|r| r.needs_session())
+            .all(|r| r.needs_recent_sign_in())
+    );
+    assert!(
+        ProjectRight::ALL
+            .iter()
+            .all(|r| !Right::Project(*r).needs_session())
+    );
+}
+
+#[test]
 fn org_presets_map_to_their_default_project_presets() {
     use OrgPreset as O;
     use ProjectPreset as P;
