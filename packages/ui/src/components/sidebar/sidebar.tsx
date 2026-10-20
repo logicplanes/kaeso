@@ -66,6 +66,7 @@ interface SidebarCtx {
   setPeeking: (v: boolean) => void;
   width: number;
   setWidth: (v: number) => void;
+  previewWidth: (v: number | null) => void;
   storageKey: string | undefined;
 }
 const Ctx = createContext<SidebarCtx>({
@@ -77,6 +78,7 @@ const Ctx = createContext<SidebarCtx>({
   setPeeking: () => undefined,
   width: 248,
   setWidth: () => undefined,
+  previewWidth: () => undefined,
   storageKey: undefined,
 });
 export const useSidebar = () => useContext(Ctx);
@@ -94,7 +96,8 @@ export interface SidebarProviderProps {
 function Provider({ children, storageKey, defaultRail = false, shortcut = true }: SidebarProviderProps) {
   const [rail, setRail] = useStoredState(storageKey ? `${storageKey}:rail` : undefined, defaultRail);
   const [storedWidth, setWidth] = useStoredState(storageKey ? `${storageKey}:width` : undefined, 248);
-  const width = clampWidth(storedWidth);
+  const [preview, previewWidth] = useState<number | null>(null);
+  const width = clampWidth(preview ?? storedWidth);
   const [collapsed, setCollapsedState] = useStoredState(storageKey ? `${storageKey}:collapsed` : undefined, false);
   const [peeking, setPeeking] = useState(false);
   const setCollapsed = useCallback(
@@ -117,7 +120,7 @@ function Provider({ children, storageKey, defaultRail = false, shortcut = true }
     return () => window.removeEventListener("keydown", onKey);
   }, [collapsed, setCollapsed, shortcut]);
   const value = useMemo(
-    () => ({ rail, setRail, collapsed, setCollapsed, peeking, setPeeking, width, setWidth, storageKey }),
+    () => ({ rail, setRail, collapsed, setCollapsed, peeking, setPeeking, width, setWidth, previewWidth, storageKey }),
     [rail, setRail, collapsed, setCollapsed, peeking, width, setWidth, storageKey],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -135,7 +138,7 @@ export const SIDEBAR_MAX = 280;
 const clampWidth = (v: number) => Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Number.isFinite(v) ? v : 248)));
 
 const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable = true, className, children, style, "aria-label": ariaLabel, ...props }, ref) {
-  const { rail, width, setWidth, collapsed, setCollapsed } = useSidebar();
+  const { rail, width, setWidth, previewWidth, collapsed, setCollapsed } = useSidebar();
   const t = useUiText();
   const [hint, setHint] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -150,12 +153,15 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
       const startX = e.clientX;
       const startW = width;
       let moved = false;
+      let last = startW;
       const move = (ev: PointerEvent) => {
         if (Math.abs(ev.clientX - startX) > 3) {
           moved = true;
           setDragging(true);
         }
-        if (moved) setWidth(clampWidth(startW + ev.clientX - startX));
+        if (!moved) return;
+        last = clampWidth(startW + ev.clientX - startX);
+        previewWidth(last);
       };
       const end = () => {
         handle.removeEventListener("pointermove", move);
@@ -165,6 +171,8 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
         document.body.style.userSelect = "";
         endDrag.current = null;
         setDragging(false);
+        if (moved) setWidth(last);
+        previewWidth(null);
       };
       const up = () => {
         end();
@@ -178,7 +186,7 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
       document.body.style.userSelect = "none";
       endDrag.current = end;
     },
-    [width, setWidth, setCollapsed],
+    [width, setWidth, previewWidth, setCollapsed],
   );
   const floating = useContext(SidebarFloatingContext);
   const hidden = collapsed && !floating;

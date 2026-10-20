@@ -26,10 +26,7 @@ export const docs = {
       required: "Marks it as required in a form.",
       size: "The height of the field.",
       value: "The chosen value, or a list of values with `multiple`, when you control it.",
-    },
-    deprecated: {
-      error:
-        "Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.",
+      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
 } satisfies ComponentDocs;

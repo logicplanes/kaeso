@@ -12,6 +12,7 @@ const right = (id: string, name: string, needs: string[] = [], scope = "project"
   sensitive: id === "logs.export",
   recent_sign_in: false,
   cloud_only: false,
+  owner_only: false,
   needs,
 });
 const catalogue: RightsCatalogue = {

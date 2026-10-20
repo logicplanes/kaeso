@@ -27,7 +27,7 @@ Creating a key needs these rights:
 | --- | --- |
 | Your own keys | **Create own keys** |
 | A service account's keys | **Create service account keys** |
-| A key with platform access | Also **Give keys platform access**, and a recent sign-in |
+| A key with platform access | Also **Give keys platform access**, a console session and a recent sign-in; a key can't create one |
 
 Give each app and each environment its own key. Its usage, logs and limits are then its own, and turning it off affects nothing else.
 
@@ -44,7 +44,7 @@ The menu of a key's sheet has three actions:
 | Action | What it does |
 | --- | --- |
 | Disable | The key stops working at once. You can enable it again |
-| Enable | A disabled key works again |
+| Enable | A disabled key works again. A key that a person disabled is enabled only by a person, and only its owner's own disable can be undone under **API keys** in the account |
 | Archive | The key stops working for good. Its history stays |
 
 Changing your own keys needs the right **Manage own keys**, and changing anyone's keys **Manage all keys**.
@@ -60,7 +60,7 @@ Platform keys are for scripts and infrastructure that manage the whole organizat
 1. In **Organization settings**, open **Platform keys** and choose **Create platform key**.
 2. Say what uses the key, and when it expires. The choices and the organization's maximum key lifetime are the same as for API keys.
 
-Creating a platform key needs the right **Create platform keys** and a recent sign-in. You disable, enable and archive platform keys like API keys, with the right **Disable platform keys**.
+Creating a platform key needs the right **Create platform keys**, a console session and a recent sign-in. You disable, enable and archive platform keys like API keys, with the right **Disable platform keys**; a platform key that a person disabled is enabled only by a person.
 
 ## Next steps
 

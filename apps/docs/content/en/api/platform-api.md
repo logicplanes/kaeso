@@ -188,14 +188,14 @@ Every organization member has one organization role. Every project member and se
 
 | Route | Right | Answers with |
 | --- | --- | --- |
-| `GET orgs/{org}/rights` | `org.view` | Every right by category, with its name, description, flags (`sensitive`, `recent_sign_in`, `cloud_only`) and the rights it needs. |
+| `GET orgs/{org}/rights` | `org.view` | Every right by category, with its name, description, flags (`sensitive`, `recent_sign_in`, `cloud_only`, `owner_only`) and the rights it needs. |
 | `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Built-in and custom roles with their rights and number of holders. `?scope=org` or `?scope=project` filters them. |
 | `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Creates, changes or deletes a custom role. An organization has at most 50. |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | A member's effective rights in the organization, in every project and in each project the caller can see, with their sources. |
-| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | A member's effective rights in this project, with their sources. |
+| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | A project member's effective rights in this project, with their sources. |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | The caller's own rights in this project, with their sources. |
 | `GET orgs/{org}/rights/{right}/grantors` | `members.view` | Up to 10 active members who hold the right and may change rights, owners first. |
-| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | The same, for a right in this project. |
+| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.members.view` | The same, for a right in this project. |
 
 Send a grant as `{"role": "developer", "rights_added": [], "rights_removed": []}`. `role` is a built-in role's name or a custom role's id; `preset` is its deprecated name. The answer carries `role` as `{id, kind, name}`, the effective `rights` and, for organization grants, `project_rights`. Invitations take `role` and `project_roles: [{project_id, role}]`, and the single sign-on setup takes `default_role`.
 

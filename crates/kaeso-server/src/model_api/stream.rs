@@ -13,7 +13,7 @@ use kaeso_upstream::UpstreamError;
 
 const INCOMPLETE: &str = "incomplete";
 
-use super::hooks::{SHUT_DOWN, STREAM_INTERRUPTED, StreamProgress};
+use super::hooks::{SHUT_DOWN, STREAM_INTERRUPTED, STREAM_LIMIT, StreamProgress};
 use super::input_count::InputCounter;
 use super::pipeline::{
     Recording, count_upstream_error, shutting_down, transport_kind, upstream_error,
@@ -93,6 +93,14 @@ impl Broken {
         }
     }
 
+    fn capped(err: KppError) -> Broken {
+        Broken {
+            kind: STREAM_LIMIT.to_owned(),
+            status: 502,
+            err,
+        }
+    }
+
     fn encoder(err: KppError) -> Broken {
         Broken {
             kind: err.kind.as_str().to_owned(),
@@ -102,19 +110,40 @@ impl Broken {
     }
 }
 
+const SHUTDOWN_WRITE: Duration = Duration::from_secs(1);
+
 struct ToApp {
     tx: Sender<Bytes>,
     progress: StreamProgress,
     arrived: std::time::Instant,
+    state: crate::state::AppState,
+    patience: Duration,
+    stopping: bool,
 }
 
 impl ToApp {
+    async fn deliver(&self, bytes: Bytes) -> bool {
+        let patience = if self.stopping {
+            SHUTDOWN_WRITE
+        } else {
+            self.patience
+        };
+        tokio::select! {
+            sent = self.tx.send(bytes) => sent.is_ok(),
+            () = tokio::time::sleep(patience) => {
+                tracing::info!(waited = ?patience, "the app stopped reading a stream; ending it");
+                false
+            }
+            () = self.state.in_flight.cut(), if !self.stopping => false,
+        }
+    }
+
     async fn reply(&mut self, bytes: Vec<u8>) -> bool {
         if bytes.is_empty() {
             return true;
         }
         let n = bytes.len() as u64;
-        if self.tx.send(Bytes::from(bytes)).await.is_err() {
+        if !self.deliver(Bytes::from(bytes)).await {
             return false;
         }
         self.progress.bytes += n;
@@ -130,7 +159,7 @@ impl ToApp {
             return true;
         }
         let n = bytes.len() as u64;
-        if self.tx.send(Bytes::from(bytes)).await.is_err() {
+        if !self.deliver(Bytes::from(bytes)).await {
             return false;
         }
         self.progress.bytes += n;
@@ -225,7 +254,12 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         tx,
         progress: StreamProgress::default(),
         arrived: rec.arrived(),
+        state: state.clone(),
+        patience: state.config.upstream.stream_idle_timeout,
+        stopping: false,
     };
+    let limits = &state.config.streams;
+    let max_bytes = limits.max_bytes.0;
     let mut gone = false;
     let mut broken: Option<Broken> = None;
     let mut last_write = Instant::now();
@@ -237,10 +271,19 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         tokio::pin!(quiet);
         let cut = state.in_flight.cut();
         tokio::pin!(cut);
+        let too_long = tokio::time::sleep(limits.max_duration);
+        tokio::pin!(too_long);
         'read: loop {
             let next = tokio::select! {
                 () = &mut closed => { gone = true; break 'read; }
+                () = &mut too_long, if !limits.max_duration.is_zero() => {
+                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
+                        gone = true;
+                    }
+                    break 'read;
+                }
                 () = &mut cut => {
+                    app.stopping = true;
                     let err = shutting_down();
                     broken.get_or_insert_with(|| Broken::shutdown(err.clone()));
                     let bytes = match encode(encoder.as_mut(), &StreamEvent::Error(err), &mut broken) {
@@ -278,12 +321,14 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                 Some(Ok(bytes)) => {
                     let events = decoder.feed(&bytes);
                     app.progress.count(&events);
+                    let mut failed = false;
                     for e in &events {
                         if let StreamEvent::Error(err) = e {
                             broken.get_or_insert_with(|| Broken::event(err));
+                            failed = true;
                         }
                     }
-                    (events, false)
+                    (events, failed)
                 }
                 Some(Err(e)) => {
                     count_upstream_error(
@@ -335,6 +380,12 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 last_write = Instant::now();
+                if max_bytes > 0 && app.progress.bytes >= max_bytes {
+                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
+                        gone = true;
+                    }
+                    break 'read;
+                }
             }
             if stop {
                 break 'read;
@@ -391,12 +442,12 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     }
     let reported = rec.outcome().usage.clone().unwrap_or_default();
     let count = estimate && reported.total_input_tokens() == 0;
-    let mut to_app = Some((app.tx, tail));
+    let mut to_app = Some(tail);
     if count {
-        if let Some((tx, tail)) = to_app.take()
+        if let Some(tail) = to_app.take()
             && !tail.is_empty()
         {
-            let _ = tx.send(Bytes::from(tail)).await;
+            app.deliver(Bytes::from(tail)).await;
         }
         rec.outcome().duration = ended;
     }
@@ -428,11 +479,26 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         }
         None => rec.finish(200).await,
     }
-    if let Some((tx, tail)) = to_app
+    if let Some(tail) = to_app
         && !tail.is_empty()
     {
-        let _ = tx.send(Bytes::from(tail)).await;
+        app.deliver(Bytes::from(tail)).await;
     }
+}
+
+async fn end_capped(
+    app: &mut ToApp,
+    encoder: &mut dyn StreamEncoder,
+    broken: &mut Option<Broken>,
+) -> bool {
+    let err =
+        KppError::provider("The reply reached this install's limit for a stream; Kaeso ended it.")
+            .with_status(502);
+    broken.get_or_insert_with(|| Broken::capped(err.clone()));
+    let bytes = match encode(encoder, &StreamEvent::Error(err), broken) {
+        Ok(bytes) | Err(bytes) => bytes,
+    };
+    app.reply(bytes).await
 }
 
 #[cfg(test)]

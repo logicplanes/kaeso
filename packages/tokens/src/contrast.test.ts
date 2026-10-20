@@ -33,6 +33,7 @@ const surfaces = ["bg-panel", "bg-chrome", "bg-raised", "fill-1", "fill-2"] as c
 const neutralRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = [
   ...(["text", "text-secondary"] as const).flatMap((fg) => surfaces.map((bg) => [fg, bg, 4.5] as const)),
   ...surfaces.filter((s) => s !== "fill-2").map((bg) => ["text-tertiary", bg, 4.5] as const),
+  ...(["text", "text-secondary"] as const).flatMap((fg) => (["item-hover", "item-pressed"] as const).map((bg) => [fg, bg, 4.5] as const)),
   ["on-ink", "ink", 4.5],
   ["toast-fg", "toast-bg", 4.5],
   ["toast-fg-secondary", "toast-bg", 4.5],

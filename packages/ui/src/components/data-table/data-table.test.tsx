@@ -44,7 +44,7 @@ describe("DataTable", () => {
   it("says it couldn't load the rows and offers Try again, without drawing the error", async () => {
     let retried = 0;
     render(<DataTable aria-label="Costs" data={[]} columns={columns} error="The gateway answered 503." onRetry={() => retried++} />);
-    expect(screen.getByText("Couldn't load these rows")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load these rows");
     expect(screen.queryByText("The gateway answered 503.")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(retried).toBe(1);
@@ -201,5 +201,51 @@ describe("DataTable on the gutter", () => {
     const cols = [c("time", 160, 1), c("status", 80, 1), c("provider", 144, 3)];
     expect(fitColumns(cols, 384, 0).hidden).toEqual([]);
     expect(fitColumns(cols, 384).hidden).toEqual(["provider"]);
+  });
+});
+
+describe("DataTable from the keyboard", () => {
+  it("is one tab stop that the arrows, Home and End move between rows, Enter opens and Space selects", async () => {
+    const user = userEvent.setup();
+    const open = vi.fn();
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} onRowClick={open} selectable />);
+    const row = (name: string) => screen.getByText(name).closest<HTMLElement>("[role=row]")!;
+    expect(row("checkout-web")).toHaveAttribute("tabindex", "0");
+    expect(row("ci-runner")).toHaveAttribute("tabindex", "-1");
+    row("checkout-web").focus();
+    await user.keyboard("{ArrowDown}");
+    expect(row("ci-runner")).toHaveFocus();
+    expect(row("ci-runner")).toHaveAttribute("tabindex", "0");
+    expect(row("checkout-web")).toHaveAttribute("tabindex", "-1");
+    await user.keyboard("{End}");
+    expect(row("staging")).toHaveFocus();
+    await user.keyboard("{Home}");
+    expect(row("checkout-web")).toHaveFocus();
+    await user.keyboard(" ");
+    expect(row("checkout-web")).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{Enter}");
+    expect(open).toHaveBeenCalledWith(rows[0]);
+  });
+  it("numbers its rows for assistive technology, the header first", () => {
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />);
+    const table = screen.getByRole("table", { name: "Keys" });
+    expect(table).toHaveAttribute("aria-rowcount", "4");
+    expect(screen.getAllByRole("columnheader")[0]!.closest("[role=row]")).toHaveAttribute("aria-rowindex", "1");
+    expect(screen.getByText("staging").closest("[role=row]")).toHaveAttribute("aria-rowindex", "4");
+  });
+  it("names each row's checkbox after the row", () => {
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable />);
+    expect(screen.getByRole("checkbox", { name: "Select ci-runner" })).toBeInTheDocument();
+  });
+  it("resizes a column with the arrow keys on its handle", async () => {
+    const user = userEvent.setup();
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />);
+    const handle = screen.getAllByRole("separator", { name: "Resize column" })[0]!;
+    expect(handle).toHaveAttribute("aria-valuenow", "160");
+    handle.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(handle).toHaveAttribute("aria-valuenow", "176");
+    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(handle).toHaveAttribute("aria-valuenow", "144");
   });
 });

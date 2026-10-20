@@ -9,7 +9,7 @@ expression: rights_reference()
 | `org.view` | Organization | View organization | See the organization, its settings and its roles. |  |  |  |
 | `org.update` | Organization | Edit organization | Rename the organization, change its picture and general settings, and choose the default project. |  |  |  |
 | `org.delete` ⚠ | Organization | Delete organization | Schedule the organization for deletion, or restore it while it waits. |  | ✓ |  |
-| `org.ownership.transfer` ⚠ | Organization | Transfer ownership | Make another member an owner in your place. | `members.view` | ✓ |  |
+| `org.ownership.transfer` ⚠ | Organization | Transfer ownership | Make another member an owner in your place; only owners hold it. | `members.view` | ✓ |  |
 | `members.view` | Members & access | View members | See members, their roles and their rights. |  |  |  |
 | `members.invite` | Members & access | Invite members | Invite people by email with a role you could grant yourself. | `members.view` |  |  |
 | `members.invites.revoke` | Members & access | Cancel invites | Cancel pending invitations. | `members.view` |  |  |
@@ -71,7 +71,7 @@ expression: rights_reference()
 | `logs.metadata.view` | Logs & data | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |  |  |
 | `logs.content.view` ⚠ | Logs & data | View prompts and outputs | See request and response bodies in the logs. | `logs.metadata.view` |  |  |
 | `logs.export` ⚠ | Logs & data | Export logs | Export the project's request logs. | `logs.metadata.view` |  |  |
-| `logs.content.disable` | Logs & data | Turn off content logging | Switch content logging off for this project. |  |  |  |
+| `logs.content.manage` ⚠ | Logs & data | Switch content logging | Switch content logging on or off for this project. |  |  |  |
 | `usage.view` | Usage & costs | View usage | See the project's usage. |  |  |  |
 | `costs.view` | Usage & costs | View costs | See the project's costs. | `usage.view` |  |  |
 | `project.audit_log.view` | Audit | View project audit log | Read the audit log of changes in this project. |  |  |  |
@@ -164,7 +164,7 @@ expression: rights_reference()
 | `logs.metadata.view` | ✓ | ✓ |  |  | ✓ |  |
 | `logs.content.view` | ✓ | ✓ |  |  |  |  |
 | `logs.export` | ✓ | ✓ |  |  |  |  |
-| `logs.content.disable` | ✓ | ✓ |  |  |  |  |
+| `logs.content.manage` | ✓ | ✓ |  |  |  |  |
 | `usage.view` | ✓ | ✓ |  |  | ✓ |  |
 | `costs.view` | ✓ | ✓ |  |  | ✓ |  |
 | `project.audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
@@ -200,7 +200,7 @@ expression: rights_reference()
 | `logs.metadata.view` | ✓ | ✓ | ✓ |
 | `logs.content.view` | ✓ | ✓ |  |
 | `logs.export` | ✓ |  |  |
-| `logs.content.disable` | ✓ |  |  |
+| `logs.content.manage` | ✓ |  |  |
 | `usage.view` | ✓ | ✓ | ✓ |
 | `costs.view` | ✓ | ✓ | ✓ |
 | `project.audit_log.view` | ✓ |  |  |

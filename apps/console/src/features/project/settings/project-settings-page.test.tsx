@@ -107,7 +107,7 @@ describe("project settings", () => {
   });
 
   it("locks the name and picture without Edit project and hides the sections that need other rights", async () => {
-    setUp({ rights: without("project.update", "security.key_policy.project.manage", "project.archive", "logs.content.disable") });
+    setUp({ rights: without("project.update", "security.key_policy.project.manage", "project.archive", "logs.content.manage") });
     const { user } = await renderApp(projectPath("settings"));
 
     const input = await screen.findByRole("textbox", { name: "Project name" });
@@ -119,7 +119,7 @@ describe("project settings", () => {
     expect(screen.queryByRole("button", { name: "Archive project" })).not.toBeInTheDocument();
     const logging = await screen.findByRole("switch", { name: "Log request content" });
     expect(logging).toHaveAttribute("aria-disabled", "true");
-    await hoverReason(user, logging, /^You need Turn off content logging; ask .+ for it\.$/);
+    await hoverReason(user, logging, /^You need Switch content logging; ask .+ for it\.$/);
   });
 
   it("keeps the name and picture of an archived project", async () => {

@@ -89,10 +89,12 @@ describe("UsageMetrics", () => {
     expect(tile("Errors")).not.toHaveTextContent("vs last week");
   });
 
-  it("shows no cost spent yet and placeholders while loading", async () => {
+  it("shows each tile's shape while loading, not a number that reads as no usage", async () => {
     await renderUi(<UsageMetrics rows={[]} from="2026-10-13" to="2026-10-14" showCost loading />);
-    expect(tile("Requests")).toHaveTextContent("—");
-    expect(tile("Cost")).toHaveTextContent("—");
+    for (const name of ["Requests", "Cost", "Errors"]) {
+      expect(tile(name)).toHaveAttribute("aria-busy", "true");
+      expect(tile(name)).not.toHaveTextContent(/\d|—/);
+    }
     expect(tile("Errors")).not.toHaveTextContent("of requests");
   });
 

@@ -43,8 +43,6 @@
   "account.keyArchived": "{name} 已归档",
   "account.keyDisabled": "{name} 已停用",
   "account.keyEnabled": "{name} 已启用",
-  "account.keyNeverUsed": "从未使用",
-  "account.keyUsed": "{when}使用",
   "account.keysFailed": "无法加载您的密钥",
   "account.language": "语言",
   "account.languageAuto": "自动（{language}）",

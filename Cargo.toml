@@ -27,6 +27,7 @@ kaeso-update = { path = "crates/kaeso-update" }
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal", "io-util", "fs"] }
 axum = { version = "0.8.9", default-features = false, features = ["http1", "http2", "json", "query", "tokio", "tower-log", "matched-path", "original-uri"] }
 tower = { version = "0.5", features = ["util", "timeout", "limit"] }
+tower-http = { version = "0.6.11", default-features = false, features = ["timeout"] }
 hyper = { version = "1.12", default-features = false, features = ["server", "http1", "http2"] }
 hyper-util = { version = "0.1.21", features = ["server-auto", "tokio", "service"] }
 http-body-util = "0.1"

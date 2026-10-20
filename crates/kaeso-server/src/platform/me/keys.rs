@@ -12,7 +12,7 @@ use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::keys::KeyView;
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
-use crate::platform::projects::keys::{Change, change};
+use crate::platform::projects::keys::{Change, Holder, change};
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -111,6 +111,7 @@ pub async fn disable(
             OrgId::from_uuid(row.org_id),
             &row,
             Change::Disable,
+            Holder::Owner,
         )
         .await?,
     ))
@@ -137,6 +138,7 @@ pub async fn enable(
             OrgId::from_uuid(row.org_id),
             &row,
             Change::Enable,
+            Holder::Owner,
         )
         .await?,
     ))
@@ -163,6 +165,7 @@ pub async fn archive(
             OrgId::from_uuid(row.org_id),
             &row,
             Change::Archive,
+            Holder::Owner,
         )
         .await?,
     ))

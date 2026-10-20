@@ -37,6 +37,8 @@ pub struct RightView {
     pub recent_sign_in: bool,
     #[doc = "Whether it exists only in Kaeso Cloud."]
     pub cloud_only: bool,
+    #[doc = "Whether only owners hold it; no role or individual change can give it."]
+    pub owner_only: bool,
     #[doc = "The rights it needs directly; a change that gives it without them, or\n\
         takes one of them away and keeps it, is refused."]
     #[schema(example = json!(["project.view", "logs.metadata.view"]))]
@@ -111,6 +113,7 @@ pub async fn catalogue(Path(_org): Path<String>, _ctx: Ctx) -> Json<RightsCatalo
             sensitive: r.is_sensitive(),
             recent_sign_in: r.needs_recent_sign_in(),
             cloud_only: r.cloud_only(),
+            owner_only: r.owner_only(),
             needs: r.needs().into_iter().map(OrgRight::as_str).collect(),
         }),
         project: group(ProjectRight::ALL, ProjectRight::category, |r| RightView {
@@ -121,6 +124,7 @@ pub async fn catalogue(Path(_org): Path<String>, _ctx: Ctx) -> Json<RightsCatalo
             sensitive: r.is_sensitive(),
             recent_sign_in: r.needs_recent_sign_in(),
             cloud_only: r.cloud_only(),
+            owner_only: false,
             needs: r.needs().into_iter().map(ProjectRight::as_str).collect(),
         }),
     })
@@ -388,6 +392,7 @@ async fn rights_in_project(
     state: &AppState,
     ctx: &Ctx,
     user: UserId,
+    own_rights: bool,
 ) -> ApiResult<ProjectRightsView> {
     let scope = ctx.org()?;
     let project = ctx.project()?;
@@ -398,6 +403,9 @@ async fn rights_in_project(
     let org_grant = org_from_store(&stored)?;
     let org_role = RoleRef::of_org(&stored);
     let membership = members::get_project(&state.pg, project.project.id, user.uuid()).await?;
+    if membership.is_none() && !own_rights {
+        return Err(ApiError::not_found("project member"));
+    }
     let own = match &membership {
         Some(pm) => {
             let s = pm.grant();
@@ -421,9 +429,9 @@ async fn rights_in_project(
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/members/{user}/rights",
-    summary = "A member's effective rights in this project, each with its sources:\n\
-    their project role, individual changes, their org role's rights in\n\
-    every project and org rights that reach into every project.",
+    summary = "A project member's effective rights in this project, each with its\n\
+    sources: their project role, individual changes, their org role's rights\n\
+    in every project and org rights that reach into every project.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("user" = UserId, Path)),
     responses((status = 200, body = ProjectRightsView))
@@ -434,7 +442,7 @@ pub async fn project_member(
     Path((_o, _p, user)): Path<(String, String, String)>,
 ) -> ApiResult<Json<ProjectRightsView>> {
     Ok(Json(
-        rights_in_project(&state, &ctx, id_param::<UserId>(&user, "member")?).await?,
+        rights_in_project(&state, &ctx, id_param::<UserId>(&user, "member")?, false).await?,
     ))
 }
 
@@ -454,7 +462,7 @@ pub async fn mine(
 ) -> ApiResult<Json<ProjectRightsView>> {
     if let Caller::Session(s) = &ctx.caller {
         return Ok(Json(
-            rights_in_project(&state, &ctx, UserId::from_uuid(s.user_id)).await?,
+            rights_in_project(&state, &ctx, UserId::from_uuid(s.user_id), true).await?,
         ));
     }
     let project = ctx.project()?;

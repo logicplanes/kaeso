@@ -19,7 +19,6 @@
   "44px rows on the panel, no lines, metadata on the right, group headers, keyboard first.": "44px-Zeilen auf dem Panel, ohne Linien, Metadaten rechts, Gruppenköpfe, Tastatur zuerst.",
   "7 days": "7 Tage",
   "90 days": "90 Tage",
-  "@deprecated Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.": "Veraltet. Fehler sind Toasts, nie Text unter einem Feld: `error` markiert das Steuerelement als ungültig und bleibt für Screenreader seine Beschreibung, wird aber nicht angezeigt. Übergib `invalid` und zeige die Meldung als Toast.",
   "A 1px line, for when space and tone cannot separate two regions.": "Eine 1px-Linie, wenn Raum und Tonwert zwei Bereiche nicht trennen können.",
   "A 4px track, an ink range and an ink thumb; a value bubble while dragging; ticks and ranges.": "Eine 4px-Spur, ein Ink-Bereich und ein Ink-Griff; eine Wertblase beim Ziehen; Marken und Bereiche.",
   "A Hugeicons free (Stroke Rounded) icon, from `@hugeicons/core-free-icons` or `icons` in `@logicplanes/kaeso-ui`.": "Ein Symbol aus Hugeicons free (Stroke Rounded), aus `@hugeicons/core-free-icons` oder `icons` in `@logicplanes/kaeso-ui`.",
@@ -50,7 +49,6 @@
   "A hairline between columns, or none.": "Eine Haarlinie zwischen den Spalten oder keine.",
   "A horizontal or vertical line.": "Eine horizontale oder vertikale Linie.",
   "A key name (`mod`, `shift`, `k`, `enter`) or any text.": "Ein Tastenname (`mod`, `shift`, `k`, `enter`) oder beliebiger Text.",
-  "A label, a control and its help, wired together; errors are toasts, never text under the field.": "Beschriftung, Steuerelement und Hilfetext, miteinander verbunden; Fehler sind Toasts, nie Text unter dem Feld.",
   "A leading icon takes 2px off its side's padding so the label looks centered.": "Ein führendes Symbol nimmt seiner Seite 2px Innenabstand, damit die Beschriftung mittig wirkt.",
   "A limit or quota: label and value, a 6px pill track, threshold ticks and a caption. Progress for work.": "Ein Limit oder Kontingent: Beschriftung und Wert, eine 6px-Pill-Spur, Schwellenmarken und eine Bildunterschrift. Progress ist für Arbeit.",
   "A list with each role's description, or a compact select.": "Eine Liste mit der Beschreibung jeder Rolle oder eine kompakte Auswahl.",
@@ -509,7 +507,6 @@
   "Requests over 14 days, rising": "Anfragen über 14 Tage, steigend",
   "Resets in 12 days": "Wird in 12 Tagen zurückgesetzt",
   "Retention": "Aufbewahrung",
-  "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip (and to a screen reader); errors are never drawn under the field, so toast it too when someone submits.": "Gib true für ein gültiges Tag zurück oder eine Meldung, was falsch ist. Ungültige Tags bleiben, mit einem Gefahrenring markiert, und zeigen die Meldung als Tooltip (und für Screenreader); Fehler stehen nie unter dem Feld, zeige sie also beim Absenden auch als Toast.",
   "Returns `true` for days that can't be chosen.": "Gibt `true` für Tage zurück, die sich nicht wählen lassen.",
   "Returns a row's stable id, for selection and keys.": "Gibt die stabile ID einer Zeile zurück, für Auswahl und Schlüssel.",
   "Returns the accessible name of each thumb of a range.": "Gibt den zugänglichen Namen jedes Reglers eines Bereichs zurück.",
@@ -959,7 +956,6 @@
   "⌘Enter calls this (usually the primary action).": "⌘Enter ruft dies auf (meist die primäre Aktion).",
   "⌘K: every page and action, grouped; nested pages; async groups with a quiet progress line.": "⌘K: jede Seite und Aktion, gruppiert; verschachtelte Seiten; asynchrone Gruppen mit einer leisen Fortschrittslinie.",
   "Called when the action is confirmed; return a promise to keep the dialog busy until it ends. It closes when the promise resolves and stays open for another try when it rejects, so toast the error there.": "Wird aufgerufen, wenn die Aktion bestätigt ist; geben Sie ein Promise zurück, damit der Dialog beschäftigt bleibt, bis es endet. Er schließt sich, wenn das Promise erfüllt wird, und bleibt für einen weiteren Versuch offen, wenn es abgelehnt wird; zeigen Sie den Fehler dann als Toast.",
-  "The error message: it marks the field invalid and is read out with the description, but isn't drawn under the field, so show it in a toast too.": "Die Fehlermeldung: Sie markiert das Feld als ungültig und wird mit der Beschreibung vorgelesen, aber nicht unter dem Feld angezeigt; zeigen Sie sie deshalb auch als Toast.",
   "The accessible name of the diagram: what it shows, such as \"Route of checkout requests\". Defaults to \"Flow diagram\"; screen readers hear each node and each connection after it.": "Der zugängliche Name des Diagramms: was es zeigt, etwa „Weg der Checkout-Anfragen“. Standardmäßig „Flussdiagramm“; Screenreader hören danach jeden Knoten und jede Verbindung.",
   "A filled field (`default`), a quiet one for toolbars (`ghost`), or a quiet one in full text colour for column headers (`header`).": "Ein gefülltes Feld (`default`), ein zurückhaltendes für Werkzeugleisten (`ghost`) oder ein zurückhaltendes in voller Textfarbe für Spaltenköpfe (`header`).",
   "Draggable right edge (232–280px), remembered.": "Ziehbarer rechter Rand (232–280 px), wird gespeichert.",
@@ -993,5 +989,9 @@
   "Large text on the artwork, e.g. the version number.": "Großer Text auf dem Bild, z. B. die Versionsnummer.",
   "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "Ein Zeichen vor dem Wort in derselben Farbe, z. B. `icons.success` für „Aktuell“.",
   "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.": "Wo er sitzt: mittig oder mit fester Oberkante für Inhalte, die ihre Höhe ändern, damit der Titel nie springt.",
-  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "Wo er sitzt: mittig oder mit fester Oberkante für Ebenen unterschiedlicher Höhe."
+  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "Wo er sitzt: mittig oder mit fester Oberkante für Ebenen unterschiedlicher Höhe.",
+  "A label, a control and its help, wired together; an error shows under the control.": "Beschriftung, Steuerelement und Hilfetext, miteinander verbunden; ein Fehler steht unter dem Steuerelement.",
+  "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip; the first one also shows under the field.": "Gib true für ein gültiges Tag zurück oder eine Meldung, was falsch ist. Ungültige Tags bleiben, mit einem Gefahrenring markiert, und zeigen die Meldung als Tooltip; die erste steht außerdem unter dem Feld.",
+  "The error message, shown under the control in the danger color: it marks the field invalid and is read out with the description.": "Die Fehlermeldung, unter dem Steuerelement in der Gefahrenfarbe angezeigt: Sie markiert das Feld als ungültig und wird mit der Beschreibung vorgelesen.",
+  "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.": "Die Fehlermeldung, unter dem Steuerelement in der Gefahrenfarbe angezeigt; sie markiert das Steuerelement als ungültig und wird mit seiner Beschreibung vorgelesen."
 }

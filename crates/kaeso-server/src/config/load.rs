@@ -654,6 +654,31 @@ mod tests {
     }
 
     #[test]
+    fn the_body_read_timeout_is_bounded_and_streams_are_unlimited_by_default() {
+        let c = load(&Map::minimal()).unwrap();
+        assert_eq!(c.server.body_read_timeout.as_secs(), 30);
+        assert!(c.streams.max_duration.is_zero());
+        assert_eq!(c.streams.max_bytes.0, 0);
+        let c = load(
+            &Map::minimal()
+                .set("KAESO_STREAMS_MAX_DURATION", "2h")
+                .set("KAESO_STREAMS_MAX_BYTES", "64MiB"),
+        )
+        .unwrap();
+        assert_eq!(c.streams.max_duration.as_secs(), 7200);
+        assert_eq!(c.streams.max_bytes.0, 64 << 20);
+        for bad in ["0s", "601s"] {
+            let err = load(&Map::minimal().set("KAESO_SERVER_BODY_READ_TIMEOUT", bad))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with("KAESO_SERVER_BODY_READ_TIMEOUT (server.body_read_timeout)"),
+                "{err}"
+            );
+        }
+    }
+
+    #[test]
     fn the_header_read_timeout_is_bounded() {
         for (ok, secs) in [("1s", 1), ("90s", 90), ("10m", 600)] {
             let c = load(&Map::minimal().set("KAESO_SERVER_HEADER_READ_TIMEOUT", ok)).unwrap();

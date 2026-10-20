@@ -24,7 +24,7 @@ org | Logs | orgs/{org}/logs/settings, orgs/{org}/logs/storage, orgs/{org}/logs/
 org | Audit log | orgs/{org}/audit-log | audit_log.* |
 org | Billing | orgs/{org}/billing | billing.* | cloud
 project | Overview | orgs/{org}/projects/{project}/usage, orgs/{org}/projects/{project}/usage/span | usage.view, costs.view |
-project | Settings | orgs/{org}/projects/{project}, orgs/{org}/projects/{project}/avatar, orgs/{org}/projects/{project}/archive, orgs/{org}/projects/{project}/key-policy, orgs/{org}/projects/{project}/logs/settings | project.update, project.archive, security.key_policy.project.manage, logs.content.disable |
+project | Settings | orgs/{org}/projects/{project}, orgs/{org}/projects/{project}/avatar, orgs/{org}/projects/{project}/archive, orgs/{org}/projects/{project}/key-policy, orgs/{org}/projects/{project}/logs/settings | project.update, project.archive, security.key_policy.project.manage, logs.content.manage |
 project | Members | orgs/{org}/projects/{project}/members, orgs/{org}/projects/{project}/members/{user}/models, orgs/{org}/projects/{project}/my-rights, orgs/{org}/projects/{project}/rights | project.members.*, limits.manage, project.view |
 project | Service accounts | orgs/{org}/projects/{project}/service-accounts, orgs/{org}/projects/{project}/service-accounts/{account}/keys, orgs/{org}/projects/{project}/service-accounts/{account}/models | service_accounts.*, limits.manage |
 project | API keys | orgs/{org}/projects/{project}/keys | keys.*, keys.platform_access.grant |

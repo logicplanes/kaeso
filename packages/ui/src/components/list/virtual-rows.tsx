@@ -14,7 +14,7 @@ export interface VirtualRowsProps {
 export function VirtualRows({ count, estimateSize, getScrollElement, scrollTo, row, measure }: VirtualRowsProps) {
   const body = useRef<HTMLDivElement | null>(null);
   const scrollMargin = useScrollMargin(body, getScrollElement, count);
-  const virtualizer = useVirtualizer({ count, getScrollElement, estimateSize, overscan: 12, scrollMargin });
+  const virtualizer = useVirtualizer({ count, getScrollElement, estimateSize, overscan: 12, scrollMargin, indexAttribute: "data-v-index" });
   useLayoutEffect(() => {
     scrollTo.current = (index) => virtualizer.scrollToIndex(index, { align: "auto" });
     return () => {
@@ -26,7 +26,7 @@ export function VirtualRows({ count, estimateSize, getScrollElement, scrollTo, r
       {virtualizer.getVirtualItems().map((v) => (
         <div
           key={v.key}
-          {...(measure ? { ref: virtualizer.measureElement, "data-index": v.index } : {})}
+          {...(measure ? { ref: virtualizer.measureElement, "data-v-index": v.index } : {})}
           role="presentation"
           className="absolute top-0 left-0 w-full"
           style={{ transform: `translateY(${Math.round(v.start - scrollMargin)}px)` }}

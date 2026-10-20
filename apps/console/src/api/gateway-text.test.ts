@@ -95,6 +95,7 @@ const catalogue = {
             sensitive: true,
             recent_sign_in: true,
             cloud_only: false,
+            owner_only: false,
             needs: ["org.view", "logs.storage.view"],
           },
           {
@@ -105,6 +106,7 @@ const catalogue = {
             sensitive: false,
             recent_sign_in: false,
             cloud_only: false,
+            owner_only: false,
             needs: [],
           },
         ],
@@ -125,6 +127,7 @@ const catalogue = {
             sensitive: true,
             recent_sign_in: false,
             cloud_only: false,
+            owner_only: false,
             needs: [],
           },
         ],

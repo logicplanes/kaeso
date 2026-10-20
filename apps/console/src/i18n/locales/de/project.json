@@ -87,7 +87,6 @@
   "project.serviceAccounts.loadingKeys": "Schlüssel werden geladen…",
   "project.serviceAccounts.nameExample": "checkout-production",
   "project.serviceAccounts.nameSaved": "Name gespeichert",
-  "project.serviceAccounts.neverUsed": "Nie verwendet",
   "project.serviceAccounts.noKeys": "Noch keine Schlüssel.",
   "project.serviceAccounts.noLimits": "Keine Limits für dieses Dienstkonto; es gelten die Limits des Projekts.",
   "project.serviceAccounts.none": "Noch keine Dienstkonten",

@@ -35,7 +35,7 @@ describe("the start page", () => {
 
 describe("a project page the person can't open", () => {
   it("moves to the first page they can open and says who can give the right", async () => {
-    signedIn({ projectRights: ["limits.view", "project.view"] });
+    signedIn({ projectRights: ["limits.view", "project.view", "project.members.view"] });
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     on("GET", "orgs/:org/projects/:project/rights/:right/grantors", { data: [memberUser("Grace Hopper")] });
     await renderApp(`${BASE}/keys`);

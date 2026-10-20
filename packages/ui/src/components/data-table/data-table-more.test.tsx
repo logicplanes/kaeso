@@ -21,7 +21,7 @@ describe("DataTable selection and rows", () => {
     render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable onSelectionChange={onSelection} />);
     await userEvent.click(screen.getByRole("checkbox", { name: "Select all rows" }));
     expect(onSelection).toHaveBeenLastCalledWith({ a: true, b: true });
-    await userEvent.click(screen.getAllByRole("checkbox", { name: "Select row" })[0]!);
+    await userEvent.click(screen.getAllByRole("checkbox", { name: /^Select (?!all)/ })[0]!);
     expect(onSelection).toHaveBeenLastCalledWith({ b: true });
     expect(screen.getAllByRole("row").filter((r) => r.getAttribute("aria-selected") === "true")).toHaveLength(1);
   });
@@ -57,9 +57,9 @@ describe("DataTable selection and rows", () => {
     fireEvent.keyDown(first!, { key: "Enter" });
     expect(onRowClick).toHaveBeenCalledTimes(2);
     expect(first).toHaveAttribute("data-active");
-    await userEvent.click(screen.getAllByRole("checkbox", { name: "Select row" })[1]!);
+    await userEvent.click(screen.getAllByRole("checkbox", { name: /^Select (?!all)/ })[1]!);
     expect(onSelection).toHaveBeenLastCalledWith({ a: true, b: true });
-    expect(screen.getAllByRole("checkbox", { name: "Select row" })[1]).not.toBeChecked();
+    expect(screen.getAllByRole("checkbox", { name: /^Select (?!all)/ })[1]).not.toBeChecked();
   });
 
   it("shows skeleton rows while the first page loads, and a custom empty state", () => {
