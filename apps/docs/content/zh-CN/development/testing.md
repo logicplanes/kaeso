@@ -205,6 +205,7 @@ e2e/.venv/bin/pytest -q e2e/sdk
 | 服务商密钥中的 `[mock:gate=NAME]` | 挂起 `GET /v1/models` 和 `GET /v1/models/{id}` |
 | 服务商密钥中的 `[mock:models=absent]` | 两个模型端点都只返回一个裸 404 |
 | 服务商密钥中的 `[mock:models=list-only]` | 只有 `GET /v1/models/{id}` 返回裸 404 |
+| 服务商密钥中的 `[mock:models=list-refuses-key]` | `GET /v1/models/{id}` 返回裸 404，`GET /v1/models` 返回该格式的密钥错误 |
 | 服务商密钥中的 `[mock:models=endless]` | 让 Anthropic 的模型列表停留在第一页 |
 
 `MockProvider::gate()` 创建一个闸门并返回它的标记。`wait_for(n)` 在 `n` 个请求到达后返回，`open()` 放行所有请求。测试就是这样在不使用 sleep 的情况下让请求保持在进行中。

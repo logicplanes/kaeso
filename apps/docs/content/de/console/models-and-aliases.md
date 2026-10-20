@@ -27,7 +27,7 @@ Nicht jedes Modell im Katalog stellt der Anbieter dem Anbieter-Schlüssel des Pr
 | Nicht verfügbar | Der Anbieter hat erklärt, dass er es diesem Schlüssel nicht bereitstellt |
 | Nicht geprüft | Noch liegt keine Antwort vor, oder ein Anbieter-Schlüssel der Organisation hat sich seither geändert |
 
-Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund, etwa dass das Projekt keinen Schlüssel für diesen Anbieter hat.
+Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund, etwa dass das Projekt keinen Schlüssel für diesen Anbieter hat oder dass der Anbieter den Schlüssel abgelehnt hat, auch wenn nur seine Modellliste ihn ablehnt.
 
 Auch Anfragen ändern die Verfügbarkeit. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md). Gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Jede Antwort zählt nur für den Anbieter-Schlüssel, der sie erhalten hat.
 
@@ -69,7 +69,7 @@ Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 2. Ein Anbieter und ein Modell: `anthropic/claude-haiku-4-5`.
 3. Eine Modell-ID: `claude-haiku-4-5`.
 
-Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`.
+Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`. Kaeso trennt sie am ersten `/`, eine Modell-ID mit `/` bleibt also erhalten: `togetherai/Qwen/Qwen3.5-9B` meint `Qwen/Qwen3.5-9B` von Together AI.
 
 ## Nächste Schritte
 

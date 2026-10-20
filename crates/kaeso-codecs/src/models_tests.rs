@@ -127,6 +127,38 @@ fn unusual_spellings_round_trip() {
 }
 
 #[test]
+fn a_together_ai_listing_that_is_a_bare_array_decodes_and_writes_back_as_one() {
+    let body = fixture("openai_chat", "providers/togetherai/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+            "deepseek-ai/DeepSeek-V4.1-Flash",
+            "Qwen/Qwen3.5-9B",
+            "BAAI/bge-base-en-v1.5"
+        ]
+    );
+    assert!(l.models[0].extras.fields.contains_key("pricing"));
+    assert!(!l.has_more);
+    let back = json_of(&dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap());
+    assert!(back.is_array());
+    let own = ModelList::new(vec![ModelInfo::new("Qwen/Qwen3.5-9B")]);
+    let served = json_of(&dispatch::encode_models(DialectId::OpenAiChat, &own).unwrap());
+    assert_eq!(served["object"], "list");
+    assert!(
+        dispatch::decode_models(
+            DialectId::OpenAiChat,
+            200,
+            &h(),
+            b"[{\"object\": \"model\"}]"
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn anthropic_fields_map_to_kpp() {
     let l = list(A, &fixture("anthropic_messages", "list"));
     assert!(!l.has_more);

@@ -246,6 +246,7 @@ Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wir
 | `object` (`"list"`) | Form `object`, nur wenn es abweicht |
 | `data` | `models` |
 | unbekannte Schlüssel | Extras-Felder |
+| ein bloßes Array von Modellen statt des Objekts, wie Together AI es sendet | `models`, Form `bare_list` |
 
 Für OpenAI-Apps geht dabei etwas verloren: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` und Extras anderer Dialekte (Anthropic `capabilities`, `line`) haben kein Feld und werden weggelassen ([Antworten](cross-format.md#antworten)). Ein `retires_at`, das nicht auf Mitternacht UTC fällt, wird auf sein UTC-Datum gekürzt, und eines nach dem Jahr 9999 wird als `shutdown_date: null` geschrieben. `created` ist eine Ganzzahl und wird so geschrieben, wie es gespeichert ist; ein Wert in Millisekunden bleibt also einer. `encode_model_request` baut `GET /v1/models/{model}` ohne Header und Body (`retrieveModel` der Spezifikation); den Schlüssel fügt das Gateway hinzu. `encode_models_request` baut `GET /v1/models` (`listModels` der Spezifikation, das keine Query-Parameter kennt; eine Query mit `limit`, `after_id`, `before_id`, `lifecycle` oder anderen Parametern ist daher `Unsupported`). In `decode_models` und `decode_model` geht ein Status außerhalb von 2xx an `decode_error`.
 
@@ -280,3 +281,16 @@ Quellen: die [Chat-Completions-Referenz](https://docs.x.ai/developers/rest-api-r
 | `presence_penalty` für ein Reasoning-Modell, `reasoning_effort` für ein Modell ohne Reasoning | | SpaceX antwortet mit 400, und dieser Fehler erreicht die App. |
 | `search_parameters` (Anfrage) | Extras | SpaceX antwortet mit 410, weil die Live-Suche abgekündigt ist; die App erhält den 410. |
 | zusätzliche Modellfelder (`aliases`, Preise in US-Cent pro 100 Millionen Token, `capabilities.reasoning_effort`, `pricing` für Bilder) | Modell-Extras | |
+
+### Together AI
+
+Quellen: die [Chat-Completions-Referenz](https://docs.together.ai/reference/chat-completions-1) und die [OpenAI-Kompatibilität](https://docs.together.ai/docs/inference/openai-compatibility) von Together AI, gelesen am 2026-10-19, die SDK-Typen in `togethercomputer/together-py` und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together-AI-Feld | KPP | Hinweise |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning_content` oder `message.reasoning`, je nach Modell, und dasselbe in Deltas | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `matched_stop` und `seed` an einer Choice, `text` an einer Stream-Choice, `token_id` in einem Delta, `prompt`, `metadata` und `warnings` auf oberster Ebene | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.reasoning_tokens` neben `completion_tokens_details.reasoning_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie oben typisiert. |
+| Fehler in der OpenAI-Hülle mit eigenen `type`- und `code`-Werten von Together AI (`start_generation_failed`, `model_not_available`), manchmal mit einer `id` auf oberster Ebene | `KppError` | Die Art folgt dem Status; ein falscher Schlüssel ist ein 401 `invalid_api_key`, also `Authentication`. |
+| `GET /v1/models`: ein bloßes Array von Modellen mit `type`, `display_name`, `organization`, `context_length`, `config` und `pricing` | `ModelList`, Modell-Extras | `GET /v1/models/{model}` antwortet für IDs mit `/` mit 404, daher stützt sich eine Modellprüfung auf die Modellliste. |

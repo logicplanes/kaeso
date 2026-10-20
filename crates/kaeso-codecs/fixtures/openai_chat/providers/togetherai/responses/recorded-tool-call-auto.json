@@ -1,0 +1,38 @@
+{
+  "id": "d695273f-aws_ec1",
+  "object": "chat.completion",
+  "created": 1792370449,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_01a1519aa64e7700b3e9eccc",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            }
+          }
+        ],
+        "reasoning_content": "The user wants the weather in Paris in Celsius. I'll call the get_weather tool."
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 336,
+    "completion_tokens": 84,
+    "total_tokens": 420,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 19
+    }
+  },
+  "system_fingerprint": "default"
+}

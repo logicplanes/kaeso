@@ -27,7 +27,7 @@ A model in the catalogue isn't always one the provider serves to the project's p
 | Unavailable | The provider said it doesn't serve it to this key |
 | Not checked | Nothing has said so yet, or a provider key of the organization changed since |
 
-Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A model that can't be checked keeps its availability, and the report says why, for example that the project has no key for that provider.
+Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A model that can't be checked keeps its availability, and the report says why, for example that the project has no key for that provider, or that the provider refused the key, also when only its model listing refused it.
 
 Requests update availability too. When the provider answers a request with "not found" and its listing confirms it, the model becomes unavailable, and the app gets an [error that says so](../api/errors.md). When a request for an unavailable model succeeds, the model becomes available again. Each answer counts only for the provider key that got it.
 
@@ -69,7 +69,7 @@ Kaeso looks up the model a request names in this order:
 2. A provider and a model: `anthropic/claude-haiku-4-5`.
 3. A model id: `claude-haiku-4-5`.
 
-If two providers have a model with the same id, use the `provider/model` form.
+If two providers have a model with the same id, use the `provider/model` form. Kaeso splits it at the first `/`, so a model id that contains `/` keeps it: `togetherai/Qwen/Qwen3.5-9B` names Together AI's `Qwen/Qwen3.5-9B`.
 
 ## Next steps
 

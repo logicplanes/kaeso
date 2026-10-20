@@ -192,6 +192,17 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
     },
+    Provider {
+        id: "togetherai",
+        name: "Together AI",
+        default_base_url: "https://api.together.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+    },
 ];
 
 const _: () = {
@@ -271,7 +282,7 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, deepseek, xai");
+        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai");
     }
 
     #[test]
@@ -370,7 +381,7 @@ mod tests {
                 .iter()
                 .map(ProviderId::as_str)
                 .collect::<Vec<_>>(),
-            ["openai", "anthropic", "deepseek", "xai"]
+            ["openai", "anthropic", "deepseek", "xai", "togetherai"]
         );
         assert_eq!(
             ProviderId::parse("openai").unwrap().provider(),

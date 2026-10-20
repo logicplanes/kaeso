@@ -386,6 +386,7 @@ mod tests {
                 "anthropic https://api.anthropic.com/",
                 "deepseek https://api.deepseek.com/",
                 "openai https://api.openai.com/",
+                "togetherai https://api.together.ai/",
                 "xai https://api.x.ai/"
             ]
         );

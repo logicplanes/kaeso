@@ -103,7 +103,7 @@ for (const block of message.content) if (block.type === "text") console.log(bloc
 
 ### 列出模型
 
-`GET /v1/models` 同样根据 `anthropic-version` 请求头选择格式。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
+`GET /v1/models` 同样根据 `anthropic-version` 请求头选择格式。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
 
 | | OpenAI 格式 | Anthropic 格式 |
 | --- | --- | --- |

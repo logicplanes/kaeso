@@ -12,7 +12,7 @@ use crate::provider::{ProviderId, known_ids};
 
 pub const EMBEDDED: &str = include_str!("../data/models-dev.json");
 
-pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-19 02:15:51 UTC);
+pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-19 02:20:41 UTC);
 
 pub const DEFAULT_URL: &str = "https://models.dev/api.json";
 
@@ -264,6 +264,12 @@ mod tests {
         );
         let gpt = parsed.snapshot.model("openai", "gpt-5").unwrap();
         assert_eq!(gpt.efforts().unwrap(), ["minimal", "low", "medium", "high"]);
+        let together = &parsed.snapshot.providers["togetherai"].models;
+        assert!(together.iter().any(|(id, model)| {
+            id.contains('/')
+                && model.cost.as_ref().and_then(|c| c.input).is_some()
+                && model.limit.as_ref().and_then(|l| l.context).is_some()
+        }));
     }
 
     #[test]

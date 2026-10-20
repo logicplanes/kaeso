@@ -69,3 +69,11 @@ order: 7
 ## 模型
 
 `GET /v1/models` 和 `GET /v1/models/{model}` 在每个 OpenAI API 中都使用同一种结构。本编解码器使用 OpenAI Chat Completions 页面中[模型](openai-chat.md#模型)一节所述的共用实现对其编码和解码，fixture 位于 `fixtures/openai_chat/models/`。解码出的 extras 带有来源 `openai_embeddings`。
+
+## 使用此格式的服务商
+
+提供 Embeddings 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_embeddings/providers/<id>/`（[fixture](fixtures.md)）。
+
+### Together AI
+
+来源：Together AI 的 [OpenAI 兼容性说明](https://docs.together.ai/docs/inference/openai-compatibility)（`embeddings.create` 对应 `POST /v1/embeddings`）和 [Serverless 模型](https://docs.together.ai/docs/serverless-models)（2026-10-19 阅读），以及 `fixtures/openai_embeddings/providers/togetherai/`。Together AI 只在专用端点上提供嵌入模型；没有专用端点的密钥会收到 400 `model_not_available`。其回复没有 `usage`，本编解码器本来就能读取这种回复。

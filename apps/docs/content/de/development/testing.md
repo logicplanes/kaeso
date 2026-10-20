@@ -205,6 +205,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |
 | `[mock:models=list-only]` im Anbieter-Schlüssel | Beantwortet nur `GET /v1/models/{id}` mit einem bloßen 404 |
+| `[mock:models=list-refuses-key]` im Anbieter-Schlüssel | Beantwortet `GET /v1/models/{id}` mit einem bloßen 404 und `GET /v1/models` mit dem Fehler des Formats für einen falschen Schlüssel |
 | `[mock:models=endless]` im Anbieter-Schlüssel | Hält die Anthropic-Liste auf ihrer ersten Seite |
 
 `MockProvider::gate()` erzeugt ein Gate und gibt seine Markierung zurück. `wait_for(n)` kehrt zurück, sobald `n` Anfragen es erreicht haben, und `open()` lässt sie alle durch. So hält ein Test eine Anfrage ohne Sleep in der Schwebe.

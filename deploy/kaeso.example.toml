@@ -66,6 +66,9 @@ base_url = "https://api.deepseek.com"
 [providers.xai]
 base_url = "https://api.x.ai"
 
+[providers.togetherai]
+base_url = "https://api.together.ai"
+
 [upstream]
 connect_timeout = "10s"
 request_timeout = "600s"

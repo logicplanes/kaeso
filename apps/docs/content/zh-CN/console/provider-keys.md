@@ -21,6 +21,7 @@ order: 3
 | Anthropic | [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) | `sk-ant-` |
 | DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) | `sk-` |
 | SpaceX | [console.x.ai](https://console.x.ai)（xAI 控制台）的 **API Keys** | `xai-` |
+| Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys) 的 **API Keys** | `tgp_v1_` |
 
 对服务商密钥的每种操作都需要相应的权限：
 

@@ -160,7 +160,8 @@ async fn check_one(
     found.\n\
     A not found from the provider's model endpoint counts only when the\n\
     provider's model listing answers and lacks the model; otherwise the model\n\
-    keeps its availability and is reported as `inconclusive`. An answer is\n\
+    keeps its availability and is reported as `inconclusive`, or as\n\
+    `key_refused` when the listing refuses the key. An answer is\n\
     recorded only while the project still uses the key that gave it.\n\
     Changing a provider key of the org resets its provider's models to\n\
     `unchecked`.",

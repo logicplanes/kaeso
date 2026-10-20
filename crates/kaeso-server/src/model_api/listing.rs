@@ -48,7 +48,8 @@ async fn visible(
             continue;
         }
         if let Some(eff) = crate::services::catalogue::effective(state, entry) {
-            out.push(info(state, &entry.model_id, entry, &eff));
+            let name = crate::services::catalogue::request_name(entry, &models.catalogue);
+            out.push(info(state, &name, entry, &eff));
             listed.entry(entry.id).or_insert((entry, eff));
         }
     }

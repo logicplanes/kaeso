@@ -394,6 +394,148 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/togetherai/context-length-error": {
+    "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "context_length_exceeded_behavior"
+  },
+  "providers/togetherai/non-serverless-model": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/reasoning-reply": {
+    "body": {
+      "max_tokens": 60,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3.5-9B"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/reasoning-stream": {
+    "body": {
+      "max_tokens": 60,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3.5-9B",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/safety-model": {
+    "message": "`safety_model` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safety_model"
+  },
+  "providers/togetherai/sampling-extras": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/togetherai/stream-usage-short": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name one planet.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/togetherai/tool-call-auto": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "system": [
+        {
+          "text": "Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "providers/xai/live-search-deprecated": {
     "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

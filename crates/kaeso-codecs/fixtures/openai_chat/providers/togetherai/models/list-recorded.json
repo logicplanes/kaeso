@@ -1,0 +1,117 @@
+[
+  {
+    "id": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "object": "model",
+    "created": 1792377574,
+    "type": "chat",
+    "running": false,
+    "display_name": "DeepSeek V4.1 Flash 1017",
+    "organization": "DeepSeek",
+    "context_length": 1048576,
+    "config": {
+      "chat_template": null,
+      "stop": [],
+      "bos_token": null,
+      "eos_token": null
+    },
+    "pricing": {
+      "hourly": 0,
+      "input": 0.3,
+      "output": 1.2,
+      "base": 0,
+      "finetune": 0,
+      "cached_input": 0.006,
+      "image_pixel": 0,
+      "transcribe": 0,
+      "image": 0,
+      "video": 0
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "object": "model",
+    "created": 1789197495,
+    "type": "chat",
+    "running": false,
+    "display_name": "DeepSeek V4.1 Flash",
+    "organization": "DeepSeek",
+    "context_length": 1048576,
+    "config": {
+      "chat_template": null,
+      "stop": [],
+      "bos_token": null,
+      "eos_token": null
+    },
+    "pricing": {
+      "hourly": 0,
+      "input": 0.3,
+      "output": 1.2,
+      "base": 0,
+      "finetune": 0,
+      "cached_input": 0.006,
+      "image_pixel": 0,
+      "transcribe": 0,
+      "image": 0,
+      "video": 0
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-9B",
+    "uuid": "endpoint-71bb7894-08d4-4882-bb72-7c257c234513",
+    "object": "model",
+    "created": 0,
+    "type": "chat",
+    "running": false,
+    "display_name": "Qwen3.5 9B FP8",
+    "organization": "Qwen",
+    "link": "https://huggingface.co/api/models/togethercomputer/Qwen3.5-9B-FP8-MLP",
+    "context_length": 262144,
+    "config": {
+      "chat_template": null,
+      "stop": [],
+      "bos_token": null,
+      "eos_token": "<|im_end|>"
+    },
+    "pricing": {
+      "hourly": 0,
+      "input": 0.17,
+      "output": 0.25,
+      "base": 0,
+      "finetune": 0,
+      "image_pixel": 0,
+      "transcribe": 0,
+      "image": 0,
+      "video": 0
+    }
+  },
+  {
+    "id": "BAAI/bge-base-en-v1.5",
+    "uuid": "endpoint-9a567e7b-15a8-40b7-b8b1-b5ae0f2163aa",
+    "object": "model",
+    "created": 1749601524,
+    "type": "embedding",
+    "running": false,
+    "display_name": "BAAI-Bge-Base-1.5",
+    "organization": "BAAI",
+    "link": "https://huggingface.co/api/models/BAAI/bge-base-en-v1.5",
+    "license": "MIT",
+    "context_length": 512,
+    "config": {
+      "chat_template": null,
+      "stop": [],
+      "bos_token": "[PAD]",
+      "eos_token": null
+    },
+    "pricing": {
+      "hourly": 0,
+      "input": 0.008,
+      "output": 0.008,
+      "base": 0,
+      "finetune": 0,
+      "image_pixel": 0,
+      "transcribe": 0,
+      "image": 0,
+      "video": 0
+    }
+  }
+]
