@@ -204,8 +204,8 @@ describe("PlaygroundPage", () => {
     const { user } = await renderApp(PLAYGROUND);
 
     await screen.findByText("gpt-5.4-mini");
-    const clear = screen.getByRole("button", { name: "Clear" });
-    expect(clear).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Nothing sent yet")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
     expect((await notifications().findAllByText("Model fell over.")).length).toBeGreaterThan(0);

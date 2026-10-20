@@ -250,12 +250,12 @@ cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates
 
 CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 `dev` 和 `prod` 时运行，也在 Release 工作流中运行。在拉取请求上，它的第一个作业判断哪些领域有改动，未改动领域的作业会被跳过。在其他所有情况下，每个作业都会运行。
 
-唯一必需的检查是 **CI**。当 **Changes** 和 **No comments** 通过，且其他每个作业都通过或被跳过时，它才通过。指向 `dev` 的拉取请求在它变绿之前无法合并（[合并](contributing.md#合并)）。
+唯一必需的检查是 **CI**。当 **Changes** 和 **Comments** 通过，且其他每个作业都通过或被跳过时，它才通过。指向 `dev` 的拉取请求在它变绿之前无法合并（[合并](contributing.md#合并)）。
 
 | 作业 | 运行内容 |
 | --- | --- |
 | Changes | 判断拉取请求改动了哪些领域 |
-| No comments | 源文件、配置和 Markdown 代码块中没有注释 |
+| Comments | 注释中没有 `TODO`、`FIXME`、`XXX` 或 `HACK` 备注，Markdown 代码块中没有注释 |
 | Workflows | `actionlint` |
 | Rust format、Rust lint | 对工作区和 `fuzz/` 运行 `cargo fmt` 和 `cargo clippy` |
 | Test KPP | `cargo coverage-kpp` 以及 `kaeso-kpp` 和 `kaeso-codecs` 的文档测试 |

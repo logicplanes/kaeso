@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { forwardRef, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -112,6 +112,14 @@ function contentWidth(el: HTMLElement): number {
   return el.getBoundingClientRect().width - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
 }
 
+function rowName<T>(column: ColumnDef<T, any> | undefined, row: Row<T>): string | undefined {
+  if (!column?.id) return undefined;
+  const text = column.meta?.text?.(row.original);
+  if (text) return text;
+  const raw = row.getValue(column.id);
+  return typeof raw === "string" && raw ? raw : undefined;
+}
+
 const growMin = (c: { size: number; minWidth: number | undefined }) => Math.min(c.size, c.minWidth ?? DATA_TABLE_GROW_MIN);
 
 function DataTableInner<T>(
@@ -149,6 +157,7 @@ function DataTableInner<T>(
   const t = useUiText();
   const [sortingInner, setSortingInner] = useState<SortingState>([]);
   const [selectionInner, setSelectionInner] = useState<RowSelectionState>({});
+  const [focusRow, setFocusRow] = useState(0);
   const sorting = sortingProp ?? sortingInner;
   const rowSelection = selection ?? selectionInner;
   const columns = useMemo<ColumnDef<T, any>[]>(() => {
@@ -168,9 +177,16 @@ function DataTableInner<T>(
             onCheckedChange={(c) => table.toggleAllRowsSelected(c)}
           />
         ),
-        cell: ({ row }) => (
-          <CheckboxBox aria-label={t("dataTable.selectRow", "Select row")} checked={row.getIsSelected()} onCheckedChange={(c) => row.toggleSelected(c)} />
-        ),
+        cell: ({ row }) => {
+          const name = rowName(userColumns[0], row);
+          return (
+            <CheckboxBox
+              aria-label={name ? t("dataTable.selectNamed", "Select {name}", { name }) : t("dataTable.selectRow", "Select row")}
+              checked={row.getIsSelected()}
+              onCheckedChange={(c) => row.toggleSelected(c)}
+            />
+          );
+        },
       },
       ...userColumns,
     ];
@@ -260,22 +276,52 @@ function DataTableInner<T>(
       inset ? "bg-raised" : cn("bg-panel", i === 0 ? "rounded-l-item" : "rounded-r-item"),
     );
 
-  const renderRow = (row: Row<T>, style?: CSSProperties) => {
+  const focusable = !!onRowClick || !!selectable;
+  const stop = Math.min(focusRow, Math.max(rows.length - 1, 0));
+  const focusAt = (i: number) => {
+    const next = Math.max(0, Math.min(rows.length - 1, i));
+    setFocusRow(next);
+    if (virtual) virtualizer.scrollToIndex(next, { align: "auto" });
+    const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`);
+    const now = line();
+    if (now) now.focus();
+    else requestAnimationFrame(() => line()?.focus());
+  };
+  const page = () => Math.max(1, Math.floor((getScrollElement()?.clientHeight ?? 400) / ROW_H[density]) - 1);
+  const onRowKeyDown = (e: KeyboardEvent<HTMLDivElement>, row: Row<T>, i: number) => {
+    if (e.target !== e.currentTarget || e.altKey || e.metaKey || e.ctrlKey) return;
+    const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: rows.length - 1, PageDown: i + page(), PageUp: i - page() }[e.key];
+    if (to !== undefined) {
+      e.preventDefault();
+      focusAt(to);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      onRowClick?.(row.original);
+    } else if (e.key === " " && selectable) {
+      e.preventDefault();
+      row.toggleSelected();
+    }
+  };
+
+  const renderRow = (row: Row<T>, i: number, style?: CSSProperties) => {
     const cells = row.getVisibleCells().filter((c) => !hidden.has(c.column.id));
     const el = (
       <div
         role="row"
+        aria-rowindex={i + 2}
         aria-selected={selectable ? row.getIsSelected() : undefined}
         data-active={row.id === activeRowId || undefined}
         data-fresh={freshRowIds?.has(row.id) || undefined}
-        tabIndex={onRowClick ? 0 : undefined}
+        data-row-index={i}
+        tabIndex={focusable ? (i === stop ? 0 : -1) : undefined}
+        onFocus={(e) => {
+          if (e.target === e.currentTarget && i !== focusRow) setFocusRow(i);
+        }}
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("button, a, [role=checkbox]")) return;
           onRowClick?.(row.original);
         }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && e.target === e.currentTarget) onRowClick?.(row.original);
-        }}
+        onKeyDown={(e) => onRowKeyDown(e, row, i)}
         style={{ ...gridStyle, ...style }}
         className={cn(
           "group/tr grid w-full text-body text-fg transition-control focus-ring-inset",
@@ -350,7 +396,7 @@ function DataTableInner<T>(
           }}
         >
           {table.getHeaderGroups().map((hg) => (
-            <div key={hg.id} role="row" className="grid h-36 hairline-b-strong" style={gridStyle}>
+            <div key={hg.id} role="row" aria-rowindex={1} className="grid h-36 hairline-b-strong" style={gridStyle}>
               {hg.headers
                 .filter((h) => !hidden.has(h.column.id))
                 .map((h, i) => {
@@ -389,10 +435,23 @@ function DataTableInner<T>(
                           role="separator"
                           aria-orientation="vertical"
                           aria-label={t("dataTable.resizeColumn", "Resize column")}
+                          aria-valuenow={h.column.getSize()}
+                          aria-valuemin={h.column.columnDef.minSize ?? 64}
+                          aria-valuemax={h.column.columnDef.maxSize ?? 640}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            const step = { ArrowLeft: -16, ArrowRight: 16 }[e.key];
+                            if (step === undefined) return;
+                            e.preventDefault();
+                            const id = h.column.id;
+                            const min = h.column.columnDef.minSize ?? 64;
+                            const max = h.column.columnDef.maxSize ?? 640;
+                            table.setColumnSizing((old) => ({ ...old, [id]: Math.max(min, Math.min(max, h.column.getSize() + step)) }));
+                          }}
                           onMouseDown={h.getResizeHandler()}
                           onTouchStart={h.getResizeHandler()}
                           onDoubleClick={() => h.column.resetSize()}
-                          className="absolute top-8 right-0 bottom-8 w-8 cursor-col-resize after:absolute after:inset-y-0 after:right-0 after:w-1 after:bg-transparent after:transition-control group-hover/th:after:bg-line-strong"
+                          className="absolute top-8 right-0 bottom-8 w-8 cursor-col-resize rounded-pill after:absolute after:inset-y-0 after:right-0 after:w-1 after:bg-transparent after:transition-control group-hover/th:after:bg-line-strong focus-ring-inset"
                         />
                       )}
                     </div>
@@ -412,17 +471,19 @@ function DataTableInner<T>(
           {error ? (
             <div role="row">
               <div role="cell" aria-colspan={cols.length} className="block">
-                <Empty
-                  size="compact"
-                  title={t("dataTable.loadFailed", "Couldn't load these rows")}
-                  actions={
-                    onRetry && (
-                      <Button size="sm" onClick={onRetry}>
-                        {t("dataTable.tryAgain", "Try again")}
-                      </Button>
-                    )
-                  }
-                />
+                <div role="alert">
+                  <Empty
+                    size="compact"
+                    title={t("dataTable.loadFailed", "Couldn't load these rows")}
+                    actions={
+                      onRetry && (
+                        <Button size="sm" onClick={onRetry}>
+                          {t("dataTable.tryAgain", "Try again")}
+                        </Button>
+                      )
+                    }
+                  />
+                </div>
               </div>
             </div>
           ) : loading && rows.length === 0 ? (
@@ -445,14 +506,17 @@ function DataTableInner<T>(
             </div>
           ) : virtual ? (
             <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
-              {virtualizer
-                .getVirtualItems()
-                .map((v) =>
-                  renderRow(rows[v.index]!, { position: "absolute", top: 0, left: 0, transform: `translateY(${Math.round(v.start - scrollMargin)}px)` }),
-                )}
+              {virtualizer.getVirtualItems().map((v) =>
+                renderRow(rows[v.index]!, v.index, {
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  transform: `translateY(${Math.round(v.start - scrollMargin)}px)`,
+                }),
+              )}
             </div>
           ) : (
-            rows.map((r) => renderRow(r))
+            rows.map((r, i) => renderRow(r, i))
           )}
         </div>
       </div>

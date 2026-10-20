@@ -116,27 +116,17 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   comments:
-    name: No comments
+    name: Comments
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Source files contain no comments
+      - name: Comments hold no to-do notes
         run: |
-          found=0
-          git grep -nP '^\s*(//|/\*|\*/|\{/\*)' -- '*.rs' '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.json' '*.css' '*.astro' '*.mdx' && found=1
-          git grep -nP '\S\s+//|[;{},)\]]//|\{/\*' -- '*.rs' '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.astro' '*.mdx' && found=1
-          git grep -nP '\S\s+/\*[^"\x27`]*$' -- '*.rs' '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.css' '*.astro' && found=1
-          git grep -nP '^\s*--' -- '*.sql' && found=1
-          git grep -nP '\S\s*--' -- '*.sql' && found=1
-          git grep -nP '<!--' -- '*.html' '*.astro' && found=1
-          git grep -nP '^\s*<!--' -- '*.md' && found=1
-          git grep -nP '^\s*#(?![!\[])' -- '*.toml' '*.yml' '*.yaml' '*.py' '*.sh' '*Dockerfile*' '*.dockerignore' '*Caddyfile*' '*.env.example' '*.editorconfig' '*.gitignore' '*.gitattributes' '*.prettierignore' '*CODEOWNERS' && found=1
-          git grep -nP '\S\s+#(?=[\s\w])' -- '*.toml' '*.yml' '*.yaml' '*.py' '*.sh' '*Dockerfile*' '*.dockerignore' '*Caddyfile*' '*.env.example' && found=1
-          if [[ "$found" -ne 0 ]]; then
-            echo "::error::Remove the comments listed above. Code explains itself; explanations belong in the documentation."
+          if git grep -nIP '(//|/\*|\*|#|--|<!--)\s*(TODO|FIXME|XXX|HACK)\b' -- ':!CHANGELOG.md' ':!*.lock' ':!pnpm-lock.yaml'; then
+            echo "::error::Open an issue instead of leaving a TODO, FIXME, XXX or HACK note in a comment."
             exit 1
           fi
       - name: Code blocks in Markdown contain no comments

@@ -62,6 +62,47 @@ describe("LogsPage", () => {
     expect(lastQuery().to).toBeUndefined();
   });
 
+  it("on a phone, drops the seconds from the start time and folds Add filter into an icon", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()] });
+    logsData({ rows: [logRow()] });
+    await renderApp(projectPath("logs"));
+
+    const row = await screen.findByRole("row", { name: /200 OK/ });
+    const [started] = within(row).getAllByRole("cell");
+    expect(started?.textContent).toMatch(/\d{1,2}:\d{2}$/);
+    expect(started?.textContent).not.toMatch(/\d{1,2}:\d{2}:\d{2}/);
+    const add = screen.getByRole("button", { name: "Add filter" });
+    expect(add).not.toHaveTextContent("Add filter");
+    vi.unstubAllGlobals();
+  });
+
+  it("on a phone, keeps the seconds when the range is a single hour", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()] });
+    logsData({ rows: [logRow()] });
+    await renderApp(projectPath("logs?range=1h"));
+
+    const row = await screen.findByRole("row", { name: /200 OK/ });
+    const [started] = within(row).getAllByRole("cell");
+    expect(started?.textContent).toMatch(/^\d{1,2}:\d{2}:\d{2}$/);
+    vi.unstubAllGlobals();
+  });
+
   it("says when the range has no requests and blocks the export", async () => {
     signedIn();
     projectData();

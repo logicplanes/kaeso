@@ -188,14 +188,14 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 | 路由 | 权限 | 返回 |
 | --- | --- | --- |
-| `GET orgs/{org}/rights` | `org.view` | 按类别列出的每项权限，包括名称、说明、标记（`sensitive`、`recent_sign_in`、`cloud_only`）及其所需的权限。 |
+| `GET orgs/{org}/rights` | `org.view` | 按类别列出的每项权限，包括名称、说明、标记（`sensitive`、`recent_sign_in`、`cloud_only`、`owner_only`）及其所需的权限。 |
 | `GET orgs/{org}/roles`、`GET …/roles/{role}` | `org.view` | 内置角色和自定义角色，包括其权限和持有者人数。可用 `?scope=org` 或 `?scope=project` 筛选。 |
 | `POST orgs/{org}/roles`、`PATCH …/roles/{role}`、`DELETE …/roles/{role}` | `roles.manage` | 创建、更改或删除自定义角色。每个组织最多 50 个。 |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | 成员在组织中、在每个项目中，以及在调用方可见的每个项目中的有效权限及其来源。 |
-| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 成员在此项目中的有效权限及其来源。 |
+| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | 项目成员在此项目中的有效权限及其来源。 |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | 调用方自己在此项目中的权限及其来源。 |
 | `GET orgs/{org}/rights/{right}/grantors` | `members.view` | 最多 10 位拥有该权限且可以更改权限的有效成员，所有者优先。 |
-| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | 同上，针对此项目中的权限。 |
+| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.members.view` | 同上，针对此项目中的权限。 |
 
 授权以 `{"role": "developer", "rights_added": [], "rights_removed": []}` 发送。`role` 是内置角色的名称或自定义角色的 ID；`preset` 是它已弃用的名称。响应包含 `{id, kind, name}` 形式的 `role`、有效的 `rights`，组织授权还包含 `project_rights`。邀请接受 `role` 和 `project_roles: [{project_id, role}]`，单点登录设置接受 `default_role`。
 

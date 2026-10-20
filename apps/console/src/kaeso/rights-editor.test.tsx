@@ -81,6 +81,15 @@ describe("GrantEditor", () => {
     expect(screen.getByRole("option", { name: /Admin/ })).toHaveTextContent(/You can't give it: you don't hold/);
   });
 
+  it("keeps owners' own rights out of other roles, even for owners", async () => {
+    const { user } = await renderUi(<Editor start={{ role: "admin", rights_added: [], rights_removed: [] }} scope="org" roles={orgRoles} defaultOpen />);
+
+    const transfer = checkbox(/^Transfer ownership/);
+    expect(transfer).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, transfer, "Only owners hold this right; transfer ownership to give it");
+    expect(checkbox(/^Delete organization/)).not.toHaveAttribute("aria-disabled", "true");
+  });
+
   it("locks every right of an organization owner", async () => {
     const onChange = vi.fn();
     const { user } = await renderUi(

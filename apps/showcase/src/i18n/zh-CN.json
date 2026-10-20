@@ -19,7 +19,6 @@
   "44px rows on the panel, no lines, metadata on the right, group headers, keyboard first.": "面板上 44px 的行，无分隔线，元数据在右侧，带分组标题，键盘优先。",
   "7 days": "7 天",
   "90 days": "90 天",
-  "@deprecated Errors are toasts, never text under a field: `error` marks the control invalid and stays its description for screen readers, but isn't drawn. Pass `invalid` and toast the message.": "已弃用。错误以提示消息显示，绝不显示在字段下方：`error` 会将控件标记为无效，并作为屏幕阅读器的描述保留，但不会绘制出来。请传入 `invalid`，并以 toast 显示消息。",
   "A 1px line, for when space and tone cannot separate two regions.": "1px 分隔线，用于留白和色调无法区分两个区域时。",
   "A 4px track, an ink range and an ink thumb; a value bubble while dragging; ticks and ranges.": "4px 轨道、墨色区间和墨色滑块；拖动时显示数值气泡；支持刻度和范围。",
   "A Hugeicons free (Stroke Rounded) icon, from `@hugeicons/core-free-icons` or `icons` in `@logicplanes/kaeso-ui`.": "Hugeicons 免费版（Stroke Rounded）图标，来自 `@hugeicons/core-free-icons` 或 `@logicplanes/kaeso-ui` 中的 `icons`。",
@@ -50,7 +49,6 @@
   "A hairline between columns, or none.": "列之间的细线，或不显示。",
   "A horizontal or vertical line.": "水平或垂直的线。",
   "A key name (`mod`, `shift`, `k`, `enter`) or any text.": "按键名称（`mod`、`shift`、`k`、`enter`）或任意文字。",
-  "A label, a control and its help, wired together; errors are toasts, never text under the field.": "标签、控件及其帮助文字连接在一起；错误使用提示消息，绝不显示在字段下方。",
   "A leading icon takes 2px off its side's padding so the label looks centered.": "前置图标会让所在一侧的内边距减少 2px，使标签看起来居中。",
   "A limit or quota: label and value, a 6px pill track, threshold ticks and a caption. Progress for work.": "限额或配额：标签和数值、6px 胶囊轨道、阈值刻度和说明文字。工作进度请用 Progress。",
   "A list with each role's description, or a compact select.": "带每个角色描述的列表，或紧凑的下拉选择。",
@@ -509,7 +507,6 @@
   "Requests over 14 days, rising": "14 天内的请求，呈上升趋势",
   "Resets in 12 days": "12 天后重置",
   "Retention": "保留期",
-  "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip (and to a screen reader); errors are never drawn under the field, so toast it too when someone submits.": "有效标签返回 true，否则返回说明问题的消息。无效标签保留，以危险色描边标出，并以提示框显示消息（屏幕阅读器也会朗读）；错误绝不显示在字段下方，因此提交时也要用 toast 提示。",
   "Returns `true` for days that can't be chosen.": "对无法选择的日期返回 `true`。",
   "Returns a row's stable id, for selection and keys.": "返回行的稳定 ID，用于选择和 key。",
   "Returns the accessible name of each thumb of a range.": "返回范围中每个滑块的无障碍名称。",
@@ -959,7 +956,6 @@
   "⌘Enter calls this (usually the primary action).": "按 ⌘Enter 时调用（通常是主要操作）。",
   "⌘K: every page and action, grouped; nested pages; async groups with a quiet progress line.": "⌘K：所有页面和操作，分组显示；支持嵌套页面；异步分组带低调的进度线。",
   "Called when the action is confirmed; return a promise to keep the dialog busy until it ends. It closes when the promise resolves and stays open for another try when it rejects, so toast the error there.": "确认操作时调用；返回一个 Promise，可让对话框在其结束前保持忙碌状态。Promise 完成时对话框关闭，被拒绝时保持打开以便重试，此时请用 toast 显示错误。",
-  "The error message: it marks the field invalid and is read out with the description, but isn't drawn under the field, so show it in a toast too.": "错误信息：它会把字段标记为无效，并与描述一起朗读，但不会显示在字段下方，因此也请用 toast 显示它。",
   "The accessible name of the diagram: what it shows, such as \"Route of checkout requests\". Defaults to \"Flow diagram\"; screen readers hear each node and each connection after it.": "图表的无障碍名称：说明它展示的内容，例如“结账请求的路径”。默认为“流程图”；屏幕阅读器随后会读出每个节点和每条连接。",
   "A filled field (`default`), a quiet one for toolbars (`ghost`), or a quiet one in full text colour for column headers (`header`).": "填充字段（`default`）、用于工具栏的低调字段（`ghost`），或用于列标题、使用完整文字颜色的低调字段（`header`）。",
   "Draggable right edge (232–280px), remembered.": "可拖动的右边缘（232–280px），会被记住。",
@@ -993,5 +989,9 @@
   "Large text on the artwork, e.g. the version number.": "图像上的大字，例如版本号。",
   "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.": "文字前同色的标记，例如“已是最新”使用 `icons.success`。",
   "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.": "显示位置：居中，或在内容高度变化时固定上边缘，使标题不会跳动。",
-  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "显示位置：居中，或为高度不同的层级固定上边缘。"
+  "Where it sits: centered, or with a fixed top edge for layers of different heights.": "显示位置：居中，或为高度不同的层级固定上边缘。",
+  "A label, a control and its help, wired together; an error shows under the control.": "标签、控件及其帮助文字连接在一起；错误信息显示在控件下方。",
+  "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip; the first one also shows under the field.": "有效标签返回 true，否则返回说明问题的消息。无效标签会保留，以危险色描边标出，并在提示中显示消息；第一条消息也会显示在字段下方。",
+  "The error message, shown under the control in the danger color: it marks the field invalid and is read out with the description.": "错误消息，以危险色显示在控件下方：它将字段标记为无效，并与描述一起朗读。",
+  "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.": "错误消息，以危险色显示在控件下方；它将控件标记为无效，并与其描述一起朗读。"
 }

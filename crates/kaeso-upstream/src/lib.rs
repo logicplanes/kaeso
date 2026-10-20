@@ -103,6 +103,20 @@ pub struct Call<'a> {
 const STREAMS_PER_CONNECTION: usize = 25;
 const CONNECTIONS_PER_PROVIDER: usize = 32;
 
+fn secret_header(
+    builder: reqwest::RequestBuilder,
+    name: &'static str,
+    value: String,
+) -> reqwest::RequestBuilder {
+    match reqwest::header::HeaderValue::from_str(&value) {
+        Ok(mut v) => {
+            v.set_sensitive(true);
+            builder.header(name, v)
+        }
+        Err(_) => builder.header(name, value),
+    }
+}
+
 #[derive(Debug)]
 pub struct Upstream {
     connect_timeout: Duration,
@@ -255,11 +269,16 @@ impl Upstream {
             builder = builder.header(name, value);
         }
         builder = match call.auth {
-            AuthStyle::Bearer => builder.header(
+            AuthStyle::Bearer => secret_header(
+                builder,
                 "authorization",
                 format!("Bearer {}", call.credential.expose_secret()),
             ),
-            AuthStyle::XApiKey => builder.header("x-api-key", call.credential.expose_secret()),
+            AuthStyle::XApiKey => secret_header(
+                builder,
+                "x-api-key",
+                call.credential.expose_secret().to_owned(),
+            ),
         };
         let builder = builder.body(call.request.body);
         if call.stream {
@@ -434,6 +453,28 @@ mod load;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn credentials_are_marked_sensitive() {
+        let client = reqwest::Client::new();
+        for (name, value) in [("authorization", "Bearer sk-x"), ("x-api-key", "sk-ant-x")] {
+            let req = secret_header(client.get("http://127.0.0.1:9/"), name, value.into())
+                .build()
+                .unwrap_or_else(|_| unreachable!());
+            let sent = req.headers().get(name).unwrap_or_else(|| unreachable!());
+            assert!(sent.is_sensitive());
+            assert!(!format!("{:?}", req.headers()).contains("sk-"));
+        }
+        assert!(
+            secret_header(
+                client.get("http://127.0.0.1:9/"),
+                "x-api-key",
+                "bad\nvalue".into()
+            )
+            .build()
+            .is_err()
+        );
+    }
 
     #[test]
     fn paths_join_without_double_slashes() {

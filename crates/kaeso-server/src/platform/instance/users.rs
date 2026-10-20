@@ -286,7 +286,7 @@ pub async fn reactivate(
     path = "/instance/users/{user}",
     summary = "Deletes a user: name and email are removed, keys archived; usage, logs\n\
     and audit logs keep the id as \"Deleted user\". Refused for the last owner\n\
-    of an org.",
+    of an org. Needs a recent sign-in.",
     tag = "instance",
     params(("user" = UserId, Path)),
     responses((status = 204, description = "Deleted."))
@@ -296,6 +296,7 @@ pub async fn delete(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
+    ctx.require_recent_sign_in()?;
     let target = user(&state, &id).await?;
     not_self(&ctx, &target, "delete")?;
     if target.state == "deleted" {
@@ -355,7 +356,7 @@ pub async fn end_sessions(
 #[utoipa::path(
     post,
     path = "/instance/users/{user}/reset-2fa",
-    summary = "Resets a user's two-factor authentication.",
+    summary = "Resets a user's two-factor authentication. Needs a recent sign-in.",
     tag = "instance",
     params(("user" = UserId, Path)),
     responses((status = 204, description = "Reset."))
@@ -365,6 +366,7 @@ pub async fn reset_2fa(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
+    ctx.require_recent_sign_in()?;
     let target = user(&state, &id).await?;
     let uid = UserId::from_uuid(target.id);
     let mut tx = state.pg.begin().await?;
@@ -395,7 +397,7 @@ pub struct AdminFlag {
     put,
     path = "/instance/users/{user}/instance-admin",
     summary = "Grants or removes instance administration. The last instance admin\n\
-    cannot remove the flag from themselves.",
+    cannot remove the flag from themselves. Needs a recent sign-in.",
     tag = "instance",
     params(("user" = UserId, Path)),
     request_body = AdminFlag,
@@ -407,6 +409,7 @@ pub async fn set_admin(
     Path(id): Path<String>,
     Body(req): Body<AdminFlag>,
 ) -> ApiResult<Json<InstanceUserView>> {
+    ctx.require_recent_sign_in()?;
     let target = user(&state, &id).await?;
     if target.state != "active" {
         return Err(ApiError::Conflict(

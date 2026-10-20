@@ -169,6 +169,7 @@
   "kaeso.rights.orgRoleSource": "{role} · 组织",
   "kaeso.rights.orgRoleSourceHint": "其组织角色在所有项目中授予此权限",
   "kaeso.rights.ownerLocked": "所有者拥有全部权限；如需减少，请分配其他角色",
+  "kaeso.rights.ownerOnly": "仅所有者拥有此权限；转让所有权即可授予",
   "kaeso.rights.ownerSource": "所有者拥有全部权限",
   "kaeso.rights.projectRole": "项目角色",
   "kaeso.rights.projectRoleSource": "其在此项目中的角色",

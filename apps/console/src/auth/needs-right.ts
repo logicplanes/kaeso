@@ -6,7 +6,7 @@ import { grantorsQuery, projectGrantorsQuery, rightsCatalogueQuery } from "~/api
 import { indexCatalogue, type Catalogue } from "~/kaeso/catalogue";
 import { eitherOf } from "./people";
 import { useReadOnly } from "./rights";
-import { orgRights, sessionQuery } from "./session";
+import { orgRights, projectRightsQuery, sessionQuery, useProjectRights as useGrantedProjectRights } from "./session";
 
 export function needsText(name: string, grantors: readonly Pick<MemberUser, "name">[] | undefined): string {
   const [first, second] = (grantors ?? []).map((g) => g.name);
@@ -14,10 +14,17 @@ export function needsText(name: string, grantors: readonly Pick<MemberUser, "nam
   return t("auth.needsRight.ask", "You need {right}; ask {person} for it.", { right: name, person: second === undefined ? first : eitherOf(first, second) });
 }
 
-function grantorsFor(cat: Catalogue, right: string, org: string, project: string | undefined, canSeeMembers: boolean) {
+interface Visibility {
+  members: boolean;
+  projectMembers: boolean;
+}
+
+const EVERYONE: Visibility = { members: true, projectMembers: true };
+
+function grantorsFor(cat: Catalogue, right: string, org: string, project: string | undefined, sees: Visibility) {
   const scope = cat.byId.get(right)?.scope;
-  if (scope === "project") return project ? projectGrantorsQuery(org, project, right) : null;
-  return canSeeMembers ? grantorsQuery(org, right) : null;
+  if (scope === "project") return project && sees.projectMembers ? projectGrantorsQuery(org, project, right) : null;
+  return sees.members ? grantorsQuery(org, right) : null;
 }
 
 export async function explainMissingRight(queryClient: QueryClient, org: string, project: string | undefined, right: string): Promise<string> {
@@ -25,7 +32,9 @@ export async function explainMissingRight(queryClient: QueryClient, org: string,
     const [catalogue, session] = await Promise.all([queryClient.fetchQuery(rightsCatalogueQuery(org)), queryClient.ensureQueryData(sessionQuery)]);
     const cat = indexCatalogue(catalogue);
     const name = cat.byId.get(right)?.name ?? right;
-    const query = grantorsFor(cat, right, org, project, orgRights(session, org).has("members.view"));
+    const projectRights = project ? await queryClient.fetchQuery(projectRightsQuery(session, org, project)).catch(() => undefined) : undefined;
+    const sees = { members: orgRights(session, org).has("members.view"), projectMembers: !!projectRights?.has("project.members.view") };
+    const query = grantorsFor(cat, right, org, project, sees);
     const grantors = query ? await queryClient.fetchQuery(query).catch(() => undefined) : undefined;
     return needsText(name, grantors);
   } catch {
@@ -36,14 +45,15 @@ export async function explainMissingRight(queryClient: QueryClient, org: string,
 export function useMissingRight(org: string, project: string | undefined, readOnly: boolean): (right: string) => string {
   const queryClient = useQueryClient();
   const cat = useQuery({ ...rightsCatalogueQuery(org), select: indexCatalogue, enabled: !!org }).data;
+  const projectRights = useGrantedProjectRights(org, project ?? "");
   const asked = useRef(new Set<string>());
   const [, rerender] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
     if (!cat || readOnly) return;
     const session = queryClient.getQueryData(sessionQuery.queryKey);
-    const canSeeMembers = !!session && orgRights(session, org).has("members.view");
+    const sees = { members: !!session && orgRights(session, org).has("members.view"), projectMembers: projectRights.has("project.members.view") };
     for (const right of asked.current) {
-      const query = grantorsFor(cat, right, org, project, canSeeMembers);
+      const query = grantorsFor(cat, right, org, project, sees);
       if (!query || queryClient.getQueryState(query.queryKey)) continue;
       void queryClient
         .fetchQuery(query)
@@ -55,7 +65,7 @@ export function useMissingRight(org: string, project: string | undefined, readOn
     if (readOnly) return t("auth.readOnly", "The organization is scheduled for deletion");
     asked.current.add(right);
     const name = cat?.byId.get(right)?.name ?? right;
-    const query = cat ? grantorsFor(cat, right, org, project, true) : null;
+    const query = cat ? grantorsFor(cat, right, org, project, EVERYONE) : null;
     return needsText(name, query ? queryClient.getQueryData(query.queryKey) : undefined);
   };
 }

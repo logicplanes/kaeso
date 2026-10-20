@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { DateRange } from "react-day-picker";
 import { Calendar, type CalendarProps } from "../calendar/calendar.js";
 import { cn } from "../../utils/cn.js";
@@ -8,6 +8,17 @@ import { MENU_ITEM } from "../menu/styles.js";
 import { IsoField } from "./iso-field.js";
 import type { DateRangePreset } from "./date-picker.js";
 import { useUiText } from "../../i18n/context.js";
+
+function moveAmongOptions(e: KeyboardEvent<HTMLDivElement>, columns: number) {
+  const options = [...e.currentTarget.querySelectorAll<HTMLElement>("[role=option]")];
+  const at = options.indexOf(document.activeElement as HTMLElement);
+  if (at < 0) return;
+  const step: Record<string, number> = { ArrowDown: columns, ArrowUp: -columns, ...(columns > 1 ? { ArrowRight: 1, ArrowLeft: -1 } : {}) };
+  const to = e.key === "Home" ? 0 : e.key === "End" ? options.length - 1 : step[e.key] !== undefined ? at + step[e.key]! : null;
+  if (to === null) return;
+  e.preventDefault();
+  options[Math.max(0, Math.min(options.length - 1, to))]?.focus();
+}
 
 export interface RangePopupProps {
   range: DateRange | null;
@@ -65,16 +76,33 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
           className={cn("shrink-0 gap-2 p-6", wide ? "flex min-w-160 flex-col hairline-r" : "grid grid-cols-2 hairline-b")}
           role="listbox"
           aria-label={t("datePicker.presets", "Presets")}
+          aria-orientation={wide ? "vertical" : undefined}
+          onKeyDown={(e) => moveAmongOptions(e, wide ? 1 : 2)}
         >
           {presets.map((p) => {
             const id = p.id ?? p.label;
             return (
-              <button key={id} type="button" role="option" aria-selected={selected === id} className={item} onClick={() => onPick(p.range(), id)}>
+              <button
+                key={id}
+                type="button"
+                role="option"
+                aria-selected={selected === id}
+                tabIndex={selected === id ? 0 : -1}
+                className={item}
+                onClick={() => onPick(p.range(), id)}
+              >
                 {p.label}
               </button>
             );
           })}
-          <button type="button" role="option" aria-selected={selected === null} className={item} onClick={() => setCustom(true)}>
+          <button
+            type="button"
+            role="option"
+            aria-selected={selected === null}
+            tabIndex={selected === null || !presets.some((p) => (p.id ?? p.label) === selected) ? 0 : -1}
+            className={item}
+            onClick={() => setCustom(true)}
+          >
             {t("datePicker.custom", "Custom")}
           </button>
         </div>

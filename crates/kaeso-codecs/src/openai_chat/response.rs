@@ -116,8 +116,15 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         block.extras = Extras::new(origin.clone());
         blocks.push(Block::Refusal(block));
     }
-    for call in &message.tool_calls {
-        blocks.push(decode_tool_call(call, &origin, true, &name_back)?);
+    for (i, call) in message.tool_calls.iter().enumerate() {
+        let generated = super::stream::generated_call_id(&known.id, i);
+        blocks.push(decode_tool_call(
+            call,
+            &origin,
+            true,
+            &name_back,
+            Some(generated),
+        )?);
     }
     let Some(finish) = choice.finish_reason else {
         return Err(KppError::provider(
@@ -185,7 +192,7 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         Choice {
             index: 0,
             message: Ext::new(ResponseMessage::default()),
-            finish_reason: Some(encode_finish(&resp.stop).to_owned()),
+            finish_reason: Some(encode_finish(&resp.stop, own).to_owned()),
         },
         &resp.extras,
         CHOICE,
@@ -248,12 +255,26 @@ pub(crate) fn decode_finish(finish: &str) -> StopReason {
     }
 }
 
-pub(crate) fn encode_finish(stop: &StopReason) -> &str {
+const FINISH_REASONS: &[&str] = &[
+    "stop",
+    "length",
+    "tool_calls",
+    "content_filter",
+    "function_call",
+];
+
+pub(crate) fn encode_finish(stop: &StopReason, own: bool) -> &str {
     match stop {
         StopReason::MaxTokens => "length",
         StopReason::ToolUse => "tool_calls",
         StopReason::ContentFilter | StopReason::Refusal => "content_filter",
-        StopReason::Other(other) => other,
+        StopReason::Other(other) if own || FINISH_REASONS.contains(&other.as_str()) => other,
+        StopReason::Other(other) => match other.as_str() {
+            "max_tokens" | "max_output_tokens" | "model_context_window_exceeded" => "length",
+            "tool_use" => "tool_calls",
+            "refusal" => "content_filter",
+            _ => "stop",
+        },
         _ => "stop",
     }
 }
@@ -273,8 +294,14 @@ pub(crate) fn decode_usage(raw: &kaeso_kpp::RawJson, origin: &Origin) -> Result<
 
 fn usage_from_wire(wire: &UsageWire) -> Usage {
     let details = wire.prompt_tokens_details.as_ref();
-    let cached = details.and_then(|d| d.cached_tokens).unwrap_or(0);
-    let written = details.and_then(|d| d.cache_write_tokens).unwrap_or(0);
+    let cached = details
+        .and_then(|d| d.cached_tokens)
+        .unwrap_or(0)
+        .min(wire.prompt_tokens);
+    let written = details
+        .and_then(|d| d.cache_write_tokens)
+        .unwrap_or(0)
+        .min(wire.prompt_tokens.saturating_sub(cached));
     let reasoning = wire
         .completion_tokens_details
         .as_ref()

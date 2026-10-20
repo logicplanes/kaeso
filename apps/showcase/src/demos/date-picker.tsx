@@ -11,6 +11,7 @@ export const meta = {
     ["Arrows", "Move between days"],
     ["Page Up Page Down", "Previous and next month"],
     ["Enter", "Chooses the day"],
+    ["Up Down", "Move between the range's presets"],
   ],
   a11y: [
     "The calendar is a grid with day names; typed ISO fields (YYYY-MM-DD) are an alternative to pointing.",

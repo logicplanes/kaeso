@@ -3,6 +3,7 @@ import { cn } from "../../utils/cn.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { BUTTON_ICON_SIZE, KAESO_BUTTON_VARIANTS, type ButtonSize } from "../button/button.js";
 import { Tooltip } from "../tooltip/tooltip.js";
+import { warnMissingName } from "../../utils/dev.js";
 
 export const KAESO_BUTTON_GROUP_VARIANTS = {
   attached: {
@@ -74,6 +75,7 @@ const Item = forwardRef<HTMLButtonElement, ButtonGroupItemProps>(function Button
       {children}
     </button>
   );
+  if (iconOnly) warnMissingName("ButtonGroup.Item", !!props["aria-label"]);
   if (iconOnly && props["aria-label"]) return <Tooltip content={props["aria-label"]}>{btn}</Tooltip>;
   return btn;
 });

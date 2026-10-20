@@ -188,14 +188,14 @@ Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitg
 
 | Route | Recht | Antwortet mit |
 | --- | --- | --- |
-| `GET orgs/{org}/rights` | `org.view` | Jedem Recht nach Kategorie, mit Name, Beschreibung, Kennzeichen (`sensitive`, `recent_sign_in`, `cloud_only`) und den Rechten, die es braucht. |
+| `GET orgs/{org}/rights` | `org.view` | Jedem Recht nach Kategorie, mit Name, Beschreibung, Kennzeichen (`sensitive`, `recent_sign_in`, `cloud_only`, `owner_only`) und den Rechten, die es braucht. |
 | `GET orgs/{org}/roles`, `GET …/roles/{role}` | `org.view` | Integrierten und eigenen Rollen mit ihren Rechten und der Zahl ihrer Träger. `?scope=org` oder `?scope=project` filtert sie. |
 | `POST orgs/{org}/roles`, `PATCH …/roles/{role}`, `DELETE …/roles/{role}` | `roles.manage` | Erstellt, ändert oder löscht eine eigene Rolle. Eine Organisation hat höchstens 50. |
 | `GET orgs/{org}/members/{user}/rights` | `members.view` | Den wirksamen Rechten eines Mitglieds in der Organisation, in jedem Projekt und in jedem Projekt, das der Aufrufer sehen kann, mit ihren Quellen. |
-| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Den wirksamen Rechten eines Mitglieds in diesem Projekt, mit ihren Quellen. |
+| `GET orgs/{org}/projects/{project}/members/{user}/rights` | `project.members.view` | Den wirksamen Rechten eines Projektmitglieds in diesem Projekt, mit ihren Quellen. |
 | `GET orgs/{org}/projects/{project}/my-rights` | `project.view` | Den eigenen Rechten des Aufrufers in diesem Projekt, mit ihren Quellen. |
 | `GET orgs/{org}/rights/{right}/grantors` | `members.view` | Bis zu 10 aktiven Mitgliedern, die das Recht haben und Rechte ändern dürfen, Inhaber zuerst. |
-| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.view` | Dasselbe, für ein Recht in diesem Projekt. |
+| `GET orgs/{org}/projects/{project}/rights/{right}/grantors` | `project.members.view` | Dasselbe, für ein Recht in diesem Projekt. |
 
 Senden Sie eine Vergabe als `{"role": "developer", "rights_added": [], "rights_removed": []}`. `role` ist der Name einer integrierten Rolle oder die ID einer eigenen Rolle; `preset` ist ihr veralteter Name. Die Antwort enthält `role` als `{id, kind, name}`, die wirksamen `rights` und bei Vergaben in der Organisation `project_rights`. Einladungen nehmen `role` und `project_roles: [{project_id, role}]`, die Einrichtung von Single Sign-on nimmt `default_role`.
 

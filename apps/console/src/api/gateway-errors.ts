@@ -21,6 +21,13 @@ const rule = (key: ErrorKey, text: (values: Values) => string, convert?: Readonl
   convert ? { key, text, convert } : { key, text };
 
 const messages = (): Rule[] => [
+  rule("errors.keyDisabledByPerson", () =>
+    t("errors.keyDisabledByPerson", "A person disabled this key, so only a person can enable it; use a console session."),
+  ),
+  rule("errors.keyDisabledBySomeoneElse", () =>
+    t("errors.keyDisabledBySomeoneElse", "Someone else disabled this key; ask a holder of `keys.all.manage` to enable it."),
+  ),
+  rule("errors.keysCantMintPlatformKeys", () => t("errors.keysCantMintPlatformKeys", "Keys can't create keys with platform access; use a console session.")),
   rule("errors.signInFirst", () => t("errors.signInFirst", "Sign in first.")),
   rule("errors.sessionEnded", () => t("errors.sessionEnded", "Your session has ended; sign in again.")),
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
@@ -140,6 +147,9 @@ const messages = (): Rule[] => [
   rule("errors.chooseAnotherMember", () => t("errors.chooseAnotherMember", "Choose another member.")),
   rule("errors.newOwnerActiveMember", () => t("errors.newOwnerActiveMember", "The new owner must be an active member of the organization.")),
   rule("errors.memberHoldsMoreRights", () => t("errors.memberHoldsMoreRights", "You can't change a member who holds rights you don't hold.")),
+  rule("errors.serviceAccountHoldsMoreRights", () =>
+    t("errors.serviceAccountHoldsMoreRights", "You can't change a service account that holds rights you don't hold."),
+  ),
   rule("errors.orgAlreadyScheduled", () => t("errors.orgAlreadyScheduled", "The organization is already scheduled for deletion.")),
   rule("errors.orgNotScheduled", () => t("errors.orgNotScheduled", "The organization is not scheduled for deletion.")),
   rule("errors.onlyScheduledDeleteNow", () => t("errors.onlyScheduledDeleteNow", "Only an organization scheduled for deletion can be deleted now.")),
@@ -168,6 +178,8 @@ const messages = (): Rule[] => [
   rule("errors.grantExceedsMany", (v) => t("errors.grantExceedsMany", "You can't grant `{right}` and {more} more rights: you don't hold them yourself.", v)),
   rule("errors.rightNeeds", (v) => t("errors.rightNeeds", "`{right}` needs `{needs}`.", v)),
   rule("errors.rightNeedsRemoved", (v) => t("errors.rightNeedsRemoved", "`{right}` needs `{needs}`; remove `{right}` too.", v)),
+  rule("errors.ownerOnlyRightAdded", (v) => t("errors.ownerOnlyRightAdded", "`{right}` is held only by owners; make the member an owner instead.", v)),
+  rule("errors.ownerOnlyRightInRole", (v) => t("errors.ownerOnlyRightInRole", "`{right}` is held only by owners, so a role can't include it.", v)),
   rule("errors.roleHoldersNeed", (v) => t("errors.roleHoldersNeed", "`{right}` needs `{needs}` for {count} of this role's holders; keep it in the role.", v), {
     count: "number",
   }),

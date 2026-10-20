@@ -192,7 +192,8 @@ pub(crate) struct CacheBreakpoint {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct ToolCall {
-    pub(crate) id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) id: Option<String>,
     #[serde(rename = "type", default, skip_serializing_if = "String::is_empty")]
     pub(crate) ty: String,
     pub(crate) function: Ext<FunctionCall>,
@@ -296,11 +297,11 @@ pub(crate) struct ResponseMessage {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct UsageWire {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_as_default")]
     pub(crate) prompt_tokens: u64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_as_default")]
     pub(crate) completion_tokens: u64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_as_default")]
     pub(crate) total_tokens: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) prompt_tokens_details: Option<PromptTokensDetails>,

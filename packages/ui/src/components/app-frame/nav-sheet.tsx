@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { SidebarFloatingContext, SidebarSheetContext } from "../sidebar/sidebar.js";
@@ -19,6 +19,8 @@ export function NavSheet({
 }) {
   const leave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const t = useUiText();
+  useEffect(() => () => clearTimeout(leave.current), []);
+  const sheet = useMemo(() => ({ close: () => onOpenChange(false), peek }), [onOpenChange, peek]);
   useEffect(() => {
     if (!open || peek || typeof window === "undefined") return;
     const wide = window.matchMedia("(min-width: 1024px)");
@@ -47,7 +49,7 @@ export function NavSheet({
           }}
         >
           <SidebarFloatingContext.Provider value>
-            <SidebarSheetContext.Provider value={{ close: () => onOpenChange(false), peek }}>{children}</SidebarSheetContext.Provider>
+            <SidebarSheetContext.Provider value={sheet}>{children}</SidebarSheetContext.Provider>
           </SidebarFloatingContext.Provider>
         </Dialog.Popup>
       </Dialog.Portal>

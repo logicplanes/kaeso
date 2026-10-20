@@ -81,6 +81,7 @@ Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
+| `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | Text | `30s` | Wie lange das Gateway auf den nächsten Teil eines Anfrage-Bodys wartet, bevor es die Anfrage mit 400 ablehnt; 1s bis 10m. |
 
 Auf einer Loopback-Adresse mit `http`, etwa `http://localhost:8080`, kommt das Sitzungscookie ohne `Secure` und ohne das Präfix `__Host-` aus, sodass die Konsole auf Ihrem Rechner über einfaches HTTP funktioniert.
 
@@ -176,11 +177,15 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 
 Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)).
 
+Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY` für `http`-Basis-URLs, oder `ALL_PROXY`), wenn seine Umgebung einen setzt, außer für die Hosts in `NO_PROXY`. Der Proxy sieht die Anbieter-Schlüssel von `http`-Aufrufen, verwenden Sie über ihn also `https`-Basis-URLs.
+
 ### Streams an Apps
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
 | `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | Text | `15s` | Nach so langer Zeit ohne Ausgabe ein Keepalive in einen offenen Stream schreiben, damit Proxys die Verbindung halten ([Lange Streams](domains-and-tls.md#lange-streams)). `0s` schaltet Keepalives ab; sonst 1s bis 300s. |
+| `KAESO_STREAMS_MAX_DURATION` | `streams.max_duration` | Text | `0s` | Wie lange eine gestreamte Antwort höchstens laufen darf, bevor das Gateway sie mit einem Fehler-Event beendet. `0s` setzt keine Grenze. |
+| `KAESO_STREAMS_MAX_BYTES` | `streams.max_bytes` | Text | `0` | Wie viele Bytes, etwa `64MiB`, eine gestreamte Antwort höchstens an die App schreiben darf, bevor das Gateway sie mit einem Fehler-Event beendet. `0` setzt keine Grenze. |
 
 ### Kontinuität des Reasonings
 
