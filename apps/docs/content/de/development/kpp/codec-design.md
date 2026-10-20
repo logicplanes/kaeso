@@ -99,6 +99,7 @@ Der Codec für OpenAI Responses liest typisierte Werte mit einfachen serde-Struc
 - Kommentare und unbekannte Felder werden gemeldet statt ignoriert, und ein Wert für `id` oder `retry`, den die Spezifikation ignoriert, wird als unbekanntes Feld aufbewahrt (`SseEvent::other`).
 - Ein letzter Frame, den keine Leerzeile abschließt, wird trotzdem gemeldet.
 - Ein Stream, der mitten in einer Zeile endet, wird als `SseError::Truncated` gemeldet statt verworfen.
+- Ein Frame, dessen erste Zeile ein Feld ist, dessen Name mit U+FEFF beginnt, wird nach einer Leerzeile geschrieben, weil ein Leser diese Bytes am Anfang eines Streams für eine Byte-Order-Mark hielte und verwürfe.
 
 Jeder Stream-Decoder reicht einen Frame ohne Daten als `Extra` weiter, dessen rohes JSON keinen Schlüssel `data` hat. Jeder Encoder schreibt ein solches `Extra` ohne `data:`-Zeile zurück. In OpenAI Chat Completions ist ein Frame `event: error` ohne Daten ein solches `Extra`, kein Fehler.
 

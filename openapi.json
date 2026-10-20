@@ -21483,7 +21483,7 @@
           },
           "url": {
             "type": "string",
-            "description": "The release's page.",
+            "description": "The release's page, an `https` URL; empty when the release server gave no `https` link.",
             "example": "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0"
           },
           "version": {
@@ -23704,7 +23704,7 @@
           },
           "url": {
             "type": "string",
-            "description": "The release's page.",
+            "description": "The release's page, an `https` URL; empty when the release server gave no `https` link.",
             "example": "https://github.com/logicplanes/kaeso/releases/tag/v40.2.0"
           },
           "version": {
