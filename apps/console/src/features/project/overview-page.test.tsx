@@ -294,7 +294,7 @@ describe("OverviewPage", () => {
     await renderApp(projectPath("?from=2025-10-21&to=2026-10-14&by=day"));
     await breakdown();
     await waitFor(() =>
-      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => r.cells[0]?.textContent)).toEqual([
+      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => (r as HTMLTableRowElement).cells[0]?.textContent)).toEqual([
         "Week of 12 Oct 2026",
         "Week of 20 Oct 2025",
       ]),
