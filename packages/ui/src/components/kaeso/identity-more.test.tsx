@@ -117,13 +117,14 @@ describe("Slider", () => {
 
 const MARKED_PROVIDERS = {
   openai: "OpenAI",
+  anthropic: "Anthropic",
   deepseek: "DeepSeek",
   xai: "SpaceX",
   togetherai: "Together AI",
+  groq: "Groq",
   openrouter: "OpenRouter",
   mistral: "Mistral",
 };
-const LETTERED_PROVIDERS = { anthropic: ["Anthropic", "A"], groq: ["Groq", "Gq"] } as const;
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 
 function pathEndpoints(d: string) {
@@ -191,15 +192,7 @@ describe("provider marks", () => {
     expect(paths[0]!.getAttributeNames()).toEqual(["d"]);
   });
 
-  it.each(Object.entries(LETTERED_PROVIDERS))("writes a letter for %s, whose guidelines don't allow its logo here", (id, [name, letter]) => {
-    render(<ProviderBadge provider={id} />);
-    const badge = screen.getByRole("img", { name });
-    expect(badge).toHaveTextContent(new RegExp(`^${letter}$`));
-    expect(badge.querySelector("svg")).toBeNull();
-    expect(PROVIDER_MARKS[id]).toBeUndefined();
-  });
-
-  it("has a mark for every provider whose guidelines allow one, and for nothing else", () => {
+  it("has a mark for every built-in provider and for nothing else", () => {
     expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
   });
 

@@ -63,8 +63,7 @@ export const docs = {
     },
   },
   ProviderBadge: {
-    description:
-      "A provider's mark on a quiet tile, in the provider's own one-colour version for the theme; a letter for providers without a mark or whose guidelines don't allow one.",
+    description: "A provider's mark on a quiet tile, in the provider's own one-colour version for the theme; a letter for providers without one.",
     props: {
       provider: "The provider id, such as `openai` or `anthropic`.",
       size: "The badge's size.",
