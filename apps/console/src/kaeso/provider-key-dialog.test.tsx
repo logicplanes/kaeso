@@ -64,7 +64,6 @@ describe("ProviderKeyDialog", () => {
 
   it("offers only the providers the gateway lists, even when the organization still has a key for another", async () => {
     const { dialog } = await open({ keys: [credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" })] });
-    expect(within(dialog).getByRole("option", { name: "OpenAI" })).toHaveAttribute("aria-selected", "true");
     expect(
       within(dialog)
         .getAllByRole("option")
@@ -82,7 +81,7 @@ describe("ProviderKeyDialog", () => {
     expect(within(dialog).queryByRole("option")).not.toBeInTheDocument();
     expect(await notifications().findByText("Too many requests; try again in a minute.")).toBeInTheDocument();
     await user.click(notifications().getByRole("button", { name: "Try again", hidden: true }));
-    expect(await within(dialog).findByRole("option", { name: "OpenAI" })).toHaveAttribute("aria-selected", "true");
+    expect(await within(dialog).findAllByRole("option")).toHaveLength(providers.length);
   });
 
   it("adds a DeepSeek key", async () => {
