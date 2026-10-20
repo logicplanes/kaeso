@@ -8,6 +8,8 @@ import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
+import { CodeText } from "~/kaeso/code-text";
+import { logMessage, type LogMessage, type useGatewayErrors } from "./messages";
 
 export const COLUMNS = [
   "time",
@@ -105,9 +107,11 @@ export function logColumns({
   keyName,
   partyName,
   providerName,
+  errors,
 }: {
   spansDays: boolean;
   layout?: LogsLayout | undefined;
+  errors?: ReturnType<typeof useGatewayErrors>;
   keyName: (id: string) => string;
   partyName: (p: Party) => string;
   providerName: (id: string) => string;
@@ -161,7 +165,7 @@ export function logColumns({
         grow: true,
       },
       (r: LogView) => r.model,
-      (_v, r) => <ModelCell row={r} />,
+      (_v, r) => <ModelCell row={r} message={logMessage(errors, r.error_message, r.provider, providerName)} />,
     ),
     provider: col.custom(
       {
@@ -232,7 +236,7 @@ export function logColumns({
 
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
-function ModelCell({ row }: { row: LogView }) {
+function ModelCell({ row, message }: { row: LogView; message: LogMessage | null }) {
   const aliased = !!row.model && row.requested_model !== row.model && !row.requested_model.endsWith(`/${row.model}`);
   return (
     <span className="@container flex w-full min-w-0 items-center gap-8">
@@ -256,9 +260,11 @@ function ModelCell({ row }: { row: LogView }) {
           {t("logs.fromModel", "from {model}", { model: row.requested_model })}
         </Text>
       )}
-      {row.error_message && (
+      {message && (
         <Text variant="small" tone="secondary" truncate className="hidden min-w-0 flex-1 basis-0 @cell-lg:block">
-          {row.error_message}
+          <CodeText
+            text={message.provider ? t("logs.providerSaid", "{provider}: {message}", { provider: message.provider, message: message.text }) : message.text}
+          />
         </Text>
       )}
     </span>

@@ -134,3 +134,28 @@ describe("a refusal while Kaeso updates", () => {
     );
   });
 });
+
+describe("the model API's messages, as request logs show them", () => {
+  it("translate with the stage a provider ran out of time in", async () => {
+    const { translateMessage, knownMessage } = await import("./gateway-errors");
+    await speak("de");
+    expect(translateMessage("The provider did not answer in time (time to first byte). Kaeso does not retry; try again or raise the model's timeout.")).toBe(
+      "Der Anbieter hat nicht rechtzeitig geantwortet (Zeit bis zum ersten Byte). Kaeso wiederholt nicht; erneut versuchen oder das Zeitlimit des Modells erhöhen.",
+    );
+    expect(translateMessage("The provider did not answer in time (lunch). Kaeso does not retry; try again or raise the model's timeout.")).toBe(
+      "The provider did not answer in time (lunch). Kaeso does not retry; try again or raise the model's timeout.",
+    );
+    await speak("zh-CN");
+    expect(translateMessage("The app closed the connection before the reply was complete.")).toBe("回复完成前，应用关闭了连接。");
+    expect(translateMessage("The request body is larger than 1048576 bytes.")).toBe("请求体超过 1,048,576 字节。");
+    expect(knownMessage("Provider returned error")).toBeUndefined();
+  });
+
+  it("ask a person to open Kaeso at its own address", async () => {
+    await speak("de");
+    const message = "Open Kaeso at https://kaeso.example.com; it refuses requests from pages at other addresses.";
+    expect((await errorFromResponse(new Response(JSON.stringify({ error: { type: "permission_denied", message } }), { status: 403 }))).message).toBe(
+      "Kaeso unter https://kaeso.example.com öffnen; Anfragen von Seiten unter anderen Adressen lehnt es ab.",
+    );
+  });
+});

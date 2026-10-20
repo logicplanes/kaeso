@@ -291,7 +291,9 @@ describe("ModelSheet", () => {
     await user.clear(name);
     await user.type(name, "Sonnet fast");
     await user.click(within(s).getByRole("button", { name: "Save overrides" }));
-    expect(await notifications().findByText("`overrides.display_name` is too long.")).toBeInTheDocument();
+    expect((await notifications().findByText("overrides.display_name", { selector: "code" })).parentElement).toHaveTextContent(
+      /^overrides\.display_name is too long\.$/,
+    );
     expect(within(s).getByRole("button", { name: "Save overrides" })).toBeInTheDocument();
     await user.click(within(s).getByRole("button", { name: "Cancel" }));
 

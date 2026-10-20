@@ -610,7 +610,7 @@ async fn rights_sessions_origins_and_archived_projects_are_checked() {
             r.body["error"]["message"]
                 .as_str()
                 .unwrap()
-                .starts_with("Cross-site request refused"),
+                .starts_with("Open Kaeso at "),
             "{:?}",
             r.body
         );

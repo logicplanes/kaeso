@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { createElement, type ReactNode } from "react";
+import { CodeText } from "~/kaeso/code-text";
 import type { ToastOptions } from "@logicplanes/kaeso-ui";
 
 let toasterMounted: () => void;
@@ -20,7 +21,12 @@ const toastModule = () => Promise.all([import("@logicplanes/kaeso-ui/toast"), mo
 const load = () => toastModule().then((m) => m.toast);
 
 type Tone = "success" | "error" | "warning";
-const show = (tone: Tone | null, title: ReactNode, options?: ToastOptions) => void load().then((t) => (tone ? t[tone](title, options) : t(title, options)));
+const withCode = (text: ReactNode) => (typeof text === "string" && text.includes("`") ? createElement(CodeText, { text }) : text);
+const show = (tone: Tone | null, title: ReactNode, options?: ToastOptions) => {
+  const shown = withCode(title);
+  const o = options?.description === undefined ? options : { ...options, description: withCode(options.description) };
+  void load().then((t) => (tone ? t[tone](shown, o) : t(shown, o)));
+};
 
 export const toast = Object.assign((title: ReactNode, options?: ToastOptions) => show(null, title, options), {
   success: (title: ReactNode, options?: ToastOptions) => show("success", title, options),

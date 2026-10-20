@@ -62,6 +62,33 @@ describe("LogsPage", () => {
     expect(lastQuery().to).toBeUndefined();
   });
 
+  it("writes the gateway's messages in the person's language and names the provider whose own words a message is", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [
+        logRow({
+          id: "req_0010",
+          status: 404,
+          provider: "groq",
+          model: "llama-3.1-8b-instant",
+          requested_model: "llama-3.1-8b-instant",
+          error_kind: "not_found",
+          error_message:
+            "Groq does not serve the model `llama-3.1-8b-instant` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
+        }),
+        logRow({ id: "req_0011", status: 429, provider: "openrouter", error_kind: "provider_error", error_message: "Provider returned error" }),
+        logRow({ id: "req_0012", status: 529, provider: "anthropic", error_kind: "overloaded", error_message: "Overloaded" }),
+      ],
+    });
+    await renderApp(projectPath("logs"), { locale: "de" });
+
+    const unserved = await screen.findByRole("row", { name: /llama-3\.1-8b-instant Nicht gefunden Groq bietet/ });
+    expect(within(unserved).getAllByText("llama-3.1-8b-instant", { selector: "code" })).toHaveLength(1);
+    expect(screen.getByRole("row", { name: /OpenRouter: Provider returned error/ })).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: /Anbieter überlastet/ })).not.toHaveTextContent("Overloaded");
+  });
+
   it("on a phone, writes the start time above its day and folds Add filter into an icon", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",
@@ -395,7 +422,7 @@ describe("LogsPage", () => {
 
     await user.click(await screen.findByRole("row", { name: /\/v1\/messages/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0002" }));
-    expect(await screen.findByRole("dialog", { name: /\/v1\/messages/ })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: /^\d{3}/ })).toHaveTextContent("/v1/messages");
     await user.keyboard("j");
     await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0003" }));
     await user.keyboard("j");

@@ -585,7 +585,7 @@ fn check_origin(state: &AppState, req: &Parts) -> ApiResult<()> {
     {
         Some(origin) if origin == expected => Ok(()),
         _ => Err(ApiError::PermissionDenied(format!(
-            "Cross-site request refused; send the header `Origin: {expected}`."
+            "Open Kaeso at {expected}; it refuses requests from pages at other addresses."
         ))),
     }
 }

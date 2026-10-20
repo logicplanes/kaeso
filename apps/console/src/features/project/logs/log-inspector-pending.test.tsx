@@ -32,7 +32,7 @@ describe("LogInspector while the conversation view loads", () => {
       ],
     });
     const { user } = await renderApp(projectPath("logs?log=req_0001"));
-    const sheet = await screen.findByRole("dialog", { name: /\/v1\// });
+    const sheet = await screen.findByRole("dialog", { name: /^\d{3}/ });
 
     await user.click(within(sheet).getByRole("tab", { name: "Request" }));
     const request = await within(sheet).findByRole("tabpanel");

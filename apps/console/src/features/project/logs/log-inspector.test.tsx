@@ -6,7 +6,7 @@ import { logContent, logEntry, logRow, logsData } from "~/test/fixtures/project-
 import { apiError, on } from "~/test/network";
 import { renderApp } from "~/test/render";
 
-const sheet = () => screen.findByRole("dialog", { name: /\/v1\// });
+const sheet = () => screen.findByRole("dialog", { name: /^\d{3}/ });
 const section = (container: HTMLElement, name: string) => within(container).getByRole("heading", { name }).closest("section") as HTMLElement;
 const noSection = (container: HTMLElement, name: string) => expect(within(container).queryByRole("heading", { name })).not.toBeInTheDocument();
 const openTab = async (user: { click: (el: Element) => Promise<void> }, name: string) => {
@@ -68,15 +68,15 @@ describe("LogInspector", () => {
     await renderApp(projectPath("logs?log=req_0042"));
 
     const dialog = await sheet();
-    expect(dialog).toHaveTextContent("/v1/messages · Claude Sonnet 4.5");
-    expect(dialog).toHaveTextContent("req_0042");
+    expect(dialog).toHaveAccessibleName(/^502.*Claude Sonnet 4\.5$/);
+    expect(dialog).toHaveTextContent("/v1/messages · req_0042");
     expect(within(dialog).getByText("Streamed")).toBeInTheDocument();
     expect(dialog).toHaveTextContent("Content not logged: logging was off for the organization or the project, or the content has passed its retention.");
     const outcome = section(dialog, "Outcome");
     expect(outcome).toHaveTextContent("Stream interrupted");
-    expect(outcome).toHaveTextContent("The provider closed the stream.");
+    expect(outcome).toHaveTextContent("Message from AnthropicThe provider closed the stream.");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("None arrived");
-    expect(dialog).toHaveTextContent("120 in · 40 out");
+    expect(dialog).toHaveTextContent("120 in · 30 out · 10 reasoning");
     noSection(dialog, "Timing");
     const route = section(dialog, "Route");
     expect(route).toHaveTextContent("OpenAI Chat Completions → Anthropic Messages");
@@ -107,7 +107,7 @@ describe("LogInspector", () => {
     await renderApp(projectPath("logs?log=req_0001"));
 
     const dialog = await sheet();
-    expect(dialog).toHaveTextContent("/v1/chat/completions · gpt-5.4-mini");
+    expect(dialog).toHaveTextContent("/v1/chat/completions · req_0001");
     expect(section(dialog, "Timing")).toBeInTheDocument();
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("From the provider");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("None counted");
@@ -218,7 +218,7 @@ describe("LogInspector", () => {
     expect(request).toHaveTextContent("prompt");
     expect(within(request).queryByRole("switch", { name: "Show raw" })).not.toBeInTheDocument();
     const reply = await openTab(user, "Reply");
-    expect(reply).toHaveTextContent("The reply in KPP form, with what the app's format could not show.");
+    expect(reply).toHaveTextContent("The reply in Kaeso's own format, which also keeps what the app's format can't show.");
     expect(within(reply).queryByRole("switch", { name: "Show raw" })).not.toBeInTheDocument();
   });
 
@@ -232,11 +232,17 @@ describe("LogInspector", () => {
           endpoint: "/v1/embeddings",
           ingress_dialect: "openai_embeddings",
           egress_dialect: "openai_embeddings",
+          usage: { input_tokens: 8, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
           content: logContent({ model: "text-embedding-3-small", input: ["one", "two"] }, null),
         }),
       ],
     });
     const { user } = await renderApp(projectPath("logs?log=req_0001"));
+
+    const usage = section(await sheet(), "Usage");
+    expect(within(usage).getByText("Input")).toBeInTheDocument();
+    expect(within(usage).queryByText("Cache read")).toBeNull();
+    expect(within(usage).queryByText("Reasoning")).toBeNull();
 
     const request = await openTab(user, "Request");
     expect(request).toHaveTextContent("2 inputs embedded.");
@@ -244,17 +250,17 @@ describe("LogInspector", () => {
     expect(reply).toHaveTextContent("Vectors aren't kept");
   });
 
-  it("draws the reply with how it stopped and the blocks KPP kept as they came", async () => {
+  it("draws the reply with how it stopped and the blocks kept as they came", async () => {
     signedIn();
     projectData();
     logsData({ rows: [logRow()], entries: [logEntry({ stream: true, content: logContent(chatRequest, kppReply) })] });
     const { user } = await renderApp(projectPath("logs?log=req_0001"));
 
     const reply = await openTab(user, "Reply");
-    expect(reply).toHaveTextContent("Assembled from the stream, in KPP form with what the app's format could not show.");
+    expect(reply).toHaveTextContent("Assembled from the stream in Kaeso's own format, which also keeps what the app's format can't show.");
     expect(within(reply).getByText("End of turn")).toBeInTheDocument();
     expect(await within(reply).findByRole("region", { name: "Assistant" })).toHaveTextContent("Order 7 shipped yesterday.");
-    expect(reply).toHaveTextContent("A block KPP keeps as it came:");
+    expect(reply).toHaveTextContent("A block kept as it came:");
     await user.click(within(reply).getByRole("switch", { name: "Show raw" }));
     await waitFor(() => expect(within(reply).queryByRole("region", { name: "Assistant" })).not.toBeInTheDocument());
     expect(reply).toHaveTextContent("blocks");
@@ -286,7 +292,7 @@ describe("LogInspector", () => {
 
     const reply = await openTab(user, "Reply");
     expect(within(reply).getByText("Incomplete")).toBeInTheDocument();
-    expect(reply).toHaveTextContent("Assembled from the stream until it stopped, in KPP form with what the app's format could not show.");
+    expect(reply).toHaveTextContent("Assembled from the stream until it stopped, in Kaeso's own format, which also keeps what the app's format can't show.");
   });
 
   it("explains a missing reply", async () => {
@@ -363,5 +369,54 @@ describe("LogInspector", () => {
     expect(raw).toHaveTextContent("Metadata");
     expect(raw).toHaveTextContent("Order 7 shipped yesterday.");
     expect(raw).toHaveTextContent("Where is order 7?");
+  });
+
+  it("says an outcome once and shows the gateway's message in the person's language with its code", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          status: 404,
+          provider: "groq",
+          model: "llama-3.1-8b-instant",
+          error_kind: "not_found",
+          error_message:
+            "Groq does not serve the model `llama-3.1-8b-instant` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"), { locale: "de" });
+
+    const outcome = section(await sheet(), "Ergebnis");
+    expect(outcome).toHaveTextContent("404Nicht gefunden");
+    expect(within(outcome).queryByText("Fehler")).toBeNull();
+    expect(within(outcome).getByText("Meldung")).toBeInTheDocument();
+    expect(await within(outcome).findByText("llama-3.1-8b-instant", { selector: "code" })).toBeInTheDocument();
+    expect(outcome).toHaveTextContent("Groq bietet das Modell llama-3.1-8b-instant dem Anbieter-Schlüssel dieses Projekts nicht an;");
+  });
+
+  it("names the provider whose own words a message is", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ status: 429, provider: "openrouter", error_kind: "provider_error", error_message: "Provider returned error" })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const outcome = section(await sheet(), "Outcome");
+    expect(outcome).toHaveTextContent("Provider error");
+    expect(await within(outcome).findByText("Message from OpenRouter")).toBeInTheDocument();
+    expect(outcome).toHaveTextContent("Provider returned error");
+  });
+
+  it("leaves out a message that only restates the status", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ status: 529, provider: "anthropic", error_kind: "overloaded", error_message: "Overloaded" })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const outcome = section(await sheet(), "Outcome");
+    expect(outcome).toHaveTextContent(/^Outcome\s*Status529(Overloaded)+$/);
   });
 });

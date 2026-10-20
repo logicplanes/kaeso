@@ -6,11 +6,18 @@ import de from "../../i18n/locales/de.js";
 import zhCN from "../../i18n/locales/zh-CN.js";
 
 describe("UsageBreakdown", () => {
-  it("names the kinds that were used and lists every kind", () => {
-    render(<UsageBreakdown tokens={{ input: 1_200_000, output: 300_000, reasoning: 0 }} />);
+  it("names the kinds that were used and lists every kind it's given", () => {
+    render(<UsageBreakdown tokens={{ input: 1_200_000, output: 300_000, cacheRead: 0, cacheWrite: 0, reasoning: 0 }} />);
     expect(screen.getByRole("img", { name: "Tokens: Input 1,200,000, Output 300,000" })).toBeInTheDocument();
     expect(screen.getByText("1.2M")).toHaveAttribute("title", "1,200,000 tokens");
     expect(screen.getAllByText("0")).toHaveLength(3);
+  });
+
+  it("leaves kinds that can't apply out of the list, such as all but input for embeddings", () => {
+    render(<UsageBreakdown tokens={{ input: 8 }} />);
+    expect(screen.getByText("Input")).toBeInTheDocument();
+    expect(screen.queryByText("Output")).toBeNull();
+    expect(screen.queryByText("Reasoning")).toBeNull();
   });
 
   it.each<[string, UiMessages, string, string]>([
