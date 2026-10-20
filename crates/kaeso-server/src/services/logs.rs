@@ -119,14 +119,46 @@ impl Buffer {
 }
 
 pub async fn flush_once(state: &AppState) -> Result<usize, StoreError> {
+    match flush_by(state, None).await {
+        Flushed::Wrote(n) => Ok(n),
+        Flushed::Failed(e) => Err(e),
+        Flushed::OutOfTime => Ok(0),
+    }
+}
+
+enum Flushed {
+    Wrote(usize),
+    Failed(StoreError),
+    OutOfTime,
+}
+
+async fn within<F>(
+    deadline: Option<tokio::time::Instant>,
+    write: F,
+) -> Option<Result<(), StoreError>>
+where
+    F: Future<Output = Result<(), StoreError>>,
+{
+    match deadline {
+        Some(d) => tokio::time::timeout_at(d, write).await.ok(),
+        None => Some(write.await),
+    }
+}
+
+async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> Flushed {
     let batch = state.logs.take(state.config.logs.flush_rows as usize);
     if batch.is_empty() {
-        return Ok(0);
+        return Flushed::Wrote(0);
     }
     let taken = batch.len();
     let logs: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
-    if let Err(e) = ch::insert_logs(&state.clickhouse, logs).await {
-        return Err(keep_unwritten(state, batch, e));
+    match within(deadline, ch::insert_logs(&state.clickhouse, logs)).await {
+        Some(Ok(())) => {}
+        Some(Err(e)) => return Flushed::Failed(keep_unwritten(state, batch, e)),
+        None => {
+            put_back(state, batch);
+            return Flushed::OutOfTime;
+        }
     }
     let unwritten: Vec<Entry> = batch
         .into_iter()
@@ -137,17 +169,25 @@ pub async fn flush_once(state: &AppState) -> Result<usize, StoreError> {
         .iter()
         .filter_map(|e| e.content.as_ref())
         .collect();
-    if let Err(e) = ch::insert_contents(&state.clickhouse, contents).await {
-        return Err(keep_unwritten(state, unwritten, e));
+    match within(deadline, ch::insert_contents(&state.clickhouse, contents)).await {
+        Some(Ok(())) => Flushed::Wrote(taken),
+        Some(Err(e)) => Flushed::Failed(keep_unwritten(state, unwritten, e)),
+        None => {
+            put_back(state, unwritten);
+            Flushed::OutOfTime
+        }
     }
-    Ok(taken)
+}
+
+fn put_back(state: &AppState, entries: Vec<Entry>) {
+    state
+        .logs
+        .put_back(entries, state.config.logs.buffer_size.0);
 }
 
 fn keep_unwritten(state: &AppState, entries: Vec<Entry>, error: StoreError) -> StoreError {
     metrics::counter!(crate::metrics::CLICKHOUSE_WRITE_FAILURES).increment(1);
-    state
-        .logs
-        .put_back(entries, state.config.logs.buffer_size.0);
+    put_back(state, entries);
     error
 }
 
@@ -155,13 +195,14 @@ pub async fn flush_all(state: &AppState, timeout: Duration) -> usize {
     let deadline = tokio::time::Instant::now() + timeout;
     let mut written = 0;
     while !state.logs.is_empty() && tokio::time::Instant::now() < deadline {
-        match tokio::time::timeout_at(deadline, flush_once(state)).await {
-            Ok(Ok(n)) => written += n,
-            Ok(Err(e)) => {
-                tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs at shutdown");
-                break;
+        match flush_by(state, Some(deadline)).await {
+            Flushed::Wrote(n) => written += n,
+            Flushed::Failed(e) => {
+                tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs at shutdown; retrying");
+                let retry = (tokio::time::Instant::now() + WRITE_RETRY_WAIT).min(deadline);
+                tokio::time::sleep_until(retry).await;
             }
-            Err(_) => break,
+            Flushed::OutOfTime => break,
         }
     }
     written

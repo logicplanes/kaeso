@@ -135,6 +135,7 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
         shutdown.clone(),
         Duration::from_secs(1),
         Duration::from_secs(30),
+        CancellationToken::new(),
     ));
     let started = Instant::now();
     let mut resp = reqwest::Client::new()

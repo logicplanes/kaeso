@@ -147,7 +147,7 @@ fn chat_documents_encode_as_file_parts() {
     assert_eq!(
         out["messages"][0]["content"],
         json!([
-            {"type": "file", "file": {"file_data": "data:application/pdf;base64,JVBE", "filename": "document.pdf"}},
+            {"type": "file", "file": {"file_data": "data:application/pdf;base64,JVBE"}},
             {"type": "image_url", "image_url": {"url": "data:image/png;base64,iVBO"}}
         ])
     );

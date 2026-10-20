@@ -82,7 +82,7 @@ nav: OpenAI Chat
 | `image_url.detail` | extras `image_url.detail` | 在 [Extras 允许列表](cross-format.md#extras)中：对其他方言静默丢弃。 |
 | `file.file_data`（`data:` URL） | `Block::Document { source: Base64 }` | 裸 base64 被视为媒体类型 `application/pdf`（OpenAI 文件输入指南中唯一的类型），带形式标记 `bare_file_data`，写回时仍为裸值。 |
 | `file.file_id` | `Block::Document { source: FileId }`，绑定到 OpenAI 的文件存储（[文件](cross-format.md#文件)） | 同时有 `file_data` 时：extras `file.file_id`。 |
-| `file.filename` | extras `file.filename` | 这是 OpenAI 要求随内联 `file_data` 一起提供的文件名，而不是展示给模型的标题，因此从不成为 `DocumentBlock::title`。在 [Extras 允许列表](cross-format.md#extras)中。来自其他方言的内联文档会得到 `document.<subtype>`（例如 `document.pdf`），因为 OpenAI [文件输入指南](https://developers.openai.com/api/docs/guides/file-inputs)中的每个示例都随 `file_data` 发送文件名。 |
+| `file.filename` | extras `file.filename` | 这是 OpenAI 要求随内联 `file_data` 一起提供的文件名，而不是展示给模型的标题，因此从不成为 `DocumentBlock::title`。在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `input_audio` | `Unsupported`（`input_audio`） | 音频输入不属于 KPP。 |
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |
@@ -107,7 +107,7 @@ nav: OpenAI Chat
 
 | 线路 | KPP | 说明 |
 |---|---|---|
-| `id`、`function.name` | `ToolCallBlock.id`、`.name` | Kaeso 改写过的名称在解码回复时映射回原名。回复中没有 `id` 或 `id` 为 `""` 的调用会得到 `call_kaeso_<回复 ID>_<n>`（ID 中的字母和数字，`n` 为其位置），使其他格式的应用能够回答它；形式标记 `id` 为 Chat 应用保留收到的写法（缺失时为 `null`）。流中同样处理，`n` 为 KPP 块索引，形式标记为 `tc`。 |
+| `id`、`function.name` | `ToolCallBlock.id`、`.name` | Kaeso 改写过的名称在解码回复时映射回原名。 |
 | `function.arguments` | 原始的 `ToolCallBlock.arguments` | 字符串中的 JSON 文本，逐字节保留。不是有效 JSON 或带有首尾空白的文本，其字面值保留在形式标记 `arguments` 中；此时 KPP 对空白文本存 `{}`，否则把文本存为 JSON 字符串。按照 KPP 的约定，`ToolCallBlock.arguments` 中的 JSON 字符串表示服务商发送的是非 JSON 文本，因此对来自其他方言的调用，以字符串的内容作为 `arguments` 发送；对象、数组和其他 JSON 值则以其 JSON 文本发送。 |
 | 未知键 | extras（嵌套的为 `function.<key>`） | |
 | `type: custom` | `Block::Unknown` | 在 `tool_calls` 中发回。 |
@@ -122,7 +122,7 @@ nav: OpenAI Chat
 | `created`、`service_tier`、`system_fingerprint`、`metadata`、`moderation` | extras | extras 中没有 `created` 的回复（例如来自其他方言的回复）取 `EncodeCtx::created_at`，没有时为 `0`。 |
 | `choices` | `choices[0]` | 多于一个选项（choice）：`Unsupported`（`n`）；没有选项：`ProviderError`；`index` 不为 0：extras `choice.index`。 |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`：verbatim。 |
-| `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。其他方言自有的值会变为最接近的 Chat 值：`max_tokens`、`max_output_tokens` 和 `model_context_window_exceeded` 变为 `length`，`tool_use` 变为 `tool_calls`，`refusal` 变为 `content_filter`，规范枚举之外的其他值变为 `stop`。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
+| `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
 | `message.annotations` | `TextBlock.citations`（原始，绑定到 Chat） | 没有内容时：extras `choice.message.annotations`。其他方言的引用会被省略（[回复](cross-format.md#回复)）。 |
 | `message.refusal` | `Block::Refusal` | |
@@ -139,9 +139,9 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | 线路 | KPP |
 |---|---|
 | `prompt_tokens − cached_tokens − cache_write_tokens` | `input_tokens` |
-| `prompt_tokens_details.cached_tokens` | `cache_read_tokens`，至多为 `prompt_tokens`；`cache_write_tokens` 至多为剩余部分 |
+| `prompt_tokens_details.cached_tokens` | `cache_read_tokens` |
 | `prompt_tokens_details.cache_write_tokens` | `cache_write_tokens` |
-| `completion_tokens` | `output_tokens`（包括推理）；与 `prompt_tokens` 和 `total_tokens` 一样，`null` 视为缺失（0），并保留在 `raw` 中 |
+| `completion_tokens` | `output_tokens`（包括推理） |
 | `completion_tokens_details.reasoning_tokens` | `reasoning_tokens` |
 | `total_tokens` | 推导得出（`prompt_tokens + completion_tokens`）；不单独存储，保留在 `raw` 中 |
 | `prompt_tokens_details.audio_tokens`、`text_tokens`、`image_tokens`，`completion_tokens_details.audio_tokens`、`text_tokens`、`accepted_prediction_tokens`、`rejected_prediction_tokens` | 只在 `raw` 中（类型化总数的细分） |
@@ -162,7 +162,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `choices[0].delta.refusal` | 一次 `BlockStart(Refusal)`，然后是 `BlockDelta(Refusal)` | |
 | `choices[0].delta.tool_calls[]`，新的 `index` | `BlockStart(ToolCall { id, name })` + 针对 `arguments` 的 `BlockDelta(ToolArguments)` | KPP 块索引按块开始的顺序排列；Chat 的 `index` 映射到 KPP 索引。改写过的名称会映射回原名。结构差异（缺少 `id`、`type`、`function`、`name` 或 `arguments`，或出现意外的 `index`）：形式标记 `tc`。未知键：extras `tool_call.<key>` 和 `tool_call.function.<key>`。`type` 不是 `function`：`BlockStart(Unknown)`，其后续条目为 `BlockDelta(Unknown)`。条目没有非空的 `id` 或 `name`（一些兼容 OpenAI 的服务商在后面的 chunk 中才发送）：`BlockStart` 及其后的每个事件都会被暂缓输出，直到两者都已到达、该块结束，或流结束或中断；之后头部带有后到的 `id` 和 `name`，名称映射回原名。第一个条目中为 `""` 的 `id` 或 `name` 由形式标记 `tc` 保留。 |
 | `choices[0].delta.tool_calls[]`，已知的 `index` | `BlockDelta(ToolArguments)` | 重复或后到的 `id`、`type` 或 `name`：形式标记 `tc`。调用已有 `id` 时出现另一个非空 `id`，表示复用该索引的新调用：先前的块结束，新的 `BlockStart` 开始，带形式标记 `tc.index`。 |
-| `choices[0].finish_reason` | 对每个打开的块发出 `BlockStop`，然后是 `ResponseDelta { stop }` | 映射与回复中相同。`""` 不是结束原因，按 `null` 处理：形式标记 `chunk.cv`。 |
+| `choices[0].finish_reason` | 对每个打开的块发出 `BlockStop`，然后是 `ResponseDelta { stop }` | 映射与回复中相同。 |
 | `usage`（`choices: []` 的 chunk） | `ResponseDelta { usage }` | 用量按[用量](#用量completionusage)处理，保留原始对象。`choices` 为空或缺失：形式标记 `chunk.ch`。 |
 | `finish_reason` 之前的 chunk 上的 `usage` | 暂存，形式标记 `chunk.u` | 运行中的用量：基于 vLLM 的提供商在 `stream_options.continuous_usage_stats` 下会在每个 chunk 上发送。KPP 只在最后一个块结束后报告用量，因此解码器保留最新的一份：结束 chunk 自身没有用量时，随它的 `ResponseDelta` 一起发出；结束之后再没有用量时，在 `ResponseStop` 之前作为 `ResponseDelta { usage }` 发出。形式标记 `chunk.u` 保存每个 chunk 的对象，因此请求了用量的 Chat 应用会原样收到每个 chunk；未请求用量的应用收不到用量，只含用量的 chunk 也不会发给它。fixture 是 `fixtures/openai_chat/streams/usage-every-chunk.sse`。 |
 | `usage: null`、`logprobs: null`、`finish_reason: null`、`content: null`、`refusal: null` | 形式标记 `chunk.kv`、`cv`、`dv` | |
@@ -170,7 +170,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `delta.audio`、`delta.function_call`、delta 中的未知键 | extras `delta.<key>` | 第一个之后完全没有类型化内容的 chunk 是一个 `Extra`（`{"event": null, "data": <chunk>}`）。 |
 | `obfuscation` | 形式标记 `chunk.obf` | 事件来自其他方言时不发送给应用。 |
 | `moderation`、chunk 中的未知键 | 该 chunk 第一个事件上的 extras | |
-| `data: [DONE]` | `ResponseStop`（在仍打开的块的 `BlockStop` 之后） | 在 `finish_reason` 之后结束但没有 `[DONE]` 的流：带形式标记 `no_done` 的 `ResponseStop`；更早结束的流，无论有没有 `[DONE]`：`Error`，因为回复被截断了。带有 SSE 字段的 `[DONE]` 帧是一个 `Extra`，流随后按没有 `[DONE]` 的流结束。 |
+| `data: [DONE]` | `ResponseStop`（在仍打开的块的 `BlockStop` 之后） | 在 `finish_reason` 之后结束但没有 `[DONE]` 的流：带形式标记 `no_done` 的 `ResponseStop`；更早结束的流：`Error`。带有 SSE 字段的 `[DONE]` 帧是一个 `Extra`，流随后按没有 `[DONE]` 的流结束。 |
 | `data: {"error": {…}}` | `Error`，像不带状态码的错误体一样解码 | 解码器停止。编码为同样的帧；之后没有 `[DONE]`。chunk 同时带有 `choices` 时也是如此，OpenRouter 就是这样发送流中错误的（[errors and debugging](https://openrouter.ai/docs/api/reference/errors-and-debugging)）；fixture 是 `fixtures/openai_chat/streams/error-in-chunk.sse`。 |
 | 没有 `error` 对象的 `choices[0].finish_reason: "error"` | `Error`（`ProviderError`） | 不是已完成的回复。该 chunk 保存在 `KppError.raw` 中，并原样发回给 Chat 应用。 |
 | 一些兼容 OpenAI 的服务商发送的、带数据的 `event: error` 帧 | `Error` | 像不带状态码的错误体一样解码；编码为 `data:` 帧。没有数据时，这样的帧是一个 `Extra`。 |

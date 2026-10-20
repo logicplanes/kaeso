@@ -440,6 +440,17 @@ fn job_view(j: &log_jobs::LogJob) -> LogJobView {
     }
 }
 
+fn provider_filter(id: &str) -> ApiResult<String> {
+    kaeso_core::provider::ProviderId::parse(id)
+        .map(|p| p.as_str().to_owned())
+        .map_err(|_| {
+            ApiError::invalid(
+                "provider",
+                "`provider` must be a provider id of lowercase letters, digits and single hyphens.",
+            )
+        })
+}
+
 fn parse_time(field: &str, s: &str) -> ApiResult<OffsetDateTime> {
     OffsetDateTime::parse(s, &Rfc3339).map_err(|_| {
         ApiError::invalid(
@@ -552,6 +563,7 @@ pub struct LogFilter {
     #[doc = "Only this provider model id."]
     pub model: Option<String>,
     #[doc = "Only this provider."]
+    #[param(value_type = Option<kaeso_core::provider::ProviderId>)]
     pub provider: Option<String>,
     #[doc = "Only this HTTP status."]
     pub status: Option<u16>,
@@ -594,7 +606,7 @@ impl LogFilter {
                 .map(|u| u.uuid())
                 .or(self.service_account.map(|s| s.uuid())),
             model: self.model.clone(),
-            provider: self.provider.clone(),
+            provider: self.provider.as_deref().map(provider_filter).transpose()?,
             status: self.status,
             failed: self.failed,
             error_kind: self.error_kind.clone(),

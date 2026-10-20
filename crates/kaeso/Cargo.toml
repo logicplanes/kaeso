@@ -16,6 +16,7 @@ anyhow.workspace = true
 clap.workspace = true
 tokio.workspace = true
 secrecy.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true

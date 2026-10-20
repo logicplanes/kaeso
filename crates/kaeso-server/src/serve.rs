@@ -56,6 +56,7 @@ const USAGE_FLUSH_INTERVAL: Duration = Duration::from_secs(10);
 const METRICS_SHUTDOWN_GRACE: Duration = Duration::from_secs(1);
 const IN_FLIGHT_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 const LOG_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
+const OVERDUE_ANSWER_WAIT: Duration = Duration::from_secs(1);
 
 #[derive(Debug, Default)]
 pub struct Overrides {
@@ -215,13 +216,21 @@ pub async fn run(
     });
     let header_read_timeout = config.server.header_read_timeout;
     let (public, internal) = tokio::join!(
-        serve_until(public, app, shutdown.clone(), grace, header_read_timeout),
+        serve_until(
+            public,
+            app,
+            shutdown.clone(),
+            grace,
+            header_read_timeout,
+            state.in_flight.cutter()
+        ),
         serve_until(
             internal,
             metrics_app,
             shutdown.clone(),
             METRICS_SHUTDOWN_GRACE,
-            header_read_timeout
+            header_read_timeout,
+            CancellationToken::new()
         ),
     );
     public?;
@@ -268,21 +277,32 @@ pub async fn serve_until(
     shutdown: CancellationToken,
     grace: Duration,
     header_read_timeout: Duration,
+    overdue: CancellationToken,
 ) -> Result<(), std::io::Error> {
-    let server = accept_until(listener, router, shutdown.clone(), header_read_timeout);
+    let kill = CancellationToken::new();
+    let server = accept_until(
+        listener,
+        router,
+        shutdown.clone(),
+        header_read_timeout,
+        kill.clone(),
+    );
     let mut server = tokio::spawn(server);
     tokio::select! {
         result = &mut server => return flatten(result),
         () = shutdown.cancelled() => {}
     }
-    match tokio::time::timeout(grace, &mut server).await {
-        Ok(result) => flatten(result),
-        Err(_) => {
-            tracing::warn!(grace = ?grace, "requests still open after the shutdown grace period; closing them");
-            server.abort();
-            Ok(())
-        }
+    if let Ok(result) = tokio::time::timeout(grace, &mut server).await {
+        return flatten(result);
     }
+    tracing::warn!(grace = ?grace, "requests still open after the shutdown grace period; ending them");
+    overdue.cancel();
+    if let Ok(result) = tokio::time::timeout(OVERDUE_ANSWER_WAIT, &mut server).await {
+        return flatten(result);
+    }
+    tracing::warn!("connections still open after their requests were ended; closing them");
+    kill.cancel();
+    flatten(server.await)
 }
 
 fn flatten(result: Result<std::io::Result<()>, tokio::task::JoinError>) -> std::io::Result<()> {
@@ -311,6 +331,7 @@ async fn accept_until(
     router: Router,
     shutdown: CancellationToken,
     header_read_timeout: Duration,
+    kill: CancellationToken,
 ) -> std::io::Result<()> {
     let builder = Arc::new(connection_builder(header_read_timeout));
     let connections = TaskTracker::new();
@@ -338,6 +359,7 @@ async fn accept_until(
             router.clone(),
             shutdown.clone(),
             header_read_timeout,
+            kill.clone(),
         ));
     }
     drop(listener);
@@ -361,6 +383,7 @@ async fn serve_connection(
     router: Router,
     shutdown: CancellationToken,
     first_request_within: Duration,
+    kill: CancellationToken,
 ) {
     let first_request = CancellationToken::new();
     let arrived = first_request.clone();
@@ -395,6 +418,10 @@ async fn serve_connection(
             () = shutdown.cancelled(), if !stopping => {
                 stopping = true;
                 connection.as_mut().graceful_shutdown();
+            }
+            () = kill.cancelled() => {
+                tracing::debug!(peer = %peer, "closing a connection after the shutdown grace period");
+                return;
             }
         }
     }

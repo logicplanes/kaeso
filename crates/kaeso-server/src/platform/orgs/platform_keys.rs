@@ -9,7 +9,7 @@ use secrecy::ExposeSecret;
 use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
-use crate::platform::access::{Caller, Ctx};
+use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{
@@ -147,23 +147,13 @@ async fn act(
     let id: OrgPlatformKeyId = id
         .parse()
         .map_err(|_| ApiError::not_found("platform key"))?;
-    let (kind, by) = creator_of(ctx);
-    let actor = keys::Actor { kind, id: by };
     let mut tx = state.pg.begin().await?;
     let done = match action {
         "platform_key.disable" => {
-            keys::set_org_disabled(&mut *tx, scope.org.id, id.uuid(), Some(ctx.now), actor).await?
+            keys::set_org_disabled(&mut *tx, scope.org.id, id.uuid(), Some(ctx.now)).await?
         }
         "platform_key.enable" => {
-            let by_person = keys::org_disabled_by(&mut *tx, scope.org.id, id.uuid())
-                .await?
-                .is_some_and(|d| d.kind.as_deref() == Some("user"));
-            if by_person && !matches!(ctx.caller, Caller::Session(_)) {
-                return Err(ApiError::PermissionDenied(
-                    crate::platform::projects::keys::PERSON_DISABLED.into(),
-                ));
-            }
-            keys::set_org_disabled(&mut *tx, scope.org.id, id.uuid(), None, actor).await?
+            keys::set_org_disabled(&mut *tx, scope.org.id, id.uuid(), None).await?
         }
         _ => keys::archive_org(&mut *tx, scope.org.id, id.uuid(), ctx.now).await?,
     };

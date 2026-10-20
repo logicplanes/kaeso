@@ -120,7 +120,7 @@ Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limit
 
 Bei einem Shutdown-Signal nimmt das Gateway keine neuen Verbindungen mehr an. Offene Anfragen und Streams erhalten `KAESO_SHUTDOWN_GRACE` zum Abschluss, standardmäßig 30 Sekunden.
 
-Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein bereits gestarteter Stream endet stattdessen mit einem Fehler-Event. Kaeso berechnet und protokolliert beide mit der Fehlerart `shutdown`, einen Stream mit geschätzter Nutzung.
+Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein bereits gestarteter Stream endet stattdessen mit einem Fehler-Event. Kaeso berechnet und protokolliert beide mit der Fehlerart `shutdown`, einen Stream mit geschätzter Nutzung. Eine Sekunde später schließt Kaeso die Verbindungen, die noch offen sind.
 
 ## Nutzung und Protokolle
 

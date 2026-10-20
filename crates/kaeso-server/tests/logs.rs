@@ -135,6 +135,17 @@ async fn requests_are_logged_with_metadata_and_content() {
             .len(),
         0
     );
+    for bad in ["OpenAI", "open%20ai", "a--b", "x%27%20OR%201%3D1"] {
+        let r = env
+            .app
+            .get(
+                &format!("{}/logs?provider={bad}", base(&env)),
+                &env.owner.cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{bad}");
+        assert_eq!(r.body["error"]["param"], "provider", "{bad}");
+    }
     assert_eq!(
         logs(&env, "?error_kind=rate_limited").await["data"]
             .as_array()
@@ -883,6 +894,34 @@ async fn requests_never_wait_for_clickhouse_and_drops_are_counted() {
         .get(&format!("{}/logs", base(&env)), &env.owner.cookie)
         .await;
     assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE);
+}
+
+#[tokio::test]
+async fn a_shutdown_flush_keeps_trying_and_keeps_what_it_could_not_write() {
+    let env = env(&[("KAESO_CLICKHOUSE_URL", "http://127.0.0.1:1")]).await;
+    for _ in 0..3 {
+        let r = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(messages("claude-haiku-4-5", "Hello")),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK);
+    }
+    let state = &env.app.state;
+    common::eventually("the requests are buffered", || async {
+        state.logs.len() == 3
+    })
+    .await;
+    let started = std::time::Instant::now();
+    let written = kaeso_server::services::logs::flush_all(state, Duration::from_millis(2500)).await;
+    assert_eq!(written, 0);
+    assert_eq!(state.logs.len(), 3, "unwritten rows stay in the buffer");
+    let waited = started.elapsed();
+    assert!(waited >= Duration::from_secs(2), "it retried: {waited:?}");
+    assert!(waited < Duration::from_secs(10), "{waited:?}");
 }
 
 #[tokio::test]

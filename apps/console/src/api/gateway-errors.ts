@@ -21,13 +21,6 @@ const rule = (key: ErrorKey, text: (values: Values) => string, convert?: Readonl
   convert ? { key, text, convert } : { key, text };
 
 const messages = (): Rule[] => [
-  rule("errors.keyDisabledByPerson", () =>
-    t("errors.keyDisabledByPerson", "A person disabled this key, so only a person can enable it; use a console session."),
-  ),
-  rule("errors.keyDisabledBySomeoneElse", () =>
-    t("errors.keyDisabledBySomeoneElse", "Someone else disabled this key; ask a holder of `keys.all.manage` to enable it."),
-  ),
-  rule("errors.keysCantMintPlatformKeys", () => t("errors.keysCantMintPlatformKeys", "Keys can't create keys with platform access; use a console session.")),
   rule("errors.signInFirst", () => t("errors.signInFirst", "Sign in first.")),
   rule("errors.sessionEnded", () => t("errors.sessionEnded", "Your session has ended; sign in again.")),
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
@@ -282,6 +275,7 @@ const messages = (): Rule[] => [
   rule("errors.notActiveProject", (v) => t("errors.notActiveProject", "`{project}` is not an active project of this organization.", v)),
   rule("errors.secretLength", (v) => t("errors.secretLength", "The secret must be {min} to {max} characters.", v)),
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
+  rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id of lowercase letters, digits and single hyphens.")),
   rule("errors.providerOneOf", (v) => t("errors.providerOneOf", "The provider must be one of {providers}.", v)),
   rule("errors.noModelInCatalogue", () => t("errors.noModelInCatalogue", "No such model in this project's catalogue.")),
   rule("errors.modelNotInCatalogue", (v) => t("errors.modelNotInCatalogue", "The model `{model}` is not in this project's catalogue.", v)),
