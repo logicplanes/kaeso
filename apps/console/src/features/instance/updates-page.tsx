@@ -25,6 +25,7 @@ import { api, data } from "~/api/client";
 import type { ReleaseView, UpdateChannel, UpdateJobView, UpdateMode, UpdateSchedule, UpdatesView, UpdateWeekday } from "~/api/generated/types";
 import { updateJobsQuery, updatesQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
+import { httpsHref } from "~/format/links";
 import { toast } from "~/shell/toast";
 import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -148,6 +149,7 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
     "docker compose pull",
     "docker compose up -d --wait",
   ].join("\n");
+  const guide = httpsHref(u.upgrade_guide);
   return (
     <SettingsSection
       title={t("instance.updates.release", "Kaeso {version}", { version: latest.version })}
@@ -159,9 +161,11 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
             tone="warning"
             title={t("instance.updates.byHand", "Update by hand")}
             actions={
-              <Button size="sm" href={u.upgrade_guide} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
-                {t("instance.updates.guide", "Open the upgrade guide")}
-              </Button>
+              guide && (
+                <Button size="sm" href={guide} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
+                  {t("instance.updates.guide", "Open the upgrade guide")}
+                </Button>
+              )
             }
           >
             {manualReason(u, latest.version)}
@@ -185,6 +189,7 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
 }
 
 function Notes({ release }: { release: ReleaseView }) {
+  const url = httpsHref(release.url);
   return (
     <section aria-label={t("instance.updates.notesOf", "Release notes of {version}", { version: release.version })} className="mt-8 flex flex-col gap-8">
       <div className="flex flex-col gap-8">
@@ -195,9 +200,11 @@ function Notes({ release }: { release: ReleaseView }) {
           <Text variant="small" tone="secondary">
             {formatDate(release.published_at)}
           </Text>
-          <Link href={release.url} external variant="quiet" className="ml-auto">
-            {t("instance.updates.onGitHub", "On GitHub")}
-          </Link>
+          {url && (
+            <Link href={url} external variant="quiet" className="ml-auto">
+              {t("instance.updates.onGitHub", "On GitHub")}
+            </Link>
+          )}
         </span>
         {release.notes.trim() ? (
           <Markdown text={release.notes} headingLevel={4} size="small" collapseAfter={2400} />

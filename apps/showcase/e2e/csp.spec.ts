@@ -33,7 +33,7 @@ test("the build writes one policy that allows its inline scripts by hash, never 
   expect(directives["style-src-attr"]).toEqual(["'unsafe-inline'"]);
   expect(directives["frame-ancestors"]).toEqual(["'none'"]);
   expect(header.replace("style-src-attr 'unsafe-inline'", "")).not.toContain("unsafe");
-  expect(read("_headers")).toBe(`/*\n  Content-Security-Policy: ${header}\n`);
+  expect(read("_headers")).toBe(`/*\n  Content-Security-Policy: ${header}\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
   expect(read("components/button.html")).toContain(`<meta http-equiv="content-security-policy" content="${header.replace("; frame-ancestors 'none'", "")}">`);
 });
 

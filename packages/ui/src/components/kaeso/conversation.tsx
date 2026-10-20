@@ -6,6 +6,7 @@ import { Banner } from "../banner/banner.js";
 import { Collapsible } from "../collapsible/collapsible.js";
 import { JsonView } from "../code-block/json-view.js";
 import { Badge } from "../badge/badge.js";
+import { Link } from "../link/link.js";
 import { safeHref } from "../../utils/safe-href.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 
@@ -43,7 +44,12 @@ function roleNames(t: UiText): Record<ConversationMessage["role"], string> {
   };
 }
 
-const imageHref = (src: string) => (/^data:image\/[a-z0-9.+-]+;/i.test(src) ? src : safeHref(src));
+const DATA_IMAGE = /^data:image\/[a-z0-9.+-]+;/i;
+
+function webHref(src: string): string | null {
+  const href = safeHref(src);
+  return href && /^https?:/.test(href) ? href : null;
+}
 
 function isJson(s: string) {
   const t = s.trim();
@@ -131,17 +137,17 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
               </Collapsible>
             );
           case "image": {
-            const href = b.src ? imageHref(b.src) : null;
+            if (b.src && DATA_IMAGE.test(b.src))
+              return (
+                <span key={i} className="block w-120 overflow-hidden rounded-well ring-over ring-over-line">
+                  <img src={b.src} alt={b.alt ?? t("conversationView.imageInput", "Image input")} className="block h-120 w-120 object-cover" />
+                </span>
+              );
+            const href = b.src ? webHref(b.src) : null;
             return href ? (
-              <a
-                key={i}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="block w-120 overflow-hidden rounded-well ring-over ring-over-line focus-ring"
-              >
-                <img src={href} alt={b.alt ?? t("conversationView.imageInput", "Image input")} className="block h-120 w-120 object-cover" />
-              </a>
+              <Link key={i} href={href} external rel="noopener noreferrer nofollow" className="w-max max-w-full wrap-anywhere">
+                {t("conversationView.imageFrom", "Image from {host}", { host: new URL(href).host })}
+              </Link>
             ) : (
               <span key={i} className="inline-flex h-32 w-max items-center gap-8 rounded-pill bg-fill-1 px-12 text-small text-fg-secondary">
                 <Icon icon={icons.vision} size="xs" /> {t("conversationView.image", "Image")} {b.media_type && <span className="mono">{b.media_type}</span>}

@@ -292,6 +292,9 @@ pub fn write_item(out: &mut Vec<u8>, item: &SseItem) {
             }
         }
         SseItem::Event(ev) => {
+            if starts_with_bom(ev) {
+                out.push(b'\n');
+            }
             if let Some(event) = &ev.event {
                 write_field(out, "event", event);
             }
@@ -316,6 +319,18 @@ pub fn write_item(out: &mut Vec<u8>, item: &SseItem) {
             out.push(b'\n');
         }
     }
+}
+
+fn starts_with_bom(ev: &SseEvent) -> bool {
+    ev.event.is_none()
+        && ev.id.is_none()
+        && ev.retry.is_none()
+        && ev
+            .other
+            .iter()
+            .map(|(name, _)| name.trim_start_matches(['\r', '\n', ':']))
+            .find(|name| !name.is_empty())
+            .is_some_and(|name| name.starts_with('\u{feff}'))
 }
 
 fn write_field(out: &mut Vec<u8>, name: &str, value: &str) {
@@ -463,6 +478,21 @@ mod tests {
         assert_eq!(evs[0].data, "{\"a\":1}");
         assert_eq!(evs[2].event, None);
         assert_eq!(evs[2].data, "line1\nline2");
+    }
+
+    #[test]
+    fn a_field_whose_name_starts_with_a_bom_is_written_so_it_reads_back() {
+        let input = b"\n\xEF\xBB\xBF{  \"model\":oss-120b\",\n  \"stream\": true\n}\n";
+        let items = parse_all(input).unwrap();
+        let mut written = Vec::new();
+        for item in &items {
+            write_item(&mut written, item);
+        }
+        assert_eq!(parse_all(&written).unwrap(), items);
+        let SseItem::Event(ev) = &items[0] else {
+            panic!("{items:?}")
+        };
+        assert!(ev.other[0].0.starts_with('\u{feff}'), "{ev:?}");
     }
 
     #[test]
