@@ -41,7 +41,11 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
     let body = &parsed.known.error.known;
     let code = body.code.as_ref().and_then(Value::as_str);
     let ty = body.ty.as_deref();
-    let kind = kind_for(status, ty, code);
+    let kind = kind_for(
+        status.or_else(|| http_status_code(body.code.as_ref())),
+        ty,
+        code,
+    );
     let message = body
         .message
         .clone()
@@ -57,6 +61,40 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
         err = err.with_param(param);
     }
     err
+}
+
+pub(crate) struct ErrorProbe {
+    pub(crate) error: bool,
+    pub(crate) choices: bool,
+}
+
+pub(crate) fn probe(json: &str) -> ErrorProbe {
+    #[derive(serde::Deserialize)]
+    struct Probe {
+        #[serde(default)]
+        error: Option<Box<serde_json::value::RawValue>>,
+        #[serde(default)]
+        choices: Option<serde::de::IgnoredAny>,
+    }
+    serde_json::from_str::<Probe>(json).map_or(
+        ErrorProbe {
+            error: false,
+            choices: false,
+        },
+        |p| {
+            let error = p.error.as_ref().map(|e| e.get().trim());
+            ErrorProbe {
+                error: error.is_some_and(|e| e.starts_with('{')),
+                choices: p.choices.is_some(),
+            }
+        },
+    )
+}
+
+fn http_status_code(code: Option<&Value>) -> Option<u16> {
+    code.and_then(Value::as_u64)
+        .and_then(|c| u16::try_from(c).ok())
+        .filter(|c| (400..600).contains(c))
 }
 
 pub(crate) fn error_body(err: &KppError) -> Value {

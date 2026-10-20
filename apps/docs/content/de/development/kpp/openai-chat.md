@@ -120,7 +120,7 @@ Die Anfrage ist dann `InvalidRequest`, etwa `` The request body is not a valid O
 | `id`, `model` | `Response.id`, `.model` | Aus einem anderen Format die ID des Anbieters, unverändert ([IDs von Antworten](cross-format.md#ids-von-antworten)). |
 | `object` | keins | Immer `chat.completion`; ein anderer Wert oder keiner: Form `object`. |
 | `created`, `service_tier`, `system_fingerprint`, `metadata`, `moderation` | Extras | Eine Antwort ohne `created` in ihren Extras, etwa eine aus einem anderen Dialekt, bekommt `EncodeCtx::created_at` oder `0`. |
-| `choices` | `choices[0]` | Mehr als eine Auswahl: `Unsupported` (`n`); keine: `ProviderError`; ein anderer `index` als 0: Extras `choice.index`. |
+| `choices` | `choices[0]` | Mehr als eine Auswahl: `Unsupported` (`n`); keine: `ProviderError`; ein anderer `index` als 0: Extras `choice.index`. Ein 200-Body mit einem `error`-Objekt und ohne `choices`, den OpenRouter sendet, wenn der Anbieter nach dem 200 scheitert ([Errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)), wird wie ein Stream-Fehler als dieser Fehler dekodiert. |
 | `choices[0].logprobs` | Extras `choice.logprobs` | `null`: verbatim. |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`, `length` ⇄ `MaxTokens`, `tool_calls` ⇄ `ToolUse`, `content_filter` ⇄ `ContentFilter`, andere Werte (etwa `function_call`) ⇄ `Other`. Aus anderen Dialekten: `StopSequence` und `PauseTurn` werden zu `stop`; `Refusal` wird zu `content_filter`, weil die Antwort zurückgehalten wurde. Eine Antwort ohne Streaming und ohne `finish_reason`, das die Spezifikation verlangt: `ProviderError`. |
 | `message.content` | `Block::Text` | Aus anderen Dialekten werden alle Textblöcke ohne Trennzeichen verbunden, weil Chat in Antworten keine Inhaltsteile hat. Ohne Trennzeichen deshalb, weil Anthropic eine Antwort rund um Zitate in mehrere Textblöcke teilt und die gestreamten Deltas, die ebenfalls kein Trennzeichen tragen, denselben `content` ergeben müssen. |
@@ -208,7 +208,7 @@ Der Fehler-Body ist `{error: {message, type, param, code}}`.
 | andere | `ProviderError` | sein 5xx-Status (außer 503) oder 500, `server_error` |
 | `error.misalignment` (`MisalignmentErrorDetailsResource` im Schema `Error`), unbekannte Schlüssel in `error` | in `KppError.raw` erhalten (der ganze Body) | Wird nur erneut gesendet, wenn der Fehler aus Chat kam. |
 
-Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Stream-Fehler, der keinen Status hat.
+Ein in der Tabelle genannter Code, in `code` oder `type`, hat Vorrang vor dem Status. Codes der Arten, die sich nach dem Status richten (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, die Bild-Codes, `server_error`), entscheiden nur bei einem Fehler ohne HTTP-Status: einem Stream-Fehler oder einem Fehler im Body einer Antwort mit 200. Bei einem solchen Fehler bestimmt ein numerischer `code` zwischen 400 und 599, den OpenRouter als HTTP-Status sendet, die Art wie ein Status; einen Status hat der Fehler trotzdem nicht.
 
 Mit HTTP 402 melden OpenAI-kompatible Anbieter wie DeepSeek ein aufgebrauchtes Guthaben ([Fehlercodes von DeepSeek](https://api-docs.deepseek.com/quick_start/error_codes)), deshalb ist es `Billing`, was auch immer sein `code` sagt.
 
@@ -229,7 +229,7 @@ Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`opena
 | Wire-Feld | KPP | Kodiert, wenn KPP keinen Wert hat |
 |---|---|---|
 | `id` | `id` | (erforderlich) |
-| `object` (`"model"`) | Form `object`, nur wenn es abweicht | `"model"` |
+| `object` (`"model"`, optional) | Form `object`, nur wenn es abweicht | `"model"` |
 | `created` (Unix-Sekunden) | `created_at` | `0` |
 | `owned_by` | `owned_by` | `"kaeso"`: Der Eigentümer ist unbekannt, wie bei einem von Anthropic gelisteten Modell, und das Modell wird vom Kaeso-Gateway bereitgestellt. |
 | `shutdown_date` (`YYYY-MM-DD` oder `null`) | `retires_at` (dieses Datum um 00:00 UTC) | `null` |
@@ -237,13 +237,13 @@ Die Codecs für Responses und Embeddings verwenden dieselbe Code-Tabelle (`opena
 
 Das Gateway listet Modelle aus seinem Katalog: Es setzt `owned_by` auf die ID des Anbieters und `created_at` auf das Veröffentlichungsdatum des Modells, wenn der Katalog eines hat.
 
-Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wird in der Form `none` vermerkt und genauso geschrieben; `shutdown_date` ist in der Spezifikation optional. Ein `shutdown_date`, das kein `full-date` ist, ergibt `ProviderError`. Extras aus jedem der drei OpenAI-Dialekte werden von allen drei Encodern berücksichtigt.
+Ein Feld, das fehlend ankommt oder als `null`, wo der Standard ein Wert ist, wird in der Form `none` vermerkt und genauso geschrieben; `shutdown_date` ist in der Spezifikation optional. `object` ist in der Spezifikation Pflicht, aber OpenRouters Liste ([`GET /api/v1/models`](https://openrouter.ai/docs/guides/overview/models)) lässt es in der Liste und bei jedem Modell weg, daher wird es genauso gelesen (Fixture `providers/openrouter/models/list-recorded.json`). Ein `shutdown_date`, das kein `full-date` ist, ergibt `ProviderError`. Extras aus jedem der drei OpenAI-Dialekte werden von allen drei Encodern berücksichtigt.
 
 ### `ListModelsResponse` ⇄ `ModelList`
 
 | Wire-Feld | KPP |
 |---|---|
-| `object` (`"list"`) | Form `object`, nur wenn es abweicht |
+| `object` (`"list"`, optional) | Form `object`, nur wenn es abweicht; fehlend oder `null` in der Form `none` |
 | `data` | `models` |
 | unbekannte Schlüssel | Extras-Felder |
 | ein bloßes Array von Modellen statt des Objekts, wie Together AI es sendet | `models`, Form `bare_list` |
@@ -309,3 +309,18 @@ Quellen: die [API-Referenz](https://console.groq.com/docs/api-reference) und der
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` der Nutzung | Die Token-Zahlen, `reasoning_tokens` eingeschlossen, sind wie oben typisiert. |
 | `usage` im Chunk mit `finish_reason`, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
 | zusätzliche Modellfelder (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` und weitere) | Modell-Extras | |
+
+### OpenRouter
+
+Quellen: die [API-Referenz](https://openrouter.ai/docs/api_reference/overview), [Streaming](https://openrouter.ai/docs/api_reference/streaming), [Fehler und Debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging) und [Reasoning-Token](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens) von OpenRouter, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/openrouter/`, alle mit `:free`-Modellen.
+
+| OpenRouter-Feld | KPP | Hinweise |
+|---|---|---|
+| `provider`, `models`, `transforms`, `usage`, `reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning`, `message.reasoning_details` und dasselbe in Deltas | Extras | Chat-Apps erhalten sie unverändert zurück. Anthropic Messages und Responses zeigen sie noch nicht als Reasoning ([Reasoning](reasoning.md)). |
+| `provider`, `native_finish_reason` an einer Antwort | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.cost`, `is_byok`, `cost_details`, die zusätzlichen Token-Angaben | `raw` der Nutzung | Kaeso berechnet Kosten mit den Preisen des Katalogs, nicht mit `usage.cost`. |
+| der letzte Stream-Chunk, der die Choice mit `finish_reason` neben `usage` wiederholt | `Usage` | Gelesen wie ein Nutzungs-Chunk mit `choices: []`. |
+| `: OPENROUTER PROCESSING`-Kommentare | `Extra` | Nur im selben Dialekt, wie andere SSE-Kommentare. |
+| ein `error`-Objekt nach der 200, im Body oder in einem Chunk neben `choices` | `KppError` | Siehe die [Zeilen oben](#streams-createchatcompletionstreamresponse); ein numerischer `code` bestimmt die Art wie ein Status. |
+| `GET /api/v1/models`: kein `object`, Modelle ohne `object` und `owned_by`, mit `total_count` und `links` | `ModelList`, Extras | `GET /api/v1/models/{model}` antwortet für jedes Modell mit 404, daher stützt sich eine Modellprüfung auf die Modellliste, die OpenRouter ohne Blick auf den Schlüssel ausliefert. |

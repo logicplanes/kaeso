@@ -10,6 +10,36 @@ use crate::codec::{Codec, EgressCtx, EncodeCtx, HeaderList};
 use crate::test_support::{assert_json_eq, fixtures};
 use crate::testing::{ComparableItem, sse_items};
 
+#[test]
+fn an_ok_reply_that_holds_only_an_error_object_is_that_error() {
+    let (_, body) = fixtures("openai_chat", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/openrouter/recorded-unknown-model")
+        .unwrap();
+    let req = Request::Generate(GenerateRequest::new("m").with_message(Message::user("hi")));
+    let ctx = EgressCtx::new(&req);
+    let err = OpenAiChat::decode_response(200, &HeaderList::new(), &body, &ctx).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(
+        err.message,
+        "kaeso-example/no-such-model:free is not a valid model ID"
+    );
+    for not_an_error in [
+        json!({"error": null, "choices": []}),
+        json!({"error": "", "choices": []}),
+    ] {
+        let bytes = serde_json::to_vec(&not_an_error).unwrap();
+        let err = OpenAiChat::decode_response(200, &HeaderList::new(), &bytes, &ctx).unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ProviderError, "{not_an_error}");
+        assert!(
+            err.message
+                .contains("not a valid OpenAI Chat Completions response"),
+            "{}",
+            err.message
+        );
+    }
+}
+
 fn round_trip(body: &Value) -> Request {
     let bytes = serde_json::to_vec(body).unwrap();
     let req =

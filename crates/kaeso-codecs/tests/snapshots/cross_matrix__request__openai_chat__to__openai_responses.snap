@@ -611,6 +611,134 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/openrouter/free-basic": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Answer in one short sentence.",
+      "max_output_tokens": 256,
+      "model": "google/gemma-4-31b-it:free",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/free-reasoning": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-reasoning-stream": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-stream": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-stream-rate-limited": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from one to five in words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/free-tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "model": "google/gemma-4-31b-it:free",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/invalid-messages": {
+    "body": {
+      "input": [],
+      "model": "google/gemma-4-31b-it:free",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/keepalive-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/openrouter/routing-fields": {
+    "message": "`models` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "models"
+  },
+  "providers/openrouter/unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-example/no-such-model:free",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

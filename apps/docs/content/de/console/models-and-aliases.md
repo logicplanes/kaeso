@@ -71,6 +71,8 @@ Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 
 Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`. Kaeso trennt sie am ersten `/`, eine Modell-ID mit `/` bleibt also erhalten: `togetherai/Qwen/Qwen3.5-9B` meint `Qwen/Qwen3.5-9B` von Together AI.
 
+Eine Modell-ID kann `/` enthalten, etwa OpenRouters `anthropic/claude-sonnet-4.5` oder Groqs `openai/gpt-oss-20b`. Weil Kaeso die Form Anbieter/Modell vor einer Modell-ID sucht, geht ein Name, der mit der ID eines anderen Anbieters beginnt, an diesen Anbieter: Hat ein Projekt OpenRouters `openai/gpt-4o` und OpenAIs `gpt-4o`, ruft `openai/gpt-4o` OpenAI auf. Stellen Sie den Anbieter voran, um sicherzugehen: `openrouter/openai/gpt-4o` ruft immer das Modell von OpenRouter auf, `groq/openai/gpt-oss-20b` immer das von Groq.
+
 ## Nächste Schritte
 
 - [Modelle aufrufen](../get-started/calling-models.md): Rufen Sie die Modelle Ihres Katalogs aus einer App auf.

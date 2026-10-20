@@ -214,6 +214,17 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
     },
+    Provider {
+        id: "openrouter",
+        name: "OpenRouter",
+        default_base_url: "https://openrouter.ai/api",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+    },
 ];
 
 const _: () = {
@@ -293,7 +304,10 @@ mod tests {
             (AuthStyle::XApiKey, None)
         );
         assert!(provider("gemini").is_none());
-        assert_eq!(ids(), "openai, anthropic, deepseek, xai, togetherai, groq");
+        assert_eq!(
+            ids(),
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter"
+        );
     }
 
     #[test]
@@ -398,7 +412,8 @@ mod tests {
                 "deepseek",
                 "xai",
                 "togetherai",
-                "groq"
+                "groq",
+                "openrouter"
             ]
         );
         assert_eq!(

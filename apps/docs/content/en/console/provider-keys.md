@@ -23,6 +23,9 @@ Provider keys are your organization's keys for the model providers Kaeso calls. 
 | SpaceX | [console.x.ai](https://console.x.ai), the xAI console, under **API Keys** | `xai-` |
 | Together AI | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys), under **API Keys** | `tgp_v1_` |
 | Groq | [console.groq.com/keys](https://console.groq.com/keys) | `gsk_` |
+| OpenRouter | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | `sk-or-v1-` |
+
+OpenRouter routes to models of many providers. Its model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`. Call one as `openrouter/anthropic/claude-sonnet-4.5` so it never goes to the maker's own provider; see [how a request names a model](models-and-aliases.md#how-a-request-names-a-model). Kaeso records the cost of OpenRouter requests at the catalogue's prices, not at the `usage.cost` OpenRouter reports. OpenRouter lists its models without looking at the key, so **Check availability** can't tell a wrong OpenRouter key; the first request with it reports the refused key.
 
 Each action on provider keys needs its own right:
 

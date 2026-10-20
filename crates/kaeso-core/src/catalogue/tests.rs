@@ -357,6 +357,50 @@ fn model_ids_with_slashes_resolve_natively_and_with_their_provider_prefix() {
 }
 
 #[test]
+fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_prefix() {
+    let free = entry("openrouter", "nvidia/nemotron-3.5-lightning:free");
+    let sonnet = entry("openrouter", "anthropic/claude-sonnet-4.5");
+    let entries = vec![free.clone(), sonnet.clone()];
+    let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
+    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
+    assert_eq!(
+        r("nvidia/nemotron-3.5-lightning:free"),
+        Ok((free.id, Via::Native))
+    );
+    assert_eq!(
+        r("openrouter/nvidia/nemotron-3.5-lightning:free"),
+        Ok((free.id, Via::Prefixed))
+    );
+    assert_eq!(
+        r("anthropic/claude-sonnet-4.5"),
+        Ok((sonnet.id, Via::Native))
+    );
+    assert!(matches!(
+        r("nvidia/nemotron-3.5-lightning"),
+        Err(ResolveError::NotInCatalogue(_))
+    ));
+}
+
+#[test]
+fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
+    let routed = entry("openrouter", "openai/gpt-4o");
+    let direct = entry("openai", "gpt-4o");
+    let both = vec![routed.clone(), direct.clone()];
+    let catalogue_both = Catalogue::new(both.clone(), vec![]);
+    let r = |n: &str| catalogue_both.resolve(n).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-4o"), Ok((direct.id, Via::Prefixed)));
+    assert_eq!(
+        r("openrouter/openai/gpt-4o"),
+        Ok((routed.id, Via::Prefixed))
+    );
+    assert_eq!(r("gpt-4o"), Ok((direct.id, Via::Native)));
+    let only = vec![routed.clone()];
+    let catalogue_only = Catalogue::new(only.clone(), vec![]);
+    let r = |n: &str| catalogue_only.resolve(n).map(|(e, v)| (e.id, v));
+    assert_eq!(r("openai/gpt-4o"), Ok((routed.id, Via::Native)));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

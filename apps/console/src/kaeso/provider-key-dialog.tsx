@@ -18,6 +18,7 @@ const KEY_SITES: Record<string, { url: string; page: string; prefix: string }> =
   xai: { url: "https://console.x.ai", page: "API Keys", prefix: "xai-" },
   togetherai: { url: "https://api.together.ai/settings/projects/~current/api-keys", page: "API Keys", prefix: "tgp_v1_" },
   groq: { url: "https://console.groq.com/keys", page: "API Keys", prefix: "gsk_" },
+  openrouter: { url: "https://openrouter.ai/settings/keys", page: "API Keys", prefix: "sk-or-v1-" },
 };
 
 function keyHelp(provider: string): ReactNode {

@@ -171,6 +171,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | Text | `https://api.x.ai` | Basis-URL der SpaceX-API. |
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | Text | `https://api.together.ai` | Basis-URL der Together-AI-API. |
 | `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | Text | `https://api.groq.com/openai` | Basis-URL der API von Groq. |
+| `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | Text | `https://openrouter.ai/api` | Basis-URL der API von OpenRouter. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |

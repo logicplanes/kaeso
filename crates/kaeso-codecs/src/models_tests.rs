@@ -114,6 +114,8 @@ fn unusual_spellings_round_trip() {
         json!({"object": "list", "data": []}),
         json!({"object": "page", "data": [{"id": "m", "object": "model"}]}),
         json!({"object": "list", "data": [{"id": "m", "object": "model.v2", "created": null, "owned_by": null, "shutdown_date": null}]}),
+        json!({"data": [{"id": "vendor/m:free"}]}),
+        json!({"object": null, "data": [{"id": "m", "object": null}]}),
     ];
     for v in openai_lists {
         let body = serde_json::to_vec(&v).unwrap();
@@ -121,6 +123,45 @@ fn unusual_spellings_round_trip() {
             round_trip(d, "list-inline", &body);
         }
     }
+}
+
+#[test]
+fn an_openrouter_listing_without_object_fields_decodes_with_its_own_fields_as_extras() {
+    let body = fixture("openai_chat", "providers/openrouter/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert!(!l.has_more);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "deepseek/deepseek-v4.1-flash-1017",
+            "elorian/glimpse",
+            "nvidia/nemotron-3.5-lightning:free"
+        ]
+    );
+    let free = &l.models[2];
+    assert_eq!(free.owned_by, None);
+    assert!(free.created_at.is_some());
+    for field in ["pricing", "context_length", "supported_parameters"] {
+        assert!(free.extras.fields.contains_key(field), "{field}");
+    }
+    assert!(l.extras.fields.contains_key("total_count"));
+    let not_found = fixtures("openai_chat", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/openrouter/retrieve-not-found")
+        .unwrap()
+        .1;
+    let e = dispatch::decode_model(DialectId::OpenAiChat, 404, &h(), &not_found).unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::NotFound, "Not Found")
+    );
+    let own = ModelList::new(vec![ModelInfo::new("nvidia/nemotron-3.5-lightning:free")]);
+    let served: Value =
+        serde_json::from_slice(&dispatch::encode_models(DialectId::OpenAiChat, &own).unwrap())
+            .unwrap();
+    assert_eq!(served["object"], "list");
+    assert_eq!(served["data"][0]["object"], "model");
 }
 
 #[test]
@@ -688,7 +729,12 @@ fn malformed_bodies_are_provider_errors() {
             json!({"id": "m", "object": "model", "created": "now"}),
             "invalid",
         ),
-        (DialectId::OpenAiChat, false, json!({"data": []}), "object"),
+        (
+            DialectId::OpenAiChat,
+            false,
+            json!({"object": "list"}),
+            "data",
+        ),
     ];
     for (d, single, v, needle) in cases {
         let body = serde_json::to_vec(&v).unwrap();

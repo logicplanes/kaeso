@@ -71,6 +71,8 @@ Kaeso looks up the model a request names in this order:
 
 If two providers have a model with the same id, use the `provider/model` form. Kaeso splits it at the first `/`, so a model id that contains `/` keeps it: `togetherai/Qwen/Qwen3.5-9B` names Together AI's `Qwen/Qwen3.5-9B`.
 
+A model id can contain `/`, such as OpenRouter's `anthropic/claude-sonnet-4.5` or Groq's `openai/gpt-oss-20b`. Because Kaeso looks for a provider and a model before a model id, a name that starts with another provider's id goes to that provider: in a project with OpenRouter's `openai/gpt-4o` and OpenAI's `gpt-4o`, `openai/gpt-4o` calls OpenAI. Put the provider in front to be sure: `openrouter/openai/gpt-4o` always calls OpenRouter's model, and `groq/openai/gpt-oss-20b` always calls Groq's.
+
 ## Next steps
 
 - [Calling models](../get-started/calling-models.md): Call the models in your catalogue from an app.

@@ -1,0 +1,25 @@
+{
+  "model": "google/gemma-4-31b-it:free",
+  "models": [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free"
+  ],
+  "provider": {
+    "allow_fallbacks": true,
+    "data_collection": "deny",
+    "sort": "latency"
+  },
+  "transforms": [
+    "middle-out"
+  ],
+  "usage": {
+    "include": true
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello in French."
+    }
+  ],
+  "max_tokens": 32
+}

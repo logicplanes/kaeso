@@ -137,6 +137,26 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "groq", name: "Groq prod", secret: "gsk_123", make_default: false }]);
   });
 
+  it("adds an OpenRouter key with OpenRouter's own key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "openrouter", name: "OpenRouter prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "OpenRouter");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your OpenRouter API key" })).toBeVisible();
+    expectKeyHint(dialog, "openrouter.ai", "https://openrouter.ai/settings/keys", "API Keys", "sk-or-v1-");
+    const secret = within(dialog).getByLabelText("OpenRouter API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-or-v1-…");
+    await user.type(secret, "sk-or-v1-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "OpenRouter prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("OpenRouter prod is the OpenRouter default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "openrouter", name: "OpenRouter prod", secret: "sk-or-v1-123", make_default: false },
+    ]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "Anthropic");

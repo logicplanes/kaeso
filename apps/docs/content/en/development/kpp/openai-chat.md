@@ -120,7 +120,7 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 | `id`, `model` | `Response.id`, `.model` | From another format, the provider's id as it is ([reply ids](cross-format.md#reply-ids)). |
 | `object` | none | Always `chat.completion`; another value, or none: form `object`. |
 | `created`, `service_tier`, `system_fingerprint`, `metadata`, `moderation` | extras | A reply without `created` in its extras, such as one from another dialect, gets `EncodeCtx::created_at`, or `0`. |
-| `choices` | `choices[0]` | More than one choice: `Unsupported` (`n`); none: `ProviderError`; an `index` other than 0: extras `choice.index`. |
+| `choices` | `choices[0]` | More than one choice: `Unsupported` (`n`); none: `ProviderError`; an `index` other than 0: extras `choice.index`. A 200 body with an `error` object and no `choices`, which OpenRouter sends when the provider fails after the 200 ([errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging)), is decoded as that error, like a stream error. |
 | `choices[0].logprobs` | extras `choice.logprobs` | `null`: verbatim. |
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`, `length` ⇄ `MaxTokens`, `tool_calls` ⇄ `ToolUse`, `content_filter` ⇄ `ContentFilter`, other values (such as `function_call`) ⇄ `Other`. From other dialects: `StopSequence` and `PauseTurn` become `stop`; `Refusal` becomes `content_filter`, because the answer was withheld. A non-streaming response without `finish_reason`, which the spec requires: `ProviderError`. |
 | `message.content` | `Block::Text` | From other dialects all text blocks are joined without a separator, because Chat has no content parts in responses. There is no separator because Anthropic splits one answer into several text blocks around citations, and the streamed deltas, which carry no separator either, must add up to the same `content`. |
@@ -208,7 +208,7 @@ The error body is `{error: {message, type, param, code}}`.
 | other | `ProviderError` | its 5xx status (not 503) or 500, `server_error` |
 | `error.misalignment` (`MisalignmentErrorDetailsResource` in the `Error` schema), unknown `error` keys | kept in `KppError.raw` (the whole body) | Sent again only when the error came from Chat. |
 
-A code named in the table, in `code` or `type`, wins over the status. Codes of the status-based kinds (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes, `server_error`) decide only for a stream error, which has no status.
+A code named in the table, in `code` or `type`, wins over the status. Codes of the status-based kinds (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes, `server_error`) decide only for an error without an HTTP status: a stream error, or an error in the body of a 200 reply. For such an error, a numeric `code` between 400 and 599, which OpenRouter sends as the HTTP status, decides the kind as a status would; the error still has no status.
 
 HTTP 402 is how OpenAI-compatible providers such as DeepSeek report an exhausted balance ([DeepSeek error codes](https://api-docs.deepseek.com/quick_start/error_codes)), so it is `Billing` whatever its `code` says.
 
@@ -229,7 +229,7 @@ The Responses and Embeddings codecs use the same code table (`openai_responses::
 | Wire field | KPP | Encoded when KPP has no value |
 |---|---|---|
 | `id` | `id` | (required) |
-| `object` (`"model"`) | form `object`, only when it differs | `"model"` |
+| `object` (`"model"`, optional) | form `object`, only when it differs | `"model"` |
 | `created` (Unix seconds) | `created_at` | `0` |
 | `owned_by` | `owned_by` | `"kaeso"`: the owner is unknown, as for a model listed by Anthropic, and the model is served by the Kaeso gateway. |
 | `shutdown_date` (`YYYY-MM-DD` or `null`) | `retires_at` (that date at 00:00 UTC) | `null` |
@@ -237,13 +237,13 @@ The Responses and Embeddings codecs use the same code table (`openai_responses::
 
 The gateway lists models from its catalogue: it sets `owned_by` to the provider id and `created_at` to the model's release date when the catalogue has one.
 
-A field received absent, or `null` where the default is a value, is recorded in form `none` and written the same way; `shutdown_date` is optional in the spec. A `shutdown_date` that is not a `full-date` is `ProviderError`. Extras from any of the three OpenAI dialects are honoured by all three encoders.
+A field received absent, or `null` where the default is a value, is recorded in form `none` and written the same way; `shutdown_date` is optional in the spec. `object` is required in the spec, but OpenRouter's listing ([`GET /api/v1/models`](https://openrouter.ai/docs/guides/overview/models)) leaves it out of the list and of every model, so it is read the same way (fixture `providers/openrouter/models/list-recorded.json`). A `shutdown_date` that is not a `full-date` is `ProviderError`. Extras from any of the three OpenAI dialects are honoured by all three encoders.
 
 ### `ListModelsResponse` ⇄ `ModelList`
 
 | Wire field | KPP |
 |---|---|
-| `object` (`"list"`) | form `object`, only when it differs |
+| `object` (`"list"`, optional) | form `object`, only when it differs; absent or `null` in form `none` |
 | `data` | `models` |
 | unknown keys | extras fields |
 | a bare array of models instead of the object, as Together AI sends it | `models`, form `bare_list` |
@@ -307,3 +307,18 @@ Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and
 | `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as above. |
 | `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
 | extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |
+
+### OpenRouter
+
+Sources: OpenRouter's [API reference](https://openrouter.ai/docs/api_reference/overview), [streaming](https://openrouter.ai/docs/api_reference/streaming), [errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging) and [reasoning tokens](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/openrouter/`, all with `:free` models.
+
+| OpenRouter field | KPP | Notes |
+|---|---|---|
+| `provider`, `models`, `transforms`, `usage`, `reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning`, `message.reasoning_details`, and the same in deltas | extras | Chat apps get them back unchanged. Anthropic Messages and Responses don't show them as reasoning yet ([reasoning](reasoning.md)). |
+| `provider`, `native_finish_reason` on a reply | extras | Left out towards other dialects. |
+| `usage.cost`, `is_byok`, `cost_details`, the extra token details | `raw` usage | Kaeso records costs at the catalogue's prices, not at `usage.cost`. |
+| the last stream chunk, which repeats the finish choice beside `usage` | `Usage` | Read like a usage chunk with `choices: []`. |
+| `: OPENROUTER PROCESSING` comments | `Extra` | Same dialect only, like other SSE comments. |
+| an `error` object after the 200, in the body or in a chunk beside `choices` | `KppError` | See the [rows above](#streams-createchatcompletionstreamresponse); a numeric `code` decides the kind as a status would. |
+| `GET /api/v1/models`: no `object`, models without `object` and `owned_by`, with `total_count` and `links` | `ModelList`, extras | `GET /api/v1/models/{model}` answers 404 for every model, so a model check relies on the listing, which OpenRouter serves without looking at the key. |

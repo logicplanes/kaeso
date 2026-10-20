@@ -77,6 +77,10 @@ mod tests {
                 entry("togetherai", "deepseek/deepseek-chat"),
                 entry("deepseek", "deepseek-chat"),
             ),
+            (
+                entry("openrouter", "openai/gpt-4o"),
+                entry("openai", "gpt-4o"),
+            ),
         ] {
             let both = Catalogue::new(vec![routed.clone(), direct.clone()], vec![]);
             let routed_name = request_name(&routed, &both);

@@ -42,6 +42,7 @@ const PROVIDERS: Record<string, string> = {
   xai: "SpaceX",
   togetherai: "Together AI",
   groq: "Groq",
+  openrouter: "OpenRouter",
 };
 export const PROVIDER_IDS = Object.keys(PROVIDERS);
 export const providerLabel = (p: string) => PROVIDERS[p] ?? titled(p);

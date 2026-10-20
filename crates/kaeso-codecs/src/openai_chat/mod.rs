@@ -135,6 +135,10 @@ impl Codec for OpenAiChat {
         if !(200..300).contains(&status) {
             return Err(error::decode_error(status, headers, body));
         }
+        let probe = std::str::from_utf8(body).map(error::probe);
+        if probe.is_ok_and(|p| p.error && !p.choices) {
+            return Err(error::decode_body(None, body));
+        }
         response::decode_response(body, ctx)
     }
 

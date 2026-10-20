@@ -271,6 +271,63 @@ fn a_mid_stream_error_ends_the_stream() {
 }
 
 #[test]
+fn an_openrouter_error_chunk_with_choices_ends_the_stream_as_an_error() {
+    for (name, message, kind) in [
+        (
+            "providers/openrouter/doc-error-mid-stream",
+            "Rate limit exceeded",
+            ErrorKind::RateLimited,
+        ),
+        (
+            "providers/openrouter/doc-error-mid-stream-string-code",
+            "Provider disconnected unexpectedly",
+            ErrorKind::ProviderError,
+        ),
+    ] {
+        let events = decode_whole(&fixture(name));
+        let StreamEvent::Error(err) = events.last().unwrap() else {
+            panic!("{name}: {events:?}")
+        };
+        assert_eq!(
+            (err.message.as_str(), &err.kind),
+            (message, &kind),
+            "{name}"
+        );
+        assert_eq!(err.status, None, "{name}");
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, StreamEvent::ResponseStop(_))),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn a_chunk_whose_error_is_a_string_ends_the_stream_as_an_error() {
+    let chunk = r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"role":"assistant","content":"Hi"},"finish_reason":null}]}"#;
+    let sse = format!("data: {chunk}\n\ndata: {{\"error\":\"rate limited\"}}\n\n");
+    let events = decode_whole(sse.as_bytes());
+    let StreamEvent::Error(err) = events.last().unwrap() else {
+        panic!("{events:?}")
+    };
+    assert_eq!(err.message, "rate limited");
+    assert_eq!(err.raw, Some(json!({"error": "rate limited"})));
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::ResponseStop(_)))
+    );
+    let kept = r#"{"id":"c","object":"chat.completion.chunk","created":1,"model":"m","error":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":"stop"}]}"#;
+    let sse = format!("data: {chunk}\n\ndata: {kept}\n\ndata: [DONE]\n\n");
+    let events = decode_whole(sse.as_bytes());
+    assert!(
+        !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
+        "{events:?}"
+    );
+}
+
+#[test]
 fn comments_and_unknown_fields_survive() {
     let events = decode_whole(&fixture("stream-doc"));
     assert!(

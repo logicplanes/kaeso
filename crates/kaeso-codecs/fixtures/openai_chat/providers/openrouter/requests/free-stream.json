@@ -1,0 +1,17 @@
+{
+  "model": "google/gemma-4-31b-it:free",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from one to five in words, separated by commas."
+    }
+  ],
+  "reasoning": {
+    "exclude": true
+  },
+  "max_tokens": 2048,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}
