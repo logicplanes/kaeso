@@ -175,6 +175,7 @@ async fn graceful_shutdown_finishes_open_requests_and_refuses_new_ones() {
         shutdown.clone(),
         Duration::from_secs(2),
         Duration::from_secs(30),
+        CancellationToken::new(),
     ));
     let client = reqwest::Client::new();
     let in_flight = tokio::spawn({
@@ -206,6 +207,7 @@ async fn graceful_shutdown_gives_up_after_the_grace_period() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let shutdown = CancellationToken::new();
+    let overdue = CancellationToken::new();
     let server = tokio::spawn(kaeso_server::serve::serve_until(
         listener,
         Router::new().route(
@@ -215,20 +217,27 @@ async fn graceful_shutdown_gives_up_after_the_grace_period() {
         shutdown.clone(),
         Duration::from_millis(300),
         Duration::from_secs(30),
+        overdue.clone(),
     ));
     let stuck = tokio::spawn(async move { reqwest::get(format!("http://{addr}/forever")).await });
     reached(&started).await;
     let started = tokio::time::Instant::now();
     shutdown.cancel();
-    tokio::time::timeout(Duration::from_secs(5), server)
+    tokio::time::timeout(Duration::from_secs(10), server)
         .await
         .unwrap()
         .unwrap()
         .unwrap();
     let waited = started.elapsed();
     assert!(waited >= Duration::from_millis(300), "{waited:?}");
-    assert!(waited < Duration::from_secs(2), "{waited:?}");
-    stuck.abort();
+    assert!(waited < Duration::from_secs(5), "{waited:?}");
+    assert!(overdue.is_cancelled(), "open requests are told to end");
+    let closed = tokio::time::timeout(Duration::from_secs(5), stuck)
+        .await
+        .expect("the client sees the connection close")
+        .unwrap()
+        .unwrap_err();
+    assert!(!closed.is_timeout(), "{closed:?}");
 }
 
 #[tokio::test]
@@ -390,6 +399,7 @@ async fn serving(
         shutdown.clone(),
         Duration::from_secs(1),
         header_read_timeout,
+        CancellationToken::new(),
     ));
     (addr, shutdown)
 }

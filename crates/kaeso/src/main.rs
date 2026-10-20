@@ -224,7 +224,10 @@ async fn healthcheck(source: &dyn Source) -> Result<()> {
 
 async fn shutdown_signal() {
     let ctrl_c = async {
-        let _ = tokio::signal::ctrl_c().await;
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            tracing::warn!(error = %e, "cannot listen for Ctrl-C; only SIGTERM stops the gateway");
+            std::future::pending::<()>().await;
+        }
     };
     #[cfg(unix)]
     let terminate = async {
@@ -232,7 +235,10 @@ async fn shutdown_signal() {
             Ok(mut s) => {
                 s.recv().await;
             }
-            Err(_) => std::future::pending::<()>().await,
+            Err(e) => {
+                tracing::warn!(error = %e, "cannot listen for SIGTERM; only Ctrl-C stops the gateway");
+                std::future::pending::<()>().await;
+            }
         }
     };
     #[cfg(not(unix))]

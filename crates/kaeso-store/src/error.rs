@@ -18,7 +18,17 @@ pub enum StoreError {
 
 const UNAVAILABLE_CODES: &[&str] = &["57P01", "57P02", "57P03", "53300"];
 
+const CONFLICT_CODES: &[&str] = &["40001", "40P01"];
+
 impl StoreError {
+    pub fn is_conflict(&self) -> bool {
+        let StoreError::Postgres(sqlx::Error::Database(db)) = self else {
+            return false;
+        };
+        db.code()
+            .is_some_and(|code| CONFLICT_CODES.contains(&code.as_ref()))
+    }
+
     pub fn is_unavailable(&self) -> bool {
         match self {
             StoreError::Postgres(e) => postgres_unavailable(e),

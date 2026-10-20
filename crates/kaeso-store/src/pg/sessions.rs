@@ -28,6 +28,7 @@ pub struct SessionListing {
     pub id: Uuid,
     pub method: String,
     pub second_factor: bool,
+    pub oidc_org_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
     pub signed_in_at: OffsetDateTime,
     pub last_used_at: OffsetDateTime,
@@ -89,19 +90,50 @@ pub async fn get_by_hash(
     .await?)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Touch {
+    Touched,
+    Recent,
+    Ended,
+}
+
 pub async fn touch(
     db: impl PgExecutor<'_>,
     id: Uuid,
     at: OffsetDateTime,
-) -> Result<(), StoreError> {
-    sqlx::query!(
-        "UPDATE sessions SET last_used_at = $2 WHERE id = $1 AND last_used_at < $2",
+) -> Result<Touch, StoreError> {
+    let row = sqlx::query!(
+        "WITH s AS (SELECT id, revoked_at FROM sessions WHERE id = $1), \
+         t AS (UPDATE sessions SET last_used_at = $2 \
+               WHERE id = $1 AND last_used_at < $2 AND revoked_at IS NULL RETURNING id) \
+         SELECT (SELECT count(*) FROM t) AS \"touched!\", \
+                (SELECT count(*) FROM s WHERE revoked_at IS NULL) AS \"live!\"",
         id,
         at
     )
-    .execute(db)
+    .fetch_one(db)
     .await?;
-    Ok(())
+    Ok(if row.touched > 0 {
+        Touch::Touched
+    } else if row.live > 0 {
+        Touch::Recent
+    } else {
+        Touch::Ended
+    })
+}
+
+pub async fn is_live(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    now: OffsetDateTime,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM sessions WHERE id = $1 AND revoked_at IS NULL AND expires_at > $2) AS "live!""#,
+        id,
+        now
+    )
+    .fetch_one(db)
+    .await?)
 }
 
 pub async fn revoke(
@@ -172,7 +204,7 @@ pub async fn list_for_user(
 ) -> Result<Vec<SessionListing>, StoreError> {
     Ok(sqlx::query_as!(
         SessionListing,
-        "SELECT id, method, second_factor, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent \
+        "SELECT id, method, second_factor, oidc_org_id, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent \
          FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2 AND last_used_at > $3 \
          ORDER BY id DESC",
         user_id,

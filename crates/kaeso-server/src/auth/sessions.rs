@@ -5,7 +5,8 @@ use kaeso_core::id::{SessionId, UserId};
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
 use kaeso_store::StoreError;
-use kaeso_store::pg::sessions::{self, NewSession, SessionRow};
+use kaeso_store::pg::sessions::{self, NewSession, SessionRow, Touch};
+use kaeso_store::pg::tokens::{self, TokenKind};
 use time::{Duration, OffsetDateTime};
 
 use crate::cache::hex;
@@ -52,6 +53,7 @@ pub struct SignIn {
 pub struct Created {
     pub token: secrecy::SecretString,
     pub id: SessionId,
+    pub expires_at: OffsetDateTime,
 }
 
 pub async fn create(
@@ -59,6 +61,16 @@ pub async fn create(
     now: OffsetDateTime,
     s: &SignIn,
 ) -> Result<Created, StoreError> {
+    create_until(db, now, s, now + ABSOLUTE_LIFETIME).await
+}
+
+pub async fn create_until(
+    db: &mut sqlx::PgConnection,
+    now: OffsetDateTime,
+    s: &SignIn,
+    expires_at: OffsetDateTime,
+) -> Result<Created, StoreError> {
+    let expires_at = expires_at.min(now + ABSOLUTE_LIFETIME);
     let token = random_token();
     let hash = secret::hash(&token);
     let id = SessionId::new();
@@ -73,7 +85,7 @@ pub async fn create(
             oidc_org_id: s.oidc_org,
             signed_in_at: s.signed_in_at.min(now),
             now,
-            expires_at: now + ABSOLUTE_LIFETIME,
+            expires_at,
             ip: s.ip,
             user_agent: s.user_agent.as_deref(),
         },
@@ -82,6 +94,7 @@ pub async fn create(
     Ok(Created {
         token: secrecy::SecretString::from(token),
         id,
+        expires_at,
     })
 }
 
@@ -111,10 +124,18 @@ pub async fn authenticate(
         return Ok(None);
     }
     if now - row.last_used_at >= TOUCH_EVERY {
-        sessions::touch(&state.pg, row.id, now).await?;
-        let mut touched = (*row).clone();
-        touched.last_used_at = now;
-        state.caches.sessions.put(&key, touched).await;
+        match sessions::touch(&state.pg, row.id, now).await? {
+            Touch::Touched => {
+                let mut touched = (*row).clone();
+                touched.last_used_at = now;
+                state.caches.sessions.put(&key, touched).await;
+            }
+            Touch::Ended => {
+                state.caches.sessions.invalidate(&key).await;
+                return Ok(None);
+            }
+            Touch::Recent => {}
+        }
     }
     Ok(Some(row))
 }
@@ -150,13 +171,11 @@ pub async fn revoke_all(
     user: UserId,
     keep: Option<SessionId>,
 ) -> Result<usize, StoreError> {
-    let hashes = sessions::revoke_all(
-        &state.pg,
-        user.uuid(),
-        keep.map(|k| k.uuid()),
-        state.clock.now(),
-    )
-    .await?;
+    let now = state.clock.now();
+    let hashes = sessions::revoke_all(&state.pg, user.uuid(), keep.map(|k| k.uuid()), now).await?;
+    for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
+        tokens::retire_all(&state.pg, kind, Some(user.uuid()), now).await?;
+    }
     forget(state, &hashes).await;
     Ok(hashes.len())
 }

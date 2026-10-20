@@ -224,6 +224,8 @@
   "instance.setInConfig": "Set in the gateway's configuration.",
   "instance.settingsFailed": "The instance settings couldn't load",
   "instance.signIn": "Sign-in",
+  "instance.signInAnotherWay": "Sign in another way to manage the instance",
+  "instance.signInAnotherWayHint": "Your SSO sign-in can't manage the instance; sign in with your password or an email link.",
   "instance.signInHint": "What the organization requires of its members.",
   "instance.signInLink": "Sign-in link",
   "instance.signInMethods": "Sign-in methods",

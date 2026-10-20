@@ -35,6 +35,7 @@ pub enum Fault {
 struct Grant {
     nonce: String,
     challenge: String,
+    subject: String,
     email: String,
     name: String,
 }
@@ -103,15 +104,26 @@ impl MockIdp {
         }
     }
     pub fn authorize(&self, authorization_url: &str, email: &str, name: &str) -> Authorized {
+        self.authorize_as(authorization_url, &format!("sub-{email}"), email, name)
+    }
+
+    pub fn authorize_as(
+        &self,
+        authorization_url: &str,
+        subject: &str,
+        email: &str,
+        name: &str,
+    ) -> Authorized {
         let url = url::Url::parse(authorization_url).expect("authorization URL");
         let q: HashMap<String, String> = url.query_pairs().into_owned().collect();
-        grant(&self.inner, &q, email, name).expect("a valid authorization request")
+        grant(&self.inner, &q, subject, email, name).expect("a valid authorization request")
     }
 }
 
 fn grant(
     inner: &Inner,
     q: &HashMap<String, String>,
+    subject: &str,
     email: &str,
     name: &str,
 ) -> Result<Authorized, String> {
@@ -129,6 +141,7 @@ fn grant(
     let grant = Grant {
         nonce: param("nonce")?,
         challenge: param("code_challenge")?,
+        subject: subject.to_owned(),
         email: email.to_owned(),
         name: name.to_owned(),
     };
@@ -183,7 +196,7 @@ async fn sign_in(
     else {
         return (StatusCode::BAD_REQUEST, "missing redirect_uri").into_response();
     };
-    match grant(&inner, &form, &email, &name) {
+    match grant(&inner, &form, &format!("sub-{email}"), &email, &name) {
         Ok(Authorized { code, state }) => {
             let mut to = redirect;
             to.query_pairs_mut()
@@ -297,7 +310,7 @@ async fn token(
     };
     let mut name = LocalizedClaim::new();
     name.insert(None, EndUserName::new(grant.name.clone()));
-    let standard = StandardClaims::new(SubjectIdentifier::new(format!("sub-{}", grant.email)))
+    let standard = StandardClaims::new(SubjectIdentifier::new(grant.subject.clone()))
         .set_email(Some(EndUserEmail::new(grant.email.clone())))
         .set_email_verified(Some(fault != Fault::UnverifiedEmail))
         .set_name(Some(name));

@@ -36,6 +36,7 @@ const WHILE_SCHEDULED: &[&str] = &["/orgs/{org}/restore"];
 pub enum Access {
     Public,
     Session,
+    Account,
     InstanceAdmin,
     Org(OrgRight),
     Project(ProjectRight),
@@ -46,6 +47,7 @@ impl Access {
         match self {
             Access::Public => "public".into(),
             Access::Session => "session".into(),
+            Access::Account => "account".into(),
             Access::InstanceAdmin => "instance_admin".into(),
             Access::Org(r) => format!("right:{}", r.as_str()),
             Access::Project(r) => format!("right:{}", r.as_str()),
@@ -58,11 +60,18 @@ impl Access {
             Access::Session => {
                 "**Access:** a signed-in console session; no right is needed.".into()
             }
-            Access::InstanceAdmin => "**Access:** a console session of an instance admin.".into(),
+            Access::Account => "**Access:** a signed-in console session that didn't come from an \
+                organization's SSO; such a session gets `other_sign_in_required`."
+                .into(),
+            Access::InstanceAdmin => "**Access:** a console session of an instance admin that \
+                didn't come from an organization's SSO."
+                .into(),
             Access::Org(r) => format!(
                 "**Right:** `{}` on the organization in the path{}.",
                 r.as_str(),
-                if r.needs_recent_sign_in() {
+                if r.needs_session() {
+                    "; a console session only, signed in within the last 15 minutes"
+                } else if r.needs_recent_sign_in() {
                     "; with a session, a sign-in within the last 15 minutes"
                 } else {
                     ""
@@ -158,7 +167,10 @@ fn document(op: &mut Operation, access: Access) {
     op.extensions = Some(ext);
     op.security = Some(match access {
         Access::Public => vec![SecurityRequirement::default()],
-        Access::Session | Access::InstanceAdmin => {
+        Access::Session | Access::Account | Access::InstanceAdmin => {
+            vec![SecurityRequirement::new("session", Vec::<String>::new())]
+        }
+        Access::Org(r) if r.needs_session() => {
             vec![SecurityRequirement::new("session", Vec::<String>::new())]
         }
         Access::Org(_) | Access::Project(_) => vec![
@@ -441,11 +453,20 @@ async fn check(
         Access::Session => {
             ctx.session()?;
         }
+        Access::Account => {
+            if from_sso(ctx.session()?) {
+                return Err(ApiError::OtherSignInRequired);
+            }
+        }
         Access::InstanceAdmin => {
-            if !ctx.session()?.is_instance_admin {
+            let session = ctx.session()?;
+            if !session.is_instance_admin {
                 return Err(ApiError::PermissionDenied(
                     "Only instance admins can do this.".into(),
                 ));
+            }
+            if from_sso(session) {
+                return Err(ApiError::OtherSignInRequired);
             }
         }
         Access::Org(right) => {
@@ -453,7 +474,13 @@ async fn check(
             let scope = match &ctx.caller {
                 Caller::Session(_) => org_scope(state, &ctx, org, None, changes_org).await?,
                 Caller::OrgKey(_) | Caller::ProjectKey(_) => {
-                    key_scope(state, &ctx, org, None).await?
+                    let scope = key_scope(state, &ctx, org, None).await?;
+                    if right.needs_session() {
+                        return Err(ApiError::PermissionDenied(
+                            "Only a console session can change SSO; API keys can't.".into(),
+                        ));
+                    }
+                    scope
                 }
                 Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
             };
@@ -631,7 +658,12 @@ async fn key_scope(
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PolicyGap {
     NeedsSso,
+    NeedsOtherSignIn,
     Needs2fa,
+}
+
+pub fn from_sso(session: &SessionRow) -> bool {
+    session.method == "oidc"
 }
 
 pub fn policy_gap(
@@ -640,9 +672,12 @@ pub fn policy_gap(
     require_sso: bool,
     require_2fa: bool,
 ) -> Option<PolicyGap> {
-    if require_sso && !(session.method == "oidc" && session.oidc_org_id == Some(org_id)) {
+    let own_sso = from_sso(session) && session.oidc_org_id == Some(org_id);
+    if require_sso && !own_sso {
         Some(PolicyGap::NeedsSso)
-    } else if require_2fa && session.method == "password" && !session.second_factor {
+    } else if from_sso(session) && !own_sso {
+        Some(PolicyGap::NeedsOtherSignIn)
+    } else if require_2fa && !own_sso && !session.second_factor {
         Some(PolicyGap::Needs2fa)
     } else {
         None
@@ -655,6 +690,7 @@ pub fn require_org_policy(session: &SessionRow, org: &Org) -> ApiResult<()> {
         Some(PolicyGap::NeedsSso) => Err(ApiError::PermissionDenied(
             "This organization requires signing in with SSO.".into(),
         )),
+        Some(PolicyGap::NeedsOtherSignIn) => Err(ApiError::OtherSignInRequired),
         Some(PolicyGap::Needs2fa) => Err(ApiError::PermissionDenied(
             "This organization requires two-factor authentication; set it up, then sign in again."
                 .into(),
@@ -724,4 +760,80 @@ async fn org_scope(
         },
         project_scope,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn session(method: &str, second_factor: bool, oidc_org: Option<uuid::Uuid>) -> SessionRow {
+        let now = OffsetDateTime::now_utc();
+        SessionRow {
+            id: uuid::Uuid::now_v7(),
+            user_id: uuid::Uuid::now_v7(),
+            method: method.to_owned(),
+            second_factor,
+            oidc_org_id: oidc_org,
+            signed_in_at: now,
+            last_used_at: now,
+            expires_at: now,
+            user_state: "active".into(),
+            is_instance_admin: false,
+        }
+    }
+
+    #[test]
+    fn only_a_second_factor_or_the_orgs_own_sso_meets_required_two_factor() {
+        let org = uuid::Uuid::now_v7();
+        let other = uuid::Uuid::now_v7();
+        for method in ["password", "magic_link", "setup", "signup"] {
+            assert_eq!(
+                policy_gap(&session(method, false, None), org, false, true),
+                Some(PolicyGap::Needs2fa),
+                "{method}"
+            );
+            assert_eq!(
+                policy_gap(&session(method, true, None), org, false, true),
+                None,
+                "{method}"
+            );
+        }
+        assert_eq!(
+            policy_gap(&session("oidc", false, Some(org)), org, false, true),
+            None
+        );
+        assert_eq!(
+            policy_gap(&session("oidc", false, Some(other)), org, false, true),
+            Some(PolicyGap::NeedsOtherSignIn)
+        );
+    }
+
+    #[test]
+    fn an_sso_session_opens_only_the_org_whose_provider_signed_it_in() {
+        let org = uuid::Uuid::now_v7();
+        let other = uuid::Uuid::now_v7();
+        let sso = session("oidc", false, Some(org));
+        assert_eq!(policy_gap(&sso, org, true, true), None);
+        assert_eq!(
+            policy_gap(&sso, other, false, false),
+            Some(PolicyGap::NeedsOtherSignIn)
+        );
+        assert_eq!(
+            policy_gap(&sso, other, true, false),
+            Some(PolicyGap::NeedsSso)
+        );
+        assert_eq!(
+            policy_gap(&session("oidc", false, None), org, false, false),
+            Some(PolicyGap::NeedsOtherSignIn),
+            "a session whose org is gone opens no org"
+        );
+        assert_eq!(
+            policy_gap(&session("password", false, None), org, true, false),
+            Some(PolicyGap::NeedsSso)
+        );
+        assert_eq!(
+            policy_gap(&session("password", false, None), org, false, false),
+            None
+        );
+    }
 }
