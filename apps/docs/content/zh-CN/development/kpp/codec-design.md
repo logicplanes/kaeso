@@ -99,6 +99,7 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 - 注释和未知字段会被报告，而不是被忽略；规范忽略的 `id` 或 `retry` 值作为未知字段保留（`SseEvent::other`）；
 - 没有空行结束的最后一帧仍会被报告；
 - 在一行中间结束的流会报告为 `SseError::Truncated`，而不是被丢弃。
+- 第一行是名称以 U+FEFF 开头的字段的帧，会在一个空行之后写出，因为读取方会把流开头的这些字节当作字节顺序标记并丢弃。
 
 每个流解码器都把没有数据的帧作为 `Extra` 传递，其原始 JSON 中没有 `data` 键；每个编码器写回时也不带 `data:` 行。在 OpenAI Chat Completions 中，没有数据的 `event: error` 帧就是这样的 `Extra`，而不是错误。
 
