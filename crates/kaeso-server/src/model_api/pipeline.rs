@@ -835,7 +835,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             }
             let headers = resp.headers;
             let (reply, out) = off_thread(bytes.len(), move || {
-                let reply = dispatch::decode_response(dialect, status, &headers, &bytes, &ectx)?;
+                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)?;
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
             })
@@ -871,12 +871,29 @@ fn provider_error(
     body: &[u8],
     ctx: &EgressCtx,
 ) -> KppError {
-    let mut err = declared_key_refusal(
+    without_key_fragments(declared_key_refusal(
         provider,
         dispatch::decode_provider_error(dialect, status, headers, body, ctx),
-    );
-    err.message = kaeso_core::secret::redact_tokens(&err.message);
+    ))
+}
+
+fn decode_reply(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+    ctx: &EgressCtx,
+) -> Result<Reply, KppError> {
+    dispatch::decode_response(dialect, status, headers, body, ctx).map_err(without_key_fragments)
+}
+
+pub(crate) fn without_key_fragments(mut err: KppError) -> KppError {
+    redact_key_fragments(&mut err);
     err
+}
+
+pub(crate) fn redact_key_fragments(err: &mut KppError) {
+    err.message = kaeso_core::secret::redact_tokens(&err.message);
 }
 
 pub(crate) fn declared_key_refusal(
@@ -939,5 +956,9 @@ mod tests {
             err.message,
             "Provider returned error: Rate limit reached for key sk-[redacted] in organization org-[redacted]."
         );
+
+        let in_a_reply =
+            decode_reply(DialectId::OpenAiChat, 200, &HeaderList::new(), body, &ctx).unwrap_err();
+        assert_eq!(in_a_reply.message, err.message);
     }
 }

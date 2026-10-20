@@ -325,7 +325,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     let mut failed = false;
                     for e in &mut events {
                         if let StreamEvent::Error(err) = e {
-                            err.message = kaeso_core::secret::redact_tokens(&err.message);
+                            super::pipeline::redact_key_fragments(err);
                             broken.get_or_insert_with(|| Broken::event(err));
                             failed = true;
                         }
@@ -346,7 +346,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     app.progress.count(&events);
                     for e in &mut events {
                         if let StreamEvent::Error(err) = e {
-                            err.message = kaeso_core::secret::redact_tokens(&err.message);
+                            super::pipeline::redact_key_fragments(err);
                             broken.get_or_insert_with(|| Broken::ended(err.clone()));
                         }
                     }
