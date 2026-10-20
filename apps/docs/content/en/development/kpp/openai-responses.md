@@ -154,9 +154,9 @@ There is one KPP block per message content part, function call, reasoning item a
 | `response.output_text.delta` | `BlockDelta` `Text`; `logprobs` extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`, `response.refusal.done` | attached to the part's `BlockStop` (`@done`) |
+| `response.output_text.done`, `response.refusal.done` | attached to the part's `BlockStop` (`@done`); when the part had no deltas, its `text` or `refusal` becomes the part's `BlockDelta`, so other dialects see it; Responses apps get the event back as it came. `response.function_call_arguments.done` without deltas likewise becomes the call's `ToolArguments`. |
 | `response.content_part.done` (message) | `BlockStop` |
-| `response.output_item.done` (`message`) | attached to the next lifecycle event (`@close`) |
+| `response.output_item.done` (`message`) | attached to the next lifecycle event (`@close`); a message whose parts were never streamed (no `content_part.added`): each `output_text` or `refusal` part of the item becomes a `BlockStart`, `BlockDelta` and `BlockStop`, skipped when written back to Responses apps (form `skip`). |
 | `response.output_item.added` (`function_call`) | `BlockStart` `ToolCall` (`call_id`, `name`) |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | attached to the `BlockStop` (`@done`) |

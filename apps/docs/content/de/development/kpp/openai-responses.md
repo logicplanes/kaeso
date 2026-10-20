@@ -154,9 +154,9 @@ Es gibt einen KPP-Block pro Inhaltsteil einer Nachricht, Funktionsaufruf, Reason
 | `response.output_text.delta` | `BlockDelta` `Text`; `logprobs` Extras |
 | `response.output_text.annotation.added` | `BlockDelta` `Citation` |
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
-| `response.output_text.done`, `response.refusal.done` | an den `BlockStop` des Parts angehängt (`@done`) |
+| `response.output_text.done`, `response.refusal.done` | an den `BlockStop` des Parts angehängt (`@done`); hatte der Part keine Deltas, wird sein `text` oder `refusal` zum `BlockDelta` des Parts, damit andere Dialekte ihn sehen; Responses-Apps bekommen das Event so zurück, wie es kam. `response.function_call_arguments.done` ohne Deltas wird ebenso zu den `ToolArguments` des Aufrufs. |
 | `response.content_part.done` (Nachricht) | `BlockStop` |
-| `response.output_item.done` (`message`) | an das nächste Lebenszyklus-Event angehängt (`@close`) |
+| `response.output_item.done` (`message`) | an das nächste Lebenszyklus-Event angehängt (`@close`); bei einer Nachricht, deren Parts nie gestreamt wurden (kein `content_part.added`), wird jeder `output_text`- oder `refusal`-Part des Items zu `BlockStart`, `BlockDelta` und `BlockStop`, die beim Zurückschreiben an Responses-Apps übersprungen werden (Form `skip`). |
 | `response.output_item.added` (`function_call`) | `BlockStart` `ToolCall` (`call_id`, `name`) |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | an den `BlockStop` angehängt (`@done`) |

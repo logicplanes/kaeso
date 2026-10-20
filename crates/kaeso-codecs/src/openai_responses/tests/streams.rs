@@ -696,3 +696,51 @@ mod split {
         }
     }
 }
+
+#[test]
+fn content_that_arrives_only_in_done_events_reaches_kpp() {
+    let text = String::from_utf8(fixture("streams", "function-call-stream", "sse")).unwrap();
+    let without_deltas: String = text
+        .split_inclusive("\n\n")
+        .filter(|f| !f.contains("response.function_call_arguments.delta"))
+        .collect();
+    let streamed: String = decode_stream_chunked(text.as_bytes(), usize::MAX)
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                Delta::ToolArguments(a) => Some(a.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let events = decode_stream_chunked(without_deltas.as_bytes(), 11);
+    let arguments: Vec<&str> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                Delta::ToolArguments(a) => Some(a.as_str()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    assert_eq!(arguments, [streamed.as_str()]);
+    let ctx = EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(true));
+    assert_sse_eq(
+        "done-only arguments",
+        without_deltas.as_bytes(),
+        &encode_stream(&events, &ctx),
+    );
+    let texts: Vec<String> = stream("text-done-only")
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                Delta::Text(t) => Some(t.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    assert_eq!(texts, ["Hi there! How can I assist you today?"]);
+}

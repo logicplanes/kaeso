@@ -55,6 +55,7 @@ enum Action {
     Hold,
     Pre,
     Main(Vec<StreamEvent>),
+    Unstreamed(Vec<StreamEvent>),
     HoldError(KppError),
     Broken(String),
     Other,
@@ -71,6 +72,8 @@ pub(crate) struct Decoder {
     current_message: Option<i64>,
     items: HashMap<i64, (u32, ItemKind)>,
     parts: HashMap<(i64, i64), u32>,
+    streamed: std::collections::HashSet<u32>,
+    with_parts: std::collections::HashSet<i64>,
     held_error: Option<(KppError, Frame)>,
     inert: bool,
 }
@@ -88,6 +91,8 @@ impl Decoder {
             current_message: None,
             items: HashMap::new(),
             parts: HashMap::new(),
+            streamed: std::collections::HashSet::new(),
+            with_parts: std::collections::HashSet::new(),
             held_error: None,
             inert: false,
         }
@@ -230,6 +235,20 @@ impl Decoder {
                 self.held_error = Some((err, f));
             }
             Action::Pre => self.pending.push(f),
+            Action::Unstreamed(events) => {
+                if !self.engine.started()
+                    && let Err(e) = self.synthesize_start(out)
+                {
+                    self.flush_pending(out);
+                    self.fail(out, e);
+                    return;
+                }
+                self.flush_pending(out);
+                for event in events {
+                    self.run(event, Vec::new(), out);
+                }
+                self.pending.push(f);
+            }
             Action::Main(mut events) => {
                 let Some(last) = events.pop() else {
                     self.flush_pending(out);
@@ -310,6 +329,33 @@ impl Decoder {
         self.run(StreamEvent::ResponseStart(start), frames, out);
     }
 
+    fn unstreamed_parts(&mut self, item: &RawValue) -> Vec<StreamEvent> {
+        let Ok(message) = serde_json::from_str::<Value>(item.get()) else {
+            return Vec::new();
+        };
+        let Some(parts) = message.get("content").and_then(Value::as_array) else {
+            return Vec::new();
+        };
+        let mut events = Vec::new();
+        for part in parts {
+            let (header, delta) = match (
+                part.get("type").and_then(Value::as_str),
+                part.get("text")
+                    .or_else(|| part.get("refusal"))
+                    .and_then(Value::as_str),
+            ) {
+                (Some("output_text"), Some(t)) => (BlockHeader::Text, Delta::Text(t.to_owned())),
+                (Some("refusal"), Some(t)) => (BlockHeader::Refusal, Delta::Refusal(t.to_owned())),
+                _ => return Vec::new(),
+            };
+            let index = self.next_index();
+            events.push(StreamEvent::BlockStart(BlockStart::new(index, header)));
+            events.push(StreamEvent::BlockDelta(BlockDelta::new(index, delta)));
+            events.push(StreamEvent::BlockStop(BlockStop::new(index)));
+        }
+        events
+    }
+
     fn next_index(&mut self) -> u32 {
         let i = self.next_block;
         self.next_block = self.next_block.saturating_add(1);
@@ -379,6 +425,7 @@ impl Decoder {
                 if self.items.contains_key(&oi) {
                     return self.broken(f);
                 }
+                self.with_parts.insert(oi);
                 let mut extras = Extras::new(self.origin.clone());
                 let header = match type_tag(part).ok().flatten().as_deref() {
                     Some("output_text") => BlockHeader::Text,
@@ -407,6 +454,7 @@ impl Decoder {
                 } else {
                     Delta::Refusal(text)
                 };
+                self.streamed.insert(index);
                 Action::Main(vec![block_delta(index, d)])
             }
             "response.output_text.annotation.added" => {
@@ -416,10 +464,43 @@ impl Decoder {
                 let c = Citation::new(self.origin.clone(), RawJson::from(a));
                 Action::Main(vec![block_delta(index, Delta::Citation(c))])
             }
-            "response.output_text.done"
-            | "response.refusal.done"
-            | "response.function_call_arguments.done"
-            | "response.reasoning_summary_text.done"
+            "response.output_text.done" | "response.refusal.done" => {
+                let key = if f.ty == "response.output_text.done" {
+                    "text"
+                } else {
+                    "refusal"
+                };
+                match (self.part(oi, ci), f.str(key)) {
+                    (Some(index), Some(text))
+                        if !text.is_empty() && !self.streamed.contains(&index) =>
+                    {
+                        self.streamed.insert(index);
+                        let d = if key == "text" {
+                            Delta::Text(text.to_owned())
+                        } else {
+                            Delta::Refusal(text.to_owned())
+                        };
+                        Action::Main(vec![block_delta(index, d)])
+                    }
+                    _ => Action::Pre,
+                }
+            }
+            "response.function_call_arguments.done" => {
+                match (oi.and_then(|oi| self.items.get(&oi)), f.str("arguments")) {
+                    (Some((index, ItemKind::Call)), Some(args))
+                        if !args.is_empty() && !self.streamed.contains(index) =>
+                    {
+                        let index = *index;
+                        self.streamed.insert(index);
+                        Action::Main(vec![block_delta(
+                            index,
+                            Delta::ToolArguments(args.to_owned()),
+                        )])
+                    }
+                    _ => Action::Pre,
+                }
+            }
+            "response.reasoning_summary_text.done"
             | "response.reasoning_summary_part.done"
             | "response.reasoning_text.done" => Action::Pre,
             "response.content_part.done" => {
@@ -436,7 +517,9 @@ impl Decoder {
             "response.function_call_arguments.delta" => {
                 match (oi.and_then(|oi| self.items.get(&oi)), delta()) {
                     (Some((index, ItemKind::Call)), Some(t)) => {
-                        Action::Main(vec![block_delta(*index, Delta::ToolArguments(t))])
+                        let index = *index;
+                        self.streamed.insert(index);
+                        Action::Main(vec![block_delta(index, Delta::ToolArguments(t))])
                     }
                     _ => self.broken(f),
                 }
@@ -473,6 +556,12 @@ impl Decoder {
                 if type_tag(item).ok().flatten().as_deref() == Some("message") {
                     if self.current_message == Some(oi) {
                         self.current_message = None;
+                    }
+                    if !self.with_parts.contains(&oi) {
+                        let events = self.unstreamed_parts(item);
+                        if !events.is_empty() {
+                            return Action::Unstreamed(events);
+                        }
                     }
                     return Action::Pre;
                 }
