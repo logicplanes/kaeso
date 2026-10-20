@@ -268,7 +268,7 @@
   "errors.providerInvalid": "Der Anbieter hat die Anfrage als ungültig abgelehnt; die Einstellungen des Modells prüfen.",
   "errors.providerKeyRefused": "Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt; ein Admin der Organisation kann ihn ersetzen.",
   "errors.providerKeyUnavailable": "Kaeso kann den Anbieter-Schlüssel des Projekts gerade nicht laden; gleich erneut versuchen.",
-  "errors.providerIdForm": "`provider` muss eine Anbieter-ID aus Kleinbuchstaben, Ziffern und einzelnen Bindestrichen sein.",
+  "errors.providerIdForm": "`provider` muss eine Anbieter-ID wie `openai` sein.",
   "errors.providerOneOf": "Der Anbieter muss einer von {providers} sein.",
   "errors.providerOverloaded": "Der Anbieter ist gerade überlastet; gleich erneut versuchen.",
   "errors.providerRateLimited": "Der Anbieter drosselt den Anbieter-Schlüssel; gleich erneut versuchen.",

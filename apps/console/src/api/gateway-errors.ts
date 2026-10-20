@@ -275,7 +275,7 @@ const messages = (): Rule[] => [
   rule("errors.notActiveProject", (v) => t("errors.notActiveProject", "`{project}` is not an active project of this organization.", v)),
   rule("errors.secretLength", (v) => t("errors.secretLength", "The secret must be {min} to {max} characters.", v)),
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
-  rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id of lowercase letters, digits and single hyphens.")),
+  rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id, such as `openai`.")),
   rule("errors.providerOneOf", (v) => t("errors.providerOneOf", "The provider must be one of {providers}.", v)),
   rule("errors.noModelInCatalogue", () => t("errors.noModelInCatalogue", "No such model in this project's catalogue.")),
   rule("errors.modelNotInCatalogue", (v) => t("errors.modelNotInCatalogue", "The model `{model}` is not in this project's catalogue.", v)),

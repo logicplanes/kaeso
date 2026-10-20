@@ -446,7 +446,7 @@ fn provider_filter(id: &str) -> ApiResult<String> {
         .map_err(|_| {
             ApiError::invalid(
                 "provider",
-                "`provider` must be a provider id of lowercase letters, digits and single hyphens.",
+                "`provider` must be a provider id, such as `openai`.",
             )
         })
 }

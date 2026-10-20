@@ -298,7 +298,7 @@
   "errors.projectRoleGiven": "This is a project role; choose an org role.",
   "errors.providerBilling": "The provider refused the request for billing reasons; check the provider account.",
   "errors.providerFailed": "The provider failed to answer; try again shortly.",
-  "errors.providerIdForm": "`provider` must be a provider id of lowercase letters, digits and single hyphens.",
+  "errors.providerIdForm": "`provider` must be a provider id, such as `openai`.",
   "errors.providerInvalid": "The provider refused the request as invalid; check the model's settings.",
   "errors.providerKeyRefused": "The provider refused the project's provider key; an org admin can replace it.",
   "errors.providerKeyUnavailable": "Kaeso cannot load the project's provider key right now; try again shortly.",
