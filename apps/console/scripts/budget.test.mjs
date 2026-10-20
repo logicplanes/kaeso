@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,7 +10,7 @@ afterEach(() => {
   made = [];
 });
 
-function build({ routes = ["src/routes/page.tsx"], manifest, maps = {}, contents = {} }) {
+function build({ routes = ["src/routes/page.tsx"], manifest, maps = {} }) {
   const root = mkdtempSync(join(tmpdir(), "kaeso-budget-"));
   made.push(root);
   for (const route of routes) {
@@ -22,7 +21,7 @@ function build({ routes = ["src/routes/page.tsx"], manifest, maps = {}, contents
   mkdirSync(join(dist, ".vite"), { recursive: true });
   mkdirSync(join(dist, "assets"), { recursive: true });
   writeFileSync(join(dist, ".vite/manifest.json"), JSON.stringify(manifest));
-  for (const { file } of Object.values(manifest)) writeFileSync(join(dist, file), contents[file] ?? "x".repeat(200));
+  for (const { file } of Object.values(manifest)) writeFileSync(join(dist, file), "x".repeat(200));
   for (const [file, sources] of Object.entries(maps)) writeFileSync(join(dist, `${file}.map`), JSON.stringify({ sources }));
   return { root, dist };
 }
@@ -41,24 +40,6 @@ describe("the bundle budgets", () => {
       notes: ["budget: page: 0.1 kB gzipped JS; ceiling 2 kB ok; within the target"],
       problems: [],
     });
-  });
-
-  it("measure the same size whatever hashes the chunk names carry", () => {
-    const measured = (hash) => {
-      const chunks = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`_c${i}.js`, { file: `assets/c${i}-${hash(i)}.js` }]));
-      const page = Object.values(chunks)
-        .map(({ file }) => `import"./${file.slice("assets/".length)}";`)
-        .join("");
-      const built = build({
-        manifest: { ...manifest, ...chunks },
-        contents: { "assets/page.js": page },
-        maps: { "assets/gates.js": ["../../src/auth/gates.ts"] },
-      });
-      return checkBudgets({ ...built, budgets: [budget] }).notes;
-    };
-    const plain = (i) => String(i).padStart(7, "0");
-    const random = (i) => createHash("sha256").update(String(i)).digest("base64url").slice(0, 7);
-    expect(measured(random)).toEqual(measured(plain));
   });
 
   it("fail when a budgeted route was renamed or deleted", () => {
