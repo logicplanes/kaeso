@@ -35,6 +35,19 @@ order: 6
 
 预算最多可在其额度的 10 个百分比处提醒，默认为 50%、80% 和 100%。每到一个提醒点，Kaeso 会给组织的所有者和管理员以及项目的管理员发送邮件。对于密钥的预算，密钥所有者也会收到邮件。每个人都可以在账户中关闭**预算提醒**。
 
+## 支出预算无法计价的功能
+
+Kaeso 按 token 为请求计价。有些功能还会按次计费或按更高费率计费，Kaeso 无法统计这部分费用。因此，只要请求适用任何支出预算（无论硬性还是软性），当请求使用以下功能时，Kaeso 都会在请求到达服务商之前以状态码 403 拒绝它：
+
+- 由服务商运行的工具，例如 Anthropic 的 `web_search` 或 `code_execution`，或 OpenAI 的 `web_search`、`file_search`、`image_generation`、`code_interpreter` 或 `mcp`；
+- `mcp_servers`、`web_search_options`、OpenRouter 的 `plugins` 或 xAI 的 `search_parameters`；
+- `auto`、`default`、`flex`、`on_demand` 或 `standard_only` 以外的 `service_tier`，例如 `priority`；
+- `anthropic-beta` 中的 `context-1m-…`，它会按更高费率对长提示词计费。
+
+由应用自己运行的工具可以使用：函数和自定义工具，Anthropic 的 `bash`、`text_editor`、`computer` 和 `memory`，以及 OpenAI 的 `local_shell`、`apply_patch` 和 `computer_use_preview`。token 预算和速率限制不会拒绝这些功能；没有支出预算时，所有功能都可以使用。
+
+消息会指出该功能和预算所在的层级，例如 "This key has a spend budget that can't price `web_search_20250305`; ask an admin."。要使用此类功能，请使用不受任何支出预算约束的密钥调用：密钥本身、其所有者和项目都没有支出预算。
+
 ## 更改限额
 
 编辑限额可更改其额度；对于预算，还可更改提醒和是否为硬性。要更改类型、周期或模型，请移除该限额后重新添加。

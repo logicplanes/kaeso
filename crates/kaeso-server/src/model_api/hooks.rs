@@ -4,6 +4,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use futures::future::BoxFuture;
 use kaeso_core::catalogue::Fields;
+use kaeso_core::cost::Unpriced;
 use kaeso_core::id::RequestId;
 use kaeso_core::limits::WorstCase;
 use kaeso_kpp::{DialectId, RequestKind, Response, Usage};
@@ -46,6 +47,7 @@ pub struct Admission {
     pub at: OffsetDateTime,
     pub timeout: Duration,
     pub worst: WorstCase,
+    pub unpriced: Option<Unpriced>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -65,6 +67,7 @@ pub struct Refusal {
     pub status: u16,
     pub message: String,
     pub retry_after: Option<Duration>,
+    pub param: Option<&'static str>,
 }
 
 pub trait Limits: Send + Sync + std::fmt::Debug {

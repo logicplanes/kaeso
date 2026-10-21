@@ -608,20 +608,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         at: rec.outcome().started_at,
         timeout: timeouts.request,
         worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
+        unpriced: kaeso_core::cost::unpriced(&req, plan.dialect),
     };
     rec.reservation = state
         .limits
         .admit(state, &admission)
         .await
         .map_err(|refusal| {
-            let kind = if refusal.status == 503 {
-                ErrorKind::ProviderError
-            } else {
-                ErrorKind::RateLimited
+            let kind = match refusal.status {
+                503 => ErrorKind::ProviderError,
+                403 => ErrorKind::PermissionDenied,
+                _ => ErrorKind::RateLimited,
             };
             let mut e = error(kind, refusal.status, refusal.message);
             if let Some(r) = refusal.retry_after {
                 e = e.with_retry_after(r);
+            }
+            if let Some(p) = refusal.param {
+                e = e.with_param(p);
             }
             fail(Stage::Limits)(e)
         })?;

@@ -35,6 +35,19 @@ Eine Rate lehnt Anfragen darüber immer ab und warnt nie. Ein Budget ist hart, s
 
 Ein Budget warnt bei bis zu 10 Prozentwerten seines Betrags, standardmäßig bei 50, 80 und 100 Prozent. Bei jedem schickt Kaeso eine E-Mail an die Inhaber und Admins der Organisation und an die Admins des Projekts. Beim Budget eines Schlüssels geht sie auch an dessen Inhaber. Jede Person kann diese E-Mails unter **Budget-Warnungen** in ihrem Konto abschalten.
 
+## Funktionen, die ein Ausgabenbudget nicht bepreisen kann
+
+Kaeso bepreist eine Anfrage nach ihren Tokens. Manche Funktionen rechnen zusätzlich pro Aufruf oder zu einem höheren Satz ab, und das kann Kaeso nicht zählen. Solange ein Ausgabenbudget für eine Anfrage gilt, hart oder weich, lehnt Kaeso sie deshalb mit Status 403 ab, bevor sie den Anbieter erreicht, wenn sie Folgendes verwendet:
+
+- ein Werkzeug, das der Anbieter ausführt, etwa `web_search` oder `code_execution` von Anthropic oder `web_search`, `file_search`, `image_generation`, `code_interpreter` oder `mcp` von OpenAI;
+- `mcp_servers`, `web_search_options`, `plugins` von OpenRouter oder `search_parameters` von xAI;
+- einen `service_tier` außer `auto`, `default`, `flex`, `on_demand` oder `standard_only`, etwa `priority`;
+- die `anthropic-beta` `context-1m-…`, die lange Prompts zu einem höheren Satz abrechnet.
+
+Werkzeuge, die die App selbst ausführt, sind erlaubt: Funktionen und eigene Werkzeuge, `bash`, `text_editor`, `computer` und `memory` von Anthropic sowie `local_shell`, `apply_patch` und `computer_use_preview` von OpenAI. Token-Budgets und Raten lehnen diese Funktionen nicht ab, und ohne Ausgabenbudget sind alle Funktionen erlaubt.
+
+Die Meldung nennt die Funktion und die Ebene des Budgets, etwa „This key has a spend budget that can't price `web_search_20250305`; ask an admin.“ Um eine solche Funktion zu nutzen, rufen Sie sie mit einem Schlüssel auf, für den kein Ausgabenbudget gilt: weder das des Schlüssels noch das seines Inhabers noch das des Projekts.
+
 ## Limit ändern
 
 Beim Bearbeiten ändern Sie den Betrag eines Limits und, bei einem Budget, seine Warnungen und ob es hart ist. Um Art, Zeitraum oder Modell zu ändern, entfernen Sie das Limit und fügen Sie ein neues hinzu.

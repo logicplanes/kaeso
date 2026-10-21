@@ -453,5 +453,8 @@
   "errors.timeoutStage.connect": "Verbindungsaufbau",
   "errors.timeoutStage.firstByte": "Zeit bis zum ersten Byte",
   "errors.timeoutStage.idleStream": "Stream ohne Daten",
-  "errors.timeoutStage.request": "Anfrage"
+  "errors.timeoutStage.request": "Anfrage",
+  "errors.unpricedFeature.key": "Dieser Schlüssel hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
+  "errors.unpricedFeature.member": "Das Mitglied hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
+  "errors.unpricedFeature.project": "Das Projekt hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin."
 }

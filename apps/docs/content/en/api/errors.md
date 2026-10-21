@@ -162,6 +162,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 401 | The key's member or service account is no longer active, or its project or organization can't be used. |
 | 403 | The key has platform access only, or it is a platform key. Neither calls models. |
 | 403 | The key's member or service account lacks the right `api.request`, or may not use this model. |
+| 403 | A spend budget applies, and the request uses a feature the provider bills beyond tokens, such as a provider-run tool or `service_tier: priority` ([limits and budgets](../console/limits-and-budgets.md#features-a-spend-budget-cant-price)). |
 | 404 | The model isn't in the project's catalogue, or the provider doesn't serve it to the project's provider key. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |

@@ -45,6 +45,20 @@ describe("a refusal with a budget or a rate", () => {
   });
 });
 
+describe("a refusal of a feature a spend budget can't price", () => {
+  it("keeps the feature as code in German and Chinese", async () => {
+    const message = "The member has a spend budget that can't price `image_generation`; ask an admin.";
+    await speak("de");
+    expect((await errorFromResponse(refusal(message))).message).toBe(
+      "Das Mitglied hat ein Ausgabenbudget, das `image_generation` nicht bepreisen kann; wenden Sie sich an einen Admin.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal("This key has a spend budget that can't price `service_tier: priority`; ask an admin."))).message).toBe(
+      "此密钥有支出预算，无法为 `service_tier: priority` 计价，请联系管理员。",
+    );
+  });
+});
+
 describe("a refusal of a spend budget that is too large", () => {
   it("is translated in German and Chinese", async () => {
     const message = "The amount must be positive and at most 1,000,000,000 USD.";

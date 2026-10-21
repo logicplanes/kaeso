@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
 use futures::future::BoxFuture;
+use kaeso_core::cost::Unpriced;
 use kaeso_core::limits::{self, Kind, Level, Limit, Period, Subject};
 use kaeso_store::StoreError;
 use kaeso_store::pg::limits as store;
@@ -343,6 +344,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
+            param: None,
         },
         Why::Over(retry) if l.kind.is_rate() => {
             let secs = u64::try_from(retry.max(1)).unwrap_or(1);
@@ -354,6 +356,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     l.describe()
                 ),
                 retry_after: Some(Duration::from_secs(secs)),
+                param: None,
             }
         }
         Why::Over(_) => {
@@ -375,8 +378,30 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                     l.describe()
                 ),
                 retry_after: None,
+                param: None,
             }
         }
+    }
+}
+
+fn unpriced_refusal(subject: Subject, u: &Unpriced) -> Refusal {
+    let feature = &u.feature;
+    let message = match subject.level() {
+        Level::Project => {
+            format!("The project has a spend budget that can't price `{feature}`; ask an admin.")
+        }
+        Level::Member => {
+            format!("The member has a spend budget that can't price `{feature}`; ask an admin.")
+        }
+        Level::Key => {
+            format!("This key has a spend budget that can't price `{feature}`; ask an admin.")
+        }
+    };
+    Refusal {
+        status: 403,
+        message,
+        retry_after: None,
+        param: Some(u.param),
     }
 }
 
@@ -465,6 +490,7 @@ impl Limits for ValkeyLimits {
                             "Kaeso cannot check this project's limits right now; try again shortly."
                                 .into(),
                         retry_after: None,
+                        param: None,
                     });
                 }
             };
@@ -477,6 +503,15 @@ impl Limits for ValkeyLimits {
             );
             if applicable.is_empty() {
                 return Ok(Reservation::default());
+            }
+            if let Some(u) = &a.unpriced
+                && let Some(l) = applicable
+                    .iter()
+                    .filter(|l| l.kind == Kind::SpendBudget)
+                    .max_by_key(|l| l.subject.level())
+            {
+                metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
+                return Err(unpriced_refusal(l.subject, u));
             }
             if let Err(e) = settle(state, &applicable, a.at).await {
                 return fail(&applicable, &e);
@@ -518,6 +553,7 @@ fn unavailable() -> Refusal {
         message: "Kaeso cannot check this project's hard budgets right now; try again shortly."
             .into(),
         retry_after: None,
+        param: None,
     }
 }
 

@@ -862,6 +862,25 @@ async fn member_and_project_limits_and_budgets_apply() {
 }
 
 #[tokio::test]
+async fn a_spend_budget_refuses_a_provider_billed_tool_in_the_playground() {
+    let env = common::v1::env(None, None).await;
+    let path = responses_path(&env);
+    limit(&env, json!({ "level": "member", "user": env.owner.user_id, "kind": "spend_budget", "period": "month", "amount": 5 })).await;
+    let mut body = ask("gpt-4o", "Draw a cat.");
+    body["tools"] = json!([{ "type": "image_generation" }]);
+    env.mock.clear();
+    let r = env.app.post(&path, body, Some(&env.owner.cookie)).await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(r.error_type(), "permission_denied");
+    assert_eq!(
+        r.body["error"]["message"],
+        "The member has a spend budget that can't price `image_generation`; ask an admin."
+    );
+    assert!(env.mock.received().is_empty());
+    completed(&play(&env.app, &path, &env.owner.cookie, &ask("gpt-4o", "Hi")).await);
+}
+
+#[tokio::test]
 async fn playground_requests_are_charged_and_logged_as_the_members() {
     let env = common::v1::env(None, None).await;
     env.app

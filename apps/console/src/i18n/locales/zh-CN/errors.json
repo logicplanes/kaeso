@@ -453,5 +453,8 @@
   "errors.timeoutStage.connect": "建立连接",
   "errors.timeoutStage.firstByte": "首字节时间",
   "errors.timeoutStage.idleStream": "流空闲",
-  "errors.timeoutStage.request": "请求"
+  "errors.timeoutStage.request": "请求",
+  "errors.unpricedFeature.key": "此密钥有支出预算，无法为 `{feature}` 计价，请联系管理员。",
+  "errors.unpricedFeature.member": "成员有支出预算，无法为 `{feature}` 计价，请联系管理员。",
+  "errors.unpricedFeature.project": "项目有支出预算，无法为 `{feature}` 计价，请联系管理员。"
 }
