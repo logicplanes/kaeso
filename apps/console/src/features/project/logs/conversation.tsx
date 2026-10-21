@@ -1,7 +1,8 @@
-import { Badge, Banner, Collapsible, JsonView, Link, Pill, Separator, Surface, Text, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { Badge, Banner, JsonView, Link, Pill, Separator, Surface, Text, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
+import { Reasoning } from "@logicplanes/kaeso-ui/playground";
 
 const roleLabel = (role: ConversationMessage["role"]): string =>
   ({
@@ -57,11 +58,11 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
       {blocks.map((b, i) => {
         switch (b.type) {
           case "text":
-            return <Markdown key={i} text={b.text} />;
+            return <Markdown key={i} text={b.text} className="mx-12" />;
           case "tool_call":
             return (
               <div key={i} className="flex flex-col gap-8">
-                <Text variant="small" weight="medium" tone="secondary" className="flex min-w-0 flex-wrap items-baseline gap-x-8">
+                <Text variant="small" weight="medium" tone="secondary" className="flex min-w-0 flex-wrap items-baseline gap-x-8 mx-12">
                   {tRich("logs.conversation.called", "Called {tool}", {
                     tool: (
                       <Text as="span" variant="small" mono>
@@ -106,13 +107,9 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
             );
           case "reasoning":
             return (
-              <Collapsible
+              <Reasoning
                 key={i}
-                title={
-                  <Text as="span" tone="secondary">
-                    {t("logs.conversation.reasoning", "Reasoning")}
-                  </Text>
-                }
+                title={t("logs.conversation.reasoning", "Reasoning")}
                 hint={
                   b.redacted
                     ? t("logs.conversation.redacted", "Redacted by the provider")
@@ -120,19 +117,18 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
                       ? undefined
                       : t("logs.conversation.hidden", "Hidden by the display setting")
                 }
+                text={b.text}
               >
                 {b.redacted ? (
                   <Text variant="small" tone="secondary">
                     {t("logs.conversation.redactedHint", "The provider redacted this reasoning; only its encrypted form was returned.")}
                   </Text>
-                ) : b.text ? (
-                  <Markdown text={b.text} size="small" tone="secondary" />
-                ) : (
+                ) : b.text ? undefined : (
                   <Text variant="small" tone="secondary">
                     {t("logs.conversation.hiddenHint", "The model reasoned, but the request did not ask to show its reasoning.")}
                   </Text>
                 )}
-              </Collapsible>
+              </Reasoning>
             );
           case "image":
             return <ImageInput key={i} src={b.src} alt={b.alt} mediaType={b.media_type} />;
@@ -161,7 +157,7 @@ export default function Conversation({ messages }: { messages: ConversationMessa
         const blocks = typeof m.content === "string" ? [{ type: "text" as const, text: m.content }] : m.content;
         return (
           <section key={i} aria-label={roleLabel(m.role)} className="flex flex-col gap-8">
-            <Text as="span" variant="caption" tone={m.role === "assistant" ? "default" : "secondary"}>
+            <Text as="span" variant="caption" tone={m.role === "assistant" ? "default" : "secondary"} className="mx-12">
               {roleLabel(m.role)}
             </Text>
             <Blocks blocks={blocks} />

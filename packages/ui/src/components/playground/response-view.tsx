@@ -1,11 +1,8 @@
 import { forwardRef, useId, useRef, useState, type ReactNode } from "react";
-import { Collapsible as BaseCollapsible } from "@base-ui/react/collapsible";
 import { cn } from "../../utils/cn.js";
-import { icons } from "../../icons/vocabulary.js";
-import { formatDuration } from "../../format/index.js";
-import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
 import { Markdown } from "../markdown/markdown.js";
+import { Reasoning } from "./reasoning.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 
@@ -45,65 +42,6 @@ function incompleteText(t: UiText, reason: string | undefined): string {
   return t("responseView.incomplete", "The model ended the response early");
 }
 
-function lastLine(text: string) {
-  const lines = text.trim().split("\n");
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const l = (lines[i] ?? "").replace(/[*_`#>]+/g, "").trim();
-    if (l) return l;
-  }
-  return "";
-}
-
-function Thinking({
-  text,
-  live,
-  duration,
-  open,
-  defaultOpen,
-  onOpenChange,
-}: {
-  text: string;
-  live: boolean;
-  duration: number | undefined;
-  open: boolean | undefined;
-  defaultOpen: boolean | undefined;
-  onOpenChange: ((open: boolean) => void) | undefined;
-}) {
-  const t = useUiText();
-  const preview = live ? lastLine(text) : "";
-  const title = live
-    ? t("responseView.thinking", "Thinking")
-    : duration !== undefined
-      ? t("responseView.thoughtFor", "Thought for {duration}", { duration: formatDuration(duration) })
-      : t("responseView.thinking", "Thinking");
-  return (
-    <BaseCollapsible.Root
-      {...(open !== undefined ? { open } : {})}
-      {...(defaultOpen !== undefined ? { defaultOpen } : {})}
-      {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
-      className="flex min-w-0 flex-col"
-    >
-      <BaseCollapsible.Trigger className="group/think flex h-32 min-w-0 cursor-pointer items-center gap-6 rounded-pill px-12 text-left text-small text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring-inset">
-        <span className={cn("shrink-0 font-medium", live && "animate-pulse-quiet reduced:animate-none")}>{title}</span>
-        <Icon
-          icon={icons.chevronRight}
-          size="xs"
-          className="shrink-0 text-fg-tertiary transition-transform duration-180 ease-overlay group-data-panel-open/think:rotate-90"
-        />
-        <span aria-hidden className="min-w-0 flex-1 truncate text-fg-tertiary group-data-panel-open/think:invisible">
-          {preview}
-        </span>
-      </BaseCollapsible.Trigger>
-      <BaseCollapsible.Panel className="collapse-motion">
-        <div className="flex gap-12 pt-4 pb-8 pl-12">
-          <span aria-hidden className="w-1 shrink-0 rounded-pill bg-line" />
-          <Markdown text={text} size="small" tone="secondary" streaming={live} collapseAfter={0} wrapCode className="min-w-0 flex-1" />
-        </div>
-      </BaseCollapsible.Panel>
-    </BaseCollapsible.Root>
-  );
-}
-
 export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function ResponseView(
   {
     text = "",
@@ -138,7 +76,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
       className={cn("flex min-w-0 flex-col gap-8", className)}
     >
       {hasReasoning && (
-        <Thinking
+        <Reasoning
           text={reasoning}
           live={thinking}
           duration={reasoningDuration}
@@ -148,12 +86,12 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         />
       )}
       {hasText ? (
-        <Markdown text={text} size="lg" streaming={active} collapseAfter={0} wrapCode />
+        <Markdown text={text} size="lg" streaming={active} collapseAfter={0} wrapCode className="px-12" />
       ) : active && !hasReasoning ? (
-        <div aria-hidden className="h-22" />
+        <div aria-hidden className="h-22 px-12" />
       ) : null}
       {status === "stopped" && (
-        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4">
+        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4 px-12">
           <span className="text-small text-fg-tertiary">
             {hasText ? t("responseView.stopped", "Stopped") : t("responseView.stoppedBeforeResponse", "Stopped before a response")}
           </span>
@@ -165,7 +103,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         </div>
       )}
       {status === "incomplete" && (
-        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4">
+        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4 px-12">
           <span className="text-small text-fg-secondary">{incompleteText(t, incompleteReason)}</span>
           {onRetry && (
             <Button size="xs" variant="ghost" onClick={onRetry}>
@@ -175,7 +113,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         </div>
       )}
       {status === "error" && (
-        <div role="alert" className="flex min-h-24 flex-col items-start gap-4">
+        <div role="alert" className="flex min-h-24 flex-col items-start gap-4 px-12">
           <span className="text-small font-medium text-fg">
             {hasText ? t("responseView.stoppedEarly", "The response stopped early") : t("responseView.noResponse", "No response")}
           </span>
@@ -187,7 +125,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
           )}
         </div>
       )}
-      {status === "done" && !hasText && <span className="text-small text-fg-tertiary">{t("responseView.noText", "The model returned no text")}</span>}
+      {status === "done" && !hasText && <span className="px-12 text-small text-fg-tertiary">{t("responseView.noText", "The model returned no text")}</span>}
       {footer}
       <span id={announce} className="sr-only">
         {status === "pending"
@@ -222,7 +160,7 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
   const text = useRef<HTMLParagraphElement | null>(null);
   const clamped = useTruncated(text, maxLines > 0 && !all);
   return (
-    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-start gap-2", className)}>
+    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-start gap-2 px-12", className)}>
       <p
         ref={text}
         className={cn(

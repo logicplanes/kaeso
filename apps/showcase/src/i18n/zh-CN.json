@@ -1062,5 +1062,15 @@
   "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "坐标轴和默认标签读取时间所用的时区，例如按 UTC 计数的日期用 \"UTC\"。默认使用 `setFormatTimeZone` 设置的时区，否则使用查看者的时区。",
   "A press outside doesn't close it, for forms that would lose what was typed; Escape and the close circle still do. Every StepDialog is persistent.": "点击外部不会关闭它，适用于会丢失已输入内容的表单；Escape 和关闭圆圈仍可关闭。每个 StepDialog 都是持久的。",
   "Shows the state's badge beside a key that isn't active (on by default); turn it off where a heading already names the state.": "在非活跃的密钥旁显示其状态徽章（默认开启）；如果标题已注明状态，请将其关闭。",
-  "Tokens by kind: input, output, cache reads and writes, reasoning. A kind left out isn't listed, for kinds that can't apply, such as output for embeddings; pass 0 to list it.": "按类型划分的 Token：输入、输出、缓存读取与写入、推理。省略的类型不会列出，用于不可能适用的类型，例如嵌入的输出；传入 0 即可列出。"
+  "Tokens by kind: input, output, cache reads and writes, reasoning. A kind left out isn't listed, for kinds that can't apply, such as output for embeddings; pass 0 to list it.": "按类型划分的 Token：输入、输出、缓存读取与写入、推理。省略的类型不会列出，用于不可能适用的类型，例如嵌入的输出；传入 0 即可列出。",
+  "A model's reasoning behind a quiet disclosure: “Thought for 4.2 s” when it is done, “Thinking” with its latest line while it streams.": "模型的推理过程收在一个低调的折叠项中：完成后显示“思考了 4.2 秒”，流式输出时显示“正在思考”及最新一行。",
+  "Finished reasoning": "已完成的推理",
+  "In a request log": "在请求日志中",
+  "What the open disclosure shows in place of `text`, such as why the reasoning can't be shown.": "展开后代替 `text` 显示的内容，例如推理为何无法显示。",
+  "Whether it starts open.": "是否默认展开。",
+  "How long the model reasoned, in milliseconds: “Thought for 4.2 s”.": "模型推理的时长，单位为毫秒：“思考了 4.2 秒”。",
+  "A short note beside the title, such as “Redacted by the provider”; while `live`, the latest line of the reasoning shows there instead.": "标题旁的简短说明，例如“已被服务商隐去”；`live` 时该处改为显示推理的最新一行。",
+  "The reasoning is still arriving: “Thinking” pulses quietly and its latest line shows beside it.": "推理仍在输出：“正在思考”轻微闪烁，旁边显示最新一行。",
+  "The reasoning, as Markdown.": "推理内容，Markdown 格式。",
+  "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "代替“正在思考”或“思考了 …”的标题，例如请求日志中的“推理”。"
 }

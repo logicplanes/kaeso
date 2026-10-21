@@ -120,6 +120,21 @@ export const docs = {
       suggestions: "Up to three short prompts; more are left out.",
     },
   },
+  Reasoning: {
+    description:
+      "A model's reasoning behind a quiet disclosure, closed by default: “Thought for 4.2 s” when it is done, “Thinking” with the latest line beside it while it streams. Opened, the reasoning reads in small secondary text beside a line. The Playground and the request log show reasoning with it.",
+    props: {
+      children: "What the open disclosure shows in place of `text`, such as why the reasoning can't be shown.",
+      defaultOpen: "Whether it starts open.",
+      duration: "How long the model reasoned, in milliseconds: “Thought for 4.2 s”.",
+      hint: "A short note beside the title, such as “Redacted by the provider”; while `live`, the latest line of the reasoning shows there instead.",
+      live: "The reasoning is still arriving: “Thinking” pulses quietly and its latest line shows beside it.",
+      onOpenChange: "Called when it opens or closes.",
+      open: "Whether it is open, when you control it.",
+      text: "The reasoning, as Markdown.",
+      title: "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.",
+    },
+  },
   ResponseMetrics: {
     description:
       'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost to the millionth of a dollar, as request logs show it. Tabular figures, labels in tertiary text. While `live`, values not known yet show "—" in the room they will take; before any response the line is empty, its height kept.',

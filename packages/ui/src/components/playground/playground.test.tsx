@@ -6,6 +6,7 @@ import { Composer } from "./composer.js";
 import { CompareGrid } from "./compare-grid.js";
 import { ResponseView, UserMessage, Thread } from "./response-view.js";
 import { ResponseMetrics, formatLatency } from "./response-metrics.js";
+import { Reasoning } from "./reasoning.js";
 import { ParameterPanel, type PlaygroundParameters } from "./parameter-panel.js";
 import { ModelPicker } from "./model-picker.js";
 import { KAESO_SELECT_VARIANTS } from "../select/select.js";
@@ -557,12 +558,36 @@ describe("PromptSuggestions", () => {
 describe("playground variants", () => {
   it("document every key", () => {
     const entries = Object.entries(playground).filter(([k]) => /^KAESO_.+_VARIANTS$/.test(k) && !k.endsWith("_DEFAULT_VARIANTS"));
-    expect(entries.length).toBe(7);
+    expect(entries.length).toBe(8);
     for (const [, variants] of entries)
       for (const keys of Object.values(variants as Record<string, Record<string, { classes: string; description: string }>>))
         for (const v of Object.values(keys)) {
           expect(typeof v.classes).toBe("string");
           expect(v.description.length).toBeGreaterThan(2);
         }
+  });
+});
+
+describe("Reasoning", () => {
+  it("says how long the model thought, opens on a click, and says Thinking with the latest line while it streams", async () => {
+    const { rerender } = render(<Reasoning text={"First idea.\n\nThe plan: three bullets."} duration={4200} />);
+    const toggle = screen.getByRole("button", { name: /Thought for 4\.2 s/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("The plan: three bullets.")).toBeInTheDocument();
+    rerender(<Reasoning text={"First idea.\n\nThe plan: three bullets."} live />);
+    expect(screen.getByRole("button", { name: /^Thinking/ })).toBeInTheDocument();
+  });
+
+  it("takes a request log's own title, a hint beside it, and what to show in place of the text", async () => {
+    render(
+      <Reasoning title="Reasoning" hint="Redacted by the provider">
+        <p>Only its encrypted form was returned.</p>
+      </Reasoning>,
+    );
+    const toggle = screen.getByRole("button", { name: "Reasoning Redacted by the provider" });
+    await userEvent.click(toggle);
+    expect(screen.getByText("Only its encrypted form was returned.")).toBeInTheDocument();
   });
 });
