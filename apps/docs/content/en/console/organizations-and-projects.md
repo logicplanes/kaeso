@@ -98,7 +98,7 @@ Each entry shows when it happened, who made the change, the action and its targe
 
 On **Projects**, choose **Create project** and give it a name. You become the project's admin. Creating a project needs the right **Create projects**. Archived projects are listed under **Archived**, and every project under **All**. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage.
 
-The default project is the one every member joins, and where new members start. To move the default, choose **Make default** in another project's menu. The old default stays a project with its members. Moving it needs the right **Edit organization**.
+The default project is where new members start. To move the default, choose **Make default** in another project's menu. Only people who join the organization afterwards start in the new default; current members keep their places and don't join it. The old default stays a project with its members. Moving it needs the right **Edit organization**.
 
 ## Change project settings
 

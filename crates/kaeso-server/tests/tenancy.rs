@@ -1205,7 +1205,7 @@ async fn make_default(app: &App, org: &str, project: &str, cookie: &str) -> comm
 }
 
 #[tokio::test]
-async fn org_admins_choose_the_default_project_and_members_follow() {
+async fn org_admins_choose_the_default_project_where_new_members_start() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -1247,18 +1247,13 @@ async fn org_admins_choose_the_default_project_and_members_follow() {
 
     let mine = app.get("/me/memberships", &member).await;
     let projects = mine.body["data"][0]["projects"].as_array().unwrap();
-    assert!(
-        projects.iter().any(|p| p["id"] == next.as_str()
-            && p["is_default"] == true
-            && p["preset"] == "viewer"),
-        "{projects:?}"
+    assert_eq!(
+        projects.len(),
+        1,
+        "existing members don't join: {projects:?}"
     );
-    assert!(
-        projects
-            .iter()
-            .any(|p| p["id"] == first.as_str() && p["is_default"] == false),
-        "{projects:?}"
-    );
+    assert_eq!(projects[0]["id"], first.as_str());
+    assert_eq!(projects[0]["is_default"], false);
     let mine = app.get("/me/memberships", &dev).await;
     assert!(
         mine.body["data"][0]["projects"]
@@ -1284,7 +1279,10 @@ async fn org_admins_choose_the_default_project_and_members_follow() {
     let events = audit.body["data"].as_array().unwrap();
     assert_eq!(events.len(), 1, "{events:?}");
     assert_eq!(events[0]["before"]["default_project"], first.as_str());
-    assert_eq!(events[0]["after"]["default_project"], next.as_str());
+    assert_eq!(
+        events[0]["after"],
+        json!({ "default_project": next.as_str() })
+    );
 
     let r = app
         .post(
@@ -1332,6 +1330,73 @@ async fn org_admins_choose_the_default_project_and_members_follow() {
     let other_org = other.body["id"].as_str().unwrap().to_owned();
     let r = make_default(&app, &other_org, &next, &owner.cookie).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn choosing_the_default_project_gives_nobody_rights_in_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let first = default_project(&app, &owner).await;
+    let (dev, dev_id) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
+    let (member, _) = join(&app, &owner, "member@example.com", "member", json!([])).await;
+    app.call(
+        Method::PATCH,
+        &format!("/orgs/{org}/members/{dev_id}"),
+        Some(json!({ "role": "developer", "rights_added": ["org.update"] })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let restricted = app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": "Restricted" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let r = make_default(&app, &org, &restricted, &dev).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["is_default"], true);
+
+    for cookie in [&dev, &member] {
+        let r = app
+            .get(
+                &format!("/orgs/{org}/projects/{restricted}/my-rights"),
+                cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+        let r = app
+            .get(
+                &format!("/orgs/{org}/projects/{restricted}/members"),
+                cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+        let mine = app.get("/me/memberships", cookie).await;
+        let projects = mine.body["data"][0]["projects"].as_array().unwrap();
+        assert_eq!(projects.len(), 1, "{projects:?}");
+        assert_eq!(projects[0]["id"], first.as_str());
+    }
+    let members = app
+        .get(
+            &format!("/orgs/{org}/projects/{restricted}/members"),
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let members = members.body["data"].as_array().unwrap();
+    assert_eq!(members.len(), 1, "{members:?}");
+    assert_eq!(members[0]["user"]["id"], owner.user_id.as_str());
     s.cleanup().await;
 }
 

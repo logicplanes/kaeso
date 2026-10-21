@@ -191,6 +191,7 @@ describe("organization projects", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Make default" }));
     const dialog = await screen.findByRole("dialog", { name: /Make default project/ });
     expect(within(dialog).getByText("Make Support triage the default?")).toBeInTheDocument();
+    expect(within(dialog).getByText("People who join the organization from now on start there; current members don't join it.")).toBeInTheDocument();
     expect(within(dialog).getByText("Default now")).toBeInTheDocument();
     expect(dialog.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
     expect(within(dialog).getByText("Checkout assistant stays a project; its members keep their places.")).toBeInTheDocument();

@@ -6888,7 +6888,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Makes an active project the org's default: the previous\ndefault becomes an ordinary project, in the same transaction, so the org\nalways has exactly one. Every org member who isn't in the new default\njoins it with the project preset of their org preset;\nmembers keep their places in the previous one. Invites from now on add\npeople to the new default.",
+        "summary": "Makes an active project the org's default: the previous\ndefault becomes an ordinary project, in the same transaction, so the org\nalways has exactly one. Nobody joins or leaves a project by it: members\nkeep their places, and people who join the org from now on start in the\nnew default.",
         "description": "**Right:** `org.update` on the organization in the path.",
         "operationId": "putOrgsOrgDefaultProject",
         "parameters": [

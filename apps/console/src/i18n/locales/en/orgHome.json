@@ -50,7 +50,7 @@
   "orgHome.listSeparator": ", ",
   "orgHome.loadingProjects": "Loading projects…",
   "orgHome.makeDefault": "Make default",
-  "orgHome.makeDefaultHint": "Every member joins it, and people who join later start there.",
+  "orgHome.makeDefaultHint": "People who join the organization from now on start there; current members don't join it.",
   "orgHome.makeDefaultProject": "Make default project",
   "orgHome.makeDefaultQuestion": "Make {name} the default?",
   "orgHome.masterKeyId": "Encrypted with the master key {id}",

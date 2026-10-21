@@ -50,7 +50,7 @@
   "orgHome.listSeparator": "、",
   "orgHome.loadingProjects": "正在加载项目…",
   "orgHome.makeDefault": "设为默认",
-  "orgHome.makeDefaultHint": "所有成员都会加入，之后加入的人也从这里开始。",
+  "orgHome.makeDefaultHint": "今后加入组织的人从这里开始；现有成员不会加入。",
   "orgHome.makeDefaultProject": "设为默认项目",
   "orgHome.makeDefaultQuestion": "将 {name} 设为默认？",
   "orgHome.masterKeyId": "已用主密钥 {id} 加密",

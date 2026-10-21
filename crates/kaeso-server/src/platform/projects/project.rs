@@ -402,10 +402,9 @@ pub struct DefaultProjectChoice {
     path = "/orgs/{org}/default-project",
     summary = "Makes an active project the org's default: the previous\n\
     default becomes an ordinary project, in the same transaction, so the org\n\
-    always has exactly one. Every org member who isn't in the new default\n\
-    joins it with the project preset of their org preset;\n\
-    members keep their places in the previous one. Invites from now on add\n\
-    people to the new default.",
+    always has exactly one. Nobody joins or leaves a project by it: members\n\
+    keep their places, and people who join the org from now on start in the\n\
+    new default.",
     tag = "projects",
     params(("org" = OrgId, Path)),
     request_body = DefaultProjectChoice,
@@ -437,23 +436,6 @@ pub async fn set_default(
     if !projects::set_default(&mut tx, org, id).await? {
         return Err(ApiError::not_found("project"));
     }
-    let joining = members::org_presets(&mut *tx, org)
-        .await?
-        .into_iter()
-        .map(|(user, preset)| {
-            let org_role = kaeso_store::pg::members::Grant {
-                preset,
-                ..Default::default()
-            };
-            (
-                user,
-                crate::services::orgs::default_project_preset(&org_role)
-                    .as_str()
-                    .to_owned(),
-            )
-        })
-        .collect::<Vec<_>>();
-    let joined = members::join_project(&mut *tx, id, &joining).await?;
     let after = projects::get(&mut *tx, org, id)
         .await?
         .ok_or_else(|| ApiError::internal("the new default project vanished"))?;
@@ -465,7 +447,6 @@ pub async fn set_default(
         }))
         .after(serde_json::json!({
             "default_project": ProjectId::from_uuid(id).to_string(),
-            "joined_members": joined,
         }))
         .write(&mut tx)
         .await?;
