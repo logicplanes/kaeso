@@ -4,6 +4,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+#### Documentation
+
+- The changelog at docs.kaeso.app has one page per minor series, so no page outgrows the site's page budget as releases add up: `/changelog` shows Unreleased and the latest series, and each older series is at `/changelog/<major.minor>`, such as `/changelog/0.2`. Links to a version, including old `/changelog#v0.1.0` addresses, open the page that holds it. The 0.3.0 documentation and showcase couldn't be deployed until this was fixed.
+
 ## [0.3.0] - 2026-10-21
 
 Kaeso 0.3.0 adds six built-in providers, so DeepSeek, SpaceX (xAI's API), Together AI, Groq, OpenRouter and Mistral can be added with a key and called from any app format. It tightens access: only owners transfer ownership, single sign-on admits only linked accounts and verified email domains, and forwarded addresses are trusted only from loopback by default. Five changes need action when you upgrade, listed under breaking, and most of the rest make requests, streams, budgets and the console faster or more accurate.
