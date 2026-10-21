@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-codecs"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "base64",
  "indexmap",
@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-kpp"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "indexmap",
  "serde",

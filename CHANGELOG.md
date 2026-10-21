@@ -4,12 +4,18 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-21
+
+Kaeso 0.3.4 changes only the Console. The Organization Security page now shows whether single sign-on admits only addresses the identity provider marks verified, and sign-in prompts for single sign-on sessions no longer offer a password or email link the account may lack. No configuration or code changes are needed when upgrading.
+
+**Full changes:** [v0.3.3...v0.3.4](https://github.com/logicplanes/kaeso/compare/v0.3.3...v0.3.4)
+
 ### Changed
 
 #### Console
 
-- **Organization** › **Security** shows whether single sign-on admits only addresses the identity provider marks verified, without opening **Edit**.
-- The pages that ask a single sign-on session to sign in another way, for instance administration and for another organization, no longer promise a password or an email link the account may not have, and the instance page's tab no longer says "Instance" twice.
+- The Organization Security page shows whether single sign-on admits only addresses the identity provider marks verified, without opening Edit.
+- Pages that ask a single sign-on session to sign in another way, such as for administration or for another organization, no longer promise a password or email link the account may not have. The instance page's tab no longer repeats the word Instance.
 
 ## [0.3.3] - 2026-10-21
 
@@ -502,7 +508,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.4
 [0.3.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.3
 [0.3.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.2
 [0.3.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.1
