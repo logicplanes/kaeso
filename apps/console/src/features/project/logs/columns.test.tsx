@@ -81,4 +81,19 @@ describe("logColumns", () => {
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
     expect(parts).toEqual(["Invalid request"]);
   });
+
+  it("gives a successful Playground request's tag room sooner than a failed one's", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[logRow({ source: "playground" }), logRow({ id: "req_0002", source: "playground", status: 429, error_kind: "rate_limited" })]}
+        columns={[all.model]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    const [ok, failed] = screen.getAllByText("Playground").map((e) => e.closest("[class*='@cell-']"));
+    expect(ok).toHaveClass("@cell-sm:inline-flex");
+    expect(failed).toHaveClass("@cell-lg:inline-flex");
+  });
 });

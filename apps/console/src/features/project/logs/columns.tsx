@@ -248,7 +248,7 @@ function ModelCell({ row }: { row: LogView }) {
         </Badge>
       )}
       {row.source === "playground" && (
-        <Pill size="sm" variant="outline" className="hidden shrink-0 @cell-lg:inline-flex">
+        <Pill size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-lg:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
           {t("logs.source.playground", "Playground")}
         </Pill>
       )}

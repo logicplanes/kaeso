@@ -63,7 +63,7 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   const firstRow = page.getByRole("table", { name: "Requests" }).getByRole("row").nth(1);
   await expect(async () => {
     await page.reload();
-    await expect(firstRow.getByText("chat/completions")).toBeVisible({ timeout: 2000 });
+    await expect(firstRow.locator("time")).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
   await firstRow.focus();
   await page.keyboard.press("Enter");
