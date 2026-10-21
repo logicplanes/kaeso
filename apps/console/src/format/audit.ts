@@ -1,68 +1,147 @@
 import { t } from "~/i18n";
 import { joinList } from "./labels";
 
-export const AUDIT_ACTIONS: Record<string, string[]> = {
-  alias: ["alias.create", "alias.update", "alias.delete"],
-  audit_log: ["audit_log.export"],
-  catalogue_model: ["catalogue_model.create", "catalogue_model.update", "catalogue_model.price_change", "catalogue_model.check", "catalogue_model.delete"],
-  credential: ["credential.create", "credential.replace", "credential.rename", "credential.default", "credential.assign", "credential.delete"],
-  instance: ["instance.setup", "instance.invite", "instance.settings_update"],
-  invite: ["invite.create", "invite.resend", "invite.revoke", "invite.accept"],
-  key: ["key.create", "key.disable", "key.enable", "key.archive"],
-  limit: ["limit.create", "limit.update", "limit.delete", "limit.threshold_reached"],
-  logs: ["logs.settings_update", "logs.project_content_logging", "logs.export", "logs.delete"],
-  member: ["member.rights_update", "member.2fa_reset", "member.remove", "member.join_by_sso"],
-  model_access: ["model_access.update"],
-  models_dev: ["models_dev.sync", "models_dev.price_change", "models_dev.model_delisted"],
-  org: [
-    "org.create",
-    "org.update",
-    "org.ownership_transfer",
-    "org.owner_appointed",
-    "org.owner_appointed_by_instance_admin",
-    "org.schedule_deletion",
-    "org.restore",
-    "org.delete_final",
-  ],
-  platform_key: ["platform_key.create", "platform_key.disable", "platform_key.enable", "platform_key.archive"],
-  project: [
-    "project.create",
-    "project.update",
-    "project.key_policy",
-    "project.archive",
-    "project.member_add",
-    "project.member_rights_update",
-    "project.member_remove",
-  ],
-  role: ["role.create", "role.update", "role.delete"],
-  security: ["security.sso_update", "security.sso_delete", "security.require_sso", "security.require_2fa", "security.key_policy"],
-  service_account: ["service_account.create", "service_account.update", "service_account.archive"],
-  user: [
-    "user.signup",
-    "user.create_by_invite",
-    "user.create_by_sso",
-    "user.update",
-    "user.email_change",
-    "user.password_change",
-    "user.password_reset",
-    "user.totp_enable",
-    "user.totp_disable",
-    "user.recovery_codes_regenerate",
-    "user.2fa_reset",
-    "user.sign_in_link",
-    "user.sessions_revoke",
-    "user.notifications",
-    "user.deactivate",
-    "user.reactivate",
-    "user.instance_admin",
-    "user.delete",
-  ],
+const KIND_LABELS: Record<string, () => string> = {
+  alias: () => t("format.audit.kind.alias", "Aliases"),
+  audit_log: () => t("format.audit.kind.auditLog", "Audit log"),
+  catalogue_model: () => t("format.audit.kind.catalogueModel", "Models"),
+  credential: () => t("format.audit.kind.credential", "Provider keys"),
+  instance: () => t("format.audit.kind.instance", "Instance"),
+  invite: () => t("format.audit.kind.invite", "Invitations"),
+  key: () => t("format.audit.kind.key", "Keys"),
+  limit: () => t("format.audit.kind.limit", "Limits"),
+  logs: () => t("format.audit.kind.logs", "Request logs"),
+  member: () => t("format.audit.kind.member", "Members"),
+  model_access: () => t("format.audit.kind.modelAccess", "Model access"),
+  models_dev: () => t("format.audit.kind.modelsDev", "models.dev"),
+  org: () => t("format.audit.kind.org", "Organization"),
+  platform_key: () => t("format.audit.kind.platformKey", "Platform keys"),
+  project: () => t("format.audit.kind.project", "Projects"),
+  role: () => t("format.audit.kind.role", "Roles"),
+  security: () => t("format.audit.kind.security", "Security"),
+  service_account: () => t("format.audit.kind.serviceAccount", "Service accounts"),
+  user: () => t("format.audit.kind.user", "Users"),
 };
 
-export function auditActionOptions(): { value: string; label: string; description?: string }[] {
-  return Object.entries(AUDIT_ACTIONS).flatMap(([prefix, actions]) => [
-    { value: `${prefix}.`, label: `${prefix}.*`, description: t("format.audit.everyAction", "Every action of this kind") },
-    ...actions.map((a) => ({ value: a, label: a })),
+const ACTION_LABELS: Record<string, () => string> = {
+  "alias.create": () => t("format.audit.action.aliasCreate", "Alias created"),
+  "alias.update": () => t("format.audit.action.aliasUpdate", "Alias changed"),
+  "alias.delete": () => t("format.audit.action.aliasDelete", "Alias deleted"),
+  "audit_log.export": () => t("format.audit.action.auditLogExport", "Audit log exported"),
+  "catalogue_model.create": () => t("format.audit.action.catalogueModelCreate", "Model added"),
+  "catalogue_model.update": () => t("format.audit.action.catalogueModelUpdate", "Model values changed"),
+  "catalogue_model.price_change": () => t("format.audit.action.catalogueModelPriceChange", "Model price changed"),
+  "catalogue_model.check": () => t("format.audit.action.catalogueModelCheck", "Models checked with the provider"),
+  "catalogue_model.delete": () => t("format.audit.action.catalogueModelDelete", "Model removed"),
+  "credential.create": () => t("format.audit.action.credentialCreate", "Provider key added"),
+  "credential.replace": () => t("format.audit.action.credentialReplace", "Provider key replaced"),
+  "credential.rename": () => t("format.audit.action.credentialRename", "Provider key renamed"),
+  "credential.default": () => t("format.audit.action.credentialDefault", "Provider key made the default"),
+  "credential.assign": () => t("format.audit.action.credentialAssign", "Provider key assigned to projects"),
+  "credential.delete": () => t("format.audit.action.credentialDelete", "Provider key deleted"),
+  "instance.setup": () => t("format.audit.action.instanceSetup", "Kaeso set up"),
+  "instance.invite": () => t("format.audit.action.instanceInvite", "User invited to the install"),
+  "instance.settings_update": () => t("format.audit.action.instanceSettingsUpdate", "Instance settings changed"),
+  "instance.update_check": () => t("format.audit.action.instanceUpdateCheck", "Checked for updates"),
+  "instance.update_settings": () => t("format.audit.action.instanceUpdateSettings", "Update settings changed"),
+  "instance.update_start": () => t("format.audit.action.instanceUpdateStart", "Update started"),
+  "instance.update_finish": () => t("format.audit.action.instanceUpdateFinish", "Update finished"),
+  "invite.create": () => t("format.audit.action.inviteCreate", "Invitation sent"),
+  "invite.resend": () => t("format.audit.action.inviteResend", "Invitation sent again"),
+  "invite.revoke": () => t("format.audit.action.inviteRevoke", "Invitation revoked"),
+  "invite.accept": () => t("format.audit.action.inviteAccept", "Invitation accepted"),
+  "key.create": () => t("format.audit.action.keyCreate", "Key created"),
+  "key.disable": () => t("format.audit.action.keyDisable", "Key disabled"),
+  "key.enable": () => t("format.audit.action.keyEnable", "Key enabled"),
+  "key.archive": () => t("format.audit.action.keyArchive", "Key archived"),
+  "limit.create": () => t("format.audit.action.limitCreate", "Limit added"),
+  "limit.update": () => t("format.audit.action.limitUpdate", "Limit changed"),
+  "limit.delete": () => t("format.audit.action.limitDelete", "Limit removed"),
+  "limit.threshold_reached": () => t("format.audit.action.limitThresholdReached", "Limit alert threshold reached"),
+  "logs.settings_update": () => t("format.audit.action.logsSettingsUpdate", "Logging settings changed"),
+  "logs.project_content_logging": () => t("format.audit.action.logsProjectContentLogging", "A project's content logging changed"),
+  "logs.export": () => t("format.audit.action.logsExport", "Request logs exported"),
+  "logs.delete": () => t("format.audit.action.logsDelete", "Request logs deleted"),
+  "member.rights_update": () => t("format.audit.action.memberRightsUpdate", "Member's role or rights changed"),
+  "member.remove": () => t("format.audit.action.memberRemove", "Member removed"),
+  "member.join_by_sso": () => t("format.audit.action.memberJoinBySso", "Member joined through single sign-on"),
+  "model_access.update": () => t("format.audit.action.modelAccessUpdate", "Model access changed"),
+  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
+  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
+  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+  "org.create": () => t("format.audit.action.orgCreate", "Organization created"),
+  "org.update": () => t("format.audit.action.orgUpdate", "Organization changed"),
+  "org.ownership_transfer": () => t("format.audit.action.orgOwnershipTransfer", "Ownership transferred"),
+  "org.owner_appointed": () => t("format.audit.action.orgOwnerAppointed", "Owner added"),
+  "org.owner_appointed_by_instance_admin": () => t("format.audit.action.orgOwnerAppointedByInstanceAdmin", "Owner added by an instance admin"),
+  "org.schedule_deletion": () => t("format.audit.action.orgScheduleDeletion", "Deletion scheduled"),
+  "org.restore": () => t("format.audit.action.orgRestore", "Organization restored"),
+  "org.delete_now": () => t("format.audit.action.orgDeleteNow", "Organization deleted at once"),
+  "org.delete_final": () => t("format.audit.action.orgDeleteFinal", "Organization deleted"),
+  "platform_key.create": () => t("format.audit.action.platformKeyCreate", "Platform key created"),
+  "platform_key.disable": () => t("format.audit.action.platformKeyDisable", "Platform key disabled"),
+  "platform_key.enable": () => t("format.audit.action.platformKeyEnable", "Platform key enabled"),
+  "platform_key.archive": () => t("format.audit.action.platformKeyArchive", "Platform key archived"),
+  "project.create": () => t("format.audit.action.projectCreate", "Project created"),
+  "project.update": () => t("format.audit.action.projectUpdate", "Project changed"),
+  "project.default": () => t("format.audit.action.projectDefault", "Default project changed"),
+  "project.key_policy": () => t("format.audit.action.projectKeyPolicy", "Project's key lifetime changed"),
+  "project.archive": () => t("format.audit.action.projectArchive", "Project archived"),
+  "project.member_add": () => t("format.audit.action.projectMemberAdd", "Project member added"),
+  "project.member_rights_update": () => t("format.audit.action.projectMemberRightsUpdate", "Project member's role or rights changed"),
+  "project.member_remove": () => t("format.audit.action.projectMemberRemove", "Project member removed"),
+  "role.create": () => t("format.audit.action.roleCreate", "Role created"),
+  "role.update": () => t("format.audit.action.roleUpdate", "Role changed"),
+  "role.delete": () => t("format.audit.action.roleDelete", "Role deleted"),
+  "security.sso_update": () => t("format.audit.action.securitySsoUpdate", "Single sign-on set up or changed"),
+  "security.sso_delete": () => t("format.audit.action.securitySsoDelete", "Single sign-on disconnected"),
+  "security.sso_domain_verify": () => t("format.audit.action.securitySsoDomainVerify", "Email domain verified"),
+  "security.require_sso": () => t("format.audit.action.securityRequireSso", "Single sign-on requirement changed"),
+  "security.require_2fa": () => t("format.audit.action.securityRequire2fa", "Two-factor requirement changed"),
+  "security.key_policy": () => t("format.audit.action.securityKeyPolicy", "Key lifetime changed"),
+  "service_account.create": () => t("format.audit.action.serviceAccountCreate", "Service account created"),
+  "service_account.update": () => t("format.audit.action.serviceAccountUpdate", "Service account changed"),
+  "service_account.archive": () => t("format.audit.action.serviceAccountArchive", "Service account archived"),
+  "user.signup": () => t("format.audit.action.userSignup", "Account created by sign-up"),
+  "user.create_by_invite": () => t("format.audit.action.userCreateByInvite", "Account created from an invitation"),
+  "user.create_by_sso": () => t("format.audit.action.userCreateBySso", "Account created by single sign-on"),
+  "user.update": () => t("format.audit.action.userUpdate", "Profile changed"),
+  "user.email_change_request": () => t("format.audit.action.userEmailChangeRequest", "Email change requested"),
+  "user.email_change_cancel": () => t("format.audit.action.userEmailChangeCancel", "Email change canceled"),
+  "user.email_change": () => t("format.audit.action.userEmailChange", "Email address changed"),
+  "user.password_change": () => t("format.audit.action.userPasswordChange", "Password changed"),
+  "user.password_reset": () => t("format.audit.action.userPasswordReset", "Password reset"),
+  "user.totp_enable": () => t("format.audit.action.userTotpEnable", "Two-factor authentication turned on"),
+  "user.totp_disable": () => t("format.audit.action.userTotpDisable", "Two-factor authentication turned off"),
+  "user.recovery_codes_regenerate": () => t("format.audit.action.userRecoveryCodesRegenerate", "Recovery codes regenerated"),
+  "user.2fa_reset": () => t("format.audit.action.user2faReset", "Two-factor authentication reset"),
+  "user.sign_in_link": () => t("format.audit.action.userSignInLink", "Sign-in link printed on the command line"),
+  "user.sso_link": () => t("format.audit.action.userSsoLink", "Linked to single sign-on"),
+  "user.sso_unlink": () => t("format.audit.action.userSsoUnlink", "Unlinked from single sign-on"),
+  "user.sessions_revoke": () => t("format.audit.action.userSessionsRevoke", "Every session ended"),
+  "user.notifications": () => t("format.audit.action.userNotifications", "Notification settings changed"),
+  "user.deactivate": () => t("format.audit.action.userDeactivate", "User deactivated"),
+  "user.reactivate": () => t("format.audit.action.userReactivate", "User reactivated"),
+  "user.instance_admin": () => t("format.audit.action.userInstanceAdmin", "Instance admin rights changed"),
+  "user.delete": () => t("format.audit.action.userDelete", "User deleted"),
+};
+
+export const AUDIT_ACTIONS: Record<string, string[]> = Object.keys(ACTION_LABELS).reduce<Record<string, string[]>>((kinds, action) => {
+  const kind = action.slice(0, action.indexOf("."));
+  (kinds[kind] ??= []).push(action);
+  return kinds;
+}, {});
+
+export const auditActionLabel = (action: string): string => ACTION_LABELS[action]?.() ?? action;
+
+export function auditActionOptions(): { value: string; label: string; description: string }[] {
+  return Object.entries(AUDIT_ACTIONS).flatMap(([kind, actions]) => [
+    {
+      value: `${kind}.`,
+      label: t("format.audit.everyActionOf", "{kind}: every action", { kind: (KIND_LABELS[kind] as () => string)() }),
+      description: `${kind}.*`,
+    },
+    ...actions.map((a) => ({ value: a, label: auditActionLabel(a), description: a })),
   ]);
 }
 
@@ -78,6 +157,8 @@ const TARGET_KINDS: Record<string, () => string> = {
   alias: () => t("format.targetKind.alias", "Alias"),
   platform_key: () => t("format.targetKind.platformKey", "Platform key"),
   key: () => t("format.targetKind.key", "Key"),
+  role: () => t("format.targetKind.role", "Role"),
+  update: () => t("format.targetKind.update", "Update"),
 };
 export const targetKindLabel = (kind: string) => TARGET_KINDS[kind]?.() ?? kind;
 
@@ -114,4 +195,26 @@ export function rightsChangeSummary(before: unknown, after: unknown, name: (righ
   if (!parts.length) return was && now && was !== now ? lead : null;
   const changes = parts.join(t("format.audit.partSeparator", "; "));
   return lead ? t("format.audit.roleRights", "{role}: {changes}", { role: lead, changes }) : changes;
+}
+
+const text = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+
+export function snapshotName(e: { target_kind?: string | null; before?: unknown; after?: unknown }): string | null {
+  for (const side of [obj(e.after), obj(e.before)]) {
+    if (!side) continue;
+    const name =
+      e.target_kind === "catalogue_model"
+        ? text(side["provider"]) && text(side["model_id"])
+          ? `${text(side["provider"])}/${text(side["model_id"])}`
+          : text(side["model_id"])
+        : e.target_kind === "invite"
+          ? text(side["email"])
+          : e.target_kind === "limit"
+            ? text(side["description"])
+            : e.target_kind === "org"
+              ? (text(obj(side["org"])?.["name"]) ?? text(side["name"]))
+              : (text(side["name"]) ?? (e.target_kind === "user" ? text(side["email"]) : null));
+    if (name) return name;
+  }
+  return null;
 }

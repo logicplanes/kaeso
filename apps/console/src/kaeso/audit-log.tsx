@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   Avatar,
   Button,
-  Code,
   CodeBlock,
   Combobox,
   DataTable,
@@ -26,7 +25,7 @@ import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { AuditEventView } from "~/api/generated/types";
 import { auditEventQuery, auditLogQuery, auditParams, type AuditFilters, type AuditScope, type AuditSearch } from "~/api/queries/audit";
-import { auditActionOptions, rightsChangeSummary, targetKindLabel } from "~/format/audit";
+import { auditActionLabel, auditActionOptions, rightsChangeSummary, snapshotName, targetKindLabel } from "~/format/audit";
 import { rightName, useCatalogue } from "./catalogue";
 import { partyText, type PartyLabel, type PartyRef } from "./party";
 import { jsonDiff, stableJson } from "~/format/json-diff";
@@ -34,11 +33,13 @@ import { afterToday, DAY_PRESETS, pickedDay, pickerDate } from "~/format/picked-
 import { locale, t, type Locale } from "~/i18n";
 import { showExportProgress, startExport } from "~/shell/export-job";
 import { patchSearch, type SearchPatch } from "~/search";
-import { inZone, yearOf } from "~/format/zone";
+import { dayKey, inZone, yearOf } from "~/format/zone";
+import { usePhone } from "~/shell/use-phone";
 
+const dateTag = () => (locale() === "en" ? "en-GB" : locale());
 const shortTimes = new Map<string, Intl.DateTimeFormat>();
 function shortTime(v: string): string {
-  const tag = locale() === "en" ? "en-GB" : locale();
+  const tag = dateTag();
   const zone = inZone();
   const key = `${tag}|${String(zone.timeZone)}`;
   let f = shortTimes.get(key);
@@ -48,6 +49,20 @@ function shortTime(v: string): string {
 }
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
+function compactTime(v: string): string {
+  const at = new Date(v);
+  const tag = dateTag();
+  if (dayKey(at) === dayKey(new Date())) return new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }).format(at);
+  const thisYear = yearOf(at) === yearOf(new Date());
+  return new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", ...(thisYear ? {} : { year: "2-digit" }), ...inZone() }).format(at);
+}
+function zoneName(at: Date): string {
+  const parts = new Intl.DateTimeFormat(dateTag(), { timeZoneName: "short", ...inZone() }).formatToParts(at);
+  return parts
+    .filter((p) => p.type === "timeZoneName")
+    .map((p) => p.value)
+    .join("");
+}
 
 export function AuditLog({
   scope,
@@ -76,25 +91,48 @@ export function AuditLog({
   const rows = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const set = (patch: SearchPatch<AuditSearch>) => onSearch(patchSearch(search, patch));
   const filtered = !!(filters.actor || filters.action || filters.target || filters.from);
+  const snapshotNames = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const r of rows) {
+      const name = r.target_id && snapshotName(r);
+      if (r.target_id && name && !names.has(r.target_id)) names.set(r.target_id, name);
+    }
+    return names;
+  }, [rows]);
+  const nameOf = useCallback((kind: string, id: string) => targetName?.(kind, id) ?? snapshotNames.get(id), [targetName, snapshotNames]);
 
   const lang = locale();
+  const phone = usePhone();
   const columns = useMemo(
     () =>
       [
         col.custom(
-          { id: "time", header: t("kaeso.audit.time", "Time"), size: TIME_WIDTH[lang], priority: 1 },
+          {
+            id: "time",
+            header: phone ? zoneName(new Date()) : t("kaeso.audit.timeIn", "Time ({zone})", { zone: zoneName(new Date()) }),
+            size: phone ? 88 : TIME_WIDTH[lang],
+            priority: 1,
+          },
           (r: AuditEventView) => r.at,
           (v: string) => (
             <Text tabular>
-              <time dateTime={v}>{eventTime(v)}</time>
+              <time dateTime={v}>{phone ? compactTime(v) : eventTime(v)}</time>
             </Text>
           ),
         ),
         col.custom(
-          { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: 176, priority: 1 },
+          { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: phone ? 64 : 168, priority: 1 },
           (r: AuditEventView) => r.actor,
           (v: PartyRef) => {
             const label = partyLabel(v);
+            if (phone)
+              return (
+                <Tooltip content={partyText(label)}>
+                  <span className="flex">
+                    <Avatar name={partyText(label)} src={label.avatarUrl} size={20} />
+                  </span>
+                </Tooltip>
+              );
             return (
               <span className="flex min-w-0 items-center gap-8">
                 {v.kind === "user" && <Avatar name={label.name} src={label.avatarUrl} size={20} decorative />}
@@ -104,14 +142,14 @@ export function AuditLog({
           },
         ),
         col.custom(
-          { id: "action", header: t("kaeso.audit.action", "Action"), size: 252, priority: 1, grow: true },
+          { id: "action", header: t("kaeso.audit.action", "Action"), size: 196, priority: 1, grow: true },
           (r: AuditEventView) => r.action,
-          (v: string) => <Code>{v}</Code>,
+          (v: string) => <Text truncate>{auditActionLabel(v)}</Text>,
         ),
         col.custom(
           { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, priority: 2 },
           (r: AuditEventView) => r.target_id ?? "",
-          (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={targetName} bare />,
+          (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={nameOf} bare />,
         ),
         col.text({ id: "ip", header: t("kaeso.audit.ip", "IP"), size: 136, priority: 3 }, (r: AuditEventView) => r.ip ?? ""),
         col.custom(
@@ -125,7 +163,7 @@ export function AuditLog({
             ) : null,
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [lang, partyLabel, targetHref, targetName],
+    [lang, phone, partyLabel, targetHref, nameOf],
   );
 
   return (
@@ -209,7 +247,7 @@ export function AuditLog({
         rowsLoading={log.isPending}
         partyLabel={partyLabel}
         targetHref={targetHref}
-        targetName={targetName}
+        targetName={nameOf}
         onClose={() => set({ event: undefined })}
       />
     </>
@@ -284,7 +322,14 @@ function AuditEventSheet({
   const cat = useCatalogue("org" in scope ? scope.org : "");
   const summary = e && "org" in scope ? rightsChangeSummary(e.before, e.after, (id) => rightName(cat, id)) : null;
   return (
-    <Sheet open={!!eventId} onOpenChange={(o) => !o && onClose()} modal={false} size="lg" title={e ? <Code>{e.action}</Code> : t("kaeso.audit.event", "Event")}>
+    <Sheet
+      open={!!eventId}
+      onOpenChange={(o) => !o && onClose()}
+      modal={false}
+      size="lg"
+      title={e ? auditActionLabel(e.action) : t("kaeso.audit.event", "Event")}
+      subtitle={e?.action}
+    >
       {(own ? rowsLoading : event.isPending) ? (
         <Skeleton className="w-full" />
       ) : !e ? (
@@ -300,7 +345,13 @@ function AuditEventSheet({
         <div className="flex flex-col gap-24">
           <KeyValue
             items={[
-              { label: t("kaeso.audit.time", "Time"), value: formatDate(e.at, { time: true, seconds: true }) },
+              {
+                label: t("kaeso.audit.time", "Time"),
+                value: t("kaeso.audit.timeWithZone", "{time} {zone}", {
+                  time: formatDate(e.at, { time: true, seconds: true }),
+                  zone: zoneName(new Date(e.at)),
+                }),
+              },
               { label: t("kaeso.audit.actor", "Actor"), value: partyText(partyLabel(e.actor)) },
               {
                 label: t("kaeso.audit.target", "Target"),
@@ -348,7 +399,7 @@ function AuditEventSheet({
                 collapseAfter={0}
               />
             ) : (
-              <Text tone="secondary">{t("kaeso.audit.noValues", "This event records no values.")}</Text>
+              <Text tone="secondary">{t("kaeso.audit.noValues", "No before or after values are kept for this kind of change.")}</Text>
             )}
           </Section>
         </div>
@@ -372,7 +423,7 @@ export function AuditExportButton({ org, filters }: { org: string; filters: Audi
   };
   return (
     <Button size="sm" leadingIcon={icons.download} onClick={exportLog}>
-      {t("common.export", "Export")}
+      {t("kaeso.audit.exportJsonl", "Export JSON Lines")}
     </Button>
   );
 }
