@@ -38,6 +38,8 @@ export const docs = {
       onSubmit:
         "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a search field, a combobox or a picker, and the Enter that confirms an input method's text, keep their own meaning.",
       open: "Whether it is open, when you control it.",
+      persistent:
+        "A press outside doesn't close it, for forms that would lose what was typed; Escape and the close circle still do. Every StepDialog is persistent.",
       size: "The dialog's width.",
       title: "The dialog's heading, also its accessible name.",
       trigger: "The trigger, a single element.",
@@ -66,6 +68,8 @@ export const docs = {
       onOpenChange: "Called when it opens or closes.",
       onSubmit: "Enter in a single-line field and ⌘/Ctrl+Enter call this on every layer; pass the action of the layer shown.",
       open: "Whether it is open, when you control it.",
+      persistent:
+        "A press outside doesn't close it, for forms that would lose what was typed; Escape and the close circle still do. Every StepDialog is persistent.",
       size: "The dialog's width.",
       trigger: "The trigger, a single element.",
     },

@@ -36,6 +36,7 @@ export const docs = {
       copy: "Hide the copy circle.",
       redacted: "The redacted key as the API returns it: sk-kso-AbC123…wxyz",
       state: "The key's state; disabled, expired and archived keys are shown dimmed.",
+      stateBadge: "Shows the state's badge beside a key that isn't active (on by default); turn it off where a heading already names the state.",
     },
   },
   LimitMeter: {

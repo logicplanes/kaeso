@@ -10,6 +10,8 @@
   "limits.emptyProject": "Add a spend budget or a rate limit for the whole project.",
   "limits.hard": "Hard",
   "limits.key": "Key",
+  "limits.keyArchived": "Key archived",
+  "limits.keyArchivedHint": "The key is archived, so this limit no longer applies to any request.",
   "limits.keys": "Keys",
   "limits.lastMinute": "Last minute",
   "limits.level": "Level",

@@ -77,6 +77,25 @@ describe("LimitsPage", () => {
     ]);
   });
 
+  it("lists a limit on an archived key last, marked as no longer applying", async () => {
+    signedIn();
+    stubProject({
+      keys: [apiKey(), apiKey({ id: "key_old", name: "old-batch", state: "archived" })],
+      limits: [
+        limit({ id: "lim_old", level: "key", kind: "spend_budget", amount: "20", subject: { type: "key", id: "key_old" } }),
+        limit({ id: "lim_key", level: "key", kind: "token_rate", period: "minute", amount: "1000", used: "0", subject: { type: "key", id: "key_web" } }),
+      ],
+    });
+    const { user } = await renderApp(projectPath("limits?level=key"));
+
+    expect(await screen.findByText("old-batch")).toBeInTheDocument();
+    const rows = cells().filter((c) => c !== "Keys2");
+    expect(rows[0]).toMatch(/^checkout-web/);
+    expect(rows[1]).toMatch(/^old-batchHardKey archived/);
+    expect(rows[0]).not.toContain("Key archived");
+    await hoverReason(user, screen.getByText("Key archived"), "The key is archived, so this limit no longer applies to any request.");
+  });
+
   it("shows one level from the URL and switches levels with the tabs", async () => {
     signedIn();
     stubProject();
@@ -163,7 +182,7 @@ describe("LimitsPage", () => {
       within(dialog).getByRole("button", { name: "Add limit" }),
       "Higher than the project's monthly spend budget of 50 USD; a lower level can't be higher than the one above it",
     );
-    await user.click(within(dialog).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(dialog).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Request rate/ }));
     expect(within(dialog).getByText("Rates count over a sliding minute and always refuse requests above them.")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Model" }));
@@ -189,7 +208,7 @@ describe("LimitsPage", () => {
     await user.click(await screen.findByRole("option", { name: /ci-deploy/ }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await within(dialog).findByText("What's the limit?");
-    await user.click(within(dialog).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(dialog).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Token budget/ }));
     await user.click(within(dialog).getByRole("radio", { name: "Day" }));
     await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "1.5");

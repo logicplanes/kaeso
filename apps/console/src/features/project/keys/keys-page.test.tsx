@@ -47,6 +47,7 @@ describe("KeysPage", () => {
     expect(within(grid).getByRole("gridcell", { name: /expiring-soon/ })).toHaveTextContent(/Grace Hopper|G/);
     expect(within(grid).getByRole("gridcell", { name: /old-key/ })).toHaveTextContent(/Expired/);
     expect(within(within(grid).getByRole("gridcell", { name: /nightly-batch/ })).getByRole("img", { name: "ci-deploy" })).toBeInTheDocument();
+    expect(within(grid).getByRole("gridcell", { name: /nightly-batch/ })).not.toHaveTextContent("Disabled");
   });
 
   it("shows an owner's picture on their keys, or their initial without one", async () => {

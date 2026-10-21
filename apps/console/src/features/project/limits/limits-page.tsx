@@ -16,6 +16,7 @@ import {
   Segmented,
   StepDialog,
   Text,
+  Tooltip,
   icons,
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
@@ -75,6 +76,7 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   const rights = useProjectRights(org, project);
   const limits = useQuery(limitsQuery(org, project));
   const subjectName = useSubjectName(org, project);
+  const archivedKey = useArchivedKey(org, project);
   const [adding, setAdding] = useState(!!search.add);
   const [editing, setEditing] = useState<LimitView>();
   const [removing, setRemoving] = useState<LimitView | null>(null);
@@ -92,7 +94,7 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   const groups: ListGroup[] = levelList
     .filter((l) => !level || l === level)
     .map((l) => {
-      const list = all.filter((x) => x.level === l.value);
+      const list = all.filter((x) => x.level === l.value).sort((a, b) => Number(archivedKey(a)) - Number(archivedKey(b)));
       return {
         id: l.value,
         title: l.title,
@@ -101,7 +103,7 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
           id: x.id,
           textValue: subjectName(x) ?? limitKindLabel(x.kind),
           glyph: <LimitGlyph org={org} project={project} limit={x} />,
-          title: <LimitTitle limit={x} subject={subjectName(x)} />,
+          title: <LimitTitle limit={x} subject={subjectName(x)} archivedKey={archivedKey(x)} />,
           subtitle: <LimitSubtitle org={org} project={project} limit={x} subject={subjectName(x)} />,
           meta: <LimitUse org={org} project={project} limit={x} />,
           date: <LimitResets org={org} project={project} limit={x} />,
@@ -211,13 +213,18 @@ function LimitGlyph({ org, project, limit }: { org: string; project: string; lim
   return <Icon icon={KIND_ICON[useLimitText(org, project, limit).kind]} size="sm" />;
 }
 
-function LimitTitle({ limit, subject }: { limit: LimitView; subject: string | undefined }) {
+function LimitTitle({ limit, subject, archivedKey }: { limit: LimitView; subject: string | undefined; archivedKey: boolean }) {
   return (
     <span className="flex min-w-0 items-center gap-8">
       <span className="truncate">{subject ?? limitKindLabel(limit.kind)}</span>
       <Badge tone={limit.hard ? "neutral" : "outline"} className="hidden sm:inline-flex">
         {limit.hard ? t("limits.hard", "Hard") : t("limits.soft", "Soft")}
       </Badge>
+      {archivedKey && (
+        <Tooltip content={t("limits.keyArchivedHint", "The key is archived, so this limit no longer applies to any request.")}>
+          <Badge tone="outline">{t("limits.keyArchived", "Key archived")}</Badge>
+        </Tooltip>
+      )}
     </span>
   );
 }
@@ -248,6 +255,13 @@ function LimitUse({ org, project, limit }: { org: string; project: string; limit
 function LimitResets({ org, project, limit }: { org: string; project: string; limit: LimitView }) {
   const text = useLimitText(org, project, limit);
   return <>{limit.period === "minute" ? t("limits.lastMinute", "Last minute") : text.resets}</>;
+}
+
+function useArchivedKey(org: string, project: string) {
+  const rights = useProjectRights(org, project);
+  const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: rights.has("keys.all.view") });
+  const archived = new Set((keys.data ?? []).filter((k) => k.state === "archived").map((k) => k.id));
+  return (l: LimitView) => l.subject.type === "key" && archived.has(l.subject.id);
 }
 
 function useSubjectName(org: string, project: string) {
@@ -362,7 +376,7 @@ function AddLimitDialog({ org, project, initialLevel, onClose }: { org: string; 
           title: t("limits.whatTitle", "What's the limit?"),
           description: t("limits.whatHint", "Rates refuse requests above them; budgets refuse or alert once used up."),
           blockedReason: limitBlocker(draft, parents) ?? undefined,
-          content: <LimitEditor value={draft} onChange={setDraft} models={catalogue.data ?? []} />,
+          content: <LimitEditor org={org} value={draft} onChange={setDraft} models={catalogue.data ?? []} />,
         },
       ]}
     />

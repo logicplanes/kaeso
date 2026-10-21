@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SecretReveal } from "./moments.js";
+import { SecretReveal, sdkSnippets } from "./moments.js";
 
 const SECRET = "sk-kso-test-0123456789abcdef";
 
@@ -9,6 +9,14 @@ describe("SecretReveal", () => {
     render(<SecretReveal secret={SECRET} baseUrl="https://gateway.example.com" />);
     expect(screen.getByRole("textbox", { name: "Secret" })).toHaveTextContent(SECRET);
     expect(screen.getByRole("tab", { name: "Python" })).toBeInTheDocument();
+  });
+
+  it("keeps every line of the SDK snippets short enough to read without scrolling, with a full key in it", () => {
+    const key = "sk-kso-8rZzM2dDGU5seMyY0G3TFPuTZjhQWXaUQACHBZyM6RMZJQYn";
+    for (const tab of sdkSnippets({ baseUrl: "https://kaeso.example.com", apiKey: key, model: "claude-sonnet-4-5" })) {
+      expect(tab.code).toContain(key);
+      for (const line of tab.code.split("\n")) expect(line.length, `${tab.label}: ${line}`).toBeLessThanOrEqual(80);
+    }
   });
 
   it("shows other snippets, or none", () => {

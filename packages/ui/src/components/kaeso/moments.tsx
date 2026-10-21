@@ -26,17 +26,17 @@ export function sdkSnippets({ baseUrl, apiKey = "$KAESO_API_KEY", model = "gpt-5
     {
       label: "Python",
       lang: "python",
-      code: `from openai import OpenAI\n${apiKey.startsWith("$") ? "import os\n" : ""}\nclient = OpenAI(base_url="${baseUrl}/v1", api_key=${envKey})\n\nresponse = client.responses.create(\n    model="${model}",\n    input="Write one sentence about gateways.",\n)\nprint(response.output_text)`,
+      code: `from openai import OpenAI\n${apiKey.startsWith("$") ? "import os\n" : ""}\nclient = OpenAI(\n    base_url="${baseUrl}/v1",\n    api_key=${envKey},\n)\n\nresponse = client.responses.create(\n    model="${model}",\n    input="Write one sentence about gateways.",\n)\nprint(response.output_text)`,
     },
     {
       label: "Node",
       lang: "ts",
-      code: `import OpenAI from "openai";\n\nconst client = new OpenAI({ baseURL: "${baseUrl}/v1", apiKey: ${nodeKey} });\n\nconst response = await client.responses.create({\n  model: "${model}",\n  input: "Write one sentence about gateways.",\n});\nconsole.log(response.output_text);`,
+      code: `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  baseURL: "${baseUrl}/v1",\n  apiKey: ${nodeKey},\n});\n\nconst response = await client.responses.create({\n  model: "${model}",\n  input: "Write one sentence about gateways.",\n});\nconsole.log(response.output_text);`,
     },
     {
       label: "curl",
       lang: "bash",
-      code: `curl ${baseUrl}/v1/responses \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "${model}", "input": "Write one sentence about gateways."}'`,
+      code: `${apiKey.startsWith("$") ? "" : `KAESO_API_KEY=${apiKey}\n`}curl ${baseUrl}/v1/responses \\\n  -H "Authorization: Bearer ${apiKey.startsWith("$") ? apiKey : "$KAESO_API_KEY"}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "model": "${model}",\n    "input": "Write one sentence about gateways."\n  }'`,
     },
   ];
 }

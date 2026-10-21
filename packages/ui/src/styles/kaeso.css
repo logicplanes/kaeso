@@ -386,6 +386,7 @@
     transform: scale(0.98);
     transition-duration: var(--k-duration-close-dialog);
     transition-timing-function: var(--k-ease-exit);
+    pointer-events: none;
   }
 }
 @utility backdrop-motion {
@@ -398,6 +399,7 @@
   }
   &[data-ending-style] {
     transition-duration: var(--k-duration-close-dialog);
+    pointer-events: none;
   }
 }
 @utility sheet-motion {
@@ -419,6 +421,7 @@
   &[data-ending-style] {
     transition-duration: var(--k-duration-close-sheet);
     transition-timing-function: var(--k-ease-exit);
+    pointer-events: none;
   }
 }
 @utility indicator-motion {

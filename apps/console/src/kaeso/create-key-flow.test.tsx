@@ -223,10 +223,12 @@ describe("CreateKeyDialog", () => {
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "deploy");
     const owner = within(dialog).getByRole("combobox", { name: "For" });
     await waitFor(() => expect(owner).not.toBeDisabled());
+    expect(within(dialog).getByText("Your key acts with your rights in this project.")).toBeInTheDocument();
     await user.click(owner);
     expect(screen.queryByRole("option", { name: "Service account old-batch" })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Me (Ada Okafor)" })).toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: "Service account ci-deploy" }));
+    expect(within(dialog).getByText("A service account's key acts with the service account's rights.")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("combobox", { name: "Expires" }));
     await user.click(await screen.findByRole("option", { name: "Never" }));
@@ -236,10 +238,12 @@ describe("CreateKeyDialog", () => {
 
     await user.click(within(dialog).getByRole("button", { name: "Models" }));
     expect(screen.queryByRole("option", { name: /GPT-5 mini/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Models" }).querySelector('[role="img"][aria-label="Anthropic"]')).not.toBeNull();
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     await user.keyboard("{Escape}");
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
-    expect(within(dialog).getByRole("combobox", { name: "Counts" })).toHaveFocus();
+    expect(within(dialog).getByRole("combobox", { name: "What it limits" })).toHaveFocus();
+    expect(within(dialog).getByRole("heading", { name: "Limit" })).toBeInTheDocument();
     const create = () => within(dialog).getByRole("button", { name: "Create key" });
     expect(create()).toHaveAttribute("aria-disabled", "true");
     await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "5");
