@@ -261,7 +261,9 @@ describe("a custom role's sheet", () => {
     await user.click(within(sheet).getByRole("button", { name: "Save role" }));
     const confirm = await screen.findByRole("alertdialog");
     await user.click(within(confirm).getByRole("button", { name: "Save role" }));
-    expect((await notifications().findAllByText(refusal)).length).toBeGreaterThan(0);
+    const shown = refusal.replaceAll("`", "");
+    const notice = (await notifications().findAllByText((_, el) => el?.textContent === shown && !!el.querySelector("code")))[0];
+    expect(notice?.querySelectorAll("code")).toHaveLength(2);
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(within(orgRights).getByRole("checkbox", { name: "View members" })).not.toBeChecked();
     expect(within(sheet).getByRole("button", { name: "Save role" })).toBeEnabled();
