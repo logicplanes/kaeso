@@ -956,7 +956,7 @@
   "“{value}” is not an email address.": "“{value}”不是有效的电子邮件地址。",
   "…rows under group headers.": "……分组标题下的行。",
   "Enter in a single-line field and ⌘/Ctrl+Enter call this on every layer; pass the action of the layer shown.": "在每一层上，在单行字段中按 Enter 或按 ⌘/Ctrl+Enter 时调用；传入当前显示层的操作。",
-  "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a combobox or a picker keeps its own meaning.": "在单行字段中按 Enter 或在任意位置按 ⌘/Ctrl+Enter 时调用（通常是主要操作）；在多行文本框、组合框或选择器中，Enter 保留其自身的作用。",
+  "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a search field, a combobox or a picker, and the Enter that confirms an input method's text, keep their own meaning.": "在单行字段中按 Enter 或在任意位置按 ⌘/Ctrl+Enter 时调用（通常是主要操作）；在多行文本框、搜索框、组合框或选择器中按 Enter，以及用于确认输入法文字的 Enter，都保留其自身的作用。",
   "⌘K: every page and action, grouped; nested pages; async groups with a quiet progress line.": "⌘K：所有页面和操作，分组显示；支持嵌套页面；异步分组带低调的进度线。",
   "Called when the action is confirmed; return a promise to keep the dialog busy until it ends. It closes when the promise resolves and stays open for another try when it rejects, so toast the error there.": "确认操作时调用；返回一个 Promise，可让对话框在其结束前保持忙碌状态。Promise 完成时对话框关闭，被拒绝时保持打开以便重试，此时请用 toast 显示错误。",
   "The accessible name of the diagram: what it shows, such as \"Route of checkout requests\". Defaults to \"Flow diagram\"; screen readers hear each node and each connection after it.": "图表的无障碍名称：说明它展示的内容，例如“结账请求的路径”。默认为“流程图”；屏幕阅读器随后会读出每个节点和每条连接。",
