@@ -12,10 +12,10 @@ export function InstanceGate() {
   const queryClient = useQueryClient();
   if (session.user.is_instance_admin && !session.can_administer_instance) {
     return (
-      <SettingsPage title={t("instance.title", "Instance")} context={t("instance.title", "Instance")}>
+      <SettingsPage title={t("instance.title", "Instance")}>
         <Empty
           title={t("instance.signInAnotherWay", "Sign in another way to manage the instance")}
-          description={t("instance.signInAnotherWayHint", "Your SSO sign-in can't manage the instance; sign in with your password or an email link.")}
+          description={t("instance.signInAnotherWayHint", "Your SSO sign-in can't manage the instance; confirm it's you another way.")}
           actions={
             <Button variant="primary" onClick={() => void signInAnotherWay(queryClient)}>
               {t("auth.otherSignIn.action", "Sign in another way")}
@@ -27,7 +27,7 @@ export function InstanceGate() {
   }
   if (!session.can_administer_instance) {
     return (
-      <SettingsPage title={t("instance.title", "Instance")} context={t("instance.title", "Instance")}>
+      <SettingsPage title={t("instance.title", "Instance")}>
         <Empty
           title={t("instance.adminsOnly", "For instance admins")}
           description={t("instance.adminsOnlyHint", "These pages manage the whole install; an instance admin can make you one.")}

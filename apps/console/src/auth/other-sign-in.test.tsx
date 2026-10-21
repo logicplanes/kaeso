@@ -17,11 +17,11 @@ describe("a session from another organization's single sign-on", () => {
   it("asks for a password before it opens the organization", async () => {
     signedIn({ session: whoAmI({ session: ssoSession, memberships: [membership({ access: "needs_other_sign_in" })] }) });
     on("GET", "me", me({ has_password: true }));
-    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     on("POST", "auth/password", signedInReply());
     const { user } = await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByText("Sign in another way to open Northwind Labs")).toBeInTheDocument();
-    expect(screen.getByText("Your SSO sign-in opens only its own organization; sign in with your password or an email link.")).toBeInTheDocument();
+    expect(screen.getByText("Your SSO sign-in opens only its own organization; confirm it's you another way.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Sign in another way" }));
     const box = await dialog();
     expect(within(box).getByText("You signed in with SSO; this needs your password or an email link.")).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe("a session from another organization's single sign-on", () => {
   it("stays on the page when the person cancels", async () => {
     signedIn({ session: whoAmI({ session: ssoSession, memberships: [membership({ access: "needs_other_sign_in" })] }) });
     on("GET", "me", me({ has_password: true }));
-    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     const { user } = await renderApp(`/orgs/${ORG}`);
     await user.click(await screen.findByRole("button", { name: "Sign in another way" }));
     const box = await dialog();
@@ -51,7 +51,7 @@ describe("an account change from a single sign-on session", () => {
   it("repeats the change after a sign-in with the password", async () => {
     signedIn({ session: whoAmI({ session: ssoSession }) });
     on("GET", "me", me({ has_password: true }));
-    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     on("POST", "auth/password", signedInReply());
     on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
     let calls = 0;
@@ -69,7 +69,7 @@ describe("an account change from a single sign-on session", () => {
   it("drops the change when the person doesn't sign in again", async () => {
     signedIn({ session: whoAmI({ session: ssoSession }) });
     on("GET", "me", me({ has_password: true }));
-    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
     on("PUT", "me/notifications", apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."));
     const { user } = await renderApp("/settings/account/notifications");
@@ -83,7 +83,7 @@ describe("an account change from a single sign-on session", () => {
   it("offers no way when the account has neither a password nor sign-in links", async () => {
     signedIn({ session: whoAmI({ session: ssoSession }) });
     on("GET", "me", me({ has_password: false }));
-    on("GET", "me/sign-in-again", { password: false, magic_link: false, sso: [] });
+    on("GET", "me/sign-in-again", { password: false, magic_link: false, set_password: false, sso: [] });
     on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
     on("PUT", "me/notifications", apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."));
     const { user } = await renderApp("/settings/account/notifications");
@@ -98,9 +98,11 @@ describe("instance administration from a single sign-on session", () => {
   it("asks an instance admin to sign in another way", async () => {
     signedIn({ session: whoAmI({ session: ssoSession }) });
     on("GET", "me", me({ has_password: true }));
-    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
     const { user } = await renderApp("/settings/instance/system");
     expect(await screen.findByText("Sign in another way to manage the instance")).toBeInTheDocument();
+    expect(screen.getByText("Your SSO sign-in can't manage the instance; confirm it's you another way.")).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe("Instance · Kaeso"));
     await user.click(screen.getByRole("button", { name: "Sign in another way" }));
     const box = await dialog();
     on("POST", "auth/password", signedInReply());

@@ -69,7 +69,7 @@ export function NeedsOtherSignIn({ orgName }: { orgName: string }) {
         <Empty
           size="lg"
           title={t("auth.otherSignIn.title", "Sign in another way to open {org}", { org: orgName })}
-          description={t("auth.otherSignIn.description", "Your SSO sign-in opens only its own organization; sign in with your password or an email link.")}
+          description={t("auth.otherSignIn.description", "Your SSO sign-in opens only its own organization; confirm it's you another way.")}
           actions={
             <Button variant="primary" onClick={() => void signInAnotherWay(queryClient)}>
               {t("auth.otherSignIn.action", "Sign in another way")}

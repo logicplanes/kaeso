@@ -88,6 +88,7 @@ describe("organization security", () => {
     expect(screen.getByText("mk_sso")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByText("Says Continue with SSO.")).toBeInTheDocument();
+    expect(screen.getByText("Only addresses the provider marks verified sign in.")).toBeInTheDocument();
     expect(screen.getByText("Opens sign-in with this provider, without an address.")).toBeInTheDocument();
     expect(screen.getByText("https://console.northwind.test/sign-in?org=org_northwind")).toBeInTheDocument();
   });
@@ -97,6 +98,13 @@ describe("organization security", () => {
     serveSecurity(security({ sso: sso({ name: "Northwind ID", auto_redirect: true }) }));
     await renderApp(PATH);
     expect(await screen.findByText("Says Continue with Northwind ID and starts on its own.")).toBeInTheDocument();
+  });
+
+  it("says when the provider's unverified addresses sign in too", async () => {
+    signedIn();
+    serveSecurity(security({ sso: sso({ require_email_verified: false }) }));
+    await renderApp(PATH);
+    expect(await screen.findByText("The provider's unverified addresses sign in too.")).toBeInTheDocument();
   });
 
   it("says when a named button waits for a click", async () => {

@@ -4,6 +4,13 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Console
+
+- **Organization** › **Security** shows whether single sign-on admits only addresses the identity provider marks verified, without opening **Edit**.
+- The pages that ask a single sign-on session to sign in another way, for instance administration and for another organization, no longer promise a password or an email link the account may not have, and the instance page's tab no longer says "Instance" twice.
+
 ## [0.3.3] - 2026-10-21
 
 The notes for version 0.3.3 list a single change, to the release artwork on the changelog, which now fills its frame in the 16:9 shape it was drawn in. Nothing in these notes asks people who run or integrate Kaeso to change configuration or code when they upgrade. The release is a documentation fix.

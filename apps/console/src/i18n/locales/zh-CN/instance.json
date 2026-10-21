@@ -233,7 +233,7 @@
   "instance.settingsFailed": "实例设置加载失败",
   "instance.signIn": "登录",
   "instance.signInAnotherWay": "用其他方式登录以管理实例",
-  "instance.signInAnotherWayHint": "通过 SSO 登录无法管理实例；请使用密码或电子邮件登录链接登录。",
+  "instance.signInAnotherWayHint": "您的 SSO 登录无法管理实例；请用其他方式确认是您本人。",
   "instance.signInHint": "组织对其成员的登录要求。",
   "instance.signInLink": "登录链接",
   "instance.signInMethods": "登录方式",

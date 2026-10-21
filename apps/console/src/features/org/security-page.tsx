@@ -188,6 +188,14 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
                   : t("org.sso.inviteOnlyHint", "Only invited people can join through the provider.")
               }
             />
+            <SettingsRow
+              title={t("org.sso.addresses", "Email addresses")}
+              description={
+                sso.require_email_verified
+                  ? t("org.sso.addressesVerified", "Only addresses the provider marks verified sign in.")
+                  : t("org.sso.addressesAny", "The provider's unverified addresses sign in too.")
+              }
+            />
             <SettingsRow title={t("org.sso.button", "Sign-in button")} description={buttonSentence(sso)} />
             <SettingsRow
               title={t("org.sso.signInLink", "Sign-in link")}

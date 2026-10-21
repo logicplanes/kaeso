@@ -233,7 +233,7 @@
   "instance.settingsFailed": "Die Einstellungen der Instanz konnten nicht geladen werden",
   "instance.signIn": "Anmeldung",
   "instance.signInAnotherWay": "Anders anmelden, um die Instanz zu verwalten",
-  "instance.signInAnotherWayHint": "Mit Ihrer SSO-Anmeldung verwalten Sie die Instanz nicht; melden Sie sich mit Passwort oder Link an.",
+  "instance.signInAnotherWayHint": "Ihre SSO-Anmeldung kann die Instanz nicht verwalten; bestätigen Sie anders, dass Sie es sind.",
   "instance.signInHint": "Was die Organisation von ihren Mitgliedern verlangt.",
   "instance.signInLink": "Anmeldelink",
   "instance.signInMethods": "Anmeldemethoden",
