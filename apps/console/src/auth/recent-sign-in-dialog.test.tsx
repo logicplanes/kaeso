@@ -1,27 +1,33 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { signedIn, whoAmI } from "~/test/fixtures";
-import { me } from "~/test/fixtures/instance-account";
 import { emailSent, signedInReply, ssoStart, totpRequired } from "~/test/fixtures/public";
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { announceConfirmed } from "./confirm-channel";
 import { requestRecentSignIn } from "./recent-sign-in-store";
 
 const PATH = "/settings/account/notifications";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const dialog = () => screen.findByRole("dialog", { name: "Sign in again to continue" });
 
-type Methods = { password: boolean; magic_link: boolean; sso: boolean; sso_required: boolean; sign_up: boolean };
+type Ways = { password: boolean; magic_link: boolean; sso: { org_id: string; org_name: string; provider_name: string | null }[] };
+const ACME_ID = { org_id: "org_01hxacme", org_name: "Acme", provider_name: "Acme ID" };
 
-function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; hasPassword?: boolean; methods?: Partial<Methods> } = {}) {
+function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; ways?: Partial<Ways> } = {}) {
   signedIn(options.session ? { session: whoAmI(options.session) } : {});
-  on("GET", "me", me({ has_password: options.hasPassword ?? true }));
-  on("POST", "auth/methods", { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, provider: null, ...options.methods });
+  on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [], ...options.ways });
   on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
   let calls = 0;
   on("PUT", "me/notifications", ({ body }: { body: unknown }) =>
     ++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : body,
   );
+}
+
+function popupWindow() {
+  const popup = { location: { href: "" }, focus: vi.fn(), close: vi.fn() };
+  const open = vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+  return { popup, open };
 }
 
 async function toggle(user: Awaited<ReturnType<typeof renderApp>>["user"]) {
@@ -168,20 +174,20 @@ describe("signing in again with a password", () => {
   });
 
   it("offers single sign-on next to the password", async () => {
-    needsRecentSignIn({ session: { session: { ...whoAmI().session, method: "oidc" } } });
-    on("POST", "auth/oidc/start", ssoStart("https://idp.example.com/authorize?state=again"));
-    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    needsRecentSignIn({ ways: { sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    const { popup } = popupWindow();
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    await user.click(within(box).getByRole("button", { name: "Continue with SSO instead" }));
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "owner@example.com", next: PATH }]);
+    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID instead" }));
+    await waitFor(() => expect(popup.location.href).toBe("https://idp.example.com/authorize?state=again"));
+    expect(requests("POST", "me/sign-in-again/sso").map((r) => r.body)).toEqual([{ org: ACME_ID.org_id, next: "/signed-in-again" }]);
   });
 });
 
 describe("signing in again without a password", () => {
   it("emails a sign-in link", async () => {
-    needsRecentSignIn({ hasPassword: false });
+    needsRecentSignIn({ ways: { password: false } });
     on("POST", "auth/magic-link", emailSent("A sign-in link is on its way to owner@example.com."));
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
@@ -195,31 +201,52 @@ describe("signing in again without a password", () => {
     expect(requests("PUT", "me/notifications")).toHaveLength(1);
   });
 
-  it("sends someone who signed in with single sign-on back to the identity provider", async () => {
-    needsRecentSignIn({ hasPassword: false, session: { session: { ...whoAmI().session, method: "oidc" } } });
-    on("POST", "auth/oidc/start", ssoStart("https://idp.example.com/authorize?state=again"));
-    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+  it("confirms at the identity provider in a window of its own and repeats the change, keeping the page", async () => {
+    needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    const { popup, open } = popupWindow();
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    expect(await within(box).findByText("Sign in again at your identity provider as owner@example.com. You come back to this page.")).toBeInTheDocument();
-    await user.click(within(box).getByRole("button", { name: "Continue with SSO" }));
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "owner@example.com", next: PATH }]);
+    expect(
+      await within(box).findByText("Sign in again at Acme ID as owner@example.com, in a window that opens; this page stays as it is."),
+    ).toBeInTheDocument();
+    await user.click(within(box).getByRole("button", { name: "Continue with Acme ID" }));
+    expect(open).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(popup.location.href).toBe("https://idp.example.com/authorize?state=again"));
+    expect(await within(box).findByText("Finish signing in at Acme ID in the window that opened; the action continues by itself.")).toBeInTheDocument();
+    act(() => announceConfirmed(null));
+    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(requests("PUT", "me/notifications")).toHaveLength(2);
   });
 
-  it("sends an account without an email address to the identity provider", async () => {
-    needsRecentSignIn({ hasPassword: false, session: { user: { ...whoAmI().user, email: null }, session: { ...whoAmI().session, method: "oidc" } } });
-    on("POST", "auth/oidc/start", ssoStart("https://idp.example.com/authorize?state=again"));
+  it("says why the identity provider didn't confirm, and lets the person try again", async () => {
+    needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    popupWindow();
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID" }));
+    await within(box).findByRole("button", { name: "Open the window again" });
+    act(() => announceConfirmed("other_account"));
+    expect((await screen.findAllByText("You signed in at the identity provider as someone else; sign in there as yourself.")).length).toBeGreaterThan(0);
+    expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
+    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+  });
+
+  it("goes to the identity provider in this tab when windows are blocked", async () => {
+    needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    vi.spyOn(window, "open").mockReturnValue(null);
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    await user.click(await within(box).findByRole("button", { name: "Continue with SSO" }));
+    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "", next: PATH }]);
+    expect(requests("POST", "me/sign-in-again/sso").map((r) => r.body)).toEqual([{ org: ACME_ID.org_id, next: PATH }]);
   });
 
   it("says when the gateway's answer can't be read", async () => {
-    needsRecentSignIn({ hasPassword: false });
+    needsRecentSignIn({ ways: { password: false } });
     on("POST", "auth/magic-link", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
@@ -230,7 +257,7 @@ describe("signing in again without a password", () => {
 
 describe("choosing how to sign in again", () => {
   it("asks no password while password sign-in is off and emails a link instead", async () => {
-    needsRecentSignIn({ methods: { password: false } });
+    needsRecentSignIn({ ways: { password: false } });
     on("POST", "auth/magic-link", emailSent("A sign-in link is on its way to owner@example.com."));
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
@@ -239,10 +266,10 @@ describe("choosing how to sign in again", () => {
   });
 
   it("offers only single sign-on when the organization requires it", async () => {
-    needsRecentSignIn({ methods: { sso: true, sso_required: true } });
+    needsRecentSignIn({ ways: { password: false, magic_link: false, sso: [ACME_ID] } });
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    expect(await within(box).findByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
+    expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
     expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Email me a sign-in link instead" })).not.toBeInTheDocument();
   });
@@ -257,10 +284,67 @@ describe("choosing how to sign in again", () => {
   });
 
   it("says so when no method works for the account", async () => {
-    needsRecentSignIn({ hasPassword: false, methods: { magic_link: false } });
+    needsRecentSignIn({ ways: { password: false, magic_link: false } });
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     expect(await within(box).findByText("No sign-in method this install offers works for your account; ask an instance admin.")).toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
+  });
+});
+
+describe("when Kaeso can't tell how to sign in again", () => {
+  it("says so and checks again on request instead of guessing a password", async () => {
+    signedIn();
+    let asked = 0;
+    on("GET", "me/sign-in-again", () => (++asked === 1 ? apiError(503, "unavailable", "Try again shortly.") : { password: true, magic_link: false, sso: [] }));
+    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
+    on("PUT", "me/notifications", apiError(403, "recent_sign_in_required", "Sign in again to do this."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByText("Kaeso couldn't check how you can sign in again.")).toBeInTheDocument();
+    expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
+    await user.click(within(box).getByRole("button", { name: "Try again" }));
+    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
+  });
+});
+
+describe("confirming through one of several identity providers", () => {
+  const OTHER = { org_id: "org_01hxglobex", org_name: "Globex", provider_name: null };
+
+  it("offers the session's own provider first, and the others beside it", async () => {
+    needsRecentSignIn({
+      session: { session: { ...whoAmI().session, method: "oidc", sso_org: OTHER.org_id } },
+      ways: { password: false, sso: [ACME_ID, OTHER] },
+    });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    const { popup } = popupWindow();
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByRole("button", { name: "Continue with Globex" })).toBeInTheDocument();
+    await user.click(within(box).getByRole("button", { name: "Continue with Acme ID instead" }));
+    await waitFor(() => expect(popup.location.href).toBe("https://idp.example.com/authorize?state=again"));
+    expect(requests("POST", "me/sign-in-again/sso").map((r) => (r.body as { org: string }).org)).toEqual([ACME_ID.org_id]);
+    await user.click(await within(box).findByRole("button", { name: "Open the window again" }));
+    await waitFor(() => expect(requests("POST", "me/sign-in-again/sso")).toHaveLength(2));
+  });
+
+  it("closes the window again when the confirmation can't start", async () => {
+    needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", apiError(404, "not_found", "SSO connection not found."));
+    const { popup } = popupWindow();
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID" }));
+    await waitFor(() => expect(popup.close).toHaveBeenCalled());
+    expect(within(box).getByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
+  });
+});
+
+describe("an account without an email address", () => {
+  it("is asked to sign in again as itself at its identity provider", async () => {
+    needsRecentSignIn({ session: { user: { ...whoAmI().user, email: null } }, ways: { password: false, magic_link: false, sso: [ACME_ID] } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByText("Sign in again at Acme ID as yourself, in a window that opens; this page stays as it is.")).toBeInTheDocument();
   });
 });

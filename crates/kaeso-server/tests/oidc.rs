@@ -1346,3 +1346,268 @@ async fn link_local_and_cloud_metadata_addresses_are_never_fetched() {
         );
     }
 }
+
+async fn confirm_as(
+    app: &App,
+    idp: &MockIdp,
+    cookie: &str,
+    org: &str,
+    subject: &str,
+    email: &str,
+) -> (String, common::Resp) {
+    let r = app
+        .post(
+            "/me/sign-in-again/sso",
+            json!({ "org": org, "next": "/orgs/x/providers" }),
+            Some(cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let url = r.body["authorization_url"].as_str().unwrap().to_owned();
+    let binding = r.set_cookie("__Host-kaeso_oidc").unwrap();
+    let auth = idp.authorize_as(&url, subject, email, "Someone");
+    (
+        url,
+        callback(app, &auth.code, &auth.state, Some(&binding)).await,
+    )
+}
+
+async fn add_provider_key(app: &App, org: &str, cookie: &str) -> common::Resp {
+    app.post(
+        &format!("/orgs/{org}/credentials"),
+        json!({ "provider": "openai", "name": "Production", "secret": "sk-test-confirmed-000000000000" }),
+        Some(cookie),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_account() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(
+        &app,
+        &owner.org_id,
+        &idp,
+        "acme.example",
+        Some("Acme ID"),
+        false,
+    )
+    .await;
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let sso = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+
+    let ways = app
+        .get("/me/sign-in-again", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(ways.body["password"], true);
+    assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
+    assert_eq!(ways.body["sso"][0]["provider_name"], "Acme ID");
+    sqlx::query("UPDATE organizations SET require_sso = true")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let there = app
+        .get(&format!("/me/sign-in-again?org={}", owner.org_id), &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        (&there.body["password"], &there.body["magic_link"]),
+        (&json!(false), &json!(false)),
+        "an org that requires SSO is confirmed only through it"
+    );
+    assert_eq!(there.body["sso"].as_array().unwrap().len(), 1);
+    sqlx::query("UPDATE organizations SET require_sso = false")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    app.clock.advance(time::Duration::minutes(16));
+    assert_eq!(
+        add_provider_key(&app, &owner.org_id, &sso)
+            .await
+            .error_type(),
+        "recent_sign_in_required"
+    );
+
+    let (url, r) = confirm_as(
+        &app,
+        &idp,
+        &sso,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let query: std::collections::HashMap<String, String> = url::Url::parse(&url)
+        .unwrap()
+        .query_pairs()
+        .into_owned()
+        .collect();
+    assert_eq!(
+        query.get("prompt").map(String::as_str),
+        Some("login"),
+        "the provider asks the person again"
+    );
+    assert_eq!(query.get("max_age").map(String::as_str), Some("0"));
+    assert_eq!(
+        location(&r),
+        format!("{ORIGIN}/orgs/x/providers"),
+        "back to the page that asked"
+    );
+    let confirmed = r.cookie().expect("a new session");
+    assert_ne!(confirmed, sso);
+    let who = app.get("/auth/session", &confirmed).await;
+    assert_eq!(who.body["user"]["email"], "owner@example.com");
+    assert_eq!(who.body["session"]["sso_org"], owner.org_id.as_str());
+    let added = add_provider_key(&app, &owner.org_id, &confirmed).await;
+    assert_eq!(added.status, StatusCode::CREATED, "{:?}", added.body);
+    let old = app.get("/auth/session", &sso).await;
+    assert_eq!(
+        old.status,
+        StatusCode::UNAUTHORIZED,
+        "the confirmed session replaces the old one"
+    );
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM audit_events WHERE action = 'user.sign_in_confirm'",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(audited, 1);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_confirmation_never_switches_accounts_and_comes_back_to_the_page_with_the_reason() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    let back = |r: &common::Resp, code: &str| {
+        assert_eq!(
+            location(r),
+            format!("{ORIGIN}/orgs/x/providers#sso_error={code}")
+        );
+        assert!(
+            r.cookie().is_none(),
+            "no session for a refused confirmation"
+        );
+    };
+
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@example.com",
+    )
+    .await;
+    back(&r, "domain_not_allowed");
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    back(&r, "other_account");
+
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@acme.example", "role": "member" }),
+        "Eve",
+    )
+    .await;
+    link_account(
+        &app,
+        &idp,
+        &eve,
+        &owner.org_id,
+        "sub-eve",
+        "eve@acme.example",
+    )
+    .await;
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-eve",
+        "eve@acme.example",
+    )
+    .await;
+    back(&r, "other_account");
+    sqlx::query("UPDATE users SET email = 'owner@acme.example' WHERE email = 'owner@example.com'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    back(&r, LINK_REQUIRED);
+
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    idp.set_fault(Fault::StaleAuthTime);
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    back(&r, "stale_sign_in");
+    idp.set_fault(Fault::None);
+    let who = app.get("/auth/session", &owner.cookie).await;
+    assert_eq!(
+        who.status,
+        StatusCode::OK,
+        "a refused confirmation leaves the session as it was"
+    );
+
+    let other = another_org(&app, "Other").await;
+    let r = app
+        .post(
+            "/me/sign-in-again/sso",
+            json!({ "org": other }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    s.cleanup().await;
+}

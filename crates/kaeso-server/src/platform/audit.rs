@@ -100,6 +100,7 @@ pub const ACTIONS: &[&str] = &[
     "user.reactivate",
     "user.recovery_codes_regenerate",
     "user.sessions_revoke",
+    "user.sign_in_confirm",
     "user.sign_in_link",
     "user.signup",
     "user.sso_link",

@@ -20,8 +20,11 @@ const MESSAGES: Record<string, () => string> = {
   deactivated: () => t("signIn.ssoError.deactivated", "This account is deactivated."),
   no_access: () => t("signIn.ssoError.noAccess", "You have no access to this organization yet; ask an admin to invite you."),
   accept_invite: () => t("signIn.ssoError.acceptInvite", "You already have an account; sign in another way to accept the invitation."),
-  link_required: () => t("signIn.ssoError.linkRequired", "Your account isn't linked to this single sign-on; sign in another way and link it under Account."),
+  link_required: () =>
+    t("signIn.ssoError.linkRequired", "Your account isn't linked to this single sign-on; sign in another way and link it under Account › Security."),
   linked_elsewhere: () => t("signIn.ssoError.linkedElsewhere", "This identity is already linked to another Kaeso account."),
+  other_account: () => t("signIn.ssoError.otherAccount", "You signed in at the identity provider as someone else; sign in there as yourself."),
+  stale_sign_in: () => t("signIn.ssoError.staleSignIn", "The identity provider didn't ask you to sign in again; try again or confirm another way."),
   org_scheduled: () => t("signIn.ssoError.orgScheduled", "This organization is scheduled for deletion."),
   throttled: () => t("signIn.ssoError.throttled", "Too many sign-in attempts; try again in a few minutes."),
 };

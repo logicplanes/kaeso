@@ -1,57 +1,71 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { toastApiError } from "~/api/toast-error";
-import { meQuery } from "~/api/queries/me";
 import { t } from "~/i18n";
+import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
 import { settleRecentSignIn, signInAgainKind } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
-import { here, sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso } from "./sign-in-api";
+import { confirmWaysQuery, confirmWithSso, here, sendMagicLink, signInWithPassword, signInWithTotp, type ConfirmSso, type ConfirmWays } from "./sign-in-api";
+import { showSsoError } from "./sso-errors";
 
-type Step = { kind: "password" } | { kind: "totp"; challenge: string; recovery: boolean } | { kind: "link-sent"; message: string };
+type Step =
+  | { kind: "choose" }
+  | { kind: "totp"; challenge: string; recovery: boolean }
+  | { kind: "link-sent"; message: string }
+  | { kind: "sso-waiting"; provider: ConfirmSso };
 type Way = "password" | "sso" | "link" | "none";
 
-export function waysToSignIn(options: {
-  email: string;
-  hasPassword: boolean;
-  ssoSession: boolean;
-  methods: { password: boolean; magic_link: boolean; sso: boolean; sso_required: boolean } | undefined;
-}): { primary: Way; sso: boolean; link: boolean } {
-  const { email, hasPassword, ssoSession, methods } = options;
-  const sso = ssoSession || !email || !!methods?.sso;
-  if (methods?.sso_required) return { primary: "sso", sso: false, link: false };
-  const password = hasPassword && !!email && (methods?.password ?? true);
-  const link = !!email && (methods?.magic_link ?? true);
-  if (password) return { primary: "password", sso, link };
-  if (sso) return { primary: "sso", sso: false, link };
-  if (link) return { primary: "link", sso: false, link: false };
-  return { primary: "none", sso: false, link: false };
+export function confirmChoices(
+  ways: ConfirmWays | undefined,
+  options: { withoutSso: boolean; ssoOrg: string | null | undefined },
+): { primary: Way; sso: ConfirmSso[]; link: boolean } {
+  if (!ways) return { primary: "none", sso: [], link: false };
+  const sso = options.withoutSso ? [] : [...ways.sso].sort((a, b) => Number(b.org_id === options.ssoOrg) - Number(a.org_id === options.ssoOrg));
+  if (ways.password) return { primary: "password", sso, link: ways.magic_link };
+  if (sso.length) return { primary: "sso", sso, link: ways.magic_link };
+  if (ways.magic_link) return { primary: "link", sso: [], link: false };
+  return { primary: "none", sso: [], link: false };
+}
+
+const providerName = (p: ConfirmSso) => p.provider_name ?? p.org_name;
+
+function openPopup(): Window | null {
+  const width = 520;
+  const height = 720;
+  const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+  const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+  return window.open("", "kaeso-sign-in-again", `popup,width=${width},height=${height},left=${left},top=${top}`);
 }
 
 export default function RecentSignInDialog() {
   const [withoutSso] = useState(() => signInAgainKind() === "without-sso");
   const session = useSession();
-  const me = useQuery(meQuery);
+  const { org } = useParams({ strict: false });
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<Step>({ kind: "password" });
+  const confirm = useQuery(confirmWaysQuery(org));
+  const [step, setStep] = useState<Step>({ kind: "choose" });
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const email = session.user.email ?? "";
-  const methods = useQuery({ queryKey: ["auth", "methods", "for", email], queryFn: () => signInMethodsFor(email), enabled: !!email, retry: false });
-  const loading = me.isPending || (!!email && methods.isPending);
-  const ways = waysToSignIn({
-    email,
-    hasPassword: me.data?.has_password ?? false,
-    ssoSession: !withoutSso && session.session.method === "oidc",
-    methods: withoutSso && methods.data ? { ...methods.data, sso: false, sso_required: false } : methods.data,
-  });
-  const hasPassword = ways.primary === "password";
+  const loading = confirm.isPending;
+  const ways = confirmChoices(confirm.data, { withoutSso, ssoOrg: session.session.sso_org });
 
-  const finish = async () => {
+  const finish = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
     settleRecentSignIn(true);
-  };
+  }, [queryClient]);
+  const waiting = step.kind === "sso-waiting";
+  useEffect(() => {
+    if (!waiting) return;
+    return onConfirmed(({ error }) => {
+      if (!error) return void finish();
+      showSsoError(error, "sign-in-again");
+      setStep({ kind: "choose" });
+    });
+  }, [waiting, finish]);
   const running = useRef(false);
   const attempt = async (fn: () => Promise<void>) => {
     if (running.current) return;
@@ -77,16 +91,29 @@ export default function RecentSignInDialog() {
       await signInWithTotp(totp.challenge, totp.recovery ? { recoveryCode: value.trim() } : { code: value });
       await finish();
     });
-  const continueWithSso = () =>
-    attempt(async () => {
-      window.location.assign(await startSso({ email, next: here() }));
+  const continueWithSso = (provider: ConfirmSso) => {
+    const popup = openPopup();
+    void attempt(async () => {
+      try {
+        const url = await confirmWithSso(provider.org_id, popup ? CONFIRMED_PATH : here());
+        if (!popup) return window.location.assign(url);
+        popup.location.href = url;
+        popup.focus();
+        setStep({ kind: "sso-waiting", provider });
+      } catch (e) {
+        popup?.close();
+        throw e;
+      }
     });
+  };
   const emailLink = () =>
     attempt(async () => {
       setStep({ kind: "link-sent", message: await sendMagicLink(email) });
     });
 
   const cancel = () => settleRecentSignIn(false);
+  const first = ways.sso[0];
+  const others = ways.primary === "sso" ? ways.sso.slice(1) : ways.sso;
   const footer =
     step.kind === "link-sent" ? (
       <Dialog.Close>
@@ -97,14 +124,19 @@ export default function RecentSignInDialog() {
         <Dialog.Close>
           <Button>{t("common.cancel", "Cancel")}</Button>
         </Dialog.Close>
-        {step.kind === "password" && (loading || ways.primary === "password") && (
+        {step.kind === "choose" && (loading || ways.primary === "password") && (
           <Button variant="primary" loading={busy || loading} disabled={!password} onClick={submitPassword}>
             {t("auth.recent.signIn", "Sign in")}
           </Button>
         )}
-        {step.kind === "password" && !loading && (ways.primary === "sso" || ways.primary === "link") && (
-          <Button variant="primary" loading={busy} onClick={ways.primary === "sso" ? continueWithSso : emailLink}>
-            {ways.primary === "sso" ? t("auth.continueWithSso", "Continue with SSO") : t("auth.recent.emailLink", "Email me a sign-in link")}
+        {step.kind === "choose" && !loading && ways.primary === "sso" && first && (
+          <Button variant="primary" loading={busy} onClick={() => continueWithSso(first)}>
+            {t("auth.recent.continueWith", "Continue with {provider}", { provider: providerName(first) })}
+          </Button>
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "link" && (
+          <Button variant="primary" loading={busy} onClick={emailLink}>
+            {t("auth.recent.emailLink", "Email me a sign-in link")}
           </Button>
         )}
         {step.kind === "totp" && (
@@ -128,7 +160,7 @@ export default function RecentSignInDialog() {
           : t("auth.recent.description", "This action needs a sign-in from the last 15 minutes.")
       }
       onSubmit={
-        step.kind === "password" && !loading && hasPassword && password
+        step.kind === "choose" && !loading && ways.primary === "password" && password
           ? submitPassword
           : step.kind === "totp" && (step.recovery ? code.trim() : code.length === 6)
             ? () => submitCode(step)
@@ -137,41 +169,64 @@ export default function RecentSignInDialog() {
       footer={footer}
     >
       <div className="flex flex-col gap-16">
-        {step.kind === "password" && loading && <Text tone="secondary">{t("auth.recent.checking", "Checking how you can sign in…")}</Text>}
-        {step.kind === "password" && !loading && hasPassword && (
+        {step.kind === "choose" && loading && <Text tone="secondary">{t("auth.recent.checking", "Checking how you can sign in…")}</Text>}
+        {step.kind === "choose" && confirm.isError && (
           <>
-            <SensitiveInput
-              label={t("auth.recent.password", "Password")}
-              kind="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              autoFocus
-            />
-            {ways.sso && (
-              <Button variant="link" className="self-start" disabled={busy} onClick={() => void continueWithSso()}>
-                {t("auth.recent.ssoInstead", "Continue with SSO instead")}
+            <Text tone="secondary">{t("auth.recent.checkFailed", "Kaeso couldn't check how you can sign in again.")}</Text>
+            <Button variant="link" className="self-start" onClick={() => void confirm.refetch()}>
+              {t("common.tryAgain", "Try again")}
+            </Button>
+          </>
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "password" && (
+          <SensitiveInput
+            label={t("auth.recent.password", "Password")}
+            kind="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            autoFocus
+          />
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "sso" && first && (
+          <Text tone="secondary">
+            {t("auth.recent.ssoHint", "Sign in again at {provider} as {email}, in a window that opens; this page stays as it is.", {
+              provider: providerName(first),
+              email: email || t("auth.recent.yourself", "yourself"),
+            })}
+          </Text>
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "link" && (
+          <Text tone="secondary">{t("auth.recent.linkHint", "We send a sign-in link to {email}. Open it, then repeat the action.", { email })}</Text>
+        )}
+        {step.kind === "choose" && !loading && !confirm.isError && ways.primary === "none" && (
+          <Text tone="secondary">{t("auth.recent.noWay", "No sign-in method this install offers works for your account; ask an instance admin.")}</Text>
+        )}
+        {step.kind === "choose" && !loading && (others.length > 0 || (ways.primary !== "link" && ways.link)) && (
+          <div className="flex flex-col items-start gap-4">
+            {others.map((p) => (
+              <Button key={p.org_id} variant="link" disabled={busy} onClick={() => continueWithSso(p)}>
+                {t("auth.recent.continueWithInstead", "Continue with {provider} instead", { provider: providerName(p) })}
               </Button>
-            )}
-            {ways.link && (
-              <Button variant="link" className="self-start" disabled={busy} onClick={() => void emailLink()}>
+            ))}
+            {ways.primary !== "link" && ways.link && (
+              <Button variant="link" disabled={busy} onClick={() => void emailLink()}>
                 {t("auth.recent.linkInstead", "Email me a sign-in link instead")}
               </Button>
             )}
+          </div>
+        )}
+        {step.kind === "sso-waiting" && (
+          <>
+            <Text tone="secondary">
+              {t("auth.recent.waiting", "Finish signing in at {provider} in the window that opened; the action continues by itself.", {
+                provider: providerName(step.provider),
+              })}
+            </Text>
+            <Button variant="link" className="self-start" disabled={busy} onClick={() => continueWithSso(step.provider)}>
+              {t("auth.recent.openAgain", "Open the window again")}
+            </Button>
           </>
-        )}
-        {step.kind === "password" && !loading && ways.primary === "sso" && (
-          <Text tone="secondary">
-            {email
-              ? t("auth.recent.ssoHint", "Sign in again at your identity provider as {email}. You come back to this page.", { email })
-              : t("auth.recent.ssoHintNoEmail", "Sign in again at your identity provider. You come back to this page.")}
-          </Text>
-        )}
-        {step.kind === "password" && !loading && ways.primary === "link" && (
-          <Text tone="secondary">{t("auth.recent.linkHint", "We send a sign-in link to {email}. Open it, then repeat the action.", { email })}</Text>
-        )}
-        {step.kind === "password" && !loading && ways.primary === "none" && (
-          <Text tone="secondary">{t("auth.recent.noWay", "No sign-in method this install offers works for your account; ask an instance admin.")}</Text>
         )}
         {step.kind === "totp" && !step.recovery && (
           <>

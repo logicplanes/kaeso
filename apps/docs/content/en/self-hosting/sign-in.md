@@ -19,6 +19,8 @@ The button says **Continue with** and the name the admin gave the provider, or *
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
+When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. A provider whose answer says the last sign-in is older than the request is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
+
 ## Links that go straight to the provider
 
 A link to `/platform/v1/auth/oidc/start` sends the browser straight to the identity provider, for a bookmark or an intranet page:

@@ -115,6 +115,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "user.totp_disable": () => t("format.audit.action.userTotpDisable", "Two-factor authentication turned off"),
   "user.recovery_codes_regenerate": () => t("format.audit.action.userRecoveryCodesRegenerate", "Recovery codes regenerated"),
   "user.2fa_reset": () => t("format.audit.action.user2faReset", "Two-factor authentication reset"),
+  "user.sign_in_confirm": () => t("format.audit.action.userSignInConfirm", "Confirmed the sign-in through single sign-on"),
   "user.sign_in_link": () => t("format.audit.action.userSignInLink", "Sign-in link printed on the command line"),
   "user.sso_link": () => t("format.audit.action.userSsoLink", "Linked to single sign-on"),
   "user.sso_unlink": () => t("format.audit.action.userSsoUnlink", "Unlinked from single sign-on"),

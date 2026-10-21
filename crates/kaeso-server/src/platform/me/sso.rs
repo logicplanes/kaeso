@@ -2,18 +2,18 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use kaeso_core::id::{OrgId, UserId};
-use kaeso_store::pg::{members, oidc, sso_identities};
+use kaeso_core::id::{OrgId, SessionId, UserId};
+use kaeso_store::pg::{members, oidc, orgs, sso_identities, users};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::Ctx;
 use crate::platform::auth::next;
-use crate::platform::auth::oidc::{StartResponse, begin_link};
+use crate::platform::auth::oidc::{StartResponse, begin_confirm, begin_link};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
-use crate::platform::params::Path;
+use crate::platform::params::{Path, Query};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -147,4 +147,134 @@ pub async fn unlink(
         .await?;
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "An org whose identity provider can confirm the sign-in.")]
+pub struct ConfirmSsoView {
+    #[doc = "The org."]
+    pub org_id: OrgId,
+    #[doc = "The org's name."]
+    #[schema(example = "Acme")]
+    pub org_name: String,
+    #[doc = "The name on its sign-in button; `null`: the button says SSO."]
+    #[schema(example = "Acme ID")]
+    pub provider_name: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(
+    description = "How the signed-in user can confirm it's them before an action that needs a recent sign-in."
+)]
+pub struct ConfirmWays {
+    #[doc = "With the account's password, and its second factor if it has one."]
+    pub password: bool,
+    #[doc = "With a sign-in link sent to the account's verified email address."]
+    pub magic_link: bool,
+    #[doc = "Through these orgs' identity providers, which the account is linked to; a\n\
+        confirmation there makes the session one from that org's SSO."]
+    pub sso: Vec<ConfirmSsoView>,
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ConfirmFor {
+    #[doc = "The org the action is in. When it requires SSO, only its own SSO\n\
+        confirms, since a session from anywhere else can't act there."]
+    pub org: Option<OrgId>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/me/sign-in-again",
+    summary = "The ways the signed-in user can confirm it's them when an action needs a\n\
+    sign-in within the last 15 minutes.",
+    tag = "me",
+    params(ConfirmFor),
+    responses((status = 200, body = ConfirmWays))
+)]
+pub async fn confirm_ways(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Query(at): Query<ConfirmFor>,
+) -> ApiResult<Json<ConfirmWays>> {
+    let me = ctx.user_id()?;
+    let user = users::get(&state.pg, me.uuid())
+        .await?
+        .ok_or_else(|| ApiError::Authentication("Sign in first.".into()))?;
+    let auth = &state.config.auth;
+    let sso = if auth.oidc {
+        sso_identities::linkable(&state.pg, me.uuid())
+            .await?
+            .into_iter()
+            .filter(|r| r.linked_at.is_some())
+            .map(|r| ConfirmSsoView {
+                org_id: OrgId::from_uuid(r.org_id),
+                org_name: r.org_name,
+                provider_name: r.provider_name,
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let mut ways = ConfirmWays {
+        password: auth.password && user.password_hash.is_some(),
+        magic_link: auth.magic_link && user.email.is_some() && user.email_verified_at.is_some(),
+        sso,
+    };
+    if let Some(org) = at.org
+        && members::get_org(&state.pg, org.uuid(), me.uuid())
+            .await?
+            .is_some()
+        && orgs::get(&state.pg, org.uuid())
+            .await?
+            .is_some_and(|o| o.require_sso)
+    {
+        ways.password = false;
+        ways.magic_link = false;
+        ways.sso.retain(|s| s.org_id == org);
+    }
+    Ok(Json(ways))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(description = "The org whose identity provider confirms the sign-in.")]
+pub struct ConfirmRequest {
+    #[doc = "The org; one of `sso` in `GET me/sign-in-again`."]
+    pub org: OrgId,
+    #[doc = "The console path to come back to, as in `POST auth/oidc/start`."]
+    #[schema(example = "/orgs/org_01hx/providers")]
+    pub next: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/me/sign-in-again/sso",
+    summary = "Starts confirming the sign-in at an org's identity provider: answers with\n\
+    the provider's URL, which asks the person to sign in again.",
+    description = "Only the same account, from a fresh sign-in at the provider, confirms: the \
+    session is replaced by a new one from that org's SSO, signed in now, and the browser comes \
+    back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, \
+    such as `other_account`, `link_required` or `stale_sign_in`.",
+    tag = "me",
+    request_body = ConfirmRequest,
+    responses((status = 200, body = StartResponse))
+)]
+pub async fn confirm(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<ConfirmRequest>,
+) -> ApiResult<Response> {
+    let me = ctx.user_id()?;
+    let session = SessionId::from_uuid(ctx.session()?.id);
+    let next = next::validate(&state.config.public_url, req.next.as_deref())?;
+    member_with_sso(&state, req.org, me).await?;
+    let started = begin_confirm(&state, &ctx, req.org, me, session, next).await?;
+    Ok((
+        [(header::SET_COOKIE, started.cookie)],
+        Json(StartResponse {
+            authorization_url: started.authorization_url,
+        }),
+    )
+        .into_response())
 }

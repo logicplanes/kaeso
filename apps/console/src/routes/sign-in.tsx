@@ -30,7 +30,10 @@ export const Route = createFileRoute("/sign-in")({
       () => true,
       () => false,
     );
-    if (signedIn) throw redirect({ href: safeNext(search.next), replace: true });
+    if (!signedIn) return;
+    const failed = new URLSearchParams(window.location.hash.slice(1)).get("sso_error");
+    const next = safeNext(search.next);
+    throw redirect({ href: failed ? `${next}#sso_error=${encodeURIComponent(failed)}` : next, replace: true });
   },
   component: SignIn,
 });

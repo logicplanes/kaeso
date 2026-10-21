@@ -93,6 +93,8 @@ This keeps other sites from acting with your session, or from signing your brows
 
 In a session, some actions need a sign-in within the last 15 minutes. Otherwise Kaeso answers `403 recent_sign_in_required`, and the console asks you to sign in again: with your password, through single sign-on, or with a sign-in link, whichever your account and the install allow. Keys never need one.
 
+`GET me/sign-in-again` lists how the account can confirm: `password`, `magic_link` and the organizations in `sso` whose identity provider it's linked to. Pass `org` for the organization of the action; when it requires single sign-on, only its own provider confirms. `POST me/sign-in-again/sso` starts a confirmation at one of them. The provider is asked for a fresh sign-in (`prompt=login`, `max_age=0`), only the same account confirms, and the session is replaced by one from that organization's single sign-on. On failure the browser comes back to `next` with `#sso_error=`, such as `other_account`, `link_required` or `stale_sign_in`.
+
 - **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
 - **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
 - **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it.

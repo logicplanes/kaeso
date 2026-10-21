@@ -46,4 +46,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Session, routes!(sso::list)))
         .routes(s.route(Access::Account, routes!(sso::link)))
         .routes(s.route(Access::Account, routes!(sso::unlink)))
+        .routes(s.route(Access::Session, routes!(sso::confirm_ways)))
+        .routes(s.route(Access::Session, routes!(sso::confirm)))
 }

@@ -61,6 +61,8 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
 - As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner.
 
+Through single sign-on, the console opens your identity provider in a small window and asks you to sign in there again. The page and what you entered stay as they are, and the action continues once you have. Only your own linked identity confirms, from a fresh sign-in, and a refusal says why. When the browser blocks the window, the console goes to the provider in this tab and brings you back to the page. A confirmation through an organization's provider makes the session one from that organization's single sign-on.
+
 ## After signing in through single sign-on
 
 A sign-in through an organization's identity provider opens only that organization, and lets you read your account. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:

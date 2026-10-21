@@ -1,9 +1,10 @@
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use kaeso_core::id::{OrgId, UserId};
+use kaeso_core::id::{OrgId, SessionId, UserId};
 use kaeso_core::secret;
 use kaeso_crypto::{ExposeSecret, Sealed, random_token};
+use kaeso_store::pg::sessions as sessions_store;
 use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
 use kaeso_store::pg::{invites, members, oidc, orgs, sso_identities, users};
 use serde::{Deserialize, Serialize};
@@ -23,6 +24,7 @@ use crate::services::{invites as invite_service, orgs as org_service};
 use crate::state::AppState;
 
 const FLOW_LIFETIME: Duration = Duration::minutes(10);
+const CLOCK_SKEW: Duration = Duration::minutes(1);
 const LINKED_PAGE: &str = "settings/account/security";
 const BINDING_COOKIE: &str = "__Host-kaeso_oidc";
 const DEV_BINDING_COOKIE: &str = "kaeso_oidc";
@@ -106,6 +108,10 @@ const EXPIRED: &str = "The SSO sign-in expired or began in another browser; star
 const LINK_REQUIRED: &str =
     "Your account isn't linked to this SSO; sign in another way and link it under Account.";
 const LINKED_ELSEWHERE: &str = "This SSO identity is already linked to another Kaeso account.";
+const OTHER_ACCOUNT: &str =
+    "You signed in at the identity provider as someone else; sign in there as yourself.";
+const STALE_SIGN_IN: &str =
+    "The identity provider didn't ask you to sign in again; try again or confirm another way.";
 const DEACTIVATED: &str = "This account is deactivated.";
 const NO_VERIFIED_DOMAIN: &str =
     "This organization's SSO has no verified email domain yet; ask an admin to verify one.";
@@ -123,6 +129,8 @@ const CODES: &[(&str, &str)] = &[
     (EXPIRED, "expired"),
     (LINK_REQUIRED, "link_required"),
     (LINKED_ELSEWHERE, "linked_elsewhere"),
+    (OTHER_ACCOUNT, "other_account"),
+    (STALE_SIGN_IN, "stale_sign_in"),
     (DEACTIVATED, "deactivated"),
     (NO_VERIFIED_DOMAIN, "no_verified_domain"),
 ];
@@ -170,7 +178,14 @@ struct Begun {
 struct Back {
     org: Option<OrgId>,
     next: Option<String>,
-    link: bool,
+    to_page: bool,
+}
+
+#[derive(Clone, Copy)]
+enum Purpose {
+    SignIn { named: bool },
+    Link(UserId),
+    Confirm { user: UserId, session: SessionId },
 }
 
 pub(crate) struct Linking {
@@ -187,7 +202,24 @@ pub(crate) async fn begin_link(
 ) -> ApiResult<Linking> {
     sso_on(state)?;
     throttle_ip(state, ctx, TOKENS_PER_IP).await?;
-    let begun = begin(state, ctx, org, false, next, Some(user)).await?;
+    let begun = begin(state, ctx, org, Purpose::Link(user), next).await?;
+    Ok(Linking {
+        authorization_url: begun.authorization_url,
+        cookie: begun.cookie,
+    })
+}
+
+pub(crate) async fn begin_confirm(
+    state: &AppState,
+    ctx: &Ctx,
+    org: OrgId,
+    user: UserId,
+    session: SessionId,
+    next: Option<String>,
+) -> ApiResult<Linking> {
+    sso_on(state)?;
+    throttle_ip(state, ctx, TOKENS_PER_IP).await?;
+    let begun = begin(state, ctx, org, Purpose::Confirm { user, session }, next).await?;
     Ok(Linking {
         authorization_url: begun.authorization_url,
         cookie: begun.cookie,
@@ -198,13 +230,17 @@ async fn begin(
     state: &AppState,
     ctx: &Ctx,
     org: OrgId,
-    named: bool,
+    purpose: Purpose,
     next: Option<String>,
-    link: Option<UserId>,
 ) -> ApiResult<Begun> {
     let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
     let provider = provider(state, org, &connection).await?;
-    let started = provider.start();
+    let (named, link, confirm) = match purpose {
+        Purpose::SignIn { named } => (named, None, None),
+        Purpose::Link(user) => (false, Some(user), None),
+        Purpose::Confirm { user, session } => (false, None, Some((user, session))),
+    };
+    let started = provider.start(confirm.is_some());
     let binding = random_token();
     tokens::insert(
         &state.pg,
@@ -221,6 +257,8 @@ async fn begin(
                 "next": next,
                 "sign_in_org": named.then(|| org.to_string()),
                 "link_user": link.map(|u| u.to_string()),
+                "confirm_user": confirm.map(|(u, _)| u.to_string()),
+                "confirm_session": confirm.map(|(_, s)| s.to_string()),
             }),
             expires_at: ctx.now + FLOW_LIFETIME,
         },
@@ -264,7 +302,7 @@ pub async fn start(
         }
         _ => return Err(ApiError::bad_request("Send either `org` or `email`.")),
     };
-    let begun = begin(&state, &ctx, org, named, next, None).await?;
+    let begun = begin(&state, &ctx, org, Purpose::SignIn { named }, next).await?;
     Ok((
         [(header::SET_COOKIE, begun.cookie)],
         axum::Json(StartResponse {
@@ -310,7 +348,8 @@ pub async fn start_link(
                 }
             },
         };
-        begin(&state, &ctx, org, link.org.is_some(), next, None).await
+        let named = link.org.is_some();
+        begin(&state, &ctx, org, Purpose::SignIn { named }, next).await
     };
     match begun.await {
         Ok(begun) => {
@@ -324,7 +363,7 @@ pub async fn start_link(
             let back = Back {
                 org: link.org,
                 next: link.next,
-                link: false,
+                to_page: false,
             };
             refused(&state, &e, &back, false)
         }
@@ -378,7 +417,7 @@ fn signed_in_location(state: &AppState, next: Option<&str>) -> String {
 }
 
 fn failed_location(state: &AppState, reason: &str, back: &Back) -> String {
-    if back.link {
+    if back.to_page {
         let mut page = back
             .next
             .as_deref()
@@ -512,6 +551,7 @@ struct Flow {
     nonce: String,
     verifier: String,
     link_user: Option<UserId>,
+    confirm: Option<(UserId, SessionId)>,
     back: Back,
 }
 
@@ -552,15 +592,23 @@ async fn take_flow(
         Some(u) => Some(u.parse::<UserId>().map_err(|_| expired())?),
         None => None,
     };
+    let confirm = match (field("confirm_user"), field("confirm_session")) {
+        (Some(u), Some(s)) => Some((
+            u.parse::<UserId>().map_err(|_| expired())?,
+            s.parse::<SessionId>().map_err(|_| expired())?,
+        )),
+        _ => None,
+    };
     Ok(Flow {
         org,
         nonce,
         verifier,
         link_user,
+        confirm,
         back: Back {
             org: field("sign_in_org").and_then(|o| o.parse().ok()),
             next: field("next"),
-            link: link_user.is_some(),
+            to_page: link_user.is_some() || confirm.is_some(),
         },
     })
 }
@@ -571,6 +619,10 @@ fn link_required() -> ApiError {
 
 fn linked_elsewhere() -> ApiError {
     ApiError::Conflict(LINKED_ELSEWHERE.into())
+}
+
+fn other_account() -> ApiError {
+    ApiError::PermissionDenied(OTHER_ACCOUNT.into())
 }
 
 fn deactivated() -> ApiError {
@@ -619,6 +671,19 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     check_domain(&connection, &email)?;
     if let Some(user) = flow.link_user {
         return link(state, ctx, flow, &connection, &identity, user).await;
+    }
+    if let Some((user, session)) = flow.confirm {
+        return confirm(
+            state,
+            ctx,
+            flow,
+            &connection,
+            &identity,
+            &email,
+            user,
+            session,
+        )
+        .await;
     }
     let org_row = orgs::get(&state.pg, org.uuid())
         .await?
@@ -737,6 +802,100 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     )
     .await?;
     tx.commit().await?;
+    let mut response = redirect(&signed_in_location(state, flow.back.next.as_deref()));
+    if let Ok(v) = binding_cookie(state, "", 0) {
+        response.headers_mut().append(header::SET_COOKIE, v);
+    }
+    let cookie =
+        cookies::set(state, &created.token).ok_or_else(|| ApiError::internal("session cookie"))?;
+    response.headers_mut().append(header::SET_COOKIE, cookie);
+    Ok(response)
+}
+
+// A confirmation proves the signed-in person is at the keyboard, so it must come back as the
+// same account and from a fresh sign-in at the provider; it never creates or switches accounts.
+#[allow(clippy::too_many_arguments)]
+async fn confirm(
+    state: &AppState,
+    ctx: &Ctx,
+    flow: &Flow,
+    connection: &oidc::Connection,
+    identity: &crate::auth::oidc::Identity,
+    email: &str,
+    user: UserId,
+    session: SessionId,
+) -> ApiResult<Response> {
+    // Both times come from the provider's clock, so a clock difference between it and
+    // Kaeso can't make a fresh sign-in look stale.
+    if let (Some(signed_in), Some(issued)) = (identity.auth_time, identity.issued_at)
+        && issued - signed_in > FLOW_LIFETIME + CLOCK_SKEW
+    {
+        return Err(ApiError::PermissionDenied(STALE_SIGN_IN.into()));
+    }
+    let org = flow.org;
+    let mut tx = state.pg.begin().await?;
+    let account = users::get(&mut *tx, user.uuid())
+        .await?
+        .filter(|u| u.state == "active")
+        .ok_or_else(deactivated)?;
+    match sso_identities::user_of(&mut *tx, org.uuid(), &connection.issuer, &identity.subject)
+        .await?
+    {
+        Some(id) if id == account.id => {}
+        Some(_) => return Err(other_account()),
+        None if account.email.as_deref() != Some(email) => return Err(other_account()),
+        None => {
+            if !sso_identities::bind_pending(
+                &mut *tx,
+                org.uuid(),
+                account.id,
+                &connection.issuer,
+                &identity.subject,
+                ctx.now,
+            )
+            .await?
+            {
+                return Err(link_required());
+            }
+            ctx.audit(Some(org), "user.sso_link")
+                .by(user)
+                .target("user", user)
+                .after(serde_json::json!({ "issuer": connection.issuer, "email": email }))
+                .write(&mut tx)
+                .await?;
+        }
+    }
+    if members::get_org(&mut *tx, org.uuid(), account.id)
+        .await?
+        .is_none()
+    {
+        return Err(no_access());
+    }
+    if !sessions_store::is_live(&mut *tx, session.uuid(), ctx.now).await? {
+        return Err(expired());
+    }
+    let created = sessions::create(
+        &mut tx,
+        ctx.now,
+        &SignIn {
+            user_id: user,
+            method: Method::Oidc,
+            second_factor: false,
+            oidc_org: Some(org.uuid()),
+            signed_in_at: ctx.now,
+            ip: ctx.ip,
+            user_agent: ctx.user_agent.clone(),
+        },
+    )
+    .await?;
+    ctx.audit(Some(org), "user.sign_in_confirm")
+        .by(user)
+        .target("user", user)
+        .after(serde_json::json!({ "method": "oidc", "issuer": connection.issuer }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    sessions::replace(state, user, session).await?;
     let mut response = redirect(&signed_in_location(state, flow.back.next.as_deref()));
     if let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);

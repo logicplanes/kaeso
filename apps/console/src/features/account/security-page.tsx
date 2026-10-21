@@ -23,8 +23,6 @@ import {
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { meQuery, ssoLinksQuery } from "~/api/queries/me";
-import { takeFragment } from "~/auth/fragment";
-import { showSsoError } from "~/auth/sso-errors";
 import { useApiMutation } from "~/auth/mutation";
 import { isApiError } from "~/api/errors";
 import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
@@ -429,12 +427,8 @@ const LINKED_PAGE = "/settings/account/security";
 
 function SingleSignOnSection() {
   const links = useQuery(ssoLinksQuery);
-  const [failed] = useState(() => takeFragment("sso_error"));
   const [unlinking, setUnlinking] = useState(false);
   const [target, setTarget] = useState({ org_id: "", org_name: "" });
-  useEffect(() => {
-    if (failed) showSsoError(failed, "sso-link-error");
-  }, [failed]);
   const link = useApiMutation({
     mutationFn: async (org: string) => data(await api.POST("/platform/v1/me/sso-links", { body: { org, next: LINKED_PAGE } })),
     onSuccess: (r) => window.location.assign(r.authorization_url),

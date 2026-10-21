@@ -280,7 +280,7 @@ describe("starting two-factor setup after a while", () => {
   it("asks to sign in again, then shows the setup key", async () => {
     signedIn();
     on("GET", "me", me());
-    on("POST", "auth/methods", { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, provider: null });
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
     on("POST", "auth/password", signedInReply());
     let calls = 0;
     on("POST", "me/totp", () => (++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : SETUP));

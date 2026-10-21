@@ -5052,6 +5052,132 @@
         "x-kaeso-access": "session"
       }
     },
+    "/platform/v1/me/sign-in-again": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The ways the signed-in user can confirm it's them when an action needs a\nsign-in within the last 15 minutes.",
+        "description": "**Access:** a signed-in console session; no right is needed.",
+        "operationId": "getMeSignInAgain",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "query",
+            "description": "The org the action is in. When it requires SSO, only its own SSO\nconfirms, since a session from anywhere else can't act there.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmWays"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/sign-in-again/sso": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Starts confirming the sign-in at an org's identity provider: answers with\nthe provider's URL, which asks the person to sign in again.",
+        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account`, `link_required` or `stale_sign_in`.\n\n**Access:** a signed-in console session; no right is needed.",
+        "operationId": "postMeSignInAgainSso",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
     "/platform/v1/me/sso-links": {
       "get": {
         "tags": [
@@ -16136,6 +16262,80 @@
               "$ref": "#/components/schemas/CatalogueModelView"
             },
             "description": "Every entry of the catalogue, with its availability after the check."
+          }
+        }
+      },
+      "ConfirmRequest": {
+        "type": "object",
+        "description": "The org whose identity provider confirms the sign-in.",
+        "required": [
+          "org"
+        ],
+        "properties": {
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The console path to come back to, as in `POST auth/oidc/start`.",
+            "example": "/orgs/org_01hx/providers"
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org; one of `sso` in `GET me/sign-in-again`."
+          }
+        }
+      },
+      "ConfirmSsoView": {
+        "type": "object",
+        "description": "An org whose identity provider can confirm the sign-in.",
+        "required": [
+          "org_id",
+          "org_name"
+        ],
+        "properties": {
+          "org_id": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org."
+          },
+          "org_name": {
+            "type": "string",
+            "description": "The org's name.",
+            "example": "Acme"
+          },
+          "provider_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name on its sign-in button; `null`: the button says SSO.",
+            "example": "Acme ID"
+          }
+        }
+      },
+      "ConfirmWays": {
+        "type": "object",
+        "description": "How the signed-in user can confirm it's them before an action that needs a recent sign-in.",
+        "required": [
+          "password",
+          "magic_link",
+          "sso"
+        ],
+        "properties": {
+          "magic_link": {
+            "type": "boolean",
+            "description": "With a sign-in link sent to the account's verified email address."
+          },
+          "password": {
+            "type": "boolean",
+            "description": "With the account's password, and its second factor if it has one."
+          },
+          "sso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfirmSsoView"
+            },
+            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO."
           }
         }
       },

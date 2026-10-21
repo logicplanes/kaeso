@@ -31,6 +31,7 @@ pub enum Fault {
     WrongIssuer,
     UnverifiedEmail,
     NoEmailVerified,
+    StaleAuthTime,
 }
 
 struct Grant {
@@ -327,7 +328,12 @@ async fn token(
         standard,
         EmptyAdditionalClaims {},
     )
-    .set_nonce(Some(Nonce::new(nonce)));
+    .set_nonce(Some(Nonce::new(nonce)))
+    .set_auth_time(Some(if fault == Fault::StaleAuthTime {
+        now - chrono::Duration::hours(1)
+    } else {
+        now
+    }));
     let access = AccessToken::new("mock-access-token".into());
     let Ok(id_token) = CoreIdToken::new(
         claims,

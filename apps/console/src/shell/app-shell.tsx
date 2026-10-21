@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { AppFrame, Sidebar, TooltipProvider } from "@logicplanes/kaeso-ui";
 import { RecentSignInHost } from "~/auth/recent-sign-in";
+import { SsoErrorHost } from "~/auth/sso-error-host";
 import { useMemberships } from "~/auth/session";
 import { t } from "~/i18n";
 import { AppSidebar } from "./app-sidebar";
@@ -51,6 +52,7 @@ export function AppShell() {
         </Sidebar.Provider>
         <CommandPaletteHost />
         <RecentSignInHost />
+        <SsoErrorHost />
         <WhatsNewHost />
       </CreateActionProvider>
     </TooltipProvider>

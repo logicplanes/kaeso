@@ -2,7 +2,9 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use kaeso_core::net::{is_link_local_or_metadata, is_public};
-use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
+use openidconnect::core::{
+    CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreProviderMetadata,
+};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, HttpRequest, HttpResponse, IssuerUrl,
     Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
@@ -224,10 +226,10 @@ impl Provider {
         .set_redirect_uri(self.redirect.clone())
     }
 
-    pub fn start(&self) -> Started {
+    pub fn start(&self, fresh: bool) -> Started {
         let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
-        let (url, state, nonce) = self
-            .client()
+        let client = self.client();
+        let mut request = client
             .authorize_url(
                 CoreAuthenticationFlow::AuthorizationCode,
                 CsrfToken::new_random,
@@ -235,8 +237,15 @@ impl Provider {
             )
             .add_scope(Scope::new("email".into()))
             .add_scope(Scope::new("profile".into()))
-            .set_pkce_challenge(challenge)
-            .url();
+            .set_pkce_challenge(challenge);
+        if fresh {
+            // OpenID Connect Core 1.0 §3.1.2.1: prompt=login and max_age=0 ask the
+            // provider to authenticate the person again instead of reusing its session.
+            request = request
+                .add_prompt(CoreAuthPrompt::Login)
+                .set_max_age(Duration::ZERO);
+        }
+        let (url, state, nonce) = request.url();
         Started {
             url: url.to_string(),
             state: state.secret().clone(),
@@ -283,10 +292,15 @@ impl Provider {
             .name()
             .and_then(|n| n.get(None))
             .map(|n| n.as_str().to_owned());
+        let instant = |t: i64| time::OffsetDateTime::from_unix_timestamp(t).ok();
+        let auth_time = claims.auth_time().and_then(|t| instant(t.timestamp()));
+        let issued_at = instant(claims.issue_time().timestamp());
         Ok(Identity {
             subject: claims.subject().as_str().to_owned(),
             email,
             name,
+            auth_time,
+            issued_at,
         })
     }
 }
@@ -309,6 +323,8 @@ pub struct Identity {
     pub subject: String,
     pub email: String,
     pub name: Option<String>,
+    pub auth_time: Option<time::OffsetDateTime>,
+    pub issued_at: Option<time::OffsetDateTime>,
 }
 
 #[cfg(test)]

@@ -95,6 +95,7 @@
   "format.audit.action.userReactivate": "User reactivated",
   "format.audit.action.userRecoveryCodesRegenerate": "Recovery codes regenerated",
   "format.audit.action.userSessionsRevoke": "Every session ended",
+  "format.audit.action.userSignInConfirm": "Confirmed the sign-in through single sign-on",
   "format.audit.action.userSignInLink": "Sign-in link printed on the command line",
   "format.audit.action.userSignup": "Account created by sign-up",
   "format.audit.action.userSsoLink": "Linked to single sign-on",

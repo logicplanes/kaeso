@@ -1,5 +1,5 @@
 import { api, data } from "~/api/client";
-import type { SignInMethodsView, SsoProviderView } from "~/api/generated/types";
+import type { ConfirmSsoView, ConfirmWays as ConfirmWaysView, SignInMethodsView, SsoProviderView } from "~/api/generated/types";
 
 export type PasswordResult = { kind: "signed_in" } | { kind: "totp"; challenge: string; expiresAt: string };
 
@@ -45,4 +45,20 @@ export function signInPageQuery(org?: string) {
 
 export async function signInMethodsFor(email: string): Promise<SignInMethods> {
   return data(await api.POST("/platform/v1/auth/methods", { body: { email } }));
+}
+
+export type ConfirmWays = ConfirmWaysView;
+export type ConfirmSso = ConfirmSsoView;
+
+export function confirmWaysQuery(org: string | undefined) {
+  return {
+    queryKey: ["me", "sign-in-again", org ?? null] as const,
+    queryFn: async (): Promise<ConfirmWays> => data(await api.GET("/platform/v1/me/sign-in-again", org ? { params: { query: { org } } } : {})),
+    staleTime: 0,
+    retry: false,
+  };
+}
+
+export async function confirmWithSso(org: string, next: string): Promise<string> {
+  return data(await api.POST("/platform/v1/me/sign-in-again/sso", { body: { org, next } })).authorization_url;
 }

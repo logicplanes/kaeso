@@ -19,6 +19,8 @@ Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter geg
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
+Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+
 ## Links, die direkt zum Anbieter führen
 
 Ein Link auf `/platform/v1/auth/oidc/start` schickt den Browser direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:

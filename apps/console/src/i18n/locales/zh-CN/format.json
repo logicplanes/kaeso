@@ -95,6 +95,7 @@
   "format.audit.action.userReactivate": "已重新启用用户",
   "format.audit.action.userRecoveryCodesRegenerate": "已重新生成恢复码",
   "format.audit.action.userSessionsRevoke": "已结束所有会话",
+  "format.audit.action.userSignInConfirm": "已通过单点登录确认登录",
   "format.audit.action.userSignInLink": "已在命令行输出登录链接",
   "format.audit.action.userSignup": "已通过注册创建账户",
   "format.audit.action.userSsoLink": "已关联单点登录",

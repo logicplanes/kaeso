@@ -135,6 +135,7 @@ describe("inviting members", () => {
     signedIn();
     on("GET", "me", me());
     on("GET", "orgs/:org/members", paged([member()]));
+    on("GET", "me/sign-in-again", { password: true, magic_link: false, sso: [] });
     on("POST", "auth/password", signedInReply());
     let asked = false;
     on("POST", "orgs/:org/invites", ({ body }: { body: InviteBody }) => {
