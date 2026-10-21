@@ -320,7 +320,7 @@ describe("instance updates page", () => {
     await hoverReason(user, failed, "api.github.com can't be reached: no connection");
   });
 
-  it("says when it never looked and that checks are off", async () => {
+  it("says when it never looked and that checks are off, and keeps the settings a manual check uses", async () => {
     signedIn();
     on(
       "GET",
@@ -336,9 +336,8 @@ describe("instance updates page", () => {
     expect(await screen.findByText("Checking is off in the gateway's configuration.")).toBeInTheDocument();
     expect(screen.queryByText("Not checked yet")).not.toBeInTheDocument();
     expect(screen.queryByText("Up to date")).not.toBeInTheDocument();
-    expect(screen.getByText("Checking is off in the gateway's configuration, so these wait until it is on.")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Releases" })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: "How updates install" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Releases" })).toBeEnabled();
+    expect(screen.getByRole("combobox", { name: "How updates install" })).toBeEnabled();
     expect(screen.getByText("You start each update on this page once one is out.")).toBeInTheDocument();
   });
 

@@ -346,7 +346,6 @@
   "instance.updates.runningVersion": "Kaeso {version}",
   "instance.updates.scheduleSaved": "更新窗口已保存",
   "instance.updates.setUpUpdater": "设置更新器",
-  "instance.updates.settingsCheckOff": "网关配置中已关闭检查更新，这些设置会等到开启后才生效。",
   "instance.updates.showProgress": "查看进度",
   "instance.updates.stable": "稳定版",
   "instance.updates.stableHint": "经过测试的版本；几乎适合所有实例。",

@@ -346,7 +346,6 @@
   "instance.updates.runningVersion": "Kaeso {version}",
   "instance.updates.scheduleSaved": "Update window saved",
   "instance.updates.setUpUpdater": "Set up the updater",
-  "instance.updates.settingsCheckOff": "Checking is off in the gateway's configuration, so these wait until it is on.",
   "instance.updates.showProgress": "Show progress",
   "instance.updates.stable": "Stable releases",
   "instance.updates.stableHint": "Tested releases; the right choice for almost every install.",

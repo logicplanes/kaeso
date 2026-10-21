@@ -265,12 +265,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
   const plan = (change: Partial<UpdateSchedule>) =>
     save.mutate({ schedule: { frequency: schedule.frequency, weekday: schedule.weekday, hour: schedule.hour, ...change } });
   return (
-    <SettingsSection
-      title={t("common.settings", "Settings")}
-      {...(s.check
-        ? {}
-        : { description: t("instance.updates.settingsCheckOff", "Checking is off in the gateway's configuration, so these wait until it is on.") })}
-    >
+    <SettingsSection title={t("common.settings", "Settings")}>
       <SettingsGroup>
         <SettingsRow
           title={t("instance.updates.channel", "Releases")}
@@ -282,7 +277,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
                 size="sm"
                 fullWidth
                 value={s.channel}
-                disabled={save.isPending || !s.check}
+                disabled={save.isPending}
                 onValueChange={(channel) => channel !== s.channel && save.mutate({ channel: channel === "prerelease" ? "prerelease" : "stable" })}
                 options={[
                   {
@@ -314,7 +309,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
                 size="sm"
                 fullWidth
                 value={s.mode}
-                disabled={save.isPending || !s.check}
+                disabled={save.isPending}
                 onValueChange={(mode) => mode !== s.mode && save.mutate({ mode: mode === "automatic" ? "automatic" : "manual" })}
                 options={[
                   { value: "manual", label: t("instance.updates.manual", "Manually") },
