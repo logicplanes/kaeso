@@ -76,7 +76,9 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
 function useShownContent(props: SheetProps): SheetProps {
   const [shown, setShown] = useState(props);
   if (props.open !== false && shown !== props) setShown(props);
-  return props.open === false ? { ...shown, open: false, onOpenChange: props.onOpenChange } : props;
+  if (props.open !== false) return props;
+  const { title, subtitle, actions, children, footer } = shown;
+  return { ...props, title, subtitle, actions, children, footer };
 }
 
 export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(current, ref) {

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../button/button.js";
 import { Dialog, KAESO_DIALOG_VARIANTS } from "./dialog.js";
 import { focusDialogSection } from "./focus.js";
@@ -119,20 +119,6 @@ export function StepDialog({
           aria-labelledby={`${uid}-step-${s.id}`}
           {...(i !== index ? { hidden: true } : enter ? { "data-enter": enter } : {})}
           className="flex min-w-0 flex-col gap-16 step-motion"
-          onKeyDown={(e: KeyboardEvent) => {
-            const target = e.target as HTMLElement;
-            if (
-              e.key === "Enter" &&
-              !e.defaultPrevented &&
-              !e.metaKey &&
-              !e.ctrlKey &&
-              target.tagName === "INPUT" &&
-              target.getAttribute("role") !== "combobox"
-            ) {
-              e.preventDefault();
-              next();
-            }
-          }}
         >
           <div className="flex flex-col gap-4">
             <h3 id={`${uid}-step-${s.id}`} tabIndex={-1} className="text-body-lg font-semibold text-fg outline-none">
