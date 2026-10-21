@@ -465,7 +465,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
             {loading ? t("commandList.loading", "Loading…") : (emptyText ?? t("commandList.noResults", "No results"))}
           </div>
         ) : (
-          <div role="presentation" className="relative w-full" style={{ height: offsets[rows.length] ?? 0 }}>
+          <div role="presentation" className="relative w-full" style={{ height: (offsets[rows.length] ?? 0) + EDGE }}>
             {[...rendered].map(([gi, indexes]) => {
               const span = spans[gi];
               const group = shown[gi]?.group;

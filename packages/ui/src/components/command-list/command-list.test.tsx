@@ -291,6 +291,14 @@ describe("CommandList outside a browser", () => {
   });
 });
 
+describe("CommandList rows", () => {
+  it("keep the same 6px edge below the last row as above the first", () => {
+    render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} />);
+    const rows = screen.getByRole("listbox", { name: "Models" }).querySelector<HTMLElement>(":scope > [role=presentation]");
+    expect(rows?.style.height).toBe(`${2 * 6 + 2 * 28 + 4 * 34}px`);
+  });
+});
+
 describe("CommandList inline in a dialog step", () => {
   it("is as tall as its rows, with no room left below the last one, and keeps that height while searching", async () => {
     const { container } = render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} height="inline" />);
