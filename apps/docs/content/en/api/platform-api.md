@@ -81,7 +81,7 @@ Use a platform key to automate a whole organization, and a project key for scrip
 
 ### Cross-site requests
 
-A request that carries the session cookie and changes something must send `Origin` with your install's origin, such as `Origin: https://kaeso.example.com`. The same holds for every such request to a public `auth/*` endpoint. Browsers send the header themselves, and `Referer` doesn't count in its place. Without it, or with another origin, Kaeso answers `403 permission_denied` and names the header in the message.
+A request that carries the session cookie and changes something must send `Origin` with your install's origin, such as `Origin: https://kaeso.example.com`. The same holds for every such request to a public `auth/*` endpoint. Browsers send the header themselves, and `Referer` doesn't count in its place. Without it, or with another origin, Kaeso answers `403 permission_denied`, and the message names the address to open Kaeso at.
 
 This keeps other sites from acting with your session, or from signing your browser in to an account of theirs.
 

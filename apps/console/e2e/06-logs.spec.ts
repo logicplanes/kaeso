@@ -52,7 +52,7 @@ test("requests through the gateway appear in the log, filter, and open in the in
   await expect(rows(page)).toHaveCount(2);
 
   await rows(page).filter({ hasText: "200" }).click();
-  const sheet = page.getByRole("dialog", { name: /chat\/completions · gpt-5\.4[ -]mini/i });
+  const sheet = page.getByRole("dialog", { name: /gpt-5\.4[ -]mini/i });
   await expect(sheet.getByText("OpenAI Chat Completions")).toBeVisible();
   await expect(sheet.getByText("logs-test")).toBeVisible();
   await sheet.getByRole("tab", { name: "Request" }).click();
@@ -113,7 +113,7 @@ test("a streamed tool call opens in the inspector, a key's rate limit shows as 4
   await expect(rows(page).filter({ hasText: "429" })).toHaveCount(1);
 
   await rows(page).last().click();
-  const sheet = page.getByRole("dialog", { name: /chat\/completions · gpt-5\.4[ -]mini/i });
+  const sheet = page.getByRole("dialog", { name: /gpt-5\.4[ -]mini/i });
   await expect(sheet.getByText("Streamed")).toBeVisible();
   await sheet.getByRole("tab", { name: "Reply" }).click();
   await expect(sheet.getByText(/Assembled from the stream/)).toBeVisible();
@@ -219,7 +219,7 @@ test("a Markdown system prompt reads as Markdown, and Show raw shows it as sent"
     await expect(rows(page)).toHaveCount(1, { timeout: 2000 });
   }).toPass({ timeout: 30_000 });
   await rows(page).first().click();
-  const sheet = page.getByRole("dialog", { name: /chat\/completions · gpt-5\.4[ -]mini/i });
+  const sheet = page.getByRole("dialog", { name: /gpt-5\.4[ -]mini/i });
   await sheet.getByRole("tab", { name: "Request" }).click();
   const prompt = sheet.getByRole("region", { name: "System" });
   await expect(prompt.getByRole("heading", { name: "Harness" })).toBeVisible();

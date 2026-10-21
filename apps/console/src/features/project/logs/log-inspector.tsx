@@ -39,6 +39,8 @@ import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
 import { seconds, startedLabel } from "./timing";
+import { logMessage, useGatewayErrors } from "./messages";
+import { CodeText } from "~/kaeso/code-text";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -101,13 +103,13 @@ export function LogInspector({
         e ? (
           <span className="flex min-w-0 items-center gap-8">
             <StatusCode code={e.status} />
-            <span className="truncate">{e.model ? `${e.endpoint} · ${modelName(e.provider, e.model)}` : e.endpoint}</span>
+            <span className="truncate">{e.model ? modelName(e.provider, e.model) : e.endpoint}</span>
           </span>
         ) : (
           t("logs.inspector.title", "Request")
         )
       }
-      subtitle={logId}
+      subtitle={e?.model ? `${e.endpoint} · ${logId}` : logId}
       actions={e?.stream ? <Badge>{t("logs.inspector.streamed", "Streamed")}</Badge> : undefined}
     >
       {logId && <Body key={logId} org={org} project={project} logId={logId} keyName={keyName} onClose={onClose} />}
@@ -202,6 +204,20 @@ function useModelName(org: string, project: string) {
 
 const known = (n: number | null | undefined): n is number => typeof n === "number" && Number.isFinite(n);
 
+const STATUS_OF_KIND: Record<string, readonly number[]> = {
+  invalid_request: [400],
+  authentication: [401],
+  permission_denied: [403],
+  not_found: [404],
+  request_too_large: [413],
+  rate_limited: [429],
+  client_disconnected: [499],
+  timeout: [408, 504],
+  overloaded: [529],
+};
+
+const restatesStatus = (kind: string, status: number) => !!STATUS_OF_KIND[kind]?.includes(status);
+
 function Long({ children, mono }: { children: string; mono?: boolean }) {
   return (
     <Text truncate mono={mono} variant={mono ? "small" : "body"}>
@@ -232,6 +248,9 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   const principal = partyName({ kind: e.principal_kind === "service_account" ? "service_account" : "user", id: e.principal_id });
   const name = modelName(e.provider, e.model);
   const sp = e.stream ? e.stream_progress : undefined;
+  const message = logMessage(useGatewayErrors(), e.error_message, e.provider, providers.name);
+  const embeddings = e.ingress_dialect === "openai_embeddings" || e.egress_dialect === "openai_embeddings";
+  const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
   return (
     <div className="mt-24 flex flex-col gap-32">
       {!e.has_content && (
@@ -250,10 +269,23 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
               className="grid grid-cols-2 gap-x-32"
               items={[
                 { label: common.status(), value: <StatusCode code={e.status} showText /> },
-                { label: t("logs.inspector.error", "Error"), value: errorKindLabel(e.error_kind) },
+                ...(restatesStatus(e.error_kind, e.status) ? [] : [{ label: t("logs.inspector.error", "Error"), value: errorKindLabel(e.error_kind) }]),
               ]}
             />
-            {e.error_message && <KeyValue layout="stacked" items={[{ label: t("logs.inspector.message", "Message"), value: e.error_message, wrap: true }]} />}
+            {message && (
+              <KeyValue
+                layout="stacked"
+                items={[
+                  {
+                    label: message.provider
+                      ? t("logs.inspector.messageFrom", "Message from {provider}", { provider: message.provider })
+                      : t("logs.inspector.message", "Message"),
+                    value: <CodeText text={message.text} />,
+                    wrap: true,
+                  },
+                ]}
+              />
+            )}
           </div>
         </Section>
       )}
@@ -276,9 +308,15 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
           label={common.tokens()}
           value={formatNumber(totalTokens(u))}
           detail={
-            used
-              ? t("logs.inspector.tokensInOut", "{input} in · {output} out", { input: formatNumber(tokensIn), output: formatNumber(u.output_tokens) })
-              : t("logs.inspector.noneCounted", "None counted")
+            !used
+              ? t("logs.inspector.noneCounted", "None counted")
+              : u.reasoning_tokens
+                ? t("logs.inspector.tokensInOutReasoning", "{input} in · {output} out · {reasoning} reasoning", {
+                    input: formatNumber(tokensIn),
+                    output: formatNumber(answer),
+                    reasoning: formatNumber(u.reasoning_tokens),
+                  })
+                : t("logs.inspector.tokensInOut", "{input} in · {output} out", { input: formatNumber(tokensIn), output: formatNumber(u.output_tokens) })
           }
         />
         <StatTile label={common.cost()} value={costUSD(e.cost)} detail={u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined} />
@@ -369,13 +407,17 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
               </Text>
             )}
             <UsageBreakdown
-              tokens={{
-                input: u.input_tokens,
-                cacheRead: u.cache_read_tokens,
-                cacheWrite: u.cache_write_tokens,
-                output: Math.max(0, u.output_tokens - u.reasoning_tokens),
-                reasoning: u.reasoning_tokens,
-              }}
+              tokens={
+                embeddings
+                  ? { input: u.input_tokens }
+                  : {
+                      input: u.input_tokens,
+                      cacheRead: u.cache_read_tokens,
+                      cacheWrite: u.cache_write_tokens,
+                      output: answer,
+                      reasoning: u.reasoning_tokens,
+                    }
+              }
             />
           </div>
         </Section>
@@ -510,9 +552,12 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
         <Text variant="small" tone="secondary">
           {e.stream
             ? e.error_kind
-              ? t("logs.inspector.replyStreamStopped", "Assembled from the stream until it stopped, in KPP form with what the app's format could not show.")
-              : t("logs.inspector.replyStream", "Assembled from the stream, in KPP form with what the app's format could not show.")
-            : t("logs.inspector.replyKpp", "The reply in KPP form, with what the app's format could not show.")}
+              ? t(
+                  "logs.inspector.replyStreamStopped",
+                  "Assembled from the stream until it stopped, in Kaeso's own format, which also keeps what the app's format can't show.",
+                )
+              : t("logs.inspector.replyStream", "Assembled from the stream in Kaeso's own format, which also keeps what the app's format can't show.")
+            : t("logs.inspector.replyOwnFormat", "The reply in Kaeso's own format, which also keeps what the app's format can't show.")}
         </Text>
       </TabHeader>
       {view && !raw && !Conversation ? (
@@ -523,7 +568,7 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
           {view.unknown.map((u, i) => (
             <div key={i} className="flex flex-col gap-8">
               <Text variant="small" tone="secondary">
-                {t("logs.inspector.unknownBlock", "A block KPP keeps as it came:")}
+                {t("logs.inspector.keptBlock", "A block kept as it came:")}
               </Text>
               <JsonView value={u} defaultDepth={3} />
             </div>

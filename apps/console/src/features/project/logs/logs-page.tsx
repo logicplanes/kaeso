@@ -37,6 +37,7 @@ import { COLUMNS, columnLabel, logColumns, logsLayout, storeColumns, storedColum
 import { ExportDialog } from "./export-dialog";
 import { scrollParentOf, useLiveLogs } from "./live";
 import { LogInspector } from "./log-inspector";
+import { useGatewayErrors } from "./messages";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
@@ -139,7 +140,8 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const keyName = (id: string) => keys.data?.find((k) => k.id === id)?.name ?? id;
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
   const phone = usePhone();
-  const all = logColumns({ spansDays, layout: logsLayout(width, phone, spansDays, columns), keyName, partyName, providerName: catalog.name });
+  const errors = useGatewayErrors();
+  const all = logColumns({ spansDays, layout: logsLayout(width, phone, spansDays, columns), keyName, partyName, providerName: catalog.name, errors });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c)).map((c) => all[c]);
 
   const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));

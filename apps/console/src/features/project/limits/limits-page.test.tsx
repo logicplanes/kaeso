@@ -388,13 +388,15 @@ describe("LimitsPage", () => {
     await user.clear(amount);
     await user.type(amount, "75");
     await user.click(within(dialog).getByRole("button", { name: "Save limit" }));
-    expect(await notifications().findByText("`amount` must be above zero.")).toBeInTheDocument();
+    expect((await notifications().findByText("amount", { selector: "code" })).parentElement).toHaveTextContent(/^amount must be above zero\.$/);
     expect(screen.getByRole("dialog", { name: "Edit limit" })).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "Remove limit" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
     await user.click(within(confirm).getByRole("button", { name: "Remove limit" }));
-    expect(await notifications().findByText("You need the right `limits.manage` in this project; ask one of its admins for it.")).toBeInTheDocument();
+    expect((await notifications().findByText("limits.manage", { selector: "code" })).parentElement).toHaveTextContent(
+      /^You need the right limits\.manage in this project; ask one of its admins for it\.$/,
+    );
     expect(requests("DELETE", ONE_LIMIT)).toHaveLength(1);
   });
 

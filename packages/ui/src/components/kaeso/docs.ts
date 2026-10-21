@@ -179,7 +179,8 @@ export const docs = {
   UsageBreakdown: {
     description: "A stacked bar of token kinds with the numbers under it, in the fixed series mapping.",
     props: {
-      tokens: "Tokens by kind: input, output, cache reads and writes, reasoning.",
+      tokens:
+        "Tokens by kind: input, output, cache reads and writes, reasoning. A kind left out isn't listed, for kinds that can't apply, such as output for embeddings; pass 0 to list it.",
     },
   },
 } satisfies ComponentDocs;

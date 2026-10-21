@@ -368,6 +368,12 @@ const CONSOLE_RULES: &str = "apps/console/src/api/gateway-errors.ts";
 
 const SHOWN_IN_THE_PLAYGROUND: &[&str] = &["crates/kaeso-core/src/catalogue/capability.rs"];
 
+const SHOWN_IN_REQUEST_LOGS: &[&str] = &[
+    "crates/kaeso-server/src/model_api",
+    "crates/kaeso-core/src/catalogue/resolve.rs",
+    "crates/kaeso-server/src/services/credentials.rs",
+];
+
 const SHOWN_BY_CODE: &[&str] = &["crates/kaeso-server/src/platform/projects/model_check.rs"];
 
 #[derive(Debug, PartialEq)]
@@ -460,7 +466,11 @@ fn the_console_translates_every_message() {
         console.len()
     );
     let mut files = Vec::new();
-    for p in SCANNED.iter().chain(SHOWN_IN_THE_PLAYGROUND) {
+    for p in SCANNED
+        .iter()
+        .chain(SHOWN_IN_THE_PLAYGROUND)
+        .chain(SHOWN_IN_REQUEST_LOGS)
+    {
         rust_files(&root.join(p), &mut files);
     }
     let mut checked = 0;

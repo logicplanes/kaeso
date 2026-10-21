@@ -3,7 +3,7 @@ import { locale, t } from "~/i18n";
 import english from "~/i18n/locales/en/errors.json";
 
 type Values = Record<string, string>;
-type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice";
+type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice" | "timeoutStage";
 
 type ErrorKey = keyof typeof english;
 
@@ -37,7 +37,7 @@ const messages = (): Rule[] => [
   rule("errors.missingRightProject", (v) => t("errors.missingRightProject", "You need the right `{right}` in this project; ask one of its admins for it.", v)),
   rule("errors.bearerKey", () => t("errors.bearerKey", "Send the key as `Authorization: Bearer <key>`.")),
   rule("errors.keyNoPlatformAccess", () => t("errors.keyNoPlatformAccess", "This key has no Platform API access; use a key with platform access.")),
-  rule("errors.crossSiteOrigin", (v) => t("errors.crossSiteOrigin", "Cross-site request refused; send the header `Origin: {expected}`.", v)),
+  rule("errors.crossSiteOrigin", (v) => t("errors.crossSiteOrigin", "Open Kaeso at {expected}; it refuses requests from pages at other addresses.", v)),
   rule("errors.projectKeyOwnProject", () => t("errors.projectKeyOwnProject", "Project API keys work only in their own project; use an org platform key.")),
   rule("errors.orgRequiresSso", () => t("errors.orgRequiresSso", "This organization requires signing in with SSO.")),
   rule("errors.otherSignIn", () => t("errors.otherSignIn", "You signed in with SSO; sign in with your password or a sign-in link to do this.")),
@@ -510,11 +510,113 @@ const messages = (): Rule[] => [
     (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),
     { levels: "codeList" },
   ),
+  rule("errors.modelApi.notInCatalogue", (v) =>
+    t(
+      "errors.modelApi.notInCatalogue",
+      "The model `{model}` is not in this project's model catalogue. A project admin can add it under the project's models.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.ambiguous", (v) =>
+    t(
+      "errors.modelApi.ambiguous",
+      "The model name `{model}` is served by several providers in this project ({providers}). Use a prefixed name such as `{provider}/{model}`.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.memberAccess", (v) =>
+    t(
+      "errors.modelApi.memberAccess",
+      "The model `{model}` is not in the models this key's member may use in this project. A project admin can change the member's model access.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.keyAccess", (v) =>
+    t(
+      "errors.modelApi.keyAccess",
+      "The model `{model}` is not in this key's model list. Create a key with access to it, or ask a project admin to change the key's model access.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.sendKey", () => t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>` or `x-api-key: <key>`.")),
+  rule("errors.modelApi.keysUnavailable", () => t("errors.modelApi.keysUnavailable", "Kaeso cannot check API keys right now. Try again shortly.")),
+  rule("errors.modelApi.platformKey", () =>
+    t("errors.modelApi.platformKey", "Org platform keys manage Kaeso through the Platform API and cannot call models. Use a project API key."),
+  ),
+  rule("errors.modelApi.platformOnly", () =>
+    t("errors.modelApi.platformOnly", "This API key has Platform API access only. Create a key with inference access to call models."),
+  ),
+  rule("errors.modelApi.noRequestRight", () =>
+    t("errors.modelApi.noRequestRight", "The owner of this API key may not call models in its project (the right `api.request` is missing)."),
+  ),
+  rule("errors.modelApi.modelsUnavailable", () =>
+    t("errors.modelApi.modelsUnavailable", "Kaeso cannot load this project's models right now. Try again shortly."),
+  ),
+  rule("errors.modelApi.noSuchModel", (v) => t("errors.modelApi.noSuchModel", "The model `{model}` does not exist or this key may not use it.", v)),
+  rule("errors.modelApi.noRoute", (v) => t("errors.modelApi.noRoute", "Kaeso does not serve `{path}`.", v)),
+  rule("errors.modelApi.method", (v) => t("errors.modelApi.method", "`{path}` does not accept `{method}` requests.", v)),
+  rule("errors.modelApi.restarting", () => t("errors.modelApi.restarting", "Kaeso is restarting and ended this request. Send it again.")),
+  rule("errors.modelApi.appClosed", () => t("errors.modelApi.appClosed", "The app closed the connection before the reply was complete.")),
+  rule(
+    "errors.modelApi.timeout",
+    (v) => t("errors.modelApi.timeout", "The provider did not answer in time ({stage}). Kaeso does not retry; try again or raise the model's timeout.", v),
+    { stage: "timeoutStage" },
+  ),
+  rule("errors.modelApi.unreachable", () => t("errors.modelApi.unreachable", "Kaeso cannot reach the provider. Try again shortly.")),
+  rule("errors.modelApi.transfer", () => t("errors.modelApi.transfer", "The connection to the provider failed before the response was complete.")),
+  rule("errors.modelApi.prepare", () => t("errors.modelApi.prepare", "Kaeso cannot prepare the call to the provider.")),
+  rule("errors.modelApi.responseTooLarge", () => t("errors.modelApi.responseTooLarge", "The provider's response is larger than this install accepts.")),
+  rule("errors.modelApi.keyRefused", () =>
+    t("errors.modelApi.keyRefused", "The provider refused this project's provider key. Ask an organization admin to check it under Providers."),
+  ),
+  rule("errors.modelApi.accountRefused", () =>
+    t(
+      "errors.modelApi.accountRefused",
+      "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.",
+    ),
+  ),
+  rule("errors.modelApi.translateUnavailable", () =>
+    t("errors.modelApi.translateUnavailable", "Kaeso cannot translate this request right now. Try again shortly."),
+  ),
+  rule("errors.modelApi.unserved", (v) =>
+    t(
+      "errors.modelApi.unserved",
+      "{provider} does not serve the model `{model}` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.bodyTimeout", () => t("errors.modelApi.bodyTimeout", "The request body did not arrive in time; send it again.")),
+  rule("errors.modelApi.bodyTooLarge", (v) => t("errors.modelApi.bodyTooLarge", "The request body is larger than {limit} bytes.", v), { limit: "number" }),
+  rule("errors.modelApi.streamOnly", () => t("errors.modelApi.streamOnly", "Only streamed requests are served here; send `stream: true`.")),
+  rule("errors.modelApi.providerUnavailable", (v) => t("errors.modelApi.providerUnavailable", "The provider `{provider}` is not available.", v)),
+  rule("errors.modelApi.credentialSealed", () =>
+    t("errors.modelApi.credentialSealed", "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."),
+  ),
+  rule("errors.modelApi.credentialUnavailable", () =>
+    t("errors.modelApi.credentialUnavailable", "Kaeso cannot load the provider credential right now. Try again shortly."),
+  ),
+  rule("errors.modelApi.noBaseUrl", () => t("errors.modelApi.noBaseUrl", "No base URL is configured for this provider.")),
+  rule("errors.modelApi.streamEnded", () => t("errors.modelApi.streamEnded", "The provider's stream ended before the reply was complete.")),
+  rule("errors.modelApi.streamCapped", () => t("errors.modelApi.streamCapped", "The reply reached this install's limit for a stream; Kaeso ended it.")),
+  rule("errors.modelApi.noCredential", (v) =>
+    t(
+      "errors.modelApi.noCredential",
+      "No credential for the provider `{provider}` is set up for this project. An org admin adds a key for it with POST /platform/v1/orgs/{org}/credentials, makes one of the org's keys the default, or assigns one to this project.",
+      v,
+    ),
+  ),
   rule("errors.edgeUnreachable", () => t("errors.edgeUnreachable", "Kaeso can't be reached right now; try again in a minute.")),
   rule("errors.edgeUpdating", () => t("errors.edgeUpdating", "Kaeso is being updated; try again in a minute.")),
 ];
 
 const toolChoices = (): Rule[] => [rule("errors.toolChoice.named", () => t("errors.toolChoice.named", "a named function in `tool_choice`"))];
+
+const timeoutStages = (): Rule[] => [
+  rule("errors.timeoutStage.firstByte", () => t("errors.timeoutStage.firstByte", "time to first byte")),
+  rule("errors.timeoutStage.request", () => t("errors.timeoutStage.request", "request")),
+  rule("errors.timeoutStage.connect", () => t("errors.timeoutStage.connect", "connect")),
+  rule("errors.timeoutStage.idleStream", () => t("errors.timeoutStage.idleStream", "idle stream")),
+];
 
 const limits = (): Rule[] => [
   rule("errors.limit.requestRate", (v) => t("errors.limit.requestRate", "request rate of {amount} requests per minute", v), { amount: "number" }),
@@ -555,7 +657,8 @@ export function pattern(englishText: string): RegExp {
 
 const compile = (rules: Rule[]): Compiled[] => rules.map((r) => ({ ...r, pattern: pattern(english[r.key]) }));
 
-let tables: { messages: Compiled[]; limits: Compiled[]; owners: Compiled[]; ownerAmounts: Compiled[]; toolChoices: Compiled[] } | undefined;
+let tables:
+  { messages: Compiled[]; limits: Compiled[]; owners: Compiled[]; ownerAmounts: Compiled[]; toolChoices: Compiled[]; timeoutStages: Compiled[] } | undefined;
 const compiled = () =>
   (tables ??= {
     messages: compile(messages()),
@@ -563,6 +666,7 @@ const compiled = () =>
     owners: compile(owners()),
     ownerAmounts: compile(ownerAmounts()),
     toolChoices: compile(toolChoices()),
+    timeoutStages: compile(timeoutStages()),
   });
 
 const codeSpans = /^`[^`]+`( `[^`]+`)*$/;
@@ -581,6 +685,7 @@ const converters: Record<Convert, (value: string) => string | undefined> = {
     return joined.replace(/([\u4e00-\u9fff])`/g, "$1 `").replace(/`([\u4e00-\u9fff])/g, "` $1");
   },
   toolChoice: (value) => apply(compiled().toolChoices, value) ?? (codeSpans.test(value) ? value : undefined),
+  timeoutStage: (value) => apply(compiled().timeoutStages, value),
   number: (value) => (/^\d+(\.\d+)?$/.test(value) ? formatNumber(Number(value), { maximumFractionDigits: 9 }) : value),
   date: (value) => (Number.isNaN(Date.parse(value)) ? value : formatDate(value, { time: true })),
 };
@@ -606,7 +711,11 @@ export function translateMessage(message: string): string {
   return apply(compiled().messages, message) ?? message;
 }
 
+export function knownMessage(message: string): string | undefined {
+  return apply(compiled().messages, message);
+}
+
 export function rules(): { key: string; text: (values: Values) => string }[] {
   const all = compiled();
-  return [...all.messages, ...all.limits, ...all.owners, ...all.ownerAmounts, ...all.toolChoices];
+  return [...all.messages, ...all.limits, ...all.owners, ...all.ownerAmounts, ...all.toolChoices, ...all.timeoutStages];
 }

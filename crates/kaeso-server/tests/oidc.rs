@@ -824,7 +824,8 @@ async fn sign_in_reads_and_start_links_need_no_origin_but_changes_do() {
             .status,
         StatusCode::OK
     );
-    let expected = format!("Cross-site request refused; send the header `Origin: {ORIGIN}`.");
+    let expected =
+        format!("Open Kaeso at {ORIGIN}; it refuses requests from pages at other addresses.");
     for (path, body) in [
         ("/auth/methods", json!({ "email": "ada@acme.example" })),
         ("/auth/oidc/start", json!({ "org": owner.org_id })),

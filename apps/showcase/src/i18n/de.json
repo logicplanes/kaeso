@@ -849,7 +849,6 @@
   "Toggle pills": "Umschaltpillen",
   "Token kinds in their fixed colors, and limits with their scope, window, kind and reset.": "Token-Arten in ihren festen Farben und Limits mit Geltungsbereich, Zeitfenster, Art und Zurücksetzung.",
   "Tokens by kind, stacked": "Token nach Art, gestapelt",
-  "Tokens by kind: input, output, cache reads and writes, reasoning.": "Token nach Art: Eingabe, Ausgabe, Cache-Lese- und Schreibzugriffe, Reasoning.",
   "Tones": "Töne",
   "Trailing content is a button: the right padding drops so the circle sits concentric in the pill.": "Der nachfolgende Inhalt ist ein Button: Der rechte Innenabstand sinkt, damit der Kreis konzentrisch in der Pill sitzt.",
   "Transparent until touched; for toolbars, rows and quiet actions.": "Transparent bis zur Berührung; für Werkzeugleisten, Zeilen und leise Aktionen.",
@@ -1062,5 +1061,6 @@
   "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.": "`time` beschriftet runde Zeiten, so viele wie passen (Standard). `points` setzt jeden Punkt in die Mitte eines gleich großen Schritts und beschriftet jeden n-ten, wie ein Balkendiagramm seine Kategorien setzt und beschriftet, sodass ein Balkendiagramm derselben Tage mit ihm übereinstimmt.",
   "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "Die Zeitzone, in der Achse und Standardbeschriftungen Zeiten lesen, etwa „UTC“ für in UTC gezählte Tage. Standardmäßig die mit `setFormatTimeZone` gesetzte Zone, sonst die des Betrachters.",
   "A press outside doesn't close it, for forms that would lose what was typed; Escape and the close circle still do. Every StepDialog is persistent.": "Ein Klick daneben schließt ihn nicht, für Formulare, die sonst das Eingegebene verlieren würden; Escape und der Schließen-Kreis schließen ihn weiterhin. Jeder StepDialog ist dauerhaft.",
-  "Shows the state's badge beside a key that isn't active (on by default); turn it off where a heading already names the state.": "Zeigt das Abzeichen des Zustands neben einem Schlüssel, der nicht aktiv ist (standardmäßig an); schalten Sie es aus, wo eine Überschrift den Zustand schon nennt."
+  "Shows the state's badge beside a key that isn't active (on by default); turn it off where a heading already names the state.": "Zeigt das Abzeichen des Zustands neben einem Schlüssel, der nicht aktiv ist (standardmäßig an); schalten Sie es aus, wo eine Überschrift den Zustand schon nennt.",
+  "Tokens by kind: input, output, cache reads and writes, reasoning. A kind left out isn't listed, for kinds that can't apply, such as output for embeddings; pass 0 to list it.": "Token nach Art: Eingabe, Ausgabe, Cache-Lese- und -Schreibzugriffe, Reasoning. Eine weggelassene Art wird nicht aufgeführt, für Arten, die nicht zutreffen können, etwa die Ausgabe bei Embeddings; 0 übergeben, um sie aufzuführen."
 }

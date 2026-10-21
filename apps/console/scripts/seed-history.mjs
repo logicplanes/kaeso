@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 const DAY = 86_400_000;
 const AGENTS = ["OpenAI/Python 2.9.0", "OpenAI/JS 7.32.0", "Anthropic/Python 0.77.1", "Anthropic/JS 0.133.0", "langchain-core/0.3.79", "checkout-web/3.4.2"];
 const FAILURES = [
-  ["rate_limited", 429, "Rate limit reached: this key's request rate. Retry in 12 seconds.", 14],
+  ["rate_limited", 429, "Rate limit reached: this key's request rate of 60 requests per minute; retry in 12 seconds.", 14],
   ["overloaded", 529, "Overloaded", 6],
   ["provider_error", 500, "Internal server error", 4],
   ["invalid_request", 400, "messages: text content blocks must be non-empty", 5],

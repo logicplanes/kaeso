@@ -54,7 +54,7 @@ export const UsageBreakdown = forwardRef<HTMLDivElement, { tokens: Partial<Recor
           ))}
         </div>
         <dl className="flex flex-wrap gap-x-24 gap-y-8">
-          {ORDER.map((k) => (
+          {ORDER.filter((k) => tokens[k] !== undefined).map((k) => (
             <div key={k} className="flex flex-col gap-2">
               <dt className="flex items-center gap-8 text-small text-fg-secondary">
                 <Swatch color={tokenKindColor(k)} />
