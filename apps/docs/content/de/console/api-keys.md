@@ -12,7 +12,7 @@ Apps und Skripte rufen Kaeso mit einem API-Schlüssel auf. Ein Schlüssel gehör
 2. **Wofür ist der Schlüssel?** Geben Sie ihm einen Namen, etwa `checkout-web`. Anfrageprotokolle und Warnungen zeigen ihn. Wählen Sie unter **Für** sich selbst oder ein Dienstkonto des Projekts.
 3. **Wann läuft er ab?** Wählen Sie 1, 7, 30 oder 90 Tage, **An einem Datum** oder **Nie**. Ein Schlüssel mit Datum endet zu Beginn dieses Tages, UTC.
 4. **Was darf er aufrufen?** Wählen Sie **Inferenz** für Apps, die Modelle aufrufen, **Plattform** für Skripte, die das Projekt über die Platform API verwalten, oder **Inferenz und Plattform** für beides.
-5. **Modelle und Limits**, optional: Wählen Sie die Modelle, die der Schlüssel aufrufen darf, und setzen Sie eigene [Limits](limits-and-budgets.md). Ohne sie darf der Schlüssel aufrufen, was sein Inhaber darf, innerhalb der Limits seines Inhabers und des Projekts.
+5. **Modelle und Limits**, optional: Wählen Sie die Modelle, die der Schlüssel aufrufen darf, und setzen Sie eigene [Limits](limits-and-budgets.md). Ein als [Nicht verfügbar](models-and-aliases.md) markiertes Modell ist ausgegraut, weil der Anbieter es dem Schlüssel des Projekts nicht bereitstellt. Ohne sie darf der Schlüssel aufrufen, was sein Inhaber darf, innerhalb der Limits seines Inhabers und des Projekts.
 
 **Schlüssel erstellt** zeigt dann den Schlüssel und eine Beispielanfrage damit. Ein Schlüssel besteht aus `sk-kso-` und 48 Buchstaben und Ziffern, und danach zeigt die Konsole nur noch seine ersten und letzten Zeichen.
 

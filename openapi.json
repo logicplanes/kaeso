@@ -19487,7 +19487,8 @@
                 "efforts",
                 "temperature",
                 "input_modalities",
-                "provider_key"
+                "provider_key",
+                "availability"
               ],
               "properties": {
                 "aliases": {
@@ -19496,6 +19497,10 @@
                     "type": "string"
                   },
                   "description": "The project's aliases pointing at it."
+                },
+                "availability": {
+                  "$ref": "#/components/schemas/AvailabilityState",
+                  "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found; the Playground offers an `unavailable`\nmodel only greyed out."
                 },
                 "cache_read_price": {
                   "type": [
@@ -21633,7 +21638,8 @@
           "efforts",
           "temperature",
           "input_modalities",
-          "provider_key"
+          "provider_key",
+          "availability"
         ],
         "properties": {
           "aliases": {
@@ -21642,6 +21648,10 @@
               "type": "string"
             },
             "description": "The project's aliases pointing at it."
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilityState",
+            "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found; the Playground offers an `unavailable`\nmodel only greyed out."
           },
           "cache_read_price": {
             "type": [

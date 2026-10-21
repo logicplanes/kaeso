@@ -119,6 +119,7 @@
   "kaeso.modelAccess.ownerCount": "{count, plural, other {所有者可用的所有模型：共 # 个。}}",
   "kaeso.modelAccess.ownerModels": "所有者可用的所有模型",
   "kaeso.modelAccess.saved": "模型已保存",
+  "kaeso.modelOptions.notServed": "服务商不提供此模型",
   "kaeso.party.you": "{name}（我）",
   "kaeso.period.label": "时间范围",
   "kaeso.picture.replace": "替换",

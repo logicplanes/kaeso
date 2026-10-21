@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
@@ -148,6 +148,47 @@ describe("PlaygroundPage", () => {
     expect(within(recent).getByRole("option", { name: /GPT-5.4 mini/ })).toHaveAttribute("aria-selected", "true");
     await user.click(within(screen.getByRole("group", { name: "Anthropic" })).getByRole("option", { name: /Claude Opus 5.5/ }));
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "anthropic/claude-opus-5-5" }));
+  });
+
+  it("keeps the model just chosen when a column is added before the page catches up", async () => {
+    signedIn();
+    on(
+      "GET",
+      MODELS,
+      page([playgroundModel(), claude, playgroundModel({ id: "cm_n", model_id: "gpt-5.4-nano", display_name: "GPT-5.4 nano", model: "gpt-5.4-nano" })]),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+
+    await screen.findByText("claude-opus-5-5");
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const nano = within(await screen.findByRole("listbox")).getByRole("option", { name: /GPT-5.4 nano/ });
+    act(() => {
+      fireEvent.click(nano);
+      fireEvent.click(screen.getByRole("button", { name: "Add column" }));
+    });
+    await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-nano,anthropic/claude-opus-5-5" }));
+  });
+
+  it("greys out models the provider doesn't serve and never adds one", async () => {
+    signedIn();
+    on(
+      "GET",
+      MODELS,
+      page([
+        playgroundModel({ id: "cm_g", provider: "groq", model_id: "llama-3.1-8b-instant", display_name: "Llama 3.1 8B", availability: "unavailable" }),
+        playgroundModel(),
+      ]),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+
+    expect(await screen.findByText("gpt-5.4-mini")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const llama = within(await screen.findByRole("listbox")).getByRole("option", { name: /Llama 3.1 8B/ });
+    expect(llama).toHaveAttribute("aria-disabled", "true");
+    expect(llama).toHaveTextContent("The provider doesn't serve it");
+    await user.keyboard("{Escape}{Escape}");
+    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-mini" }));
   });
 
   it("asks for a model when the link names one the project doesn't have", async () => {

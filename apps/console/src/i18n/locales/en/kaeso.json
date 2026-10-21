@@ -119,6 +119,7 @@
   "kaeso.modelAccess.ownerCount": "{count, plural, one {Every model its owner may use: # model.} other {Every model its owner may use: # models.}}",
   "kaeso.modelAccess.ownerModels": "Every model its owner may use",
   "kaeso.modelAccess.saved": "Models saved",
+  "kaeso.modelOptions.notServed": "The provider doesn't serve it",
   "kaeso.party.you": "{name} (you)",
   "kaeso.period.label": "Period",
   "kaeso.picture.replace": "Replace",

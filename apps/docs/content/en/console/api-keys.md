@@ -12,7 +12,7 @@ Apps and scripts call Kaeso with an API key. A key belongs to a member or a serv
 2. **What is it for?** Give the key a name, such as `checkout-web`. Request logs and alerts show it. Under **For**, choose yourself or a service account of the project.
 3. **When does it expire?** Choose 1, 7, 30 or 90 days, **On a date**, or **Never**. A key with a date stops at the start of that day, UTC.
 4. **What can it call?** Choose **Inference** for apps that call models, **Platform** for scripts that manage the project through the Platform API, or **Inference and platform** for both.
-5. **Models and limits**, optional: choose the models the key may call and set [limits](limits-and-budgets.md) of its own. Without them, the key may call what its owner may, within its owner's and the project's limits.
+5. **Models and limits**, optional: choose the models the key may call and set [limits](limits-and-budgets.md) of its own. A model marked [Unavailable](models-and-aliases.md) is greyed out, because the provider doesn't serve it to the project's key. Without them, the key may call what its owner may, within its owner's and the project's limits.
 
 **Key created** then shows the key and a sample request that uses it. A key is `sk-kso-` followed by 48 letters and digits, and afterwards the console shows only its first and last characters.
 

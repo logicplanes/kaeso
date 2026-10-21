@@ -119,6 +119,7 @@
   "kaeso.modelAccess.ownerCount": "{count, plural, one {Alle Modelle, die der Inhaber nutzen darf: # Modell.} other {Alle Modelle, die der Inhaber nutzen darf: # Modelle.}}",
   "kaeso.modelAccess.ownerModels": "Alle Modelle, die der Inhaber nutzen darf",
   "kaeso.modelAccess.saved": "Modelle gespeichert",
+  "kaeso.modelOptions.notServed": "Vom Anbieter nicht angeboten",
   "kaeso.party.you": "{name} (Sie)",
   "kaeso.period.label": "Zeitraum",
   "kaeso.picture.replace": "Ersetzen",
