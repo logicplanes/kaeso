@@ -64,7 +64,7 @@ services:
         condition: service_healthy
 
   gateway:
-    image: ghcr.io/logicplanes/kaeso-gateway:0.3.1
+    image: ghcr.io/logicplanes/kaeso-gateway:0.3.2
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -99,7 +99,7 @@ services:
         condition: service_started
 
   console:
-    image: ghcr.io/logicplanes/kaeso-console:0.3.1
+    image: ghcr.io/logicplanes/kaeso-console:0.3.2
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -129,7 +129,7 @@ services:
       - updater:/state
 
   updater:
-    image: ghcr.io/logicplanes/kaeso-updater:0.3.1
+    image: ghcr.io/logicplanes/kaeso-updater:0.3.2
     profiles: [updater]
     restart: unless-stopped
     user: "65532:65532"
