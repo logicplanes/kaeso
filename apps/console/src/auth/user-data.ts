@@ -1,5 +1,6 @@
 import { LAST_PLACE_KEY } from "~/shell/last";
 import { RECENT_KEY } from "~/shell/recent";
+import { forget } from "~/shell/session-memory";
 import { writeStored } from "~/storage";
 
 export const INVITE_KEY = "kaeso:invite";
@@ -7,6 +8,8 @@ export const INVITE_KEY = "kaeso:invite";
 const DRAFT_PREFIX = "kaeso:playground-draft:";
 
 export const playgroundDraftKey = (project: string): string => `${DRAFT_PREFIX}${project}`;
+
+export const PLAYGROUND_CONVERSATION = ["playground", "conversation"] as const;
 
 function storedDrafts(): string[] {
   try {
@@ -19,4 +22,5 @@ function storedDrafts(): string[] {
 export function forgetUserData(): void {
   for (const key of [RECENT_KEY, LAST_PLACE_KEY, ...storedDrafts()]) writeStored(key, null);
   writeStored(INVITE_KEY, null, "session");
+  forget(PLAYGROUND_CONVERSATION);
 }

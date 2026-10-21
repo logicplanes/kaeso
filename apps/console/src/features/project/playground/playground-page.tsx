@@ -23,11 +23,13 @@ import { parametersOf, searchOf } from "./search";
 import { EFFORTS, MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
 import type { Turn } from "./responses";
-import { useThreads } from "./use-threads";
+import { useThreads, type Thread as ThreadState } from "./use-threads";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { readStored, writeStored } from "~/storage";
-import { playgroundDraftKey } from "~/auth/user-data";
+import { PLAYGROUND_CONVERSATION, playgroundDraftKey } from "~/auth/user-data";
+import { forget, recall, remember } from "~/shell/session-memory";
+import { toast } from "~/shell/toast";
 import { patchSearch, type SearchPatch } from "~/search";
 
 const suggestions = () => [
@@ -46,6 +48,14 @@ function writeDraft(project: string, text: string) {
 
 const same = (a: object, b: object) => JSON.stringify(a) === JSON.stringify(b);
 
+interface Conversation {
+  refs: string[];
+  threads: ThreadState[];
+}
+const conversationKey = (project: string) => [...PLAYGROUND_CONVERSATION, project];
+const warnOnLeave = (e: BeforeUnloadEvent) => e.preventDefault();
+const CLEARED = "playground:cleared";
+
 export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
@@ -59,8 +69,9 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
 
   const callable = chat.filter((m) => m.provider_key && m.availability !== "unavailable");
   const first = callable[0] ?? chat[0];
+  const [saved] = useState(() => recall<Conversation>(conversationKey(project)));
   const linked = parseModels(search.models);
-  const refs = linked.length ? linked : [first ? modelRef(first) : ""];
+  const refs = linked.length ? linked : (saved?.refs ?? [first ? modelRef(first) : ""]);
   const models = refs.map((r) => byRef.get(r) ?? null);
 
   const setSearch = useCallback(
@@ -106,7 +117,23 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     return () => clearTimeout(timer);
   }, [parameters, linkedParameters, setSearch]);
 
-  const { threads, busy, send, retry, stop, add, remove, clear } = useThreads(org, project, refs.length);
+  const shownRefs = useRef(refs);
+  useEffect(() => {
+    shownRefs.current = refs;
+  });
+  const { threads, busy, send, retry, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+    initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
+    onLeave: (left) => {
+      if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
+      else forget(conversationKey(project));
+    },
+  });
+  const restoring = useRef(!!saved && !search.models);
+  useEffect(() => {
+    if (!restoring.current || !saved) return;
+    restoring.current = false;
+    setSearch({ models: saved.refs.join(",") });
+  }, [saved, setSearch]);
   const [prompt, setPrompt] = useState(() => readDraft(project));
   const composer = useRef<HTMLTextAreaElement | null>(null);
   const changePrompt = (text: string) => {
@@ -138,6 +165,24 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
 
   const empty = threads.every((x) => x.turns.length === 0);
+  useEffect(() => {
+    if (empty) return;
+    window.addEventListener("beforeunload", warnOnLeave);
+    return () => window.removeEventListener("beforeunload", warnOnLeave);
+  }, [empty]);
+  const clearAll = () => {
+    const before = clear();
+    toast(t("playground.cleared", "Conversation cleared"), {
+      id: CLEARED,
+      action: {
+        label: t("playground.undoClear", "Undo"),
+        onClick: () => {
+          restore(before);
+          toast.dismiss(CLEARED);
+        },
+      },
+    });
+  };
   const options = useMemo(
     () =>
       chat.map((m) => playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }))),
@@ -167,7 +212,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         actions={
           <div className="flex items-center gap-8">
             {!empty && (
-              <Button size="sm" variant="ghost" onClick={clear}>
+              <Button size="sm" variant="ghost" onClick={clearAll}>
                 {common.clear()}
               </Button>
             )}

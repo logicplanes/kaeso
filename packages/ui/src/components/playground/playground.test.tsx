@@ -402,18 +402,16 @@ describe("ResponseMetrics", () => {
     const m = screen.getByLabelText("Metrics");
     expect(m).toHaveTextContent("First token420 ms");
     expect(m).toHaveTextContent("Total3.14 s");
-    expect(m).toHaveTextContent("Tokens1,204 → 856");
+    expect(m).toHaveTextContent("Tokens1,204 in · 856 out");
     expect(m).toHaveTextContent("Reasoning312");
-    expect(m).toHaveTextContent("Cost$0.00421");
-    expect(screen.getByLabelText("1,204 in, 856 out")).toBeInTheDocument();
+    expect(m).toHaveTextContent("Cost$0.004213");
   });
 
   it("shows a dash for the token count that is not known yet", () => {
     render(<ResponseMetrics inputTokens={1204} />);
     const m = screen.getByLabelText("Metrics");
-    expect(m).toHaveTextContent("Tokens1,204 → —not yet known");
+    expect(m).toHaveTextContent("Tokens1,204 in · — out");
     expect(m).not.toHaveTextContent("[object Object]");
-    expect(screen.getByLabelText("1,204 in, unknown out")).toBeInTheDocument();
   });
 
   it("is empty before a response, keeping its height", () => {
@@ -431,9 +429,13 @@ describe("ResponseMetrics", () => {
     rerender(<ResponseMetrics live reasoning timeToFirstToken={380} />);
     expect(items()).toEqual(["380 ms", "—", "—", "—", "—"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={65_000} inputTokens={12} outputTokens={0} reasoningTokens={0} cost="12.5" />);
-    expect(items()).toEqual(["380 ms", "1 min 5 s", "12 → 0", "0", "$12.50"]);
+    expect(items()).toEqual(["380 ms", "1 min 5 s", "12 in · 0 out", "0", "$12.500000"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={900} inputTokens={12} outputTokens={4} />);
-    expect(items()).toEqual(["380 ms", "900 ms", "12 → 4"]);
+    expect(items()).toEqual(["380 ms", "900 ms", "12 in · 4 out"]);
+    rerender(<ResponseMetrics inputTokens={12} outputTokens={4} cost="0.0000630" />);
+    expect(items()).toEqual(["12 in · 4 out", "$0.000063"]);
+    rerender(<ResponseMetrics inputTokens={12} outputTokens={4} cost="0" />);
+    expect(items()).toEqual(["12 in · 4 out", "$0"]);
   });
 
   it("counts the total quietly while live", () => {

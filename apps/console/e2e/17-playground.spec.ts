@@ -52,7 +52,7 @@ test("one prompt streams from two models side by side, with metrics; Stop ends b
     await expect(reply(page, name)).not.toBeEmpty();
     const metrics = column(page, name).getByRole("definition");
     await expect(metrics.filter({ hasText: /^\$/ })).toBeVisible({ timeout: 20_000 });
-    await expect(metrics.filter({ hasText: /^\d[\d,]* → \d[\d,]*$/ })).toBeVisible();
+    await expect(metrics.filter({ hasText: /^\d[\d,]* in · \d[\d,]* out$/ })).toBeVisible();
     await expect(metrics.filter({ hasText: /^\d[\d.,]* (ms|s)$/ }).first()).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeVisible();
@@ -68,7 +68,13 @@ test("one prompt streams from two models side by side, with metrics; Stop ends b
   for (const name of [mini, nano]) await expect(reply(page, name).getByText("Stopped", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeVisible();
 
+  const asked = page.waitForEvent("dialog").then(async (dialog) => {
+    const kind = dialog.type();
+    await dialog.accept();
+    return kind;
+  });
   await page.reload();
+  expect(await asked).toBe("beforeunload");
   await expect(column(page, mini)).toBeVisible();
   await expect(column(page, nano)).toBeVisible();
 });

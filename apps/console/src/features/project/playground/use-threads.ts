@@ -27,8 +27,16 @@ export interface Send {
   request: PlaygroundRequest;
 }
 
-export function useThreads(org: string, project: string, columns: number) {
-  const [threads, setThreads] = useState<Thread[]>(() => Array.from({ length: columns }, newThread));
+const settled = (threads: Thread[], now: number): Thread[] =>
+  threads.map((t) => ({ ...t, turns: t.turns.map((x) => (isLive(x.response) ? { ...x, response: endResponse(x.response, "stopped", now) } : x)) }));
+
+export function useThreads(
+  org: string,
+  project: string,
+  columns: number,
+  { initial, onLeave }: { initial?: Thread[] | undefined; onLeave?: ((threads: Thread[]) => void) | undefined } = {},
+) {
+  const [threads, setThreads] = useState<Thread[]>(() => (initial?.length === columns ? initial : Array.from({ length: columns }, newThread)));
   if (threads.length !== columns) {
     setThreads(threads.length > columns ? threads.slice(0, columns) : [...threads, ...Array.from({ length: columns - threads.length }, newThread)]);
   }
@@ -38,6 +46,12 @@ export function useThreads(org: string, project: string, columns: number) {
   const live = useRef(new Map<string, ResponseState>());
   const frame = useRef<number | null>(null);
   const mounted = useRef(true);
+  const latest = useRef(threads);
+  const leave = useRef(onLeave);
+  useEffect(() => {
+    latest.current = threads;
+    leave.current = onLeave;
+  });
 
   const flush = useCallback(() => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -61,6 +75,7 @@ export function useThreads(org: string, project: string, columns: number) {
     const open = controllers.current;
     return () => {
       mounted.current = false;
+      leave.current?.(settled(latest.current, performance.now()));
       for (const c of open.values()) c.abort();
       open.clear();
       if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -161,11 +176,21 @@ export function useThreads(org: string, project: string, columns: number) {
     setThreads((ts) => ts.filter((_, i) => i !== column));
   };
 
-  const clear = () => {
+  const clear = (): Thread[] => {
     stop();
+    const before = settled(threads, performance.now());
     setThreads((ts) => ts.map((t) => ({ ...t, turns: [] })));
+    return before;
   };
 
+  const restore = (before: Thread[]) =>
+    setThreads((ts) =>
+      ts.map((t) => {
+        const kept = before.find((b) => b.key === t.key);
+        return kept && t.turns.length === 0 ? kept : t;
+      }),
+    );
+
   const busy = threads.some((t) => t.turns.some((x) => isLive(x.response)));
-  return { threads, busy, send, retry, stop, add, remove, clear };
+  return { threads, busy, send, retry, stop, add, remove, clear, restore };
 }
