@@ -4,6 +4,22 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Each release on the documentation's changelog shows its artwork from `update.kaeso.app`, the same picture as the console's What's new dialog. The documentation's Content Security Policy allows images from `update.kaeso.app` for it.
+
+#### UI library
+
+- `ReleaseArt` takes `src`, an image of a release's stored artwork such as `https://update.kaeso.app/art/0.3.0.svg`, shown in the same frame as the drawn picture, which takes its place if the image doesn't load.
+
+### Changed
+
+- The gateway looks for new releases every 5 minutes instead of twice a day, and 15 minutes after a failed check; an unchanged release list costs only a `304` answer.
+
+#### Console
+
+- **Settings → Instance → Updates** no longer shows when the gateway last looked for releases; it says only when a check failed.
+
 ### Fixed
 
 #### Documentation
