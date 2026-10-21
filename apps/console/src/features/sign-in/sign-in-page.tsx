@@ -6,7 +6,16 @@ import { PublicPage } from "~/shell/public-page";
 import { toast } from "~/shell/toast";
 import { toastApiError } from "~/api/toast-error";
 import { isApiError, type ApiError } from "~/api/errors";
-import { sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso, type SignInMethods } from "~/auth/sign-in-api";
+import {
+  codeRefusal,
+  sendMagicLink,
+  signInMethodsFor,
+  signInWithPassword,
+  signInWithTotp,
+  startSso,
+  type SignInMethods,
+  type TotpChallenge,
+} from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
 import { handResetAddress } from "~/features/public/reset-address";
 import { safeNext } from "~/auth/next";
@@ -24,7 +33,7 @@ const loadSignUpLine = () => import("./sign-up-line").then((m) => (signUpLine = 
 type Step =
   | { kind: "email" }
   | { kind: "methods"; methods: SignInMethods }
-  | { kind: "totp"; challenge: string; expiresAt: string; recovery: boolean }
+  | ({ kind: "totp"; recovery: boolean; failures: number } & TotpChallenge)
   | { kind: "link-sent"; message: string };
 
 const refusedPassword = (e: unknown): e is ApiError => isApiError(e) && !e.unreachable && e.type !== "internal";
@@ -113,12 +122,21 @@ export function SignInPage({
   const withPassword = () =>
     run("password", async () => {
       const result = await signInWithPassword(address, password);
-      if (result.kind === "totp") setStep({ kind: "totp", challenge: result.challenge, expiresAt: result.expiresAt, recovery: false });
+      if (result.kind === "totp") setStep({ ...result, recovery: result.codesLocked, failures: 0 });
       else await done();
     });
   const withCode = (totp: Extract<Step, { kind: "totp" }>, value = code) =>
     run("code", async () => {
-      await signInWithTotp(totp.challenge, totp.recovery ? { recoveryCode: value.trim() } : { code: value });
+      try {
+        await signInWithTotp(totp.challenge, totp.recovery ? { recoveryCode: value.trim() } : { code: value });
+      } catch (e) {
+        const failures = totp.failures + 1;
+        const refusal = codeRefusal(e, totp, failures);
+        if (refusal === "ended") otherEmail();
+        else if (refusal === "locked") setStep({ ...totp, failures, recovery: true, codesLocked: true });
+        else setStep({ ...totp, failures });
+        throw e;
+      }
       await done();
     });
   const withLink = () =>
@@ -162,6 +180,7 @@ export function SignInPage({
     return (
       <TotpStep
         recovery={step.recovery}
+        codesLocked={step.codesLocked}
         expiresAt={step.expiresAt}
         code={code}
         onCodeChange={setCode}

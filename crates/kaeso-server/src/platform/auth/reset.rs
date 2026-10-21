@@ -4,7 +4,7 @@ use kaeso_core::id::UserId;
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
 use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
-use kaeso_store::pg::users;
+use kaeso_store::pg::{totp, users};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -177,6 +177,8 @@ pub struct PasswordChanged {
     path = "/auth/password-reset/verify",
     summary = "Sets a new password with a reset link and ends every session of the\n\
     user. The link works once.",
+    description = "It also unlocks the codes from the authenticator app that 10 wrong codes in a \
+    row locked (`auth/totp`).",
     tag = "auth",
     request_body = ResetVerifyRequest,
     responses((status = 200, description = "The password is changed; sign in with it.", body = PasswordChanged))
@@ -204,6 +206,7 @@ pub async fn verify(
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
     users::set_password(&mut *tx, user.id, &password_hash).await?;
     users::mark_verified(&mut *tx, user.id, ctx.now).await?;
+    totp::clear_failed_codes(&mut *tx, user.id).await?;
     for kind in [
         TokenKind::PasswordReset,
         TokenKind::MagicLink,

@@ -37,6 +37,8 @@ Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmel
 
 Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung, nachdem Sie einen aktuellen Code oder einen Wiederherstellungscode eingegeben haben. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
 
+Eine Anmeldung nimmt bis zu drei Codes an; nach drei falschen beginnen Sie erneut mit Passwort oder Anmeldelink. Nach 10 falschen Codes in Folge funktionieren Codes aus der App nicht mehr, und Kaeso schickt Ihnen eine E-Mail, nach je 10 weiteren erneut. Ein Wiederherstellungscode meldet Sie weiter an und entsperrt die App-Codes, ebenso ein Zurücksetzen des Passworts per E-Mail.
+
 ## Single Sign-on verknüpfen
 
 Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mit ihm verknüpft ist. Ein Konto, das die Single Sign-on der Organisation angelegt hat, ist von Anfang an verknüpft. **Single Sign-on** unter **Sicherheit** listet Ihre Organisationen mit Identitätsanbieter.

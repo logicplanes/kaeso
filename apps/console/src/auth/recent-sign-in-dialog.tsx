@@ -8,6 +8,7 @@ import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
 import { settleRecentSignIn, signInAgainKind } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
 import {
+  codeRefusal,
   confirmWaysQuery,
   confirmWithSso,
   emailPasswordLink,
@@ -17,12 +18,13 @@ import {
   signInWithTotp,
   type ConfirmSso,
   type ConfirmWays,
+  type TotpChallenge,
 } from "./sign-in-api";
 import { showSsoError } from "./sso-errors";
 
 type Step =
   | { kind: "choose" }
-  | { kind: "totp"; challenge: string; recovery: boolean }
+  | ({ kind: "totp"; recovery: boolean; failures: number } & TotpChallenge)
   | { kind: "link-sent"; message: string }
   | { kind: "sso-waiting"; provider: ConfirmSso };
 type Way = "password" | "sso" | "link" | "set-password" | "none";
@@ -94,12 +96,24 @@ export default function RecentSignInDialog() {
   const submitPassword = () =>
     attempt(async () => {
       const result = await signInWithPassword(email, password);
-      if (result.kind === "totp") setStep({ kind: "totp", challenge: result.challenge, recovery: false });
+      if (result.kind === "totp") setStep({ ...result, recovery: result.codesLocked, failures: 0 });
       else await finish();
     });
   const submitCode = (totp: Extract<Step, { kind: "totp" }>, value = code) =>
     attempt(async () => {
-      await signInWithTotp(totp.challenge, totp.recovery ? { recoveryCode: value.trim() } : { code: value });
+      try {
+        await signInWithTotp(totp.challenge, totp.recovery ? { recoveryCode: value.trim() } : { code: value });
+      } catch (e) {
+        const failures = totp.failures + 1;
+        const refusal = codeRefusal(e, totp, failures);
+        if (refusal !== "again") setCode("");
+        if (refusal === "ended") {
+          setPassword("");
+          setStep({ kind: "choose" });
+        } else if (refusal === "locked") setStep({ ...totp, failures, recovery: true, codesLocked: true });
+        else setStep({ ...totp, failures });
+        throw e;
+      }
       await finish();
     });
   const continueWithSso = (provider: ConfirmSso) => {
@@ -271,6 +285,9 @@ export default function RecentSignInDialog() {
               {t("auth.recent.useRecovery", "Use a recovery code")}
             </Button>
           </>
+        )}
+        {step.kind === "totp" && step.codesLocked && (
+          <Text tone="secondary">{t("auth.recent.codesLocked", "Too many wrong codes locked your authenticator app; enter a recovery code.")}</Text>
         )}
         {step.kind === "totp" && step.recovery && (
           <SensitiveInput

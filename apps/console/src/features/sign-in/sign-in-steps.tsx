@@ -165,6 +165,7 @@ export function MethodsStep({
 
 export function TotpStep({
   recovery,
+  codesLocked = false,
   expiresAt,
   code,
   onCodeChange,
@@ -173,6 +174,7 @@ export function TotpStep({
   onToggleRecovery,
 }: {
   recovery: boolean;
+  codesLocked?: boolean;
   expiresAt: string;
   code: string;
   onCodeChange: (code: string) => void;
@@ -184,9 +186,11 @@ export function TotpStep({
     <PublicPage
       title={t("signIn.twoStep", "Two-step verification")}
       description={
-        recovery
-          ? t("signIn.recoveryHint", "Enter one of your recovery codes; each works once.")
-          : t("signIn.codeHint", "Enter the 6-digit code from your authenticator app.")
+        codesLocked
+          ? t("signIn.codesLockedHint", "Too many wrong codes locked your authenticator app; enter a recovery code.")
+          : recovery
+            ? t("signIn.recoveryHint", "Enter one of your recovery codes; each works once.")
+            : t("signIn.codeHint", "Enter the 6-digit code from your authenticator app.")
       }
     >
       <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), onVerify())}>
@@ -213,14 +217,16 @@ export function TotpStep({
           {t("signIn.verify", "Verify")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
-          {tRich("signIn.challengeExpires", "The challenge expires {when}. {link}", {
-            when: formatRelative(expiresAt),
-            link: (
-              <Link href="#" onClick={(e) => (e.preventDefault(), onToggleRecovery())}>
-                {recovery ? t("signIn.useApp", "Use the authenticator app") : t("signIn.useRecovery", "Use a recovery code")}
-              </Link>
-            ),
-          })}
+          {codesLocked
+            ? t("signIn.challengeExpiresAlone", "The challenge expires {when}.", { when: formatRelative(expiresAt) })
+            : tRich("signIn.challengeExpires", "The challenge expires {when}. {link}", {
+                when: formatRelative(expiresAt),
+                link: (
+                  <Link href="#" onClick={(e) => (e.preventDefault(), onToggleRecovery())}>
+                    {recovery ? t("signIn.useApp", "Use the authenticator app") : t("signIn.useRecovery", "Use a recovery code")}
+                  </Link>
+                ),
+              })}
         </Text>
       </form>
     </PublicPage>

@@ -1,12 +1,27 @@
 import { api, data } from "~/api/client";
-import type { ConfirmSsoView, ConfirmWays as ConfirmWaysView, SignInMethodsView, SsoProviderView } from "~/api/generated/types";
+import { isApiError } from "~/api/errors";
+import type { ConfirmSsoView, ConfirmWays as ConfirmWaysView, SignInMethodsView, SsoProviderView, TotpRequired } from "~/api/generated/types";
 
-export type PasswordResult = { kind: "signed_in" } | { kind: "totp"; challenge: string; expiresAt: string };
+export type TotpChallenge = { challenge: string; expiresAt: string; attempts: number; codesLocked: boolean };
+export type PasswordResult = { kind: "signed_in" } | ({ kind: "totp" } & TotpChallenge);
+
+export function totpChallenge(required: TotpRequired): TotpChallenge {
+  return { challenge: required.challenge, expiresAt: required.expires_at, attempts: required.attempts, codesLocked: required.codes_locked };
+}
 
 export async function signInWithPassword(email: string, password: string): Promise<PasswordResult> {
   const { data, response } = await api.POST("/platform/v1/auth/password", { body: { email, password } });
-  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", challenge: data.challenge, expiresAt: data.expires_at };
+  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", ...totpChallenge(data) };
   return { kind: "signed_in" };
+}
+
+export type CodeRefusal = "locked" | "ended" | "again";
+
+export function codeRefusal(error: unknown, challenge: TotpChallenge, failures: number): CodeRefusal {
+  if (!isApiError(error)) return "again";
+  if (error.status === 403) return "locked";
+  if (error.status === 401 && (failures >= challenge.attempts || Date.parse(challenge.expiresAt) <= Date.now())) return "ended";
+  return "again";
 }
 
 export async function signInWithTotp(challenge: string, answer: { code: string } | { recoveryCode: string }): Promise<void> {

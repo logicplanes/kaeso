@@ -42,6 +42,8 @@
   "errors.clientSecretRequired": "Für eine neue Verbindung ist `client_secret` erforderlich.",
   "errors.codeInvalidClock": "Dieser Code ist ungültig; die Uhr des Geräts prüfen und den nächsten versuchen.",
   "errors.codeInvalidOrUsed": "Dieser Code ist ungültig oder wurde schon verwendet.",
+  "errors.challengeCodesUsedUp": "Zu viele falsche Codes für diese Anmeldung; die Anmeldung neu beginnen.",
+  "errors.codesLocked": "Zu viele falsche Codes in Folge; mit einem Wiederherstellungscode anmelden oder das Passwort zurücksetzen.",
   "errors.enterSecondFactor": "Einen Code aus der Authenticator-App oder einen Wiederherstellungscode eingeben.",
   "errors.emailCancelLinkInvalid": "Dieser Link ist ungültig, verwendet oder abgelaufen; die Änderung ist vielleicht schon erledigt.",
   "errors.codeOrRecoveryCode": "Entweder `code` oder `recovery_code` senden.",

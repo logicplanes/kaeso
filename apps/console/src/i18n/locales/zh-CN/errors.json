@@ -42,6 +42,8 @@
   "errors.clientSecretRequired": "新连接需要 `client_secret`。",
   "errors.codeInvalidClock": "验证码无效，请检查设备时间后尝试下一个。",
   "errors.codeInvalidOrUsed": "验证码无效或已被使用。",
+  "errors.challengeCodesUsedUp": "本次登录输错验证码的次数过多；请重新开始登录。",
+  "errors.codesLocked": "连续输错验证码的次数过多；请使用恢复码登录或重置密码。",
   "errors.enterSecondFactor": "请输入身份验证器应用中的代码或恢复码。",
   "errors.emailCancelLinkInvalid": "此链接无效、已使用或已过期；更改可能已经完成。",
   "errors.codeOrRecoveryCode": "请发送 `code` 或 `recovery_code` 之一。",

@@ -867,7 +867,7 @@
           "auth"
         ],
         "summary": "Sets a new password with a reset link and ends every session of the\nuser. The link works once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "It also unlocks the codes from the authenticator app that 10 wrong codes in a row locked (`auth/totp`).\n\n**Access:** public; no authentication.",
         "operationId": "postAuthPasswordResetVerify",
         "requestBody": {
           "content": {
@@ -1314,7 +1314,7 @@
           "auth"
         ],
         "summary": "Completes a password or sign-in link sign-in with a TOTP or recovery\ncode. A code of the same 30-second step is accepted only once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes from the authenticator app are refused with `permission_denied` and the account's owner gets an email: only a recovery code signs in, until one does or the password is reset by email.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthTotp",
         "requestBody": {
           "content": {
@@ -24238,12 +24238,24 @@
         "required": [
           "status",
           "challenge",
-          "expires_at"
+          "expires_at",
+          "attempts",
+          "codes_locked"
         ],
         "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many codes the challenge takes; it ends after that many wrong ones,\nand the next try needs the password or sign-in link again.",
+            "example": 3
+          },
           "challenge": {
             "type": "string",
             "description": "Pass to `auth/totp` with a code. Valid for 5 minutes."
+          },
+          "codes_locked": {
+            "type": "boolean",
+            "description": "Whether codes from the authenticator app are locked after 10 wrong ones\nin a row: only a recovery code signs in, until one does or the password\nis reset by email."
           },
           "expires_at": {
             "type": "string",

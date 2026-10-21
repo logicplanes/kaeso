@@ -194,9 +194,9 @@ describe("a signed-in visit", () => {
 });
 
 describe("two-step verification", () => {
-  async function atCode() {
+  async function atCode(challenge = totpRequired()) {
     const view = await atMethods("/sign-in");
-    on("POST", "auth/password", json(totpRequired(), { status: 202 }));
+    on("POST", "auth/password", json(challenge, { status: 202 }));
     await view.user.type(screen.getByLabelText("Password"), "correct horse battery");
     await view.user.click(screen.getByRole("button", { name: "Sign in" }));
     await screen.findByText("Two-step verification");
@@ -246,6 +246,45 @@ describe("two-step verification", () => {
     await user.click(screen.getByRole("link", { name: "Use a recovery code" }));
     await user.click(screen.getByRole("link", { name: "Use the authenticator app" }));
     expect(screen.getByLabelText("Code from your authenticator app")).toBeInTheDocument();
+  });
+
+  it("starts the sign-in again once the challenge has taken its last code", async () => {
+    const { user } = await atCode();
+    const field = screen.getByLabelText("Code from your authenticator app");
+    on("POST", "auth/totp", apiError(401, "authentication", "That code isn't valid or was already used."));
+    await user.type(field, "000000");
+    await waitFor(() => expect(field).toHaveValue(""));
+    await user.type(field, "111111");
+    await waitFor(() => expect(requests("POST", "auth/totp")).toHaveLength(2));
+    await waitFor(() => expect(field).toHaveValue(""));
+    on("POST", "auth/totp", apiError(401, "authentication", "Too many wrong codes for this sign-in; start signing in again."));
+    await user.type(field, "222222");
+    expect(await (await notifications()).findByText("Too many wrong codes for this sign-in; start signing in again.")).toBeInTheDocument();
+    expect(await screen.findByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
+    expect(screen.queryByText("Two-step verification")).not.toBeInTheDocument();
+  });
+
+  it("asks for a recovery code when wrong codes locked the authenticator app", async () => {
+    const { user } = await atCode();
+    on("POST", "auth/totp", apiError(403, "permission_denied", "Too many wrong codes in a row; sign in with a recovery code or reset your password."));
+    await user.type(screen.getByLabelText("Code from your authenticator app"), "000000");
+    expect(await (await notifications()).findByText("Too many wrong codes in a row; sign in with a recovery code or reset your password.")).toBeInTheDocument();
+    expect(await screen.findByText("Too many wrong codes locked your authenticator app; enter a recovery code.")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Recovery code" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Use the authenticator app" })).not.toBeInTheDocument();
+    expect(screen.getByText("The challenge expires in 5 min.")).toBeInTheDocument();
+  });
+
+  it("opens on the recovery code while the authenticator app is locked", async () => {
+    const { user } = await atCode(totpRequired({ codes_locked: true }));
+    expect(screen.getByText("Too many wrong codes locked your authenticator app; enter a recovery code.")).toBeInTheDocument();
+    on("POST", "auth/totp", () => {
+      signedIn();
+      return signedInReply();
+    });
+    await user.type(screen.getByRole("textbox", { name: "Recovery code" }), "abcd-efgh");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    await waitFor(() => expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", recovery_code: "abcd-efgh" }]));
   });
 });
 

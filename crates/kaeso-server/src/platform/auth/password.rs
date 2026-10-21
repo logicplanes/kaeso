@@ -23,6 +23,8 @@ use crate::platform::json::Body;
 use crate::state::AppState;
 
 const CHALLENGE_LIFETIME: Duration = Duration::minutes(5);
+pub const CODES_PER_CHALLENGE: i32 = 3;
+pub const CODES_BEFORE_LOCK: i32 = 10;
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "Email and password.")]
@@ -46,6 +48,14 @@ pub struct TotpRequired {
     #[doc = "When the challenge expires."]
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+    #[doc = "How many codes the challenge takes; it ends after that many wrong ones,\n\
+        and the next try needs the password or sign-in link again."]
+    #[schema(example = 3)]
+    pub attempts: i32,
+    #[doc = "Whether codes from the authenticator app are locked after 10 wrong ones\n\
+        in a row: only a recovery code signs in, until one does or the password\n\
+        is reset by email."]
+    pub codes_locked: bool,
 }
 
 fn wrong() -> ApiError {
@@ -119,6 +129,8 @@ pub(crate) async fn challenge(
         status: "totp_required",
         challenge,
         expires_at,
+        attempts: CODES_PER_CHALLENGE,
+        codes_locked: totp::failed_codes(&state.pg, user.id).await? >= CODES_BEFORE_LOCK,
     };
     Ok((axum::http::StatusCode::ACCEPTED, Json(body)).into_response())
 }
@@ -194,6 +206,10 @@ pub struct TotpRequest {
     path = "/auth/totp",
     summary = "Completes a password or sign-in link sign-in with a TOTP or recovery\n\
     code. A code of the same 30-second step is accepted only once.",
+    description = "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs \
+    the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes \
+    from the authenticator app are refused with `permission_denied` and the account's owner gets \
+    an email: only a recovery code signs in, until one does or the password is reset by email.",
     tag = "auth",
     request_body = TotpRequest,
     responses((status = 200, description = "Signed in; the session cookie is set.", body = SignedIn))
@@ -204,20 +220,6 @@ pub async fn totp(
     Body(req): Body<TotpRequest>,
 ) -> ApiResult<Response> {
     throttle_ip(&state, &ctx, SIGN_IN_PER_IP).await?;
-    let hash = secret::hash(req.challenge.expose_secret());
-    let challenge = tokens::peek(&state.pg, TokenKind::TotpChallenge, &hash, ctx.now)
-        .await?
-        .ok_or_else(|| {
-            ApiError::Authentication(
-                "The sign-in has expired; enter your email and password again.".into(),
-            )
-        })?;
-    let user_id = challenge
-        .user_id
-        .map(UserId::from_uuid)
-        .ok_or_else(|| ApiError::internal("challenge without user"))?;
-    let attempts = Attempts::new(&ctx, &user_id.to_string());
-    attempts.begin(&state).await?;
     let factor = match (&req.code, &req.recovery_code) {
         (Some(code), None) => Factor::Code(code),
         (None, Some(code)) => Factor::Recovery(code),
@@ -227,13 +229,41 @@ pub async fn totp(
             ));
         }
     };
+    let hash = secret::hash(req.challenge.expose_secret());
+    let (challenge, attempt) = tokens::attempt(
+        &state.pg,
+        TokenKind::TotpChallenge,
+        &hash,
+        ctx.now,
+        CODES_PER_CHALLENGE,
+    )
+    .await?
+    .ok_or_else(challenge_expired)?;
+    let user_id = challenge
+        .user_id
+        .map(UserId::from_uuid)
+        .ok_or_else(|| ApiError::internal("challenge without user"))?;
+    let attempts = Attempts::new(&ctx, &user_id.to_string());
+    attempts.begin(&state).await?;
+    let app_code = matches!(factor, Factor::Code(_));
+    if app_code && totp::failed_codes(&state.pg, user_id.uuid()).await? >= CODES_BEFORE_LOCK {
+        failed_code(&state, &ctx, user_id).await?;
+        return Err(codes_locked());
+    }
     match crate::auth::totp::check(&state, user_id, factor).await {
         Ok(()) => {}
         Err(SecondFactorError::Invalid) => {
             metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "totp", "reason" => "wrong").increment(1);
-            return Err(ApiError::Authentication(
-                "That code isn't valid or was already used.".into(),
-            ));
+            let failed = failed_code(&state, &ctx, user_id).await?;
+            return Err(if app_code && failed >= CODES_BEFORE_LOCK {
+                codes_locked()
+            } else if attempt >= CODES_PER_CHALLENGE {
+                ApiError::Authentication(
+                    "Too many wrong codes for this sign-in; start signing in again.".into(),
+                )
+            } else {
+                ApiError::Authentication("That code isn't valid or was already used.".into())
+            });
         }
         Err(e) => return Err(ApiError::internal(e)),
     }
@@ -241,10 +271,9 @@ pub async fn totp(
         .await?
         .is_none()
     {
-        return Err(ApiError::Authentication(
-            "The sign-in has expired; enter your email and password again.".into(),
-        ));
+        return Err(challenge_expired());
     }
+    totp::clear_failed_codes(&state.pg, user_id.uuid()).await?;
     attempts.succeeded(&state).await;
     let user = users::get(&state.pg, user_id.uuid())
         .await?
@@ -255,4 +284,41 @@ pub async fn totp(
         _ => Method::Password,
     };
     sign_in(&state, &ctx, &user, method, true, None).await
+}
+
+fn challenge_expired() -> ApiError {
+    ApiError::Authentication("The sign-in has expired; enter your email and password again.".into())
+}
+
+fn codes_locked() -> ApiError {
+    ApiError::PermissionDenied(
+        "Too many wrong codes in a row; sign in with a recovery code or reset your password."
+            .into(),
+    )
+}
+
+async fn failed_code(state: &AppState, ctx: &Ctx, user: UserId) -> ApiResult<i32> {
+    let failed = totp::count_failed_code(&state.pg, user.uuid()).await?;
+    if failed >= CODES_BEFORE_LOCK && failed % CODES_BEFORE_LOCK == 0 {
+        tracing::warn!(user = %user, failed, "authenticator codes locked after wrong codes");
+        if let Some(email) = users::get(&state.pg, user.uuid())
+            .await?
+            .and_then(|u| u.email)
+        {
+            let lang = crate::services::mail_lang::of_user(
+                &state.pg,
+                user.uuid(),
+                ctx.accept_language.as_deref(),
+            )
+            .await;
+            let reset = format!("{}auth/password-reset", state.config.public_url);
+            state.mailer.send(kaeso_mail::templates::two_factor_locked(
+                lang,
+                &email,
+                u32::try_from(failed).unwrap_or(u32::MAX),
+                &reset,
+            ));
+        }
+    }
+    Ok(failed)
 }

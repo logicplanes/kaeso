@@ -89,6 +89,8 @@ const messages = (): Rule[] => [
   rule("errors.signInExpired", () => t("errors.signInExpired", "The sign-in has expired; enter your email and password again.")),
   rule("errors.codeOrRecoveryCode", () => t("errors.codeOrRecoveryCode", "Send either `code` or `recovery_code`.")),
   rule("errors.codeInvalidOrUsed", () => t("errors.codeInvalidOrUsed", "That code isn't valid or was already used.")),
+  rule("errors.challengeCodesUsedUp", () => t("errors.challengeCodesUsedUp", "Too many wrong codes for this sign-in; start signing in again.")),
+  rule("errors.codesLocked", () => t("errors.codesLocked", "Too many wrong codes in a row; sign in with a recovery code or reset your password.")),
   rule("errors.enterSecondFactor", () => t("errors.enterSecondFactor", "Enter a code from your authenticator app or a recovery code.")),
   rule("errors.emailCancelLinkInvalid", () => t("errors.emailCancelLinkInvalid", "This link is invalid, used or expired; the change may already be done.")),
   rule("errors.signInLinkInvalid", () => t("errors.signInLinkInvalid", "This sign-in link is invalid, used or expired; request a new one.")),

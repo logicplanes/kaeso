@@ -49,6 +49,7 @@ Password sign-in still works, and `kaeso setup-link` prints the setup link eithe
 | Two-factor on | Someone turns on two-factor authentication |
 | Two-factor off | Someone turns off two-factor authentication |
 | Two-factor reset | An instance admin, or `kaeso user reset-2fa`, resets it |
+| Two-factor locked | Someone enters 10 wrong two-factor codes in a row, and again after every 10 more |
 | Email changed | An email address changes |
 | Signed out | Every session of a person ends |
 | Account deactivated | An instance admin deactivates an account |

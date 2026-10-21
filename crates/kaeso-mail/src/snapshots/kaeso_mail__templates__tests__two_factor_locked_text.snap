@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Two-factor codes are locked on your Kaeso account
+
+Authenticator codes are locked
+
+Someone entered your password and then 10 wrong codes in a row.
+
+Reset password:
+https://kaeso.example.com/auth/password-reset
+
+A recovery code still signs you in and unlocks them; if this wasn't you, reset your password.
+
+-- 
+Sent by Kaeso at kaeso.example.com; security notices are always sent.

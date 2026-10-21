@@ -49,6 +49,7 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 | Zwei-Faktor an | Jemand die Zwei-Faktor-Authentifizierung einschaltet |
 | Zwei-Faktor aus | Jemand die Zwei-Faktor-Authentifizierung abschaltet |
 | Zwei-Faktor zurückgesetzt | Ein Instanz-Admin oder `kaeso user reset-2fa` sie zurücksetzt |
+| Zwei-Faktor gesperrt | Jemand 10 falsche Zwei-Faktor-Codes in Folge eingibt, und erneut nach je 10 weiteren |
 | Adresse geändert | Eine E-Mail-Adresse sich ändert |
 | Abgemeldet | Jede Sitzung einer Person endet |
 | Konto deaktiviert | Ein Instanz-Admin ein Konto deaktiviert |
