@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
@@ -80,6 +80,20 @@ describe("logColumns", () => {
     );
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
     expect(parts).toEqual(["Invalid request"]);
+  });
+
+  it("leaves the provider cell empty when a request was refused before a provider was chosen", () => {
+    const all = logColumns({ spansDays: true, layout: "narrow", keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[logRow({ status: 400, model: "", provider: "", error_kind: "invalid_request" })]}
+        columns={[all.provider]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    expect(screen.getByRole("cell").textContent).toBe("");
+    expect(within(screen.getByRole("cell")).queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("gives a successful Playground request's tag room sooner than a failed one's", () => {

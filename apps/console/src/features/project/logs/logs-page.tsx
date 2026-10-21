@@ -424,8 +424,9 @@ function useWidth(ref: RefObject<HTMLElement | null>): number {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setWidth(Math.round(el.getBoundingClientRect().width));
-    const seen = new ResizeObserver(([entry]) => entry && setWidth(Math.round(entry.contentRect.width)));
+    const measure = () => setWidth(Math.round(el.getBoundingClientRect().width));
+    measure();
+    const seen = new ResizeObserver(measure);
     seen.observe(el);
     return () => seen.disconnect();
   }, [ref]);
