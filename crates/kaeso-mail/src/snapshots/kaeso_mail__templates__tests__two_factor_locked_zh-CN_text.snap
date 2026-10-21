@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 您的 Kaeso 账户的双重验证码已锁定
+
+验证器验证码已锁定
+
+有人输入了您的密码，随后连续输错了 10 次验证码。
+
+重置密码：
+https://kaeso.example.com/auth/password-reset
+
+恢复码仍可登录并解除锁定；如果这不是您本人的操作，请重置密码。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送；安全通知始终会发送。

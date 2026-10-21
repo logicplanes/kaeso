@@ -107,6 +107,38 @@ pub async fn consume(
     Ok(row)
 }
 
+pub async fn attempt(
+    db: impl PgExecutor<'_>,
+    kind: TokenKind,
+    hash: &[u8],
+    now: OffsetDateTime,
+    limit: i32,
+) -> Result<Option<(Token, i32)>, StoreError> {
+    let row = sqlx::query!(
+        "UPDATE sign_in_tokens SET attempts = attempts + 1 \
+         WHERE kind = $2 AND token_hash = $3 AND used_at IS NULL AND expires_at > $1 AND attempts < $4 \
+         RETURNING id, user_id, email, data, expires_at, attempts",
+        now,
+        kind.as_str(),
+        hash,
+        limit,
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row.map(|r| {
+        (
+            Token {
+                id: r.id,
+                user_id: r.user_id,
+                email: r.email,
+                data: r.data,
+                expires_at: r.expires_at,
+            },
+            r.attempts,
+        )
+    }))
+}
+
 pub async fn peek(
     db: impl PgExecutor<'_>,
     kind: TokenKind,

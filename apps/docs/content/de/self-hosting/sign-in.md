@@ -15,21 +15,25 @@ In zwei Fällen zeigt die Seite sofort den Button eines Anbieters:
 - Passwörter und Anmeldelinks sind abgeschaltet, und genau eine Organisation hat einen Identitätsanbieter.
 - Jemand öffnet den Anmeldelink der Organisation, etwa `https://kaeso.example.com/sign-in?org=org_…`, den ihre Seite **Sicherheit** zeigt. Solange andere Methoden eingeschaltet sind, bietet die Seite außerdem **Stattdessen mit E-Mail anmelden** an.
 
-Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt.
+Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt, und wenn der Browser schon angemeldet ist.
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
-Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, oder sagt sie nicht, wann sie war (`auth_time`), wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+
+Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Sitzung anmelden. Eine Sitzung aus Single Sign-on zählt deshalb ab dem `auth_time` des Anbieters, nicht ab der Rückkehr zu Kaeso, und gilt nur als kürzliche Anmeldung, solange dieser Zeitpunkt höchstens 15 Minuten zurückliegt. Kaeso misst ihn am Ausstellungszeitpunkt `iat` des Tokens, auf der Uhr des Anbieters; die Uhren beider Server müssen also nicht übereinstimmen. Ohne `auth_time` gilt die Sitzung von Anfang an als älter als 15 Minuten.
 
 ## Links, die direkt zum Anbieter führen
 
-Ein Link auf `/platform/v1/auth/oidc/start` schickt den Browser direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
+Ein Link auf `/platform/v1/auth/oidc/start` schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
 
 ```text
 https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
 ```
 
-`org` nennt die Organisation; Sie können es weglassen, solange nur eine Organisation Single Sign-on nutzt. `next` ist die Konsolenseite, die sich danach öffnet. Der Link meldet nur den Browser an, der ihn öffnet, und zwar als die Person, die sich beim Anbieter anmeldet. Ein auf einer anderen Website platzierter Link kann also niemanden im Konto einer anderen Person anmelden.
+`org` nennt die Organisation; Sie können es weglassen, solange nur eine Organisation Single Sign-on nutzt. `next` ist die Konsolenseite, die sich danach öffnet. Der Link öffnet die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht.
+
+Ist der Browser schon bei Kaeso angemeldet, fragt die Seite zuerst: Sie nennt das angemeldete Konto und wartet auf einen Klick. Single Sign-on ersetzt nie die Sitzung eines anderen Kontos. Kommt vom Anbieter ein anderes Konto zurück, bleibt der Browser angemeldet, und die Seite meldet `signed_in_as_other`; zum Wechseln melden Sie sich zuerst ab. Ein auf einer anderen Website platzierter Link kann einen angemeldeten Browser also weder abmelden noch im Konto einer anderen Person anmelden.
 
 ## Wer sich über Single Sign-on anmeldet
 

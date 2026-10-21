@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Zwei-Faktor-Codes Ihres Kaeso-Kontos sind gesperrt
+
+Authenticator-Codes sind gesperrt
+
+Jemand hat Ihr Passwort und danach 10 falsche Codes in Folge eingegeben.
+
+Passwort zurücksetzen:
+https://kaeso.example.com/auth/password-reset
+
+Ein Wiederherstellungscode meldet Sie an und entsperrt sie; waren Sie das nicht, setzen Sie Ihr Passwort zurück.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com; Sicherheitshinweise werden immer gesendet.

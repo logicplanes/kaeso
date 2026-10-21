@@ -12,7 +12,11 @@ vi.mock("./sign-in-steps", () => {
 describe("signing in when the provider's step can't be fetched", () => {
   it("asks for the address instead", async () => {
     signedOut();
-    on("GET", "auth/methods", methods({ password: false, magic_link: false, sso: true, provider: { org: ORG, name: "Northwind ID", auto_redirect: true } }));
+    on(
+      "GET",
+      "auth/methods",
+      methods({ password: false, magic_link: false, sso: true, provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true } }),
+    );
     await renderApp("/sign-in");
     expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();

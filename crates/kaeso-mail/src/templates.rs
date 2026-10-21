@@ -15,6 +15,7 @@ pub enum EmailKind {
     TwoFactorEnabled,
     TwoFactorDisabled,
     TwoFactorReset,
+    TwoFactorLocked,
     EmailChanged,
     EmailChangeRequested,
     SessionsEnded,
@@ -39,6 +40,7 @@ impl EmailKind {
             EmailKind::TwoFactorEnabled => "two_factor_enabled",
             EmailKind::TwoFactorDisabled => "two_factor_disabled",
             EmailKind::TwoFactorReset => "two_factor_reset",
+            EmailKind::TwoFactorLocked => "two_factor_locked",
             EmailKind::EmailChanged => "email_changed",
             EmailKind::EmailChangeRequested => "email_change_requested",
             EmailKind::SessionsEnded => "sessions_ended",
@@ -627,6 +629,42 @@ pub fn two_factor_reset<'a>(lang: Locale, to: &str, by: impl Into<Actor<'a>>) ->
     )
 }
 
+pub fn two_factor_locked(lang: Locale, to: &str, wrong_codes: u32, url: &str) -> Email {
+    let n = lang.number(&wrong_codes.to_string());
+    let (subject, heading, sentence, action, note) = match lang {
+        Locale::En => (
+            "Two-factor codes are locked on your Kaeso account",
+            "Authenticator codes are locked",
+            format!("Someone entered your password and then {n} wrong codes in a row."),
+            "Reset password",
+            "A recovery code still signs you in and unlocks them; if this wasn't you, reset your password.",
+        ),
+        Locale::De => (
+            "Zwei-Faktor-Codes Ihres Kaeso-Kontos sind gesperrt",
+            "Authenticator-Codes sind gesperrt",
+            format!("Jemand hat Ihr Passwort und danach {n} falsche Codes in Folge eingegeben."),
+            "Passwort zurücksetzen",
+            "Ein Wiederherstellungscode meldet Sie an und entsperrt sie; waren Sie das nicht, setzen Sie Ihr Passwort zurück.",
+        ),
+        Locale::ZhCn => (
+            "您的 Kaeso 账户的双重验证码已锁定",
+            "验证器验证码已锁定",
+            zh(&["有人输入了您的密码，随后连续输错了", &n, "次验证码。"]),
+            "重置密码",
+            "恢复码仍可登录并解除锁定；如果这不是您本人的操作，请重置密码。",
+        ),
+    };
+    Email::new(
+        to,
+        EmailKind::TwoFactorLocked,
+        subject.to_owned(),
+        Content::new(lang, heading, Reason::Security)
+            .sentence(sentence)
+            .action(action, url)
+            .note(note),
+    )
+}
+
 pub fn email_changed(lang: Locale, to: &str, new_address: &str) -> Email {
     let (subject, heading, sentence) = match lang {
         Locale::En => (
@@ -993,6 +1031,7 @@ mod tests {
     const TO: &str = "owner@example.com";
     const URL: &str =
         "https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK";
+    const RESET_URL: &str = "https://kaeso.example.com/auth/password-reset";
 
     fn instance() -> Instance {
         Instance::new("https://kaeso.example.com/")
@@ -1023,6 +1062,7 @@ mod tests {
             two_factor_enabled(l, TO),
             two_factor_disabled(l, TO),
             two_factor_reset(l, TO, Actor::Administrator),
+            two_factor_locked(l, TO, 10, RESET_URL),
             email_changed(l, TO, "new@example.com"),
             email_change_requested(l, TO, "new@example.com", URL),
             sessions_ended(l, TO, Actor::Administrator),
@@ -1097,6 +1137,7 @@ mod tests {
             EmailKind::TwoFactorEnabled,
             EmailKind::TwoFactorDisabled,
             EmailKind::TwoFactorReset,
+            EmailKind::TwoFactorLocked,
             EmailKind::EmailChanged,
             EmailKind::EmailChangeRequested,
             EmailKind::SessionsEnded,
@@ -1282,7 +1323,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 19] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 20] = [
             (
                 EmailKind::Invitation,
                 [
@@ -1356,6 +1397,14 @@ mod tests {
                     "Zwei-Faktor-Authentifizierung zurückgesetzt",
                 ],
                 ["您的双重验证已被重置", "双重验证已重置"],
+            ),
+            (
+                EmailKind::TwoFactorLocked,
+                [
+                    "Zwei-Faktor-Codes Ihres Kaeso-Kontos sind gesperrt",
+                    "Authenticator-Codes sind gesperrt",
+                ],
+                ["您的 Kaeso 账户的双重验证码已锁定", "验证器验证码已锁定"],
             ),
             (
                 EmailKind::EmailChanged,

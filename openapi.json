@@ -483,7 +483,7 @@
           "auth"
         ],
         "summary": "The identity provider returns here. On success the session cookie is\nset and the browser goes to the console; on failure to the sign-in page\nwith an error code in `#sso_error=`.",
-        "description": "The codes: `sso_off`, `no_sso`, `name_org`, `invalid_link`, `expired`, `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, `linked_elsewhere`, `org_scheduled`, `throttled` and `failed`. Show your own message for each; new codes may appear, so show a general one for a code you don't know.\n\n**Access:** public; no authentication.",
+        "description": "The codes: `sso_off`, `no_sso`, `name_org`, `invalid_link`, `expired`, `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, `linked_elsewhere`, `signed_in_as_other`, `org_scheduled`, `throttled` and `failed`. `signed_in_as_other` means the browser is signed in to another account, which stays signed in; an answer for the same account replaces its session. Show your own message for each; new codes may appear, so show a general one for a code you don't know.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthOidcCallback",
         "parameters": [
           {
@@ -560,8 +560,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "A link that starts SSO: sends the browser straight to the identity\nprovider, with the flow bound to this browser as `POST auth/oidc/start`\nbinds it. On failure, to the sign-in page with an error code in `#sso_error=`.",
-        "description": "For links from an intranet page or a bookmark. It only begins a sign-in in the browser that follows it, and whoever signs in at the provider is who is signed in afterwards, so it needs no `Origin` header.\n\n**Access:** public; no authentication.",
+        "summary": "A link to an org's SSO: sends the browser to the console's sign-in page for\nthe org (`/sign-in?org=…&next=…&start=sso`), which names the org and its\nidentity provider. On failure, to the sign-in page with an error code in\n`#sso_error=`.",
+        "description": "For links from an intranet page or a bookmark. It begins no sign-in itself: the page starts one with `POST auth/oidc/start`, at once in a browser without a session, and only when the person chooses to in a browser that is signed in already. The callback never replaces another account's session, so a link planted on another site can neither sign that browser in to someone else's account nor end its session.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthOidcStart",
         "parameters": [
           {
@@ -585,7 +585,7 @@
         ],
         "responses": {
           "303": {
-            "description": "Redirect to the identity provider, or to the sign-in page with `#sso_error=`."
+            "description": "Redirect to the sign-in page, with `#sso_error=` on failure."
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"
@@ -867,7 +867,7 @@
           "auth"
         ],
         "summary": "Sets a new password with a reset link and ends every session of the\nuser. The link works once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "It also unlocks the codes from the authenticator app that 10 wrong codes in a row locked (`auth/totp`).\n\n**Access:** public; no authentication.",
         "operationId": "postAuthPasswordResetVerify",
         "requestBody": {
           "content": {
@@ -1314,7 +1314,7 @@
           "auth"
         ],
         "summary": "Completes a password or sign-in link sign-in with a TOTP or recovery\ncode. A code of the same 30-second step is accepted only once.",
-        "description": "**Access:** public; no authentication.",
+        "description": "A challenge takes 3 codes; after 3 wrong ones it ends, and the next try needs the password or sign-in link again. After 10 wrong codes in a row, across challenges, codes from the authenticator app are refused with `permission_denied` and the account's owner gets an email: only a recovery code signs in, until one does or the password is reset by email.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthTotp",
         "requestBody": {
           "content": {
@@ -4173,8 +4173,8 @@
         "tags": [
           "me"
         ],
-        "summary": "Every key of the signed-in user, in every project.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "summary": "The signed-in user's keys, in every project of the orgs this session may\nopen.",
+        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from an org's SSO.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "getMeKeys",
         "parameters": [
           {
@@ -23254,7 +23254,7 @@
           "signed_in_at": {
             "type": "string",
             "format": "date-time",
-            "description": "When the user last signed in on this session."
+            "description": "When the user last signed in on this session. Through SSO, when the\nidentity provider last checked them (its `auth_time`); without one,\nmore than 15 minutes before the session began."
           },
           "sso_org": {
             "oneOf": [
@@ -23771,12 +23771,13 @@
         "description": "An identity provider a sign-in page offers.",
         "required": [
           "org",
+          "org_name",
           "auto_redirect"
         ],
         "properties": {
           "auto_redirect": {
             "type": "boolean",
-            "description": "The page starts the sign-in at the provider without a click, unless the\nperson just signed out or the last attempt failed."
+            "description": "The page starts the sign-in at the provider without a click, unless the\nbrowser is signed in already, the person just signed out or the last\nattempt failed."
           },
           "name": {
             "type": [
@@ -23789,6 +23790,11 @@
           "org": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org it signs in to; pass it as `org` to `auth/oidc/start`."
+          },
+          "org_name": {
+            "type": "string",
+            "description": "The org's name, so the page says where the provider signs in.",
+            "example": "Acme"
           }
         }
       },
@@ -23923,7 +23929,7 @@
           },
           "sign_in_url": {
             "type": "string",
-            "description": "The org's sign-in link: the sign-in page with this provider's button,\nwithout asking for an address. `GET auth/oidc/start?org=…` goes\nstraight to the provider instead."
+            "description": "The org's sign-in link: the sign-in page with this provider's button,\nwithout asking for an address. `GET auth/oidc/start?org=…` opens it and\ngoes on to the provider at once while nobody is signed in."
           }
         }
       },
@@ -24238,12 +24244,24 @@
         "required": [
           "status",
           "challenge",
-          "expires_at"
+          "expires_at",
+          "attempts",
+          "codes_locked"
         ],
         "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many codes the challenge takes; it ends after that many wrong ones,\nand the next try needs the password or sign-in link again.",
+            "example": 3
+          },
           "challenge": {
             "type": "string",
             "description": "Pass to `auth/totp` with a code. Valid for 5 minutes."
+          },
+          "codes_locked": {
+            "type": "boolean",
+            "description": "Whether codes from the authenticator app are locked after 10 wrong ones\nin a row: only a recovery code signs in, until one does or the password\nis reset by email."
           },
           "expires_at": {
             "type": "string",

@@ -237,6 +237,7 @@ pub async fn list(
 pub async fn list_of_user(
     db: impl PgExecutor<'_>,
     user_id: Uuid,
+    orgs: &[Uuid],
     include_archived: bool,
     after: Option<Uuid>,
     limit: i64,
@@ -245,12 +246,13 @@ pub async fn list_of_user(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
          platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at \
-         FROM api_keys WHERE user_id = $1 AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) \
-         ORDER BY id LIMIT $4",
+         FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($2 OR archived_at IS NULL) \
+         AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
         user_id,
         include_archived,
         after,
-        limit
+        limit,
+        orgs
     )
     .fetch_all(db)
     .await?)

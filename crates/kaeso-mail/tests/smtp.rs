@@ -32,6 +32,12 @@ fn every_email(to: &str) -> Vec<Email> {
                 templates::two_factor_enabled(l, to),
                 templates::two_factor_disabled(l, to),
                 templates::two_factor_reset(l, to, Actor::Administrator),
+                templates::two_factor_locked(
+                    l,
+                    to,
+                    10,
+                    "https://kaeso.example.com/auth/password-reset",
+                ),
                 templates::email_changed(l, to, "new@example.com"),
                 templates::sessions_ended(l, to, Actor::Administrator),
                 templates::account_deactivated(l, to),

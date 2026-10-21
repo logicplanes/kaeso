@@ -13,7 +13,7 @@ export function signedInReply(): SignedIn {
 }
 
 export function totpRequired(overrides: Partial<TotpRequired> = {}): TotpRequired {
-  return { status: "totp_required", challenge: "chl_42", expires_at: inFiveMinutes(), ...overrides };
+  return { status: "totp_required", challenge: "chl_42", expires_at: inFiveMinutes(), attempts: 3, codes_locked: false, ...overrides };
 }
 
 export function emailSent(message: string): EmailSent {

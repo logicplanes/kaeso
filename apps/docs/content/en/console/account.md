@@ -37,6 +37,8 @@ A sign-in link first shows the account it signs in to. Choose **Sign in** only i
 
 Setting it up needs a sign-in from the last 15 minutes. **Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication after you enter a current code or a recovery code. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
 
+A sign-in takes up to three codes; after three wrong ones, start again with your password or a sign-in link. After 10 wrong codes in a row, codes from the app stop working, and Kaeso emails you, and again after every 10 more. A recovery code still signs you in and unlocks the app's codes, and so does resetting your password by email.
+
 ## Link single sign-on
 
 An organization's identity provider signs you in only once your account is linked to it. An account that the organization's single sign-on created is linked from the start. **Single sign-on**, under **Security**, lists your organizations with an identity provider.
@@ -55,7 +57,7 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Confirm a sensitive action
 
-Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out.
+Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out. A sign-in through single sign-on dates from when your identity provider last checked you, which can be long before it sent you back to Kaeso.
 
 - In your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
@@ -65,7 +67,7 @@ Through single sign-on, the console opens your identity provider in a small wind
 
 ## After signing in through single sign-on
 
-A sign-in through an organization's identity provider opens only that organization, and lets you read your account. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
+A sign-in through an organization's identity provider opens only that organization, and lets you read your account. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 
 - changing your email address or password, or two-factor authentication;
 - creating an organization, leaving another one, or deleting the account;

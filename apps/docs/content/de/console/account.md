@@ -37,6 +37,8 @@ Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmel
 
 Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung, nachdem Sie einen aktuellen Code oder einen Wiederherstellungscode eingegeben haben. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
 
+Eine Anmeldung nimmt bis zu drei Codes an; nach drei falschen beginnen Sie erneut mit Passwort oder Anmeldelink. Nach 10 falschen Codes in Folge funktionieren Codes aus der App nicht mehr, und Kaeso schickt Ihnen eine E-Mail, nach je 10 weiteren erneut. Ein Wiederherstellungscode meldet Sie weiter an und entsperrt die App-Codes, ebenso ein Zurücksetzen des Passworts per E-Mail.
+
 ## Single Sign-on verknüpfen
 
 Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mit ihm verknüpft ist. Ein Konto, das die Single Sign-on der Organisation angelegt hat, ist von Anfang an verknüpft. **Single Sign-on** unter **Sicherheit** listet Ihre Organisationen mit Identitätsanbieter.
@@ -55,7 +57,7 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Sensible Aktion bestätigen
 
-Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt.
+Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt. Eine Anmeldung über Single Sign-on zählt ab dem Zeitpunkt, zu dem Ihr Identitätsanbieter Sie zuletzt geprüft hat, und der kann lange vor der Rückkehr zu Kaeso liegen.
 
 - In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
@@ -65,7 +67,7 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 ## Nach einer Anmeldung über Single Sign-on
 
-Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
+Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 
 - E-Mail-Adresse, Passwort oder Zwei-Faktor-Authentifizierung ändern;
 - eine Organisation erstellen, eine andere verlassen oder das Konto löschen;

@@ -8,6 +8,11 @@ use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
 async fn turn_on_totp(app: &App, cookie: &str) -> (String, String) {
+    let (cookie, secret, _) = totp_with_recovery_codes(app, cookie).await;
+    (cookie, secret)
+}
+
+async fn totp_with_recovery_codes(app: &App, cookie: &str) -> (String, String, Vec<String>) {
     let begin = app
         .post("/me/totp", json!({}), Some(cookie))
         .await
@@ -21,7 +26,8 @@ async fn turn_on_totp(app: &App, cookie: &str) -> (String, String) {
         )
         .await
         .expect_status(StatusCode::OK);
-    (confirm.cookie().unwrap(), secret)
+    let recovery = serde_json::from_value(confirm.body["recovery_codes"].clone()).unwrap();
+    (confirm.cookie().unwrap(), secret, recovery)
 }
 
 async fn next_step(app: &App) {
@@ -420,5 +426,270 @@ async fn turning_totp_off_needs_a_current_code() {
     )
     .await
     .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}
+
+const WRONG: &str = "That code isn't valid or was already used.";
+const ENDED: &str = "Too many wrong codes for this sign-in; start signing in again.";
+const LOCKED: &str =
+    "Too many wrong codes in a row; sign in with a recovery code or reset your password.";
+const OWNER: &str = "owner@example.com";
+
+fn wrong_code(secret: &str, app: &App) -> String {
+    let mut near = vec![code(secret, app)];
+    for seconds in [-30, 30] {
+        app.clock.advance(time::Duration::seconds(seconds));
+        near.push(code(secret, app));
+        app.clock.advance(time::Duration::seconds(-seconds));
+    }
+    (0..10)
+        .map(|d: u8| d.to_string().repeat(6))
+        .find(|c| !near.contains(c))
+        .unwrap()
+}
+
+async fn password_challenge(app: &App, ip: &str, password: &str) -> Value {
+    app.raw(from(
+        ip,
+        "/auth/password",
+        json!({ "email": OWNER, "password": password }),
+    ))
+    .await
+    .expect_status(StatusCode::ACCEPTED)
+    .body
+}
+
+async fn link_challenge(app: &App, ip: &str) -> Value {
+    let token = magic_link(app, OWNER).await;
+    app.raw(from(
+        ip,
+        "/auth/magic-link/verify",
+        json!({ "token": token }),
+    ))
+    .await
+    .expect_status(StatusCode::ACCEPTED)
+    .body
+}
+
+async fn answer(app: &App, ip: &str, challenge: &Value, mut factor: Value) -> common::Resp {
+    factor["challenge"] = challenge["challenge"].clone();
+    app.raw(from(ip, "/auth/totp", factor)).await
+}
+
+#[track_caller]
+fn refused(r: &common::Resp, status: StatusCode, message: &str) {
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str()),
+        (status, Some(message)),
+        "{:?}",
+        r.body
+    );
+    assert!(r.cookie().is_none());
+}
+
+fn locked_emails(app: &App) -> Vec<String> {
+    app.mail
+        .to(OWNER)
+        .into_iter()
+        .filter(|m| m.kind.as_str() == "two_factor_locked")
+        .map(|m| m.text)
+        .collect()
+}
+
+#[tokio::test]
+async fn a_challenge_ends_after_three_wrong_codes() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (_, secret) = turn_on_totp(&app, &owner.cookie).await;
+    next_step(&app).await;
+    let ip = "2001:db8:1::1";
+
+    let challenge = password_challenge(&app, ip, PASSWORD).await;
+    assert_eq!(
+        (&challenge["attempts"], &challenge["codes_locked"]),
+        (&json!(3), &json!(false))
+    );
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+    for _ in 0..2 {
+        refused(
+            &answer(&app, ip, &challenge, bad.clone()).await,
+            StatusCode::UNAUTHORIZED,
+            WRONG,
+        );
+    }
+    refused(
+        &answer(&app, ip, &challenge, bad.clone()).await,
+        StatusCode::UNAUTHORIZED,
+        ENDED,
+    );
+    refused(
+        &answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) })).await,
+        StatusCode::UNAUTHORIZED,
+        "The sign-in has expired; enter your email and password again.",
+    );
+
+    let challenge = link_challenge(&app, ip).await;
+    for _ in 0..2 {
+        refused(
+            &answer(&app, ip, &challenge, bad.clone()).await,
+            StatusCode::UNAUTHORIZED,
+            WRONG,
+        );
+    }
+    let r = answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["session"]["method"], "magic_link");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn wrong_codes_in_a_row_lock_app_codes_until_a_recovery_code_signs_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (_, secret, recovery) = totp_with_recovery_codes(&app, &owner.cookie).await;
+    next_step(&app).await;
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+
+    for n in 1..=3 {
+        let ip = format!("2001:db8:2:{n}::1");
+        let challenge = if n == 2 {
+            link_challenge(&app, &ip).await
+        } else {
+            password_challenge(&app, &ip, PASSWORD).await
+        };
+        for _ in 0..3 {
+            answer(&app, &ip, &challenge, bad.clone())
+                .await
+                .expect_status(StatusCode::UNAUTHORIZED);
+        }
+    }
+    assert!(locked_emails(&app).is_empty());
+
+    app.clock.advance(time::Duration::days(2));
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+    let ip = "2001:db8:2:4::1";
+    let challenge = password_challenge(&app, ip, PASSWORD).await;
+    assert_eq!(challenge["codes_locked"], false);
+    let before = app.mail.to(OWNER).len();
+    refused(
+        &answer(&app, ip, &challenge, bad.clone()).await,
+        StatusCode::FORBIDDEN,
+        LOCKED,
+    );
+    app.wait_for_mail(OWNER, before + 1).await;
+    let sent = locked_emails(&app);
+    assert_eq!(sent.len(), 1, "the lock engaging sends one email");
+    assert!(sent[0].contains("10 wrong codes in a row"), "{}", sent[0]);
+    assert!(
+        sent[0].contains(&format!("{}/auth/password-reset", common::ORIGIN)),
+        "{}",
+        sent[0]
+    );
+
+    refused(
+        &answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) })).await,
+        StatusCode::FORBIDDEN,
+        LOCKED,
+    );
+    let ip = "2001:db8:2:5::1";
+    let challenge = link_challenge(&app, ip).await;
+    assert_eq!(challenge["codes_locked"], true);
+    refused(
+        &answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) })).await,
+        StatusCode::FORBIDDEN,
+        LOCKED,
+    );
+    assert_eq!(locked_emails(&app).len(), 1);
+
+    for n in 6..=7 {
+        let ip = format!("2001:db8:2:{n}::1");
+        let challenge = password_challenge(&app, &ip, PASSWORD).await;
+        for _ in 0..3 {
+            refused(
+                &answer(&app, &ip, &challenge, bad.clone()).await,
+                StatusCode::FORBIDDEN,
+                LOCKED,
+            );
+        }
+    }
+    assert_eq!(locked_emails(&app).len(), 1);
+    let before = app.mail.to(OWNER).len();
+    let ip = "2001:db8:2:9::1";
+    let challenge = password_challenge(&app, ip, PASSWORD).await;
+    for _ in 0..2 {
+        refused(
+            &answer(&app, ip, &challenge, bad.clone()).await,
+            StatusCode::FORBIDDEN,
+            LOCKED,
+        );
+    }
+    app.wait_for_mail(OWNER, before + 1).await;
+    let sent = locked_emails(&app);
+    assert_eq!(sent.len(), 2, "every ten more wrong codes send another");
+    assert!(sent[1].contains("20 wrong codes in a row"), "{}", sent[1]);
+
+    let r = answer(
+        &app,
+        ip,
+        &challenge,
+        json!({ "recovery_code": recovery[0] }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(r.body["session"]["second_factor"], true);
+    let challenge = password_challenge(&app, ip, PASSWORD).await;
+    assert_eq!(
+        challenge["codes_locked"], false,
+        "a recovery code unlocks app codes"
+    );
+    answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::OK);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_password_reset_by_email_unlocks_app_codes() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (_, secret) = turn_on_totp(&app, &owner.cookie).await;
+    next_step(&app).await;
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+    for n in 1..=4 {
+        let ip = format!("2001:db8:3:{n}::1");
+        let challenge = password_challenge(&app, &ip, PASSWORD).await;
+        for _ in 0..3 {
+            answer(&app, &ip, &challenge, bad.clone()).await;
+        }
+    }
+    let ip = "2001:db8:3:5::1";
+    assert_eq!(
+        password_challenge(&app, ip, PASSWORD).await["codes_locked"],
+        true
+    );
+
+    let before = app.mail.to(OWNER).len();
+    app.post("/auth/password-reset", json!({ "email": OWNER }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    app.wait_for_mail(OWNER, before + 1).await;
+    let new_password = "a brand new and long password";
+    app.post(
+        "/auth/password-reset/verify",
+        json!({ "token": app.last_token(OWNER), "password": new_password }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let challenge = password_challenge(&app, ip, new_password).await;
+    assert_eq!(challenge["codes_locked"], false);
+    answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::OK);
     s.cleanup().await;
 }

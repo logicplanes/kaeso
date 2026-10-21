@@ -144,6 +144,33 @@ describe("signing in again with a password", () => {
     ]);
   });
 
+  it("asks for the password again once the challenge has taken its last code", async () => {
+    needsRecentSignIn();
+    on("POST", "auth/password", json(totpRequired({ attempts: 1 }), { status: 202 }));
+    on("POST", "auth/totp", apiError(401, "authentication", "Too many wrong codes for this sign-in; start signing in again."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.type(within(box).getByLabelText("Password"), "correct horse battery");
+    await user.click(within(box).getByRole("button", { name: "Sign in" }));
+    await user.type(await within(box).findByRole("textbox"), "000000");
+    expect((await (await notifications()).findAllByText("Too many wrong codes for this sign-in; start signing in again.")).length).toBeGreaterThan(0);
+    expect(await within(box).findByLabelText("Password")).toHaveValue("");
+  });
+
+  it("asks for a recovery code when wrong codes locked the authenticator app", async () => {
+    needsRecentSignIn();
+    on("POST", "auth/password", json(totpRequired(), { status: 202 }));
+    on("POST", "auth/totp", apiError(403, "permission_denied", "Too many wrong codes in a row; sign in with a recovery code or reset your password."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.type(within(box).getByLabelText("Password"), "correct horse battery");
+    await user.click(within(box).getByRole("button", { name: "Sign in" }));
+    await user.type(await within(box).findByRole("textbox"), "000000");
+    expect(await within(box).findByText("Too many wrong codes locked your authenticator app; enter a recovery code.")).toBeInTheDocument();
+    expect(within(box).getByLabelText("Recovery code")).toHaveValue("");
+    expect(within(box).queryByRole("button", { name: "Use a recovery code" })).not.toBeInTheDocument();
+  });
+
   it("asks once when two changes need it at the same time", async () => {
     needsRecentSignIn();
     on("POST", "auth/password", signedInReply());

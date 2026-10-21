@@ -46,8 +46,8 @@ pub struct SsoView {
         `email_verified`."]
     pub require_email_verified: bool,
     #[doc = "The org's sign-in link: the sign-in page with this provider's button,\n\
-        without asking for an address. `GET auth/oidc/start?org=…` goes\n\
-        straight to the provider instead."]
+        without asking for an address. `GET auth/oidc/start?org=…` opens it and\n\
+        goes on to the provider at once while nobody is signed in."]
     pub sign_in_url: String,
 }
 

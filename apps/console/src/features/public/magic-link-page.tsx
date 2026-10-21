@@ -9,17 +9,17 @@ import { usePageTitle } from "~/shell/title";
 import { safeNext } from "~/auth/next";
 import { takeFragment } from "~/auth/fragment";
 import { sessionQuery } from "~/auth/session-queries";
-import { signInWithTotp, type PasswordResult } from "~/auth/sign-in-api";
+import { codeRefusal, signInWithTotp, totpChallenge, type PasswordResult, type TotpChallenge } from "~/auth/sign-in-api";
 import { t } from "~/i18n";
 
 type Steps = typeof import("~/features/sign-in/sign-in-steps");
 
 async function signInWithMagicLink(token: string): Promise<PasswordResult> {
   const { data, response } = await api.POST("/platform/v1/auth/magic-link/verify", { body: { token } });
-  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", challenge: data.challenge, expiresAt: data.expires_at };
+  if (response.status === 202 && data && "challenge" in data) return { kind: "totp", ...totpChallenge(data) };
   return { kind: "signed_in" };
 }
-type Totp = { challenge: string; expiresAt: string; recovery: boolean };
+type Totp = TotpChallenge & { recovery: boolean; failures: number };
 
 function Waiting() {
   return (
@@ -62,13 +62,13 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
     await queryClient.resetQueries();
     await navigate({ to: safeNext(next), replace: true });
   };
-  const run = async (fn: () => Promise<void>, onError: () => void) => {
+  const run = async (fn: () => Promise<void>, onError: (e: unknown) => void) => {
     setBusy(true);
     try {
       await fn();
     } catch (e) {
       toastApiError(e, { id: "token-link" });
-      onError();
+      onError(e);
     } finally {
       setBusy(false);
     }
@@ -79,7 +79,7 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
         const result = await signInWithMagicLink(token);
         if (result.kind === "signed_in") return done();
         setSteps(await import("~/features/sign-in/sign-in-steps"));
-        setTotp({ challenge: result.challenge, expiresAt: result.expiresAt, recovery: false });
+        setTotp({ ...result, recovery: result.codesLocked, failures: 0 });
       },
       () => setFailed(true),
     );
@@ -89,7 +89,14 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
         await signInWithTotp(step.challenge, step.recovery ? { recoveryCode: value.trim() } : { code: value });
         await done();
       },
-      () => setCode(""),
+      (e) => {
+        setCode("");
+        const failures = step.failures + 1;
+        const refusal = codeRefusal(e, step, failures);
+        if (refusal === "ended") setFailed(true);
+        else if (refusal === "locked") setTotp({ ...step, failures, recovery: true, codesLocked: true });
+        else setTotp({ ...step, failures });
+      },
     );
 
   if (!token) {
@@ -121,6 +128,7 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
     return (
       <TotpStep
         recovery={totp.recovery}
+        codesLocked={totp.codesLocked}
         expiresAt={totp.expiresAt}
         code={code}
         onCodeChange={setCode}

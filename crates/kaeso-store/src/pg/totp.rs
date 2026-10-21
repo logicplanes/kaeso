@@ -89,6 +89,37 @@ pub async fn use_step(
     Ok(done.rows_affected() == 1)
 }
 
+pub async fn failed_codes(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<i32, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT failed_codes FROM user_totp WHERE user_id = $1",
+        user_id
+    )
+    .fetch_optional(db)
+    .await?
+    .unwrap_or(0))
+}
+
+pub async fn count_failed_code(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<i32, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE user_totp SET failed_codes = failed_codes + 1, updated_at = now() WHERE user_id = $1 \
+         RETURNING failed_codes",
+        user_id
+    )
+    .fetch_optional(db)
+    .await?
+    .unwrap_or(0))
+}
+
+pub async fn clear_failed_codes(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE user_totp SET failed_codes = 0, updated_at = now() WHERE user_id = $1 AND failed_codes > 0",
+        user_id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn remove(db: &mut sqlx::PgConnection, user_id: Uuid) -> Result<bool, StoreError> {
     sqlx::query!(
         "DELETE FROM user_recovery_codes WHERE user_id = $1",
