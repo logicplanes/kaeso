@@ -91,6 +91,7 @@ describe("a member's sheet", () => {
     await user.click(await screen.findByRole("option", { name: /Auditor/ }));
     await user.click(within(sheet).getByRole("button", { name: "Save role" }));
     expect(await notifications().findByText("Grace Hopper is Auditor now")).toBeInTheDocument();
+    await waitFor(() => expect(within(sheet).getByRole("combobox", { name: "Role" })).toHaveFocus());
     expect(requests("PATCH", "orgs/:org/members/:user").map((r) => r.body)).toEqual([{ role: "auditor", rights_added: [], rights_removed: [] }]);
   });
 
@@ -103,6 +104,7 @@ describe("a member's sheet", () => {
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(within(sheet).queryByRole("button", { name: "Save role" })).not.toBeInTheDocument());
     expect(within(sheet).getByRole("combobox", { name: "Role" })).toHaveTextContent("Developer");
+    expect(within(sheet).getByRole("combobox", { name: "Role" })).toHaveFocus();
     expect(requests("PATCH", "orgs/:org/members/:user")).toHaveLength(0);
   });
 

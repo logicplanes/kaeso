@@ -202,7 +202,7 @@
   "Called with the value when dragging ends.": "拖动结束时调用，并传入值。",
   "Called with the value while it is dragged.": "拖动时调用，并传入值。",
   "Cancel": "取消",
-  "Characters that end a tag, besides Enter.": "除 Enter 外结束一个标签的字符。",
+  "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.": "除 Enter 外结束一个标签的字符；粘贴的文本也会在换行符和制表符处拆分。",
   "Checkbox and radio items": "复选框和单选项",
   "Checkout conversation": "结账对话",
   "Choices for the value menu.": "值菜单中的选项。",
