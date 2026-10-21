@@ -200,7 +200,7 @@ test("provider keys: several per provider, one default, assigned to a project, r
     const submit = add.getByRole("button", { name: "Add key" });
     if (!(await submit.isVisible())) await add.getByRole("button", { name: "Continue" }).click();
     await submit.click();
-    await expect(toastText(page, new RegExp(`^${name} (added|is the Anthropic default)$`))).toBeVisible();
+    await expect(toastText(page, new RegExp(`^(Anthropic · ${name} added|${name} is the Anthropic default)$`))).toBeVisible();
   }
   const row = (name: string) => page.getByRole("row").filter({ hasText: name });
 
@@ -222,7 +222,7 @@ test("provider keys: several per provider, one default, assigned to a project, r
   const replace = page.getByRole("dialog", { name: "Replace Anthropic · Research" });
   await replace.getByLabel("Anthropic API key").fill("  sk-ant-mock-22222222222222anthr0p1c  ");
   await replace.getByRole("button", { name: "Replace key" }).click();
-  await expect(toastText(page, "Research replaced")).toBeVisible();
+  await expect(toastText(page, "Anthropic · Research replaced")).toBeVisible();
   await expect(page.getByText("…0p1c")).toBeVisible();
 
   await page.getByRole("button", { name: "Actions for Anthropic · Research" }).click();
