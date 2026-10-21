@@ -177,7 +177,7 @@ mod tests {
     fn only_kaeso_images_by_digest_and_the_same_name_pass() {
         let host = replaced()["HostConfig"].clone();
         for image in [
-            "ghcr.io/logicplanes/kaeso-gateway:0.3.0".to_owned(),
+            "ghcr.io/logicplanes/kaeso-gateway:0.1.0".to_owned(),
             format!("docker.io/library/alpine@{D}"),
             format!("ghcr.io/logicplanes/kaeso-gateway@{}", D.to_uppercase()),
             String::new(),

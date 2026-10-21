@@ -89,8 +89,8 @@ describe("release artwork", () => {
   it("picks random specs and a fixed one for a version", () => {
     expect(randomReleaseArt(sequence(0))).toEqual({ version: 1, seed: 0, style: "bauhaus", palette: 0 });
     expect(randomReleaseArt(sequence(0.99999999999))).toEqual({ version: 1, seed: 4294967295, style: "spiro", palette: art.palettes.length - 1 });
-    expect(releaseArtFor("0.3.0")).toEqual(releaseArtFor("0.3.0"));
-    expect(isReleaseArtSpec(releaseArtFor("0.3.0"))).toBe(true);
+    expect(releaseArtFor("0.1.0")).toEqual(releaseArtFor("0.1.0"));
+    expect(isReleaseArtSpec(releaseArtFor("0.1.0"))).toBe(true);
   });
 
   it("never repeats a recent style, palette or any earlier seed", () => {
@@ -117,19 +117,19 @@ describe("release artwork", () => {
 
 describe("ReleaseArt", () => {
   it("is an image with a label that shows its title and eyebrow", () => {
-    render(<ReleaseArt seed="0.3.0" label="Kaeso 0.3.0" title="0.3.0" eyebrow="What's new in Kaeso" shape="wide" />);
-    const img = screen.getByRole("img", { name: "Kaeso 0.3.0" });
+    render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
+    const img = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
-    expect(img).toHaveTextContent("0.3.0");
+    expect(img).toHaveTextContent("0.1.0");
     expect(img).toHaveTextContent("What's new in Kaeso");
   });
 
   it("draws the stored art when it has one, and the seed's art otherwise", () => {
     const spec: ReleaseArtSpec = { version: 1, seed: 9, style: "albers", palette: 2 };
-    const { container, rerender } = render(<ReleaseArt seed="0.3.0" art={spec} label="Artwork" />);
+    const { container, rerender } = render(<ReleaseArt seed="0.1.0" art={spec} label="Artwork" />);
     const stored = container.innerHTML;
     expect(container.querySelectorAll("rect").length).toBeGreaterThanOrEqual(4);
-    rerender(<ReleaseArt seed="0.3.0" label="Artwork" />);
+    rerender(<ReleaseArt seed="0.1.0" label="Artwork" />);
     expect(container.innerHTML).not.toBe(stored);
     expect(screen.getByRole("img", { name: "Artwork" }).querySelectorAll("text")).toHaveLength(0);
   });
@@ -149,13 +149,13 @@ describe("ReleaseArt", () => {
 
   it("writes the same artwork as a file of its own", () => {
     const spec: ReleaseArtSpec = { version: 1, seed: 5, style: "arcs", palette: 4 };
-    const svg = releaseArtSvg({ seed: "0.3.0", art: spec, label: "Kaeso <0.3.0>", title: "0.3.0", eyebrow: "Kaeso & friends" });
+    const svg = releaseArtSvg({ seed: "0.1.0", art: spec, label: "Kaeso <0.1.0>", title: "0.1.0", eyebrow: "Kaeso & friends" });
     expect(
-      svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="1280" height="720" role="img" aria-label="Kaeso &lt;0.3.0&gt;">'),
+      svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="1280" height="720" role="img" aria-label="Kaeso &lt;0.1.0&gt;">'),
     ).toBe(true);
     expect(svg).toContain("Kaeso &amp; friends");
     expect(svg).toContain(`fill="${art.grounds.paper.fill}"`);
-    expect(releaseArtSvg({ seed: "0.3.0", label: "x", shape: "wide" })).toContain('viewBox="0 0 840 360"');
-    expect(releaseArtSvg({ seed: "0.3.0", label: "x" })).not.toContain("<text");
+    expect(releaseArtSvg({ seed: "0.1.0", label: "x", shape: "wide" })).toContain('viewBox="0 0 840 360"');
+    expect(releaseArtSvg({ seed: "0.1.0", label: "x" })).not.toContain("<text");
   });
 });
