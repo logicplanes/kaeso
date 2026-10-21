@@ -2,7 +2,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{MembershipId, OrgId, ProjectId, UserId};
-use kaeso_core::rights::ProjectGrant;
+use kaeso_core::rights::{OrgGrant, ProjectGrant};
 use kaeso_store::pg::key_lifecycle;
 use kaeso_store::pg::members::{self, ProjectMember};
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_project_peer, lock_roles,
-    project_from_store, project_to_store, project_view, requested_role,
+    org_from_store, project_from_store, project_to_store, project_view, requested_role,
 };
 use crate::platform::json::Body;
 use crate::platform::orgs::members::MemberUser;
@@ -156,6 +156,19 @@ pub async fn add(
     Ok((StatusCode::CREATED, Json(view(&row)?)))
 }
 
+async fn check_peer(db: impl sqlx::PgExecutor<'_>, ctx: &Ctx, m: &ProjectMember) -> ApiResult<()> {
+    let org_grant: Option<OrgGrant> = members::get_org(db, ctx.org()?.org.id, m.user_id)
+        .await?
+        .map(|o| org_from_store(&o.grant()))
+        .transpose()?;
+    check_project_peer(
+        ctx.org()?,
+        ctx.project()?.rights,
+        org_grant.as_ref(),
+        &grant_of(m)?,
+    )
+}
+
 async fn member(db: impl sqlx::PgExecutor<'_>, ctx: &Ctx, user: &str) -> ApiResult<ProjectMember> {
     let user: UserId = id_param(user, "member")?;
     members::get_project(db, ctx.project()?.project.id, user.uuid())
@@ -186,7 +199,7 @@ pub async fn update(
     let target = member(&mut *tx, &ctx, &user).await?;
     let before = grant_of(&target)?;
     let (after, role) = RoleBook::load(&mut *tx, org).await?.project_grant(&req)?;
-    check_project_peer(ctx.project()?.rights, &before)?;
+    check_peer(&mut *tx, &ctx, &target).await?;
     check_project(ctx.project()?.rights, Some(&before), &after)?;
     if !members::update_project(&mut *tx, project, target.user_id, &project_to_store(&after))
         .await?
@@ -220,7 +233,7 @@ pub async fn remove(
 ) -> ApiResult<StatusCode> {
     let project = ensure_active(&ctx, ARCHIVED)?;
     let target = member(&state.pg, &ctx, &user).await?;
-    check_project_peer(ctx.project()?.rights, &grant_of(&target)?)?;
+    check_peer(&state.pg, &ctx, &target).await?;
     let mut tx = state.pg.begin().await?;
     members::delete_project(&mut *tx, project, target.user_id).await?;
     let limits = kaeso_store::pg::limits::delete_of_user(

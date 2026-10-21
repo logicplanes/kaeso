@@ -1,7 +1,7 @@
 use kaeso_core::id::RoleId;
 use kaeso_core::rights::{
     OrgGrant, OrgHolding, OrgPreset, OrgRights, ProjectGrant, ProjectPreset, ProjectRights,
-    check_project_change,
+    check_project_change, effective_project_rights,
 };
 use kaeso_store::pg::members::Grant;
 use kaeso_store::pg::roles::{self, Role};
@@ -373,8 +373,15 @@ pub fn check_project(
     Ok(check_project_change(caller, before, after.effective())?)
 }
 
-pub fn check_project_peer(caller: ProjectRights, target: &ProjectGrant) -> ApiResult<()> {
-    if target.effective().is_subset(caller) {
+pub fn check_project_peer(
+    caller: &OrgScope,
+    caller_rights: ProjectRights,
+    target_org: Option<&OrgGrant>,
+    target: &ProjectGrant,
+) -> ApiResult<()> {
+    let owner_reachable = caller.is_owner() || !target_org.is_some_and(OrgGrant::is_owner);
+    let covered = effective_project_rights(target_org, Some(target)).is_subset(caller_rights);
+    if owner_reachable && covered {
         Ok(())
     } else {
         Err(ApiError::PermissionDenied(

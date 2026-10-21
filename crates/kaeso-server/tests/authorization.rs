@@ -299,6 +299,154 @@ async fn service_accounts_change_only_for_callers_holding_their_rights() {
 }
 
 #[tokio::test]
+async fn project_member_changes_count_the_rights_of_the_org_role() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let members = format!("/orgs/{org}/projects/{project}/members");
+    let (lead, lead_id) = join(&app, &owner, "lead@example.com", "developer").await;
+    let (_, auditor_id) = join(&app, &owner, "auditor@example.com", "auditor").await;
+    let (_, member_id) = join(&app, &owner, "member@example.com", "member").await;
+    app.call(
+        Method::PATCH,
+        &format!("{members}/{lead_id}"),
+        Some(json!({ "role": "admin", "rights_removed": ["project.audit_log.view"] })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let auditor = app
+        .get(&format!("{members}/{auditor_id}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(auditor.body["grant"]["role"]["id"], "viewer");
+    assert!(!rights(&auditor.body["grant"]["rights"]).contains(&"project.audit_log.view"));
+
+    for (method, body) in [
+        (Method::PATCH, Some(json!({ "role": "viewer" }))),
+        (Method::DELETE, None),
+    ] {
+        let r = app
+            .call(
+                method,
+                &format!("{members}/{auditor_id}"),
+                body,
+                Some(&lead),
+            )
+            .await
+            .expect_status(StatusCode::FORBIDDEN);
+        assert_eq!(
+            r.body["error"]["message"],
+            "You can't change a member who holds rights you don't hold."
+        );
+    }
+    app.get(&format!("{members}/{auditor_id}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+
+    app.call(
+        Method::PATCH,
+        &format!("{members}/{member_id}"),
+        Some(json!({ "role": "developer" })),
+        Some(&lead),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.call(
+        Method::DELETE,
+        &format!("{members}/{member_id}"),
+        None,
+        Some(&lead),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn only_owners_change_or_remove_owners_in_projects() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let members = format!("/orgs/{org}/projects/{project}/members");
+    let (lead, lead_id) = join(&app, &owner, "lead@example.com", "developer").await;
+    let (_, heir_id) = join(&app, &owner, "heir@example.com", "owner").await;
+    let (_, member_id) = join(&app, &owner, "member@example.com", "member").await;
+    app.call(
+        Method::PATCH,
+        &format!("{members}/{lead_id}"),
+        Some(json!({ "role": "admin" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let key = app
+        .post(
+            &format!("/orgs/{org}/platform-keys"),
+            json!({ "name": "CI", "expires_in_days": 30 }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    for target in [&owner.user_id, &heir_id] {
+        for (method, body) in [
+            (Method::PATCH, Some(json!({ "role": "viewer" }))),
+            (Method::DELETE, None),
+        ] {
+            let path = format!("{members}/{target}");
+            let r = app
+                .call(method.clone(), &path, body.clone(), Some(&lead))
+                .await
+                .expect_status(StatusCode::FORBIDDEN);
+            assert_eq!(
+                r.body["error"]["message"],
+                "You can't change a member who holds rights you don't hold."
+            );
+            let r = app
+                .with_key(method, &path, body, &key)
+                .await
+                .expect_status(StatusCode::FORBIDDEN);
+            assert_eq!(
+                r.body["error"]["message"],
+                "You can't change a member who holds rights you don't hold."
+            );
+        }
+        let still = app
+            .get(&format!("{members}/{target}"), &owner.cookie)
+            .await
+            .expect_status(StatusCode::OK);
+        assert_eq!(still.body["grant"]["role"]["id"], "admin");
+    }
+
+    app.call(
+        Method::PATCH,
+        &format!("{members}/{heir_id}"),
+        Some(json!({ "role": "developer" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.with_key(
+        Method::DELETE,
+        &format!("{members}/{member_id}"),
+        None,
+        &key,
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn invitations_are_resent_only_by_people_who_could_send_them() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
