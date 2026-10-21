@@ -15,6 +15,7 @@ const options: ModelPickerOption[] = [
 const providers = [
   { id: "openai", name: "OpenAI" },
   { id: "anthropic", name: "Anthropic" },
+  { id: "deepseek", name: "DeepSeek" },
 ];
 
 const open = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -55,7 +56,8 @@ describe("ModelPicker", () => {
     await user.click(screen.getByRole("button", { name: "Model" }));
     const groups = within(await screen.findByRole("listbox", { name: "Model" })).getAllByRole("group");
     expect(groups.map((g) => document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent)).toEqual(["acme", "Anthropic", "DeepSeek", "OpenAI"]);
-    expect(within(screen.getByRole("group", { name: "Providers" })).getByRole("button", { name: "acme" })).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(screen.getByRole("option", { name: /^acme/ })).toBeInTheDocument();
   });
 
   it("searches by name, id and provider, and closes with the chosen model shown", async () => {
@@ -110,7 +112,7 @@ describe("ModelPicker", () => {
   it("offers only the providers whose models match the search, and opens fresh", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
-    render(<ModelPicker options={options} onValueChange={onValueChange} />);
+    render(<ModelPicker options={options} providers={providers} onValueChange={onValueChange} />);
     await open(user);
     await user.keyboard("gpt");
     await user.click(screen.getByRole("combobox", { name: "Provider" }));
