@@ -4,6 +4,7 @@ pub mod hooks;
 pub mod in_flight;
 mod input_count;
 pub mod listing;
+pub mod memory;
 pub mod pipeline;
 mod stream;
 
@@ -31,6 +32,7 @@ async fn serve(
     req: Request,
 ) -> Response {
     let (parts, body) = req.into_parts();
+    let max_body = state.config.body_limits.model_api.as_usize();
     pipeline::serve(
         state,
         Incoming {
@@ -43,6 +45,7 @@ async fn serve(
             caller: None,
             source: hooks::Source::Api,
             stream_only: false,
+            max_body,
         },
     )
     .await

@@ -47,6 +47,7 @@ pub struct Incoming {
     pub caller: Option<Caller>,
     pub source: Source,
     pub stream_only: bool,
+    pub max_body: usize,
 }
 
 pub(super) struct Recording {
@@ -56,6 +57,7 @@ pub(super) struct Recording {
     started: Instant,
     reservation: Reservation,
     sent_input: Option<u64>,
+    held: Option<super::memory::Held>,
 }
 
 impl Recording {
@@ -261,6 +263,7 @@ pub async fn serve_with(
         started: Instant::now(),
         reservation: Reservation::default(),
         sent_input: None,
+        held: None,
     };
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
@@ -446,6 +449,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         client_ip,
         caller,
         stream_only,
+        max_body,
         ..
     } = inc;
     let caller = match caller {
@@ -466,7 +470,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     rec.outcome().caller = Some(caller.clone());
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
-    let limit = state.config.body_limits.model_api.as_usize();
+    let limit = max_body;
     let body = axum::body::to_bytes(body, limit).await.map_err(|e| {
         let refused = if crate::http::body_timeout::timed_out(&e) {
             error(
@@ -490,6 +494,19 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.request_body = Some(body.clone());
     }
     let request_bytes = body.len();
+    let scanned = body.clone();
+    let shape = off_thread(request_bytes, move || {
+        kaeso_codecs::limits::request_shape(ingress, &scanned)
+    })
+    .await
+    .and_then(|r| r)
+    .map_err(at(Stage::Request))?;
+    rec.held = Some(
+        state
+            .translating
+            .hold(super::memory::estimate(kind, request_bytes, &shape))
+            .await,
+    );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
         dispatch::decode_request(ingress, kind, &body, &listed)
@@ -608,20 +625,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         at: rec.outcome().started_at,
         timeout: timeouts.request,
         worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
+        unpriced: kaeso_core::cost::unpriced(&req, plan.dialect),
     };
     rec.reservation = state
         .limits
         .admit(state, &admission)
         .await
         .map_err(|refusal| {
-            let kind = if refusal.status == 503 {
-                ErrorKind::ProviderError
-            } else {
-                ErrorKind::RateLimited
+            let kind = match refusal.status {
+                503 => ErrorKind::ProviderError,
+                403 => ErrorKind::PermissionDenied,
+                _ => ErrorKind::RateLimited,
             };
             let mut e = error(kind, refusal.status, refusal.message);
             if let Some(r) = refusal.retry_after {
                 e = e.with_retry_after(r);
+            }
+            if let Some(p) = refusal.param {
+                e = e.with_param(p);
             }
             fail(Stage::Limits)(e)
         })?;
@@ -759,6 +780,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 started: rec.started,
                 reservation: std::mem::take(&mut rec.reservation),
                 sent_input: None,
+                held: rec.held.take(),
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
@@ -894,6 +916,9 @@ pub(crate) fn without_key_fragments(mut err: KppError) -> KppError {
 
 pub(crate) fn redact_key_fragments(err: &mut KppError) {
     err.message = kaeso_core::secret::redact_tokens(&err.message);
+    if let Some(raw) = err.raw.as_mut() {
+        kaeso_core::secret::redact_json(raw);
+    }
 }
 
 pub(crate) fn declared_key_refusal(
@@ -960,5 +985,44 @@ mod tests {
         let in_a_reply =
             decode_reply(DialectId::OpenAiChat, 200, &HeaderList::new(), body, &ctx).unwrap_err();
         assert_eq!(in_a_reply.message, err.message);
+    }
+
+    #[test]
+    fn a_same_format_error_body_reaches_every_app_without_key_fragments_or_account_ids() {
+        let cases: [(&str, DialectId, &[u8]); 3] = [
+            (
+                "openrouter",
+                DialectId::OpenAiChat,
+                br#"{"error": {"message": "Provider returned error", "code": 429, "metadata": {"raw": "Rate limit reached for key sk-proj-Ab1xYz789 in organization org-AbCdEf123456."}}, "user_id": "user_2xQ9mLp7Vt4Kd8Rf"}"#,
+            ),
+            (
+                "openai",
+                DialectId::OpenAiResponses,
+                br#"{"error": {"message": "Rate limit reached in organization org-AbCdEf123456 for key sk-proj-Ab1xYz789.", "type": "requests", "param": null, "code": "rate_limit_exceeded"}}"#,
+            ),
+            (
+                "anthropic",
+                DialectId::AnthropicMessages,
+                br#"{"type": "error", "error": {"type": "rate_limit_error", "message": "This request would exceed your organization's rate limit (org: 0d5b7a5e-1c2f-4a59-9a8e-3f1d2c4b5a6e, model: claude-opus-5-5)."}, "request_id": "req_011CXyZ"}"#,
+            ),
+        ];
+        for (provider, dialect, body) in cases {
+            let p = kaeso_core::provider::provider(provider).unwrap();
+            let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+            let ctx = EgressCtx::new(&req).with_chat_profile(p.chat);
+            let err = provider_error(p, dialect, 429, &HeaderList::new(), body, &ctx);
+            for app in [
+                DialectId::OpenAiChat,
+                DialectId::OpenAiResponses,
+                DialectId::AnthropicMessages,
+            ] {
+                let sent = dispatch::encode_error(app, &err).body;
+                let text = String::from_utf8_lossy(&sent);
+                for secret in ["Ab1xYz789", "AbCdEf123456", "2xQ9mLp7", "0d5b7a5e"] {
+                    assert!(!text.contains(secret), "{provider} to {app}: {text}");
+                }
+                assert!(text.contains("[redacted]"), "{provider} to {app}: {text}");
+            }
+        }
     }
 }

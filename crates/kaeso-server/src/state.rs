@@ -34,6 +34,7 @@ pub struct Inner {
     pub rebuilds: crate::services::limits::Rebuilds,
     pub logs: crate::services::logs::Buffer,
     pub in_flight: crate::model_api::in_flight::InFlight,
+    pub translating: crate::model_api::memory::Budget,
     pub availability: crate::services::availability::Recall,
     pub dns: Arc<dyn crate::services::dns::TxtLookup>,
     clickhouse_migrated: AtomicBool,
@@ -57,6 +58,7 @@ impl AppState {
     pub fn new(p: Parts) -> AppState {
         let caches = Caches::new(&p.valkey, &p.keyring);
         let connect_timeout = p.config.upstream.connect_timeout;
+        let translating = crate::model_api::memory::Budget::new(p.config.body_limits.in_flight.0);
         caches.listen(&p.valkey);
         AppState(Arc::new(Inner {
             config: p.config,
@@ -83,6 +85,7 @@ impl AppState {
             rebuilds: crate::services::limits::Rebuilds::default(),
             logs: crate::services::logs::Buffer::default(),
             in_flight: crate::model_api::in_flight::InFlight::default(),
+            translating,
             availability: crate::services::availability::Recall::default(),
             dns: p
                 .dns

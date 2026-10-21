@@ -43,6 +43,7 @@ impl Codec for AnthropicMessages {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::limits::request_shape(Self::DIALECT, body)?;
         request::decode_request(kind, body, headers)
     }
 

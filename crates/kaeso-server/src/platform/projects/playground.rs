@@ -114,6 +114,7 @@ pub async fn responses(
         }),
         source: Source::Playground,
         stream_only: true,
+        max_body: state.config.body_limits.platform_api.as_usize(),
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }
@@ -205,6 +206,9 @@ fn refusal(f: &Failure) -> ApiError {
         Stage::Limits if e.status == Some(503) => ApiError::Unavailable(
             "Kaeso cannot check this project's budgets right now; try again shortly.".into(),
         ),
+        Stage::Limits if e.kind == ErrorKind::PermissionDenied => {
+            ApiError::PermissionDenied(e.message.clone())
+        }
         Stage::Limits => ApiError::RateLimited {
             message: own(
                 &e.message,
@@ -526,5 +530,17 @@ mod tests {
             KppError::new(ErrorKind::ProviderError, "x").with_status(503),
         ));
         assert_eq!(unchecked.kind(), "unavailable");
+        let said = "The member has a spend budget that can't price `web_search`; ask an admin.";
+        let unpriced = refusal(&failure(
+            Stage::Limits,
+            KppError::new(ErrorKind::PermissionDenied, said)
+                .with_status(403)
+                .with_param("tools"),
+        ));
+        assert_eq!(
+            (unpriced.kind(), unpriced.status().as_u16()),
+            ("permission_denied", 403)
+        );
+        assert_eq!(unpriced.to_string(), said);
     }
 }

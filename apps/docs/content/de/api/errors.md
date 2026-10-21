@@ -154,6 +154,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | Status | Ursache |
 | --- | --- |
 | 400 | Kaeso kann die Anfrage nicht lesen, oder das Modell nimmt eine Einstellung oder ein Feld der Anfrage nicht an. |
+| 400 | Die Anfrage enthält mehr Nachrichten, Inhaltsblöcke in einer Nachricht, Werkzeuge oder Embedding-Eingaben, als Kaeso annimmt ([die Anfrage](../concepts/request-flow.md#die-anfrage)). |
 | 400 | Die Anfrage zählt Token, und der Anbieter des Modells hat keinen Endpunkt zum Zählen von Token. |
 | 400 | Der Kontext ist zu lang für das Modell. |
 | 400 | Mehrere Anbieter im Projekt bieten die Modell-ID an. Senden Sie stattdessen `provider/model`. |
@@ -162,10 +163,11 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 401 | Das Mitglied oder Dienstkonto des Schlüssels ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar. |
 | 403 | Der Schlüssel hat nur Plattformzugriff, oder es ist ein Plattform-Schlüssel. Beide rufen keine Modelle auf. |
 | 403 | Dem Mitglied oder Dienstkonto des Schlüssels fehlt das Recht `api.request`, oder es darf dieses Modell nicht verwenden. |
+| 403 | Ein Ausgabenbudget gilt, und die Anfrage nutzt eine Funktion, die der Anbieter über Tokens hinaus abrechnet, etwa ein Werkzeug des Anbieters oder `service_tier: priority` ([Limits und Budgets](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)). |
 | 404 | Das Modell steht nicht im Katalog des Projekts, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB. |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 8 MiB. |
 | 429 | Ein Ratenlimit oder Budget ist erreicht, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |
@@ -180,7 +182,7 @@ Hat ein Stream begonnen, kann sich sein Status nicht mehr ändern. Scheitert der
 
 ## Fehler des Anbieters
 
-Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter, außer wenn der Anbieter den Anbieter-Schlüssel des Projekts abgelehnt hat. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`.
+Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter, außer wenn der Anbieter den Anbieter-Schlüssel des Projekts abgelehnt hat. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`. In jedem Fehler, auch in einem gestreamten oder für ein anderes Format neu geschriebenen, ist alles, was wie ein Schlüssel oder eine Konto-, Benutzer-, Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt.
 
 Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bedeutung:
 

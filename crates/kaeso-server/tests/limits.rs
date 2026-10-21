@@ -1169,6 +1169,7 @@ async fn a_request_without_an_output_bound_runs_alone_under_a_fresh_budget() {
                 nano_usd: 1_000,
                 bounded,
             },
+            unpriced: None,
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;
@@ -1224,6 +1225,7 @@ async fn requests_count_as_in_flight_for_as_long_as_their_model_may_take() {
                 nano_usd: 600_000_000,
                 bounded: true,
             },
+            unpriced: None,
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;
@@ -1570,4 +1572,180 @@ async fn a_wave_after_valkey_loses_a_counter_rebuilds_it_and_counts_every_reques
     assert_eq!(passed(&answers), 20);
     used(&env, lim, &(21 * TOKENS).to_string()).await;
     assert_eq!(env.app.state.rebuilds.len(), 0);
+}
+
+struct Billed {
+    path: &'static str,
+    anthropic: bool,
+    body: Value,
+    headers: &'static [(&'static str, &'static str)],
+    param: &'static str,
+    feature: &'static str,
+    error_type: &'static str,
+}
+
+fn billed_requests() -> Vec<Billed> {
+    let text = "Hi";
+    let mut web_search = messages("claude-haiku-4-5", text);
+    web_search["tools"] =
+        json!([{ "type": "web_search_20250305", "name": "web_search", "max_uses": 5 }]);
+    let mut mcp = messages("claude-haiku-4-5", text);
+    mcp["mcp_servers"] =
+        json!([{ "type": "url", "url": "https://mcp.example.com/sse", "name": "example" }]);
+    vec![
+        Billed {
+            path: "/v1/messages",
+            anthropic: true,
+            body: web_search,
+            headers: &[],
+            param: "tools",
+            feature: "web_search_20250305",
+            error_type: "permission_error",
+        },
+        Billed {
+            path: "/v1/messages",
+            anthropic: true,
+            body: mcp,
+            headers: &[("anthropic-beta", "mcp-client-2025-04-04")],
+            param: "mcp_servers",
+            feature: "mcp_servers",
+            error_type: "permission_error",
+        },
+        Billed {
+            path: "/v1/messages",
+            anthropic: true,
+            body: messages("claude-haiku-4-5", text),
+            headers: &[(
+                "anthropic-beta",
+                "claude-code-20250219,context-1m-2025-08-07",
+            )],
+            param: "anthropic-beta",
+            feature: "anthropic-beta: context-1m-2025-08-07",
+            error_type: "permission_error",
+        },
+        Billed {
+            path: "/v1/responses",
+            anthropic: false,
+            body: json!({ "model": "gpt-4o", "input": text, "tools": [{ "type": "image_generation" }] }),
+            headers: &[],
+            param: "tools",
+            feature: "image_generation",
+            error_type: "request_forbidden",
+        },
+        Billed {
+            path: "/v1/responses",
+            anthropic: false,
+            body: json!({ "model": "gpt-4o", "input": text, "service_tier": "priority" }),
+            headers: &[],
+            param: "service_tier",
+            feature: "service_tier: priority",
+            error_type: "request_forbidden",
+        },
+    ]
+}
+
+async fn send_billed(env: &Env, key: &str, b: &Billed) -> Answer {
+    let mut req = axum::http::Request::builder()
+        .uri(b.path)
+        .method("POST")
+        .header("content-type", "application/json");
+    req = if b.anthropic {
+        req.header("x-api-key", key)
+            .header("anthropic-version", "2023-06-01")
+    } else {
+        req.header("authorization", format!("Bearer {key}"))
+    };
+    for (name, value) in b.headers {
+        req = req.header(*name, *value);
+    }
+    let req = req
+        .body(axum::body::Body::from(serde_json::to_vec(&b.body).unwrap()))
+        .unwrap();
+    let (status, headers, body) = env.app.raw_bytes(req).await;
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+#[tokio::test]
+async fn spend_budgets_refuse_what_the_provider_bills_beyond_tokens_before_anything_is_sent() {
+    let env = common::v1::env(None, None).await;
+    let (free, _) = key_of(&env, "unbudgeted", json!({})).await;
+    let (spend, spend_id) = key_of(&env, "spend", json!({})).await;
+    let (tokens, tokens_id) = key_of(&env, "tokens", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": spend_id, "kind": "spend_budget", "period": "month", "amount": 100, "hard": false })).await;
+    limit(&env, json!({ "level": "key", "key": tokens_id, "kind": "token_budget", "period": "month", "amount": 1000000 })).await;
+    for b in billed_requests() {
+        let what = format!("{} {}", b.path, b.feature);
+        env.mock.clear();
+        let r = send_billed(&env, &spend, &b).await;
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{what}: {}", r.text());
+        let error = &r.json()["error"];
+        assert_eq!(error["type"], b.error_type, "{what}");
+        assert_eq!(
+            error["message"],
+            format!(
+                "This key has a spend budget that can't price `{}`; ask an admin.",
+                b.feature
+            ),
+            "{what}"
+        );
+        if !b.anthropic {
+            assert_eq!(error["param"], b.param, "{what}");
+        }
+        assert!(
+            env.mock.received().is_empty(),
+            "{what}: the provider was called"
+        );
+
+        for passes in [&free, &tokens] {
+            let r = send_billed(&env, passes, &b).await;
+            assert_ne!(r.status, StatusCode::FORBIDDEN, "{what}: {}", r.text());
+        }
+        assert_eq!(env.mock.received().len(), 2, "{what}");
+    }
+
+    let flex = json!({ "model": "gpt-4o", "input": "Hi", "service_tier": "flex" });
+    let r = call(&env, "/v1/responses", Some(&spend), false, Some(flex)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+}
+
+#[tokio::test]
+async fn the_most_specific_spend_budget_names_itself_when_it_refuses_a_billed_tool() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(
+        &env,
+        json!({ "level": "project", "kind": "spend_budget", "period": "month", "amount": 100 }),
+    )
+    .await;
+    let b = billed_requests().swap_remove(0);
+    let r = send_billed(&env, &env.key, &b).await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The project has a spend budget that can't price `web_search_20250305`; ask an admin."
+    );
+    limit(&env, json!({ "level": "member", "user": env.owner.user_id, "kind": "spend_budget", "period": "month", "amount": 50 })).await;
+    let r = send_billed(&env, &env.key, &b).await;
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("The member has a spend budget"),
+        "{}",
+        r.text()
+    );
+    limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "month", "amount": 10 })).await;
+    let r = send_billed(&env, &secret, &b).await;
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("This key has a spend budget"),
+        "{}",
+        r.text()
+    );
 }

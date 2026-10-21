@@ -360,7 +360,8 @@ mod tests {
         assert_eq!(c.server.header_read_timeout.as_secs(), 30);
         assert_eq!(c.key_failures.per_address, 100);
         assert_eq!(c.key_failures.window.as_secs(), 60);
-        assert_eq!(c.body_limits.model_api.0, 32 << 20);
+        assert_eq!(c.body_limits.model_api.0, 8 << 20);
+        assert_eq!(c.body_limits.in_flight.0, 512 << 20);
         assert_eq!(c.body_limits.platform_api.0, 1 << 20);
         assert_eq!(c.body_limits.provider_response.0, 128 << 20);
         assert_eq!(c.logs.buffer_size.0, 256 << 20);

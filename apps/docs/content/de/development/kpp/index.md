@@ -86,6 +86,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `dispatch` | Die Codec-Funktionen, zur Laufzeit nach `DialectId` gewählt |
 | `wire` | serde-Bausteine für verlustfreie Wire-Structs ([Wire-Structs](codec-design.md#wire-structs)) |
 | `sse` | Parser und Writer für Event-Streams ([Server-sent Events](codec-design.md#server-sent-events)) |
+| `limits` | Wie viele Nachrichten, Blöcke, Werkzeuge und Embedding-Eingaben eine Anfrage höchstens enthält ([Grenzen einer Anfrage](codec-design.md#grenzen-einer-anfrage)) |
 | `cross` | Die Regeln für Daten, die den Dialekt wechseln, und die Extras-Allowlist |
 | `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](reasoning.md#reasoning-über-runden-hinweg)) |
 | `keepalive` | Frames, die laufende Streams nicht verstummen lassen ([Keepalives](cross-format.md#keepalives)) |

@@ -154,6 +154,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | Status | Cause |
 | --- | --- |
 | 400 | Kaeso can't read the request, or the model doesn't take a setting or field the request uses. |
+| 400 | The request holds more messages, content blocks in one message, tools or embedding inputs than Kaeso takes ([the request](../concepts/request-flow.md#the-request)). |
 | 400 | The request counts tokens, and the model's provider has no endpoint for counting them. |
 | 400 | The context is too long for the model. |
 | 400 | Several providers in the project serve the model id. Send `provider/model` instead. |
@@ -162,10 +163,11 @@ The message names the cause and what to do. These are the causes behind each sta
 | 401 | The key's member or service account is no longer active, or its project or organization can't be used. |
 | 403 | The key has platform access only, or it is a platform key. Neither calls models. |
 | 403 | The key's member or service account lacks the right `api.request`, or may not use this model. |
+| 403 | A spend budget applies, and the request uses a feature the provider bills beyond tokens, such as a provider-run tool or `service_tier: priority` ([limits and budgets](../console/limits-and-budgets.md#features-a-spend-budget-cant-price)). |
 | 404 | The model isn't in the project's catalogue, or the provider doesn't serve it to the project's provider key. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |
-| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. |
+| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. |
 | 429 | A rate limit or budget is reached, and the message names it. For a used-up budget, the message says when it resets. |
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |
@@ -180,7 +182,7 @@ Once a stream has started, its status can't change. If the provider fails or end
 
 ## Provider errors
 
-When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`.
+When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`. In every error, also one streamed or rewritten for another format, anything that looks like a key or an account, user, project or organization id is replaced by `[redacted]`.
 
 Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 

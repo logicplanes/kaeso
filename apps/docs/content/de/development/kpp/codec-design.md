@@ -91,6 +91,19 @@ Wire-Structs, die in `Ext` verwendet werden, folgen diesen Regeln:
 
 Der Codec für OpenAI Responses liest typisierte Werte mit einfachen serde-Structs und schreibt mit einem geordneten JSON-Baum (`openai_responses::node::Node`), der rohes JSON Byte für Byte einbetten kann; `serde_json::Value` sortiert Objektschlüssel und würde rohe Payloads umformatieren. [Wie genaue Schreibweisen erhalten bleiben](openai-responses.md#wie-genaue-schreibweisen-erhalten-bleiben) beschreibt, wie er sie reproduziert.
 
+## Grenzen einer Anfrage
+
+Eine Anfrage zu decodieren kostet weit mehr Speicher als ihr Body: Jede Nachricht, jeder Inhaltsblock und jedes Werkzeug wird zu typisierten KPP-Werten mit ihren Extras. Ein Body aus winzigen Elementen brauchte deshalb früher mehr als das 100-Fache seiner Größe. Das `decode_request` jedes Codecs führt zuerst `limits::request_shape` aus, das den Body mit `IgnoredAny` von serde zählt und dafür nichts alloziert. Eine Anfrage über einer Grenze wird mit `InvalidRequest`, Status 400 und dem Feld in `param` abgelehnt, bevor etwas davon decodiert wird:
+
+| Grenze | Wert | Zählt | Quelle |
+| --- | --- | --- | --- |
+| `MAX_MESSAGES` | 100.000 | `messages` (Anthropic Messages, Chat Completions) oder Elemente von `input` (Responses) | Die Grenze von Anthropic: 100.000 Nachrichten pro Anfrage |
+| `MAX_BLOCKS_PER_MESSAGE` | 10.000 | Inhaltsblöcke einer Nachricht, eines Eingabeelements oder des System-Prompts, mit den Blöcken in ihren Werkzeugergebnissen | Weit über der Grenze jedes Anbieters für Bilder oder Dokumente pro Anfrage |
+| `MAX_TOOLS` | 10.000 | `tools` und `functions` von Chat | Die Kataloggröße der Werkzeugsuche von Anthropic |
+| `MAX_EMBEDDING_INPUTS` | 2.048 | Eingaben eines `input`-Arrays von OpenAI Embeddings | Die Grenze von OpenAI: 2.048 Eingaben |
+
+Ein Body, der kein JSON ist oder nicht wie eine Anfrage des Dialekts aufgebaut ist, wird gezählt, soweit er sich lesen lässt, und das Decodieren meldet dann, was falsch ist. Ein maskierter Schlüssel wie `"messages"` zählt wie der Schlüssel, den er schreibt. `request_shape` gibt die Zählung auch als `RequestShape` zurück, damit das Gateway den Speicher einer Anfrage schätzen kann, bevor es sie decodiert.
+
 ## Server-sent Events
 
 `sse::SseParser` folgt dem [WHATWG-Algorithmus für Event-Streams](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation) bei Zeilen, Kommentaren, mehrzeiligen Daten, `id` (ein Wert mit NUL ist keine ID) und `retry` (nur ASCII-Ziffern, die in einen `u64` passen), mit bewussten Abweichungen, damit nichts verloren geht:

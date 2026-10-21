@@ -35,6 +35,19 @@ A rate always refuses requests above it, and never alerts. A budget is hard whil
 
 A budget alerts at up to 10 percentages of its amount, by default at 50, 80 and 100 percent. At each, Kaeso emails the organization's owners and admins and the project's admins. For a key's budget, it also emails the key's owner. Anyone can turn these emails off under **Budget alerts** in their account.
 
+## Features a spend budget can't price
+
+Kaeso prices a request by its tokens. Some features also bill per call or at a higher rate, and Kaeso can't count that. So while any spend budget applies to a request, hard or soft, Kaeso refuses it with status 403 before it reaches the provider when it uses:
+
+- a tool the provider runs, such as Anthropic's `web_search` or `code_execution`, or OpenAI's `web_search`, `file_search`, `image_generation`, `code_interpreter` or `mcp`;
+- `mcp_servers`, `web_search_options`, OpenRouter's `plugins` or xAI's `search_parameters`;
+- a `service_tier` other than `auto`, `default`, `flex`, `on_demand` or `standard_only`, such as `priority`;
+- the `anthropic-beta` `context-1m-…`, which bills long prompts at a higher rate.
+
+Tools the app runs itself pass: functions and custom tools, Anthropic's `bash`, `text_editor`, `computer` and `memory`, and OpenAI's `local_shell`, `apply_patch` and `computer_use_preview`. Token budgets and rates don't refuse these features, and without a spend budget every feature passes.
+
+The message names the feature and the budget's level, such as "This key has a spend budget that can't price `web_search_20250305`; ask an admin." To use such a feature, call it with a key that no spend budget covers: not the key's, its owner's or the project's.
+
 ## Change a limit
 
 Editing a limit changes its amount and, for a budget, its alerts and whether it's hard. To change its kind, period or model, remove it and add another.

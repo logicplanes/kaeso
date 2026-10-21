@@ -4,6 +4,10 @@ use rust_decimal::prelude::ToPrimitive;
 
 use crate::catalogue::Fields;
 
+mod unpriced;
+
+pub use unpriced::{Unpriced, unpriced};
+
 const MILLION: Decimal = Decimal::from_parts(1_000_000, 0, 0, false, 0);
 const BILLION: Decimal = Decimal::from_parts(1_000_000_000, 0, 0, false, 0);
 const TRILLION: Decimal = Decimal::from_parts(3_567_587_328, 232, 0, false, 0);

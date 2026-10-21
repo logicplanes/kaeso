@@ -410,6 +410,13 @@ const messages = (): Rule[] => [
     (v) => t("errors.budgetNoReset.key", "Budget used up: this key's {limit}; it does not reset, so raise the limit to continue.", v),
     { limit: "limit" },
   ),
+  rule("errors.unpricedFeature.project", (v) =>
+    t("errors.unpricedFeature.project", "The project has a spend budget that can't price `{feature}`; ask an admin.", v),
+  ),
+  rule("errors.unpricedFeature.member", (v) =>
+    t("errors.unpricedFeature.member", "The member has a spend budget that can't price `{feature}`; ask an admin.", v),
+  ),
+  rule("errors.unpricedFeature.key", (v) => t("errors.unpricedFeature.key", "This key has a spend budget that can't price `{feature}`; ask an admin.", v)),
   rule("errors.hardBudgetsUnavailable", () =>
     t("errors.hardBudgetsUnavailable", "Kaeso cannot check this project's hard budgets right now; try again shortly."),
   ),

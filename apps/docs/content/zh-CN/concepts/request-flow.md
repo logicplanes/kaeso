@@ -29,7 +29,9 @@ Kaeso 会转换每个请求，而不是原样透传，并且每个请求只发�
 
 ## 请求
 
-请求正文最大为 `KAESO_BODY_LIMITS_MODEL_API`，默认 32 MiB。更大的请求会得到 413。
+请求正文最大为 `KAESO_BODY_LIMITS_MODEL_API`，默认 8 MiB。更大的请求会得到 413。
+
+KPP 在解码之前先统计请求正文的内容。超过 100,000 条消息或输入项、单条消息超过 10,000 个内容块、超过 10,000 个工具或 2,048 个 embedding 输入时，请求会得到 400。随后 Kaeso 估算请求在翻译和发送期间占用的内存。当进行中的请求已用满 `KAESO_BODY_LIMITS_IN_FLIGHT`（默认 512 MiB）时，该请求会等待它们完成。
 
 随后，KPP 把请求从应用的格式（例如 Chat Completions 或 Messages）解码为其规范格式。无法读取的请求会在这里被拒绝。要求 Kaeso 从不发送给服务商的内容的请求也会被拒绝，例如多个候选结果或存储的 Responses 状态。
 
