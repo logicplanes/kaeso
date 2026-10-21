@@ -59,8 +59,13 @@ describe("formatRelative", () => {
     expect(formatRelative(new Date(2026, 9, 15, 9, 0), now)).toBe("3 h ago");
     expect(formatRelative(new Date(2026, 9, 17, 12, 0), now)).toBe("in 2 days");
     expect(formatRelative(new Date(2026, 9, 12, 12, 0), now)).toBe("3 days ago");
-    expect(formatRelative(new Date(2026, 8, 1), now)).toBe("1 Sept");
-    expect(formatRelative(new Date(2025, 8, 1), now)).toBe("1 Sept 2025");
+    expect(formatRelative(new Date(2026, 8, 1), now)).toBe("1 Sep");
+    expect(formatRelative(new Date(2025, 8, 1), now)).toBe("1 Sep 2025");
+  });
+
+  it("abbreviates September with three letters like every other month", () => {
+    expect(formatDate(new Date(2026, 8, 29), { time: false })).toBe("29 Sep 2026");
+    expect(formatDate("2026-09-29T08:00:00Z", { utc: true })).toBe("29 Sep 2026 UTC");
   });
 });
 

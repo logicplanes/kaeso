@@ -37,6 +37,15 @@ const inZone = (): { timeZone?: string } => (zone ? { timeZone: zone } : {});
 const numberLocale = () => (current === "en" ? "en-US" : current);
 const dateLocale = () => (current === "en" ? "en-GB" : current);
 
+// CLDR's en-GB writes September alone with four letters ("Sept"), which breaks a column of three-letter months.
+const formatDay = (f: Intl.DateTimeFormat, d: Date) =>
+  current === "en"
+    ? f
+        .formatToParts(d)
+        .map((p) => (p.type === "month" && p.value === "Sept" ? "Sep" : p.value))
+        .join("")
+    : f.format(d);
+
 export function formatNumber(value: number, options: Intl.NumberFormatOptions = {}): string {
   return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 2, ...options }).format(value);
 }
@@ -168,7 +177,7 @@ export function formatDate(value: DateInput, options: { time?: boolean; utc?: bo
     ...(options.time ? { hour: "2-digit", minute: "2-digit", ...(options.seconds ? { second: "2-digit" } : {}), hourCycle: "h23" } : {}),
     ...(options.utc ? { timeZone: "UTC" } : inZone()),
   });
-  return `${f.format(d)}${options.utc ? " UTC" : ""}`;
+  return `${formatDay(f, d)}${options.utc ? " UTC" : ""}`;
 }
 
 export function formatDateRange(from: DateInput, to: DateInput): string {
@@ -220,10 +229,13 @@ export function formatRelative(value: DateInput, now: DateInput = Date.now()): s
       : t("format.daysAgo", "{count, plural, one {# day ago} other {# days ago}}", { count });
   }
   const year = new Intl.DateTimeFormat("en", { year: "numeric", ...inZone() });
-  return new Intl.DateTimeFormat(dateLocale(), {
-    day: "numeric",
-    month: "short",
-    ...inZone(),
-    ...(year.format(d) !== year.format(toDate(now)) ? { year: "numeric" } : {}),
-  }).format(d);
+  return formatDay(
+    new Intl.DateTimeFormat(dateLocale(), {
+      day: "numeric",
+      month: "short",
+      ...inZone(),
+      ...(year.format(d) !== year.format(toDate(now)) ? { year: "numeric" } : {}),
+    }),
+    d,
+  );
 }

@@ -1,14 +1,13 @@
 import type { ModelPickerOption } from "@logicplanes/kaeso-ui/playground";
 import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
-import { capabilities } from "~/features/project/models/model-fields";
+import { capabilities, priceLabel } from "~/features/project/models/model-fields";
 import { modelName } from "~/format/models";
-import { costUSD } from "~/format/money";
 import { t } from "~/i18n";
 import { recall, remember } from "~/shell/session-memory";
 
 export function pickerPrice(input: string | null | undefined, output: string | null | undefined): string | undefined {
-  return input && output ? `${costUSD(input)} / ${costUSD(output)}` : undefined;
+  return input && output ? priceLabel({ input_price: input, output_price: output }) : undefined;
 }
 
 const notServed = () => t("kaeso.modelOptions.notServed", "The provider doesn't serve it");

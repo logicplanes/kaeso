@@ -202,6 +202,9 @@ pub struct SearchParams {
     pub include_deprecated: Option<bool>,
     #[doc = "How many results, 1 to 200 (default 50)."]
     pub limit: Option<u32>,
+    #[doc = "Only current models, the ones `all_current` adds: not deprecated,\n\
+        producing text or embeddings."]
+    pub current: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -221,6 +224,48 @@ pub struct SearchHit {
     pub deprecated: bool,
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
+    #[doc = "USD per million input tokens, as an entry would start with it."]
+    #[schema(value_type = Option<String>, example = "3.00")]
+    pub input_price: Option<rust_decimal::Decimal>,
+    #[doc = "USD per million output tokens, as an entry would start with it."]
+    #[schema(value_type = Option<String>, example = "15.00")]
+    pub output_price: Option<rust_decimal::Decimal>,
+    #[doc = "The context window in tokens."]
+    pub context_limit: Option<u64>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "The models.dev models matching a search, newest first per provider.")]
+pub struct ModelSearch {
+    #[doc = "The first `limit` matches."]
+    pub data: Vec<SearchHit>,
+    #[doc = "Whether more models match than `data` holds."]
+    pub has_more: bool,
+    #[doc = "How many models match."]
+    pub total: u32,
+    #[doc = "How many of the matches the catalogue doesn't have yet."]
+    pub not_in_catalogue: u32,
+}
+
+fn is_current(
+    state: &AppState,
+    provider: &str,
+    id: &str,
+    m: &kaeso_core::models_dev::Model,
+) -> bool {
+    if m.is_deprecated() {
+        return false;
+    }
+    let embeddings = state
+        .models_dev
+        .supplement()
+        .get(provider, id)
+        .and_then(|f| f.egress_dialect)
+        == Some(kaeso_kpp::DialectId::OpenAiEmbeddings);
+    embeddings
+        || m.modalities
+            .as_ref()
+            .is_some_and(|x| x.output.iter().any(|o| o == "text"))
 }
 
 #[utoipa::path(
@@ -229,14 +274,14 @@ pub struct SearchHit {
     summary = "Searches models.dev for models to add, newest first per provider.",
     tag = "models",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), SearchParams),
-    responses((status = 200, body = List<SearchHit>))
+    responses((status = 200, body = ModelSearch))
 )]
 pub async fn search(
     State(state): State<AppState>,
     ctx: Ctx,
     Path(_p): Path<(String, String)>,
     Query(p): Query<SearchParams>,
-) -> ApiResult<Json<List<SearchHit>>> {
+) -> ApiResult<Json<ModelSearch>> {
     let limit = p.limit.unwrap_or(50);
     if !(1..=200).contains(&limit) {
         return Err(ApiError::invalid(
@@ -265,6 +310,9 @@ pub async fn search(
             if m.is_deprecated() && !p.include_deprecated.unwrap_or(false) {
                 continue;
             }
+            if p.current.unwrap_or(false) && !is_current(&state, pid, mid, m) {
+                continue;
+            }
             if let Some(q) = &q
                 && !mid.to_lowercase().contains(q.as_str())
                 && !m
@@ -286,6 +334,9 @@ pub async fn search(
                 catalogue_model_id: in_catalogue
                     .get(&(pid.as_str(), mid.as_str()))
                     .map(|id| CatalogueModelId::from_uuid(*id)),
+                input_price: None,
+                output_price: None,
+                context_limit: None,
             });
         }
     }
@@ -295,8 +346,32 @@ pub async fn search(
             .then(b.release_date.cmp(&a.release_date))
             .then(a.model_id.cmp(&b.model_id))
     });
+    let total = u32::try_from(hits.len()).unwrap_or(u32::MAX);
+    let not_in_catalogue = u32::try_from(
+        hits.iter()
+            .filter(|h| h.catalogue_model_id.is_none())
+            .count(),
+    )
+    .unwrap_or(u32::MAX);
     hits.truncate(limit as usize);
-    Ok(Json(List::complete(hits)))
+    for h in &mut hits {
+        if let Some(f) = core::preview(
+            &h.provider,
+            &h.model_id,
+            &loaded.snapshot,
+            state.models_dev.supplement(),
+        ) {
+            h.input_price = f.input_price;
+            h.output_price = f.output_price;
+            h.context_limit = f.context_limit;
+        }
+    }
+    Ok(Json(ModelSearch {
+        has_more: hits.len() < total as usize,
+        data: hits,
+        total,
+        not_in_catalogue,
+    }))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -562,19 +637,7 @@ pub async fn batch(
         (None, true) => models
             .into_iter()
             .flatten()
-            .filter(|(_, m)| !m.is_deprecated())
-            .filter(|(id, m)| {
-                let embeddings = state
-                    .models_dev
-                    .supplement()
-                    .get(prov.id, id)
-                    .and_then(|f| f.egress_dialect)
-                    == Some(kaeso_kpp::DialectId::OpenAiEmbeddings);
-                embeddings
-                    || m.modalities
-                        .as_ref()
-                        .is_some_and(|x| x.output.iter().any(|o| o == "text"))
-            })
+            .filter(|(id, m)| is_current(&state, prov.id, id, m))
             .map(|(id, _)| id.clone())
             .collect(),
         _ => {

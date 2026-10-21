@@ -43,7 +43,10 @@ describe("AliasesTab", () => {
     const { user } = await renderApp(projectPath("models?tab=aliases"));
 
     expect(await screen.findByText("No aliases yet")).toBeInTheDocument();
-    expect(screen.getByText("A name like fast that apps send as model; retarget it and every app follows.")).toBeInTheDocument();
+    expect(screen.getByText("fast", { selector: "code" }).parentElement).toHaveTextContent(
+      /^A name like fast that apps send as model; retarget it and every app follows\.$/,
+    );
+    expect(screen.getByText("model", { selector: "code" })).toBeInTheDocument();
     const create = screen.getAllByRole("button", { name: "Create alias" });
     expect(create).toHaveLength(2);
     await user.click(create[1] as HTMLElement);

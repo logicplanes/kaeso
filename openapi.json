@@ -12625,6 +12625,15 @@
               "format": "int32",
               "minimum": 0
             }
+          },
+          {
+            "name": "current",
+            "in": "query",
+            "description": "Only current models, the ones `all_current` adds: not deprecated,\nproducing text or embeddings.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -12632,7 +12641,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/List_SearchHit"
+                  "$ref": "#/components/schemas/ModelSearch"
                 }
               }
             }
@@ -19944,86 +19953,6 @@
           }
         }
       },
-      "List_SearchHit": {
-        "type": "object",
-        "description": "A page of results.",
-        "required": [
-          "data",
-          "has_more"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "A models.dev model.",
-              "required": [
-                "provider",
-                "model_id",
-                "deprecated"
-              ],
-              "properties": {
-                "catalogue_model_id": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/CatalogueModelId",
-                      "description": "The catalogue entry, if the project has it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "deprecated": {
-                  "type": "boolean",
-                  "description": "Whether models.dev marks it deprecated."
-                },
-                "family": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Its family."
-                },
-                "model_id": {
-                  "type": "string",
-                  "description": "The model id."
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Its name."
-                },
-                "provider": {
-                  "type": "string",
-                  "description": "The provider."
-                },
-                "release_date": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Release date."
-                }
-              }
-            },
-            "description": "The items."
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "Whether more items follow."
-          },
-          "next_cursor": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Pass as `after` to get the next page; `null` on the last page."
-          }
-        }
-      },
       "List_ServiceAccountView": {
         "type": "object",
         "description": "A page of results.",
@@ -20986,6 +20915,41 @@
           }
         },
         "additionalProperties": false
+      },
+      "ModelSearch": {
+        "type": "object",
+        "description": "The models.dev models matching a search, newest first per provider.",
+        "required": [
+          "data",
+          "has_more",
+          "total",
+          "not_in_catalogue"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "description": "The first `limit` matches."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more models match than `data` holds."
+          },
+          "not_in_catalogue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many of the matches the catalogue doesn't have yet.",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many models match.",
+            "minimum": 0
+          }
+        }
       },
       "ModelUpdate": {
         "type": "object",
@@ -22778,6 +22742,15 @@
               }
             ]
           },
+          "context_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The context window in tokens.",
+            "minimum": 0
+          },
           "deprecated": {
             "type": "boolean",
             "description": "Whether models.dev marks it deprecated."
@@ -22789,6 +22762,14 @@
             ],
             "description": "Its family."
           },
+          "input_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million input tokens, as an entry would start with it.",
+            "example": "3.00"
+          },
           "model_id": {
             "type": "string",
             "description": "The model id."
@@ -22799,6 +22780,14 @@
               "null"
             ],
             "description": "Its name."
+          },
+          "output_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million output tokens, as an entry would start with it.",
+            "example": "15.00"
           },
           "provider": {
             "type": "string",

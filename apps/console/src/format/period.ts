@@ -19,7 +19,13 @@ export function dayFormat(english: "en-US" | "en-GB", options: Intl.DateTimeForm
     const tag = locale() === "en" ? english : locale();
     let f = made.get(tag);
     if (!f) made.set(tag, (f = new Intl.DateTimeFormat(tag, { ...options, timeZone: "UTC" })));
-    return f.format(new Date(`${day}T00:00:00Z`));
+    const date = new Date(`${day}T00:00:00Z`);
+    if (tag !== "en-GB") return f.format(date);
+    // CLDR's en-GB writes September alone with four letters ("Sept"), which breaks a column of three-letter months.
+    return f
+      .formatToParts(date)
+      .map((p) => (p.type === "month" && p.value === "Sept" ? "Sep" : p.value))
+      .join("");
   };
 }
 
