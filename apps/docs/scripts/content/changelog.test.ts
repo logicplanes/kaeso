@@ -285,6 +285,44 @@ describe("the changelog page", () => {
     expect(latest?.content.repository).toBe(repoUrl);
   });
 
+  it("points a link to a version on another page at that page, wherever the link sits", () => {
+    const link = (id: string) => ({ t: "link" as const, kind: "anchor" as const, href: `#${id}`, c: [{ t: "strong" as const, c: [{ t: "text" as const, v: id }] }] });
+    const inlines = [link("v0.1.0"), link("v0.2.0"), { t: "em" as const, c: [link("v0.1.0")] }, { t: "code" as const, v: "x" }];
+    const blocks: Block[] = [
+      { t: "heading", level: 4, id: "h", c: inlines },
+      { t: "paragraph", c: inlines },
+      { t: "list", ordered: false, start: 1, items: [{ c: [{ t: "paragraph", c: inlines }] }] },
+      { t: "quote", c: [{ t: "paragraph", c: inlines }] },
+      { t: "callout", kind: "note", c: [{ t: "paragraph", c: inlines }] },
+      { t: "table", align: ["start"], head: [inlines], rows: [[inlines]] },
+      {
+        t: "links",
+        items: [
+          { kind: "anchor", href: "#v0.1.0", title: inlines, description: inlines },
+          { kind: "anchor", href: "#v0.2.0", title: [], description: [] },
+          { kind: "page", href: "/guides", title: [], description: [] },
+        ],
+      },
+      { t: "rule" },
+    ];
+    const entry = (version: string, latest: boolean) => ({
+      id: `v${version}`,
+      version,
+      prerelease: false,
+      yanked: false,
+      latest,
+      intro: blocks,
+      sections: [{ name: "Fixed", group: "fixed" as const, id: `v${version}-fixed`, blocks, topics: [{ name: "Console", id: `v${version}-fixed-console`, blocks }] }],
+    });
+    const [latest, older] = changelogPages({ releases: [entry("0.2.0", true), entry("0.1.0", false)] }, "/de/changelog");
+    const drawn = text(latest?.content.releases[0]?.intro ?? []);
+    expect(drawn.split('"kind":"page","href":"/de/changelog/0.1#v0.1.0"')).toHaveLength(1 + 7 * 2 + 5);
+    expect(drawn).toContain('"kind":"anchor","href":"#v0.2.0"');
+    expect(drawn).toContain('"kind":"page","href":"/guides"');
+    expect(text(latest?.content.releases[0]?.sections[0]?.topics[0]?.blocks ?? [])).toBe(drawn);
+    expect(text(older?.content.releases[0]?.intro ?? [])).toContain('"kind":"page","href":"/de/changelog#v0.2.0"');
+  });
+
   it("keeps a changelog of one series, or none, on a single page", () => {
     const one = buildChangelog(fixture, docsRoot).content;
     const single = { ...one, releases: one.releases.filter((r) => r.version.startsWith("1.1.")) };
