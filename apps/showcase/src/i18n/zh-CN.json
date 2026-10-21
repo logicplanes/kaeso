@@ -1048,6 +1048,7 @@
   "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "让标题下的副标题换行显示，而不是以省略号截断，用于需要完整阅读的描述。",
   "Lets a subtitle under its title wrap. Set by `List`.": "让标题下的副标题换行显示。由 `List` 设置。",
   "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "以已输入但尚未添加为标签的文字调用，让表单在添加前就能计入它。",
+  "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.": "仅限整数，例如天数：手机上显示数字键盘，输入框中不加千位分隔符。",
   "Marks the `first` or `last` category as covering only part of its span: its bars are drawn lighter and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "将第一个（`first`）或最后一个（`last`）类别标记为只覆盖其跨度的一部分：其柱形以较浅颜色绘制，提示框显示“不完整”。`ongoing` 将最后一个标记为仍在计数，例如今天，并显示“截至目前”。",
   "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "在提示框中显示每个系列占该类别总数的比例（默认开启）。当一个系列是另一个系列的一部分时关闭它，例如请求中的错误。",
   "Names the times under the axis (\"3 Aug\", \"2026\"). Defaults to calendar ticks in `timeZone`; pass it with `tickAt=\"points\"` for buckets.": "命名坐标轴下方的时间（“8月3日”、“2026”）。默认是 `timeZone` 中的日历刻度；对时间段请与 `tickAt=\"points\"` 一起传入。",

@@ -52,7 +52,7 @@ test("organizations: one is created with an owner and opens with its metadata", 
 test("logging and system: retention defaults change and a test email is sent", async ({ page }) => {
   await openInstance(page, "Logging");
   await page.getByRole("textbox", { name: "Default content retention" }).fill("14");
-  await page.getByRole("button", { name: "Save retention" }).click();
+  await page.getByRole("button", { name: "Save default content retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
   await page.getByRole("button", { name: "Send test email" }).click();

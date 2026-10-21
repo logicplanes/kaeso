@@ -46,6 +46,8 @@ describe("an organization seen from the instance", () => {
     expect(await screen.findByRole("heading", { name: "Northwind Labs", level: 1 })).toBeInTheDocument();
     const usage = screen.getByRole("list", { name: "Usage in the last 30 days" });
     expect(await within(usage).findByText("3,000")).toBeInTheDocument();
+    expect(usage).toHaveClass("lg:grid-cols-4");
+    expect(usage).not.toHaveClass("grid-cols-1");
     expect(within(usage).getByText("100 a day on average")).toBeInTheDocument();
     expect(within(usage).getByText("1.5M")).toBeInTheDocument();
     expect(within(usage).getByText("500 per request")).toBeInTheDocument();

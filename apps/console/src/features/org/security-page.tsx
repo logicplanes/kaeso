@@ -614,6 +614,7 @@ function KeyPolicy({ org, days }: { org: string; days: number | null }) {
                   <NumberInput
                     aria-label={t("org.keyLifetime.title", "Maximum key lifetime")}
                     size="sm"
+                    integer
                     value={draft}
                     onValueChange={setDraft}
                     min="1"

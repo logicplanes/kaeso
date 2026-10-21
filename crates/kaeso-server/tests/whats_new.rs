@@ -31,10 +31,11 @@ async fn a_new_user_sees_nothing_and_an_old_one_sees_every_release_since() {
 
     let fresh = app.get("/me/whats-new", &owner.cookie).await;
     assert_eq!(fresh.status, StatusCode::OK);
-    assert_eq!(
-        fresh.body,
-        json!({ "current": RUNNING, "seen": null, "releases": [] })
-    );
+    assert_eq!(fresh.body["current"], RUNNING);
+    assert_eq!(fresh.body["seen"], Value::Null);
+    assert_eq!(fresh.body["releases"], json!([]));
+    assert_eq!(fresh.body["running"]["version"], RUNNING);
+    assert_eq!(fresh.body["running"]["notes"], "");
 
     let seen = app
         .post("/me/whats-new/seen", json!({}), Some(&owner.cookie))
@@ -78,6 +79,7 @@ async fn a_new_user_sees_nothing_and_an_old_one_sees_every_release_since() {
         .await;
     let caught_up = app.get("/me/whats-new", &owner.cookie).await;
     assert_eq!(caught_up.body["releases"], json!([]));
+    assert_eq!(caught_up.body["running"]["version"], RUNNING);
     s.cleanup().await;
 }
 

@@ -52,7 +52,7 @@ describe("instance general page", () => {
     expect(screen.getByRole("combobox", { name: "Time zone" })).toHaveValue("UTC");
     expect(screen.getByText(/\(GMT\+0\)$/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Default metadata retention" })).not.toBeInTheDocument();
-    expect(screen.queryByText("smtp")).not.toBeInTheDocument();
+    expect(screen.queryByText("SMTP server")).not.toBeInTheDocument();
   });
 
   it("shows the API's message when the settings couldn't load", async () => {
@@ -137,37 +137,36 @@ describe("request log retention", () => {
     expect(screen.getByRole("textbox", { name: "Maximum content retention" })).toHaveValue("90");
   });
 
-  it("explains what keeps the retention from being saved", async () => {
+  it("explains what keeps each retention from being saved", async () => {
     signedIn();
     settingsApi();
     const { user } = await renderApp(LOGGING);
     await screen.findByRole("textbox", { name: "Default metadata retention" });
-    const save = () => screen.getByRole("button", { name: "Save retention" });
-    await hoverReason(user, save(), "No change to save");
+    const save = (name: string) => screen.getByRole("button", { name });
+    await hoverReason(user, save("Save default metadata retention"), "No change to save");
     await setNumber(user, "Default content retention", "");
-    await hoverReason(user, save(), "Enter whole days, at least 1");
-    await setNumber(user, "Default content retention", "30");
+    await hoverReason(user, save("Save default content retention"), "Enter whole days, at least 1");
     await setNumber(user, "Default metadata retention", "400");
-    await hoverReason(user, save(), "The default metadata retention is above its maximum");
-    await setNumber(user, "Default metadata retention", "90");
+    await hoverReason(user, save("Save default metadata retention"), "The default metadata retention is above its maximum");
     await setNumber(user, "Default content retention", "120");
-    await hoverReason(user, save(), "The default content retention is above its maximum");
-    await setNumber(user, "Default content retention", "60");
-    await setNumber(user, "Default metadata retention", "45");
-    await hoverReason(user, save(), "Content can't be kept longer than metadata");
+    await hoverReason(user, save("Save default content retention"), "The default content retention is above its maximum");
+    await setNumber(user, "Default metadata retention", "20");
+    await hoverReason(user, save("Save default metadata retention"), "Content can't be kept longer than metadata");
     expect(patches()).toEqual([]);
   });
 
-  it("saves the defaults and maximums together", async () => {
+  it("saves each retention next to its field, in whole days", async () => {
     signedIn();
     settingsApi();
     const { user } = await renderApp(LOGGING);
-    await screen.findByRole("textbox", { name: "Default metadata retention" });
+    const metadata = await screen.findByRole("textbox", { name: "Default metadata retention" });
+    expect(metadata).toHaveAttribute("inputmode", "numeric");
     await setNumber(user, "Default metadata retention", "60");
-    await setNumber(user, "Maximum metadata retention", "180");
-    await user.click(screen.getByRole("button", { name: "Save retention" }));
+    await user.click(screen.getByRole("button", { name: "Save default metadata retention" }));
     expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
-    expect(patches()).toEqual([{ metadata_retention_days: 60, content_retention_days: 30, max_metadata_retention_days: 180, max_content_retention_days: 90 }]);
+    expect(patches()).toEqual([{ metadata_retention_days: 60 }]);
+    expect(screen.getByText("No organization keeps metadata longer.")).toBeInTheDocument();
+    expect(screen.getByText("No organization keeps bodies longer.")).toBeInTheDocument();
   });
 });
 
@@ -176,7 +175,7 @@ describe("the test email", () => {
     signedIn();
     settingsApi();
     await renderApp(SYSTEM);
-    expect(await screen.findByText("smtp")).toBeInTheDocument();
+    expect(await screen.findByText("SMTP server")).toBeInTheDocument();
     expect(screen.getByText("mail.example.com:587")).toBeInTheDocument();
     expect(screen.getByText("kaeso@example.com")).toBeInTheDocument();
   });
@@ -185,8 +184,16 @@ describe("the test email", () => {
     signedIn();
     settingsApi({ mail: { transport: "log", host: null, port: null, from: "kaeso@example.com" } as never });
     await renderApp(SYSTEM);
-    expect(await screen.findByText("log")).toBeInTheDocument();
+    expect(await screen.findByText("Gateway log")).toBeInTheDocument();
+    expect(screen.getByText("Emails are written to the gateway's log, not sent.")).toBeInTheDocument();
     expect(screen.queryByText("Host")).not.toBeInTheDocument();
+  });
+
+  it("names a transport it doesn't know as the configuration does", async () => {
+    signedIn();
+    settingsApi({ mail: { transport: "sendmail", host: null, port: null, from: "kaeso@example.com" } as never });
+    await renderApp(SYSTEM);
+    expect(await screen.findByText("sendmail")).toBeInTheDocument();
   });
 
   it("sends one to yourself when no recipient is given", async () => {
