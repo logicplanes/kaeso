@@ -71,7 +71,7 @@ Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur dies
 - eine Organisation erstellen, eine andere verlassen oder das Konto löschen;
 - eine andere Organisation öffnen oder die Instanz verwalten.
 
-Ohne Passwort legen Sie eines mit **Passwort vergessen?** auf der Anmeldeseite fest.
+Ohne Passwort wählen Sie **Link per E-Mail senden** unter **Konto** › **Sicherheit** oder **Passwort vergessen?** auf der Anmeldeseite und legen eines über die E-Mail fest. Denselben Link bietet die Konsole an, wenn eine Aktion eine weitere Anmeldung verlangt und nichts anderes funktioniert.
 
 ## E-Mails wählen
 

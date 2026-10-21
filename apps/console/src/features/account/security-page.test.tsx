@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { signedIn } from "~/test/fixtures";
+import { signedIn, whoAmI } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
-import { signedInReply } from "~/test/fixtures/public";
+import { emailSent, signedInReply } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -52,6 +52,19 @@ describe("password", () => {
     await user.click(within(dialog).getByRole("button", { name: "Set password" }));
     expect(await (await notifications()).findByText("Password set; other sessions signed out")).toBeInTheDocument();
     expect(requests("POST", "me/password").map((r) => r.body)).toEqual([{ new_password: "correct horse battery" }]);
+  });
+
+  it("sends a link to set a first password from a single sign-on session, which can't set one itself", async () => {
+    signedIn({ session: whoAmI({ session: { ...whoAmI().session, method: "oidc" } }) });
+    on("GET", "me", me({ has_password: false }));
+    on("GET", "me/sign-in-again", { password: false, magic_link: false, set_password: true, sso: [] });
+    on("POST", "auth/password-reset", emailSent("If an account exists for this address, we sent it a password reset link."));
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText("Not set; set one through a link sent to your email.")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Email me a link" }));
+    expect(await (await notifications()).findByText("Link sent to owner@example.com")).toBeInTheDocument();
+    expect(requests("POST", "auth/password-reset").map((r) => r.body)).toEqual([{ email: "owner@example.com" }]);
+    expect(screen.queryByRole("button", { name: "Set password" })).not.toBeInTheDocument();
   });
 
   it("keeps the dialog open when the current password is wrong", async () => {

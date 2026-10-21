@@ -7,7 +7,17 @@ import { t } from "~/i18n";
 import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
 import { settleRecentSignIn, signInAgainKind } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
-import { confirmWaysQuery, confirmWithSso, here, sendMagicLink, signInWithPassword, signInWithTotp, type ConfirmSso, type ConfirmWays } from "./sign-in-api";
+import {
+  confirmWaysQuery,
+  confirmWithSso,
+  emailPasswordLink,
+  here,
+  sendMagicLink,
+  signInWithPassword,
+  signInWithTotp,
+  type ConfirmSso,
+  type ConfirmWays,
+} from "./sign-in-api";
 import { showSsoError } from "./sso-errors";
 
 type Step =
@@ -15,7 +25,7 @@ type Step =
   | { kind: "totp"; challenge: string; recovery: boolean }
   | { kind: "link-sent"; message: string }
   | { kind: "sso-waiting"; provider: ConfirmSso };
-type Way = "password" | "sso" | "link" | "none";
+type Way = "password" | "sso" | "link" | "set-password" | "none";
 
 export function confirmChoices(
   ways: ConfirmWays | undefined,
@@ -26,6 +36,7 @@ export function confirmChoices(
   if (ways.password) return { primary: "password", sso, link: ways.magic_link };
   if (sso.length) return { primary: "sso", sso, link: ways.magic_link };
   if (ways.magic_link) return { primary: "link", sso: [], link: false };
+  if (ways.set_password) return { primary: "set-password", sso: [], link: false };
   return { primary: "none", sso: [], link: false };
 }
 
@@ -110,6 +121,14 @@ export default function RecentSignInDialog() {
     attempt(async () => {
       setStep({ kind: "link-sent", message: await sendMagicLink(email) });
     });
+  const emailPassword = () =>
+    attempt(async () => {
+      await emailPasswordLink(email);
+      setStep({
+        kind: "link-sent",
+        message: t("auth.recent.setPasswordSent", "We sent a link to {email}. Set a password there, sign in with it, then repeat the action.", { email }),
+      });
+    });
 
   const cancel = () => settleRecentSignIn(false);
   const first = ways.sso[0];
@@ -137,6 +156,11 @@ export default function RecentSignInDialog() {
         {step.kind === "choose" && !loading && ways.primary === "link" && (
           <Button variant="primary" loading={busy} onClick={emailLink}>
             {t("auth.recent.emailLink", "Email me a sign-in link")}
+          </Button>
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "set-password" && (
+          <Button variant="primary" loading={busy} onClick={emailPassword}>
+            {t("auth.recent.emailPassword", "Email me a link to set a password")}
           </Button>
         )}
         {step.kind === "totp" && (
@@ -198,6 +222,9 @@ export default function RecentSignInDialog() {
         )}
         {step.kind === "choose" && !loading && ways.primary === "link" && (
           <Text tone="secondary">{t("auth.recent.linkHint", "We send a sign-in link to {email}. Open it, then repeat the action.", { email })}</Text>
+        )}
+        {step.kind === "choose" && !loading && ways.primary === "set-password" && (
+          <Text tone="secondary">{t("auth.recent.setPasswordHint", "Your account has no password yet. We send a link to {email} to set one.", { email })}</Text>
         )}
         {step.kind === "choose" && !loading && !confirm.isError && ways.primary === "none" && (
           <Text tone="secondary">{t("auth.recent.noWay", "No sign-in method this install offers works for your account; ask an instance admin.")}</Text>

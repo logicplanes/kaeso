@@ -16319,7 +16319,8 @@
         "required": [
           "password",
           "magic_link",
-          "sso"
+          "sso",
+          "set_password"
         ],
         "properties": {
           "magic_link": {
@@ -16329,6 +16330,10 @@
           "password": {
             "type": "boolean",
             "description": "With the account's password, and its second factor if it has one."
+          },
+          "set_password": {
+            "type": "boolean",
+            "description": "The account has no password yet but can set one through a link sent to its\nemail address (`POST auth/password-reset`), then confirm with it."
           },
           "sso": {
             "type": "array",

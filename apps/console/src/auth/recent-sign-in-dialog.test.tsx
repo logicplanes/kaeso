@@ -11,12 +11,17 @@ const PATH = "/settings/account/notifications";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const dialog = () => screen.findByRole("dialog", { name: "Sign in again to continue" });
 
-type Ways = { password: boolean; magic_link: boolean; sso: { org_id: string; org_name: string; provider_name: string | null }[] };
+type Ways = {
+  password: boolean;
+  magic_link: boolean;
+  set_password: boolean;
+  sso: { org_id: string; org_name: string; provider_name: string | null }[];
+};
 const ACME_ID = { org_id: "org_01hxacme", org_name: "Acme", provider_name: "Acme ID" };
 
 function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; ways?: Partial<Ways> } = {}) {
   signedIn(options.session ? { session: whoAmI(options.session) } : {});
-  on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [], ...options.ways });
+  on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [], ...options.ways });
   on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
   let calls = 0;
   on("PUT", "me/notifications", ({ body }: { body: unknown }) =>
@@ -346,5 +351,20 @@ describe("an account without an email address", () => {
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     expect(await within(box).findByText("Sign in again at Acme ID as yourself, in a window that opens; this page stays as it is.")).toBeInTheDocument();
+  });
+});
+
+describe("an account without a password", () => {
+  it("is sent a link to set one when nothing else confirms", async () => {
+    needsRecentSignIn({ ways: { password: false, magic_link: false, set_password: true } });
+    on("POST", "auth/password-reset", emailSent("If an account exists for this address, we sent it a password reset link."));
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByText("Your account has no password yet. We send a link to owner@example.com to set one.")).toBeInTheDocument();
+    await user.click(within(box).getByRole("button", { name: "Email me a link to set a password" }));
+    expect(
+      await within(box).findByText("We sent a link to owner@example.com. Set a password there, sign in with it, then repeat the action."),
+    ).toBeInTheDocument();
+    expect(requests("POST", "auth/password-reset").map((r) => r.body)).toEqual([{ email: "owner@example.com" }]);
   });
 });

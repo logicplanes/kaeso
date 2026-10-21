@@ -174,6 +174,9 @@ pub struct ConfirmWays {
     #[doc = "Through these orgs' identity providers, which the account is linked to; a\n\
         confirmation there makes the session one from that org's SSO."]
     pub sso: Vec<ConfirmSsoView>,
+    #[doc = "The account has no password yet but can set one through a link sent to its\n\
+        email address (`POST auth/password-reset`), then confirm with it."]
+    pub set_password: bool,
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -221,6 +224,7 @@ pub async fn confirm_ways(
         password: auth.password && user.password_hash.is_some(),
         magic_link: auth.magic_link && user.email.is_some() && user.email_verified_at.is_some(),
         sso,
+        set_password: auth.password && user.password_hash.is_none() && user.email.is_some(),
     };
     if let Some(org) = at.org
         && members::get_org(&state.pg, org.uuid(), me.uuid())
@@ -232,6 +236,7 @@ pub async fn confirm_ways(
     {
         ways.password = false;
         ways.magic_link = false;
+        ways.set_password = false;
         ways.sso.retain(|s| s.org_id == org);
     }
     Ok(Json(ways))

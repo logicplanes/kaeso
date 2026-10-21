@@ -8,7 +8,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 #### Platform API
 
-- `GET me/sign-in-again` lists how the signed-in account can confirm a recent sign-in, narrowed to an organization's own single sign-on when `org` requires it, and `POST me/sign-in-again/sso` starts a confirmation at a linked organization's identity provider.
+- `GET me/sign-in-again` lists how the signed-in account can confirm a recent sign-in, narrowed to an organization's own single sign-on when `org` requires it, and whether it can set a password by email first. `POST me/sign-in-again/sso` starts a confirmation at a linked organization's identity provider.
 
 ### Fixed
 
@@ -16,6 +16,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 - Confirming a recent sign-in through single sign-on no longer loops. The console opens the identity provider in a window of its own, the page and what you typed stay, and the action repeats by itself once you've signed in there; a refusal says why instead of asking again.
 - **Add models** says when a model's values can't load instead of staying silent.
+- An account without a password, such as one that signs in through single sign-on, gets a link by email to set one: from **Email me a link** under **Account** › **Security**, and in the dialog when an action needs another sign-in and nothing else works. Both used to end at a step it couldn't take.
+- A sign-in ends the session its browser had, so signing in again to confirm an action no longer leaves a session behind each time; **Sessions** listed dozens for one browser.
 
 #### Self-hosting
 

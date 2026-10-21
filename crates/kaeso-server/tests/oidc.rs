@@ -1415,6 +1415,10 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(ways.body["password"], true);
+    assert_eq!(
+        ways.body["set_password"], false,
+        "the owner has a password already"
+    );
     assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
     assert_eq!(ways.body["sso"][0]["provider_name"], "Acme ID");
     sqlx::query("UPDATE organizations SET require_sso = true")
@@ -1609,5 +1613,26 @@ async fn a_confirmation_never_switches_accounts_and_comes_back_to_the_page_with_
         )
         .await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_account_without_a_password_is_offered_one_by_email_to_confirm_with() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    let sso = sso_as(&app, &idp, &owner.org_id, "sub-new", "new@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    let ways = app
+        .get("/me/sign-in-again", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(ways.body["password"], false);
+    assert_eq!(ways.body["set_password"], true);
+    assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
     s.cleanup().await;
 }

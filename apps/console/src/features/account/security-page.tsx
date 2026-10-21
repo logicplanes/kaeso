@@ -26,6 +26,8 @@ import { meQuery, ssoLinksQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
 import { isApiError } from "~/api/errors";
 import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
+import { useSession } from "~/auth/session";
+import { confirmWaysQuery, emailPasswordLink } from "~/auth/sign-in-api";
 import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
@@ -59,6 +61,15 @@ export function SecurityPage() {
 
 function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: string | null | undefined }) {
   const [open, setOpen] = useState(false);
+  const fromSso = useSession().session.method === "oidc";
+  const linkTo = !hasPassword && fromSso ? email : undefined;
+  const control = linkTo ? (
+    <EmailPasswordLink email={linkTo} />
+  ) : (
+    <Button size="sm" onClick={() => setOpen(true)}>
+      {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
+    </Button>
+  );
   return (
     <SettingsSection title={t("account.password", "Password")}>
       <SettingsGroup>
@@ -67,19 +78,31 @@ function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: 
           description={
             hasPassword
               ? t("account.passwordHint", "Changing it signs out your other sessions.")
-              : t("account.passwordNotSet", "Not set; you sign in with a link or SSO.")
+              : linkTo
+                ? t("account.passwordByEmail", "Not set; set one through a link sent to your email.")
+                : t("account.passwordNotSet", "Not set; you sign in with a link or SSO.")
           }
-          control={
-            <Button size="sm" onClick={() => setOpen(true)}>
-              {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
-            </Button>
-          }
+          control={control}
         />
       </SettingsGroup>
       <DialogScope open={open}>
         <PasswordDialog hasPassword={hasPassword} email={email} open={open} onOpenChange={setOpen} />
       </DialogScope>
     </SettingsSection>
+  );
+}
+
+function EmailPasswordLink({ email }: { email: string }) {
+  const ways = useQuery(confirmWaysQuery(undefined));
+  const send = useApiMutation({
+    mutationFn: () => emailPasswordLink(email),
+    onSuccess: () => toast(t("account.passwordLinkSent", "Link sent to {email}", { email })),
+  });
+  if (!ways.data?.set_password) return null;
+  return (
+    <Button size="sm" loading={send.isPending} onClick={() => send.mutate()}>
+      {t("account.emailPasswordLink", "Email me a link")}
+    </Button>
   );
 }
 

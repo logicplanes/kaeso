@@ -71,7 +71,7 @@ A sign-in through an organization's identity provider opens only that organizati
 - creating an organization, leaving another one, or deleting the account;
 - opening another organization, or instance administration.
 
-Without a password, set one with **Forgot your password?** on the sign-in page.
+Without a password, choose **Email me a link** under **Account** › **Security**, or **Forgot your password?** on the sign-in page, and set one from the email. The console offers the same link when an action needs another sign-in and nothing else works.
 
 ## Choose your emails
 

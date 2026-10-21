@@ -62,3 +62,7 @@ export function confirmWaysQuery(org: string | undefined) {
 export async function confirmWithSso(org: string, next: string): Promise<string> {
   return data(await api.POST("/platform/v1/me/sign-in-again/sso", { body: { org, next } })).authorization_url;
 }
+
+export async function emailPasswordLink(email: string): Promise<void> {
+  await api.POST("/platform/v1/auth/password-reset", { body: { email } });
+}
