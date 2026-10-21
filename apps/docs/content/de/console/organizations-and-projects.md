@@ -98,7 +98,7 @@ Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Akt
 
 Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**. Archivierte Projekte stehen unter **Archiviert**, alle Projekte unter **Alle**. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
 
-Das Standardprojekt ist das Projekt, in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Nur wer der Organisation danach beitritt, beginnt im neuen Standardprojekt; bisherige Mitglieder behalten ihre Plätze und treten ihm nicht bei. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
+Das Standardprojekt ist das Projekt, in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Nur wer der Organisation danach beitritt, beginnt im neuen Standardprojekt; bisherige Mitglieder behalten ihre Plätze und treten ihm nicht bei. Kaeso lehnt die Verlegung ab, solange offene Einladungen oder die Rolle für Single Sign-on Personen dort Rechte geben würden, die Sie nicht haben. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
 
 ## Projekteinstellungen ändern
 

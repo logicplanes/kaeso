@@ -2,8 +2,8 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{OrgId, ProjectId};
-use kaeso_core::rights::{OrgRight, ProjectGrant, ProjectPreset, ProjectRight};
-use kaeso_store::pg::{avatars, key_lifecycle, members, projects, service_accounts};
+use kaeso_core::rights::{OrgPreset, OrgRight, ProjectGrant, ProjectPreset, ProjectRight};
+use kaeso_store::pg::{avatars, invites, key_lifecycle, members, orgs, projects, service_accounts};
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 use time::OffsetDateTime;
@@ -11,12 +11,14 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
-use crate::platform::grants::project_to_store;
+use crate::platform::grants::{check_project, project_to_store};
 use crate::platform::json::Body;
+use crate::platform::orgs::invites::caller_project_rights;
 use crate::platform::orgs::security::validate_lifetime;
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
 use crate::platform::validate::validate_name;
+use crate::services::invites::ProjectRole;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -389,6 +391,52 @@ pub async fn archive(
     Ok(Json(ProjectView::from_row(&after)))
 }
 
+async fn check_waiting_joins(
+    state: &AppState,
+    ctx: &Ctx,
+    tx: &mut PgConnection,
+    project: uuid::Uuid,
+) -> ApiResult<()> {
+    let org = ctx.org()?.org.id;
+    let mut presets: Vec<ProjectPreset> = invites::pending_of_org(&mut *tx, org, ctx.now)
+        .await?
+        .into_iter()
+        .filter(|i| {
+            serde_json::from_value::<Vec<ProjectRole>>(i.project_roles.clone())
+                .unwrap_or_default()
+                .iter()
+                .all(|r| r.project_id.uuid() != project)
+        })
+        .map(|i| {
+            i.org_preset
+                .unwrap_or_else(|| OrgPreset::Member.as_str().to_owned())
+        })
+        .chain(
+            orgs::get(&mut *tx, org)
+                .await?
+                .and_then(|o| o.sso_default_preset),
+        )
+        .map(|preset| {
+            crate::services::orgs::default_project_preset(&kaeso_store::pg::members::Grant {
+                preset,
+                ..Default::default()
+            })
+        })
+        .collect();
+    presets.sort_by_key(|p| p.as_str());
+    presets.dedup();
+    let caller = caller_project_rights(state, ctx, project).await?;
+    for preset in presets {
+        check_project(caller, None, &ProjectGrant::preset(preset)).map_err(|_| {
+            ApiError::PermissionDenied(
+                "Pending invitations or SSO sign-ups would get rights you don't hold in this project."
+                    .into(),
+            )
+        })?;
+    }
+    Ok(())
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "The project that becomes the org's default.")]
@@ -404,7 +452,8 @@ pub struct DefaultProjectChoice {
     default becomes an ordinary project, in the same transaction, so the org\n\
     always has exactly one. Nobody joins or leaves a project by it: members\n\
     keep their places, and people who join the org from now on start in the\n\
-    new default.",
+    new default. Refused when pending invitations or the SSO default role\n\
+    would give people rights there that the caller doesn't hold.",
     tag = "projects",
     params(("org" = OrgId, Path)),
     request_body = DefaultProjectChoice,
@@ -432,6 +481,7 @@ pub async fn set_default(
     if chosen.is_default {
         return Ok(Json(ProjectView::from_row(&chosen)));
     }
+    check_waiting_joins(&state, &ctx, &mut tx, id).await?;
     let previous = projects::default_of(&mut *tx, org).await?;
     if !projects::set_default(&mut tx, org, id).await? {
         return Err(ApiError::not_found("project"));

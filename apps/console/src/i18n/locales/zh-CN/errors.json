@@ -253,6 +253,7 @@
   "errors.pathForm": "路径的格式不符合此端点的要求。",
   "errors.pathParamForm": "路径中的 `{name}` 格式不符合要求。",
   "errors.pathParamUtf8": "路径中的 `{name}` 不是有效的 UTF-8。",
+  "errors.pendingJoinsHoldMore": "待处理的邀请或 SSO 注册会获得您在此项目中没有的权限。",
   "errors.pictureEmpty": "图片为空。",
   "errors.pictureMismatch": "图片为 {actual}，而非 {declared}。",
   "errors.pictureNotBase64": "图片不是有效的 Base64。",

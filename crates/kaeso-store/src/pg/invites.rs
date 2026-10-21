@@ -103,6 +103,22 @@ pub async fn pending_for(
     .await?)
 }
 
+pub async fn pending_of_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    now: OffsetDateTime,
+) -> Result<Vec<Invite>, StoreError> {
+    Ok(sqlx::query_as!(
+        Invite,
+        "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
+         FROM invites WHERE org_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > $2",
+        org_id,
+        now
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn list(
     db: impl PgExecutor<'_>,
     org_id: Option<Uuid>,

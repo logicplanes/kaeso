@@ -253,6 +253,7 @@
   "errors.pathForm": "Der Pfad hat nicht die Form, die dieser Endpunkt erwartet.",
   "errors.pathParamForm": "`{name}` im Pfad hat nicht die erwartete Form.",
   "errors.pathParamUtf8": "`{name}` im Pfad ist kein gültiges UTF-8.",
+  "errors.pendingJoinsHoldMore": "Offene Einladungen oder SSO-Anmeldungen bekämen Rechte, die Sie in diesem Projekt nicht haben.",
   "errors.pictureEmpty": "Das Bild ist leer.",
   "errors.pictureMismatch": "Das Bild ist {actual}, nicht {declared}.",
   "errors.pictureNotBase64": "Das Bild ist kein gültiges Base64.",

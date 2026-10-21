@@ -4,6 +4,7 @@ mod common;
 
 use axum::http::{Method, StatusCode};
 use common::{App, Owner};
+use kaeso_testkit::oidc::MockIdp;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -500,6 +501,210 @@ async fn invitations_are_resent_only_by_people_who_could_send_them() {
     .expect_status(StatusCode::OK);
     app.wait_for_mail("heir@example.com", 2).await;
     assert_eq!(app.mail.to("heir@example.com").len(), 2);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn invitations_and_sso_grant_no_default_project_rights_the_inviter_lacks() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let (inviter, inviter_id) = join(&app, &owner, "recruiter@example.com", "developer").await;
+    app.call(
+        Method::PATCH,
+        &format!("/orgs/{org}/members/{inviter_id}"),
+        Some(json!({
+            "role": "developer",
+            "rights_added": ["members.invite", "security.sso.manage"],
+        })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.call(
+        Method::PATCH,
+        &format!("/orgs/{org}/projects/{project}/members/{inviter_id}"),
+        Some(json!({ "role": "viewer" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let invites = format!("/orgs/{org}/invites");
+
+    let r = app
+        .post(
+            &invites,
+            json!({ "email": "ada@example.com", "role": "developer" }),
+            Some(&inviter),
+        )
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    let message = r.body["error"]["message"].as_str().unwrap();
+    assert!(message.starts_with("You can't grant `"), "{message}");
+    assert!(
+        message.ends_with("you don't hold them yourself."),
+        "{message}"
+    );
+    let listed = app.get(&invites, &owner.cookie).await;
+    assert_eq!(listed.body["data"], json!([]));
+
+    app.post(
+        &invites,
+        json!({ "email": "bob@example.com", "role": "member" }),
+        Some(&inviter),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    app.post(
+        &invites,
+        json!({
+            "email": "cy@example.com",
+            "role": "developer",
+            "project_roles": [{ "project_id": project, "role": "viewer" }],
+        }),
+        Some(&inviter),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let by_owner = app
+        .post(
+            &invites,
+            json!({ "email": "dee@example.com", "role": "developer" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let by_owner = by_owner.body["id"].as_str().unwrap();
+    let r = app
+        .post(
+            &format!("{invites}/{by_owner}/resend"),
+            json!({}),
+            Some(&inviter),
+        )
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert!(
+        r.body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("You can't grant `"),
+        "{:?}",
+        r.body
+    );
+
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let sso = |role: &str| {
+        json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example"],
+            "default_role": role,
+        })
+    };
+    let path = format!("/orgs/{org}/security/sso");
+    let r = app
+        .call(Method::PUT, &path, Some(sso("developer")), Some(&inviter))
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert!(
+        r.body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("You can't grant `"),
+        "{:?}",
+        r.body
+    );
+    let r = app
+        .call(Method::PUT, &path, Some(sso("member")), Some(&inviter))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["sso_default_role"]["id"], "member");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_default_moves_only_where_the_caller_covers_the_people_waiting_to_join() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let (mover, mover_id) = join(&app, &owner, "mover@example.com", "developer").await;
+    app.call(
+        Method::PATCH,
+        &format!("/orgs/{org}/members/{mover_id}"),
+        Some(json!({ "role": "developer", "rights_added": ["org.update"] })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let restricted = app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": "Restricted" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let pending = app
+        .post(
+            &format!("/orgs/{org}/invites"),
+            json!({ "email": "ada@example.com", "role": "developer" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let pending = pending.body["id"].as_str().unwrap().to_owned();
+    let make_default = |cookie: String| {
+        let app = &app;
+        let path = format!("/orgs/{org}/default-project");
+        let body = json!({ "project_id": restricted });
+        async move {
+            app.call(Method::PUT, &path, Some(body), Some(&cookie))
+                .await
+        }
+    };
+    let refused =
+        "Pending invitations or SSO sign-ups would get rights you don't hold in this project.";
+
+    let r = make_default(mover.clone())
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert_eq!(r.body["error"]["message"], refused);
+    app.call(
+        Method::DELETE,
+        &format!("/orgs/{org}/invites/{pending}"),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+
+    sqlx::query("UPDATE organizations SET sso_default_preset = 'member' WHERE id = $1")
+        .bind(common::uuid(&org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let r = make_default(mover.clone())
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert_eq!(r.body["error"]["message"], refused);
+    sqlx::query("UPDATE organizations SET sso_default_preset = NULL WHERE id = $1")
+        .bind(common::uuid(&org))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    let r = make_default(mover.clone())
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["is_default"], true);
     s.cleanup().await;
 }
 
