@@ -32,6 +32,14 @@ describe("what's new", () => {
     expect(fallback.querySelectorAll("rect, circle, path").length).toBeGreaterThan(3);
   });
 
+  it("marks a pre-release as one", async () => {
+    signedIn();
+    on("GET", "me/whats-new", { current: "40.5.0-rc.1", seen: "40.4.0", releases: [{ ...release("40.5.0-rc.1"), prerelease: true }] });
+    await renderApp(PATH);
+    const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
+    expect(within(dialog).getByText("Kaeso pre-release")).toBeInTheDocument();
+  });
+
   it("walks through every release since the last visit and records it as seen", async () => {
     signedIn();
     on("GET", "me/whats-new", { current: "40.5.0", seen: "40.3.0", releases: [release("40.5.0"), release("40.4.0")] });
