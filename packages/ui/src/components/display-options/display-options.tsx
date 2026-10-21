@@ -10,7 +10,7 @@ import { Switch } from "../switch/switch.js";
 import { Tag } from "../tag/tag.js";
 import type { IconData } from "../icon/icon.js";
 import { Icon } from "../icon/icon.js";
-import { useUiText } from "../../i18n/context.js";
+import { useLocale, useUiText } from "../../i18n/context.js";
 
 export const KAESO_DISPLAY_OPTIONS_VARIANTS = {
   trigger: {
@@ -37,7 +37,7 @@ export interface DisplayOptionsProps {
   view?: { value: string; options: SegmentedOption[]; onChange: (v: string) => void } | undefined;
   rows?: DisplayOptionsRow[] | undefined;
   toggles?: DisplayOptionsToggle[] | undefined;
-  properties?: { options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void } | undefined;
+  properties?: { options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void; hidden?: string[] | undefined } | undefined;
   trigger?: keyof typeof KAESO_DISPLAY_OPTIONS_VARIANTS.trigger | undefined;
   inline?: boolean | undefined;
   footer?: ReactNode | undefined;
@@ -45,6 +45,8 @@ export interface DisplayOptionsProps {
 
 function Panel({ view, rows, toggles, properties, footer }: DisplayOptionsProps) {
   const t = useUiText();
+  const locale = useLocale();
+  const squeezed = properties ? properties.options.filter((o) => properties.value.includes(o.value) && properties.hidden?.includes(o.value)) : [];
   return (
     <div className="flex w-320 flex-col">
       {view && (
@@ -86,12 +88,14 @@ function Panel({ view, rows, toggles, properties, footer }: DisplayOptionsProps)
           <div className="flex flex-wrap gap-6">
             {properties.options.map((o) => {
               const on = properties.value.includes(o.value);
+              const out = on && squeezed.includes(o);
               return (
                 <Tag
                   key={o.value}
                   size="sm"
                   variant={on ? "soft" : "outline"}
                   pressed={on}
+                  {...(out ? { icon: icons.hide, "aria-description": t("displayOptions.doesNotFit", "Doesn't fit at this width") } : {})}
                   onClick={() => properties.onChange(on ? properties.value.filter((v) => v !== o.value) : [...properties.value, o.value])}
                 >
                   {o.label}
@@ -99,6 +103,18 @@ function Panel({ view, rows, toggles, properties, footer }: DisplayOptionsProps)
               );
             })}
           </div>
+          {squeezed.length > 0 && (
+            <span className="text-caption text-fg-tertiary">
+              {t(
+                "displayOptions.hiddenProperties",
+                "{count, plural, one {{properties} doesn't fit at this width.} other {{properties} don't fit at this width.}}",
+                {
+                  count: squeezed.length,
+                  properties: new Intl.ListFormat(locale, { type: "conjunction" }).format(squeezed.map((o) => o.label)),
+                },
+              )}
+            </span>
+          )}
         </div>
       )}
       {footer && <div className="p-12 hairline-t">{footer}</div>}

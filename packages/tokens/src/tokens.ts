@@ -278,6 +278,9 @@ export const width = {
   aside: 320,
   banner: 480,
   kv: 480,
+  cellSm: 208,
+  cellMd: 320,
+  cellLg: 512,
 } as const;
 
 export const breakpoint = { sidebar: 1024 } as const;

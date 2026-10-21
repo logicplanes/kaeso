@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -12,27 +12,28 @@ import {
   type FilterChipChoice,
   IconButton,
   Menu,
-  ProviderBadge,
   SearchInput,
+  useProviderGroups,
   Select,
-  Text,
   Toolbar,
   icons,
 } from "@logicplanes/kaeso-ui";
+import { useModelGroups } from "@logicplanes/kaeso-ui/playground";
 import { isApiError } from "~/api/errors";
 import { allKeysQuery } from "~/api/queries/keys";
 import { logsInfiniteQuery, type LogFilters, type LogRange } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
 import { ERROR_KIND_IDS, errorKindLabel } from "~/format/labels";
-import { useProviderFilterOptions, useProviders } from "~/kaeso/providers";
+import { catalogueModelOption } from "~/kaeso/model-options";
+import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
 import { utcDay } from "~/format/period";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
-import { COLUMNS, columnLabel, logColumns, storeColumns, storedColumns, type ColumnId } from "./columns";
+import { COLUMNS, columnLabel, logColumns, logsLayout, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
 import { scrollParentOf, useLiveLogs } from "./live";
 import { LogInspector } from "./log-inspector";
@@ -93,8 +94,11 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const [columns, setColumns] = useState<ColumnId[]>(storedColumns);
   const [density, setDensity] = useState<"default" | "compact">("default");
   const [adding, setAdding] = useState<FilterId | null>(null);
+  const [added, setAdded] = useState<FilterId[]>([]);
+  const [squeezed, setSqueezed] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const scroller = useRef<HTMLDivElement | null>(null);
+  const width = useWidth(scroller);
 
   const setSearch = (patch: SearchPatch<LogsSearch>) => {
     void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: patchSearch(search, patch), replace: true });
@@ -135,7 +139,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const keyName = (id: string) => keys.data?.find((k) => k.id === id)?.name ?? id;
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
   const phone = usePhone();
-  const all = logColumns({ spansDays, phone, keyName, partyName, providerName: catalog.name });
+  const all = logColumns({ spansDays, layout: logsLayout(width, phone, spansDays, columns), keyName, partyName, providerName: catalog.name });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c)).map((c) => all[c]);
 
   const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));
@@ -143,59 +147,47 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name })),
     ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),
   ];
-  const modelOptions = [...(catalogue.data ?? [])]
-    .sort((a, b) => catalog.byName(a.provider, b.provider))
-    .map((m) => ({
-      value: m.model_id,
-      group: catalog.name(m.provider),
-      textValue: m.effective.display_name && m.effective.display_name !== m.model_id ? `${m.effective.display_name} ${m.model_id}` : m.model_id,
-      label:
-        m.effective.display_name && m.effective.display_name !== m.model_id ? (
-          <span className="flex min-w-0 items-baseline gap-8">
-            {m.effective.display_name}
-            <Text mono variant="small" tone="secondary">
-              {m.model_id}
-            </Text>
-          </span>
-        ) : (
-          m.model_id
-        ),
-    }));
-  const someConnected = providers.some((p) => p.connected) && providers.some((p) => !p.connected);
-  const providerChoices = [...providers]
-    .sort((a, b) => Number(!!b.connected) - Number(!!a.connected) || catalog.byName(a.id, b.id))
-    .map((p) => ({
-      value: p.id,
-      label: catalog.name(p.id),
-      ...(someConnected ? { group: p.connected ? t("logs.filter.connectedProviders", "Connected") : t("logs.filter.otherProviders", "Other providers") } : {}),
-      leading: (
-        <span aria-hidden className="flex">
-          <ProviderBadge provider={p.id} name={catalog.name(p.id)} size="sm" />
-        </span>
+  const modelGroups = useModelGroups(
+    useMemo(
+      () =>
+        (catalogue.data ?? [])
+          .filter((m) => !filters.provider || m.provider === filters.provider)
+          .map((m) => {
+            const { deprecated: _, ...option } = catalogueModelOption(m);
+            return { ...option, value: m.model_id };
+          }),
+      [catalogue.data, filters.provider],
+    ),
+    {
+      providers: useModelPickerProviders(
+        org,
+        useMemo(() => [...new Set((catalogue.data ?? []).map((m) => m.provider))], [catalogue.data]),
       ),
-    }));
+    },
+  );
+  const modelLabel = (id: string) => {
+    const m = catalogue.data?.find((c) => c.model_id === id);
+    return m?.effective.display_name && m.effective.display_name !== id ? m.effective.display_name : id;
+  };
+  const providerGroups = useProviderGroups(useMemo(() => providers.map(({ hint: _, ...p }) => p), [providers]));
   const choice = (id: ChoiceFilterId): FilterChipChoice[] =>
     id === "key"
       ? keyOptions
       : id === "member"
         ? memberOptions
-        : id === "model"
-          ? modelOptions
-          : id === "provider"
-            ? providerChoices
-            : id === "status"
-              ? STATUSES.map((s) => ({ value: String(s), label: String(s) }))
-              : id === "error"
-                ? ERROR_KIND_IDS.map((k) => ({ value: k, label: errorKindLabel(k) }))
-                : id === "stream"
-                  ? [
-                      { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                      { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                    ]
-                  : [
-                      { value: "api", label: "API" },
-                      { value: "playground", label: t("logs.source.playground", "Playground") },
-                    ];
+        : id === "status"
+          ? STATUSES.map((s) => ({ value: String(s), label: String(s) }))
+          : id === "error"
+            ? ERROR_KIND_IDS.map((k) => ({ value: k, label: errorKindLabel(k) }))
+            : id === "stream"
+              ? [
+                  { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                  { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                ]
+              : [
+                  { value: "api", label: "API" },
+                  { value: "playground", label: t("logs.source.playground", "Playground") },
+                ];
   const current = (id: ChoiceFilterId): string | undefined =>
     id === "status"
       ? filters.status
@@ -207,7 +199,15 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           : String(filters.stream)
         : filters[id];
   const set = (id: ChoiceFilterId, v: string | undefined) => setSearch({ ...CHOICE_PATCH[id](v), log: undefined });
-  const active = FILTER_IDS.filter((id) => (id === "failed" ? !!filters.failed : current(id) !== undefined || adding === id));
+  const present = FILTER_IDS.filter((id) => (id === "failed" ? !!filters.failed : current(id) !== undefined || adding === id));
+  const active = [...present.filter((id) => !added.includes(id)), ...added.filter((id) => present.includes(id))];
+  const startAdding = (id: FilterId) => {
+    setAdded((a) => [...a.filter((x) => x !== id), id]);
+    if (id === "failed") setSearch({ failed: true });
+    else setAdding(id);
+  };
+  const valueLabel = (id: ChoiceFilterId, value: string): ReactNode =>
+    id === "model" ? modelLabel(value) : id === "provider" ? catalog.name(value) : (choice(id).find((c) => c.value === value)?.label ?? value);
 
   const canExport = rights.has("logs.export");
   const nothingToExport = logs.isSuccess && rows.length === 0;
@@ -285,16 +285,25 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               />
             );
           const value = current(id);
+          const picked = { current: false };
           return (
             <FilterChip
               key={id}
               property={filterLabel(id)}
               operator={t("logs.filter.is", "is")}
-              value={choice(id).find((c) => c.value === value)?.label ?? value ?? t("logs.filter.any", "any")}
-              values={choice(id)}
+              value={value ? valueLabel(id, value) : t("logs.filter.any", "any")}
+              {...(id === "model"
+                ? { groups: modelGroups, width: "lg" as const }
+                : id === "provider"
+                  ? { groups: providerGroups, width: "sm" as const }
+                  : { values: choice(id), searchable: id === "key" || id === "member" })}
               selected={value ? [value] : []}
               defaultValuesOpen={adding === id}
+              onValuesOpenChange={(open) => {
+                if (!open && !picked.current && adding === id) setAdding(null);
+              }}
               onSelectedChange={(v) => {
+                picked.current = true;
                 setAdding(null);
                 set(id, v[0]);
               }}
@@ -317,7 +326,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           </Menu.Trigger>
           <Menu.Content>
             {FILTER_IDS.filter((id) => !active.includes(id)).map((id) => (
-              <Menu.Item key={id} onClick={() => (id === "failed" ? setSearch({ failed: true }) : setAdding(id))}>
+              <Menu.Item key={id} onClick={() => startAdding(id)}>
                 {filterLabel(id)}
               </Menu.Item>
             ))}
@@ -355,6 +364,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               storeColumns(next);
             },
             options: COLUMNS.map((c) => ({ value: c, label: columnLabel(c) })),
+            hidden: squeezed,
           }}
         />
       </Toolbar>
@@ -400,12 +410,27 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             onRowClick={(r) => setSearch({ log: r.id })}
             activeRowId={log}
             freshRowIds={fresh}
+            onHiddenColumnsChange={setSqueezed}
           />
         </div>
       </AppFrame.Body>
       <LogInspector org={org} project={project} logId={log} keyName={keyName} onClose={() => setSearch({ log: undefined })} />
     </>
   );
+}
+
+function useWidth(ref: RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.round(el.getBoundingClientRect().width));
+    measure();
+    const seen = new ResizeObserver(measure);
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, [ref]);
+  return width;
 }
 
 function RequestIdSearch({ onOpen }: { onOpen: (id: string) => void }) {

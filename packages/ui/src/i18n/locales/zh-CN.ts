@@ -110,6 +110,8 @@ const zhCN: Readonly<Record<string, string>> = {
   "dialog.back": "返回",
   "dialog.close": "关闭",
   "displayOptions.displayOptions": "显示选项",
+  "displayOptions.doesNotFit": "当前宽度放不下",
+  "displayOptions.hiddenProperties": "{count, plural, other {当前宽度放不下{properties}。}}",
   "displayOptions.properties": "显示属性",
   "displayOptions.view": "视图",
   "donut.legend": "图例",

@@ -110,6 +110,8 @@ const en: Readonly<Record<string, string>> = {
   "dialog.back": "Back",
   "dialog.close": "Close",
   "displayOptions.displayOptions": "Display options",
+  "displayOptions.doesNotFit": "Doesn't fit at this width",
+  "displayOptions.hiddenProperties": "{count, plural, one {{properties} doesn't fit at this width.} other {{properties} don't fit at this width.}}",
   "displayOptions.properties": "Display properties",
   "displayOptions.view": "View",
   "donut.legend": "Legend",

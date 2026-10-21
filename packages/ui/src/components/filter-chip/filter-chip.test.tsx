@@ -164,6 +164,45 @@ describe("FilterChip", () => {
     expect(onSelectedChange).toHaveBeenCalledWith(["m599"]);
     await waitFor(() => expect(list).not.toBeInTheDocument());
   });
+  it("opens ready-made groups with their marks as a searchable list as wide as asked", async () => {
+    const onSelectedChange = vi.fn();
+    const onOpen = vi.fn();
+    const groups = [
+      { id: "mistral", label: "Mistral", leading: <span>M</span>, items: [{ value: "mistral-small-latest", label: "Mistral Small" }] },
+      { id: "groq", label: "Groq", items: [{ value: "llama-3.1-8b-instant", label: "Llama 3.1 8B" }] },
+    ];
+    render(
+      <FilterChip
+        property="Model"
+        operator="is"
+        value="any"
+        groups={groups}
+        width="lg"
+        defaultValuesOpen
+        onSelectedChange={onSelectedChange}
+        onValuesOpenChange={onOpen}
+      />,
+    );
+    const list = await screen.findByRole("listbox", { name: "Model" });
+    expect(list.closest("[role=dialog]")).toHaveClass("w-560");
+    expect(screen.getByRole("group", { name: "Mistral" })).toHaveTextContent("M");
+    fireEvent.change(screen.getByRole("combobox", { name: "Search model values" }), { target: { value: "llama" } });
+    fireEvent.click(screen.getByRole("option", { name: "Llama 3.1 8B" }));
+    expect(onSelectedChange).toHaveBeenCalledWith(["llama-3.1-8b-instant"]);
+    expect(onOpen).toHaveBeenLastCalledWith(false);
+  });
+  it("searches a short list when asked to", async () => {
+    render(<FilterChip property="Key" operator="is" value="any" values={[{ value: "k1", label: "ci-runner" }]} searchable defaultValuesOpen />);
+    expect(await screen.findByRole("searchbox", { name: "Search key values" })).toBeInTheDocument();
+  });
+  it("says when its values close without a choice", async () => {
+    const onOpen = vi.fn();
+    render(
+      <FilterChip property="Key" operator="is" value="any" values={[{ value: "k1", label: "ci-runner" }]} defaultValuesOpen onValuesOpenChange={onOpen} />,
+    );
+    fireEvent.keyDown(await screen.findByRole("menu"), { key: "Escape" });
+    await waitFor(() => expect(onOpen).toHaveBeenLastCalledWith(false));
+  });
   it("doesn't open values it doesn't have, even when just added", () => {
     render(<FilterChip property="Key" operator="is" value="any" values={[]} defaultValuesOpen />);
     expect(screen.queryByRole("menu")).toBeNull();
