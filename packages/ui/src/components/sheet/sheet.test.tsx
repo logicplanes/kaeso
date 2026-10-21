@@ -105,14 +105,26 @@ describe("Sheet", () => {
   it("dims the page behind a confirmation opened from a sheet that isn't modal, and only once over a modal one", async () => {
     const { rerender } = render(
       <Sheet open modal={false} title="checkout-web">
-        <AlertDialog open title="Archive checkout-web?" description="Applications using it stop authenticating." confirmLabel="Archive key" onConfirm={() => undefined} />
+        <AlertDialog
+          open
+          title="Archive checkout-web?"
+          description="Applications using it stop authenticating."
+          confirmLabel="Archive key"
+          onConfirm={() => undefined}
+        />
       </Sheet>,
     );
     expect(await screen.findByRole("alertdialog", { name: "Archive checkout-web?" })).toBeInTheDocument();
     expect(document.querySelectorAll(".bg-overlay")).toHaveLength(1);
     rerender(
       <Sheet open title="checkout-web">
-        <AlertDialog open title="Archive checkout-web?" description="Applications using it stop authenticating." confirmLabel="Archive key" onConfirm={() => undefined} />
+        <AlertDialog
+          open
+          title="Archive checkout-web?"
+          description="Applications using it stop authenticating."
+          confirmLabel="Archive key"
+          onConfirm={() => undefined}
+        />
       </Sheet>,
     );
     await waitFor(() => expect(document.querySelectorAll(".bg-overlay")).toHaveLength(1));
