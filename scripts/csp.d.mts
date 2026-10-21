@@ -1,6 +1,7 @@
 export interface SitePolicyOptions {
   hashes?: boolean;
   styleAttributes?: boolean;
+  images?: string[];
 }
 
 export interface InlineContent {

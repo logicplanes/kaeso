@@ -118,14 +118,14 @@ function htmlFiles(dir, base = dir) {
     .sort();
 }
 
-function render(scriptHashes, styleHashes, styleAttributes, { header }) {
-  const extra = { "script-src": scriptHashes, "style-src": styleHashes };
+function render(scriptHashes, styleHashes, styleAttributes, { header, images }) {
+  const extra = { "script-src": scriptHashes, "style-src": styleHashes, "img-src": images };
   const directives = DIRECTIVES.filter(([name]) => header || !HEADER_ONLY.has(name)).map(([name, ...sources]) => [name, ...sources, ...(extra[name] ?? [])]);
   if (styleAttributes) directives.splice(directives.findIndex(([name]) => name === "style-src") + 1, 0, ["style-src-attr", "'unsafe-inline'"]);
   return directives.map((parts) => parts.join(" ")).join("; ");
 }
 
-export function sitePolicy(dir, { hashes = false, styleAttributes = false } = {}) {
+export function sitePolicy(dir, { hashes = false, styleAttributes = false, images = [] } = {}) {
   const problems = [];
   const scripts = new Set();
   const styles = new Set();
@@ -146,8 +146,9 @@ export function sitePolicy(dir, { hashes = false, styleAttributes = false } = {}
   const scriptHashes = [...scripts].sort();
   const styleHashes = [...styles].sort();
   const allowAttributes = styleAttributes && attributes > 0;
-  const header = render(scriptHashes, styleHashes, allowAttributes, { header: true });
-  const meta = render(scriptHashes, styleHashes, allowAttributes, { header: false });
+  for (const origin of images) if (!/^https:\/\/[a-z0-9.-]+$/.test(origin)) problems.push(`the image origin ${origin} isn't an https origin`);
+  const header = render(scriptHashes, styleHashes, allowAttributes, { header: true, images });
+  const meta = render(scriptHashes, styleHashes, allowAttributes, { header: false, images });
   if (Buffer.byteLength(header) > MAX_HEADER_BYTES)
     problems.push(`the policy is ${Buffer.byteLength(header)} bytes, over ${MAX_HEADER_BYTES}; move inline scripts and styles to files`);
   return { header, meta, problems, files, scripts: scriptHashes.length, styles: styleHashes.length };

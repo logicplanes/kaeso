@@ -48,6 +48,7 @@ export const de: Messages = {
   "changelog.seriesDescription": "Jede spürbare Änderung in den Releases {series}.",
   "changelog.pages": "Weitere Releases",
   "changelog.current": "Neueste Releases",
+  "changelog.artwork": "Bild zu Kaeso {version}",
   "changelog.feed": "Kaeso-Releases",
   "changelog.added": "Hinzugefügt",
   "changelog.changed": "Geändert",

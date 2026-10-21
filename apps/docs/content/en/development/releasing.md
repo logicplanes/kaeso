@@ -154,10 +154,10 @@ Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every pa
 
 ### Content Security Policy
 
-Each build writes its site's policy into every page as a `<meta>` tag, and into `csp.txt` and `_headers`. Also send it as the `Content-Security-Policy` header, because only the header can add `frame-ancestors 'none'`. The documentation's header never changes:
+Each build writes its site's policy into every page as a `<meta>` tag, and into `csp.txt` and `_headers`. Also send it as the `Content-Security-Policy` header, because only the header can add `frame-ancestors 'none'`. The documentation's header never changes; it allows images from `update.kaeso.app`, where the changelog's release artwork comes from:
 
 ```text
-default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://update.kaeso.app; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
 The showcase's policy lists a hash for each of its inline scripts and styles, which change with them. Take its header from the `csp.txt` of the build you deploy.

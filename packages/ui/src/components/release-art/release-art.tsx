@@ -1,4 +1,4 @@
-import { createElement, forwardRef, useId, useMemo, type ReactNode } from "react";
+import { createElement, forwardRef, useId, useMemo, useState, type ReactNode } from "react";
 import { font } from "@logicplanes/kaeso-tokens";
 import { cn } from "../../utils/cn.js";
 import { drawReleaseArt, releaseArtFor, releaseArtText, serializeArt, RELEASE_ART_VIEW, type ArtNode, type ReleaseArtSpec } from "./drawing.js";
@@ -17,6 +17,7 @@ export interface ReleaseArtProps {
   seed: string;
   label: string;
   art?: ReleaseArtSpec | undefined;
+  src?: string | undefined;
   title?: ReactNode | undefined;
   eyebrow?: ReactNode | undefined;
   shape?: keyof typeof KAESO_RELEASE_ART_VARIANTS.shape | undefined;
@@ -28,10 +29,11 @@ function toElement(n: ArtNode, key: number): ReactNode {
 }
 
 export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function ReleaseArt(
-  { seed, label, art, title, eyebrow, shape = "banner", className },
+  { seed, label, art, src, title, eyebrow, shape = "banner", className },
   ref,
 ) {
   const { w, h } = RELEASE_ART_VIEW[shape];
+  const [failed, setFailed] = useState<string | null>(null);
   const prefix = `art${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const spec = art ?? releaseArtFor(seed);
   const drawn = useMemo(() => drawReleaseArt(spec, { shape, idPrefix: prefix }), [spec, shape, prefix]);
@@ -46,7 +48,11 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
         preserveAspectRatio="xMidYMid slice"
         className={cn("block w-full overflow-hidden rounded-well", KAESO_RELEASE_ART_VARIANTS.shape[shape].classes)}
       >
-        {drawn.children?.map(toElement)}
+        {src && failed !== src ? (
+          <image href={src} width={w} height={h} preserveAspectRatio="xMidYMid slice" onError={() => setFailed(src)} />
+        ) : (
+          drawn.children?.map(toElement)
+        )}
         {eyebrow && (
           <text
             x={text.eyebrow.x}

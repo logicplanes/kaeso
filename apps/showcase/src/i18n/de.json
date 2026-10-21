@@ -1072,5 +1072,6 @@
   "A short note beside the title, such as “Redacted by the provider”; while `live`, the latest line of the reasoning shows there instead.": "Ein kurzer Hinweis neben dem Titel, etwa „Vom Anbieter geschwärzt“; solange `live` gilt, steht dort stattdessen die neueste Zeile der Überlegungen.",
   "The reasoning is still arriving: “Thinking” pulses quietly and its latest line shows beside it.": "Die Überlegungen kommen noch an: „Denkt nach“ pulsiert ruhig, daneben steht die neueste Zeile.",
   "The reasoning, as Markdown.": "Die Überlegungen als Markdown.",
-  "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "Der Titel statt „Denkt nach“ oder „… nachgedacht“, etwa „Überlegungen“ in einem Anfrageprotokoll."
+  "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "Der Titel statt „Denkt nach“ oder „… nachgedacht“, etwa „Überlegungen“ in einem Anfrageprotokoll.",
+  "An image of the release's stored artwork, e.g. `https://update.kaeso.app/art/0.1.0.svg`, shown in the frame instead of the drawn picture, which takes its place if the image doesn't load.": "Das gespeicherte Bild des Releases als Datei, z. B. `https://update.kaeso.app/art/0.1.0.svg`, im Rahmen statt des gezeichneten Bildes; lädt die Datei nicht, erscheint das gezeichnete."
 }

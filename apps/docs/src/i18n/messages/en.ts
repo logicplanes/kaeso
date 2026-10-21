@@ -46,6 +46,7 @@ export const en = {
   "changelog.seriesDescription": "Every change people will notice in the {series} releases.",
   "changelog.pages": "More releases",
   "changelog.current": "Latest releases",
+  "changelog.artwork": "Artwork of Kaeso {version}",
   "changelog.feed": "Kaeso releases",
   "changelog.added": "Added",
   "changelog.changed": "Changed",

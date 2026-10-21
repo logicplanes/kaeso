@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { art } from "@logicplanes/kaeso-tokens";
 import { ReleaseArt, releaseArtSvg } from "./release-art.js";
 import {
@@ -132,6 +132,20 @@ describe("ReleaseArt", () => {
     rerender(<ReleaseArt seed="0.1.0" label="Artwork" />);
     expect(container.innerHTML).not.toBe(stored);
     expect(screen.getByRole("img", { name: "Artwork" }).querySelectorAll("text")).toHaveLength(0);
+  });
+
+  it("shows the stored artwork's image in the frame, and draws the picture when the image doesn't load", () => {
+    const { container } = render(<ReleaseArt seed="0.1.0" src="https://update.kaeso.app/art/0.1.0.svg" label="Kaeso 0.1.0" title="0.1.0" shape="wide" />);
+    const svg = screen.getByRole("img", { name: "Kaeso 0.1.0" });
+    const image = svg.querySelector("image");
+    expect(image).toHaveAttribute("href", "https://update.kaeso.app/art/0.1.0.svg");
+    expect(image).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
+    expect(svg).toHaveAttribute("viewBox", "0 0 840 360");
+    expect(svg).toHaveTextContent("0.1.0");
+    expect(container.querySelectorAll("rect")).toHaveLength(0);
+    fireEvent.error(image as Element);
+    expect(svg.querySelector("image")).toBeNull();
+    expect(container.querySelectorAll("rect").length).toBeGreaterThan(0);
   });
 
   it("gives every artwork on a page its own ids", () => {

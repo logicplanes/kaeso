@@ -7,6 +7,7 @@ export const docs = {
     props: {
       seed: "What the artwork is drawn from when there is no `art`, e.g. `0.1.0`; the same seed always draws the same picture.",
       art: "The release's stored artwork, e.g. from `nextReleaseArt`; it always draws the same picture and wins over `seed`.",
+      src: "An image of the release's stored artwork, e.g. `https://update.kaeso.app/art/0.1.0.svg`, shown in the frame instead of the drawn picture, which takes its place if the image doesn't load.",
       label: 'What the picture shows, read by screen readers: "Kaeso 0.1.0".',
       title: "Large text on the artwork, e.g. the version number.",
       eyebrow: "Small text above the title, e.g. “What's new in Kaeso”.",

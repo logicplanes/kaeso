@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { writeSitePolicy } from "../../scripts/csp.mjs";
 import { kaesoVersion } from "./scripts/content/docs.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
+import { UPDATE_SERVICE } from "./src/site/update-service.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const contentDir = process.env.KAESO_DOCS_CONTENT ?? "content";
@@ -74,7 +75,7 @@ function contentSecurityPolicy(): Plugin {
       order: "post",
       sequential: true,
       handler() {
-        this.info(writeSitePolicy(outDir));
+        this.info(writeSitePolicy(outDir, { images: [UPDATE_SERVICE] }));
       },
     },
   };

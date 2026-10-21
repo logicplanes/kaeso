@@ -1072,5 +1072,6 @@
   "A short note beside the title, such as “Redacted by the provider”; while `live`, the latest line of the reasoning shows there instead.": "标题旁的简短说明，例如“已被服务商隐去”；`live` 时该处改为显示推理的最新一行。",
   "The reasoning is still arriving: “Thinking” pulses quietly and its latest line shows beside it.": "推理仍在输出：“正在思考”轻微闪烁，旁边显示最新一行。",
   "The reasoning, as Markdown.": "推理内容，Markdown 格式。",
-  "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "代替“正在思考”或“思考了 …”的标题，例如请求日志中的“推理”。"
+  "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "代替“正在思考”或“思考了 …”的标题，例如请求日志中的“推理”。",
+  "An image of the release's stored artwork, e.g. `https://update.kaeso.app/art/0.1.0.svg`, shown in the frame instead of the drawn picture, which takes its place if the image doesn't load.": "版本已存储配图的图片，例如 `https://update.kaeso.app/art/0.1.0.svg`，显示在框内以代替绘制的图案；图片无法加载时改为显示绘制的图案。"
 }

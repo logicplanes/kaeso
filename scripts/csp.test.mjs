@@ -61,6 +61,15 @@ test("a site without inline code gets the strict policy, and the policy without 
   assert.ok(html.includes(`<meta charset="utf-8" /><meta http-equiv="content-security-policy" content="${STRICT.replace("; frame-ancestors 'none'", "")}">`));
 });
 
+test("a site that shows images from another origin allows only that origin, and only https origins", () => {
+  writeSitePolicy(site({ "index.html": page() }), { images: ["https://update.kaeso.app"] });
+  assert.equal(readFileSync(join(dir, "csp.txt"), "utf8"), `${STRICT.replace("img-src 'self' data:", "img-src 'self' data: https://update.kaeso.app")}\n`);
+  assert.deepEqual(sitePolicy(site({ "index.html": page() }), { images: ["http://update.kaeso.app", "https://*.example.com"] }).problems, [
+    "the image origin http://update.kaeso.app isn't an https origin",
+    "the image origin https://*.example.com isn't an https origin",
+  ]);
+});
+
 test("a strict site fails the build on any inline script, style or style attribute, naming the page", () => {
   site({ "a.html": page(`<script>x()</script>`), "b.html": page(`<style>p{}</style>`), "c.html": page("", `<p style="margin:0">c</p>`) });
   assert.throws(

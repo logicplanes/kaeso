@@ -58,6 +58,7 @@ for (const l of LANGUAGES) {
     await expect(latest.getByRole("link", { name: l.compare })).toHaveAttribute("href", `${repo}/compare/v1.1.1...v1.2.0`);
     await expect(latest.getByRole("link", { name: /GitHub/ }).first()).toHaveAttribute("href", `${repo}/releases/tag/v1.2.0`);
     await expect(latest.getByRole("heading", { level: 3, name: l.added })).toHaveAttribute("id", "v1.2.0-added");
+    await expect(latest.getByRole("img", { name: /1\.2\.0/ }).locator("image")).toHaveAttribute("href", "https://update.kaeso.app/art/1.2.0.svg");
     await expect(latest.getByText("A filter for aliases on the models page.").locator("xpath=ancestor::*[@lang][1]")).toHaveAttribute("lang", "en");
     if (l.note) {
       await expect(page.getByText(l.note)).toBeVisible();
@@ -81,6 +82,16 @@ test("the changelog follows the introduction in the sidebar and is built as its 
   expect(html).toContain("<title>Änderungen · Kaeso-Dokumentation</title>");
   expect(html).toContain('<link rel="alternate" type="application/atom+xml" title="Kaeso-Releases" href="https://github.com/logicplanes/kaeso/releases.atom" />');
   expect(await (await request.get("/sitemap.xml")).text()).toContain("<loc>https://docs.kaeso.app/zh-CN/changelog</loc>");
+});
+
+test("each release shows its artwork from the update service, in a frame kept while it loads", async ({ page, releaseArt }) => {
+  await page.goto("/changelog");
+  const art = page.getByRole("region", { name: "1.2.0" }).getByRole("img", { name: "Artwork of Kaeso 1.2.0" });
+  await expect(art.locator("image")).toHaveAttribute("href", "https://update.kaeso.app/art/1.2.0.svg");
+  const box = await art.boundingBox();
+  expect(Math.round(((box?.width ?? 0) / (box?.height ?? 1)) * 9)).toBe(21);
+  await expect.poll(() => releaseArt).toContain("https://update.kaeso.app/art/1.2.0.svg");
+  await expect(page.getByRole("region", { name: "Unreleased" }).getByRole("img")).toHaveCount(0);
 });
 
 test("the lines under Unreleased say they are not released yet", async ({ page }) => {

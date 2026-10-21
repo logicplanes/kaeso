@@ -1,10 +1,12 @@
 import { Badge, Link, Separator, Text } from "@logicplanes/kaeso-ui";
 import { formatDate, parseISODate } from "@logicplanes/kaeso-ui/format";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, type ReactNode } from "react";
+import { Fragment, Suspense, lazy, useEffect, type ReactNode } from "react";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { ChangelogContent, ChangelogEntry, ChangelogRelease } from "~/markdown/ast";
 import { Markdown } from "~/markdown/render";
+
+const ReleaseArtwork = lazy(() => import("./release-artwork"));
 
 export function releaseDate(iso: string): string {
   const day = parseISODate(iso);
@@ -93,6 +95,9 @@ function Release({ release, lang }: { release: ChangelogRelease; lang: string | 
           )}
         </div>
       </div>
+      <Suspense fallback={<div aria-hidden className="aspect-21/9 w-full" />}>
+        <ReleaseArtwork version={release.version} label={t("changelog.artwork").replace("{version}", release.version)} />
+      </Suspense>
       <Entry entry={release} lang={lang} />
     </section>
   );

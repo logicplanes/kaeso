@@ -154,10 +154,10 @@ Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie entha
 
 ### Content Security Policy
 
-Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seite sowie in `csp.txt` und `_headers`. Senden Sie sie außerdem als Header `Content-Security-Policy`, denn nur der Header kann `frame-ancestors 'none'` hinzufügen. Der Header der Dokumentation ändert sich nie:
+Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seite sowie in `csp.txt` und `_headers`. Senden Sie sie außerdem als Header `Content-Security-Policy`, denn nur der Header kann `frame-ancestors 'none'` hinzufügen. Der Header der Dokumentation ändert sich nie; er erlaubt Bilder von `update.kaeso.app`, woher die Release-Bilder im Änderungsprotokoll kommen:
 
 ```text
-default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://update.kaeso.app; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
 Die Richtlinie des Showcases nennt einen Hash für jedes seiner Inline-Skripte und -Stile; die Hashes ändern sich mit ihnen. Nehmen Sie seinen Header aus der `csp.txt` des Builds, den Sie verteilen.

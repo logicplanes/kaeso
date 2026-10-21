@@ -42,6 +42,8 @@ describe("the changelog page", () => {
     expect(latest.querySelector("time")).toHaveAttribute("dateTime", "2026-11-15");
     expect(latest.querySelector("time")).toHaveTextContent("15 Nov 2026");
     expect(within(latest).getByRole("link", { name: /Release on GitHub/ })).toHaveAttribute("href", `${repo}/releases/tag/v1.2.0`);
+    const art = await within(latest).findByRole("img", { name: "Artwork of Kaeso 1.2.0" });
+    expect(art.querySelector("image")).toHaveAttribute("href", "https://update.kaeso.app/art/1.2.0.svg");
     expect(within(latest).getByRole("link", { name: /Changes since 1\.1\.1/ })).toHaveAttribute("href", `${repo}/compare/v1.1.1...v1.2.0`);
     expect(screen.queryByRole("link", { name: /Edit on GitHub/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Every release on GitHub/ })).toHaveAttribute("href", `${repo}/releases`);

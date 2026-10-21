@@ -48,6 +48,7 @@ export const zhCN: Messages = {
   "changelog.seriesDescription": "{series} 系列各版本中值得注意的全部变更。",
   "changelog.pages": "更多版本",
   "changelog.current": "最新版本",
+  "changelog.artwork": "Kaeso {version} 的配图",
   "changelog.feed": "Kaeso 版本",
   "changelog.added": "新增",
   "changelog.changed": "变更",
