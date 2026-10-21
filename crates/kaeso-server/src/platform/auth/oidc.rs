@@ -13,7 +13,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::{next, throttle_ip};
 use crate::auth::oidc::Provider;
-use crate::auth::sessions::{self, Method, SignIn};
+use crate::auth::sessions::{self, ABSOLUTE_LIFETIME, Method, RECENT_SIGN_IN, SignIn};
 use crate::auth::throttle::TOKENS_PER_IP;
 use crate::platform::access::Ctx;
 use crate::platform::cookies;
@@ -795,7 +795,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             method: Method::Oidc,
             second_factor: false,
             oidc_org: Some(org.uuid()),
-            signed_in_at: ctx.now,
+            signed_in_at: signed_in_at(&identity, ctx.now),
             ip: ctx.ip,
             user_agent: ctx.user_agent.clone(),
         },
@@ -813,6 +813,20 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     Ok(response)
 }
 
+// The provider may reuse its own older sign-in, so the age comes from its auth_time against the
+// token's iat (one clock); without auth_time the age is unknown and must not count as recent.
+fn signed_in_at(
+    identity: &crate::auth::oidc::Identity,
+    now: time::OffsetDateTime,
+) -> time::OffsetDateTime {
+    match (identity.auth_time, identity.issued_at) {
+        (Some(signed_in), Some(issued)) => {
+            now - (issued - signed_in).clamp(Duration::ZERO, ABSOLUTE_LIFETIME)
+        }
+        _ => now - RECENT_SIGN_IN - Duration::SECOND,
+    }
+}
+
 // A confirmation proves the signed-in person is at the keyboard, so it must come back as the
 // same account and from a fresh sign-in at the provider; it never creates or switches accounts.
 #[allow(clippy::too_many_arguments)]
@@ -826,12 +840,12 @@ async fn confirm(
     user: UserId,
     session: SessionId,
 ) -> ApiResult<Response> {
-    // Both times come from the provider's clock, so a clock difference between it and
-    // Kaeso can't make a fresh sign-in look stale.
-    if let (Some(signed_in), Some(issued)) = (identity.auth_time, identity.issued_at)
-        && issued - signed_in > FLOW_LIFETIME + CLOCK_SKEW
-    {
-        return Err(ApiError::PermissionDenied(STALE_SIGN_IN.into()));
+    // max_age=0 makes auth_time required in the answer (OpenID Connect Core 1.0 §2 and
+    // §3.1.2.1). Both times come from the provider's clock, so a clock difference
+    // between it and Kaeso can't make a fresh sign-in look stale.
+    match (identity.auth_time, identity.issued_at) {
+        (Some(signed_in), Some(issued)) if issued - signed_in <= FLOW_LIFETIME + CLOCK_SKEW => {}
+        _ => return Err(ApiError::PermissionDenied(STALE_SIGN_IN.into())),
     }
     let org = flow.org;
     let mut tx = state.pg.begin().await?;
@@ -883,7 +897,7 @@ async fn confirm(
             method: Method::Oidc,
             second_factor: false,
             oidc_org: Some(org.uuid()),
-            signed_in_at: ctx.now,
+            signed_in_at: signed_in_at(identity, ctx.now),
             ip: ctx.ip,
             user_agent: ctx.user_agent.clone(),
         },
@@ -997,4 +1011,46 @@ async fn link(
         response.headers_mut().append(header::SET_COOKIE, v);
     }
     Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+    use time::macros::datetime;
+
+    use super::*;
+
+    fn signed_in(auth_time: Option<time::OffsetDateTime>) -> time::OffsetDateTime {
+        let identity = crate::auth::oidc::Identity {
+            subject: "sub".into(),
+            email: "ada@acme.example".into(),
+            name: None,
+            auth_time,
+            issued_at: Some(datetime!(2026-10-21 12:00 UTC)),
+        };
+        signed_in_at(&identity, datetime!(2026-10-21 18:30 UTC))
+    }
+
+    #[test]
+    fn an_sso_session_dates_from_the_providers_sign_in() {
+        assert_eq!(
+            signed_in(Some(datetime!(2026-10-21 11:00 UTC))),
+            datetime!(2026-10-21 17:30 UTC),
+            "an hour before the token on the provider's clock is an hour before now"
+        );
+        assert_eq!(
+            signed_in(Some(datetime!(2026-10-21 12:05 UTC))),
+            datetime!(2026-10-21 18:30 UTC),
+            "a sign-in after the token can't be in the future"
+        );
+        assert_eq!(
+            signed_in(Some(datetime!(2026-07-01 12:00 UTC))),
+            datetime!(2026-09-21 18:30 UTC),
+            "no older than a session lives"
+        );
+        assert_eq!(
+            signed_in(None),
+            datetime!(2026-10-21 18:14:59 UTC),
+            "without auth_time it isn't recent"
+        );
+    }
 }

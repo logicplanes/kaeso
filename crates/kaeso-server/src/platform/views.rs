@@ -67,7 +67,9 @@ pub struct SessionView {
         Such a session opens only that org and reads the user's own account;\n\
         anything else answers `other_sign_in_required`."]
     pub sso_org: Option<OrgId>,
-    #[doc = "When the user last signed in on this session."]
+    #[doc = "When the user last signed in on this session. Through SSO, when the\n\
+        identity provider last checked them (its `auth_time`); without one,\n\
+        more than 15 minutes before the session began."]
     #[serde(with = "time::serde::rfc3339")]
     pub signed_in_at: OffsetDateTime,
     #[doc = "When the session was last used."]

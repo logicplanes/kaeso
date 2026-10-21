@@ -19,7 +19,9 @@ The button says **Continue with** and the name the admin gave the provider, or *
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
-When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. A provider whose answer says the last sign-in is older than the request is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
+When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. A provider whose answer says the last sign-in is older than the request, or doesn't say when it was (`auth_time`), is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
+
+A provider can also sign someone in with a session of its own from earlier, without asking. So a session from single sign-on dates from the provider's `auth_time`, not from when it came back to Kaeso, and counts as a recent sign-in only while that time is within 15 minutes. Kaeso measures it against the token's issue time `iat`, on the provider's clock, so the two servers' clocks needn't agree. Without `auth_time`, the session counts as older than 15 minutes from the start.
 
 ## Links that go straight to the provider
 

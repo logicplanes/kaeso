@@ -57,7 +57,7 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Confirm a sensitive action
 
-Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out.
+Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out. A sign-in through single sign-on dates from when your identity provider last checked you, which can be long before it sent you back to Kaeso.
 
 - In your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.

@@ -57,7 +57,7 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Sensible Aktion bestätigen
 
-Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt.
+Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt. Eine Anmeldung über Single Sign-on zählt ab dem Zeitpunkt, zu dem Ihr Identitätsanbieter Sie zuletzt geprüft hat, und der kann lange vor der Rückkehr zu Kaeso liegen.
 
 - In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.

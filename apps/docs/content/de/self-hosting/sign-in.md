@@ -19,7 +19,9 @@ Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter geg
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
-Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, oder sagt sie nicht, wann sie war (`auth_time`), wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+
+Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Sitzung anmelden. Eine Sitzung aus Single Sign-on zählt deshalb ab dem `auth_time` des Anbieters, nicht ab der Rückkehr zu Kaeso, und gilt nur als kürzliche Anmeldung, solange dieser Zeitpunkt höchstens 15 Minuten zurückliegt. Kaeso misst ihn am Ausstellungszeitpunkt `iat` des Tokens, auf der Uhr des Anbieters; die Uhren beider Server müssen also nicht übereinstimmen. Ohne `auth_time` gilt die Sitzung von Anfang an als älter als 15 Minuten.
 
 ## Links, die direkt zum Anbieter führen
 

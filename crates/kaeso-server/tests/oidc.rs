@@ -1702,6 +1702,101 @@ async fn a_confirmation_never_switches_accounts_and_comes_back_to_the_page_with_
     s.cleanup().await;
 }
 
+async fn signed_in_ago(app: &App, cookie: &str) -> time::Duration {
+    let who = app.get("/auth/session", cookie).await;
+    let at = time::OffsetDateTime::parse(
+        who.body["session"]["signed_in_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap();
+    app.clock.now() - at
+}
+
+#[track_caller]
+fn about(ago: time::Duration, expected: time::Duration) {
+    assert!(
+        (ago - expected).abs() < time::Duration::seconds(1),
+        "{ago} is not {expected}"
+    );
+}
+
+#[tokio::test]
+async fn an_sso_sign_in_is_only_as_recent_as_the_sign_in_at_the_provider() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+
+    idp.set_fault(Fault::StaleAuthTime);
+    let reused = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    about(signed_in_ago(&app, &reused).await, time::Duration::hours(1));
+    assert_eq!(
+        add_provider_key(&app, &owner.org_id, &reused)
+            .await
+            .error_type(),
+        "recent_sign_in_required",
+        "a session the provider signed in an hour ago is not a fresh sign-in"
+    );
+
+    idp.set_fault(Fault::NoAuthTime);
+    let unknown = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    about(
+        signed_in_ago(&app, &unknown).await,
+        time::Duration::minutes(15) + time::Duration::seconds(1),
+    );
+    assert_eq!(
+        add_provider_key(&app, &owner.org_id, &unknown)
+            .await
+            .error_type(),
+        "recent_sign_in_required"
+    );
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &unknown,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    assert_eq!(
+        location(&r),
+        format!("{ORIGIN}/orgs/x/providers#sso_error=stale_sign_in"),
+        "a confirmation without auth_time can't prove a fresh sign-in"
+    );
+    assert!(r.cookie().is_none());
+    assert_eq!(
+        app.get("/auth/session", &unknown).await.status,
+        StatusCode::OK
+    );
+
+    idp.set_fault(Fault::None);
+    let fresh = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    about(signed_in_ago(&app, &fresh).await, time::Duration::ZERO);
+    let added = add_provider_key(&app, &owner.org_id, &fresh).await;
+    assert_eq!(added.status, StatusCode::CREATED, "{:?}", added.body);
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn an_account_without_a_password_is_offered_one_by_email_to_confirm_with() {
     let s = TestServices::start().await;

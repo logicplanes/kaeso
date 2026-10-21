@@ -23254,7 +23254,7 @@
           "signed_in_at": {
             "type": "string",
             "format": "date-time",
-            "description": "When the user last signed in on this session."
+            "description": "When the user last signed in on this session. Through SSO, when the\nidentity provider last checked them (its `auth_time`); without one,\nmore than 15 minutes before the session began."
           },
           "sso_org": {
             "oneOf": [
