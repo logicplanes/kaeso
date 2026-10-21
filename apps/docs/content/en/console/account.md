@@ -86,7 +86,7 @@ Product names and model ids stay as they are in every language.
 
 ## Leave an organization or delete your account
 
-**Leave organization**, under **Memberships**, takes you out of the organization and its projects and archives your keys there.
+**Leave organization**, under **Memberships**, takes you out of the organization and its projects and archives your keys there. Its only owner can't leave until someone else is an owner too.
 
 **Delete account**, under **Profile**, takes you out of every organization and archives all your keys. History shows you as a deleted user. Type your email address to confirm.
 

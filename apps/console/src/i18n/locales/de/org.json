@@ -22,6 +22,7 @@
   "org.general.copyId": "Organisations-ID kopieren",
   "org.general.enterName": "Namen eingeben",
   "org.general.hidden": "Kein Zugriff auf die allgemeinen Einstellungen",
+  "org.general.hint": "Name, Bild und ID der Organisation, wem sie gehört, und ihre Löschung.",
   "org.general.id": "Organisations-ID",
   "org.general.idHint": "Für die Platform API und den Support.",
   "org.general.loadFailed": "Die Organisation konnte nicht geladen werden",
@@ -422,7 +423,7 @@
   "org.twoFactor.require": "Zwei-Faktor-Authentifizierung verlangen",
   "org.twoFactor.requireConfirm": "Zwei-Faktor-Authentifizierung verlangen?",
   "org.twoFactor.requireConfirmHint": "Sie nutzen sie noch nicht: Die Organisation bleibt für Sie und alle Mitglieder ohne sie gesperrt, bis Sie sie in den Sicherheitseinstellungen Ihres Kontos einrichten.",
-  "org.twoFactor.requireHint": "Gilt für die Anmeldung mit Passwort, nicht für Anmeldelinks oder SSO.",
+  "org.twoFactor.requireHint": "Verlangt einen Code bei der Anmeldung, außer über das eigene SSO.",
   "org.twoFactor.requiredOff": "Zwei-Faktor-Authentifizierung ist nicht mehr Pflicht",
   "org.twoFactor.requiredOn": "Zwei-Faktor-Authentifizierung ist jetzt Pflicht",
   "org.wholeDays": "Ganze Tage eingeben, mindestens 1"

@@ -18,7 +18,11 @@ export function ProfilePage() {
   const me = useQuery(meQuery);
   const m = me.data;
   return (
-    <SettingsPage title={t("account.profile", "Profile")} context={t("account.title", "Account")}>
+    <SettingsPage
+      title={t("account.profile", "Profile")}
+      context={t("account.title", "Account")}
+      description={t("account.profileHint", "Your name, picture and email address, as the people you work with see them.")}
+    >
       {me.isError ? (
         <LoadFailed title={t("account.profileFailed", "Your profile couldn't load")} />
       ) : !m ? (

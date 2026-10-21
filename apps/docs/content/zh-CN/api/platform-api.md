@@ -76,7 +76,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 - **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
 - **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`。默认为 `inference`，授予平台访问权限需要 `keys.platform_access.grant` 权限（[API 密钥](../console/api-keys.md)）。
 - **平台密钥只能在会话中创建**，且创建者必须拥有管理员角色的全部权限。平台密钥从不调用模型。
-- **组织策略作用于会话。** 要求单点登录的组织会对其他会话返回 403。要求双重验证的组织会对没有第二重验证的密码会话返回 403。
+- **组织策略作用于会话。** 要求单点登录的组织会对其他会话返回 403。要求双重验证的组织会对没有第二重验证的会话返回 403，通过其自己的单点登录建立的会话除外。
 - **未知密钥会被限流。** 来自同一地址、使用未知密钥的请求过多时（两个 API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`（[API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)）。
 
 ### 跨站请求

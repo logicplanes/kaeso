@@ -39,7 +39,11 @@ export function SecurityPage() {
   const me = useQuery(meQuery);
   const m = me.data;
   return (
-    <SettingsPage title={t("account.security", "Security")} context={t("account.title", "Account")}>
+    <SettingsPage
+      title={t("account.security", "Security")}
+      context={t("account.title", "Account")}
+      description={t("account.securityHint", "How you sign in: your password, a second factor and single sign-on.")}
+    >
       {me.isError ? (
         <LoadFailed title={t("account.securityFailed", "Your security settings couldn't load")} />
       ) : !m ? (
@@ -178,7 +182,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   return (
     <SettingsSection
       title={t("account.twoFactor", "Two-factor authentication")}
-      description={t("account.twoFactorHint", "An authenticator code at every password sign-in and sign-in link.")}
+      description={t("account.twoFactorHint", "A code at each password or link sign-in; SSO leaves it to your provider.")}
     >
       <SettingsGroup>
         {enabled ? (
@@ -399,7 +403,7 @@ function TwoFactorDialog({
               </Text>
               <Field label={t("account.setupKey", "Setup key")}>
                 <div className="flex items-center gap-8">
-                  <Code>{s.secret}</Code>
+                  <Code>{groupsOfFour(s.secret)}</Code>
                   <CopyButton value={s.secret} label={t("account.copySetupKey", "Copy setup key")} size="xs" />
                 </div>
               </Field>
@@ -418,6 +422,8 @@ function TwoFactorDialog({
     </Dialog>
   );
 }
+
+const groupsOfFour = (secret: string) => secret.replace(/(.{4})(?=.)/g, "$1 ");
 
 const LINKED_PAGE = "/settings/account/security";
 

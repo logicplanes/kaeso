@@ -76,7 +76,7 @@ Use a platform key to automate a whole organization, and a project key for scrip
 - **Keys go in `Authorization`.** The Platform API never reads `x-api-key`.
 - **Platform access is chosen when a key is created**, with `"access": "platform"` or `"both"`. The default is `inference`, and platform access needs the right `keys.platform_access.grant` ([API keys](../console/api-keys.md)).
 - **Platform keys are created only in a session**, by someone who holds every right of the Admin role. They never call models.
-- **Organization policies apply to sessions.** An organization that requires single sign-on answers other sessions with 403. One that requires two-factor authentication answers password sessions without a second factor with 403.
+- **Organization policies apply to sessions.** An organization that requires single sign-on answers other sessions with 403. One that requires two-factor authentication answers sessions without a second factor with 403, except those from its own single sign-on.
 - **Unknown keys are throttled.** Too many requests with unknown keys from one address, on both APIs together, get `429 rate_limited` with `Retry-After` ([API key failures](../self-hosting/configuration.md#api-key-failures)).
 
 ### Cross-site requests

@@ -65,6 +65,7 @@
   "format.targetKind.platformKey": "Platform key",
   "format.targetKind.serviceAccount": "Service account",
   "format.targetKind.user": "User",
+  "format.userAgent.apiClient": "{client} (API client)",
   "format.userAgent.browserOnOs": "{browser} on {os}",
   "format.userAgent.unknown": "Unknown device",
   "format.userState.deactivated": "Deactivated",

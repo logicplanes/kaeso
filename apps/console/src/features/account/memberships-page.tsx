@@ -39,13 +39,7 @@ export function MembershipsPage() {
           key={m.org_id}
           title={m.org_name}
           description={t("account.orgRole", "{role} of the organization", { role: m.role.name })}
-          actions={
-            m.org_state === "scheduled_for_deletion" ? undefined : (
-              <Button size="sm" variant="ghost" onClick={() => setLeaving(m)}>
-                {t("account.leaveOrg", "Leave organization")}
-              </Button>
-            )
-          }
+          actions={m.org_state === "scheduled_for_deletion" ? undefined : <LeaveButton membership={m} onLeave={() => setLeaving(m)} />}
         >
           <SettingsGroup aria-label={t("account.projectsIn", "Projects in {org}", { org: m.org_name })}>
             {m.org_state === "scheduled_for_deletion" && (
@@ -91,5 +85,19 @@ export function MembershipsPage() {
         onConfirm={() => (leaving ? leave.mutateAsync(leaving) : undefined)}
       />
     </SettingsPage>
+  );
+}
+
+function LeaveButton({ membership: m, onLeave }: { membership: MyMembership; onLeave: () => void }) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={m.last_owner}
+      disabledReason={m.last_owner ? t("account.soleOwner", "You're its only owner; make someone else an owner first.") : undefined}
+      onClick={onLeave}
+    >
+      {t("account.leaveOrg", "Leave organization")}
+    </Button>
   );
 }

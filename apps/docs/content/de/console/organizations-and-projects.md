@@ -69,7 +69,7 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 | Einstellung | Wirkung |
 | --- | --- |
 | Single Sign-on verlangen | Mitglieder gelangen nur über den Identitätsanbieter in die Organisation. Ihre anderen Sitzungen gelten weiter für ihre übrigen Organisationen. Setzt einen verbundenen Anbieter voraus |
-| Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit Passwort und einem Code aus ihrer Authenticator-App. Ein Anmeldelink reicht nicht; eine Anmeldung über den eigenen Identitätsanbieter der Organisation schon |
+| Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit einem Code aus ihrer Authenticator-App, per Passwort oder Anmeldelink. Eine Anmeldung über den eigenen Identitätsanbieter der Organisation reicht ebenfalls |
 | Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und ein Projekt kann ein kürzeres Limit setzen |
 
 Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole warnt Sie vor dem Speichern. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.

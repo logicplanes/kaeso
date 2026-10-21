@@ -36,7 +36,7 @@ describe("your API keys", () => {
     expect(within(grid()).getByRole("button", { name: /proj_gone/ })).toBeInTheDocument();
     expect(within(grid()).getByRole("gridcell", { name: /support-bot/ })).toHaveTextContent(/Used /);
     expect(within(grid()).getByRole("gridcell", { name: /support-bot/ })).toHaveTextContent("Never expires");
-    expect(within(grid()).getByRole("gridcell", { name: /triage-bot/ })).toHaveTextContent("Expires in 3 d");
+    expect(within(grid()).getByRole("gridcell", { name: /triage-bot/ })).toHaveTextContent("Expires in 3 days");
     expect(within(grid()).getByRole("gridcell", { name: /triage-bot/ })).toHaveTextContent("Never used");
     expect(keyQueries()).toEqual([{ limit: "100", include_archived: "false" }]);
   });

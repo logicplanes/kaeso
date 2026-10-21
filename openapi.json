@@ -20916,9 +20916,14 @@
           "org_state",
           "role",
           "preset",
-          "projects"
+          "projects",
+          "last_owner"
         ],
         "properties": {
+          "last_owner": {
+            "type": "boolean",
+            "description": "The user is the org's only owner, so `DELETE me/memberships/{org}` is\nrefused until someone else is an owner too."
+          },
           "org_avatar_url": {
             "type": [
               "string",

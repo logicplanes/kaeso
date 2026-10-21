@@ -37,7 +37,7 @@ test("a new key is shown once, and closing without copying asks first", async ({
   await expect(ask).toBeVisible();
   await ask.getByRole("button", { name: "Close without copying" }).click();
   await expect(row(page, "checkout-web")).toBeVisible();
-  await expect(row(page, "checkout-web").getByText("Expires in 90 d")).toBeVisible();
+  await expect(row(page, "checkout-web").getByText("Expires in 90 days")).toBeVisible();
 });
 
 test("the next key starts on an empty first step, and the last key's secret is no longer on the page", async ({ page }) => {

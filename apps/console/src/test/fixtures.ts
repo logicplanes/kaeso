@@ -94,6 +94,7 @@ export function myMembership(overrides: Partial<MyMembership> = {}): MyMembershi
     role: { id: "owner", kind: "builtin", name: "Owner" },
     preset: "owner",
     projects: [myProject(), myProject({ id: OTHER_PROJECT, name: "Support triage", is_default: false })],
+    last_owner: false,
     ...overrides,
   };
 }

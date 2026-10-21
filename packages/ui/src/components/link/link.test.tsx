@@ -10,6 +10,13 @@ describe("Link", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
+  it("hands an app link, such as an authenticator's, to its app in the same tab", () => {
+    render(<Link href="otpauth://totp/Kaeso:owner%40example.com?secret=JBSWY3DPEHPK3PXP">Open in an authenticator app on this device</Link>);
+    const link = screen.getByRole("link", { name: "Open in an authenticator app on this device" });
+    expect(link).not.toHaveAttribute("target");
+    expect(link.querySelector("svg")).toBeNull();
+  });
+
   it("keeps the external mark on the line of the last word when the text wraps", () => {
     render(<Link href="https://github.com/logicplanes/kaeso">Read the gateway setup guide</Link>);
     const mark = screen.getByRole("link").querySelector("svg")!.parentElement!;

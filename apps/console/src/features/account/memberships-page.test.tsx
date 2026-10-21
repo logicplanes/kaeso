@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { ORG, OTHER_PROJECT, PROJECT, membership, myMembership, myProject, signedIn, whoAmI } from "~/test/fixtures";
 import { apiError, noContent, on, requests } from "~/test/network";
-import { notifications } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
 import { atFixtureTime } from "~/test/clock";
 
@@ -11,11 +11,11 @@ atFixtureTime();
 const PATH = "/settings/account/memberships";
 const CONTOSO = "org_contoso";
 
-function twoOrgs(contoso: Partial<Parameters<typeof myMembership>[0]> = {}) {
+function twoOrgs(contoso: Partial<Parameters<typeof myMembership>[0]> = {}, northwind: Partial<Parameters<typeof myMembership>[0]> = {}) {
   return signedIn({
     session: whoAmI({ memberships: [membership(), membership({ org_id: CONTOSO, org_name: "Contoso" })] }),
     memberships: [
-      myMembership(),
+      myMembership(northwind),
       myMembership({ org_id: CONTOSO, org_name: "Contoso", role: { id: "member", kind: "builtin", name: "Member" }, projects: [], ...contoso }),
     ],
   });
@@ -87,6 +87,18 @@ describe("memberships", () => {
     expect((await notifications().findAllByText("Transfer ownership of Northwind Labs first.")).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(screen.getByRole("heading", { name: "Northwind Labs" })).toBeInTheDocument();
+  });
+
+  it("says why the only owner can't leave, and lets the others leave", async () => {
+    twoOrgs({}, { last_owner: true });
+    const { user } = await renderApp(PATH);
+    await screen.findByRole("heading", { name: "Contoso" });
+    const [northwind, contoso] = screen.getAllByRole("button", { name: "Leave organization" });
+    await waitFor(() => expect(northwind).toHaveAttribute("aria-disabled", "true"));
+    await hoverReason(user, northwind as HTMLElement, "You're its only owner; make someone else an owner first.");
+    await user.click(northwind as HTMLElement);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(contoso).toBeEnabled();
   });
 
   it("closes the confirmation without leaving", async () => {

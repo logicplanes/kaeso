@@ -22,6 +22,7 @@
   "org.general.copyId": "复制组织 ID",
   "org.general.enterName": "请输入名称",
   "org.general.hidden": "无权查看常规设置",
+  "org.general.hint": "组织的名称、头像和 ID、所有者，以及删除组织。",
   "org.general.id": "组织 ID",
   "org.general.idHint": "用于 Platform API 和技术支持。",
   "org.general.loadFailed": "无法加载组织",
@@ -422,7 +423,7 @@
   "org.twoFactor.require": "要求双重验证",
   "org.twoFactor.requireConfirm": "要求双重验证？",
   "org.twoFactor.requireConfirmHint": "您尚未启用双重验证：在您于账户安全设置中启用之前，组织将对您以及所有未启用的成员关闭。",
-  "org.twoFactor.requireHint": "适用于密码登录，不适用于登录链接或 SSO。",
+  "org.twoFactor.requireHint": "登录时需要验证码，通过本组织自己的单点登录除外。",
   "org.twoFactor.requiredOff": "已不再要求双重验证",
   "org.twoFactor.requiredOn": "已要求双重验证",
   "org.wholeDays": "请输入整数天数，至少为 1"
