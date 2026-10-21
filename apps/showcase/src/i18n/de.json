@@ -202,7 +202,7 @@
   "Called with the value when dragging ends.": "Wird mit dem Wert aufgerufen, wenn das Ziehen endet.",
   "Called with the value while it is dragged.": "Wird mit dem Wert aufgerufen, während er gezogen wird.",
   "Cancel": "Abbrechen",
-  "Characters that end a tag, besides Enter.": "Zeichen, die ein Tag beenden, außer Enter.",
+  "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.": "Zeichen, die ein Tag beenden, außer Enter; eingefügter Text wird auch an Zeilenumbrüchen und Tabulatoren getrennt.",
   "Checkbox and radio items": "Kontrollkästchen- und Optionselemente",
   "Checkout conversation": "Unterhaltung im Checkout",
   "Choices for the value menu.": "Auswahlmöglichkeiten für das Wertemenü.",

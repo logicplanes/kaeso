@@ -72,17 +72,17 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
     },
   });
 
-  const invalid = emails.filter((e) => !looksLikeEmail(e));
+  const typed = [...new Set([...emails, ...draft.split(/[\s,;]+/).flatMap((e) => (e ? [e.toLowerCase()] : []))])];
+  const invalid = typed.filter((e) => !looksLikeEmail(e));
   const nextProject = extra.find((p) => !roles.some((r) => r.project_id === p.id));
-  const reason =
-    !emails.length && !looksLikeEmail(draft.trim())
-      ? t("org.invite.addEmail", "Add at least one email address")
-      : invalid.length
-        ? t("org.invite.notEmails", "{count, plural, one {{addresses} isn't an email address} other {{addresses} aren't email addresses}}", {
-            count: invalid.length,
-            addresses: invalid.join(", "),
-          })
-        : undefined;
+  const reason = !typed.length
+    ? t("org.invite.addEmail", "Add at least one email address")
+    : invalid.length
+      ? t("org.invite.notEmails", "{count, plural, one {{addresses} isn't an email address} other {{addresses} aren't email addresses}}", {
+          count: invalid.length,
+          addresses: invalid.join(", "),
+        })
+      : undefined;
 
   return (
     <StepDialog
