@@ -50,7 +50,7 @@
   "orgHome.listSeparator": ", ",
   "orgHome.loadingProjects": "Projekte werden geladen…",
   "orgHome.makeDefault": "Als Standard festlegen",
-  "orgHome.makeDefaultHint": "Alle Mitglieder treten bei, und wer später beitritt, startet dort.",
+  "orgHome.makeDefaultHint": "Wer der Organisation ab jetzt beitritt, startet dort; bisherige Mitglieder treten nicht bei.",
   "orgHome.makeDefaultProject": "Standardprojekt festlegen",
   "orgHome.makeDefaultQuestion": "{name} als Standard festlegen?",
   "orgHome.masterKeyId": "Mit dem Hauptschlüssel {id} verschlüsselt",

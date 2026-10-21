@@ -287,43 +287,6 @@ pub async fn insert_project(
     Ok(done.rows_affected() == 1)
 }
 
-pub async fn org_presets(
-    db: impl PgExecutor<'_>,
-    org_id: Uuid,
-) -> Result<Vec<(Uuid, String)>, StoreError> {
-    Ok(sqlx::query!(
-        "SELECT user_id, preset FROM org_memberships WHERE org_id = $1 ORDER BY id",
-        org_id
-    )
-    .fetch_all(db)
-    .await?
-    .into_iter()
-    .map(|r| (r.user_id, r.preset))
-    .collect())
-}
-
-pub async fn join_project(
-    db: impl PgExecutor<'_>,
-    project_id: Uuid,
-    users: &[(Uuid, String)],
-) -> Result<u64, StoreError> {
-    let ids: Vec<Uuid> = users.iter().map(|_| Uuid::now_v7()).collect();
-    let user_ids: Vec<Uuid> = users.iter().map(|(u, _)| *u).collect();
-    let presets: Vec<String> = users.iter().map(|(_, p)| p.clone()).collect();
-    Ok(sqlx::query!(
-        "INSERT INTO project_memberships (id, project_id, user_id, preset) \
-         SELECT id, $2, user_id, preset FROM UNNEST($1::uuid[], $3::uuid[], $4::text[]) AS j (id, user_id, preset) \
-         ON CONFLICT (project_id, user_id) DO NOTHING",
-        &ids,
-        project_id,
-        &user_ids,
-        &presets
-    )
-    .execute(db)
-    .await?
-    .rows_affected())
-}
-
 pub async fn get_project(
     db: impl PgExecutor<'_>,
     project_id: Uuid,

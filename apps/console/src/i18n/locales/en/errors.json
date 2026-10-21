@@ -322,6 +322,7 @@
   "errors.pathForm": "The path does not have the form this endpoint expects.",
   "errors.pathParamForm": "`{name}` in the path does not have the expected form.",
   "errors.pathParamUtf8": "`{name}` in the path is not valid UTF-8.",
+  "errors.pendingJoinsHoldMore": "Pending invitations or SSO sign-ups would get rights you don't hold in this project.",
   "errors.pictureEmpty": "The picture is empty.",
   "errors.pictureMismatch": "The picture is {actual}, not {declared}.",
   "errors.pictureNotBase64": "The picture isn't valid base64.",

@@ -15,7 +15,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Accepts an invitation. Signed in, the session's user must have the\ninvited address. Not signed in, the account is created (with `name`) and\nsigned in; an existing account must sign in first.",
+        "summary": "Accepts an invitation. Signed in, the session's user must have the\ninvited address. Not signed in, the account is created (with `name`) and\nsigned in; an existing account must sign in first. Refused for a member of\nthe org; accepting revokes the address's other pending invitations to it.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthInvitesAccept",
         "requestBody": {
@@ -6888,7 +6888,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Makes an active project the org's default: the previous\ndefault becomes an ordinary project, in the same transaction, so the org\nalways has exactly one. Every org member who isn't in the new default\njoins it with the project preset of their org preset;\nmembers keep their places in the previous one. Invites from now on add\npeople to the new default.",
+        "summary": "Makes an active project the org's default: the previous\ndefault becomes an ordinary project, in the same transaction, so the org\nalways has exactly one. Nobody joins or leaves a project by it: members\nkeep their places, and people who join the org from now on start in the\nnew default. Refused when pending invitations or the SSO default role\nwould give people rights there that the caller doesn't hold.",
         "description": "**Right:** `org.update` on the organization in the path.",
         "operationId": "putOrgsOrgDefaultProject",
         "parameters": [
@@ -17727,7 +17727,7 @@
               "string",
               "null"
             ],
-            "description": "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n`developer`, `auditor`, `member`) or a custom org role's id. Only a\nrole whose rights the inviter holds; only owners invite owners.",
+            "description": "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n`developer`, `auditor`, `member`) or a custom org role's id. Only a\nrole whose rights the inviter holds, and whose project role in the\ndefault project the inviter could grant there unless `project_roles`\nnames it; only owners invite owners.",
             "example": "developer"
           }
         }
@@ -23833,7 +23833,7 @@
               "string",
               "null"
             ],
-            "description": "The org role of SSO users who arrive without an invite: a built-in\nrole other than `owner`, or a custom org role's id; `null` for invite\nonly. Only a role whose rights the caller holds can be chosen.",
+            "description": "The org role of SSO users who arrive without an invite: a built-in\nrole other than `owner`, or a custom org role's id; `null` for invite\nonly. Only a role whose rights the caller holds, and whose project role\nin the default project the caller could grant there, can be chosen.",
             "example": "developer"
           },
           "domains": {

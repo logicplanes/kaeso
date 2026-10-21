@@ -178,7 +178,8 @@ pub struct SsoRequest {
     pub domains: Vec<String>,
     #[doc = "The org role of SSO users who arrive without an invite: a built-in\n\
         role other than `owner`, or a custom org role's id; `null` for invite\n\
-        only. Only a role whose rights the caller holds can be chosen."]
+        only. Only a role whose rights the caller holds, and whose project role\n\
+        in the default project the caller could grant there, can be chosen."]
     #[schema(example = "developer")]
     pub default_role: Option<String>,
     #[doc = "Deprecated: the built-in role; send `default_role` instead."]
@@ -279,6 +280,7 @@ pub async fn put_sso(
                 ));
             }
             check_org(scope, None, &grant)?;
+            super::invites::check_default_join(&state, &ctx, &grant, &[]).await?;
             Some(org_to_store(&grant))
         }
     };

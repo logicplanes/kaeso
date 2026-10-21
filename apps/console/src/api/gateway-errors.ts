@@ -159,6 +159,9 @@ const messages = (): Rule[] => [
   rule("errors.chooseAnotherMember", () => t("errors.chooseAnotherMember", "Choose another member.")),
   rule("errors.newOwnerActiveMember", () => t("errors.newOwnerActiveMember", "The new owner must be an active member of the organization.")),
   rule("errors.memberHoldsMoreRights", () => t("errors.memberHoldsMoreRights", "You can't change a member who holds rights you don't hold.")),
+  rule("errors.pendingJoinsHoldMore", () =>
+    t("errors.pendingJoinsHoldMore", "Pending invitations or SSO sign-ups would get rights you don't hold in this project."),
+  ),
   rule("errors.serviceAccountHoldsMoreRights", () =>
     t("errors.serviceAccountHoldsMoreRights", "You can't change a service account that holds rights you don't hold."),
   ),

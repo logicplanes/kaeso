@@ -29,9 +29,10 @@ impl ProjectRole {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Accepted {
-    Joined(OrgId),
+    Joined { org: OrgId, revoked_others: u64 },
     Instance,
     Gone,
+    AlreadyMember,
 }
 
 pub async fn accept(
@@ -57,7 +58,12 @@ pub async fn accept(
         (Some(p), _) => org_grant(p.parse::<OrgPreset>().unwrap_or(OrgPreset::Member)),
         (None, _) => org_grant(OrgPreset::Member),
     };
-    add_member(&mut *tx, org, user, &grant).await?;
+    // Never touch an existing member's roles: a stale invitation would restore what was taken away.
+    if !add_member(&mut *tx, org, user, &grant).await? {
+        return Ok(Accepted::AlreadyMember);
+    }
+    let revoked_others =
+        invites::revoke_others_for(&mut *tx, org.uuid(), &invite.email, invite.id, now).await?;
     let project_roles: Vec<ProjectRole> =
         serde_json::from_value(invite.project_roles.clone()).unwrap_or_default();
     for role in project_roles {
@@ -78,5 +84,8 @@ pub async fn accept(
             members::update_project(&mut *tx, project.id, user.uuid(), &grant).await?;
         }
     }
-    Ok(Accepted::Joined(org))
+    Ok(Accepted::Joined {
+        org,
+        revoked_others,
+    })
 }

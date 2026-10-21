@@ -52,7 +52,7 @@ export function MakeDefaultDialog({
         {
           id: "confirm",
           title: t("orgHome.makeDefaultQuestion", "Make {name} the default?", { name: project.name }),
-          description: t("orgHome.makeDefaultHint", "Every member joins it, and people who join later start there."),
+          description: t("orgHome.makeDefaultHint", "People who join the organization from now on start there; current members don't join it."),
           content: (
             <KeyValue
               items={[

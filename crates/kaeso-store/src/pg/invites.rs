@@ -103,6 +103,22 @@ pub async fn pending_for(
     .await?)
 }
 
+pub async fn pending_of_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    now: OffsetDateTime,
+) -> Result<Vec<Invite>, StoreError> {
+    Ok(sqlx::query_as!(
+        Invite,
+        "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
+         FROM invites WHERE org_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > $2",
+        org_id,
+        now
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn list(
     db: impl PgExecutor<'_>,
     org_id: Option<Uuid>,
@@ -163,6 +179,27 @@ pub async fn revoke(
     .await?
     .rows_affected()
         == 1)
+}
+
+pub async fn revoke_others_for(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    email: &str,
+    accepted: Uuid,
+    now: OffsetDateTime,
+) -> Result<u64, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE invites SET revoked_at = $4, updated_at = now() \
+         WHERE org_id = $1 AND lower(email) = lower($2) AND id <> $3 \
+         AND accepted_at IS NULL AND revoked_at IS NULL",
+        org_id,
+        email,
+        accepted,
+        now
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
 }
 
 pub async fn renew(

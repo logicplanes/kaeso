@@ -16,7 +16,7 @@ Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die 
 2. **Was dürfen sie in der Organisation?** Wählen Sie ihre Organisationsrolle.
 3. **Welche Projekte?** Fügen Sie die Projekte hinzu, denen sie beitreten, jeweils mit einer Rolle. Dem Standardprojekt treten sie immer bei.
 
-**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**. Unter **Mitglieder** suchen Sie nach Name oder E-Mail-Adresse oder wählen eine Rolle, um zu sehen, wer sie hat.
+**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**. Sobald jemand eine Einladung annimmt, werden seine anderen offenen Einladungen in die Organisation widerrufen. Eine Einladung ändert nie die Rollen von jemandem, der schon Mitglied ist. Unter **Mitglieder** suchen Sie nach Name oder E-Mail-Adresse oder wählen eine Rolle, um zu sehen, wer sie hat.
 
 Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen, die neu bei Kaeso sind. Wer schon ein Konto hat, braucht eine Einladung und verknüpft das Konto unter **Konto** mit dem Identitätsanbieter.
 
@@ -53,7 +53,7 @@ Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 
 Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein.
 
-Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es.
+Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
 
 ## Dienstkonto erstellen
 

@@ -336,6 +336,62 @@ async fn without_an_invite_or_default_role_there_is_no_access() {
 }
 
 #[tokio::test]
+async fn joining_by_sso_takes_one_invitation_and_retires_the_others() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, None).await;
+    let org = owner.org_id.parse::<OrgId>().unwrap().uuid();
+    let mut ids = Vec::new();
+    for (preset, token) in [("admin", "older-invite"), ("member", "newer-invite")] {
+        let id = uuid::Uuid::now_v7();
+        kaeso_store::pg::invites::insert(
+            &app.state.pg,
+            &kaeso_store::pg::invites::NewInvite {
+                id,
+                org_id: Some(org),
+                email: "bob@acme.example",
+                org_preset: Some(preset),
+                org_role_id: None,
+                project_roles: json!([]),
+                token_hash: &kaeso_core::secret::hash(token),
+                invited_by: None,
+                expires_at: app.clock.now() + time::Duration::days(21),
+            },
+        )
+        .await
+        .unwrap();
+        ids.push(kaeso_core::id::InviteId::from_uuid(id).to_string());
+    }
+
+    let flow = start(&app, json!({ "org": owner.org_id })).await;
+    let auth = idp.authorize(&flow.url, "bob@acme.example", "Bob");
+    let r = callback(&app, &auth.code, &auth.state, Some(&flow.binding)).await;
+    let who = app
+        .get("/auth/session", &r.cookie().expect("signed in"))
+        .await;
+    assert_eq!(who.body["memberships"][0]["preset"], "member");
+    let status = |id: &str| {
+        let path = format!("/orgs/{}/invites/{id}", owner.org_id);
+        let app = &app;
+        let cookie = owner.cookie.clone();
+        async move { app.get(&path, &cookie).await.body["status"].clone() }
+    };
+    assert_eq!(status(&ids[0]).await, "revoked");
+    assert_eq!(status(&ids[1]).await, "accepted");
+    let r = app
+        .post(
+            "/auth/invites/lookup",
+            json!({ "token": "older-invite" }),
+            None,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn sso_signs_in_existing_accounts_once_linked_and_only_where_they_are_members() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
