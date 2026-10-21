@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRef, useState } from "react";
 import { Sheet } from "./sheet.js";
-import { AlertDialog } from "../dialog/dialog.js";
+import { AlertDialog, Dialog } from "../dialog/dialog.js";
 import { Button } from "../button/button.js";
 
 function MembersPage() {
@@ -128,6 +128,42 @@ describe("Sheet", () => {
       </Sheet>,
     );
     await waitFor(() => expect(document.querySelectorAll(".bg-overlay")).toHaveLength(1));
+  });
+
+  it("leaves the focus in another dialog when it closes after the row that opened it is gone", async () => {
+    function RemoveThenAdd() {
+      const [member, setMember] = useState<string | null>(null);
+      const [removed, setRemoved] = useState(false);
+      const [adding, setAdding] = useState(false);
+      return (
+        <>
+          {!removed && <Button onClick={() => setMember("Lin Park")}>Open Lin Park</Button>}
+          <Button onClick={() => setAdding(true)}>Add member</Button>
+          <Sheet open={!!member} onOpenChange={(o) => !o && setMember(null)} modal={false} title={member ?? "Member"}>
+            <Button
+              onClick={() => {
+                setRemoved(true);
+                setMember(null);
+                setAdding(true);
+              }}
+            >
+              Remove from project
+            </Button>
+          </Sheet>
+          <Dialog open={adding} onOpenChange={setAdding} title="Add member">
+            <input aria-label="Member" />
+          </Dialog>
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<RemoveThenAdd />);
+    await user.click(screen.getByRole("button", { name: "Open Lin Park" }));
+    await user.click(await screen.findByRole("button", { name: "Remove from project" }));
+    const field = await screen.findByRole("textbox", { name: "Member" });
+    field.focus();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Lin Park" })).not.toBeInTheDocument());
+    expect(field).toHaveFocus();
   });
 
   it("renders inline with a heading, its ref and a close circle that asks to close", async () => {
