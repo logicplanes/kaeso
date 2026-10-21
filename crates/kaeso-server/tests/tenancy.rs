@@ -259,6 +259,8 @@ async fn rights_can_only_be_granted_by_holders_and_owners_stay() {
         )
         .await;
     assert_eq!(r.status, StatusCode::CONFLICT);
+    let mine = app.get("/me/memberships", &owner.cookie).await;
+    assert_eq!(mine.body["data"][0]["last_owner"], true, "{:?}", mine.body);
     let r = app
         .call(
             Method::DELETE,
@@ -297,6 +299,8 @@ async fn rights_can_only_be_granted_by_holders_and_owners_stay() {
         )
         .await;
     assert_eq!(me.body["grant"]["preset"], "admin");
+    let mine = app.get("/me/memberships", &owner.cookie).await;
+    assert_eq!(mine.body["data"][0]["last_owner"], false, "{:?}", mine.body);
     app.wait_for_mail("admin@example.com", 2).await;
     assert!(
         app.mail

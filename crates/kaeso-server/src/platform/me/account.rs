@@ -110,6 +110,9 @@ pub struct MyMembership {
     pub preset: String,
     #[doc = "The user's projects there."]
     pub projects: Vec<MyProject>,
+    #[doc = "The user is the org's only owner, so `DELETE me/memberships/{org}` is\n\
+        refused until someone else is an owner too."]
+    pub last_owner: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -130,6 +133,7 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
     let me = ctx.user_id()?;
     let orgs = members::orgs_of_user(&state.pg, me.uuid()).await?;
     let projects = members::projects_of_user(&state.pg, me.uuid()).await?;
+    let last_owner = members::orgs_where_last_owner(&state.pg, me.uuid()).await?;
     Ok(Json(Memberships {
         data: orgs
             .into_iter()
@@ -153,6 +157,7 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
                 org_state: o.org_state,
                 org_deletion_due_at: o.org_deletion_due_at,
                 preset: o.preset,
+                last_owner: last_owner.iter().any(|(id, _)| *id == o.org_id),
             })
             .collect(),
     }))

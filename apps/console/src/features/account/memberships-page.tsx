@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertDialog, Avatar, Badge, Button, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { useMemberships } from "~/auth/session";
-import { orgOwnersQuery } from "~/api/queries/orgs";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { projectPath } from "~/shell/pages";
 import { SettingsPage } from "~/shell/settings-page";
@@ -90,14 +89,12 @@ export function MembershipsPage() {
 }
 
 function LeaveButton({ membership: m, onLeave }: { membership: MyMembership; onLeave: () => void }) {
-  const owners = useQuery({ ...orgOwnersQuery(m.org_id), enabled: m.role.id === "owner" });
-  const soleOwner = m.role.id === "owner" && owners.data?.length === 1;
   return (
     <Button
       size="sm"
       variant="ghost"
-      disabled={soleOwner || (m.role.id === "owner" && owners.isPending)}
-      disabledReason={soleOwner ? t("account.soleOwner", "You're its only owner; make someone else an owner first.") : undefined}
+      disabled={m.last_owner}
+      disabledReason={m.last_owner ? t("account.soleOwner", "You're its only owner; make someone else an owner first.") : undefined}
       onClick={onLeave}
     >
       {t("account.leaveOrg", "Leave organization")}
