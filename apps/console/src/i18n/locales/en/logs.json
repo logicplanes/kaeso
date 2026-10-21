@@ -146,6 +146,7 @@
   "logs.range.month": "Last 30 days",
   "logs.range.week": "Last 7 days",
   "logs.reasoning.signedBytes": "{count} bytes of provider-signed data, not readable.",
+  "logs.recentDetail": "{project}, {time}",
   "logs.role.assistant": "Assistant",
   "logs.role.developer": "Developer",
   "logs.role.system": "System",

@@ -6,6 +6,8 @@ import { keysPageQuery } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
 import { orgProjectsQuery } from "~/api/queries/projects";
+import { orgMembersQuery, platformKeysQuery } from "~/api/queries/orgs";
+import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { useMemberships, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { useCreateAction } from "./create-action";
@@ -44,7 +46,7 @@ export default function PaletteUI({
   onQueryChange: (query: string) => void;
 }) {
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
-  const groups = usePaletteGroups(close, open, query.trim());
+  const { groups, orgContext } = usePaletteGroups(close, open, query.trim());
   return (
     <CommandPalette
       open={open}
@@ -53,13 +55,17 @@ export default function PaletteUI({
       onQueryChange={onQueryChange}
       hotkey={false}
       groups={groups}
-      placeholder={t("shell.palette.placeholder", "Search pages, actions, keys, models and members")}
+      placeholder={
+        orgContext
+          ? t("shell.palette.orgPlaceholder", "Search pages, actions, projects, members and keys")
+          : t("shell.palette.placeholder", "Search pages, actions, keys, models and members")
+      }
       emptyText={t("shell.palette.empty", "Nothing matches. Try another word.")}
     />
   );
 }
 
-function useFindGroup(org: string, project: string, query: string, enabled: boolean, close: () => void): CommandGroup | null {
+function useFindGroup(org: string, project: string, query: string, enabled: boolean, close: () => void, projectName?: string): CommandGroup | null {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const on = enabled && !!project && query.length > 0;
@@ -71,6 +77,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
   const q = query.toLowerCase();
   const has = (...texts: (string | null | undefined)[]) => texts.some((text) => text?.toLowerCase().includes(q));
   const base = projectPath(org, project);
+  const inProject = (kind: string) => (projectName ? t("shell.palette.inProject", "{kind} in {project}", { kind, project: projectName }) : kind);
   const go = (href: string) => () => {
     close();
     void navigate({ href });
@@ -82,7 +89,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:key:${k.id}`,
         label: k.name,
         icon: icons.key,
-        hint: recentHint("key"),
+        hint: inProject(recentHint("key")),
         keywords: [query],
         onSelect: go(`${base}/keys?key=${k.id}`),
       })),
@@ -92,7 +99,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:model:${m.id}`,
         label: m.model_id,
         icon: icons.model,
-        hint: recentHint("model"),
+        hint: inProject(recentHint("model")),
         keywords: [query],
         onSelect: go(`${base}/models?model=${m.id}`),
       })),
@@ -102,7 +109,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:member:${m.user.id}`,
         label: m.user.name,
         icon: icons.member,
-        hint: recentHint("member"),
+        hint: inProject(recentHint("member")),
         keywords: [query],
         onSelect: go(`${base}/members?member=${m.user.id}`),
       })),
@@ -112,7 +119,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:sa:${a.id}`,
         label: a.name,
         icon: icons.serviceAccount,
-        hint: recentHint("service-account"),
+        hint: inProject(recentHint("service-account")),
         keywords: [query],
         onSelect: go(`${base}/service-accounts?account=${a.id}`),
       })),
@@ -124,7 +131,71 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
   };
 }
 
-function usePaletteGroups(close: () => void, open: boolean, query: string): CommandGroup[] {
+function useOrgFindGroup(org: string, query: string, enabled: boolean, close: () => void): CommandGroup | null {
+  const navigate = useNavigate();
+  const rights = useOrgRights(org);
+  const on = enabled && !!org && query.length > 0;
+  const projects = useQuery({ ...orgProjectsQuery(org), enabled: on });
+  const members = useQuery({ ...orgMembersQuery(org), enabled: on && rights.has("members.view") });
+  const platformKeys = useQuery({ ...platformKeysQuery(org, false), enabled: on && rights.has("platform_keys.view") });
+  const providerKeys = useQuery({ ...orgCredentialsQuery(org), enabled: on && rights.has("provider_credentials.view") });
+  if (!on) return null;
+  const q = query.toLowerCase();
+  const has = (...texts: (string | null | undefined)[]) => texts.some((text) => text?.toLowerCase().includes(q));
+  const go = (href: string) => () => {
+    close();
+    void navigate({ href });
+  };
+  const items: CommandItem[] = [
+    ...(projects.data ?? [])
+      .filter((p) => has(p.name))
+      .map((p) => ({
+        id: `find:project:${p.id}`,
+        label: p.name,
+        icon: icons.project,
+        hint: t("common.project", "Project"),
+        keywords: [query],
+        onSelect: go(projectPath(org, p.id)),
+      })),
+    ...(members.data ?? [])
+      .filter((m) => has(m.user.name, m.user.email))
+      .map((m) => ({
+        id: `find:org-member:${m.user.id}`,
+        label: m.user.name,
+        icon: icons.member,
+        hint: recentHint("member"),
+        keywords: [query],
+        onSelect: go(`/settings/orgs/${org}/members?member=${m.user.id}`),
+      })),
+    ...(platformKeys.data ?? [])
+      .filter((k) => has(k.name))
+      .map((k) => ({
+        id: `find:platform-key:${k.id}`,
+        label: k.name,
+        icon: icons.key,
+        hint: t("shell.kind.platformKey", "Platform key"),
+        keywords: [query],
+        onSelect: go(`/settings/orgs/${org}/platform-keys`),
+      })),
+    ...(providerKeys.data ?? [])
+      .filter((c) => has(c.name))
+      .map((c) => ({
+        id: `find:provider-key:${c.id}`,
+        label: c.name,
+        icon: icons.key,
+        hint: t("shell.kind.providerKey", "Provider key"),
+        keywords: [query],
+        onSelect: go(`/orgs/${org}/providers`),
+      })),
+  ].slice(0, 20);
+  return {
+    label: t("shell.palette.find", "Find (in the first 100 of each list)"),
+    items,
+    loading: projects.isFetching || members.isFetching || platformKeys.isFetching || providerKeys.isFetching,
+  };
+}
+
+function usePaletteGroups(close: () => void, open: boolean, query: string): { groups: CommandGroup[]; orgContext: boolean } {
   const navigate = useNavigate();
   const params = useParams({ strict: false });
   const session = useSession();
@@ -137,15 +208,22 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): Comm
   const projects = useQuery({ ...orgProjectsQuery(org), enabled: !!org });
   const create = useCreateAction();
   const { setTheme } = useTheme();
-  const find = useFindGroup(org, project, query, open, close);
+  const orgContext = !!params.org && !params.project;
+  const projectName = orgContext ? projects.data?.find((p) => p.id === project)?.name : undefined;
+  const projectFind = useFindGroup(org, project, query, open, close, projectName);
+  const orgFind = useOrgFindGroup(org, query, open && orgContext, close);
 
-  return useMemo(() => {
+  const groups = useMemo(() => {
+    const find =
+      orgFind && projectFind
+        ? { ...orgFind, items: [...orgFind.items, ...projectFind.items].slice(0, 20), loading: !!(orgFind.loading || projectFind.loading) }
+        : (orgFind ?? projectFind);
     const go = (to: string) => () => {
       close();
       void navigate({ to });
     };
     const goto: CommandItem[] = [
-      ...PROJECT_PAGES.filter((p) => project && projectRights.has(p.right)).map((p) => ({
+      ...PROJECT_PAGES.filter((p) => project && !orgContext && projectRights.has(p.right)).map((p) => ({
         id: `page:${p.id}`,
         label: p.label(),
         icon: p.icon,
@@ -195,7 +273,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): Comm
           id: `recent:${r.kind}:${r.id}`,
           label: r.label,
           icon: RECENT_ICON[r.kind],
-          hint: recentHint(r.kind),
+          hint: r.detail ? t("shell.palette.recentDetail", "{kind} · {detail}", { kind: recentHint(r.kind), detail: r.detail }) : recentHint(r.kind),
           onSelect: go(r.href),
         })),
       });
@@ -302,5 +380,22 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): Comm
       ],
     });
     return groups;
-  }, [close, create, find, memberships, navigate, open, org, orgRights, project, projectRights, projects.data, session.user.is_instance_admin, setTheme]);
+  }, [
+    close,
+    create,
+    orgFind,
+    projectFind,
+    memberships,
+    navigate,
+    open,
+    org,
+    orgContext,
+    orgRights,
+    project,
+    projectRights,
+    projects.data,
+    session.user.is_instance_admin,
+    setTheme,
+  ]);
+  return { groups, orgContext };
 }

@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembership, signedIn, user as person, whoAmI } from "~/test/fixtures";
 import { apiKey, catalogueModel, projectData, projectMember, serviceAccount } from "~/test/fixtures/project";
 import { me } from "~/test/fixtures/instance-account";
-import { on, requests } from "~/test/network";
+import { on, page as paged, requests } from "~/test/network";
+import { credential, member, platformKey } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
 
 const LIMITS = `/orgs/${ORG}/projects/${PROJECT}/limits`;
@@ -13,14 +14,14 @@ const PLACEHOLDER = "Search pages, actions, keys, models and members";
 async function openPalette(user: UserEvent) {
   await screen.findByRole("navigation", { name: "Console" });
   await user.keyboard("{Meta>}k{/Meta}");
-  await screen.findByPlaceholderText(PLACEHOLDER);
+  await screen.findByPlaceholderText(/^Search pages, actions/);
   return screen.getByRole("listbox", { name: "Results" });
 }
 
 async function openPaletteIn(user: UserEvent, navigation: string) {
   await screen.findByRole("navigation", { name: navigation });
   await user.keyboard("{Meta>}k{/Meta}");
-  await screen.findByPlaceholderText(PLACEHOLDER);
+  await screen.findByPlaceholderText(/^Search pages, actions/);
   return screen.getByRole("listbox", { name: "Results" });
 }
 
@@ -101,6 +102,58 @@ describe("the command palette", () => {
     await user.click(found);
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/service-accounts`));
     expect(router.state.location.search).toMatchObject({ account: "sa_north" });
+  });
+
+  it("finds the organization's projects, members and keys on its pages, and offers its pages, not a project's", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/members", paged([member(), member({ user: { id: "usr_lin", name: "Lin Park", email: "lin@example.com" } })]));
+    on("GET", "orgs/:org/platform-keys", paged([platformKey({ id: "opk_lint", name: "linter-ci" })]));
+    on("GET", "orgs/:org/credentials", { data: [credential({ id: "cred_lin", name: "Lindy OpenAI" })] });
+    const { user, router } = await renderApp(`/orgs/${ORG}`);
+    const list = await openPalette(user);
+    expect(screen.getByPlaceholderText("Search pages, actions, projects, members and keys")).toBeInTheDocument();
+    const ids = optionIds(list);
+    expect(ids).toEqual(expect.arrayContaining(["org:providers", "org-settings:members"]));
+    expect(ids.filter((id) => id.startsWith("page:"))).toEqual([]);
+    await user.type(screen.getByPlaceholderText("Search pages, actions, projects, members and keys"), "Lin");
+    const lin = await screen.findByRole("option", { name: /Lin Park/ });
+    expect(lin).toHaveTextContent("Member");
+    expect(await screen.findByRole("option", { name: /linter-ci/ })).toHaveTextContent("Platform key");
+    expect(await screen.findByRole("option", { name: /Lindy OpenAI/ })).toHaveTextContent("Provider key");
+    await user.click(lin);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/settings/orgs/${ORG}/members`));
+    expect(router.state.location.search).toMatchObject({ member: "usr_lin" });
+  });
+
+  it("finds a project by its name on the organization's pages, and the last project's keys with its name", async () => {
+    signedIn();
+    projectData({ keys: [apiKey({ name: "support-bot" })] });
+    const { user, router } = await renderApp(`/orgs/${ORG}`);
+    await openPalette(user);
+    await user.type(screen.getByPlaceholderText("Search pages, actions, projects, members and keys"), "support");
+    expect(await screen.findByRole("option", { name: /support-bot/ })).toHaveTextContent("Key in Checkout assistant");
+    await user.click(await screen.findByRole("option", { name: /Support triage/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
+  });
+
+  it("tells recent requests apart by their project and time", async () => {
+    signedIn();
+    projectData();
+    window.localStorage.setItem(
+      "kaeso:recent",
+      JSON.stringify([
+        { kind: "request", id: "req_1", label: "200 responses · mistral-small-latest", href: "/a", detail: "Research agent, 20 Oct 2026, 05:23:01" },
+        { kind: "request", id: "req_2", label: "200 responses · mistral-small-latest", href: "/b", detail: "Research agent, 20 Oct 2026, 05:24:12" },
+      ]),
+    );
+    const { user } = await renderApp(LIMITS);
+    const list = await openPalette(user);
+    const recent = within(list).getAllByRole("option", { name: /mistral-small-latest/ });
+    expect(recent.map((o) => o.textContent)).toEqual([
+      expect.stringContaining("Request · Research agent, 20 Oct 2026, 05:23:01"),
+      expect.stringContaining("Request · Research agent, 20 Oct 2026, 05:24:12"),
+    ]);
   });
 
   it("forgets the search when the shortcut closes it", async () => {
@@ -261,7 +314,7 @@ describe("the command palette", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/limits`));
   });
 
-  it("uses the organization's default project when the last place was in another organization", async () => {
+  it("offers the organization's pages, not another organization's project, on its settings pages", async () => {
     const globex = { org_id: "org_globex", org_name: "Globex" };
     signedIn({
       session: whoAmI({ memberships: [membership(globex), membership()] }),
@@ -272,7 +325,8 @@ describe("the command palette", () => {
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: "org_globex", project: "proj_globex" }));
     const { user, router } = await renderApp(`/settings/orgs/${ORG}/general`);
     const list = await openPaletteIn(user, "Settings");
-    await user.click(await option(list, "page:keys"));
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/keys`));
+    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
+    await user.click(await option(list, "org:providers"));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/providers`));
   });
 });

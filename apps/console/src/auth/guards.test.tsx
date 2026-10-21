@@ -185,7 +185,7 @@ describe("leaving an organization that's gone", () => {
   it("goes home from an organization the person doesn't belong to", async () => {
     signedIn();
     await renderApp(`/orgs/${CONTOSO}`);
-    expect(await (await notifications()).findByText("You don't belong to that organization")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
   });
 
@@ -221,7 +221,7 @@ describe("leaving an organization that's gone", () => {
     await waitFor(() => expect(calls).toBe(2));
     await waitFor(() => expect(queryClient.getQueryData<typeof both>(["session"])?.memberships).toHaveLength(2));
     expect(window.location.pathname).toBe(`/orgs/${CONTOSO}`);
-    expect(screen.queryByText("You don't belong to that organization")).not.toBeInTheDocument();
+    expect(screen.queryByText("That organization doesn't exist, or you don't have access to it")).not.toBeInTheDocument();
   });
 
   it("stays when the session can't be checked again", async () => {
@@ -231,6 +231,6 @@ describe("leaving an organization that's gone", () => {
     await renderApp(`/orgs/${CONTOSO}`);
     expect((await (await notifications()).findAllByText("Too many requests; slow down.")).length).toBeGreaterThan(0);
     expect(window.location.pathname).toBe(`/orgs/${CONTOSO}`);
-    expect(screen.queryByText("You don't belong to that organization")).not.toBeInTheDocument();
+    expect(screen.queryByText("That organization doesn't exist, or you don't have access to it")).not.toBeInTheDocument();
   });
 });

@@ -33,6 +33,7 @@ import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { costUSD } from "~/format/money";
 import { describeUserAgent } from "~/format/user-agent";
+import { orgProjectsQuery } from "~/api/queries/projects";
 import { catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
@@ -129,6 +130,7 @@ function Body({
 }) {
   const rights = useProjectRights(org, project);
   const entry = useQuery(logEntryQuery(org, project, logId));
+  const projectName = useQuery(orgProjectsQuery(org)).data?.find((p) => p.id === project)?.name;
   useRememberRecent(
     entry.data
       ? {
@@ -136,6 +138,9 @@ function Body({
           id: logId,
           label: entry.data.model ? `${entry.data.status} ${entry.data.endpoint} · ${entry.data.model}` : `${entry.data.status} ${entry.data.endpoint}`,
           href: `/orgs/${org}/projects/${project}/logs?log=${logId}`,
+          detail: projectName
+            ? t("logs.recentDetail", "{project}, {time}", { project: projectName, time: formatDate(entry.data.started_at, { time: true, seconds: true }) })
+            : formatDate(entry.data.started_at, { time: true, seconds: true }),
         }
       : null,
   );

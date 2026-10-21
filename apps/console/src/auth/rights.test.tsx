@@ -43,9 +43,9 @@ describe("an organization the person doesn't belong to, in strict mode", () => {
   it("is checked once and goes home with one notice", async () => {
     signedIn();
     await renderStrictApp("/orgs/org_contoso");
-    expect(await (await notifications()).findByText("You don't belong to that organization")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
-    expect((await notifications()).getAllByText("You don't belong to that organization")).toHaveLength(1);
+    expect((await notifications()).getAllByText("That organization doesn't exist, or you don't have access to it")).toHaveLength(1);
   });
 });
 
