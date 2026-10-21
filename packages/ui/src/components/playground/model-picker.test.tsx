@@ -138,7 +138,15 @@ describe("ModelPicker", () => {
 
 describe("useModelGroups", () => {
   it("builds the picker's groups for other lists: providers under their marks, connected ones first", () => {
-    const { result } = renderHook(() => useModelGroups(options, { providers: [{ id: "deepseek", connected: true }] }));
+    const { result } = renderHook(() =>
+      useModelGroups(options, {
+        providers: [
+          { id: "deepseek", name: "DeepSeek", connected: true },
+          { id: "anthropic", name: "Anthropic" },
+          { id: "openai", name: "OpenAI" },
+        ],
+      }),
+    );
     expect(result.current.map((g) => [g.id, g.label, g.count])).toEqual([
       ["provider:deepseek", "DeepSeek", 1],
       ["provider:anthropic", "Anthropic", 1],
@@ -148,7 +156,12 @@ describe("useModelGroups", () => {
     expect(result.current[2]?.items.map((i) => i.label)).toEqual(["GPT-5", "GPT-5 mini", "GPT-4"]);
   });
   it("lists one provider's models without a heading, each with its mark", () => {
-    const { result } = renderHook(() => useModelGroups(options.filter((o) => o.provider === "openai")));
+    const { result } = renderHook(() =>
+      useModelGroups(
+        options.filter((o) => o.provider === "openai"),
+        { providers: [{ id: "openai", name: "OpenAI" }] },
+      ),
+    );
     expect(result.current).toHaveLength(1);
     expect(result.current[0]?.label).toBeUndefined();
     const { container } = render(<>{result.current[0]?.items[0]?.render?.({ query: "", active: false, selected: false })}</>);
