@@ -48,6 +48,12 @@ pub enum SourceError {
     Address(String),
 }
 
+// "sha256:…" alone would be read as an absolute URL with the scheme `sha256`, so the
+// digest joins as a relative path.
+fn attestations_url(endpoints: &Endpoints, sha256: &str) -> Result<Url, url::ParseError> {
+    endpoints.attestations.join(&format!("./sha256:{sha256}"))
+}
+
 #[derive(Clone, Debug)]
 pub struct Source {
     http: reqwest::Client,
@@ -140,10 +146,7 @@ impl Source {
     pub async fn attestations(&self, sha256: &str) -> Result<Vec<u8>, VerifyError> {
         let what = format!("sha256:{sha256}");
         let fetch = |e: SourceError| VerifyError::Fetch(what.clone(), e.to_string());
-        let url = self
-            .endpoints
-            .attestations
-            .join(&what)
+        let url = attestations_url(&self.endpoints, sha256)
             .map_err(|_| fetch(SourceError::Address(what.clone())))?;
         let req = self
             .http
@@ -208,5 +211,25 @@ impl Source {
             return Err(SourceError::Mismatch(what));
         }
         Ok(body)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attestations_are_asked_for_on_the_repository_by_digest() {
+        let url = attestations_url(&Endpoints::github().unwrap(), "ebafa65").unwrap();
+        assert_eq!(
+            url.as_str(),
+            "https://api.github.com/repos/logicplanes/kaeso/attestations/sha256:ebafa65"
+        );
+        let joined = Endpoints::github()
+            .unwrap()
+            .attestations
+            .join("sha256:ebafa65")
+            .unwrap();
+        assert_eq!(joined.scheme(), "sha256", "why the digest needs `./`");
     }
 }

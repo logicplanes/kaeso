@@ -215,3 +215,36 @@ async fn keys_and_authorities_count_only_within_their_validity() {
         .remove("validFor");
     assert!(Trust::parse(&broken.to_string()).is_err());
 }
+
+#[tokio::test]
+async fn attestations_are_fetched_from_the_repository_by_digest() {
+    let app = axum::Router::new().route(
+        "/repos/logicplanes/kaeso/attestations/{subject}",
+        axum::routing::get(
+            |axum::extract::Path(subject): axum::extract::Path<String>| async move {
+                if subject == "sha256:ebafa65" {
+                    (axum::http::StatusCode::OK, r#"{"attestations":[]}"#)
+                } else {
+                    (axum::http::StatusCode::NOT_FOUND, "")
+                }
+            },
+        ),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await });
+    let base = url::Url::parse(&format!("http://{addr}/")).unwrap();
+    let source = Source::new(Endpoints {
+        attestations: base.join("repos/logicplanes/kaeso/attestations/").unwrap(),
+        ..Endpoints::github().unwrap()
+    })
+    .unwrap();
+    assert_eq!(
+        source.attestations("ebafa65").await.unwrap(),
+        br#"{"attestations":[]}"#
+    );
+    assert!(matches!(
+        source.attestations("0000").await,
+        Err(VerifyError::Missing(_))
+    ));
+}

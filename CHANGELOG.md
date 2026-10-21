@@ -20,6 +20,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 #### Self-hosting
 
 - Valkey starts again on an install that already has data. Since 0.3.0 its container started as root without capabilities, so it couldn't enter its own `appendonlydir` and exited, which rolled back an upgrade from 0.2. It now runs as the image's own user and needs no capabilities.
+- The updater verifies releases again. It asked GitHub for a release's attestations at an address that read `sha256:…` as a URL of its own, so every update from the console or in a window was refused with "cannot be fetched (request failed)". Installs that use the updater update to this release by hand once; from then on it updates them itself.
 
 ### Security
 
