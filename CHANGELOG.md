@@ -4,6 +4,158 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+Kaeso 0.3.0 adds six built-in providers, so DeepSeek, SpaceX (xAI's API), Together AI, Groq, OpenRouter and Mistral can be added with a key and called from any app format. It tightens access: only owners transfer ownership, single sign-on admits only linked accounts and verified email domains, and forwarded addresses are trusted only from loopback by default. Five changes need action when you upgrade, listed under breaking, and most of the rest make requests, streams, budgets and the console faster or more accurate.
+
+- **Breaking:** Only owners can transfer ownership: custom roles and individual grants lose the right, and the content logging right is renamed `logs.content.manage`, so grant it again where people switch content logging. ([#229](https://github.com/logicplanes/kaeso/pull/229))
+- **Breaking:** The gateway trusts X-Forwarded-For only from loopback by default. Set `KAESO_TRUSTED_PROXIES` when a reverse proxy sits outside the Compose package, or every client shares the proxy's address in logs and throttles. ([#247](https://github.com/logicplanes/kaeso/pull/247))
+- **Breaking:** Single sign-on signs in only accounts linked to the organization's identity provider. Existing members whose accounts predate their organization's single sign-on must link them once under Account, Security. ([#252](https://github.com/logicplanes/kaeso/pull/252))
+- **Breaking:** Single sign-on admits only email domains the organization has verified with a DNS TXT record. Publish the record and choose Verify domains under Security before relying on single sign-on after upgrading. ([#264](https://github.com/logicplanes/kaeso/pull/264))
+- **Breaking:** Single sign-on no longer trusts private-network identity providers by default, so set `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` to true for one. Turn off required verified addresses only for providers that never send the claim. ([#270](https://github.com/logicplanes/kaeso/pull/270))
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.2.2...v0.3.0](https://github.com/logicplanes/kaeso/compare/v0.2.2...v0.3.0)
+
+### Added
+
+- Count requests for a model whose provider has no token-count endpoint are refused in the app's own format with a 400 that names the model, instead of reaching the provider. ([#197](https://github.com/logicplanes/kaeso/pull/197))
+- DeepSeek, SpaceX (xAI's API, with its Grok models), Together AI, Groq, OpenRouter and Mistral are built-in providers. An organization adds a key on Providers and calls their models from any app format, under the usual keys, limits and logs. ([#200](https://github.com/logicplanes/kaeso/pull/200), [#202](https://github.com/logicplanes/kaeso/pull/202), [#203](https://github.com/logicplanes/kaeso/pull/203), [#204](https://github.com/logicplanes/kaeso/pull/204), [#209](https://github.com/logicplanes/kaeso/pull/209), [#213](https://github.com/logicplanes/kaeso/pull/213))
+- Providers that speak OpenAI Chat Completions can declare the fields they rename or refuse, such as `max_completion_tokens`, the `developer` role or `safety_identifier`, so Anthropic Messages and Responses apps no longer get a 422 from them. ([#212](https://github.com/logicplanes/kaeso/pull/212))
+- `cargo xtask record` takes any provider in the registry with `--provider` and records its replies into a folder of its own, so new providers can be checked against live replies. ([#198](https://github.com/logicplanes/kaeso/pull/198))
+- NVIDIA NIM is not a built-in provider in this release: its support was added and then withdrawn until its calls can be checked against the live API. ([#206](https://github.com/logicplanes/kaeso/pull/206), [#210](https://github.com/logicplanes/kaeso/pull/210))
+- Request bodies that stall end after `server.body_read_timeout`, apps that stop reading a stream release the provider call, and the optional `streams.max_duration` and `streams.max_bytes` settings end long replies in the app's format. ([#266](https://github.com/logicplanes/kaeso/pull/266))
+- `GET orgs/{org}/providers` lists every provider with its name, key page, key prefix, formats and token counting, so clients read provider facts from the gateway instead of keeping their own table. ([#281](https://github.com/logicplanes/kaeso/pull/281))
+
+#### UI library
+
+- The console draws a provider's own mark wherever it names the provider, and the providers added in this release have marks of their own. ([#216](https://github.com/logicplanes/kaeso/pull/216))
+- The UI library adds CommandList, a searchable list that stays fast with thousands of rows, and ProviderPicker and ModelPicker are built on it. ([#257](https://github.com/logicplanes/kaeso/pull/257))
+
+#### Documentation
+
+- The documentation explains how providers work in one concept page, and adds a supported providers page that lists each provider's formats, host and where its keys come from. ([#217](https://github.com/logicplanes/kaeso/pull/217))
+
+### Changed
+
+- The console no longer reloads every loaded page of a long list when the window regains focus, and a change under an organization no longer reloads every list inside it. ([#221](https://github.com/logicplanes/kaeso/pull/221))
+- Provider logos follow each provider's brand guidelines in one colour per theme, and Anthropic and Groq show a letter where their terms don't allow the logo in an interface. ([#223](https://github.com/logicplanes/kaeso/pull/223))
+- A request for a model the provider no longer serves is refused locally with the same 404, and the provider is asked again only once the last answer is five minutes old. ([#228](https://github.com/logicplanes/kaeso/pull/228))
+- The console asks the gateway for less: one list per resource, no lookups one at a time, and a live request log that keeps up with bursts of more than 100 requests. ([#233](https://github.com/logicplanes/kaeso/pull/233))
+- The gateway keeps serving from its caches while it cannot hear Valkey invalidations, and concurrent misses share one load instead of each querying PostgreSQL. ([#235](https://github.com/logicplanes/kaeso/pull/235))
+- Large and long requests use less memory and CPU, because the gateway shares one copy of each request and translates large bodies off its async worker threads. ([#236](https://github.com/logicplanes/kaeso/pull/236))
+- Every console page lines up on one edge, and boxes start and end on the gutter with their text 12 pixels further in, on phones as well as desktops. ([#237](https://github.com/logicplanes/kaeso/pull/237))
+- Limit checks no longer wait behind large cache reads and writes on Valkey, because bulk transfers use their own connections. ([#242](https://github.com/logicplanes/kaeso/pull/242))
+- When a provider refuses the project's provider key, apps get a 502 provider error without the key details, and the provider's reason is kept, redacted, in the request log. ([#244](https://github.com/logicplanes/kaeso/pull/244))
+- The gateway trusts X-Forwarded-For only from loopback by default, so set `KAESO_TRUSTED_PROXIES` for a reverse proxy outside the Compose package. ([#247](https://github.com/logicplanes/kaeso/pull/247))
+- Every model and provider choice in the console is searchable and grouped, and the Providers page lists only the providers the organization has keys for. ([#258](https://github.com/logicplanes/kaeso/pull/258))
+- The key dialog links each provider's API key page, and Add models warns when a provider has no key yet or when a bulk add would be large. ([#259](https://github.com/logicplanes/kaeso/pull/259))
+- The key dialog opens SpaceX's API keys page directly, and it links Mistral's key page with a hint that Mistral keys have no fixed prefix. ([#275](https://github.com/logicplanes/kaeso/pull/275))
+- Every built-in provider shows its own logo in the console, including Anthropic and Groq, and SpaceX's mark stays readable at small sizes. ([#279](https://github.com/logicplanes/kaeso/pull/279))
+- The console reads every provider's name, key page, key prefix and formats from the gateway's list, so providers the gateway adds appear without a console update. ([#290](https://github.com/logicplanes/kaeso/pull/290))
+
+#### Gateway
+
+- Streams to one provider spread over several HTTP/2 connections, so hundreds of concurrent requests no longer queue behind one connection's stream limit. ([#222](https://github.com/logicplanes/kaeso/pull/222))
+- Model requests find their catalogue entry and each provider's record in constant time, however many models and providers are configured. ([#224](https://github.com/logicplanes/kaeso/pull/224), [#230](https://github.com/logicplanes/kaeso/pull/230))
+- The models.dev sync check reads only its timestamps and content hash on each run, instead of loading the whole stored snapshot every five minutes. ([#225](https://github.com/logicplanes/kaeso/pull/225))
+- A burst of requests that finds a lost budget counter rebuilds it from PostgreSQL once instead of once per request. ([#251](https://github.com/logicplanes/kaeso/pull/251))
+- A fresh install starts with the models and prices that models.dev listed at the release, 561 models across the providers Kaeso calls. ([#316](https://github.com/logicplanes/kaeso/pull/316))
+
+#### KPP
+
+- Long tool loops from Chat Completions apps on Claude or the Responses API restore kept reasoning in one pass per request, so requests late in a conversation translate faster. ([#227](https://github.com/logicplanes/kaeso/pull/227))
+
+#### Console
+
+- The console's tests cover every branch again, so the coverage gate passes on the release branch. ([#310](https://github.com/logicplanes/kaeso/pull/310))
+
+#### Documentation
+
+- The Release workflow can be re-run after a partial release, and it checks its release commit against an independent run of the version script before pushing only the tag. ([#220](https://github.com/logicplanes/kaeso/pull/220))
+- The published crates `kaeso-kpp` and `kaeso-codecs` are packaged, documented and checked for API breaks on every change, and the KPP decoders are fuzzed nightly. ([#231](https://github.com/logicplanes/kaeso/pull/231))
+- Code may carry a comment only where a careful reader would otherwise get it wrong, such as a workaround or a security invariant, and CI rejects leftover task notes in comments. ([#254](https://github.com/logicplanes/kaeso/pull/254))
+
+#### Self-hosting
+
+- Release images ship a gateway binary built with link-time optimisation, which is 28 percent smaller; local builds and CI keep the faster release profile. ([#273](https://github.com/logicplanes/kaeso/pull/273))
+
+### Fixed
+
+- Anthropic-format streams no longer fail when an OpenAI-compatible provider sends running usage on every chunk, as vLLM-based providers do. ([#219](https://github.com/logicplanes/kaeso/pull/219))
+- Hard budgets and token rates reserve a worst case for each concurrent request, so a burst of expensive requests cannot overrun them, and a long stream keeps its reservation. ([#232](https://github.com/logicplanes/kaeso/pull/232))
+- Replies and streams that finish without usage are charged an estimate instead of nothing, and the request log marks the usage as estimated. ([#238](https://github.com/logicplanes/kaeso/pull/238))
+- Tool calls and errors from OpenAI-compatible providers are no longer dropped, merged or taken for a finished reply, and non-object tool arguments are refused for Anthropic apps instead of changed. ([#246](https://github.com/logicplanes/kaeso/pull/246))
+- Project pages say when their keys, members, service accounts or limits could not load, instead of showing an empty list. ([#248](https://github.com/logicplanes/kaeso/pull/248))
+- Writes to Anthropic's one-hour prompt cache are charged at their own price, twice the input price, instead of the five-minute price. ([#249](https://github.com/logicplanes/kaeso/pull/249))
+- A revoked API key or ended session stops working at once across instances, and shared cache entries are signed with a key derived from the master key, so planted entries are ignored. ([#250](https://github.com/logicplanes/kaeso/pull/250))
+- A stream error from a provider stops the provider request, so it no longer keeps generating and charging after the error is reported. ([#253](https://github.com/logicplanes/kaeso/pull/253))
+- Replies from OpenAI-compatible providers with unusual usage, ids or finish reasons reach every app intact, and a stream that ends before its finish is reported as an error. ([#256](https://github.com/logicplanes/kaeso/pull/256))
+- Release links are https only, request logs no longer load remote images, and the docs and showcase send strict transport security, nosniff and a referrer policy. ([#263](https://github.com/logicplanes/kaeso/pull/263))
+- Responses streams whose text or tool arguments arrive only in their final events reach apps in other formats instead of an empty reply. ([#267](https://github.com/logicplanes/kaeso/pull/267))
+- Server-sent events whose first field name starts with a byte order mark are written so that they read back the same. ([#268](https://github.com/logicplanes/kaeso/pull/268))
+- Shutdown closes connections still open after the grace period, startup retries an unreachable PostgreSQL, and log and usage writes no longer lose rows. ([#269](https://github.com/logicplanes/kaeso/pull/269))
+- Three earlier changes that later merges had undone are back in place: Chat reply translation, key safeguards and signed cache entries. ([#276](https://github.com/logicplanes/kaeso/pull/276))
+- DeepSeek stops at the output limit apps in every format send, because its chat profile now uses `max_tokens`, and budgets hold enough for SpaceX reasoning. ([#278](https://github.com/logicplanes/kaeso/pull/278))
+- Reasoning from DeepSeek, Groq, Together AI, OpenRouter and SpaceX reaches Anthropic and Responses apps and the Playground, and the request log stores it as reasoning rather than raw blocks. ([#283](https://github.com/logicplanes/kaeso/pull/283))
+- The Playground refuses a model the provider does not serve with the same 404 and message as the model API, and the request log shows that message from the first failure. ([#288](https://github.com/logicplanes/kaeso/pull/288))
+- Finished Playground replies no longer show up as 499 errors, and a failed or cut-off reply says why in its column. ([#289](https://github.com/logicplanes/kaeso/pull/289))
+- Certificate checks no longer trust the distrusted emSign roots and intermediates, as the advisories against the certificate stack require. ([#293](https://github.com/logicplanes/kaeso/pull/293))
+- OpenRouter errors carry the upstream provider's reason, such as a shared rate limit, to Anthropic and Responses apps and the request log, instead of only Provider returned error. ([#294](https://github.com/logicplanes/kaeso/pull/294))
+- Request log messages appear in the person's language, with backtick spans set as code, and the request sheet states each outcome once. ([#295](https://github.com/logicplanes/kaeso/pull/295))
+- Account pages explain why an organization's only owner cannot leave, order sessions by last use with readable client names, and describe two-factor authentication the same way everywhere. ([#297](https://github.com/logicplanes/kaeso/pull/297))
+- Numbers, dates, context sizes and prices read the same way across the console, in English, German and Chinese. ([#298](https://github.com/logicplanes/kaeso/pull/298))
+- Members and projects can be searched, archived items have their own tab, and inviting people keeps the address that was typed. ([#299](https://github.com/logicplanes/kaeso/pull/299))
+- The model picker filters by provider at any number of providers, opens with an empty search, and greys out models the provider does not serve. ([#300](https://github.com/logicplanes/kaeso/pull/300))
+- Single sign-on shows the sign-in callback to register before a connection exists, each domain's verification state, and why it cannot be required yet. ([#302](https://github.com/logicplanes/kaeso/pull/302))
+- Audit logs name every action and target in words, show the time zone, and keep the target column readable at every width. ([#303](https://github.com/logicplanes/kaeso/pull/303))
+- The Playground keeps its conversation while the tab is open, Clear can be undone, and replies show tokens and costs in the same form as the request logs. ([#304](https://github.com/logicplanes/kaeso/pull/304))
+- Add models shows prices, how many models match, and exactly how many Add every current would add, and the Models page shows each provider's logo once per group. ([#305](https://github.com/logicplanes/kaeso/pull/305))
+- Instance admins see each user's organizations and can reopen What's new, and the instance pages show dates, badges and update states that make sense. ([#309](https://github.com/logicplanes/kaeso/pull/309))
+- Enter confirms text in an input method without submitting a dialog, and Enter in a search field inside a dialog keeps filtering. ([#311](https://github.com/logicplanes/kaeso/pull/311))
+- The Providers page keeps a search's result when a refresh fails and explains why the first key cannot be added, and folded values are labelled for screen readers. ([#312](https://github.com/logicplanes/kaeso/pull/312))
+- Inviting people stops at an invalid address still being typed, splits a pasted row of addresses into one tag each, and keeps focus after a role change. ([#313](https://github.com/logicplanes/kaeso/pull/313))
+- Step dialogs keep what was typed when someone clicks outside them, and confirmations opened over a sheet dim the page behind them. ([#315](https://github.com/logicplanes/kaeso/pull/315))
+- Copyable values show in full, Enter submits dialogs, field edges reach 3 to 1 contrast, and sheets keep their content while they close. ([#280](https://github.com/logicplanes/kaeso/pull/280))
+- Provider keys name their provider in dialogs and menus, the providers list keeps every detail on narrow screens, and large organizations can search it. ([#282](https://github.com/logicplanes/kaeso/pull/282))
+- Usage charts name each UTC day by its own date in every time zone and mark the period that is still running. ([#284](https://github.com/logicplanes/kaeso/pull/284))
+- The request log keeps the model and provider readable at every width, and its model filter follows the chosen provider. ([#285](https://github.com/logicplanes/kaeso/pull/285))
+- Sign-in shows a wrong password under the field, opens the app when you are already signed in, and carries your address into a password reset. ([#286](https://github.com/logicplanes/kaeso/pull/286))
+
+#### Console
+
+- Console pages line up on the gutter and show their shape while they load, and request logs fit a phone with the Status header shown whole. ([#239](https://github.com/logicplanes/kaeso/pull/239), [#240](https://github.com/logicplanes/kaeso/pull/240))
+- The sign-in page loads about 2 kB less JavaScript before its first paint, which keeps it inside its size budget. ([#272](https://github.com/logicplanes/kaeso/pull/272))
+- The playground's controls are translated in the console's development server, as they already are in the production build. ([#287](https://github.com/logicplanes/kaeso/pull/287))
+- The command palette searches the organization's projects, members and keys on its pages, and recent requests show their project and time to tell them apart. ([#306](https://github.com/logicplanes/kaeso/pull/306))
+- Organization pages show each provider's own name, order and formats from the first frame instead of briefly showing raw ids. ([#314](https://github.com/logicplanes/kaeso/pull/314))
+
+#### UI library
+
+- Tables, lists, date presets and form errors work with a keyboard and a screen reader, and selected rows and menu hints meet contrast requirements. ([#261](https://github.com/logicplanes/kaeso/pull/261))
+- Charts that show a loading state first draw once their data arrives, so the overview's Requests chart no longer stays empty. ([#277](https://github.com/logicplanes/kaeso/pull/277))
+- Checkbox and radio edges reach 3 to 1 contrast in light and dark mode, the same as field edges. ([#307](https://github.com/logicplanes/kaeso/pull/307))
+- Closing a sheet whose row has gone no longer takes the focus from a dialog opened meanwhile. ([#318](https://github.com/logicplanes/kaeso/pull/318))
+
+#### Documentation
+
+- The requirements page lists every host an install connects to, and the quick start creates the master key with the release's gateway image. ([#243](https://github.com/logicplanes/kaeso/pull/243))
+
+### Security
+
+- Each release's compose file pins the Kaeso images by digest, and manual upgrades can verify them with `gh attestation verify`. ([#218](https://github.com/logicplanes/kaeso/pull/218))
+- The updater refuses to create a container with more rights than the one it replaces, and it pulls only Kaeso images by digest. ([#226](https://github.com/logicplanes/kaeso/pull/226))
+- Only owners can transfer ownership, custom roles and grants can no longer include that right, and the content logging right is renamed `logs.content.manage`. ([#229](https://github.com/logicplanes/kaeso/pull/229))
+- Caddy and the updater run unprivileged, the databases drop their Linux capabilities, and every service has memory, process and log limits. ([#234](https://github.com/logicplanes/kaeso/pull/234))
+- Single sign-on signs in only accounts linked to the organization's identity provider, and existing members link their account once under Account, Security. ([#252](https://github.com/logicplanes/kaeso/pull/252))
+- Sign-in links ask for the second factor, account changes need a code, and email changes can be cancelled from the old address. ([#255](https://github.com/logicplanes/kaeso/pull/255))
+- Only a person re-enables a key that a person disabled, keys cannot create platform-access keys, and instance admin changes to people need a recent sign-in. ([#262](https://github.com/logicplanes/kaeso/pull/262))
+- Single sign-on admits only addresses at email domains the organization has verified with a DNS TXT record. ([#264](https://github.com/logicplanes/kaeso/pull/264))
+- Single sign-on refuses link-local and cloud metadata addresses, issuers with queries, reuse of a stored secret for a changed issuer, and unverified email addresses, and private networks are off by default. ([#270](https://github.com/logicplanes/kaeso/pull/270))
+- The sign-in page shows its own message for an SSO failure instead of text taken from the address, so a crafted link cannot show arbitrary text. ([#271](https://github.com/logicplanes/kaeso/pull/271))
+- Advisories against the certificate stack are resolved, so the gateway rejects certificates chained through distrusted emSign intermediates. ([#292](https://github.com/logicplanes/kaeso/pull/292))
+
 ## [0.2.2] - 2026-10-18
 
 Kaeso 0.2.2 lets installs update themselves in a daily or weekly window, and it replaces the `updates.apply` setting with `updates.mode`, so remove `apply` from any TOML file before you upgrade. Installs now look for releases at Kaeso's own update service instead of GitHub's API, so they need outgoing access to it or a mirror set in `updates.releases_url`. Each install has one time zone that the console uses for every time it shows, and users see a What's new dialog once after an update. The release also splits the instance settings into General, Logging and System pages and fixes phone zoom and the sign-in method prompt.
@@ -277,7 +429,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.0
 [0.2.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.2
 [0.2.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.1
 [0.2.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.0
