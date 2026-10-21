@@ -251,7 +251,9 @@ function DataTableInner<T>(
   const hidden = useMemo(() => new Set(hiddenIds.split(" ").filter(Boolean)), [hiddenIds]);
   const onHiddenRef = useRef(onHiddenColumnsChange);
   onHiddenRef.current = onHiddenColumnsChange;
-  useLayoutEffect(() => onHiddenRef.current?.([...hidden]), [hidden]);
+  useLayoutEffect(() => {
+    onHiddenRef.current?.([...hidden]);
+  }, [hidden]);
   const cols = leaf.filter((c) => !hidden.has(c.id));
   const trackMin = (c: (typeof cols)[number]) =>
     c.columnDef.meta?.grow ? (tight ? growMin({ size: c.getSize(), minWidth: c.columnDef.meta.minWidth }) : c.getSize()) : c.getSize();

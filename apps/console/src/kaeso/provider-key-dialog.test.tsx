@@ -55,7 +55,7 @@ describe("ProviderKeyDialog", () => {
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), " Messages prod ");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
-    expect(await notifications().findByText("Messages prod added")).toBeInTheDocument();
+    expect(await notifications().findByText("Anthropic · Messages prod added")).toBeInTheDocument();
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
       { provider: "anthropic", name: "Messages prod", secret: "sk-ant-123", make_default: false },
     ]);
@@ -265,7 +265,7 @@ describe("ProviderKeyDialog", () => {
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-rotated");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
 
-    expect(await notifications().findByText("Production replaced")).toBeInTheDocument();
+    expect(await notifications().findByText("OpenAI · Production replaced")).toBeInTheDocument();
     expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => [r.params.credential, r.body])).toEqual([["cred_prod", { secret: "sk-rotated" }]]);
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
