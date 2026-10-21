@@ -49,6 +49,19 @@ describe("sessions", () => {
     expect(titles).toEqual(["Safari on macOS", "curl (API client)", "Firefox on Windows", "Node.js (API client)"]);
   });
 
+  it("puts the later sign-in first when two sessions were last used at the same moment", async () => {
+    signedIn();
+    sessions([
+      sessionItem({ id: "ses_early", current: false, user_agent: "curl/8.7.1", last_used_at: "2026-10-20T04:55:43Z", signed_in_at: "2026-09-01T08:00:00Z" }),
+      sessionItem({ id: "ses_late", current: false, user_agent: FIREFOX, last_used_at: "2026-10-20T04:55:43Z", signed_in_at: "2026-10-02T08:00:00Z" }),
+      sessionItem(),
+    ]);
+    await renderApp(PATH);
+    await screen.findByText("This device");
+    const titles = screen.getAllByText(/^(Safari on macOS|Firefox on Windows|curl \(API client\))$/).map((n) => n.firstChild?.textContent);
+    expect(titles).toEqual(["Safari on macOS", "Firefox on Windows", "curl (API client)"]);
+  });
+
   it("says when the sessions couldn't load", async () => {
     signedIn();
     on("GET", "me/sessions", apiError(429, "rate_limited", "Too many requests; try again in a minute."));

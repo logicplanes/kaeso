@@ -255,6 +255,21 @@ describe("ServiceAccountSheet", () => {
     expect(requests("PATCH", ACCOUNT).map((r) => r.body)).toEqual([{ grant: { role: "viewer", rights_added: [], rights_removed: [] } }]);
   });
 
+  it("shows the save it is waiting for as busy, the name's or the role's", async () => {
+    signedIn();
+    account();
+    on("PATCH", ACCOUNT, () => new Promise(() => undefined));
+    const { user } = await renderApp(projectPath("service-accounts?account=sa_deploy"));
+
+    const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
+    await user.click(await within(sheet).findByRole("combobox", { name: "Role" }));
+    await user.click(await screen.findByRole("option", { name: /Viewer/ }));
+    await user.click(within(sheet).getByRole("button", { name: "Save role" }));
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Save role" })).toHaveAttribute("aria-busy", "true"));
+    await user.click(within(sheet).getByRole("button", { name: "Rename" }));
+    expect(within(sheet).getByRole("button", { name: "Save" })).not.toHaveAttribute("aria-busy");
+  });
+
   it("archives the service account after confirming", async () => {
     signedIn();
     account();
