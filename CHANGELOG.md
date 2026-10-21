@@ -4,6 +4,23 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+#### Platform API
+
+- `GET me/sign-in-again` lists how the signed-in account can confirm a recent sign-in, narrowed to an organization's own single sign-on when `org` requires it, and `POST me/sign-in-again/sso` starts a confirmation at a linked organization's identity provider.
+
+### Fixed
+
+#### Console
+
+- Confirming a recent sign-in through single sign-on no longer loops. The console opens the identity provider in a window of its own, the page and what you typed stay, and the action repeats by itself once you've signed in there; a refusal says why instead of asking again.
+- **Add models** says when a model's values can't load instead of staying silent.
+
+### Security
+
+- A confirmation through single sign-on only confirms the signed-in account. It asks the identity provider for a fresh sign-in (`prompt=login`, `max_age=0`), refuses another person, an identity that isn't linked and an older sign-in, and replaces the session; it used to start a new sign-in that could switch accounts.
+
 ## [0.3.1] - 2026-10-21
 
 Kaeso 0.3.1 is a small follow-up to 0.3.0 with no breaking changes. The gateway now checks for new releases every 5 minutes, and Settings shows the last check only when it failed. The documentation changelog is split into one page per minor series, and the UI library's ReleaseArt takes an image source for stored release artwork.
