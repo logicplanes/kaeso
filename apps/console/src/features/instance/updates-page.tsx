@@ -19,7 +19,7 @@ import {
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
-import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
+import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { Markdown } from "@logicplanes/kaeso-ui/markdown";
 import { api, data } from "~/api/client";
 import type { ReleaseView, UpdateChannel, UpdateJobView, UpdateMode, UpdateSchedule, UpdatesView, UpdateWeekday } from "~/api/generated/types";
@@ -70,14 +70,12 @@ export function InstanceUpdatesPage() {
   );
 }
 
-function checkedText(u: UpdatesView): string {
-  const last = u.check.last_checked_at;
+function checkText(u: UpdatesView): string | undefined {
   const reason = u.latest && !u.can_apply && !u.manual && u.job?.state !== "running" ? blocked(u) : null;
   if (reason) return reason;
-  if (last && u.check.error) return t("instance.updates.checkFailedHint", "The check {when} failed; Kaeso tries again later.", { when: formatRelative(last) });
+  if (u.check.error) return t("instance.updates.checkFailed", "The last check for releases failed; Kaeso tries again shortly.");
   if (!u.settings.check) return t("instance.updates.checkOffHint", "Checking is off in the gateway's configuration.");
-  if (!last) return t("instance.updates.notCheckedHint", "Not checked yet; Kaeso looks twice a day.");
-  return t("instance.updates.checkedHint", "Checked {when}; Kaeso looks twice a day.", { when: formatRelative(last) });
+  return undefined;
 }
 
 function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (release: ReleaseView) => void; onProgress: (job: string) => void }) {
@@ -97,17 +95,15 @@ function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (releas
     <StatusDot tone="success" icon={icons.success}>
       {t("instance.updates.upToDate", "Up to date")}
     </StatusDot>
-  ) : u.settings.check ? (
-    <Text tone="secondary">{t("instance.updates.notChecked", "Not checked yet")}</Text>
   ) : undefined;
   const description = running ? (
     t("instance.updates.runningTitle", "Updating to Kaeso {version}", { version: running.to })
   ) : u.check.error ? (
     <Tooltip content={checkErrorText(u.check.error)}>
-      <span>{checkedText(u)}</span>
+      <span>{checkText(u)}</span>
     </Tooltip>
   ) : (
-    checkedText(u)
+    checkText(u)
   );
   return (
     <SettingsGroup className="mt-40">

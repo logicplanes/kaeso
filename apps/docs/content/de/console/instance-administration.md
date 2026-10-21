@@ -60,7 +60,7 @@ Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuratio
 
 ## Kaeso aktualisieren
 
-**Updates** zeigt die Version der Installation und das neueste Kaeso-Release mit den Release-Notizen aller Releases seither. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen zeigt, dass ein neueres Release erschienen ist. Das Gateway sucht zweimal täglich nach Releases, und die Seite sagt, wann es zuletzt gesucht hat und wann es das nächste Mal sucht.
+**Updates** zeigt die Version der Installation und das neueste Kaeso-Release mit den Release-Notizen aller Releases seither. Eine Markierung **Neu** neben **Updates** in der Seitenleiste der Einstellungen zeigt, dass ein neueres Release erschienen ist. Das Gateway sucht alle 5 Minuten nach Releases, und die Seite sagt, wenn eine Suche fehlgeschlagen ist.
 
 - **Releases** bietet nur stabile Releases an oder auch Vorabversionen. Nur die [Konfiguration](../self-hosting/configuration.md) des Gateways schaltet die Suche ab, für Installationen ohne Internetzugang.
 - Mit dem [Updater](../self-hosting/upgrades.md#der-updater) wählt **Wie Updates installiert werden** zwischen **Von Hand** und **Automatisch**. Automatisch installiert Kaeso neue Releases in einem Update-Fenster: täglich oder wöchentlich, zu einer Stunde in der Zeitzone der Installation.

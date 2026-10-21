@@ -46,7 +46,7 @@ test("check failed: the reason shows and nothing changes", async ({ page }) => {
   await scenario({ releases: "error" });
   await openUpdates(page);
   await lookNow(page);
-  await expect(page.getByText(/^The check .* failed; Kaeso tries again later\.$/)).toBeVisible();
+  await expect(page.getByText("The last check for releases failed; Kaeso tries again shortly.")).toBeVisible();
 });
 
 test("from the console: an update is confirmed, followed and recorded", async ({ page }) => {

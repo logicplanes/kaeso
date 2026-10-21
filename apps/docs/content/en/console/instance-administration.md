@@ -60,7 +60,7 @@ Sign-in methods and email are set in the gateway's [configuration](../self-hosti
 
 ## Update Kaeso
 
-**Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out. The gateway looks for releases twice a day, and the page says when it last looked and when it looks next.
+**Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out. The gateway looks for releases every 5 minutes, and the page says when a check failed.
 
 - **Releases** offers stable releases only, or pre-releases too. Only the gateway's [configuration](../self-hosting/configuration.md) turns the check off, for installs without internet access.
 - With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone.

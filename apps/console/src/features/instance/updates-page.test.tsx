@@ -43,7 +43,7 @@ describe("instance updates page", () => {
     expect(await within(table).findByText("40.4.0 to 40.4.1")).toBeInTheDocument();
   });
 
-  it("says the install is up to date and when it last looked", async () => {
+  it("says the install is up to date, without a time of the last check", async () => {
     signedIn();
     on("GET", "instance/updates", updates());
     history();
@@ -51,7 +51,7 @@ describe("instance updates page", () => {
     expect(await screen.findByRole("heading", { name: "Updates", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("Up to date")).toBeInTheDocument();
     expect(screen.getByText("Kaeso 40.4.2")).toBeInTheDocument();
-    expect(screen.getByText(/^Checked .*; Kaeso looks twice a day\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/Checked|twice a day|Not checked/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Check now" })).not.toBeInTheDocument();
     expect(await screen.findByText("No updates yet")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
@@ -315,8 +315,7 @@ describe("instance updates page", () => {
     );
     history();
     const { user } = await renderApp(PATH);
-    const failed = await screen.findByText(/^The check .* failed; Kaeso tries again later\.$/);
-    expect(screen.getByText("Not checked yet")).toBeInTheDocument();
+    const failed = await screen.findByText("The last check for releases failed; Kaeso tries again shortly.");
     await hoverReason(user, failed, "api.github.com can't be reached: no connection");
   });
 
@@ -334,7 +333,6 @@ describe("instance updates page", () => {
     history();
     await renderApp(PATH);
     expect(await screen.findByText("Checking is off in the gateway's configuration.")).toBeInTheDocument();
-    expect(screen.queryByText("Not checked yet")).not.toBeInTheDocument();
     expect(screen.queryByText("Up to date")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Releases" })).toBeEnabled();
     expect(screen.getByRole("combobox", { name: "How updates install" })).toBeEnabled();
@@ -455,7 +453,7 @@ describe("instance updates page", () => {
     history();
     await renderApp(PATH);
     expect(await screen.findByText("No window planned; UTC time.")).toBeInTheDocument();
-    expect(screen.getByText("Not checked yet; Kaeso looks twice a day.")).toBeInTheDocument();
+    expect(screen.queryByText(/Not checked/)).not.toBeInTheDocument();
   });
 
   it("lists past updates with who started them and how they ended", async () => {
