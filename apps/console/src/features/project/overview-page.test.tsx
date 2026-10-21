@@ -91,7 +91,7 @@ describe("OverviewPage", () => {
     await user.click(screen.getByRole("radio", { name: "By day" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "day" }));
     table = await breakdown();
-    await waitFor(() => expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringContaining("Oct 13"), expect.stringContaining("Oct 12")]));
+    await waitFor(() => expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringContaining("13 Oct"), expect.stringContaining("12 Oct")]));
     expect(within(table).getByRole("columnheader", { name: "Day" })).toBeInTheDocument();
   });
 
@@ -246,7 +246,7 @@ describe("OverviewPage", () => {
     failing = false;
     await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("Oct 13"));
+    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
   });
 
   it("loads the daily rows again from the breakdown", async () => {
@@ -264,7 +264,7 @@ describe("OverviewPage", () => {
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
     failing = false;
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("Oct 13"));
+    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
   });
 
   it("loads the cost by model again when it couldn't load", async () => {

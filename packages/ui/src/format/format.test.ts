@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateRange, formatDuration, formatISODate, formatPercent, formatRelative, formatTokens, formatUSD, parseISODate } from "./index.js";
+import {
+  dateFormatter,
+  formatContext,
+  formatDate,
+  formatDateRange,
+  formatDuration,
+  formatISODate,
+  formatPercent,
+  formatPrice,
+  formatRelative,
+  formatTokens,
+  formatUSD,
+  parseISODate,
+} from "./index.js";
 import { describeInTimeZone, TIME_ZONES } from "../../test/time-zone.js";
 
 describe("formatUSD", () => {
@@ -51,8 +64,8 @@ describe("ISO dates", () => {
       it("agrees with formatDate and formatDateRange", () => {
         const d = new Date(2027, 0, 1);
         expect(formatDate(d)).toBe("1 Jan 2027");
-        expect(formatDateRange(new Date(2026, 11, 31), d)).toBe("Dec 31, 2026 – Jan 1, 2027");
-        expect(formatDateRange(d, new Date(2027, 0, 1, 18))).toBe("Jan 1");
+        expect(formatDateRange(new Date(2026, 11, 31), d)).toBe("31 Dec 2026 – 1 Jan 2027");
+        expect(formatDateRange(d, new Date(2027, 0, 1, 18))).toBe("1 Jan");
         expect(formatISODate(d)).toBe("2027-01-01");
       });
       it("names the UTC day on request", () => {
@@ -85,10 +98,50 @@ describe("ISO dates", () => {
   });
 });
 
+describe("English dates", () => {
+  it("write the day first with three-letter months everywhere", () => {
+    const sep = new Date(Date.UTC(2026, 8, 21, 14, 5));
+    expect(dateFormatter({ day: "numeric", month: "short", timeZone: "UTC" })(sep)).toBe("21 Sep");
+    expect(dateFormatter({ weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })(sep)).toBe("Mon 21 Sep");
+    expect(dateFormatter({ month: "short", year: "numeric", timeZone: "UTC" })(sep)).toBe("Sep 2026");
+    expect(formatDate(sep, { utc: true, time: true })).toBe("21 Sep 2026, 14:05 UTC");
+    expect(dateFormatter({ day: "numeric", month: "short", timeZone: "UTC" }, "de")(sep)).toBe("21. Sept.");
+  });
+});
+
+describe("token, context and price formats", () => {
+  it("name context sizes as models do", () => {
+    expect(formatContext(131_072)).toBe("128K");
+    expect(formatContext(1_048_576)).toBe("1M");
+    expect(formatContext(200_000)).toBe("200K");
+    expect(formatContext(1_000_000)).toBe("1M");
+    expect(formatContext(8_000)).toBe("8K");
+    expect(formatContext(32_768)).toBe("32K");
+    expect(formatContext(128_000)).toBe("128K");
+    expect(formatContext(8_192)).toBe("8K");
+    expect(formatContext(1_500)).toBe("1.5K");
+    expect(formatContext(512)).toBe("512");
+  });
+  it("write prices exactly, with at least two decimals", () => {
+    expect(formatPrice("0.075")).toBe("$0.075");
+    expect(formatPrice("4")).toBe("$4.00");
+    expect(formatPrice("20.000000")).toBe("$20.00");
+    expect(formatPrice("1.25")).toBe("$1.25");
+    expect(formatPrice("0.0000375")).toBe("$0.000038");
+  });
+  it("keep tokens short in English", () => {
+    expect(formatTokens(793_640)).toBe("793.6K");
+    expect(formatTokens(131_072)).toBe("131.1K");
+    expect(formatTokens(9_999)).toBe("10K");
+    expect(formatTokens(999_999)).toBe("1M");
+    expect(formatTokens(999_949)).toBe("999.9K");
+  });
+});
+
 describe("formatDateRange across a year", () => {
   it("names both years, so twelve months never read as a day apart", () => {
-    expect(formatDateRange(new Date(2025, 9, 14), new Date(2026, 9, 13))).toBe("Oct 14, 2025 – Oct 13, 2026");
-    expect(formatDateRange(new Date(2025, 9, 13), new Date(2026, 9, 13))).toBe("Oct 13, 2025 – Oct 13, 2026");
-    expect(formatDateRange(new Date(2026, 3, 14), new Date(2026, 9, 13))).toBe("Apr 14 – Oct 13");
+    expect(formatDateRange(new Date(2025, 9, 14), new Date(2026, 9, 13))).toBe("14 Oct 2025 – 13 Oct 2026");
+    expect(formatDateRange(new Date(2025, 9, 13), new Date(2026, 9, 13))).toBe("13 Oct 2025 – 13 Oct 2026");
+    expect(formatDateRange(new Date(2026, 3, 14), new Date(2026, 9, 13))).toBe("14 Apr – 13 Oct");
   });
 });
