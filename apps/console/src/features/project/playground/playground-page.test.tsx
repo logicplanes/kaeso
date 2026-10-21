@@ -210,7 +210,10 @@ describe("PlaygroundPage", () => {
     expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
-    expect((await notifications().findAllByText("Model fell over.")).length).toBeGreaterThan(0);
+    const failure = await screen.findByRole("alert");
+    expect(failure).toHaveTextContent("No response");
+    expect(failure).toHaveTextContent("Model fell over.");
+    expect(notifications().queryByText("Model fell over.")).not.toBeInTheDocument();
     await user.click(await screen.findByRole("button", { name: "Retry" }));
     expect(await screen.findByText("Second try worked.")).toBeInTheDocument();
     expect(sentBodies()).toHaveLength(2);
@@ -292,6 +295,45 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(answer).toHaveTextContent("Stopped"));
     expect(answer).toHaveTextContent("Partial answer");
     expect(await screen.findByRole("button", { name: "Send" })).toBeInTheDocument();
+  });
+
+  it("names the request of a gateway failure in the column", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => {
+      const refused = apiError(502, "internal", "The gateway failed.");
+      refused.headers.set("kaeso-request-id", "req_01abc");
+      return refused;
+    });
+    const { user } = await renderApp(PLAYGROUND);
+
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The gateway failed. Request req_01abc");
+  });
+
+  it("says when the model cut a reply off at the output limit", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () =>
+      eventStream(
+        sse([
+          { type: "response.created" },
+          { type: "response.output_text.delta", item_id: "m", delta: "The first half" },
+          { type: "response.incomplete", response: { incomplete_details: { reason: "max_output_tokens" }, usage: { input_tokens: 3, output_tokens: 16 } } },
+        ]),
+      ),
+    );
+    const { user } = await renderApp(PLAYGROUND);
+
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    const answer = await screen.findByRole("article", { name: "GPT-5.4 mini response" });
+    await waitFor(() => expect(answer).toHaveTextContent("Stopped at the output limit"));
+    expect(answer).toHaveTextContent("The first half");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("adds no column while the models haven't loaded", async () => {

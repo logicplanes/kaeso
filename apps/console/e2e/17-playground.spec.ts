@@ -73,13 +73,15 @@ test("one prompt streams from two models side by side, with metrics; Stop ends b
   await expect(column(page, nano)).toBeVisible();
 });
 
-test("a refusal is a toast with the gateway's message", async ({ page }) => {
+test("a refusal shows the gateway's message in its column", async ({ page }) => {
   await signInAsOwner(page);
   await page.goto(`/orgs/${org}/projects/${project}/playground?models=openai/gpt-5.4-mini`);
   await page.getByRole("textbox", { name: "Prompt" }).fill("Fail [mock:error=server-error]");
   await page.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Notifications" }).getByText(/provider|try again/i)).toBeVisible();
-  await expect(reply(page, /^GPT-5\.4 mini$/).getByText("No response", { exact: true })).toBeVisible();
+  const failure = reply(page, /^GPT-5\.4 mini$/).getByRole("alert");
+  await expect(failure.getByText("No response", { exact: true })).toBeVisible();
+  await expect(failure.getByText(/provider|try again/i)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Notifications" }).getByText(/provider|try again/i)).toHaveCount(0);
 });
 
 test("playground requests are in the request log with a Playground tag and filter by source", async ({ page }) => {

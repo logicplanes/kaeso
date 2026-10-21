@@ -8,7 +8,7 @@
   "playground.emptyThread": "Noch nichts gesendet",
   "playground.emptyThreadCompare": "Unten einen Prompt senden; jede Spalte beantwortet ihn nebeneinander.",
   "playground.emptyThreadHint": "Unten einen Prompt senden oder mit einem der Beispiele beginnen.",
-  "playground.failedRequest": "{model} · Anfrage {id}",
+  "playground.errorWithRequest": "{error} Anfrage {id}",
   "playground.full": "Bis zu {count} Modelle gleichzeitig vergleichen",
   "playground.loadingModels": "Modelle werden geladen",
   "playground.modelError": "Das Modell brach mit einem Fehler ab. Bitte erneut versuchen.",

@@ -9,7 +9,8 @@ const sonnet = answers["claude-sonnet-4-5"]![1]!;
 
 export const meta = {
   title: "ResponseView",
-  description: "A model's response as it arrives: Markdown with a quiet caret, reasoning in a Thinking disclosure, and calm stopped and failed states.",
+  description:
+    "A model's response as it arrives: Markdown with a quiet caret, reasoning in a Thinking disclosure, and calm stopped, cut-off and failed states.",
   group: "Playground",
   entry: "playground",
   import: "ResponseView, UserMessage, Thread",
@@ -18,7 +19,7 @@ export const meta = {
   a11y: [
     "Each response is an article named by aria-label (“GPT-5 response” in a comparison) and is aria-busy while it streams, so its words aren't read out one by one.",
     "Thinking is a disclosure button; closed, its row shows the latest line of the summary, hidden from screen readers, which read the summary when opened.",
-    "A failure says only “No response” in place: the error itself is a toast.",
+    "A failure is an alert in place of the response: “No response”, then the error.",
   ],
 };
 export const examples = [
@@ -135,11 +136,14 @@ export function States() {
       <StateSection title="Stopped">
         <ResponseView status="stopped" text={half} onRetry={() => undefined} />
       </StateSection>
+      <StateSection title="Cut off at the output limit">
+        <ResponseView status="incomplete" incompleteReason="max_output_tokens" text={half} onRetry={() => undefined} />
+      </StateSection>
       <StateSection title="Failed">
-        <ResponseView status="error" onRetry={() => undefined} />
+        <ResponseView status="error" error="Budget used up: the project's $5.00 per month." onRetry={() => undefined} />
       </StateSection>
       <StateSection title="Failed partway">
-        <ResponseView status="error" text={half} onRetry={() => undefined} />
+        <ResponseView status="error" text={half} error="The stream ended before the model finished. Try again." onRetry={() => undefined} />
       </StateSection>
       <StateSection title="Empty">
         <ResponseView text="" />

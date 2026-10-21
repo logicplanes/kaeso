@@ -8,7 +8,7 @@
   "playground.emptyThread": "Nothing sent yet",
   "playground.emptyThreadCompare": "Send a prompt below and every column answers it side by side.",
   "playground.emptyThreadHint": "Send a prompt below, or start from one of the examples.",
-  "playground.failedRequest": "{model} · Request {id}",
+  "playground.errorWithRequest": "{error} Request {id}",
   "playground.full": "Compare up to {count} models at once",
   "playground.loadingModels": "Loading models",
   "playground.modelError": "The model stopped with an error. Try again.",

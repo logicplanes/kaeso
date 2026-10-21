@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isApiError } from "~/api/errors";
 import { streamPlayground, type PlaygroundRequest } from "~/api/playground";
-import { toast } from "~/shell/toast";
 import { locale, t } from "~/i18n";
 import { applyEvent, endResponse, isLive, newResponse, type ResponseState, type Turn } from "./responses";
 
@@ -26,7 +25,6 @@ const newThread = (): Thread => ({ key: id("col"), turns: [] });
 export interface Send {
   column: number;
   request: PlaygroundRequest;
-  label: string;
 }
 
 export function useThreads(org: string, project: string, columns: number) {
@@ -36,6 +34,7 @@ export function useThreads(org: string, project: string, columns: number) {
   }
 
   const controllers = useRef(new Map<string, AbortController>());
+  const finished = useRef(new Set<string>());
   const live = useRef(new Map<string, ResponseState>());
   const frame = useRef<number | null>(null);
   const mounted = useRef(true);
@@ -68,13 +67,21 @@ export function useThreads(org: string, project: string, columns: number) {
     };
   }, []);
 
+  const settle = useCallback(
+    async (turn: Turn, state: ResponseState) => {
+      const settled = state.status === "failed" && state.error ? { ...state, error: await inLanguage(state.error) } : state;
+      live.current.set(turn.id, settled);
+      if (mounted.current) flush();
+    },
+    [flush],
+  );
+
   const run = useCallback(
-    async (turn: Turn, request: PlaygroundRequest, label: string) => {
+    async (turn: Turn, request: PlaygroundRequest) => {
       const controller = new AbortController();
       controllers.current.set(turn.id, controller);
       let state = turn.response;
-      let failure: string | null = null;
-      let requestId: string | null = null;
+      let settled = false;
       try {
         for await (const event of streamPlayground(org, project, request, controller.signal)) {
           let data: Record<string, unknown>;
@@ -84,35 +91,39 @@ export function useThreads(org: string, project: string, columns: number) {
             continue;
           }
           if (!data || typeof data !== "object") continue;
-          state = applyEvent(state, event.event, data, performance.now());
-          live.current.set(turn.id, state);
-          if (!isLive(state)) break;
-          schedule();
+          const next = applyEvent(state, event.event, data, performance.now());
+          if (next === state) continue;
+          state = next;
+          if (isLive(state)) {
+            live.current.set(turn.id, state);
+            schedule();
+            continue;
+          }
+          settled = true;
+          finished.current.add(turn.id);
+          void settle(turn, state);
         }
         if (isLive(state))
           state = controller.signal.aborted
             ? endResponse(state, "stopped", performance.now())
             : endResponse(state, "failed", performance.now(), t("playground.streamEnded", "The stream ended before the model finished. Try again."));
-        if (state.status === "failed" && state.error) failure = await inLanguage(state.error);
       } catch (e) {
         if (controller.signal.aborted) state = endResponse(state, "stopped", performance.now());
-        else {
-          failure = isApiError(e) ? e.message : t("playground.connectionClosed", "The connection closed before the reply finished. Try again.");
-          requestId = isApiError(e) && e.status >= 500 ? e.requestId : null;
-          state = endResponse(state, "failed", performance.now(), failure);
-        }
+        else
+          state = endResponse(
+            state,
+            "failed",
+            performance.now(),
+            isApiError(e) ? e.message : t("playground.connectionClosed", "The connection closed before the reply finished. Try again."),
+            isApiError(e) && e.status >= 500 ? e.requestId : null,
+          );
       } finally {
         controllers.current.delete(turn.id);
-        live.current.set(turn.id, state);
-        flush();
+        finished.current.delete(turn.id);
       }
-      if (failure && mounted.current)
-        toast.error(failure, {
-          id: `playground:${failure}`,
-          description: requestId ? t("playground.failedRequest", "{model} · Request {id}", { model: label, id: requestId }) : label,
-        });
+      if (!settled) await settle(turn, state);
     },
-    [org, project, schedule, flush],
+    [org, project, schedule, settle],
   );
 
   const send = useCallback(
@@ -121,26 +132,26 @@ export function useThreads(org: string, project: string, columns: number) {
       const turns = sends.map((s) => ({ ...s, turn: { id: id("turn"), prompt, response: newResponse(now) } satisfies Turn }));
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
       setThreads((ts) => ts.map((t, i) => ({ ...t, turns: [...t.turns, ...turns.filter((x) => x.column === i).map((x) => x.turn)] })));
-      for (const t of turns) void run(t.turn, t.request, t.label);
+      for (const t of turns) void run(t.turn, t.request);
     },
     [run],
   );
 
   const retry = useCallback(
-    (column: number, request: PlaygroundRequest, label: string) => {
+    (column: number, request: PlaygroundRequest) => {
       const thread = threads[column];
       const last = thread?.turns.at(-1);
       if (!thread || !last || isLive(last.response)) return;
       const turn: Turn = { id: id("turn"), prompt: last.prompt, response: newResponse(performance.now()) };
       live.current.set(turn.id, turn.response);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
-      void run(turn, request, label);
+      void run(turn, request);
     },
     [threads, run],
   );
 
   const stop = useCallback(() => {
-    for (const c of controllers.current.values()) c.abort();
+    for (const [turn, c] of controllers.current) if (!finished.current.has(turn)) c.abort();
   }, []);
 
   const add = useCallback(() => setThreads((ts) => [...ts, newThread()]), []);

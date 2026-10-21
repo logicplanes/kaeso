@@ -362,6 +362,23 @@ describe("ResponseView", () => {
     expect(screen.getByText("The model returned no text")).toBeInTheDocument();
   });
 
+  it("shows why a reply failed or was cut off, in place", async () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(<ResponseView status="error" error="Budget used up: the project's $5.00 per month." onRetry={onRetry} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("No responseBudget used up: the project's $5.00 per month.");
+    rerender(<ResponseView status="error" text="Half" error="The stream ended before the model finished. Try again." />);
+    expect(screen.getByRole("alert")).toHaveTextContent("The response stopped early");
+    rerender(<ResponseView status="incomplete" incompleteReason="max_output_tokens" text="The first half" onRetry={onRetry} />);
+    expect(screen.getByText("Stopped at the output limit")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    rerender(<ResponseView status="incomplete" incompleteReason="content_filter" text="The first half" />);
+    expect(screen.getByText("Stopped by the provider's content filter")).toBeInTheDocument();
+    rerender(<ResponseView status="incomplete" text="The first half" />);
+    expect(screen.getByText("The model ended the response early")).toBeInTheDocument();
+  });
+
   it("never renders HTML from a response", () => {
     const { container } = render(<ResponseView text={'<img src=x onerror="alert(1)"> [x](javascript:alert(1))'} reasoning="<script>alert(1)</script>" />);
     expect(container.querySelector("img, script, a[href^=javascript]")).toBeNull();
