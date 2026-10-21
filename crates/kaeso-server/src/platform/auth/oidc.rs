@@ -802,6 +802,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     )
     .await?;
     tx.commit().await?;
+    super::end_previous(state, ctx, user_id).await?;
     let mut response = redirect(&signed_in_location(state, flow.back.next.as_deref()));
     if let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);

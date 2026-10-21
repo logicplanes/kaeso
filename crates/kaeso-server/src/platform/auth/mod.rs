@@ -107,7 +107,24 @@ pub(crate) async fn start_session_until(
 ) -> ApiResult<Response> {
     let mut conn = state.pg.acquire().await?;
     let created = sessions::create_until(&mut conn, ctx.now, &sign_in, expires_at).await?;
+    end_previous(state, ctx, sign_in.user_id).await?;
     signed_in_response(state, ctx, user, &sign_in, &created)
+}
+
+// A browser keeps one session: a sign-in ends the one it had, replacing it for the same
+// person, so signing in again to confirm an action leaves no session nobody can reach.
+pub(crate) async fn end_previous(state: &AppState, ctx: &Ctx, user: UserId) -> ApiResult<()> {
+    let Ok(previous) = ctx.session() else {
+        return Ok(());
+    };
+    let owner = UserId::from_uuid(previous.user_id);
+    let id = kaeso_core::id::SessionId::from_uuid(previous.id);
+    if owner == user {
+        sessions::replace(state, owner, id).await?;
+    } else {
+        sessions::revoke(state, owner, id).await?;
+    }
+    Ok(())
 }
 
 fn signed_in_response(

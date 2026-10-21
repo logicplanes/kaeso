@@ -1227,3 +1227,51 @@ async fn resetting_two_factor_removes_it_and_ends_sessions() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_sign_in_ends_the_session_its_browser_had() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@example.com", "role": "member" }),
+        "Eve",
+    )
+    .await;
+    let again = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": PASSWORD }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::OK, "{:?}", again.body);
+    let current = again.cookie().unwrap();
+    let list = app.get("/auth/sessions", &current).await;
+    assert_eq!(
+        list.body["data"].as_array().unwrap().len(),
+        1,
+        "signing in again in a browser replaces its session"
+    );
+    assert_eq!(
+        app.get("/auth/session", &owner.cookie).await.status,
+        StatusCode::UNAUTHORIZED
+    );
+
+    let other = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": PASSWORD }),
+            Some(&eve),
+        )
+        .await;
+    assert_eq!(other.status, StatusCode::OK, "{:?}", other.body);
+    assert_eq!(
+        app.get("/auth/session", &eve).await.status,
+        StatusCode::UNAUTHORIZED,
+        "another person's sign-in in the same browser ends theirs"
+    );
+    s.cleanup().await;
+}
