@@ -91,6 +91,19 @@ Anthropic 的索引按块写出的顺序分配。不以 `ResponseStart` 开头�
 
 OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值，并用一棵有序的 JSON 树（`openai_responses::node::Node`）写出，这棵树可以逐字节嵌入原始 JSON；`serde_json::Value` 则会对对象键排序，并重新格式化原始载荷。[原始写法如何保留](openai-responses.md#原始写法如何保留)介绍了它如何重现原始写法。
 
+## 请求上限
+
+解码请求所需的内存远大于请求正文本身：每条消息、每个内容块和每个工具都会变成带有 extras 的类型化 KPP 值。因此，由大量极小元素组成的正文以前会占用其大小 100 倍以上的内存。每个编解码器的 `decode_request` 都会先运行 `limits::request_shape`，它用 serde 的 `IgnoredAny` 统计正文，不为其分配内存。超出上限的请求会在解码任何内容之前被拒绝，错误为 `InvalidRequest`，状态码 400，`param` 中给出字段：
+
+| 上限 | 值 | 统计对象 | 来源 |
+| --- | --- | --- | --- |
+| `MAX_MESSAGES` | 100,000 | `messages`（Anthropic Messages、Chat Completions）或 `input` 中的项（Responses） | Anthropic 每个请求最多 100,000 条消息的限制 |
+| `MAX_BLOCKS_PER_MESSAGE` | 10,000 | 单条消息、输入项或系统提示词中的内容块，包括其工具结果中的内容块 | 远高于任何服务商对每个请求中图片或文档数量的限制 |
+| `MAX_TOOLS` | 10,000 | `tools`，以及 Chat 的 `functions` | Anthropic 工具搜索的目录规模 |
+| `MAX_EMBEDDING_INPUTS` | 2,048 | OpenAI Embeddings 中 `input` 数组的输入 | OpenAI 最多 2,048 个输入的限制 |
+
+不是 JSON 的正文，或结构不像该方言请求的正文，会尽可能统计，随后由解码报告问题所在。像 `"messages"` 这样经过转义的键，按其表示的键统计。`request_shape` 还会以 `RequestShape` 返回统计结果，使网关能在解码之前估算请求的内存。
+
 ## 服务器发送事件
 
 `sse::SseParser` 在行、注释、多行数据、`id`（含 NUL 的值不是 ID）和 `retry`（只接受能放进 `u64` 的 ASCII 数字）上遵循 [WHATWG 事件流算法](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)，但为了不丢失任何内容，有意做了以下不同处理：

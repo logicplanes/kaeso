@@ -91,6 +91,19 @@ Wire structs used inside `Ext` follow these rules:
 
 The OpenAI Responses codec reads typed values with plain serde structs and writes with an ordered JSON tree (`openai_responses::node::Node`) that can embed raw JSON byte for byte; `serde_json::Value` sorts object keys and would reformat raw payloads. [How exact spellings survive](openai-responses.md#how-exact-spellings-survive) describes how it reproduces them.
 
+## Request limits
+
+Decoding a request costs far more memory than its body: every message, content block and tool becomes typed KPP values with their extras. A body of tiny items therefore used to take over 100 times its size. Every codec's `decode_request` first runs `limits::request_shape`, which counts the body with serde's `IgnoredAny` and allocates nothing for it. A request over a limit is refused with `InvalidRequest`, status 400, and the field in `param`, before any of it is decoded:
+
+| Limit | Value | Counts | Source |
+| --- | --- | --- | --- |
+| `MAX_MESSAGES` | 100,000 | `messages` (Anthropic Messages, Chat Completions) or `input` items (Responses) | Anthropic's limit of 100,000 messages per request |
+| `MAX_BLOCKS_PER_MESSAGE` | 10,000 | Content blocks of one message, input item or system prompt, with the blocks inside its tool results | Far above any provider's image or document limit per request |
+| `MAX_TOOLS` | 10,000 | `tools`, and Chat's `functions` | The catalog size of Anthropic's tool search |
+| `MAX_EMBEDDING_INPUTS` | 2,048 | Inputs of an OpenAI Embeddings `input` array | OpenAI's limit of 2,048 inputs |
+
+A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it.
+
 ## Server-sent events
 
 `sse::SseParser` follows the [WHATWG event-stream algorithm](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation) for lines, comments, multi-line data, `id` (a value containing NUL is not an id) and `retry` (only ASCII digits that fit a `u64`). It differs on purpose where the specification would lose something:

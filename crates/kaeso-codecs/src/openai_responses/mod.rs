@@ -42,6 +42,7 @@ impl Codec for OpenAiResponses {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::limits::request_shape(Self::DIALECT, body)?;
         request::decode(kind, body, headers)
     }
 

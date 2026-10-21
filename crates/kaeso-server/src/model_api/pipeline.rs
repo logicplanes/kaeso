@@ -47,6 +47,7 @@ pub struct Incoming {
     pub caller: Option<Caller>,
     pub source: Source,
     pub stream_only: bool,
+    pub max_body: usize,
 }
 
 pub(super) struct Recording {
@@ -56,6 +57,7 @@ pub(super) struct Recording {
     started: Instant,
     reservation: Reservation,
     sent_input: Option<u64>,
+    held: Option<super::memory::Held>,
 }
 
 impl Recording {
@@ -261,6 +263,7 @@ pub async fn serve_with(
         started: Instant::now(),
         reservation: Reservation::default(),
         sent_input: None,
+        held: None,
     };
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
@@ -446,6 +449,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         client_ip,
         caller,
         stream_only,
+        max_body,
         ..
     } = inc;
     let caller = match caller {
@@ -466,7 +470,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     rec.outcome().caller = Some(caller.clone());
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
-    let limit = state.config.body_limits.model_api.as_usize();
+    let limit = max_body;
     let body = axum::body::to_bytes(body, limit).await.map_err(|e| {
         let refused = if crate::http::body_timeout::timed_out(&e) {
             error(
@@ -490,6 +494,19 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.request_body = Some(body.clone());
     }
     let request_bytes = body.len();
+    let scanned = body.clone();
+    let shape = off_thread(request_bytes, move || {
+        kaeso_codecs::limits::request_shape(ingress, &scanned)
+    })
+    .await
+    .and_then(|r| r)
+    .map_err(at(Stage::Request))?;
+    rec.held = Some(
+        state
+            .translating
+            .hold(super::memory::estimate(kind, request_bytes, &shape))
+            .await,
+    );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
         dispatch::decode_request(ingress, kind, &body, &listed)
@@ -763,6 +780,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 started: rec.started,
                 reservation: std::mem::take(&mut rec.reservation),
                 sent_input: None,
+                held: rec.held.take(),
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));

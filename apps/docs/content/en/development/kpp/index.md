@@ -86,6 +86,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `dispatch` | The codec functions, chosen by `DialectId` at run time |
 | `wire` | serde building blocks for lossless wire structs ([wire structs](codec-design.md#wire-structs)) |
 | `sse` | The event-stream parser and writer ([server-sent events](codec-design.md#server-sent-events)) |
+| `limits` | The most messages, blocks, tools and embedding inputs a request may hold ([request limits](codec-design.md#request-limits)) |
 | `cross` | The rules for data that crosses dialects, and the extras allowlist |
 | `continuity` | Reasoning that travels with the conversation ([reasoning continuity](reasoning.md#reasoning-continuity)) |
 | `keepalive` | Frames that keep live streams from going silent ([keepalives](cross-format.md#keepalives)) |

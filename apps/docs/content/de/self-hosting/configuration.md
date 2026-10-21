@@ -203,8 +203,9 @@ Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | Text | `32MiB` | Größter Anfragekörper der Modell-API. |
-| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | Text | `1MiB` | Größter Anfragekörper der Platform API. |
+| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | Text | `8MiB` | Größter Anfragekörper der Modell-API. Er fasst ein Bild an der 5-MB-Grenze von Anthropic als Base64; für große PDFs erhöhen Sie ihn. |
+| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | Text | `512MiB` | Speicher, den Modell-API und Playground gleichzeitig für die Anfragen nutzen dürfen, die sie übersetzen, geschätzt aus der Größe jedes Körpers und seinen Nachrichten, Blöcken und Werkzeugen. Eine Anfrage darüber wartet, bis andere fertig sind; eine, die größer ist als der ganze Wert, läuft allein. |
+| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | Text | `1MiB` | Größter Anfragekörper der Platform API, Anfragen des Playground eingeschlossen. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | Text | `128MiB` | Größter Antwortkörper, den das Gateway ohne Streaming von einem Anbieter liest. Ein größerer lässt die Anfrage mit 502 scheitern. |
 
 ### Anfrageprotokolle

@@ -154,6 +154,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | Status | Ursache |
 | --- | --- |
 | 400 | Kaeso kann die Anfrage nicht lesen, oder das Modell nimmt eine Einstellung oder ein Feld der Anfrage nicht an. |
+| 400 | Die Anfrage enthält mehr Nachrichten, Inhaltsblöcke in einer Nachricht, Werkzeuge oder Embedding-Eingaben, als Kaeso annimmt ([die Anfrage](../concepts/request-flow.md#die-anfrage)). |
 | 400 | Die Anfrage zählt Token, und der Anbieter des Modells hat keinen Endpunkt zum Zählen von Token. |
 | 400 | Der Kontext ist zu lang für das Modell. |
 | 400 | Mehrere Anbieter im Projekt bieten die Modell-ID an. Senden Sie stattdessen `provider/model`. |
@@ -166,7 +167,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 404 | Das Modell steht nicht im Katalog des Projekts, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB. |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 8 MiB. |
 | 429 | Ein Ratenlimit oder Budget ist erreicht, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |

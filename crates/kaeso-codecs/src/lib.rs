@@ -6,6 +6,7 @@ pub mod continuity;
 pub mod cross;
 pub mod dispatch;
 mod keepalive;
+pub mod limits;
 mod models;
 mod openai_models;
 pub mod sse;

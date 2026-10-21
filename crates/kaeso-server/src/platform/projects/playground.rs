@@ -114,6 +114,7 @@ pub async fn responses(
         }),
         source: Source::Playground,
         stream_only: true,
+        max_body: state.config.body_limits.platform_api.as_usize(),
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

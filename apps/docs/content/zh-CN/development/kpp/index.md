@@ -86,6 +86,7 @@ sequenceDiagram
 | `dispatch` | 在运行时按 `DialectId` 选择的编解码器函数 |
 | `wire` | 用于无损线路结构体的 serde 构件（[线路结构体](codec-design.md#线路结构体)） |
 | `sse` | 事件流的解析器和写入器（[服务器发送事件](codec-design.md#服务器发送事件)） |
+| `limits` | 请求最多可包含的消息、内容块、工具和 embedding 输入数量（[请求上限](codec-design.md#请求上限)） |
 | `cross` | 跨方言数据的规则，以及 extras 允许列表 |
 | `continuity` | 随对话传递的推理（[推理的延续](reasoning.md#推理的延续)） |
 | `keepalive` | 让进行中的流不至于沉默的帧（[保活消息](cross-format.md#保活消息)） |

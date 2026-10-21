@@ -93,7 +93,8 @@ max_bytes = "0"
 reasoning_ttl = "1h"
 
 [body_limits]
-model_api = "32MiB"
+model_api = "8MiB"
+in_flight = "512MiB"
 platform_api = "1MiB"
 provider_response = "128MiB"
 

@@ -202,8 +202,9 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | 文本 | `32MiB` | 模型 API 请求体的上限。 |
-| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限。 |
+| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | 文本 | `8MiB` | 模型 API 请求体的上限。它能容纳一张达到 Anthropic 5 MB 上限、以 base64 编码的图片；处理大型 PDF 时请调高。 |
+| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据每个请求体的大小及其消息、内容块和工具估算。超出时，请求会等待其他请求完成；单个请求超过全部额度时会单独运行。 |
+| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限，包括 Playground 请求。 |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |
 
 ### 请求日志
