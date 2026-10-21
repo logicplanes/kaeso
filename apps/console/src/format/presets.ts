@@ -1,5 +1,5 @@
 import { t } from "~/i18n";
-import { PERIODS, shiftDay, utcDay, type PeriodId, type PeriodSearch } from "./period";
+import { daysBetween, PERIODS, shiftDay, utcDay, type PeriodId, type PeriodSearch } from "./period";
 
 function shiftMonths(day: string, months: number): string {
   const [y = 1970, m = 1, d = 1] = day.split("-").map(Number);
@@ -28,8 +28,9 @@ export function resolvePeriod(s: PeriodSearch, first?: string | null, now = new 
   return { ...presetDays(period, now, first), period };
 }
 
-export function comparedWith(period: PeriodId | undefined, days: number): string | undefined {
-  if (period === "all") return undefined;
+export function comparedWith(period: PeriodId | undefined, from: string, to: string, now = new Date()): string | undefined {
+  if (period === "all" || period === "today" || (from === to && to === utcDay(now))) return undefined;
+  const days = daysBetween(from, to).length;
   if (period === "6m" || period === "12m")
     return t("format.period.vsPriorMonths", "{count, plural, one {vs. prior # month} other {vs. prior # months}}", { count: period === "6m" ? 6 : 12 });
   return t("format.period.vsPriorDays", "{count, plural, one {vs. prior # day} other {vs. prior # days}}", { count: days });

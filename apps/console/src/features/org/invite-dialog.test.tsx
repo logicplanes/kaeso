@@ -172,6 +172,21 @@ describe("inviting members", () => {
     expect(await within(dialog).findByText("What can they do in the organization?")).toBeInTheDocument();
   });
 
+  it("stays on the addresses while the one being typed isn't an email address, whichever key moves on", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged([member()]));
+    const { user, dialog } = await openDialog();
+    const field = within(dialog).getByRole("textbox", { name: "Email addresses" });
+    await fill(user, field, "ada@example.com");
+    await user.keyboard("{Enter}");
+    await user.type(field, "bob");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "bob isn't an email address");
+    await user.click(field);
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(within(dialog).getByText("Who are you inviting?")).toBeInTheDocument();
+    expect(requests("POST", "orgs/:org/invites")).toHaveLength(0);
+  });
+
   it("sends several invitations at once and keeps the ones that failed", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));

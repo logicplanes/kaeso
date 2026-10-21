@@ -202,7 +202,7 @@
   "Called with the value when dragging ends.": "拖动结束时调用，并传入值。",
   "Called with the value while it is dragged.": "拖动时调用，并传入值。",
   "Cancel": "取消",
-  "Characters that end a tag, besides Enter.": "除 Enter 外结束一个标签的字符。",
+  "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.": "除 Enter 外结束一个标签的字符；粘贴的文本也会在换行符和制表符处拆分。",
   "Checkbox and radio items": "复选框和单选项",
   "Checkout conversation": "结账对话",
   "Choices for the value menu.": "值菜单中的选项。",
@@ -420,7 +420,6 @@
   "Multiple": "多选",
   "Multiple with chips": "多选，带标签块",
   "Name": "名称",
-  "Names a point's time in the tooltip, the table and for screen readers, where a point stands for more than its instant: \"Week of 3 Aug\", \"Aug 2026\". The axis keeps its calendar ticks.": "当一个点代表的不只是一个时刻时，为它在提示框、表格和屏幕阅读器中命名：“8月3日当周”“2026年8月”。坐标轴保留其日历刻度。",
   "Names the action: \"Delete this key?\"": "说明操作：“删除此密钥？”",
   "Names the box by other text, such as the first line of a row whose label holds more.": "用其他文字为方框命名，例如标签内容较多的行中的第一行。",
   "Names the circle by other text, such as the first line of a row whose label holds more.": "用其他文字为圆形按钮命名，例如标签内容较多的行中的第一行。",
@@ -1049,5 +1048,13 @@
   "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "让标题下的副标题换行显示，而不是以省略号截断，用于需要完整阅读的描述。",
   "Lets a subtitle under its title wrap. Set by `List`.": "让标题下的副标题换行显示。由 `List` 设置。",
   "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "以已输入但尚未添加为标签的文字调用，让表单在添加前就能计入它。",
-  "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.": "仅限整数，例如天数：手机上显示数字键盘，输入框中不加千位分隔符。"
+  "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.": "仅限整数，例如天数：手机上显示数字键盘，输入框中不加千位分隔符。",
+  "Marks the `first` or `last` category as covering only part of its span: its bars are drawn lighter and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "将第一个（`first`）或最后一个（`last`）类别标记为只覆盖其跨度的一部分：其柱形以较浅颜色绘制，提示框显示“不完整”。`ongoing` 将最后一个标记为仍在计数，例如今天，并显示“截至目前”。",
+  "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "在提示框中显示每个系列占该类别总数的比例（默认开启）。当一个系列是另一个系列的一部分时关闭它，例如请求中的错误。",
+  "Names the times under the axis (\"3 Aug\", \"2026\"). Defaults to calendar ticks in `timeZone`; pass it with `tickAt=\"points\"` for buckets.": "命名坐标轴下方的时间（“8月3日”、“2026”）。默认是 `timeZone` 中的日历刻度；对时间段请与 `tickAt=\"points\"` 一起传入。",
+  "Names a point's time in the tooltip, the table and for screen readers, where a point stands for more than its instant: \"Week of 3 Aug\", \"Aug 2026\".": "当一个点代表的不只是一个时刻时，为它在提示框、表格和屏幕阅读器中命名：“8月3日当周”“2026年8月”。",
+  "Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "将第一个（`first`）或最后一个（`last`）点标记为只覆盖其跨度的一部分：通往它的线为虚线，提示框显示“不完整”。`ongoing` 将最后一个标记为仍在计数，例如今天，并显示“截至目前”。",
+  "Shows each series' share of the point's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "在提示框中显示每个系列占该点总数的比例（默认开启）。当一个系列是另一个系列的一部分时关闭它，例如请求中的错误。",
+  "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.": "`time` 标注整点时间，能放下多少就标多少（默认）。`points` 将每个点放在等宽步长的中间，并每隔 n 个标注一个，与柱状图放置和标注类别的方式相同，因此同样日期的柱状图会与它对齐。",
+  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "坐标轴和默认标签读取时间所用的时区，例如按 UTC 计数的日期用 \"UTC\"。默认使用 `setFormatTimeZone` 设置的时区，否则使用查看者的时区。"
 }

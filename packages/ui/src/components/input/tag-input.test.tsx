@@ -33,10 +33,13 @@ describe("TagInput", () => {
     fireEvent.paste(input, { clipboardData: { getData: () => "a@example.com; b@example.com\nc@example.com" } });
     expect(onChange).toHaveBeenLastCalledWith(["a@example.com", "b@example.com", "c@example.com"]);
     fireEvent.paste(input, { clipboardData: { getData: () => "single" } });
+    fireEvent.paste(input, { clipboardData: { getData: () => "e@example.com\tf@example.com" } });
+    expect(onChange).toHaveBeenLastCalledWith(["a@example.com", "b@example.com", "c@example.com", "e@example.com", "f@example.com"]);
+    await userEvent.clear(input);
     await userEvent.type(input, "d@example.com");
     fireEvent.blur(input);
-    expect(onChange).toHaveBeenLastCalledWith(["a@example.com", "b@example.com", "c@example.com", "d@example.com"]);
-    expect(document.querySelector('input[type="hidden"]')).toHaveValue("a@example.com,b@example.com,c@example.com,d@example.com");
+    expect(onChange).toHaveBeenLastCalledWith(["a@example.com", "b@example.com", "c@example.com", "e@example.com", "f@example.com", "d@example.com"]);
+    expect(document.querySelector('input[type="hidden"]')).toHaveValue("a@example.com,b@example.com,c@example.com,e@example.com,f@example.com,d@example.com");
   });
 
   it("removes a tag with its button and keeps a controlled value", async () => {

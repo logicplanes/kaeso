@@ -49,6 +49,8 @@ export interface BarChartProps extends ChartState {
   highlight?: number | undefined;
   axisLabels?: string[] | undefined;
   dates?: readonly AxisDate[] | undefined;
+  shares?: boolean | undefined;
+  partial?: { first?: boolean | undefined; last?: boolean | undefined; ongoing?: boolean | undefined } | undefined;
   "aria-label": string;
   className?: string | undefined;
 }
@@ -63,6 +65,8 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
     highlight,
     axisLabels,
     dates,
+    shares = true,
+    partial,
     className,
     "aria-label": ariaLabel,
     ...state
@@ -116,9 +120,16 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
         ),
   );
   const GAP = 2;
+  const lastCategory = categories.length - 1;
+  const isPartial = (ci: number) => (!!(partial?.last || partial?.ongoing) && ci === lastCategory) || (!!partial?.first && ci === 0);
+  const heading = (ci: number) => {
+    const name = categories[ci] ?? "";
+    if (partial?.ongoing && ci === lastCategory) return t("chart.soFar", "{heading}, so far", { heading: name });
+    return isPartial(ci) ? t("chart.partial", "{heading}, partial", { heading: name }) : name;
+  };
   const table = {
     columns: [t("barChart.category", "Category"), ...series.map((s) => s.label)],
-    rows: categories.map((c, ci) => [c, ...series.map((s) => formatValue(s.values[ci] ?? 0))]),
+    rows: categories.map((_, ci) => [heading(ci), ...series.map((s) => formatValue(s.values[ci] ?? 0))]),
   };
   const ticks = (state.loading ? axis.ticks(4) : wholeTicks(readableTicks(axis, axisLabel), flat)).filter((t) => t <= (tween.top || 1) + 1e-9);
   const quiet = !!state.loading || !!state.empty || !!state.error;
@@ -148,7 +159,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
       label: s.label,
       color: color(s),
       value: formatValue(s.values[ci] ?? 0),
-      ...(series.length > 1 && totals[ci] ? { share: formatPercent(Math.round(((s.values[ci] ?? 0) / (totals[ci] ?? 1)) * 100) / 100, 0) } : {}),
+      ...(shares && series.length > 1 && totals[ci] ? { share: formatPercent(Math.round(((s.values[ci] ?? 0) / (totals[ci] ?? 1)) * 100) / 100, 0) } : {}),
     }));
   const PAD = 8;
   return (
@@ -199,7 +210,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                         let below = horizontal ? 0 : h;
                         return series.map((s, si) => {
                           const val = vals[si]?.[ci] ?? 0;
-                          const dim = focus && focus !== s.id ? 0.3 : 1;
+                          const dim = (focus && focus !== s.id ? 0.3 : 1) * (isPartial(ci) ? 0.5 : 1);
                           if (horizontal) {
                             const x0 = stacked ? Math.round(v(acc)) : 0;
                             acc += val;
@@ -265,9 +276,9 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
             </svg>
           )}
           {active !== null && size.width > 0 && (
-            <ChartTooltip {...anchor(active)} width={size.width} visible heading={categories[active]} rows={rowsFor(active)} />
+            <ChartTooltip {...anchor(active)} width={size.width} visible heading={heading(active)} rows={rowsFor(active)} />
           )}
-          <ChartLive>{keys.index !== null && !quiet ? liveLine(categories[keys.index], rowsFor(keys.index), t) : null}</ChartLive>
+          <ChartLive>{keys.index !== null && !quiet ? liveLine(heading(keys.index), rowsFor(keys.index), t) : null}</ChartLive>
         </div>
       </ChartFrame>
     </div>

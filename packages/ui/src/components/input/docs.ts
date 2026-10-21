@@ -121,7 +121,7 @@ export const docs = {
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       placeholder: "Text shown while there is no value.",
       required: "Marks it as required in a form.",
-      separators: "Characters that end a tag, besides Enter.",
+      separators: "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.",
       validate:
         "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip; the first one also shows under the field.",
       value: "The tags, when you control them.",

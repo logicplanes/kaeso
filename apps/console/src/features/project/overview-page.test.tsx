@@ -284,6 +284,23 @@ describe("OverviewPage", () => {
     expect(calls).toBe(2);
   });
 
+  it("names the year of every week when the period spans two years", async () => {
+    signedIn();
+    projectData();
+    on("GET", `${USAGE}/span`, { first_day: "2025-10-01", last_day: "2026-10-14" });
+    on("GET", USAGE, ({ query }: { query: URLSearchParams }) => ({
+      data: query.get("group_by") === "week" ? [usageRow({ key: "2025-10-20", requests: 3 }), usageRow({ key: "2026-10-12", requests: 7 })] : [],
+    }));
+    await renderApp(projectPath("?from=2025-10-21&to=2026-10-14&by=day"));
+    await breakdown();
+    await waitFor(() =>
+      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => (r as HTMLTableRowElement).cells[0]?.textContent)).toEqual([
+        "Week of 12 Oct 2026",
+        "Week of 20 Oct 2025",
+      ]),
+    );
+  });
+
   it("chooses a period from the picker", async () => {
     signedIn();
     projectData();
