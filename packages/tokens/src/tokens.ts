@@ -278,7 +278,7 @@ export const width = {
   aside: 320,
   banner: 480,
   kv: 480,
-  cellSm: 288,
+  cellSm: 208,
   cellMd: 352,
   cellLg: 512,
 } as const;
