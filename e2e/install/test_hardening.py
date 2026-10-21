@@ -41,7 +41,7 @@ def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(serv
         "updater-init": ["CHOWN", "DAC_READ_SEARCH", "FOWNER"],
         "postgres": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"],
         "clickhouse": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "KILL", "SETGID", "SETUID"],
-        "valkey": ["CHOWN", "SETGID", "SETUID"],
+        "valkey": [],
     }
     for name, service in services.items():
         assert service["security_opt"] == ["no-new-privileges:true"], name
@@ -52,6 +52,7 @@ def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(serv
 
 def test_the_edge_and_the_kaeso_images_run_without_root_on_read_only_file_systems(services):
     assert services["caddy"]["user"] == "65532:65532"
+    assert services["valkey"]["user"] == "999:1000"
     for name in ("gateway", "console", "updater", "docker-proxy"):
         assert services[name]["read_only"] is True, name
     assert {t.split(":")[0] for t in services["console"]["tmpfs"]} == {"/tmp", "/var/lib/console/data", "/var/lib/console/config"}

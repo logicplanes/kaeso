@@ -17,6 +17,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Confirming a recent sign-in through single sign-on no longer loops. The console opens the identity provider in a window of its own, the page and what you typed stay, and the action repeats by itself once you've signed in there; a refusal says why instead of asking again.
 - **Add models** says when a model's values can't load instead of staying silent.
 
+#### Self-hosting
+
+- Valkey starts again on an install that already has data. Since 0.3.0 its container started as root without capabilities, so it couldn't enter its own `appendonlydir` and exited, which rolled back an upgrade from 0.2. It now runs as the image's own user and needs no capabilities.
+
 ### Security
 
 - A confirmation through single sign-on only confirms the signed-in account. It asks the identity provider for a fresh sign-in (`prompt=login`, `max_age=0`), refuses another person, an identity that isn't linked and an older sign-in, and replaces the session; it used to start a new sign-in that could switch accounts.

@@ -254,6 +254,12 @@ def test_the_init_services_run_again_over_directories_only_their_services_can_re
         assert again.returncode == 0, again.stderr
 
 
+def test_the_data_services_start_again_over_the_data_they_wrote(install, owner):
+    for service in ("valkey", "postgres", "clickhouse"):
+        again = install.run("up", "-d", "--wait", "--no-deps", "--force-recreate", service, check=False, capture_output=True)
+        assert again.returncode == 0, f"{service}: {again.stderr}"
+
+
 def flag(state: str | None) -> None:
     command = f"printf '%s' '{state}' > /m/active" if state else "rm -f /m/active"
     subprocess.run(
