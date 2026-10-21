@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, SplitView } from "@logicplanes/kaeso-ui";
 import { catalogueQuery } from "~/api/queries/models";
 import { projectUsageQuery, usageSpanQuery, type GroupBy } from "~/api/queries/usage";
-import { granularity } from "~/format/buckets";
+import { granularity, spansYears } from "~/format/buckets";
 import { previousPeriod, type PeriodSearch } from "~/format/period";
 import { comparedWith, presetDays, resolvePeriod } from "~/format/presets";
 import { CostChart, RequestsChart, TokensChart, UsageMetrics } from "~/kaeso/usage-panels";
@@ -32,7 +32,7 @@ export function OverviewPage({ org, project, search }: { org: string; project: s
   const g = granularity(from, to);
   const daily = useQuery({ ...projectUsageQuery(org, project, from, to, g), enabled: ready });
   const before = previousPeriod(from, to);
-  const compare = comparedWith(period, before.days);
+  const compare = comparedWith(period, from, to);
   const previous = useQuery({ ...projectUsageQuery(org, project, before.from, before.to, g), enabled: ready && !!compare });
   const grouped = useQuery({ ...projectUsageQuery(org, project, from, to, by), enabled: ready && by !== "day" });
   const byModel = useQuery({ ...projectUsageQuery(org, project, from, to, "model"), enabled: ready && showCost });
@@ -100,6 +100,7 @@ export function OverviewPage({ org, project, search }: { org: string; project: s
                 rows={tableRows}
                 by={by}
                 granularity={g}
+                withYear={spansYears(from, to, g)}
                 showCost={showCost}
                 org={org}
                 project={project}

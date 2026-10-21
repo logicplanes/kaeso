@@ -1,13 +1,13 @@
 import { forwardRef, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
-import { formatTokens } from "../../format/index.js";
+import { formatNumber, formatTokens } from "../../format/index.js";
 import { CommandList, type CommandListGroup, type CommandListItem } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
 import { Highlight } from "../combobox/combobox.js";
-import { Button } from "../button/button.js";
 import { Switch } from "../switch/switch.js";
-import { KAESO_SELECT_VARIANTS } from "../select/select.js";
+import { KAESO_SELECT_VARIANTS, Select } from "../select/select.js";
+import { commandMatch } from "../command-list/match.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { CapabilityIcons, ModelLabel, ProviderBadge, providerName, type Capability } from "../kaeso/identity.js";
 
@@ -73,7 +73,7 @@ export interface MultiModelPickerProps extends BaseProps {
 export type ModelPickerProps = SingleModelPickerProps | MultiModelPickerProps;
 
 const ALL = "";
-const CHIPS_ABOVE = 1;
+const ALL_PROVIDERS = "*";
 
 function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption; query: string; providerLabel?: string | undefined }) {
   const model = option.model ?? option.value;
@@ -146,6 +146,14 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
   const [query, setQuery] = useState("");
   const [only, setOnly] = useState<string | null>(null);
   const [showDeprecated, setShowDeprecated] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setQuery("");
+      setOnly(null);
+    }
+  }
 
   const byValue = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
   const provider = useMemo(() => new Map(providers.map((p) => [p.id, p])), [providers]);
@@ -213,23 +221,48 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
     setOpen(false);
   };
 
-  const chips =
-    grouped && providerOrder.length > CHIPS_ABOVE ? (
-      <div role="group" aria-label={t("modelPicker.providers", "Providers")} className="flex min-w-0 flex-1 gap-4 overflow-x-auto scrollbar-none">
-        <Button size="xs" variant={only ? "ghost" : "secondary"} aria-pressed={!only} onClick={() => setOnly(null)}>
-          {t("modelPicker.allProviders", "All")}
-        </Button>
-        {providerOrder.map((id) => (
-          <Button key={id} size="xs" variant={only === id ? "secondary" : "ghost"} aria-pressed={only === id} onClick={() => setOnly(only === id ? null : id)}>
-            {nameOf(id)}
-          </Button>
-        ))}
-      </div>
+  const shownProviders = useMemo(() => {
+    const q = query.trim();
+    const kept = new Set(chosenKey.split("\u0000"));
+    const counts = new Map<string, number>();
+    for (const o of options) {
+      if (o.deprecated && !showDeprecated && !kept.has(o.value)) continue;
+      const model = o.model ?? o.value;
+      if (q && commandMatch(q, [o.name ?? model, model, nameOf(o.provider), o.provider]) <= 0) continue;
+      counts.set(o.provider, (counts.get(o.provider) ?? 0) + 1);
+    }
+    return providerOrder.filter((id) => counts.has(id) || id === only).map((id) => ({ id, count: counts.get(id) ?? 0 }));
+  }, [options, providerOrder, query, showDeprecated, chosenKey, only, nameOf]);
+  const providerFilter =
+    grouped && providerOrder.length > 1 ? (
+      <Select
+        aria-label={t("modelPicker.provider", "Provider")}
+        size="sm"
+        appearance="ghost"
+        value={only ?? ALL_PROVIDERS}
+        onValueChange={(v: string) => setOnly(v === ALL_PROVIDERS ? null : v)}
+        options={[
+          { value: ALL_PROVIDERS, label: t("modelPicker.everyProvider", "All providers") },
+          ...shownProviders.map(({ id, count }) => ({
+            value: id,
+            textValue: nameOf(id),
+            label: (
+              <span className="flex min-w-0 items-center gap-8">
+                <span aria-hidden className="flex shrink-0">
+                  <ProviderBadge provider={id} size="sm" />
+                </span>
+                <span className="min-w-0 truncate">{nameOf(id)}</span>
+                <span className="shrink-0 text-fg-tertiary tabular">{formatNumber(count)}</span>
+              </span>
+            ),
+          })),
+        ]}
+      />
     ) : null;
   const toolbar =
-    chips || hasDeprecated ? (
+    providerFilter || hasDeprecated ? (
       <>
-        {chips}
+        {providerFilter}
         {hasDeprecated && (
           <Switch size="sm" label={t("modelPicker.showDeprecated", "Deprecated")} checked={showDeprecated} onCheckedChange={setShowDeprecated} />
         )}
@@ -267,10 +300,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
       title={title}
       width="lg"
       open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) setQuery("");
-      }}
+      onOpenChange={setOpen}
       trigger={
         <PickerTrigger
           ref={ref}

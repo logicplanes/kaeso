@@ -43,6 +43,31 @@ describe("Sheet", () => {
     }
   });
 
+  it("updates its trigger and close handler while it is closed", async () => {
+    function Export({ exporting, onOpenChange }: { exporting: boolean; onOpenChange: (open: boolean) => void }) {
+      return (
+        <Sheet
+          open={false}
+          onOpenChange={onOpenChange}
+          trigger={<Button disabled={exporting}>{exporting ? "Exporting…" : "Export logs"}</Button>}
+          title="Export logs"
+        >
+          <p>Last 7 days</p>
+        </Sheet>
+      );
+    }
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = render(<Export exporting={false} onOpenChange={first} />);
+    expect(screen.getByRole("button", { name: "Export logs" })).toBeEnabled();
+    rerender(<Export exporting onOpenChange={first} />);
+    expect(screen.getByRole("button", { name: "Exporting…" })).toBeDisabled();
+    rerender(<Export exporting={false} onOpenChange={second} />);
+    await userEvent.click(screen.getByRole("button", { name: "Export logs" }));
+    expect(second).toHaveBeenCalledWith(true);
+    expect(first).not.toHaveBeenCalled();
+  });
+
   it("opens from its trigger with a title, subtitle, actions and footer, and closes", async () => {
     const onOpenChange = vi.fn();
     render(

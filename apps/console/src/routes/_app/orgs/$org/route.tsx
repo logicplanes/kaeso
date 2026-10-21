@@ -7,9 +7,9 @@ import { RouteError } from "~/shell/route-error";
 const IN_PROJECT = /^\/orgs\/[^/]+\/projects\/[^/]+/;
 
 export const Route = createFileRoute("/_app/orgs/$org")({
-  loader: ({ context, params, location, preload }) => {
+  loader: async ({ context, params, location, preload }) => {
     if (!preload && !IN_PROJECT.test(location.pathname)) writeLast({ org: params.org });
-    void context.queryClient.prefetchQuery(providersQuery(params.org));
+    await context.queryClient.ensureQueryData(providersQuery(params.org)).catch(() => undefined);
   },
   component: OrgLayout,
   errorComponent: RouteError,

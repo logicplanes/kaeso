@@ -349,6 +349,10 @@ pub struct PlaygroundModel {
     #[doc = "Whether the project has a provider key for its provider (assigned to\n\
         the project, or the org's default); without one, requests fail."]
     pub provider_key: bool,
+    #[doc = "Whether the provider serves it to the project's provider key, as the\n\
+        last check or request found; the Playground offers an `unavailable`\n\
+        model only greyed out."]
+    pub availability: crate::platform::projects::models::AvailabilityState,
 }
 
 #[utoipa::path(
@@ -427,6 +431,7 @@ pub async fn models(
             cache_read_price: price(f.cache_read_price),
             cache_write_price: price(f.cache_write_price),
             provider_key,
+            availability: entry.availability.into(),
         });
     }
     Ok(axum::Json(List::complete(out)))

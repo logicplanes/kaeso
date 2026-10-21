@@ -80,10 +80,11 @@ function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
   });
 }
 
-const SINGLE_LINE = new Set(["text", "email", "password", "search", "tel", "url", "number"]);
+const SINGLE_LINE = new Set(["text", "email", "password", "tel", "url", "number"]);
 
 function submitsOnEnter(e: KeyboardEvent): boolean {
-  if (e.key !== "Enter" || e.altKey || e.nativeEvent.isComposing) return false;
+  // Safari ends composition before the Enter that confirms it, leaving only keyCode 229: https://bugs.webkit.org/show_bug.cgi?id=165004
+  if (e.key !== "Enter" || e.altKey || e.nativeEvent.isComposing || e.keyCode === 229) return false;
   if (e.metaKey || e.ctrlKey) return true;
   const target = e.target as HTMLElement;
   return !e.defaultPrevented && !e.shiftKey && target instanceof HTMLInputElement && SINGLE_LINE.has(target.type) && target.getAttribute("role") !== "combobox";

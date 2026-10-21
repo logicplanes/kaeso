@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertDialog, Avatar, Badge, Button, Empty, KeyValue, List, Section, Sheet, Skeleton, Text } from "@logicplanes/kaeso-ui";
@@ -50,6 +50,17 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
   const access = useQuery({ ...memberRightsQuery(org, userId), enabled: rights.has("members.view") });
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const [grant, setGrant] = useState<Grant | null>(null);
+  const roleBox = useRef<HTMLDivElement | null>(null);
+  const refocus = useRef(false);
+  const reset = () => {
+    refocus.current = roleBox.current?.contains(document.activeElement) ?? false;
+    setGrant(null);
+  };
+  useEffect(() => {
+    if (grant || !refocus.current) return;
+    refocus.current = false;
+    roleBox.current?.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+  });
   const [removing, setRemoving] = useState(false);
   const [transferring, setTransferring] = useState(false);
   const invalidates = [["orgs", org, "members"], ["orgs", org, "roles"], ["session"]];
@@ -58,7 +69,7 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
     mutationFn: async (g: Grant) => data(await api.PATCH("/platform/v1/orgs/{org}/members/{user}", { params: { path: { org, user: userId } }, body: g })),
     invalidates,
     onSuccess: (m) => {
-      setGrant(null);
+      reset();
       toast.success(t("org.member.roleSaved", "{name} is {role} now", { name: m.user.name, role: m.grant.role.name }));
     },
   });
@@ -133,14 +144,14 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
         ]}
       />
       <Section title={common.role()} description={t("org.member.roleHint", "What they can do in the organization and in every project.")} spacing="none">
-        <div className="flex flex-col gap-12">
+        <div ref={roleBox} className="flex flex-col gap-12">
           <GrantEditor cat={cat} scope="org" roles={rolesOfScope(roles, "org")} value={editing} onChange={setGrant} giver={giver} readOnly={roleReason} />
           {changed && (
             <div className="flex gap-8">
               <Button size="sm" variant="primary" loading={save.isPending} onClick={() => grant && save.mutate(grant)}>
                 {t("org.saveRole", "Save role")}
               </Button>
-              <Button size="sm" onClick={() => setGrant(null)}>
+              <Button size="sm" onClick={reset}>
                 {common.cancel()}
               </Button>
             </div>

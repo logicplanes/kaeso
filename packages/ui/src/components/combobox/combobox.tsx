@@ -53,11 +53,11 @@ export function Highlight({ text, query }: { text: string; query: string }) {
   const q = query.trim().toLowerCase();
   if (!q) return <>{text}</>;
   const i = text.toLowerCase().indexOf(q);
-  if (i < 0) return <span className="text-fg-secondary">{text}</span>;
+  if (i < 0) return <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">{text}</span>;
   return (
-    <span className="text-fg-secondary">
+    <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
       {text.slice(0, i)}
-      <span className="text-fg">{text.slice(i, i + q.length)}</span>
+      <span className="text-fg group-data-disabled/item:text-fg-disabled">{text.slice(i, i + q.length)}</span>
       {text.slice(i + q.length)}
     </span>
   );

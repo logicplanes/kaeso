@@ -3,11 +3,14 @@ import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import { capabilities, priceLabel } from "~/features/project/models/model-fields";
 import { modelName } from "~/format/models";
+import { t } from "~/i18n";
 import { recall, remember } from "~/shell/session-memory";
 
 export function pickerPrice(input: string | null | undefined, output: string | null | undefined): string | undefined {
   return input && output ? priceLabel({ input_price: input, output_price: output }) : undefined;
 }
+
+const notServed = () => t("kaeso.modelOptions.notServed", "The provider doesn't serve it");
 
 export function catalogueModelOption(m: CatalogueModelView): ModelPickerOption {
   const name = modelName(m);
@@ -21,7 +24,12 @@ export function catalogueModelOption(m: CatalogueModelView): ModelPickerOption {
     ...(m.effective.context_limit ? { context: m.effective.context_limit } : {}),
     ...(price ? { price } : {}),
     ...(m.deprecated ? { deprecated: true } : {}),
+    ...(m.availability === "unavailable" ? { disabled: true, note: notServed() } : {}),
   };
+}
+
+export function keepChosen(options: ModelPickerOption[], chosen: readonly string[]): ModelPickerOption[] {
+  return options.map((o) => (o.disabled && chosen.includes(o.value) ? { ...o, disabled: false } : o));
 }
 
 export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: string): ModelPickerOption {
@@ -38,7 +46,7 @@ export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: 
     ],
     ...(m.context_limit ? { context: m.context_limit } : {}),
     ...(price ? { price } : {}),
-    ...(m.provider_key ? {} : { disabled: true, note: noKey }),
+    ...(!m.provider_key ? { disabled: true, note: noKey } : m.availability === "unavailable" ? { disabled: true, note: notServed() } : {}),
   };
 }
 

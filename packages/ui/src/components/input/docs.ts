@@ -37,6 +37,7 @@ export const docs = {
       defaultValue: "The number on first render, as text.",
       description: "One sentence of help under the label.",
       hideStepper: "Hide the stepper circles.",
+      integer: "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",
       label: "The visible label.",
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
@@ -120,7 +121,7 @@ export const docs = {
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       placeholder: "Text shown while there is no value.",
       required: "Marks it as required in a form.",
-      separators: "Characters that end a tag, besides Enter.",
+      separators: "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.",
       validate:
         "Return true for a valid tag, or a message saying what is wrong. Invalid tags stay, marked with a danger ring, and show the message as their tooltip; the first one also shows under the field.",
       value: "The tags, when you control them.",

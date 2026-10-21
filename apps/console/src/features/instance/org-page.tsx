@@ -89,53 +89,50 @@ function Usage({ org }: { org: string }) {
       title={t("instance.last30Days", "Last 30 days")}
       description={t("instance.last30DaysHint", "Requests, tokens and cost across its projects, and the logs it stores")}
     >
-      <StatGrid aria-label={t("instance.usage30Days", "Usage in the last 30 days")}>{u ? <UsageTiles u={u} /> : <LoadingTiles />}</StatGrid>
+      <StatGrid aria-label={t("instance.usage30Days", "Usage in the last 30 days")}>{u ? usageTiles(u) : loadingTiles()}</StatGrid>
     </SettingsSection>
   );
 }
 
-function UsageTiles({ u }: { u: InstanceOrgUsage }) {
+function usageTiles(u: InstanceOrgUsage) {
   const n = u.requests_30d;
   const perRequest = (v: number) => v / n;
-  return (
-    <>
-      <StatTile
-        label={t("common.requests", "Requests")}
-        value={formatNumber(n)}
-        detail={
-          n ? t("instance.perDay", "{count} a day on average", { count: formatNumber(Math.round(n / 30)) }) : t("instance.noneInPeriod", "None in this period")
-        }
-      />
-      <StatTile
-        label={t("common.tokens", "Tokens")}
-        value={formatTokens(u.tokens_30d)}
-        detail={n ? t("instance.perRequest", "{value} per request", { value: formatTokens(Math.round(perRequest(u.tokens_30d))) }) : undefined}
-      />
-      <StatTile
-        label={t("common.cost", "Cost")}
-        value={formatUSD(u.cost_30d)}
-        detail={
-          n ? t("instance.perRequest", "{value} per request", { value: formatUSD(perRequest(Number(u.cost_30d)).toFixed(8), { significant: 2 }) }) : undefined
-        }
-      />
-      <StatTile
-        label={t("instance.logs", "Logs")}
-        value={formatBytes(u.log_logical_bytes)}
-        detail={t("instance.entryCount", "{count, plural, one {# entry} other {# entries}}", { count: u.log_entries })}
-      />
-    </>
-  );
+  return [
+    <StatTile
+      key="requests"
+      label={t("common.requests", "Requests")}
+      value={formatNumber(n)}
+      detail={
+        n ? t("instance.perDay", "{count} a day on average", { count: formatNumber(Math.round(n / 30)) }) : t("instance.noneInPeriod", "None in this period")
+      }
+    />,
+    <StatTile
+      key="tokens"
+      label={t("common.tokens", "Tokens")}
+      value={formatTokens(u.tokens_30d)}
+      detail={n ? t("instance.perRequest", "{value} per request", { value: formatTokens(Math.round(perRequest(u.tokens_30d))) }) : undefined}
+    />,
+    <StatTile
+      key="cost"
+      label={t("common.cost", "Cost")}
+      value={formatUSD(u.cost_30d)}
+      detail={
+        n ? t("instance.perRequest", "{value} per request", { value: formatUSD(perRequest(Number(u.cost_30d)).toFixed(8), { significant: 2 }) }) : undefined
+      }
+    />,
+    <StatTile
+      key="logs"
+      label={t("instance.logs", "Logs")}
+      value={formatBytes(u.log_logical_bytes)}
+      detail={t("instance.entryCount", "{count, plural, one {# entry} other {# entries}}", { count: u.log_entries })}
+    />,
+  ];
 }
 
-function LoadingTiles() {
-  return (
-    <>
-      {[t("common.requests", "Requests"), t("common.tokens", "Tokens"), t("common.cost", "Cost"), t("instance.logs", "Logs")].map((label) => (
-        <StatTile key={label} label={label} value={<Skeleton shape="line" className="w-64" />} />
-      ))}
-    </>
-  );
-}
+const loadingTiles = () =>
+  [t("common.requests", "Requests"), t("common.tokens", "Tokens"), t("common.cost", "Cost"), t("instance.logs", "Logs")].map((label) => (
+    <StatTile key={label} label={label} value={<Skeleton shape="line" className="w-64" />} />
+  ));
 
 function signIn(o: InstanceOrgView): string {
   if (o.require_sso && o.require_2fa) return t("instance.ssoAnd2fa", "Single sign-on and two-factor");

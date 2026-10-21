@@ -14,7 +14,7 @@ The same menu lists your organizations and switches between them.
 
 ## Read usage
 
-The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. It also breaks the cost down by project, and the usage by project, model or member. Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
+The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. Each total is compared with the period before it, except for today, which isn't over yet, and all time. Charts count by UTC day; a day, week or month still running is drawn dashed or lighter, and its tooltip says "so far". It also breaks the cost down by project, and the usage by project, model or member. Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
 
 A project's **Overview** shows the same numbers for one project, broken down by time, model, key or member. It also lists the project's limits with what is used, and its recent errors.
 

@@ -65,7 +65,7 @@ export function InstanceSystemPage() {
                 description={
                   s.log_buffer.dropped > 0
                     ? t("instance.droppedHint", "The buffer was full: these requests have no log entry.")
-                    : t("instance.droppedNone", "None: every request was logged.")
+                    : t("instance.droppedNone", "Every request since the start was logged.")
                 }
                 control={
                   <Text tabular tone={s.log_buffer.dropped > 0 ? "danger" : "default"}>

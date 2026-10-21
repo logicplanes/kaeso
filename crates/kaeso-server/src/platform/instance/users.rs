@@ -1,18 +1,19 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::id::{InviteId, UserId};
+use kaeso_core::id::{InviteId, OrgId, UserId};
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
 use kaeso_mail::Actor;
 use kaeso_store::pg::invites::{self, NewInvite};
-use kaeso_store::pg::{totp, users};
+use kaeso_store::pg::{members, totp, users};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
+use crate::platform::grants::RoleRef;
 use crate::platform::json::Body;
 use crate::platform::orgs::invites::{INVITE_LIFETIME, InviteView};
 use crate::platform::pagination::{List, PageParams};
@@ -108,6 +109,48 @@ pub async fn get(
     Path(id): Path<String>,
 ) -> ApiResult<Json<InstanceUserView>> {
     Ok(Json(view(&state, &user(&state, &id).await?).await?))
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "An org a user belongs to, as instance admins see it.")]
+pub struct InstanceUserOrg {
+    #[doc = "The org."]
+    pub id: OrgId,
+    #[doc = "Its name."]
+    #[schema(example = "Acme")]
+    pub name: String,
+    #[doc = "`active` or `scheduled_for_deletion`."]
+    #[schema(example = "active")]
+    pub state: String,
+    #[doc = "The user's role in it."]
+    pub role: RoleRef,
+}
+
+#[utoipa::path(
+    get,
+    path = "/instance/users/{user}/orgs",
+    summary = "The orgs a user belongs to, by name, with their role in each.",
+    tag = "instance",
+    params(("user" = UserId, Path)),
+    responses((status = 200, body = List<InstanceUserOrg>))
+)]
+pub async fn orgs(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> ApiResult<Json<List<InstanceUserOrg>>> {
+    let u = user(&state, &id).await?;
+    let mut orgs: Vec<InstanceUserOrg> = members::orgs_of_user(&state.pg, u.id)
+        .await?
+        .into_iter()
+        .map(|o| InstanceUserOrg {
+            role: RoleRef::of_org(&o.grant()),
+            id: OrgId::from_uuid(o.org_id),
+            name: o.org_name,
+            state: o.org_state,
+        })
+        .collect();
+    orgs.sort_by_key(|o| o.name.to_lowercase());
+    Ok(Json(List::complete(orgs)))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

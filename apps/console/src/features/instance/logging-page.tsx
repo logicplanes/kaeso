@@ -33,49 +33,65 @@ export function InstanceLoggingPage() {
   );
 }
 
+type RetentionField = "metadata_retention_days" | "content_retention_days" | "max_metadata_retention_days" | "max_content_retention_days";
+
 function Retention({ settings }: { settings: SettingsView }) {
-  const [metadata, setMetadata] = useState(String(settings.metadata_retention_days));
-  const [content, setContent] = useState(String(settings.content_retention_days));
-  const [maxMetadata, setMaxMetadata] = useState(String(settings.max_metadata_retention_days));
-  const [maxContent, setMaxContent] = useState(String(settings.max_content_retention_days));
+  const [draft, setDraft] = useState<Record<RetentionField, string>>({
+    metadata_retention_days: String(settings.metadata_retention_days),
+    content_retention_days: String(settings.content_retention_days),
+    max_metadata_retention_days: String(settings.max_metadata_retention_days),
+    max_content_retention_days: String(settings.max_content_retention_days),
+  });
+  const [saving, setSaving] = useState<RetentionField | null>(null);
   const save = useApiMutation({
-    mutationFn: async () =>
-      data(
-        await api.PATCH("/platform/v1/instance/settings", {
-          body: {
-            metadata_retention_days: Number(metadata),
-            content_retention_days: Number(content),
-            max_metadata_retention_days: Number(maxMetadata),
-            max_content_retention_days: Number(maxContent),
-          },
-        }),
-      ),
+    mutationFn: async (body: Partial<Record<RetentionField, number>>) => data(await api.PATCH("/platform/v1/instance/settings", { body })),
     invalidates: [["instance", "settings"]],
     onSuccess: () => toast.success(t("instance.retentionSaved", "Retention saved")),
   });
-  const [m, c, mm, mc] = [metadata, content, maxMetadata, maxContent].map(Number) as [number, number, number, number];
-  const whole = (n: number) => Number.isInteger(n) && n >= 1;
-  const changed =
-    m !== settings.metadata_retention_days ||
-    c !== settings.content_retention_days ||
-    mm !== settings.max_metadata_retention_days ||
-    mc !== settings.max_content_retention_days;
-  const reason = ![m, c, mm, mc].every(whole)
-    ? t("instance.wholeDays", "Enter whole days, at least 1")
-    : m > mm
-      ? t("instance.metadataAboveMax", "The default metadata retention is above its maximum")
-      : c > mc
-        ? t("instance.contentAboveMax", "The default content retention is above its maximum")
-        : c > m || mc > mm
-          ? t("instance.contentLongerThanMetadata", "Content can't be kept longer than metadata")
-          : !changed
-            ? t("instance.noChange", "No change to save")
-            : undefined;
-  const field = (label: string, value: string, set: (v: string) => void) => (
-    <div className="w-160">
-      <NumberInput aria-label={label} size="sm" value={value} onValueChange={set} min="1" step="1" unit={t("instance.daysUnit", "days")} />
-    </div>
-  );
+  const next = (field: RetentionField) => ({ ...settings, [field]: Number(draft[field]) });
+  const reason = (field: RetentionField): string | undefined => {
+    const v = Number(draft[field]);
+    const s = next(field);
+    if (!Number.isInteger(v) || v < 1) return t("instance.wholeDays", "Enter whole days, at least 1");
+    if (v === settings[field]) return t("instance.noChange", "No change to save");
+    if (s.metadata_retention_days > s.max_metadata_retention_days) return t("instance.metadataAboveMax", "The default metadata retention is above its maximum");
+    if (s.content_retention_days > s.max_content_retention_days) return t("instance.contentAboveMax", "The default content retention is above its maximum");
+    if (s.content_retention_days > s.metadata_retention_days || s.max_content_retention_days > s.max_metadata_retention_days)
+      return t("instance.contentLongerThanMetadata", "Content can't be kept longer than metadata");
+    return undefined;
+  };
+  const control = (field: RetentionField, label: string, saveLabel: string) => {
+    const why = reason(field);
+    return (
+      <div className="flex min-w-0 items-center gap-8">
+        <div className="w-160 min-w-0">
+          <NumberInput
+            aria-label={label}
+            size="sm"
+            integer
+            value={draft[field]}
+            onValueChange={(v) => setDraft((d) => ({ ...d, [field]: v }))}
+            min="1"
+            step="1"
+            unit={t("instance.daysUnit", "days")}
+          />
+        </div>
+        <Button
+          size="sm"
+          aria-label={saveLabel}
+          disabled={!!why}
+          {...(why ? { disabledReason: why } : {})}
+          loading={save.isPending && saving === field}
+          onClick={() => {
+            setSaving(field);
+            save.mutate({ [field]: Number(draft[field]) });
+          }}
+        >
+          {t("common.save", "Save")}
+        </Button>
+      </div>
+    );
+  };
   return (
     <SettingsSection
       title={t("instance.retention", "Request log retention")}
@@ -85,34 +101,40 @@ function Retention({ settings }: { settings: SettingsView }) {
         <SettingsRow
           title={t("instance.metadataDefault", "Metadata, by default")}
           description={t("instance.metadataHint", "Timing, tokens, cost and errors.")}
-          control={field(t("instance.metadataDefaultLabel", "Default metadata retention"), metadata, setMetadata)}
+          control={control(
+            "metadata_retention_days",
+            t("instance.metadataDefaultLabel", "Default metadata retention"),
+            t("instance.saveMetadataDefault", "Save default metadata retention"),
+          )}
         />
         <SettingsRow
           title={t("instance.contentDefault", "Content, by default")}
           description={t("instance.contentHint", "Request and reply bodies.")}
-          control={field(t("instance.contentDefaultLabel", "Default content retention"), content, setContent)}
+          control={control(
+            "content_retention_days",
+            t("instance.contentDefaultLabel", "Default content retention"),
+            t("instance.saveContentDefault", "Save default content retention"),
+          )}
         />
         <SettingsRow
           title={t("instance.metadataMax", "Metadata, at most")}
-          control={field(t("instance.metadataMaxLabel", "Maximum metadata retention"), maxMetadata, setMaxMetadata)}
+          description={t("instance.metadataMaxHint", "No organization keeps metadata longer.")}
+          control={control(
+            "max_metadata_retention_days",
+            t("instance.metadataMaxLabel", "Maximum metadata retention"),
+            t("instance.saveMetadataMax", "Save maximum metadata retention"),
+          )}
         />
         <SettingsRow
           title={t("instance.contentMax", "Content, at most")}
-          control={field(t("instance.contentMaxLabel", "Maximum content retention"), maxContent, setMaxContent)}
+          description={t("instance.contentMaxHint", "No organization keeps bodies longer.")}
+          control={control(
+            "max_content_retention_days",
+            t("instance.contentMaxLabel", "Maximum content retention"),
+            t("instance.saveContentMax", "Save maximum content retention"),
+          )}
         />
       </SettingsGroup>
-      <div className="mt-12 flex justify-end">
-        <Button
-          size="sm"
-          variant="primary"
-          disabled={!!reason}
-          {...(reason ? { disabledReason: reason } : {})}
-          loading={save.isPending}
-          onClick={() => save.mutate()}
-        >
-          {t("instance.saveRetention", "Save retention")}
-        </Button>
-      </div>
     </SettingsSection>
   );
 }

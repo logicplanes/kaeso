@@ -12,7 +12,7 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 **Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt.
 
-Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es hat diese Aktionen:
+Instanz-Admins tragen das Abzeichen **Instanz-Admin**. Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -69,7 +69,7 @@ Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuratio
 
 Der Verlauf listet jedes Update mit der Person, die es gestartet hat, oder **Automatisch**, und seinem Ausgang.
 
-Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**: die neue Version auf ihrem eigenen Artwork, das sich nie ändert, mit ihren Verbesserungen und, mit **Nächstes**, jedes verpasste Release. **Weiter zur Konsole**, Escape oder ein Klick daneben schließt den Dialog.
+Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**: die neue Version auf ihrem eigenen Artwork, das sich nie ändert, mit ihren Verbesserungen und, mit **Nächstes**, jedes verpasste Release. **Weiter zur Konsole**, Escape oder ein Klick daneben schließt den Dialog. **Neuigkeiten** unter **Updates** zeigt die Notizen der laufenden Version erneut.
 
 ## Audit-Log lesen
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
-import { catalogueModelOption, playgroundModelOption, recentModels, rememberModel } from "./model-options";
+import { catalogueModelOption, keepChosen, playgroundModelOption, recentModels, rememberModel } from "./model-options";
 
 const entry = (effective: Partial<CatalogueModelView["effective"]>, more: Partial<CatalogueModelView> = {}) =>
   ({ id: "cm_01", provider: "openai", model_id: "gpt-5-mini", deprecated: false, effective, ...more }) as unknown as CatalogueModelView;
@@ -71,6 +71,29 @@ describe("model picker options", () => {
       provider_key: true,
     } as unknown as PlaygroundModel;
     expect(playgroundModelOption(m, "gpt-5-mini", "No OpenAI key")).toEqual({ value: "gpt-5-mini", provider: "openai", model: "gpt-5-mini", capabilities: [] });
+  });
+
+  it("grey out a model its provider doesn't serve, except where it is already chosen", () => {
+    const unserved = catalogueModelOption(
+      entry({ display_name: "Llama 3.1 8B" }, { provider: "groq", model_id: "llama-3.1-8b-instant", availability: "unavailable" }),
+    );
+    expect(unserved).toMatchObject({ disabled: true, note: "The provider doesn't serve it" });
+    const served = catalogueModelOption(entry({}, { id: "cm_02", availability: "available" }));
+    expect(served.disabled).toBeUndefined();
+    expect(keepChosen([unserved, served], ["cm_01"])).toEqual([{ ...unserved, disabled: false }, served]);
+    expect(keepChosen([unserved], [])).toEqual([unserved]);
+    const playground = {
+      provider: "groq",
+      model_id: "llama-3.1-8b-instant",
+      display_name: "Llama 3.1 8B",
+      input_modalities: ["text"],
+      provider_key: true,
+      availability: "unavailable",
+    };
+    expect(playgroundModelOption(playground as unknown as PlaygroundModel, "groq/llama-3.1-8b-instant", "No Groq key")).toMatchObject({
+      disabled: true,
+      note: "The provider doesn't serve it",
+    });
   });
 
   it("remember the five most recent models per project", () => {

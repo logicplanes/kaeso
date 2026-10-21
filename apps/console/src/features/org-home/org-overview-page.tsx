@@ -32,7 +32,7 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
   const g = granularity(from, to);
   const daily = useQuery({ ...orgUsageQuery(org, from, to, g), enabled: ready });
   const before = previousPeriod(from, to);
-  const compare = comparedWith(period, before.days);
+  const compare = comparedWith(period, from, to);
   const previous = useQuery({ ...orgUsageQuery(org, before.from, before.to, g), enabled: ready && !!compare });
   const byProject = useQuery({ ...orgUsageQuery(org, from, to, "project"), enabled: ready });
   const projects = useQuery(orgProjectsQuery(org, true));

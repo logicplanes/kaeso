@@ -52,7 +52,7 @@ test("organizations: one is created with an owner and opens with its metadata", 
 test("logging and system: retention defaults change and a test email is sent", async ({ page }) => {
   await openInstance(page, "Logging");
   await page.getByRole("textbox", { name: "Default content retention" }).fill("14");
-  await page.getByRole("button", { name: "Save retention" }).click();
+  await page.getByRole("button", { name: "Save default content retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
   await page.getByRole("button", { name: "Send test email" }).click();
@@ -99,5 +99,5 @@ test("model sources, system and the instance audit log", async ({ page }) => {
 
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/audit-log"]`).click();
   await expect(page.getByRole("heading", { level: 1, name: "Audit log" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Audit log" }).getByText("instance.settings_update").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Audit log" }).getByText("Instance settings changed").first()).toBeVisible();
 });

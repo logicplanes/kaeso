@@ -23,6 +23,7 @@ export interface NumberInputProps extends Omit<InputProps, "type" | "value" | "d
   min?: string | undefined;
   max?: string | undefined;
   hideStepper?: boolean | undefined;
+  integer?: boolean | undefined;
   align?: keyof typeof KAESO_NUMBER_INPUT_VARIANTS.align | undefined;
 }
 
@@ -36,6 +37,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     min,
     max,
     hideStepper,
+    integer,
     align = "end",
     onBlur,
     onFocus,
@@ -65,7 +67,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     return v;
   };
   const stepBy = (dir: 1 | -1) => set(clamp(addDecimal(raw || "0", dir === 1 ? step : `-${step}`)));
-  const display = focused ? localizeDecimal(raw, seps) : groupDecimal(raw, seps);
+  const display = integer ? raw : focused ? localizeDecimal(raw, seps) : groupDecimal(raw, seps);
   const live = !disabled && !readOnly;
   const stepper = !hideStepper && (
     <span
@@ -83,7 +85,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     <Input
       ref={ref}
       type="text"
-      inputMode="decimal"
+      inputMode={integer ? "numeric" : "decimal"}
       autoComplete="off"
       spellCheck={false}
       value={display}
@@ -93,6 +95,10 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       suffix={unit}
       trailing={stepper || undefined}
       onChange={(e: ChangeEvent<HTMLInputElement>) => {
+        if (integer) {
+          if (/^-?\d*$/.test(e.target.value)) set(e.target.value);
+          return;
+        }
         const v = ungroup(e.target.value, seps);
         if (isDecimal(v)) set(v);
       }}

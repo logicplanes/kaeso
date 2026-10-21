@@ -23,6 +23,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(s.route(a, routes!(users::list)))
         .routes(s.route(a, routes!(users::get)))
+        .routes(s.route(a, routes!(users::orgs)))
         .routes(s.route(a, routes!(users::invite)))
         .routes(s.route(a, routes!(users::deactivate)))
         .routes(s.route(a, routes!(users::reactivate)))
