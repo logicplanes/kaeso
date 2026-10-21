@@ -36,7 +36,7 @@ export const docs = {
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
       onOpenChange: "Called when it opens or closes.",
       onSubmit:
-        "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a combobox or a picker keeps its own meaning.",
+        "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a search field, a combobox or a picker, and the Enter that confirms an input method's text, keep their own meaning.",
       open: "Whether it is open, when you control it.",
       size: "The dialog's width.",
       title: "The dialog's heading, also its accessible name.",
@@ -72,7 +72,7 @@ export const docs = {
   },
   StepDialog: {
     description:
-      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and keeps its top edge where it opened: it grows or shrinks 200ms downward from the size it has as the step changes, so the title never jumps, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
+      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a single-line field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and keeps its top edge where it opened: it grows or shrinks 200ms downward from the size it has as the step changes, so the title never jumps, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
     props: {
       defaultStep: "Start on this step (state matrices).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
