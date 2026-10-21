@@ -30,13 +30,13 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 
 ## Das Changelog
 
-`CHANGELOG.md` folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und Pull Requests ändern die Datei nie. Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden. Der Titel jedes Pull Requests wird zu seiner Zeile, mit einem Link auf den Pull Request, und seine Labels bestimmen, wo die Zeile steht.
+`CHANGELOG.md` folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und Pull Requests ändern die Datei nie. Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden. Der Titel jedes Pull Requests, wie er gemergt wurde, wird zu seiner Zeile, mit einem Link auf den Pull Request, und seine Labels bestimmen, wo die Zeile steht. Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, daher ändert eine Bearbeitung nach dem Merge nichts. Für einen auf andere Weise gemergten Pull Request ist es der Titel zum Zeitpunkt des Merges.
 
 Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Dependabot werden zu einer Zeile, „Dependencies updated“. Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt genannt.
 
 Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
 
-Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
+Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Das Modell liest jeden so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -45,6 +45,20 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 Ein stabiles Release nach Vorabversionen seiner Version fasst deren Abschnitte zu einem zusammen, sodass seine Notizen alles seit dem letzten stabilen Release abdecken.
 
 Das GitHub-Release zeigt eine Kurzfassung des Abschnitts. Sie hat einen Satz, bis zu fünf Highlights, die Breaking Changes, die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich. Das Modell schreibt sie zusammen mit dem Abschnitt. Ohne Modell listet das Release die ersten fünf Zeilen des Abschnitts, jede auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
+
+### Was die Notizen enthalten dürfen
+
+Jede Zeile der Notizen, vom Modell oder aus einem Titel, besteht diese Prüfungen:
+
+- Keine Adressen: keine URLs, E-Mail-Adressen oder IP-Adressen.
+- Keine Hostnamen außer `kaeso.app` und seinen Subdomains, `github.com/logicplanes/kaeso` und Kaesos Images unter `ghcr.io/logicplanes`. `crates.io` und `models.dev` dürfen ohne Pfad vorkommen. Ein Name, der auf eine gängige Top-Level-Domain wie `.com` oder `.example` endet, zählt als Hostname, auch in Code-Spans.
+- Keine Shell-Pipelines wie `| sh` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
+
+Ein Entwurf, der nach einer Korrektur noch scheitert, fällt auf die Titel zurück. Ein Titel, der scheitert, hält den Job **Prepare** an und nennt den Pull Request. Schreiben Sie dafür eine Zeile unter `[Unreleased]` auf `dev`, die den Pull Request verlinkt, und starten Sie Release erneut.
+
+### Prüfung vor dem Tag
+
+Jeder Job, der ein Secret nutzt, ins Repository schreibt oder veröffentlicht, läuft in der Umgebung `release` und wartet daher auf die Freigabe des Maintainers. Die Freigabe von **Release notes** lässt das Modell entwerfen. **Prepare** schreibt danach das Changelog und zeigt den Abschnitt und das GitHub-Release in seiner Zusammenfassung, genau so, wie das Release sie veröffentlicht. **Tag** wartet danach auf Ihre Freigabe, lesen Sie also zuerst die Zusammenfassung. Stimmt darin etwas nicht, lehnen Sie **Tag** ab, beheben Sie die Ursache auf `dev` und starten Sie Release erneut.
 
 ### Labels
 
@@ -79,6 +93,8 @@ Der Workflow **Labels** setzt die Bereichs-Labels und `internal` bei jedem Push 
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
    ```
+
+   Geben Sie die Jobs des Laufs frei, sobald sie warten. Bevor Sie **Tag** freigeben, lesen Sie die Notizen in der Zusammenfassung von **Prepare** ([Prüfung vor dem Tag](#prüfung-vor-dem-tag)).
 
 5. Bringen Sie das Release nach `dev`. Der Job **Sync dev** des Laufs versucht es, aber `dev` nimmt nur Pull Requests an. Er endet deshalb meist mit einer Warnung und zeigt den Befehl, den Sie ausführen. Mergen Sie von Hand, was Ihre Ausnahme von den Regeln für `dev` erlaubt:
 
