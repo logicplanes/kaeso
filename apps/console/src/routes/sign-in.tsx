@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SignInPage } from "~/features/sign-in/sign-in-page";
 import { takeFragment } from "~/auth/fragment";
-import { internalPath } from "~/auth/next";
+import { internalPath, safeNext } from "~/auth/next";
+import { sessionQuery } from "~/auth/session-queries";
 import { signInPageQuery, type SignInMethods } from "~/auth/sign-in-api";
 import { t } from "~/i18n";
 
@@ -22,7 +23,17 @@ const signInSearch = (search: Record<string, unknown>): { next?: string; org?: s
   ...text(search, "done"),
 });
 
-export const Route = createFileRoute("/sign-in")({ validateSearch: signInSearch, component: SignIn });
+export const Route = createFileRoute("/sign-in")({
+  validateSearch: signInSearch,
+  beforeLoad: async ({ context, search }) => {
+    const signedIn = await context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0, retry: false }).then(
+      () => true,
+      () => false,
+    );
+    if (signedIn) throw redirect({ href: safeNext(search.next), replace: true });
+  },
+  component: SignIn,
+});
 
 function SignIn() {
   const search = Route.useSearch({ select: signInSearch, structuralSharing: true });

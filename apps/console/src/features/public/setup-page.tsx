@@ -19,7 +19,22 @@ const SIGN_IN_LINK_COMMAND = "kaeso user sign-in-link";
 export function SetupPage() {
   usePageTitle(t("public.setUpKaeso", "Set up Kaeso"));
   const [token] = useState(() => takeFragment("token"));
+  const install = useQuery(signInMethodsQuery);
+  if (install.data?.set_up) return <AlreadySetUp />;
   return token ? <SetupForm token={token} /> : <NeedsSetupLink unusable={false} />;
+}
+
+function AlreadySetUp() {
+  return (
+    <PublicPage
+      title={t("public.alreadySetUp", "Kaeso is set up")}
+      description={t("public.alreadySetUpHint", "Sign in with your account; a setup link works only until the first user exists.")}
+    >
+      <Button variant="primary" size="xl" fullWidth href="/sign-in">
+        {t("public.signIn", "Sign in")}
+      </Button>
+    </PublicPage>
+  );
 }
 
 function NeedsSetupLink({ unusable }: { unusable: boolean }) {
@@ -28,7 +43,7 @@ function NeedsSetupLink({ unusable }: { unusable: boolean }) {
       title={unusable ? t("public.setupLinkUnusable", "This setup link can't be used") : t("public.needsSetupLink", "This page needs the setup link")}
       description={t("public.setupLinkFromCommand", "The gateway's command line prints the setup link; it ends with #token=…")}
     >
-      <Text tone="secondary">
+      <Text tone="secondary" className="text-center">
         {tRich("public.runSetupLinkHere", "Run {command} where the gateway runs to print a new link.", { command: <Code>{SETUP_COMMAND}</Code> })}
       </Text>
     </PublicPage>
@@ -47,7 +62,7 @@ function SetupForm({ token }: { token: string }) {
   const [orgName, setOrgName] = useState("");
   const { busy, error, submit } = useSubmit();
   const ready = name.trim() && email.trim() && (!withPassword || passwordOk(password)) && orgName.trim();
-  const tokenProblem = error?.param === "token" || error?.type === "conflict";
+  const tokenProblem = error?.param === "token";
 
   const setUp = () =>
     submit(async () => {
@@ -59,6 +74,7 @@ function SetupForm({ token }: { token: string }) {
       await (org ? navigate({ to: "/settings/orgs/$org/security", params: { org } }) : navigate({ to: "/" }));
     });
 
+  if (error?.type === "conflict") return <AlreadySetUp />;
   if (tokenProblem) return <NeedsSetupLink unusable />;
   return (
     <PublicPage

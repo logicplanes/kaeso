@@ -9,6 +9,7 @@ Clear enough to act on, exact enough to trust, and calm enough to stay out of th
 - **No exclamation points, no emoji**, no jokes, no congratulations.
 - **Errors say what did not happen and what to do next**: "Couldn't reach the provider. Check the provider key, then try again."
 - **Name the object**: "Key copied", not "Copied to clipboard".
+- **Toasts are one sentence.** A confirmation, a warning or progress reads as a phrase without a final period: "Key revoked", "Password changed; sign in with the new one". An error ends with a period, like the gateway's messages: "The email or password is wrong."
 - **Use Kaeso's terms**: key, provider key, project, organization, model, alias, limit, budget, request log.
 - **Realistic data in examples**, never lorem ipsum.
 - **Straight apostrophes** in English: "Couldn't load these rows", "the key's name", never `’`.

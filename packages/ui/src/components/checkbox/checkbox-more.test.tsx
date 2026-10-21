@@ -131,6 +131,15 @@ describe("SensitiveInput", () => {
     expect(input).toHaveAttribute("type", "password");
   });
 
+  it("names its reveal button after the password it shows", async () => {
+    render(<SensitiveInput kind="password" label="Password" />);
+    const input = screen.getByLabelText("Password");
+    await userEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(input).toHaveAttribute("type", "text");
+    await userEvent.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(input).toHaveAttribute("type", "password");
+  });
+
   it("warns about Caps Lock in a password", async () => {
     const onKeyDown = vi.fn();
     const onKeyUp = vi.fn();

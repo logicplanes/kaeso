@@ -38,6 +38,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Public, routes!(magic::lookup)))
         .routes(s.route(Access::Public, routes!(reset::request)))
         .routes(s.route(Access::Public, routes!(reset::verify)))
+        .routes(s.route(Access::Public, routes!(reset::lookup)))
         .routes(s.route(Access::Public, routes!(oidc::start, oidc::start_link)))
         .routes(s.route(Access::Public, routes!(oidc::callback)))
         .routes(s.route(Access::Public, routes!(invites::lookup)))

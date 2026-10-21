@@ -74,7 +74,7 @@
   "shell.routeError.noAccessTitle": "Kein Zugriff auf diese Seite",
   "shell.routeError.start": "Zur Startseite",
   "shell.routeError.title": "Diese Seite konnte nicht geladen werden",
-  "shell.routeError.unexpected": "Unerwarteter Fehler auf dieser Seite; bitte neu laden",
+  "shell.routeError.unexpected": "Unerwarteter Fehler auf dieser Seite; bitte neu laden.",
   "shell.searchSettings": "Einstellungen suchen",
   "shell.settings.appearance": "Darstellung",
   "shell.settings.general": "Allgemein",

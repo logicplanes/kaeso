@@ -125,15 +125,71 @@ describe("signing in with a password", () => {
     expect(window.location.host).toBe("localhost:3000");
   });
 
-  it("shows the gateway's refusal and selects the password to retype it", async () => {
+  it("shows the gateway's refusal under the password and selects it to retype", async () => {
     const { user } = await atMethods("/sign-in");
     on("POST", "auth/password", apiError(401, "authentication", "That email and password don't match."));
     const field = screen.getByLabelText("Password");
     await user.type(field, "wrong one");
     await user.keyboard("{Enter}");
-    expect(await (await notifications()).findByText("That email and password don't match.")).toBeInTheDocument();
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(field).toHaveAccessibleDescription("That email and password don't match.");
+    expect(screen.getByText("That email and password don't match.")).toBeVisible();
+    expect(within(await screen.findByRole("region", { name: "Notifications" })).queryByText("That email and password don't match.")).not.toBeInTheDocument();
     await waitFor(() => expect(field).toHaveFocus());
     expect(window.location.pathname).toBe("/sign-in");
+    await user.type(field, "x");
+    expect(field).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText("That email and password don't match.")).not.toBeInTheDocument();
+  });
+
+  it("keeps a failure that isn't about the password in a notification", async () => {
+    const { user } = await atMethods("/sign-in");
+    on("POST", "auth/password", apiError(503, "unavailable", "The gateway is starting; try again in a moment."));
+    const field = screen.getByLabelText("Password");
+    await user.type(field, "correct horse battery{Enter}");
+    expect(await (await notifications()).findByText("The gateway is starting; try again in a moment.")).toBeInTheDocument();
+    expect(field).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("carries the address into the password reset", async () => {
+    const { user } = await atMethods("/sign-in");
+    await user.click(screen.getByRole("link", { name: "Forgot your password?" }));
+    expect(await screen.findByRole("heading", { name: "Reset your password", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
+  });
+
+  it("underlines every link on the page alike", async () => {
+    await atMethods("/sign-in", methods({ sign_up: true }));
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeGreaterThan(2);
+    for (const link of links) expect(link).toHaveClass("underline");
+  });
+});
+
+describe("a signed-in visit", () => {
+  it("opens the page it was asked for instead of the form", async () => {
+    signedIn();
+    await renderApp("/sign-in?next=/settings/account/appearance");
+    await waitFor(() => expect(window.location.pathname).toBe("/settings/account/appearance"));
+    expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
+  });
+
+  it("asks the gateway again rather than trusting a session it read moments ago", async () => {
+    signedIn();
+    const { router } = await renderApp(`/orgs/${ORG}/projects`);
+    await screen.findByRole("navigation", { name: "Console" });
+    signedOut();
+    on("GET", "auth/methods", methods());
+    await router.navigate({ to: "/sign-in" });
+    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/sign-in");
+  });
+
+  it("opens the console without a next page, and never another site", async () => {
+    signedIn();
+    await renderApp("/sign-in?next=//elsewhere.test/steal");
+    await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
+    expect(window.location.host).toBe("localhost:3000");
   });
 });
 

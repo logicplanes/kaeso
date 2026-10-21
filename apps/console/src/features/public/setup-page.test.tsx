@@ -32,16 +32,18 @@ describe("setting up Kaeso", () => {
 
   it("guides the password and creates the first user and organization", async () => {
     const { user } = await renderApp("/setup#token=stp_1");
-    expect(await screen.findByText("12 to 128 characters. A few unrelated words are easy to remember and hard to guess.")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Password")).toHaveAccessibleDescription(
+      "12 to 128 characters. A few unrelated words are easy to remember and hard to guess.",
+    );
     const submit = screen.getByRole("button", { name: "Set up Kaeso" });
     expect(submit).toBeDisabled();
     await user.type(screen.getByLabelText("Password"), "short");
-    expect(screen.getByText("7 more characters to go.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("7 more characters to go.");
     await user.type(screen.getByLabelText("Password"), "1234567");
-    expect(screen.getByText("Long enough.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("Long enough.");
     await user.clear(screen.getByLabelText("Password"));
     await user.type(screen.getByLabelText("Password"), "x".repeat(11));
-    expect(screen.getByText("1 more character to go.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("1 more character to go.");
     await user.clear(screen.getByLabelText("Password"));
     await fill(user);
     on("POST", "auth/setup", () => {
@@ -97,7 +99,7 @@ describe("setting up Kaeso", () => {
     const field = screen.getByLabelText("Password");
     field.focus();
     await user.paste("x".repeat(129));
-    expect(screen.getByText("At most 128 characters.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("At most 128 characters.");
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Ada{Enter}");
     expect(requests("POST", "auth/setup")).toHaveLength(0);
   });
@@ -115,14 +117,32 @@ describe("setting up Kaeso", () => {
     expect(screen.getByRole("button", { name: "Set up Kaeso" })).toBeEnabled();
   });
 
-  it("explains a used setup link", async () => {
-    on("POST", "auth/setup", apiError(409, "conflict", "Kaeso is already set up."));
+  it("says Kaeso is set up when someone else set it up first", async () => {
+    on("POST", "auth/setup", apiError(409, "conflict", "Kaeso is already set up; sign in instead."));
     const { user } = await renderApp("/setup#token=stp_1");
     await fill(user);
     await user.click(screen.getByRole("button", { name: "Set up Kaeso" }));
-    expect(await screen.findByText("This setup link can't be used")).toBeInTheDocument();
-    expect((await (await notifications()).findAllByText("Kaeso is already set up.")).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { name: "Kaeso is set up", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
     expect(screen.queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+  });
+
+  it("says Kaeso is set up and links to sign in, with or without a setup link", async () => {
+    on("GET", "auth/methods", methods({ set_up: true }));
+    await renderApp("/setup");
+    expect(await screen.findByRole("heading", { name: "Kaeso is set up", level: 1 })).toBeInTheDocument();
+    expect(screen.getByText("Sign in with your account; a setup link works only until the first user exists.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
+    expect(screen.queryByText("This page needs the setup link")).not.toBeInTheDocument();
+  });
+
+  it("opens the form when the setup link arrives in a tab that already shows the page", async () => {
+    await renderApp("/setup");
+    expect(await screen.findByText("This page needs the setup link")).toBeInTheDocument();
+    window.history.pushState(null, "", "/setup#token=stp_2");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    expect(await screen.findByRole("textbox", { name: "Name" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("");
   });
 
   it("explains a wrong setup token", async () => {

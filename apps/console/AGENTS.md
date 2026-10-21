@@ -78,13 +78,13 @@ pnpm --filter kaeso-console e2e
 
 A description is one short sentence that fits on one line. Drop detail before letting it wrap; detail a person needs goes where they need it: the dialog the row opens, the field's placeholder, or the toast when something is refused. No second sentence: join two clauses with a semicolon or cut one.
 
-| Where                                                                         | Limit                                               |
-| ----------------------------------------------------------------------------- | --------------------------------------------------- |
-| `SettingsRow` description                                                     | 60 characters; 50 when the control holds an `Input` |
-| `SettingsSection`, `SettingsPage`, `OrgPage`, `AppFrame.Settings` description | 80 characters; 70 when the header has `actions`     |
-| `Dialog`/`AlertDialog` and dialog step descriptions                           | 100 characters, one sentence where possible         |
-| `Empty` description                                                           | 90 characters, one sentence                         |
-| Toast                                                                         | 60 characters, one sentence                         |
+| Where                                                                         | Limit                                                |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `SettingsRow` description                                                     | 60 characters; 50 when the control holds an `Input`  |
+| `SettingsSection`, `SettingsPage`, `OrgPage`, `AppFrame.Settings` description | 80 characters; 70 when the header has `actions`      |
+| `Dialog`/`AlertDialog` and dialog step descriptions                           | 100 characters, one sentence where possible          |
+| `Empty` description                                                           | 90 characters, one sentence                          |
+| Toast                                                                         | 60 characters, one sentence; a period only on errors |
 
 Measured, not guessed: descriptions are Inter at 13px (`text-small`) in rows and sections and 15px (`text-body-lg`) under a page title, about 6.1px a character on average and 6.9px at most (7.3px at 15px). The settings column is 760px less 24px padding; a row's text gets 672px less its 20px padding, 16px gap and control. 60 characters (415px at most) fit beside any control up to 240px; an input with its Save button takes 305px, leaving room for 50. A header description has the column's 712px, less an action. Dialog and empty-state descriptions may take two lines of their narrower column; toasts stay on one. Each `${…}` in a template counts as 12 characters.
 

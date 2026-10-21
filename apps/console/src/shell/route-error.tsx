@@ -13,7 +13,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
   useEffect(() => {
     if (isApiError(error)) {
       if (error.type !== "not_found" && error.type !== "permission_denied") toastApiError(error, { id: `load:${error.type}:${error.message}` });
-    } else toast.error(t("shell.routeError.unexpected", "This page hit an unexpected error; reload to try again"), { id: "route-error" });
+    } else toast.error(t("shell.routeError.unexpected", "This page hit an unexpected error; reload to try again."), { id: "route-error" });
   }, [error]);
   const retry = async () => {
     await queryClient.invalidateQueries({ predicate: (query) => query.state.status === "error" });

@@ -22,6 +22,29 @@ describe("requesting a password reset", () => {
     expect(requests("POST", "auth/password-reset").map((r) => r.body)).toEqual([{ email: "ada@example.com" }]);
   });
 
+  it("starts from the address typed on the sign-in page", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods());
+    on("POST", "auth/methods", methods());
+    const { user } = await renderApp("/sign-in");
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@example.com{Enter}");
+    await user.click(await screen.findByRole("link", { name: "Forgot your password?" }));
+    expect(await screen.findByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
+    expect(screen.getByRole("button", { name: "Email me a link" })).toBeEnabled();
+  });
+
+  it("sets the new password when the link from the email opens in the same tab", async () => {
+    on("POST", "auth/password-reset", emailSent("Sent."));
+    const { user } = await renderApp("/auth/password-reset");
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@example.com{Enter}");
+    expect(await screen.findByText("Check your email")).toBeInTheDocument();
+    window.history.pushState(null, "", "/auth/password-reset#token=rst_2");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    expect(await screen.findByRole("heading", { name: "Set a new password", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByText("Check your email")).not.toBeInTheDocument();
+    expect(window.location.hash).toBe("");
+  });
+
   it("shows the refusal", async () => {
     on("POST", "auth/password-reset", apiError(429, "rate_limited", "Too many reset requests; try again in a few minutes."));
     const { user } = await renderApp("/auth/password-reset");
@@ -48,6 +71,27 @@ describe("setting a new password", () => {
     expect(await (await notifications()).findByText("Password changed; sign in with the new one")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/sign-in");
     expect(requests("POST", "auth/password-reset/verify").map((r) => r.body)).toEqual([{ token: "rst_1", password: "too short but now long" }]);
+  });
+
+  it("names the account for password managers and keeps the hint's height as the password grows", async () => {
+    on("POST", "auth/password-reset/lookup", { email: "ada@example.com", expires_at: "2026-10-20T12:15:00Z" });
+    const { user } = await renderApp("/auth/password-reset#token=rst_1");
+    const field = await screen.findByLabelText("New password");
+    await waitFor(() => expect(document.querySelector('input[autocomplete="username"]')).toHaveValue("ada@example.com"));
+    expect(requests("POST", "auth/password-reset/lookup").map((r) => r.body)).toEqual([{ token: "rst_1" }]);
+    expect(field).toHaveAttribute("autocomplete", "new-password");
+    await user.type(field, "short");
+    expect(field).toHaveAccessibleDescription("7 more characters to go.");
+    const rule = screen.getByText("12 to 128 characters. A few unrelated words are easy to remember and hard to guess.");
+    expect(rule).toHaveAttribute("aria-hidden");
+    expect(rule.parentElement).toContainElement(screen.getByText("7 more characters to go."));
+  });
+
+  it("says a used link has expired before anyone types a password", async () => {
+    on("POST", "auth/password-reset/lookup", apiError(401, "authentication", "This reset link is invalid, used or expired; request a new one."));
+    await renderApp("/auth/password-reset#token=rst_1");
+    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
   });
 
   it("offers a new link when the reset link has expired", async () => {

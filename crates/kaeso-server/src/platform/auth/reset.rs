@@ -96,6 +96,64 @@ pub async fn request(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[schema(description = "The token from a reset link.")]
+pub struct ResetLookupRequest {
+    #[doc = "The token from `…/auth/password-reset#token=…`."]
+    #[schema(value_type = String, write_only)]
+    pub token: SecretString,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "The account whose password a reset link sets.")]
+pub struct ResetAccount {
+    #[doc = "The account's email address."]
+    #[schema(example = "owner@example.com")]
+    pub email: String,
+    #[doc = "When the link expires."]
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: time::OffsetDateTime,
+}
+
+fn invalid_link() -> ApiError {
+    ApiError::Authentication(
+        "This reset link is invalid, used or expired; request a new one.".into(),
+    )
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/password-reset/lookup",
+    summary = "Names the account a reset link sets the password of, without using the\n\
+    link, so the console can show the address and offer it to password managers.",
+    tag = "auth",
+    request_body = ResetLookupRequest,
+    responses((status = 200, body = ResetAccount))
+)]
+pub async fn lookup(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<ResetLookupRequest>,
+) -> ApiResult<Json<ResetAccount>> {
+    passwords_on(&state)?;
+    throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
+    let hash = secret::hash(req.token.expose_secret());
+    let token = tokens::peek(&state.pg, TokenKind::PasswordReset, &hash, ctx.now)
+        .await?
+        .ok_or_else(invalid_link)?;
+    let user = match token.user_id {
+        Some(id) => users::get(&state.pg, id)
+            .await?
+            .filter(|u| u.state == "active"),
+        None => None,
+    };
+    let email = user.and_then(|u| u.email).ok_or_else(invalid_link)?;
+    Ok(Json(ResetAccount {
+        email,
+        expires_at: token.expires_at,
+    }))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "The token and the new password.")]
 pub struct ResetVerifyRequest {
     #[doc = "The token from `…/auth/password-reset#token=…`."]
@@ -135,11 +193,7 @@ pub async fn verify(
     let mut tx = state.pg.begin().await?;
     let token = tokens::consume(&mut *tx, TokenKind::PasswordReset, &hash, ctx.now)
         .await?
-        .ok_or_else(|| {
-            ApiError::Authentication(
-                "This reset link is invalid, used or expired; request a new one.".into(),
-            )
-        })?;
+        .ok_or_else(invalid_link)?;
     let user_id = token
         .user_id
         .map(UserId::from_uuid)

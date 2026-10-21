@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use kaeso_core::id::OrgId;
-use kaeso_store::pg::{instance, oidc, orgs};
+use kaeso_store::pg::{instance, oidc, orgs, users};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
@@ -36,6 +36,9 @@ pub struct SignInMethodsView {
         sign-in method, so the page needs no address; otherwise `null`. With an\n\
         address: the one of its domain."]
     pub provider: Option<SsoProviderView>,
+    #[doc = "The install is set up: its first user exists, so a setup link no longer\n\
+        works and people sign in instead."]
+    pub set_up: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -77,7 +80,7 @@ pub struct MethodsRequest {
     pub email: String,
 }
 
-fn install(state: &AppState, sign_up: bool) -> SignInMethodsView {
+fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
     let a = &state.config.auth;
     SignInMethodsView {
         password: a.password,
@@ -86,6 +89,7 @@ fn install(state: &AppState, sign_up: bool) -> SignInMethodsView {
         sso_required: false,
         sign_up,
         provider: None,
+        set_up,
     }
 }
 
@@ -124,7 +128,8 @@ pub async fn get(
     Query(q): Query<MethodsQuery>,
 ) -> ApiResult<Json<SignInMethodsView>> {
     let policy = accounts::policy(&instance::get(&state.pg).await?);
-    let mut methods = install(&state, policy.sign_up_open());
+    let set_up = users::any_exist(&state.pg).await?;
+    let mut methods = install(&state, policy.sign_up_open(), set_up);
     methods.provider = offered(&state, q.org).await?;
     Ok(Json(methods))
 }
@@ -148,7 +153,8 @@ pub async fn lookup(
     let email = kaeso_core::email::normalize(&req.email)
         .map_err(|e| ApiError::invalid("email", format!("{e}.")))?;
     let policy = accounts::policy(&instance::get(&state.pg).await?);
-    let mut methods = install(&state, policy.may_sign_up(&email));
+    let set_up = users::any_exist(&state.pg).await?;
+    let mut methods = install(&state, policy.may_sign_up(&email), set_up);
     let org = if methods.sso {
         oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email)).await?
     } else {

@@ -20,10 +20,30 @@ async fn sign_in(app: &App, email: &str, password: &str) -> common::Resp {
     .await
 }
 
+async fn says_set_up(app: &App, set_up: bool) {
+    let page = app.call(Method::GET, "/auth/methods", None, None).await;
+    assert_eq!(
+        page.body.get("set_up"),
+        Some(&json!(set_up)),
+        "{:?}",
+        page.body
+    );
+    let address = app
+        .post("/auth/methods", json!({ "email": "ada@example.com" }), None)
+        .await;
+    assert_eq!(
+        address.body.get("set_up"),
+        Some(&json!(set_up)),
+        "{:?}",
+        address.body
+    );
+}
+
 #[tokio::test]
 async fn setup_creates_the_first_admin_owner_and_works_once() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
+    says_set_up(&app, false).await;
     let url = kaeso_server::setup::issue_link(&app.state)
         .await
         .unwrap()
@@ -67,6 +87,7 @@ async fn setup_creates_the_first_admin_owner_and_works_once() {
 
     let again = app.post("/auth/setup", body, None).await;
     assert_eq!(again.status, StatusCode::CONFLICT);
+    says_set_up(&app, true).await;
     assert!(
         kaeso_server::setup::issue_link(&app.state)
             .await
@@ -567,6 +588,64 @@ async fn a_password_reset_retires_the_links_sent_before_it() {
         )
         .await;
     assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_reset_link_names_its_account_without_being_used() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    app.post(
+        "/auth/password-reset",
+        json!({ "email": "owner@example.com" }),
+        None,
+    )
+    .await;
+    app.wait_for_mail("owner@example.com", 1).await;
+    let token = app.last_token("owner@example.com");
+    for _ in 0..2 {
+        let named = app
+            .post(
+                "/auth/password-reset/lookup",
+                json!({ "token": token }),
+                None,
+            )
+            .await;
+        assert_eq!(named.status, StatusCode::OK, "{:?}", named.body);
+        assert_eq!(named.body["email"], "owner@example.com");
+        assert!(named.body["expires_at"].is_string());
+    }
+    let wrong = app
+        .post(
+            "/auth/password-reset/lookup",
+            json!({ "token": "not-a-token" }),
+            None,
+        )
+        .await;
+    assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    let done = app
+        .post(
+            "/auth/password-reset/verify",
+            json!({ "token": token, "password": "a brand new passphrase" }),
+            None,
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{:?}", done.body);
+    let used = app
+        .post(
+            "/auth/password-reset/lookup",
+            json!({ "token": token }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (used.status, used.body["error"]["message"].as_str()),
+        (
+            StatusCode::UNAUTHORIZED,
+            Some("This reset link is invalid, used or expired; request a new one.")
+        )
+    );
     s.cleanup().await;
 }
 

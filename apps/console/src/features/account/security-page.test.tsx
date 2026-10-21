@@ -27,7 +27,9 @@ describe("password", () => {
     const save = within(dialog).getByRole("button", { name: "Change password" });
     expect(save).toBeDisabled();
     await user.type(within(dialog).getByLabelText("New password"), "correct horse battery");
-    expect(within(dialog).getByText("Long enough.")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("New password")).toHaveAccessibleDescription("Long enough.");
+    expect(dialog.querySelector('input[autocomplete="username"]')).toHaveValue(me().email);
+    expect(within(dialog).getByLabelText("New password")).not.toHaveAttribute("data-1p-ignore");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(requests("POST", "me/password")).toHaveLength(0);
     await user.type(within(dialog).getByLabelText("Current password"), "old password");

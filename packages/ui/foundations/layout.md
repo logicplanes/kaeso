@@ -29,7 +29,7 @@ The same holds at the right edge: the last box ends on the gutter, the last colu
 - **Text in running text.** A link or an inline copyable value inside a sentence keeps its 2 to 4px of hit padding around the text. It is part of the line, not a box.
 - **Controls inside a box on the gutter.** Inside a box that already sits on the gutter, such as a table's header cell, a settings group's header or a banner, a control may use that box's own padding and keep its label on the box's text line: a column's sort button keeps its label on the column's edge.
 - **Pane dividers.** Hairlines that split the panel into panes, such as the playground's columns, run from edge to edge; each pane keeps the 24px gutter inside it.
-- **The wordmark** sits 28px in and 28px down in the sidebar and on sign-in screens, on the sidebar's content line. On the phone bar it sits on the page's 24px gutter, like everything under it.
+- **The wordmark** sits 28px in and 28px down in the sidebar and on sign-in screens, on the sidebar's content line. On the phone bar it sits on the page's 24px gutter, and on a sign-in screen narrower than 640px on the form's 16px gutter, like everything under it.
 
 ## Vertical rhythm
 

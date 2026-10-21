@@ -106,7 +106,7 @@
   "account.setAPassword": "Set a password",
   "account.setPassword": "Set password",
   "account.setUp": "Set up",
-  "account.setupHint": "Add Kaeso to an authenticator app, then enter the six-digit code it shows.",
+  "account.setupHint": "Add Kaeso to an authenticator app, then enter the 6-digit code it shows.",
   "account.setupKey": "Setup key",
   "account.setupTitle": "Set up two-factor authentication",
   "account.signOutEverywhere": "Sign out everywhere",

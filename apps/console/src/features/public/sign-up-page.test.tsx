@@ -67,7 +67,7 @@ describe("finishing an account", () => {
     const { user } = await renderApp("/auth/signup#token=sgn_1");
     expect(await screen.findByText("Choose the name people see; a password is optional.")).toBeInTheDocument();
     expect(window.location.hash).toBe("");
-    expect(screen.getByText("Leave empty to sign in with a link by email.")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Password/)).toHaveAccessibleDescription("Leave empty to sign in with a link by email.");
     const create = screen.getByRole("button", { name: "Create account" });
     expect(create).toBeDisabled();
     await user.type(screen.getByRole("textbox", { name: "Name" }), " Grace Hopper ");

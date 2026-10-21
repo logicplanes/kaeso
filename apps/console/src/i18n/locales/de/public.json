@@ -2,6 +2,8 @@
   "public.acceptInvitation": "Einladung annehmen",
   "public.acceptToJoin": "{target, select, role {Annehmen, um {org} als {role} beizutreten.} org {Annehmen, um {org} beizutreten.} other {Annehmen, um dieser Kaeso-Instanz beizutreten.}}",
   "public.accountExists": "{target, select, role {Für {email} gibt es bereits ein Konto. Anmelden, um die Einladung anzunehmen und {org} als {role} beizutreten.} org {Für {email} gibt es bereits ein Konto. Anmelden, um die Einladung anzunehmen und {org} beizutreten.} other {Für {email} gibt es bereits ein Konto. Anmelden, um die Einladung anzunehmen und dieser Kaeso-Instanz beizutreten.}}",
+  "public.alreadySetUp": "Kaeso ist eingerichtet",
+  "public.alreadySetUpHint": "Melden Sie sich mit Ihrem Konto an; ein Einrichtungslink funktioniert nur, bis es den ersten Benutzer gibt.",
   "public.alreadySignedInAs": "Sie sind schon als {email} angemeldet; der Link meldet Sie hier erneut an.",
   "public.backToSignIn": "Zurück zur Anmeldung",
   "public.byInvitation": "Konten gibt es hier nur auf Einladung",

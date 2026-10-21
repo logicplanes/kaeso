@@ -101,7 +101,7 @@ test("a new member joins as Member and sees what a Viewer may not do, with who c
   const noor = await context.newPage();
   await noor.goto(link);
   await noor.getByLabel("Name").fill(NOOR.name);
-  await noor.getByLabel("Password").fill(NEW_PASSWORD);
+  await noor.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
   await noor.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(noor);
   await noor.goto(`/orgs/${org}`);

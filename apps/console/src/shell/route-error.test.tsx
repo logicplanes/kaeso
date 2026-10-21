@@ -49,6 +49,6 @@ describe("a page that fails to load", () => {
     );
     await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByRole("heading", { name: "Couldn't load this page", level: 1 })).toBeInTheDocument();
-    await waitFor(() => expect(notifications().getAllByText("This page hit an unexpected error; reload to try again").length).toBeGreaterThan(0));
+    await waitFor(() => expect(notifications().getAllByText("This page hit an unexpected error; reload to try again.").length).toBeGreaterThan(0));
   });
 });

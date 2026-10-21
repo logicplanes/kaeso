@@ -46,7 +46,7 @@ export function SecurityPage() {
         <SettingsLoading rows={2} />
       ) : (
         <>
-          <PasswordSection hasPassword={m.has_password} />
+          <PasswordSection hasPassword={m.has_password} email={m.email} />
           <TwoFactorSection enabled={m.totp_enabled} codesLeft={m.recovery_codes_left} />
           <SingleSignOnSection />
         </>
@@ -55,7 +55,7 @@ export function SecurityPage() {
   );
 }
 
-function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
+function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: string | null | undefined }) {
   const [open, setOpen] = useState(false);
   return (
     <SettingsSection title={t("account.password", "Password")}>
@@ -75,13 +75,23 @@ function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
         />
       </SettingsGroup>
       <DialogScope open={open}>
-        <PasswordDialog hasPassword={hasPassword} open={open} onOpenChange={setOpen} />
+        <PasswordDialog hasPassword={hasPassword} email={email} open={open} onOpenChange={setOpen} />
       </DialogScope>
     </SettingsSection>
   );
 }
 
-function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassword: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
+function PasswordDialog({
+  hasPassword,
+  email,
+  open,
+  onOpenChange: setOpen,
+}: {
+  hasPassword: boolean;
+  email: string | null | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const save = useApiMutation({
@@ -118,8 +128,10 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
       }
     >
       <div className="flex flex-col gap-16">
+        {email && <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />}
         {hasPassword && (
           <SensitiveInput
+            kind="password"
             label={t("account.currentPassword", "Current password")}
             autoComplete="current-password"
             value={current}
@@ -129,6 +141,7 @@ function PasswordDialog({ hasPassword, open, onOpenChange: setOpen }: { hasPassw
           />
         )}
         <SensitiveInput
+          kind="password"
           label={t("account.newPassword", "New password")}
           autoComplete="new-password"
           description={passwordHint(next)}
@@ -363,7 +376,7 @@ function TwoFactorDialog({
       onOpenChange={(o) => !o && onClose()}
       size="md"
       title={t("account.setupTitle", "Set up two-factor authentication")}
-      description={t("account.setupHint", "Add Kaeso to an authenticator app, then enter the six-digit code it shows.")}
+      description={t("account.setupHint", "Add Kaeso to an authenticator app, then enter the 6-digit code it shows.")}
       onSubmit={() => code.length === 6 && turnOn(code)}
       footer={
         <>

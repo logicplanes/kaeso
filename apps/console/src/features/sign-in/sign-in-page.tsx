@@ -5,8 +5,10 @@ import { Button, Input } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { toast } from "~/shell/toast";
 import { toastApiError } from "~/api/toast-error";
+import { isApiError, type ApiError } from "~/api/errors";
 import { sendMagicLink, signInMethodsFor, signInWithPassword, signInWithTotp, startSso, type SignInMethods } from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
+import { handResetAddress } from "~/features/public/reset-address";
 import { safeNext } from "~/auth/next";
 import { t } from "~/i18n";
 import type { Busy } from "./sign-in-steps";
@@ -24,6 +26,8 @@ type Step =
   | { kind: "methods"; methods: SignInMethods }
   | { kind: "totp"; challenge: string; expiresAt: string; recovery: boolean }
   | { kind: "link-sent"; message: string };
+
+const refusedPassword = (e: unknown): e is ApiError => isApiError(e) && !e.unreachable && e.type !== "internal";
 
 const onlySso = (m: SignInMethods) => m.sso && !m.password && !m.magic_link && !m.sign_up;
 
@@ -56,6 +60,7 @@ export function SignInPage({
   }, [SignUp]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [step, setStep] = useState<Step>({ kind: "email" });
   const [withEmailInstead, setWithEmailInstead] = useState(false);
@@ -89,7 +94,8 @@ export function SignInPage({
     } catch (e) {
       if (what === "code") setCode("");
       if (what === "password") passwordFailed.current = true;
-      toastApiError(e);
+      if (what === "password" && refusedPassword(e)) setPasswordError(e.message);
+      else toastApiError(e);
     } finally {
       setBusy(null);
     }
@@ -129,6 +135,7 @@ export function SignInPage({
   const otherEmail = () => {
     setEmail(address);
     setPassword("");
+    setPasswordError(null);
     setStep({ kind: "email" });
   };
   const alone = provider && !withEmailInstead && step.kind === "email" ? provider : null;
@@ -172,13 +179,15 @@ export function SignInPage({
         address={address}
         methods={step.methods}
         password={password}
-        onPasswordChange={setPassword}
+        passwordError={passwordError ?? undefined}
+        onPasswordChange={(value) => (setPassword(value), setPasswordError(null))}
         busy={busy}
         onPassword={() => void withPassword()}
         onSso={() => void withSso()}
         onLink={() => void withLink()}
         onSignUp={() => void withSignUp()}
         onOtherEmail={otherEmail}
+        onForgotPassword={() => (handResetAddress(address), void navigate({ to: "/auth/password-reset" }))}
       />
     );
   }
