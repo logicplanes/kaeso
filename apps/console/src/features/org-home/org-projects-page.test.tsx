@@ -91,7 +91,7 @@ describe("organization projects", () => {
     await user.click(screen.getByRole("tab", { name: "All" }));
     const old = await within(await list()).findByRole("gridcell", { name: /Old pilot/ });
     expect(old).toHaveTextContent("Archived");
-    expect(old).toHaveTextContent("Archived 1 Sept 2026");
+    expect(old).toHaveTextContent("Archived 1 Sep 2026");
     expect(within(old).queryByRole("button", { name: "Actions for Old pilot" })).not.toBeInTheDocument();
   });
 
