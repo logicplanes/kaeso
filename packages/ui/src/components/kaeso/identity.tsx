@@ -19,49 +19,27 @@ export const KAESO_IDENTITY_VARIANTS = {
 } as const;
 export const KAESO_IDENTITY_DEFAULT_VARIANTS = { provider: "md" } as const;
 
-const PROVIDER_LETTERS: Record<string, string> = {
-  openai: "O",
-  anthropic: "A",
-  google: "G",
-  mistral: "M",
-  groq: "Gq",
-  deepseek: "D",
-  xai: "S",
-  cohere: "C",
-  bedrock: "B",
-  azure: "Az",
-  ollama: "Ol",
-  togetherai: "T",
-  openrouter: "Or",
-};
-const PROVIDER_NAMES: Record<string, string> = {
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  google: "Google",
-  mistral: "Mistral",
-  groq: "Groq",
-  deepseek: "DeepSeek",
-  xai: "SpaceX",
-  cohere: "Cohere",
-  bedrock: "Amazon Bedrock",
-  azure: "Azure OpenAI",
-  ollama: "Ollama",
-  togetherai: "Together AI",
-  openrouter: "OpenRouter",
-};
-export const providerName = (id: string) => PROVIDER_NAMES[id] ?? id;
+export const providerName = (id: string, name?: string | undefined) => name?.trim() || id;
+const providerLetter = (id: string, name?: string | undefined) => (/[\p{L}\p{N}]/u.exec(providerName(id, name))?.[0] ?? id.slice(0, 1)).toLocaleUpperCase();
 
 const MARK_SIZE = { sm: "size-10", md: "size-12", lg: "size-16", xl: "size-24" } as const;
 
 export const ProviderBadge = forwardRef<
   HTMLSpanElement,
-  { provider: string; size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined; withName?: boolean | undefined; className?: string | undefined }
->(function ProviderBadge({ provider, size = "md", withName, className }, ref) {
+  {
+    provider: string;
+    name?: string | undefined;
+    size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined;
+    withName?: boolean | undefined;
+    className?: string | undefined;
+  }
+>(function ProviderBadge({ provider, name, size = "md", withName, className }, ref) {
   const mark = PROVIDER_MARKS[provider];
+  const label = providerName(provider, name);
   const tile = (
     <span
       aria-hidden={withName || undefined}
-      {...(!withName ? { role: "img", "aria-label": providerName(provider) } : {})}
+      {...(!withName ? { role: "img", "aria-label": label } : {})}
       className={cn(
         "inline-flex shrink-0 items-center justify-center bg-fill-1 font-semibold shadow-ring",
         mark ? mark.color : "text-fg-secondary",
@@ -73,7 +51,7 @@ export const ProviderBadge = forwardRef<
           <path d={mark.d} />
         </svg>
       ) : (
-        (PROVIDER_LETTERS[provider] ?? provider.slice(0, 1).toUpperCase())
+        providerLetter(provider, name)
       )}
     </span>
   );
@@ -86,7 +64,7 @@ export const ProviderBadge = forwardRef<
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8 text-body text-fg", className)}>
       {tile}
-      <span className="min-w-0 truncate">{providerName(provider)}</span>
+      <span className="min-w-0 truncate">{label}</span>
     </span>
   );
 });
@@ -114,16 +92,20 @@ const SHORT_ID = 14;
 
 export interface ModelLabelProps {
   provider: string;
+  providerName?: string | undefined;
   model: string;
   name?: string | undefined;
   capabilities?: Capability[] | undefined;
   className?: string | undefined;
 }
 
-export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function ModelLabel({ provider, model, name, capabilities = [], className }, ref) {
+export const ModelLabel = forwardRef<HTMLSpanElement, ModelLabelProps>(function ModelLabel(
+  { provider, providerName: providerDisplayName, model, name, capabilities = [], className },
+  ref,
+) {
   return (
     <span ref={ref} className={cn("inline-flex max-w-full min-w-0 items-center gap-8", className)}>
-      <ProviderBadge provider={provider} />
+      <ProviderBadge provider={provider} name={providerDisplayName} />
       {name ? (
         <>
           <span className="min-w-0 truncate text-body text-fg">{name}</span>
@@ -296,6 +278,7 @@ RequestTimeline.displayName = "RequestTimeline";
 
 export interface ProviderCardProps {
   provider: string;
+  name?: string | undefined;
   connected: boolean;
   status: ReactNode;
   keyLabel?: ReactNode | undefined;
@@ -305,16 +288,17 @@ export interface ProviderCardProps {
 }
 
 export const ProviderCard = forwardRef<HTMLDivElement, ProviderCardProps>(function ProviderCard(
-  { provider, connected, status, keyLabel, detail, actions, className },
+  { provider, name, connected, status, keyLabel, detail, actions, className },
   ref,
 ) {
   const t = useUiText();
+  const label = providerName(provider, name);
   return (
-    <section ref={ref} aria-label={providerName(provider)} className={cn("flex min-w-0 flex-col gap-16 rounded-group bg-raised p-20 shadow-xs", className)}>
+    <section ref={ref} aria-label={label} className={cn("flex min-w-0 flex-col gap-16 rounded-group bg-raised p-20 shadow-xs", className)}>
       <div className="flex min-w-0 items-center gap-12">
-        <ProviderBadge provider={provider} size="xl" />
+        <ProviderBadge provider={provider} name={name} size="xl" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h3 className="truncate text-body-lg font-semibold text-fg">{providerName(provider)}</h3>
+          <h3 className="truncate text-body-lg font-semibold text-fg">{label}</h3>
           <span className="text-small text-fg-secondary text-pretty">{status}</span>
         </div>
         <Badge tone={connected ? "success" : "neutral"}>

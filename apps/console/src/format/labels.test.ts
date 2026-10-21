@@ -14,8 +14,6 @@ import {
   limitKindLabel,
   limitUnit,
   periodLabel,
-  PROVIDER_IDS,
-  providerLabel,
   sessionMethodLabel,
   userStateLabel,
 } from "./labels";
@@ -96,7 +94,6 @@ describe("labels", () => {
 
   it("write a value the console doesn't know yet as words", () => {
     expect(errorKindLabel("upstream_gone_away")).toBe("Upstream gone away");
-    expect(providerLabel("mistral")).toBe("Mistral");
     expect(accessLabel("read_only")).toBe("Read only");
     expect(keyStateLabel("suspended")).toBe("Suspended");
     expect(limitKindLabel("image_budget")).toBe("Image budget");
@@ -111,7 +108,6 @@ describe("labels", () => {
   it("keep product names as they are in every language", async () => {
     await speak("zh-CN");
     expect(DIALECT_IDS.map(dialectLabel)).toEqual(["Anthropic Messages", "OpenAI Chat Completions", "OpenAI Responses", "OpenAI Embeddings"]);
-    expect(PROVIDER_IDS.map(providerLabel)).toEqual(["OpenAI", "Anthropic", "DeepSeek", "SpaceX", "Together AI", "Groq", "OpenRouter", "Mistral"]);
     expect(sessionMethodLabel("oidc")).toBe("SSO");
     expect(limitUnit("spend_budget")).toBe("USD");
   });

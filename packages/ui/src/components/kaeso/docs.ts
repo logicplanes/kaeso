@@ -60,11 +60,14 @@ export const docs = {
       model: "The model id, in mono: after the name, quieter, or alone when there's no name.",
       name: "The display name, first.",
       provider: "The provider id, such as `openai` or `anthropic`.",
+      providerName: "The provider's name from the gateway's provider list, which names its mark for screen readers; the id without it.",
     },
   },
   ProviderBadge: {
-    description: "A provider's mark on a quiet tile, in the provider's own one-colour version for the theme; a letter for providers without one.",
+    description:
+      "A provider's mark on a quiet tile, in the provider's own one-colour version for the theme; for providers without one, the first letter of their name.",
     props: {
+      name: "The provider's name from the gateway's provider list: the badge's accessible name, the text `withName` writes and the source of the letter; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",
       size: "The badge's size.",
       withName: "Writes the provider's name next to its mark.",
@@ -83,6 +86,7 @@ export const docs = {
       connected: "Whether requests can reach the provider.",
       detail: "A line under the provider's name, such as how many keys it has.",
       keyLabel: "The key: its name and last four characters, and when it was last used.",
+      name: "The provider's name from the gateway's provider list, as the card's title; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",
       status: 'Where the key comes from, or what\'s missing: "The organization\'s key", "No key yet".',
     },

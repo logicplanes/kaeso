@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { CommandList, PickerPopover, PickerTrigger, ProviderBadge, providerName, type CommandListGroup } from "@logicplanes/kaeso-ui";
-import { models } from "~/fixtures/kaeso";
+import { CommandList, PickerPopover, PickerTrigger, ProviderBadge, type CommandListGroup } from "@logicplanes/kaeso-ui";
+import { models, providerNames } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
 const groups: CommandListGroup[] = [...new Set(models.map((m) => m.provider))].map((provider) => ({
   id: provider,
-  label: providerName(provider),
-  leading: <ProviderBadge provider={provider} size="sm" />,
+  label: providerNames[provider],
+  leading: <ProviderBadge provider={provider} name={providerNames[provider]} size="sm" />,
   count: models.filter((m) => m.provider === provider).length,
-  items: models.filter((m) => m.provider === provider).map((m) => ({ value: m.model, label: m.name, keywords: [m.model, providerName(provider)] })),
+  items: models
+    .filter((m) => m.provider === provider)
+    .map((m) => ({ value: m.model, label: m.name, keywords: [m.model, providerNames[provider] ?? provider] })),
 }));
 
 const thousands: CommandListGroup[] = Array.from({ length: 40 }, (_, g) => ({

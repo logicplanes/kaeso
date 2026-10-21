@@ -1,12 +1,11 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
+import { providers as providerList, signedIn, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
-import { PROVIDER_IDS, providerLabel } from "~/format/labels";
 
 const LOGS = "orgs/:org/projects/:project/logs";
 const listQueries = () => requests("GET", LOGS).map((r) => Object.fromEntries(r.query));
@@ -223,8 +222,9 @@ describe("LogsPage", () => {
     expect(screen.getByRole("group", { name: "Other providers" })).toContainElement(screen.getByRole("menuitemradio", { name: "Anthropic" }));
     const providers = screen.getAllByRole("menuitemradio");
     expect(providers[0]).toHaveAccessibleName("DeepSeek");
-    const others = PROVIDER_IDS.filter((p) => p !== "deepseek")
-      .map(providerLabel)
+    const others = providerList
+      .filter((p) => p.id !== "deepseek")
+      .map((p) => p.name)
       .sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
     others.forEach((name, i) => expect(providers[i + 1]).toHaveAccessibleName(name));
     await user.keyboard("{Escape}");

@@ -1,6 +1,6 @@
 import { Checkbox, CheckboxGroup, Field, Input, NumberInput, Select, Switch, Text } from "@logicplanes/kaeso-ui";
 import type { Fields } from "~/api/generated/types";
-import { DIALECT_IDS, dialectLabel } from "~/format/labels";
+import { dialectLabel } from "~/format/labels";
 import { t } from "~/i18n";
 
 export interface FieldDraft {
@@ -24,17 +24,7 @@ export interface FieldDraft {
   timeout_seconds: string;
 }
 
-const PROVIDER_DIALECTS: Record<string, string[]> = {
-  openai: ["openai_responses", "openai_chat", "openai_embeddings"],
-  anthropic: ["anthropic_messages"],
-  deepseek: ["openai_chat"],
-  xai: ["openai_responses", "openai_chat"],
-  togetherai: ["openai_chat", "openai_embeddings"],
-  groq: ["openai_chat"],
-  openrouter: ["openai_chat", "openai_embeddings"],
-  mistral: ["openai_chat", "openai_embeddings"],
-};
-export const providerDialects = (provider: string) => PROVIDER_DIALECTS[provider] ?? DIALECT_IDS;
+const adaptiveThinking = (dialects: readonly string[]) => dialects.includes("anthropic_messages");
 
 const INPUTS = ["text", "image", "pdf", "audio", "video"];
 const OUTPUTS = ["text", "image", "audio", "embedding"];
@@ -65,7 +55,7 @@ export function draftFrom(f: Fields): FieldDraft {
   };
 }
 
-function fieldsOf(d: FieldDraft, provider: string): Fields {
+function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
   const int = (v: string) => (v.trim() === "" ? null : Number(v));
   const text = (v: string) => (v.trim() === "" ? null : v.trim());
   return {
@@ -83,7 +73,7 @@ function fieldsOf(d: FieldDraft, provider: string): Fields {
     reasoning: d.reasoning,
     structured_output: d.structured_output,
     temperature: d.temperature,
-    adaptive_thinking: provider === "anthropic" ? d.adaptive_thinking : null,
+    adaptive_thinking: adaptiveThinking(dialects) ? d.adaptive_thinking : null,
     forced_tool_choice: d.forced_tool_choice,
     efforts: d.efforts,
     timeout_seconds: int(d.timeout_seconds),
@@ -108,8 +98,8 @@ function sameValue(key: string, v: unknown, b: unknown): boolean {
   return same(v, b);
 }
 
-export function changedFields(d: FieldDraft, base: Fields, provider: string): Partial<Fields> {
-  const next = fieldsOf(d, provider);
+export function changedFields(d: FieldDraft, base: Fields, dialects: readonly string[]): Partial<Fields> {
+  const next = fieldsOf(d, dialects);
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(next)) {
     if (!sameValue(k, v, base[k as keyof Fields])) out[k] = v;
@@ -117,9 +107,9 @@ export function changedFields(d: FieldDraft, base: Fields, provider: string): Pa
   return out as Partial<Fields>;
 }
 
-export function allFields(d: FieldDraft, provider: string): Partial<Fields> {
+export function allFields(d: FieldDraft, dialects: readonly string[]): Partial<Fields> {
   const unset = (k: string, v: unknown) => v === null || (Array.isArray(v) && v.length === 0) || (ACCEPTED_UNLESS_FALSE.has(k) && v === true);
-  return Object.fromEntries(Object.entries(fieldsOf(d, provider)).filter(([k, v]) => !unset(k, v))) as Partial<Fields>;
+  return Object.fromEntries(Object.entries(fieldsOf(d, dialects)).filter(([k, v]) => !unset(k, v))) as Partial<Fields>;
 }
 
 export function draftProblem(d: FieldDraft, custom: boolean): string | null {
@@ -137,7 +127,7 @@ export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   return null;
 }
 
-export function ModelForm({ value, onChange, provider }: { value: FieldDraft; onChange: (d: FieldDraft) => void; provider: string }) {
+export function ModelForm({ value, onChange, dialects }: { value: FieldDraft; onChange: (d: FieldDraft) => void; dialects: readonly string[] }) {
   const set = (patch: Partial<FieldDraft>) => onChange({ ...value, ...patch });
   const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price", label: string) => (
     <NumberInput
@@ -205,7 +195,7 @@ export function ModelForm({ value, onChange, provider }: { value: FieldDraft; on
         placeholder={t("models.chooseFormat", "Choose a format")}
         value={value.egress_dialect || null}
         onValueChange={(v) => set({ egress_dialect: v })}
-        options={providerDialects(provider).map((d) => ({ value: d, label: dialectLabel(d) }))}
+        options={dialects.map((d) => ({ value: d, label: dialectLabel(d) }))}
       />
       <div className="flex flex-col gap-12">
         <Switch label={t("models.cap.tools", "Tool calling")} checked={value.tool_call} onCheckedChange={(tool_call) => set({ tool_call })} />
@@ -220,7 +210,7 @@ export function ModelForm({ value, onChange, provider }: { value: FieldDraft; on
           checked={value.temperature}
           onCheckedChange={(temperature) => set({ temperature })}
         />
-        {provider === "anthropic" && (
+        {adaptiveThinking(dialects) && (
           <Switch
             label={t("models.field.adaptiveThinking", "Adaptive thinking")}
             checked={value.adaptive_thinking}

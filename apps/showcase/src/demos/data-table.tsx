@@ -16,7 +16,7 @@ import {
   icons,
   type ColumnDef,
 } from "@logicplanes/kaeso-ui";
-import { keys, makeLogs, members, models, NOW, type KeyRow, type LogRow, type ModelRow } from "~/fixtures/kaeso";
+import { keys, makeLogs, members, models, NOW, providerNames, type KeyRow, type LogRow, type ModelRow } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
 const logs = makeLogs(200);
@@ -30,7 +30,7 @@ const columns: ColumnDef<LogRow, any>[] = [
   col.custom(
     { id: "model", header: "Model", size: 240, priority: 1, grow: true },
     (r) => r.model,
-    (v, r) => <ModelLabel provider={r.provider} model={v} />,
+    (v, r) => <ModelLabel provider={r.provider} providerName={providerNames[r.provider]} model={v} />,
   ),
   col.text({ id: "key", header: "Key", size: 140, priority: 3 }, (r) => r.key),
   col.mono({ id: "endpoint", header: "Endpoint", size: 180, priority: 4 }, (r) => r.endpoint),
@@ -101,7 +101,7 @@ const phoneColumns: ColumnDef<LogRow, any>[] = [
   col.custom(
     { id: "model", header: "Model", size: 240, priority: 1, grow: true },
     (r) => r.model,
-    (v, r) => <ModelLabel provider={r.provider} model={v} />,
+    (v, r) => <ModelLabel provider={r.provider} providerName={providerNames[r.provider]} model={v} />,
   ),
   col.text({ id: "key", header: "Key", size: 140, priority: 3 }, (r) => r.key),
   col.duration({ id: "latency", header: "Latency", size: 104, priority: 2 }, (r) => r.latencyMs),
@@ -121,7 +121,7 @@ const modelColumns: ColumnDef<ModelRow, any>[] = [
   col.custom(
     { id: "model", header: "Model", size: 320, priority: 1, grow: true },
     (m) => m.model,
-    (v, m) => <ModelLabel provider={m.provider} model={v} name={m.name} />,
+    (v, m) => <ModelLabel provider={m.provider} providerName={providerNames[m.provider]} model={v} name={m.name} />,
   ),
   col.money({ id: "input", header: "Input / 1M", size: 112, priority: 2 }, (m) => m.input, { decimals: 2 }),
   col.money({ id: "output", header: "Output / 1M", size: 112, priority: 2 }, (m) => m.output, { decimals: 2 }),

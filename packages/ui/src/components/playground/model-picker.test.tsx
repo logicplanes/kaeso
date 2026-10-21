@@ -12,6 +12,11 @@ const options: ModelPickerOption[] = [
   { value: "deepseek-chat", provider: "deepseek", model: "deepseek-chat" },
 ];
 
+const providers = [
+  { id: "openai", name: "OpenAI" },
+  { id: "anthropic", name: "Anthropic" },
+];
+
 const open = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole("button", { name: "Model" }));
   return screen.findByRole("listbox", { name: "Model" });
@@ -20,7 +25,7 @@ const open = async (user: ReturnType<typeof userEvent.setup>) => {
 describe("ModelPicker", () => {
   it("groups models under their providers, connected ones first, with recent models on top", async () => {
     const user = userEvent.setup();
-    render(<ModelPicker options={options} providers={[{ id: "deepseek", name: "DeepSeek", connected: true }]} recent={["gpt-5-mini"]} />);
+    render(<ModelPicker options={options} providers={[...providers, { id: "deepseek", name: "DeepSeek", connected: true }]} recent={["gpt-5-mini"]} />);
     const list = await open(user);
     expect(
       within(list)
@@ -35,6 +40,22 @@ describe("ModelPicker", () => {
     expect(screen.getByRole("img", { name: "Capabilities: Tool calling, Reasoning" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Claude Sonnet 4.5/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("option", { name: /Claude Sonnet 4.5/ })).toHaveTextContent("No key");
+  });
+
+  it("names each provider as the caller does, and one it doesn't name by its id", async () => {
+    const user = userEvent.setup();
+    render(
+      <ModelPicker
+        options={[...options, { value: "acme/m1", provider: "acme", model: "m1" }]}
+        providers={[...providers, { id: "deepseek", name: "DeepSeek" }]}
+        value="claude-sonnet-4-5"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Model" })).toContainElement(screen.getByRole("img", { name: "Anthropic" }));
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const groups = within(await screen.findByRole("listbox", { name: "Model" })).getAllByRole("group");
+    expect(groups.map((g) => document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent)).toEqual(["acme", "Anthropic", "DeepSeek", "OpenAI"]);
+    expect(within(screen.getByRole("group", { name: "Providers" })).getByRole("button", { name: "acme" })).toBeInTheDocument();
   });
 
   it("searches by name, id and provider, and closes with the chosen model shown", async () => {
@@ -67,7 +88,7 @@ describe("ModelPicker", () => {
 
   it("hides deprecated models behind a toggle and filters by provider", async () => {
     const user = userEvent.setup();
-    render(<ModelPicker options={options} />);
+    render(<ModelPicker options={options} providers={providers} />);
     await open(user);
     expect(screen.queryByRole("option", { name: /GPT-4\b/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("switch", { name: "Deprecated" }));

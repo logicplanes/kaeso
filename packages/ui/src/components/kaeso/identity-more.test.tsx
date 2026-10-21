@@ -13,15 +13,38 @@ import { lazyModulesSettled } from "../../utils/lazy-module.js";
 afterEach(() => vi.useRealTimers());
 
 describe("identity parts", () => {
-  it("draws provider marks, letters for unknown providers, and names", () => {
+  it("draws provider marks, names from the caller, and the name's first letter for providers without a mark", () => {
     render(
       <>
-        <ProviderBadge provider="openai" withName />
-        <ProviderBadge provider="acme" size="xl" />
+        <ProviderBadge provider="openai" name="OpenAI" withName />
+        <ProviderBadge provider="acme" name="Zenith Labs" size="xl" />
+        <ProviderBadge provider="302ai" name=" 302.AI " />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
-    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Zenith Labs" })).toHaveTextContent(/^Z$/);
+    expect(screen.getByRole("img", { name: "302.AI" })).toHaveTextContent(/^3$/);
+  });
+
+  it("falls back to the provider id without a name", () => {
+    render(
+      <>
+        <ProviderBadge provider="gemini" withName />
+        <ProviderBadge provider="cohere" name="" />
+        <ModelLabel provider="vertex" model="gemini-3-pro" />
+      </>,
+    );
+    expect(screen.getByText("gemini")).toBeVisible();
+    expect(screen.getByRole("img", { name: "cohere" })).toHaveTextContent(/^C$/);
+    expect(screen.getByRole("img", { name: "vertex" })).toHaveTextContent(/^V$/);
+    expect(providerName("gemini")).toBe("gemini");
+    expect(providerName("gemini", "  ")).toBe("gemini");
+    expect(providerName("gemini", "Gemini")).toBe("Gemini");
+  });
+
+  it("names the provider of a model label for screen readers", () => {
+    render(<ModelLabel provider="anthropic" providerName="Anthropic" model="claude-sonnet-4-5" name="Claude Sonnet 4.5" />);
+    expect(screen.getByRole("img", { name: "Anthropic" })).toBeInTheDocument();
   });
 
   it("names a model's capabilities", () => {
@@ -71,12 +94,16 @@ describe("identity parts", () => {
   });
 
   it("shows a provider card with its key and actions", () => {
-    render(<ProviderCard provider="openai" connected status="Healthy" keyLabel="sk-…9f" detail="Added by Ada" actions={<button>Rotate</button>} />);
+    render(
+      <ProviderCard provider="openai" name="OpenAI" connected status="Healthy" keyLabel="sk-…9f" detail="Added by Ada" actions={<button>Rotate</button>} />,
+    );
     const card = screen.getByRole("region", { name: "OpenAI" });
     expect(card).toHaveTextContent("Connected");
     expect(card).toHaveTextContent("Added by Ada");
-    render(<ProviderCard provider="anthropic" connected={false} status="Add a key to use Anthropic" />);
+    render(<ProviderCard provider="anthropic" name="Anthropic" connected={false} status="Add a key to use Anthropic" />);
     expect(screen.getByRole("region", { name: "Anthropic" })).toHaveTextContent("Not connected");
+    render(<ProviderCard provider="acme" connected={false} status="No key yet" />);
+    expect(screen.getByRole("heading", { name: "acme" })).toBeInTheDocument();
   });
 });
 
@@ -176,10 +203,9 @@ function pathEndpoints(d: string) {
 
 describe("provider marks", () => {
   it.each(Object.entries(MARKED_PROVIDERS))("draws %s's own mark, named %s", (id, name) => {
-    render(<ProviderBadge provider={id} />);
+    render(<ProviderBadge provider={id} name={name} />);
     const badge = screen.getByRole("img", { name });
     const svg = badge.querySelector("svg");
-    expect(providerName(id)).toBe(name);
     expect(badge).toHaveTextContent(/^$/);
     expect(badge).toHaveClass(PROVIDER_MARKS[id]!.color);
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
@@ -224,8 +250,8 @@ describe("provider marks", () => {
   it.each(Object.keys(KAESO_IDENTITY_VARIANTS.provider))("draws every mark at the %s size", (size) => {
     render(
       <>
-        {Object.keys(MARKED_PROVIDERS).map((id) => (
-          <ProviderBadge key={id} provider={id} size={size as keyof typeof KAESO_IDENTITY_VARIANTS.provider} />
+        {Object.entries(MARKED_PROVIDERS).map(([id, name]) => (
+          <ProviderBadge key={id} provider={id} name={name} size={size as keyof typeof KAESO_IDENTITY_VARIANTS.provider} />
         ))}
       </>,
     );
@@ -233,7 +259,7 @@ describe("provider marks", () => {
   });
 
   it("writes the name next to the mark and hides the mark from screen readers", () => {
-    const { container } = render(<ProviderBadge provider="togetherai" withName size="sm" />);
+    const { container } = render(<ProviderBadge provider="togetherai" name="Together AI" withName size="sm" />);
     expect(screen.getByText("Together AI")).toBeVisible();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(container.querySelector("[aria-hidden='true'] svg path")).not.toBeNull();

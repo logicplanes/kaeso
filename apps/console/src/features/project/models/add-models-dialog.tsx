@@ -22,8 +22,7 @@ import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview } from "~/api/generated/types";
 import { CURRENT_MODELS_LIMIT, currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
-import { providerLabel } from "~/format/labels";
-import { useOrgProviderKeys, useProviderOptions } from "~/kaeso/providers";
+import { useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
 import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
@@ -64,8 +63,11 @@ export function AddModelsDialog(props: AddModelsProps) {
 function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>("search");
-  const [provider, setProvider] = useState(() => recall<string>(LAST_PROVIDER) ?? "openai");
+  const catalog = useProviders(org);
+  const [chosen, setProvider] = useState(() => recall<string>(LAST_PROVIDER));
+  const provider = (chosen && catalog.get(chosen) ? chosen : catalog.list[0]?.id) ?? "";
   const providers = useProviderOptions(org);
+  const dialects = catalog.dialects(provider);
   const orgKeys = useOrgProviderKeys(org);
   const noKey = orgKeys.known && !orgKeys.keys.some((k) => k.provider === provider);
   const [q, setQ] = useState("");
@@ -74,8 +76,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [review, setReview] = useState<{ preview: Preview; draft: FieldDraft } | null>(null);
   const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft }>(emptyCustom());
   const search = useDebounced(q.trim(), 250);
-  const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open });
-  const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open });
+  const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open && !!provider });
+  const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open && !!provider });
   const addable = (current.data ?? []).filter((h) => !h.catalogue_model_id).length;
 
   const invalidates = [["orgs", org, "projects", project, "models"]];
@@ -127,7 +129,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
 
   const ids = [...selected];
   const only = ids.length === 1 ? ids[0] : undefined;
-  const name = providerLabel(provider);
+  const name = catalog.name(provider);
   const list = hits.data ?? [];
 
   const addSelected = () => {
@@ -136,7 +138,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const reviewProblem = review ? draftProblem(review.draft, false) : null;
   const addReviewed = () => {
     if (review && !reviewProblem)
-      addOne.mutate({ model_id: review.preview.model_id, custom: false, overrides: changedFields(review.draft, previewFields(review.preview), provider) });
+      addOne.mutate({ model_id: review.preview.model_id, custom: false, overrides: changedFields(review.draft, previewFields(review.preview), dialects) });
   };
   const isCustom = custom.checked && !custom.preview;
   const customProblem = custom.checked ? draftProblem(custom.draft, isCustom) : null;
@@ -147,7 +149,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     addOne.mutate({
       model_id: modelId,
       custom: isCustom,
-      overrides: custom.preview ? changedFields(custom.draft, previewFields(custom.preview), provider) : allFields(custom.draft, provider),
+      overrides: custom.preview ? changedFields(custom.draft, previewFields(custom.preview), dialects) : allFields(custom.draft, dialects),
     });
   };
   const addAll = () => batch.mutate({ all_current: true });
@@ -194,7 +196,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </Banner>
         )}
         <div className="flex min-h-0 flex-col">
-          {hits.isPending ? (
+          {hits.isPending && provider ? (
             <List aria-label={t("models.onModelsDev", "Models on models.dev")} density="compact" items={[]} loading />
           ) : list.length === 0 ? (
             <Empty
@@ -217,7 +219,14 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               items={list.map((h) => ({
                 id: h.model_id,
                 textValue: h.model_id,
-                title: <ModelLabel provider={h.provider} model={h.model_id} {...(h.name && h.name !== h.model_id ? { name: h.name } : {})} />,
+                title: (
+                  <ModelLabel
+                    provider={h.provider}
+                    providerName={catalog.name(h.provider)}
+                    model={h.model_id}
+                    {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
+                  />
+                ),
                 meta: h.catalogue_model_id ? (
                   <Badge>{t("models.inCatalogue", "Already in catalogue")}</Badge>
                 ) : h.deprecated ? (
@@ -258,7 +267,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     description: t("models.reviewHint", "Values from models.dev, completed by Kaeso; what you change becomes an override for this project."),
     content: review ? (
       <div className="flex flex-col gap-16">
-        <ModelForm value={review.draft} onChange={(draft) => setReview({ ...review, draft })} provider={provider} />
+        <ModelForm value={review.draft} onChange={(draft) => setReview({ ...review, draft })} dialects={dialects} />
       </div>
     ) : null,
     footer: (
@@ -296,7 +305,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               {t("models.customUnlisted", "models.dev doesn't list it. Inputs, outputs, limits, input and output prices and the format are required.")}
             </Banner>
           ))}
-        {custom.checked && <ModelForm value={custom.draft} onChange={(draft) => setCustom({ ...custom, draft })} provider={provider} />}
+        {custom.checked && <ModelForm value={custom.draft} onChange={(draft) => setCustom({ ...custom, draft })} dialects={dialects} />}
       </div>
     ),
     footer: custom.checked ? (

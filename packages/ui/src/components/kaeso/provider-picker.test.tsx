@@ -28,6 +28,13 @@ describe("ProviderPicker", () => {
     expect(screen.getByRole("option", { name: "DeepSeek" })).toHaveAttribute("aria-disabled", "true");
   });
 
+  it("draws the first letter of a provider's name where it has no mark, and names one without a name by its id", () => {
+    render(<ProviderPicker providers={[{ id: "acme", name: "Zenith Labs" }, { id: "gemini" }]} aria-label="Provider" />);
+    const zenith = screen.getByRole("option", { name: "Zenith Labs" });
+    expect(zenith.querySelector("[aria-hidden] [role='img']")).toHaveTextContent(/^Z$/);
+    expect(screen.getByRole("option", { name: "gemini" })).toBeInTheDocument();
+  });
+
   it("skips the captions when nothing is connected and says when no provider matches", async () => {
     const user = userEvent.setup();
     render(<ProviderPicker providers={providers.map((p) => ({ ...p, connected: false }))} aria-label="Provider" autoFocus />);

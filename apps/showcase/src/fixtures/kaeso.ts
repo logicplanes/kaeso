@@ -23,6 +23,18 @@ export const members = [
   { id: "usr_jon", name: "Jon Weber", email: "jon@northwind.example", preset: "Viewer" },
 ];
 
+export const providers = [
+  { id: "openai", name: "OpenAI" },
+  { id: "anthropic", name: "Anthropic" },
+  { id: "deepseek", name: "DeepSeek" },
+  { id: "xai", name: "SpaceX" },
+  { id: "togetherai", name: "Together AI" },
+  { id: "groq", name: "Groq" },
+  { id: "openrouter", name: "OpenRouter" },
+  { id: "mistral", name: "Mistral" },
+];
+export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
+
 export type ModelRow = {
   id: string;
   provider: "openai" | "anthropic";

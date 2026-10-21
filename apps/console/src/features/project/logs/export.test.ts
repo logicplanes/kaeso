@@ -49,7 +49,7 @@ describe("exportFilters", () => {
           error: "rate_limited",
           source: "api",
         },
-        { key: "checkout-web", member: "Dana Ito" },
+        { key: "checkout-web", member: "Dana Ito", provider: "OpenAI" },
       ),
     ).toEqual([
       { label: "Key", value: "checkout-web" },
@@ -65,9 +65,10 @@ describe("exportFilters", () => {
   });
 
   it("falls back to the ids when it has no names", () => {
-    expect(exportFilters({ key: "key_1", member: "sa:sa_deploy", stream: false, source: "playground" })).toEqual([
+    expect(exportFilters({ key: "key_1", member: "sa:sa_deploy", provider: "openai", stream: false, source: "playground" })).toEqual([
       { label: "Key", value: "key_1" },
       { label: "Member", value: "sa_deploy" },
+      { label: "Provider", value: "openai" },
       { label: "Streaming", value: "Not streamed" },
       { label: "Source", value: "Playground" },
     ]);

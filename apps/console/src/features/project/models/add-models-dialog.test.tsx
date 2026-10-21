@@ -5,8 +5,7 @@ import { credential, fill, hoverReason, notifications } from "~/test/fixtures/or
 import { catalogueModel, modelsApi, preview, projectData, projectPath, searchHit } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
-import { DIALECT_IDS, PROVIDER_IDS } from "~/format/labels";
-import { providerDialects } from "./model-form";
+import { remember } from "~/shell/session-memory";
 
 const hits = () => [
   searchHit(),
@@ -59,6 +58,17 @@ describe("AddModelsDialog", () => {
     expect(notifications().getByText("1 already in the catalogue")).toBeInTheDocument();
     expect(requests("POST", BATCH).map((r) => r.body)).toEqual([{ provider: "openai", model_ids: ["gpt-5", "gpt-5-mini"] }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add models/ })).not.toBeInTheDocument());
+  });
+
+  it("starts on the first provider the gateway lists when the remembered one is gone", async () => {
+    setUp();
+    remember(["add-models", "provider"], "cohere");
+    const { dialog } = await open();
+
+    expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
+    expect(searches().map((q) => q.provider)).not.toContain("cohere");
+    expect(searches()).toContainEqual({ provider: "openai", include_deprecated: "false", limit: "50" });
+    expect(within(dialog).getByRole("button", { name: "Provider" })).toHaveTextContent("OpenAI");
   });
 
   it("starts in the search box; Space selects rows and ⌘Enter adds them", async () => {
@@ -303,7 +313,6 @@ describe("AddModelsDialog", () => {
     await user.click(within(custom).getByRole("button", { name: "Continue" }));
     await user.click(await within(custom).findByRole("combobox", { name: "Sends as" }));
     expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions", "OpenAI Embeddings"]);
-    for (const provider of PROVIDER_IDS) expect(providerDialects(provider), provider).not.toEqual(DIALECT_IDS);
   });
 
   it("treats a custom model as unlisted when models.dev can't be asked", async () => {

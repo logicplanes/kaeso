@@ -69,11 +69,13 @@ export function logColumns({
   phone = false,
   keyName,
   partyName,
+  providerName,
 }: {
   spansDays: boolean;
   phone?: boolean | undefined;
   keyName: (id: string) => string;
   partyName: (p: Party) => string;
+  providerName: (id: string) => string;
 }) {
   const time = (iso: string) =>
     new Date(iso).toLocaleString(dateLocale(), {
@@ -108,7 +110,7 @@ export function logColumns({
     provider: col.custom(
       { id: "provider", header: columnLabel("provider"), size: 144, priority: 3 },
       (r: LogView) => r.provider,
-      (v) => <ProviderBadge provider={v} withName size="sm" />,
+      (v) => <ProviderBadge provider={v} name={providerName(v)} withName size="sm" />,
     ),
     stream: col.custom(
       { id: "stream", header: columnLabel("stream"), size: 104, priority: 4 },

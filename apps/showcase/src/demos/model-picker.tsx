@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModels } from "~/fixtures/playground";
-import { models } from "~/fixtures/kaeso";
+import { models, providers } from "~/fixtures/kaeso";
 
 const catalogue = models.map((m) => ({
   value: m.model,
@@ -41,12 +41,12 @@ export function Basic() {
   const [model, setModel] = useState("claude-sonnet-4-5");
   return (
     <div className="flex h-52 w-full max-w-360 items-center pl-8 hairline-b">
-      <ModelPicker value={model} onValueChange={setModel} options={playgroundModels} />
+      <ModelPicker value={model} onValueChange={setModel} options={playgroundModels} providers={providers} />
     </div>
   );
 }
 export function Raised() {
-  return <ModelPicker appearance="default" size="md" defaultValue="gpt-5" options={playgroundModels} />;
+  return <ModelPicker appearance="default" size="md" defaultValue="gpt-5" options={playgroundModels} providers={providers} />;
 }
 export function Catalogue() {
   const [model, setModel] = useState<string | null>(null);
@@ -55,7 +55,7 @@ export function Catalogue() {
       appearance="default"
       size="md"
       options={catalogue}
-      providers={[{ id: "anthropic", connected: true }]}
+      providers={providers.map((p) => ({ ...p, connected: p.id === "anthropic" }))}
       recent={["claude-sonnet-4-5"]}
       value={model}
       onValueChange={setModel}
@@ -74,6 +74,7 @@ export function States() {
             appearance={row.label === "Raised" ? "default" : "ghost"}
             {...(row.label === "Empty" ? {} : { defaultValue: "gpt-5-mini" })}
             options={playgroundModels}
+            providers={providers}
           />
         </div>
       )}

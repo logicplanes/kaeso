@@ -8,6 +8,7 @@ import { limitsQuery } from "~/api/queries/limits";
 import { recentErrorsQuery } from "~/api/queries/recent-errors";
 import { errorKindLabel, limitKindLabel, periodLabel } from "~/format/labels";
 import { alertMarks } from "~/format/alert-marks";
+import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { periodUSD } from "~/kaeso/usage-panels";
 import { bucketLabel, type Granularity } from "~/format/buckets";
@@ -59,6 +60,7 @@ export function Breakdown({
   onByChange: (by: NonNullable<OverviewSearch["by"]>) => void;
 }) {
   const rights = useProjectRights(org, project);
+  const providers = useProviders(org);
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const partiesLoading = usePartyNamesLoading(org, project);
@@ -72,7 +74,9 @@ export function Breakdown({
       const model = rest.join("/");
       const name = modelName(r.key);
       if (!model) return <Text tone="secondary">{name}</Text>;
-      return <ModelLabel className="max-w-full" provider={provider} model={model} {...(name !== model ? { name } : {})} />;
+      return (
+        <ModelLabel className="max-w-full" provider={provider} providerName={providers.name(provider)} model={model} {...(name !== model ? { name } : {})} />
+      );
     }
     if (by === "key") return <Text truncate>{keyName(r.key)}</Text>;
     const [kind, id = ""] = r.key.split(":");

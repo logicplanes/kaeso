@@ -27,6 +27,14 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(r.body["has_more"], false);
+    let console: Value = serde_json::from_str(include_str!(
+        "../../../apps/console/src/test/fixtures/providers.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        r.body, console,
+        "the console's tests read the list the gateway serves"
+    );
     let listed = r.body["data"].as_array().unwrap();
     assert_eq!(
         listed.iter().map(|p| p["id"].clone()).collect::<Vec<_>>(),
