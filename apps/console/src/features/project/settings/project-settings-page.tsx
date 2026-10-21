@@ -60,9 +60,15 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
                 isDefault={p.is_default}
                 canUpdate={rights.has("project.update")}
               />
-              {rights.has("security.key_policy.project.manage") && <KeyLifetime org={org} project={project} days={p.max_key_lifetime_days ?? null} />}
-              <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} />
-              {rights.has("project.archive") && <Archive org={org} project={project} name={p.name} isDefault={p.is_default} />}
+              {rights.has("security.key_policy.project.manage") && (
+                <KeyLifetime org={org} project={project} days={p.max_key_lifetime_days ?? null} archived={!!p.archived_at} />
+              )}
+              <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />
+              {p.archived_at ? (
+                <ArchivedOn date={p.archived_at} />
+              ) : (
+                rights.has("project.archive") && <Archive org={org} project={project} name={p.name} isDefault={p.is_default} />
+              )}
             </>
           )}
         </div>
@@ -114,9 +120,7 @@ function General({
           project={project}
           name={name}
           src={src}
-          disabledReason={
-            !canUpdate ? needs("project.update") : archived ? t("project.settings.archivedReadOnly", "An archived project can't change") : undefined
-          }
+          disabledReason={!canUpdate ? needs("project.update") : archived ? archivedReadOnly() : undefined}
         />
         <SettingsRow
           title={common.name()}
@@ -198,7 +202,7 @@ function PictureRow({
   );
 }
 
-function KeyLifetime({ org, project, days }: { org: string; project: string; days: number | null }) {
+function KeyLifetime({ org, project, days, archived }: { org: string; project: string; days: number | null; archived: boolean }) {
   const orgView = useQuery(orgQuery(org));
   const orgMax = orgView.data?.max_key_lifetime_days ?? null;
   const [draft, setDraft] = useState(days === null ? "" : String(days));
@@ -235,6 +239,8 @@ function KeyLifetime({ org, project, days }: { org: string; project: string; day
             <Switch
               aria-label={t("project.settings.useOrgLimit", "Use the organization's limit")}
               checked={inherit}
+              disabled={archived}
+              {...(archived ? { disabledReason: archivedReadOnly() } : {})}
               onCheckedChange={(on) => {
                 const next = on ? null : (orgMax ?? 90);
                 if (next !== null) setDraft(String(next));
@@ -256,6 +262,7 @@ function KeyLifetime({ org, project, days }: { org: string; project: string; day
                     integer
                     value={draft}
                     onValueChange={setDraft}
+                    disabled={archived}
                     min="1"
                     step="1"
                     unit={t("project.settings.days", "days")}
@@ -263,8 +270,8 @@ function KeyLifetime({ org, project, days }: { org: string; project: string; day
                 </div>
                 <Button
                   size="sm"
-                  disabled={!draft || !!problem || value === days}
-                  {...(problem ? { disabledReason: problem } : {})}
+                  disabled={archived || !draft || !!problem || value === days}
+                  {...(archived ? { disabledReason: archivedReadOnly() } : problem ? { disabledReason: problem } : {})}
                   loading={save.isPending}
                   onClick={() => save.mutate(value)}
                 >
@@ -279,7 +286,7 @@ function KeyLifetime({ org, project, days }: { org: string; project: string; day
   );
 }
 
-function ContentLogging({ org, project, canChange }: { org: string; project: string; canChange: boolean }) {
+function ContentLogging({ org, project, canChange, archived }: { org: string; project: string; canChange: boolean; archived: boolean }) {
   const needs = useNeedsRight(org, project);
   const settings = useQuery(logSettingsQuery(org, project));
   const toggle = useApiMutation({
@@ -312,11 +319,27 @@ function ContentLogging({ org, project, canChange }: { org: string; project: str
             <Switch
               aria-label={t("project.settings.logContent", "Log request content")}
               checked={!!s?.effective_content_logging}
-              disabled={!s || orgOff || !canChange}
-              {...(canChange ? {} : { disabledReason: needs("logs.content.manage") })}
+              disabled={!s || orgOff || !canChange || archived}
+              {...(!canChange ? { disabledReason: needs("logs.content.manage") } : archived ? { disabledReason: archivedReadOnly() } : {})}
               onCheckedChange={(on) => toggle.mutate(on)}
             />
           }
+        />
+      </SettingsGroup>
+    </SettingsSection>
+  );
+}
+
+const archivedReadOnly = () => t("project.settings.archivedReadOnly", "An archived project can't change");
+
+function ArchivedOn({ date }: { date: string }) {
+  return (
+    <SettingsSection title={common.archive()}>
+      <SettingsGroup>
+        <SettingsRow
+          title={t("project.settings.archivedTitle", "Archived")}
+          description={t("project.settings.archivedHint", "Its keys and service accounts went with it; history is kept.")}
+          control={<Text tone="secondary">{formatDate(date)}</Text>}
         />
       </SettingsGroup>
     </SettingsSection>

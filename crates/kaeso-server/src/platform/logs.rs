@@ -269,6 +269,11 @@ pub async fn update_project_settings(
     let mut p = projects::get_for_update(&mut *tx, scope.org_id, scope.id)
         .await?
         .ok_or_else(|| ApiError::not_found("project"))?;
+    if p.archived_at.is_some() {
+        return Err(ApiError::Conflict(
+            crate::platform::projects::ARCHIVED.to_owned(),
+        ));
+    }
     let before = p.content_logging;
     p.content_logging = req.content_logging;
     projects::update(&mut *tx, &p).await?;

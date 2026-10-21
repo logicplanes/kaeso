@@ -134,6 +134,25 @@ describe("project settings", () => {
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   });
 
+  it("says when an archived project was archived instead of offering to archive it again", async () => {
+    setUp({ view: project({ is_default: false, archived_at: "2026-10-19T12:00:00Z" }) });
+    await renderApp(projectPath("settings"));
+
+    expect(await screen.findByText("Its keys and service accounts went with it; history is kept.")).toBeInTheDocument();
+    expect(screen.getByText("19 Oct 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Archive project" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("switch", { name: "Use the organization's limit" })).toHaveAttribute("aria-disabled", "true");
+    expect(await screen.findByRole("switch", { name: "Log request content" })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("keeps an archived project's own key lifetime as it is", async () => {
+    setUp({ view: project({ is_default: false, archived_at: "2026-10-19T12:00:00Z", max_key_lifetime_days: 30 }) });
+    const { user } = await renderApp(projectPath("settings"));
+
+    expect(await screen.findByRole("textbox", { name: "Maximum key lifetime" })).toBeDisabled();
+    await hoverReason(user, screen.getByRole("button", { name: "Save" }), "An archived project can't change");
+  });
+
   it("removes the picture", async () => {
     setUp({ view: project({ avatar_url: "/avatars/project.webp" }) });
     on("DELETE", "orgs/:org/projects/:project/avatar", project());

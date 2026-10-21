@@ -370,6 +370,50 @@ async fn content_follows_the_switches_and_the_rights() {
 }
 
 #[tokio::test]
+async fn an_archived_projects_content_switch_stays_as_it_was() {
+    let env = env(&[]).await;
+    let org = env.owner.org_id.clone();
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": "Old experiments" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let project = format!("/orgs/{org}/projects/{}", r.body["id"].as_str().unwrap());
+    let r = env
+        .app
+        .post(
+            &format!("{project}/archive"),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &format!("{project}/logs/settings"),
+            Some(json!({ "content_logging": false })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The project is archived and cannot be changed."
+    );
+    let r = env
+        .app
+        .get(&format!("{project}/logs/settings"), &env.owner.cookie)
+        .await;
+    assert_eq!(r.body["content_logging"], true, "{:?}", r.body);
+}
+
+#[tokio::test]
 async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     let env = env(&[]).await;
     let mut ok = messages("claude-haiku-4-5", "Hello");
