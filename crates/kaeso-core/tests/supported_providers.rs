@@ -9,6 +9,8 @@ struct Language {
     dir: &'static str,
     separator: &'static str,
     token_counts: &'static str,
+    key_separator: &'static str,
+    no_prefix: &'static str,
 }
 
 const LANGUAGES: [Language; 3] = [
@@ -16,16 +18,22 @@ const LANGUAGES: [Language; 3] = [
         dir: "en",
         separator: ", ",
         token_counts: "token counts",
+        key_separator: ", ",
+        no_prefix: "no fixed prefix",
     },
     Language {
         dir: "de",
         separator: ", ",
         token_counts: "Token-Zählung",
+        key_separator: ", ",
+        no_prefix: "kein festes Präfix",
     },
     Language {
         dir: "zh-CN",
         separator: "、",
         token_counts: "Token 计数",
+        key_separator: "，",
+        no_prefix: "无固定前缀",
     },
 ];
 
@@ -47,7 +55,9 @@ fn host(base_url: &str) -> &str {
     rest.split('/').next().unwrap_or(rest)
 }
 
-fn expected_row(p: &Provider, language: &Language) -> (String, String, String) {
+type Row = (String, String, String, String);
+
+fn expected_row(p: &Provider, language: &Language) -> Row {
     let mut formats = vec![format_name(p.generation)];
     for d in p.dialects.iter().copied().filter(|d| *d != p.generation) {
         formats.push(format_name(d));
@@ -60,14 +70,24 @@ fn expected_row(p: &Provider, language: &Language) -> (String, String, String) {
     if p.count_tokens.is_some() {
         formats.push(language.token_counts);
     }
+    let prefix = p.key_prefix.map_or_else(
+        || language.no_prefix.to_owned(),
+        |prefix| format!("`{prefix}`"),
+    );
     (
         format!("{} `{}`", p.name, p.id),
         formats.join(language.separator),
         format!("`{}`", host(p.default_base_url)),
+        format!(
+            "[{}]({}){}{prefix}",
+            host(p.key_page.url),
+            p.key_page.url,
+            language.key_separator
+        ),
     )
 }
 
-fn table_rows(text: &str) -> Vec<(String, String, String)> {
+fn table_rows(text: &str) -> Vec<Row> {
     text.lines()
         .skip_while(|line| !line.starts_with("| ---"))
         .skip(1)
@@ -75,18 +95,18 @@ fn table_rows(text: &str) -> Vec<(String, String, String)> {
         .map(|line| {
             let mut cells = line.trim_matches('|').split(" | ").map(str::trim);
             let mut next = || cells.next().unwrap_or_default().to_owned();
-            (next(), next(), next())
+            (next(), next(), next(), next())
         })
         .collect()
 }
 
 #[test]
-fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats_and_host() {
+fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats_host_and_key() {
     let mut providers: Vec<&Provider> = PROVIDERS.iter().collect();
     providers.sort_by_key(|p| p.name.to_lowercase());
     for language in &LANGUAGES {
         let (path, text) = page(language);
-        let expected: Vec<(String, String, String)> = providers
+        let expected: Vec<Row> = providers
             .iter()
             .map(|p| expected_row(p, language))
             .collect();
@@ -94,7 +114,8 @@ fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats_an
             table_rows(&text),
             expected,
             "{path} has one row per provider in crates/kaeso-core/src/provider.rs, sorted by name: \
-             the name and the id, the formats with the default first, then the host of the default base URL"
+             the name and the id, the formats with the default first, the host of the default base URL, \
+             then the key page linked by its host and the key's prefix"
         );
     }
 }

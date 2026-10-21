@@ -17,6 +17,7 @@ org | Members | orgs/{org}/members | members.* |
 org | Roles | orgs/{org}/roles, orgs/{org}/rights | org.view, roles.manage, members.view |
 org | Invites | orgs/{org}/invites | members.invite, members.invites.revoke |
 org | Projects | orgs/{org}/projects, orgs/{org}/default-project | projects.*, org.update |
+org | Providers | orgs/{org}/providers | org.view |
 org | Provider credentials | orgs/{org}/credentials | provider_credentials.* |
 org | Security | orgs/{org}/security | security.* |
 org | Org platform keys | orgs/{org}/platform-keys | platform_keys.* |

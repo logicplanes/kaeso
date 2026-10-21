@@ -16,6 +16,7 @@ pub mod pagination;
 pub mod params;
 pub mod precondition;
 pub mod projects;
+pub mod providers;
 pub mod rights;
 pub mod usage;
 pub mod validate;
