@@ -392,9 +392,7 @@ async fn overview(state: &AppState) -> ApiResult<UpdatesView> {
         check: UpdateCheckView {
             last_checked_at: settings.last_checked_at,
             last_success_at: settings.last_success_at,
-            next_check_at: settings
-                .next_check_at
-                .filter(|_| state.config.updates.check),
+            next_check_at: service::next_check(&settings).filter(|_| state.config.updates.check),
             error: settings.last_error,
         },
         updater: UpdaterView {
@@ -425,7 +423,7 @@ pub async fn get(State(state): State<AppState>, _ctx: Ctx) -> ApiResult<Json<Upd
     responses((status = 200, body = UpdatesView))
 )]
 pub async fn check(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<UpdatesView>> {
-    let checked = service::check(&state).await?;
+    let checked = service::check(&state, service::Trigger::Admin).await?;
     let view = overview(&state).await?;
     ctx.audit(None, "instance.update_check")
         .after(json!({

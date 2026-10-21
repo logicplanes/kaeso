@@ -1,5 +1,5 @@
 use crate::jobs::JobError;
-use crate::services::updates::{self, Auto, Checked};
+use crate::services::updates::{self, Auto, Checked, Trigger};
 use crate::state::AppState;
 
 pub async fn run(state: AppState) -> Result<String, JobError> {
@@ -9,7 +9,7 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         None => String::new(),
     };
     let checked = if updates::due(&state).await? {
-        match updates::check(&state).await? {
+        match updates::check(&state, Trigger::Schedule).await? {
             Checked::Unchanged => "releases unchanged",
             Checked::Changed => "release list fetched",
             Checked::Failed(_) => "check failed",

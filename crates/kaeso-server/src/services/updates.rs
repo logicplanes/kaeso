@@ -25,6 +25,9 @@ pub const RETRY_INTERVAL: time::Duration = time::Duration::minutes(15);
 pub const LOST_AFTER: time::Duration = time::Duration::hours(1);
 pub const START_GRACE: time::Duration = time::Duration::minutes(2);
 pub const FRESH_FOR_AUTO: time::Duration = time::Duration::hours(1);
+// GitHub's primary rate limit resets within its one-hour window, so only a broken or hostile feed asks for longer.
+pub const MAX_WAIT: time::Duration = time::Duration::hours(1);
+pub const ADMIN_SPACING: time::Duration = time::Duration::minutes(1);
 const JITTER_SECONDS: u32 = 60;
 const MANIFESTS_AT_ONCE: usize = 4;
 const MANIFESTS_PER_CHECK: usize = 12;
@@ -380,11 +383,11 @@ fn rate_limit_wait(
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.trim().parse::<i64>().ok())
     };
+    let capped = |seconds: i64| time::Duration::seconds(seconds.clamp(0, MAX_WAIT.whole_seconds()));
     if let Some(seconds) = number(RETRY_AFTER.as_str()) {
-        return Some(time::Duration::seconds(seconds.max(0)));
+        return Some(capped(seconds));
     }
-    number("x-ratelimit-reset")
-        .map(|reset| time::Duration::seconds((reset - now.unix_timestamp()).max(0)))
+    number("x-ratelimit-reset").map(|reset| capped(reset.saturating_sub(now.unix_timestamp())))
 }
 
 pub fn downloads_of(releases_url: &url::Url) -> String {
@@ -545,17 +548,49 @@ pub enum Checked {
     Failed(String),
 }
 
-pub async fn check(state: &AppState) -> Result<Checked, StoreError> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Trigger {
+    Schedule,
+    Admin,
+}
+
+pub async fn check(state: &AppState, trigger: Trigger) -> Result<Checked, StoreError> {
     let st = state.clone();
     pg::with_advisory_lock(&state.pg, locks::UPDATE_CHECK, || async move {
-        check_locked(&st).await
+        check_locked(&st, trigger).await
     })
     .await
 }
 
-async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
+fn after_last_check(settings: &Settings, at_most: time::Duration) -> Option<OffsetDateTime> {
+    settings.last_checked_at.map(|c| c.saturating_add(at_most))
+}
+
+fn blocked_until(settings: &Settings, trigger: Trigger) -> Option<OffsetDateTime> {
+    let longest = match trigger {
+        Trigger::Schedule => MAX_WAIT,
+        Trigger::Admin => ADMIN_SPACING,
+    };
+    let until = settings.blocked_until?;
+    Some(until.min(after_last_check(settings, longest)?))
+}
+
+pub fn next_check(settings: &Settings) -> Option<OffsetDateTime> {
+    let latest = after_last_check(
+        settings,
+        MAX_WAIT.saturating_add(time::Duration::seconds(i64::from(JITTER_SECONDS))),
+    );
+    let at = settings.next_check_at?;
+    Some(latest.map_or(at, |l| at.min(l)))
+}
+
+fn next_check_after(now: OffsetDateTime, wait: time::Duration) -> OffsetDateTime {
+    now.saturating_add(wait.saturating_add(jitter()))
+}
+
+async fn check_locked(state: &AppState, trigger: Trigger) -> Result<Checked, StoreError> {
     let settings = updates::settings(&state.pg).await?;
-    if let Some(until) = settings.blocked_until.filter(|u| state.clock.now() < *u) {
+    if let Some(until) = blocked_until(&settings, trigger).filter(|u| state.clock.now() < *u) {
         tracing::debug!(%until, "GitHub asked to wait; the check waits too");
         return Ok(Checked::Failed(settings.last_error.unwrap_or_else(|| {
             "GitHub refused more requests for now".to_owned()
@@ -579,7 +614,7 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
                 now,
                 None,
                 None,
-                now + CHECK_INTERVAL + jitter(),
+                next_check_after(now, CHECK_INTERVAL),
                 None,
             )
             .await?;
@@ -595,7 +630,7 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
                 now,
                 None,
                 None,
-                now + CHECK_INTERVAL + jitter(),
+                next_check_after(now, CHECK_INTERVAL),
                 None,
             )
             .await?;
@@ -613,13 +648,13 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
             let wait = e
                 .retry_after()
                 .map_or(RETRY_INTERVAL, |w| w.max(RETRY_INTERVAL));
-            let blocked = e.retry_after().map(|w| now + w);
+            let blocked = e.retry_after().map(|w| now.saturating_add(w));
             updates::record_check(
                 &state.pg,
                 now,
                 None,
                 Some(&message),
-                now + wait + jitter(),
+                next_check_after(now, wait),
                 blocked,
             )
             .await?;
@@ -630,10 +665,10 @@ async fn check_locked(state: &AppState) -> Result<Checked, StoreError> {
 
 pub async fn due(state: &AppState) -> Result<bool, StoreError> {
     let settings = updates::settings(&state.pg).await?;
-    Ok(state.config.updates.check
-        && settings
-            .next_check_at
-            .is_none_or(|at| state.clock.now() >= at))
+    Ok(
+        state.config.updates.check
+            && next_check(&settings).is_none_or(|at| state.clock.now() >= at),
+    )
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -830,7 +865,7 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
     if settings
         .last_success_at
         .is_none_or(|at| now - at > FRESH_FOR_AUTO)
-        && let Checked::Failed(_) = check(state).await?
+        && let Checked::Failed(_) = check(state, Trigger::Schedule).await?
     {
         return Ok(Auto::CheckFailed);
     }
@@ -1021,6 +1056,74 @@ mod tests {
         );
         h.insert(RETRY_AFTER, HeaderValue::from_static("120"));
         assert_eq!(rate_limit_wait(&h, now), Some(time::Duration::seconds(120)));
+    }
+
+    #[test]
+    fn a_feed_never_asks_for_more_than_an_hour() {
+        let now = OffsetDateTime::from_unix_timestamp(1_000).unwrap();
+        for (name, value) in [
+            ("retry-after", "7200"),
+            ("retry-after", "9223372036854775807"),
+            ("x-ratelimit-reset", "9223372036854775807"),
+        ] {
+            let mut h = HeaderMap::new();
+            h.insert(name, HeaderValue::from_static(value));
+            assert_eq!(rate_limit_wait(&h, now), Some(MAX_WAIT), "{name}: {value}");
+        }
+        for (name, value) in [
+            ("retry-after", "-9223372036854775808"),
+            ("x-ratelimit-reset", "-9223372036854775808"),
+        ] {
+            let mut h = HeaderMap::new();
+            h.insert(name, HeaderValue::from_static(value));
+            assert_eq!(
+                rate_limit_wait(&h, now),
+                Some(time::Duration::ZERO),
+                "{name}: {value}"
+            );
+        }
+    }
+
+    fn checked(at: OffsetDateTime, next: OffsetDateTime, blocked: OffsetDateTime) -> Settings {
+        Settings {
+            channel: "stable".into(),
+            mode: "manual".into(),
+            etag: None,
+            last_checked_at: Some(at),
+            last_success_at: None,
+            last_error: None,
+            next_check_at: Some(next),
+            blocked_until: Some(blocked),
+            auto_frequency: "daily".into(),
+            auto_weekday: 1,
+            auto_hour: 3,
+            auto_window_at: None,
+        }
+    }
+
+    #[test]
+    fn a_stored_wait_counts_for_at_most_an_hour_and_a_minute_for_an_admin() {
+        let at = OffsetDateTime::from_unix_timestamp(1_000).unwrap();
+        let far = OffsetDateTime::new_utc(
+            time::Date::from_calendar_date(9999, time::Month::December, 31).unwrap(),
+            time::Time::MIDNIGHT,
+        );
+        let s = checked(at, far, far);
+        assert_eq!(blocked_until(&s, Trigger::Schedule), Some(at + MAX_WAIT));
+        assert_eq!(blocked_until(&s, Trigger::Admin), Some(at + ADMIN_SPACING));
+        assert_eq!(
+            next_check(&s),
+            Some(at + MAX_WAIT + time::Duration::minutes(1))
+        );
+
+        let soon = at + time::Duration::seconds(30);
+        let s = checked(at, soon, soon);
+        assert_eq!(blocked_until(&s, Trigger::Schedule), Some(soon));
+        assert_eq!(blocked_until(&s, Trigger::Admin), Some(soon));
+        assert_eq!(next_check(&s), Some(soon));
+
+        let end = time::PrimitiveDateTime::MAX.assume_utc();
+        assert_eq!(next_check_after(end, MAX_WAIT), end);
     }
 
     #[test]
