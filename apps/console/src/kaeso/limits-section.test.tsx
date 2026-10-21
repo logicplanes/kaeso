@@ -107,7 +107,7 @@ describe("LimitsSection", () => {
 
     expect(await within(section).findByText("No limits on this member; the project's limits apply.")).toBeInTheDocument();
     const amount = await startDraft(user, section);
-    await user.click(within(section).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Token budget/ }));
     await user.type(amount, "1.5");
     await hoverReason(user, addButton(section), "Requests and tokens are whole numbers.");
@@ -155,17 +155,17 @@ describe("LimitsSection", () => {
     const amount = await startDraft(user, section);
     await user.click(within(section).getByRole("radio", { name: "Day" }));
     await user.click(within(section).getByRole("switch", { name: /Refuse requests when used up/ }));
-    await user.click(within(section).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Request rate/ }));
     expect(within(section).getByText("Rates count over a sliding minute and always refuse requests above them.")).toBeInTheDocument();
     expect(within(section).queryByRole("radio", { name: "Day" })).not.toBeInTheDocument();
     expect(within(section).queryByRole("switch")).not.toBeInTheDocument();
     expect(within(section).queryByRole("textbox", { name: "Alert at" })).not.toBeInTheDocument();
     await user.type(amount, "120");
-    await user.click(within(section).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Spend budget/ }));
     expect(within(section).getByRole("radio", { name: "Month" })).toHaveAttribute("aria-checked", "true");
-    await user.click(within(section).getByRole("combobox", { name: "Counts" }));
+    await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Token rate/ }));
     await user.click(addButton(section));
 
@@ -198,7 +198,7 @@ describe("LimitsSection", () => {
     await user.click(await within(section).findByRole("button", { name: "Edit the monthly spend budget of 20 USD" }));
     const dialog = await screen.findByRole("dialog", { name: "Edit limit" });
     expect(within(dialog).getByText("The monthly spend budget of 20 USD; to change its kind, period or model, remove it and add another.")).toBeInTheDocument();
-    expect(within(dialog).queryByRole("combobox", { name: "Counts" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("combobox", { name: "What it limits" })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole("radio", { name: "Day" })).not.toBeInTheDocument();
     const amount = within(dialog).getByRole("textbox", { name: "Amount" });
     await user.clear(amount);

@@ -8,11 +8,11 @@ A project's catalogue, on its **Models** page, lists the models its keys may cal
 
 ## Add models
 
-Choose **Add models**, pick a provider from the searchable list next to the search field, with providers your organization has connected first, and search its models. The dialog remembers the provider until you reload the console or sign out. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
+Choose **Add models**, pick a provider from the searchable list next to the search field, with providers your organization has connected first, and search its models. The dialog remembers the provider until you reload the console or sign out. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one. Each model shows its context window and its input and output prices, newest first; when more than 50 models match, the dialog shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
 Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
 
-- **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. When that is 50 models or more, the dialog says so before you add them.
+- **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. The dialog says how many models it adds, and warns before you add 50 or more.
 - **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it.
 
 The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.

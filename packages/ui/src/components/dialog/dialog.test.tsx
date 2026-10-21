@@ -329,6 +329,34 @@ describe("Dialog content that changes", () => {
 });
 
 describe("busy dialogs", () => {
+  it("stay open on a press outside when persistent, as every step dialog does, and still close with Escape", async () => {
+    const onOpenChange = vi.fn();
+    const { rerender } = render(<Dialog open persistent onOpenChange={onOpenChange} title="Create key" />);
+    await frames();
+    await userEvent.click(document.querySelector<HTMLElement>(".bg-overlay")!);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    onOpenChange.mockClear();
+    rerender(
+      <StepDialog
+        open
+        onOpenChange={onOpenChange}
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        steps={[
+          { id: "name", title: "What is it for?", content: <input aria-label="Name" /> },
+          { id: "expiry", title: "When does it expire?", content: null },
+        ]}
+      />,
+    );
+    await frames();
+    await userEvent.click(document.querySelector<HTMLElement>(".bg-overlay")!);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Continue" }).textContent).toBe("Continue");
+  });
+
   it("stay open while their work is underway: Escape, a press outside, the close circle, Cancel and ⌘Enter do nothing", async () => {
     const onOpenChange = vi.fn();
     const onSubmit = vi.fn();

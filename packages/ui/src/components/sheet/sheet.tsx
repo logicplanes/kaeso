@@ -2,6 +2,7 @@ import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { forwardRef, useCallback, useState, type ReactElement, type ReactNode } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import { OverNonModalSheet } from "../../utils/over-sheet.js";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
 import { useScopedDialog } from "../../utils/dialog-scope.js";
@@ -116,7 +117,9 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(curre
           className={cn("fixed z-40 sheet-motion", box, KAESO_SHEET_VARIANTS.side[side].classes, !modal && side !== "bottom" && "sheet-inspector")}
         >
           <InsetContent inset={false}>
-            <Frame {...props} />
+            <OverNonModalSheet value={!modal}>
+              <Frame {...props} />
+            </OverNonModalSheet>
           </InsetContent>
         </BaseDialog.Popup>
       </BaseDialog.Portal>

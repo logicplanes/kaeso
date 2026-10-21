@@ -33,6 +33,17 @@ async fn read(app: &common::App, key: &str, loaded: i64) -> i64 {
     value[0].amount.try_into().unwrap()
 }
 
+async fn handled_earlier_invalidations(instance: &common::App, from: &common::App, sentinel: &str) {
+    // Valkey delivers invalidations in the order they were published: once `instance` drops a
+    // sentinel that `from` published afterwards, it has handled every invalidation before it.
+    assert_eq!(read(instance, sentinel, 1).await, 1);
+    from.state.caches.project_limits.invalidate(sentinel).await;
+    common::eventually("the sentinel invalidation", || async move {
+        read(instance, sentinel, 2).await == 2
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn an_entry_loaded_before_an_invalidation_is_not_kept() {
     let s = TestServices::start().await;
@@ -56,6 +67,8 @@ async fn an_entry_loaded_before_an_invalidation_is_not_kept() {
     };
     let (stale, ()) = tokio::join!(stale, revoke);
     assert_eq!(stale.unwrap().unwrap()[0].amount, 1.into());
+    handled_earlier_invalidations(&app, &other, "race-seen-here").await;
+    handled_earlier_invalidations(&other, &app, "race-seen-there").await;
     assert_eq!(read(&app, "race", 2).await, 2, "this instance reloads");
     assert_eq!(
         read(&other, "race", 3).await,

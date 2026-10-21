@@ -17,6 +17,16 @@ describe("KeyDisplay", () => {
   });
 });
 
+describe("KeyDisplay state", () => {
+  it("dims a key that isn't active, with its state as a badge unless a heading already names it", () => {
+    const { rerender } = render(<KeyDisplay redacted="sk-kso-AbC1…wxyz" state="disabled" copy={false} />);
+    expect(screen.getByText("Disabled")).toBeInTheDocument();
+    rerender(<KeyDisplay redacted="sk-kso-AbC1…wxyz" state="disabled" stateBadge={false} copy={false} />);
+    expect(screen.queryByText("Disabled")).not.toBeInTheDocument();
+    expect(screen.getByText("sk-kso-AbC1…wxyz")).toHaveClass("text-fg-secondary");
+  });
+});
+
 describe("StatusCode", () => {
   it("colors only what needs a look: a success is the plain code", () => {
     const { rerender } = render(<StatusCode code={200} />);
@@ -32,6 +42,13 @@ describe("StatusCode", () => {
     expect(screen.getByText("gpt-5.4-mini")).toHaveClass("min-w-max");
     rerender(<ModelLabel provider="anthropic" model="claude-sonnet-5-5-20260901" name="Claude Sonnet 5.5" />);
     expect(screen.getByText("claude-sonnet-5-5-20260901")).toHaveClass("min-w-96");
+  });
+  it("leaves out the provider's mark in a list that already groups under it", () => {
+    const { rerender } = render(<ModelLabel provider="openai" providerName="OpenAI" model="gpt-5.4-mini" />);
+    expect(screen.getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    rerender(<ModelLabel provider="openai" providerName="OpenAI" model="gpt-5.4-mini" mark={false} />);
+    expect(screen.queryByRole("img", { name: "OpenAI" })).toBeNull();
+    expect(screen.getByText("gpt-5.4-mini")).toBeInTheDocument();
   });
 });
 

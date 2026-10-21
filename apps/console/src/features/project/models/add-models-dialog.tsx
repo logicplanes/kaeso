@@ -15,18 +15,20 @@ import {
   Switch,
   Text,
 } from "@logicplanes/kaeso-ui";
+import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
-import type { BatchResult, Fields, Preview } from "~/api/generated/types";
-import { CURRENT_MODELS_LIMIT, currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
+import type { BatchResult, Fields, Preview, SearchHit } from "~/api/generated/types";
+import { currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
 import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
 import { ModelForm, allFields, changedFields, draftFrom, draftProblem, type FieldDraft } from "./model-form";
+import { contextLabel, priceLabel } from "./model-fields";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
@@ -78,7 +80,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const search = useDebounced(q.trim(), 250);
   const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open && !!provider });
   const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open && !!provider });
-  const addable = (current.data ?? []).filter((h) => !h.catalogue_model_id).length;
+  const addable = current.data?.not_in_catalogue ?? 0;
 
   const invalidates = [["orgs", org, "projects", project, "models"]];
 
@@ -130,7 +132,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const ids = [...selected];
   const only = ids.length === 1 ? ids[0] : undefined;
   const name = catalog.name(provider);
-  const list = hits.data ?? [];
+  const list = hits.data?.data ?? [];
+  const total = hits.data?.total ?? 0;
 
   const addSelected = () => {
     if (ids.length) batch.mutate({ model_ids: ids });
@@ -224,22 +227,26 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
                     provider={h.provider}
                     providerName={catalog.name(h.provider)}
                     model={h.model_id}
+                    mark={false}
                     {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
                   />
                 ),
-                meta: h.catalogue_model_id ? (
-                  <Badge>{t("models.inCatalogue", "Already in catalogue")}</Badge>
-                ) : h.deprecated ? (
-                  <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
-                ) : (
-                  h.family
-                ),
+                meta: <HitMeta hit={h} />,
                 date: h.release_date ? monthLabel(h.release_date) : undefined,
                 disabled: !!h.catalogue_model_id,
               }))}
             />
           )}
         </div>
+        {hits.data?.has_more && (
+          <Text variant="small" tone="secondary">
+            {t("models.showingSome", "Showing {shown} of {total} {provider} models; search to narrow them down.", {
+              shown: formatNumber(list.length),
+              total: formatNumber(total),
+              provider: name,
+            })}
+          </Text>
+        )}
         <Text variant="small" tone="secondary">
           {tRich("models.notOnModelsDev", "Not on models.dev? {link}", {
             link: (
@@ -334,12 +341,23 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       <div className="flex flex-col gap-12">
         {addable >= MANY_MODELS && (
           <Banner tone="warning">
-            {addable >= CURRENT_MODELS_LIMIT
-              ? t("models.addAllMany", "This can add {count} or more models at once; adding the ones you need keeps the catalogue short.", {
-                  count: CURRENT_MODELS_LIMIT,
-                })
-              : t("models.addAllUpTo", "This adds up to {count} models at once; adding the ones you need keeps the catalogue short.", { count: addable })}
+            {t("models.addAllWarning", "This adds {count} models at once; adding the ones you need keeps the catalogue short.", {
+              count: formatNumber(addable),
+            })}
           </Banner>
+        )}
+        {current.isSuccess && addable < MANY_MODELS && (
+          <Text>
+            {addable
+              ? t(
+                  "models.addAllCount",
+                  "{count, plural, one {# current model isn't in the catalogue yet.} other {# current models aren't in the catalogue yet.}}",
+                  {
+                    count: addable,
+                  },
+                )
+              : t("models.addAllNone", "Every current {provider} model is in the catalogue already.", { provider: name })}
+          </Text>
         )}
         <Text variant="small" tone="secondary">
           {t("models.addAllCurrentLater", "Models that models.dev adds later aren't added here on their own.")}
@@ -347,7 +365,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       </div>
     ),
     footer: (
-      <Button variant="primary" loading={batch.isPending} onClick={addAll}>
+      <Button variant="primary" loading={batch.isPending} disabled={current.isSuccess && addable === 0} onClick={addAll}>
         {t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}
       </Button>
     ),
@@ -367,6 +385,21 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       onSubmit={submit[view]}
       layers={view === "search" ? [searchLayer] : [searchLayer, layers[view]]}
     />
+  );
+}
+
+function HitMeta({ hit }: { hit: SearchHit }) {
+  if (hit.catalogue_model_id) return <Badge>{t("models.inCatalogue", "Already in catalogue")}</Badge>;
+  return (
+    <span className="flex items-center gap-12">
+      {hit.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}
+      <Text variant="small" tone="secondary" tabular className="hidden min-w-48 text-right sm:block">
+        {contextLabel(hit.context_limit)}
+      </Text>
+      <Text variant="small" tone="secondary" tabular className="min-w-96 text-right">
+        {priceLabel(hit)}
+      </Text>
+    </span>
   );
 }
 

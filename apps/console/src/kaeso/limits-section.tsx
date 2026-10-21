@@ -94,7 +94,7 @@ export function LimitsSection({
         ))}
         {draft && (
           <div className="flex flex-col gap-12">
-            <LimitEditor value={draft} onChange={setDraft} models={catalogue.data ?? []} />
+            <LimitEditor org={org} value={draft} onChange={setDraft} models={catalogue.data ?? []} />
             <div className="flex gap-8">
               <Button
                 size="sm"
@@ -250,7 +250,7 @@ export function EditLimitDialog({
       }
     >
       <div className="flex flex-col gap-16">
-        <LimitEditor value={editing} onChange={setEditing} models={catalogue.data ?? []} fixedKind />
+        <LimitEditor org={org} value={editing} onChange={setEditing} models={catalogue.data ?? []} fixedKind />
       </div>
     </Dialog>
   );

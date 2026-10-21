@@ -221,6 +221,28 @@ async fn entries_store_only_overrides_and_merge_with_models_dev() {
     .await;
     assert_eq!(r.body["error"]["param"], "output_price", "{:?}", r.body);
 
+    let current = format!("{b}/models/search?provider=anthropic&current=true&limit=1");
+    let before = app.get(&current, &owner.cookie).await;
+    assert_eq!(before.body["total"], 17, "{:?}", before.body);
+    assert_eq!(before.body["not_in_catalogue"], 16);
+    assert_eq!(before.body["has_more"], true);
+    let first = &before.body["data"][0];
+    assert_eq!(before.body["data"].as_array().unwrap().len(), 1);
+    assert!(first["input_price"].is_string(), "{first:?}");
+    assert!(first["output_price"].is_string(), "{first:?}");
+    assert!(first["context_limit"].as_u64().unwrap() > 0, "{first:?}");
+    let all = app
+        .get(
+            &format!("{b}/models/search?provider=anthropic&include_deprecated=true&limit=200"),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(all.body["has_more"], false);
+    assert_eq!(
+        all.body["total"].as_u64().unwrap(),
+        all.body["data"].as_array().unwrap().len() as u64
+    );
+
     let r = app
         .post(
             &format!("{b}/models/batch"),
@@ -233,6 +255,8 @@ async fn entries_store_only_overrides_and_merge_with_models_dev() {
     assert_eq!(r.body["added"].as_array().unwrap().len(), 16);
     let list = app.get(&format!("{b}/models"), &owner.cookie).await;
     assert_eq!(list.body["data"].as_array().unwrap().len(), 18);
+    let after = app.get(&current, &owner.cookie).await;
+    assert_eq!(after.body["not_in_catalogue"], 0, "{:?}", after.body);
 
     let audit = app
         .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
