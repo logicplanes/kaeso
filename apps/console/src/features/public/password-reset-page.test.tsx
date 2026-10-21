@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { signedOut } from "~/test/fixtures";
 import { emailSent, methods } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
@@ -64,6 +64,7 @@ describe("setting a new password", () => {
     expect(window.location.hash).toBe("");
     const field = screen.getByLabelText("New password");
     await user.type(field, "too short{Enter}");
+    fireEvent.submit(field.closest("form") as HTMLFormElement);
     expect(requests("POST", "auth/password-reset/verify")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Set password" })).toBeDisabled();
     await user.type(field, " but now long");

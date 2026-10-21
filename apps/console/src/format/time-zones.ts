@@ -5,8 +5,9 @@ export function browserTimeZone(): string {
 }
 
 export function timeZoneNames(current: string): string[] {
-  const names = new Set(["UTC", ...Intl.supportedValuesOf("timeZone"), current]);
-  return [...names].sort((a, b) => (a === "UTC" ? -1 : b === "UTC" ? 1 : a.localeCompare(b)));
+  const others = new Set([...Intl.supportedValuesOf("timeZone"), current]);
+  others.delete("UTC");
+  return ["UTC", ...[...others].sort((a, b) => a.localeCompare(b))];
 }
 
 export function offsetOf(zone: string, at: Date = new Date()): string {
