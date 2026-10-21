@@ -807,9 +807,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
             };
             if !success {
-                let err = declared_key_refusal(
+                let err = provider_error(
                     eff.provider,
-                    dispatch::decode_error(plan.dialect, status, &resp.headers, &bytes),
+                    plan.dialect,
+                    status,
+                    &resp.headers,
+                    &bytes,
+                    &ectx,
                 );
                 count_upstream_error(err.kind.as_str(), provider);
                 if err.kind == ErrorKind::NotFound
@@ -831,7 +835,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             }
             let headers = resp.headers;
             let (reply, out) = off_thread(bytes.len(), move || {
-                let reply = dispatch::decode_response(dialect, status, &headers, &bytes, &ectx)?;
+                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)?;
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
             })
@@ -857,6 +861,39 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Ok(Done::Complete(resp, StatusCode::OK.as_u16()))
         }
     }
+}
+
+fn provider_error(
+    provider: &kaeso_core::provider::Provider,
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+    ctx: &EgressCtx,
+) -> KppError {
+    without_key_fragments(declared_key_refusal(
+        provider,
+        dispatch::decode_provider_error(dialect, status, headers, body, ctx),
+    ))
+}
+
+fn decode_reply(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+    ctx: &EgressCtx,
+) -> Result<Reply, KppError> {
+    dispatch::decode_response(dialect, status, headers, body, ctx).map_err(without_key_fragments)
+}
+
+pub(crate) fn without_key_fragments(mut err: KppError) -> KppError {
+    redact_key_fragments(&mut err);
+    err
+}
+
+pub(crate) fn redact_key_fragments(err: &mut KppError) {
+    err.message = kaeso_core::secret::redact_tokens(&err.message);
 }
 
 pub(crate) fn declared_key_refusal(
@@ -894,4 +931,34 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     o.usage = Some(estimate::complete(usage, &tally, input));
     o.usage_estimated = true;
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_provider_errors_upstream_reason_reaches_its_message_without_key_fragments() {
+        let openrouter = kaeso_core::provider::provider("openrouter").unwrap();
+        let body = br#"{"error": {"message": "Provider returned error", "code": 429, "metadata": {"raw": "Rate limit reached for key sk-proj-Ab1xYz789 in organization org-AbCdEf123456."}}}"#;
+        let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+        let ctx = EgressCtx::new(&req).with_chat_profile(openrouter.chat);
+        let err = provider_error(
+            openrouter,
+            DialectId::OpenAiChat,
+            429,
+            &HeaderList::new(),
+            body,
+            &ctx,
+        );
+        assert_eq!(err.kind, ErrorKind::RateLimited);
+        assert_eq!(
+            err.message,
+            "Provider returned error: Rate limit reached for key sk-[redacted] in organization org-[redacted]."
+        );
+
+        let in_a_reply =
+            decode_reply(DialectId::OpenAiChat, 200, &HeaderList::new(), body, &ctx).unwrap_err();
+        assert_eq!(in_a_reply.message, err.message);
+    }
 }

@@ -18,6 +18,8 @@ mod tests_cross;
 #[cfg(test)]
 mod tests_deepseek;
 #[cfg(test)]
+mod tests_error_detail;
+#[cfg(test)]
 mod tests_malformed;
 #[cfg(test)]
 mod tests_profile;
@@ -145,12 +147,16 @@ impl Codec for OpenAiChat {
         body: &[u8],
         ctx: &EgressCtx,
     ) -> Result<Reply, KppError> {
+        let detail = ctx.chat_profile.reply.error_detail;
         if !(200..300).contains(&status) {
-            return Err(error::decode_error(status, headers, body));
+            return Err(error::with_detail(
+                error::decode_error(status, headers, body),
+                detail,
+            ));
         }
         let probe = std::str::from_utf8(body).map(error::probe);
         if probe.is_ok_and(|p| p.error && !p.choices) {
-            return Err(error::decode_body(None, body));
+            return Err(error::with_detail(error::decode_body(None, body), detail));
         }
         response::decode_response(body, ctx)
     }
@@ -161,6 +167,18 @@ impl Codec for OpenAiChat {
 
     fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
         error::decode_error(status, headers, body)
+    }
+
+    fn decode_provider_error(
+        status: u16,
+        headers: &HeaderList,
+        body: &[u8],
+        ctx: &EgressCtx,
+    ) -> KppError {
+        error::with_detail(
+            error::decode_error(status, headers, body),
+            ctx.chat_profile.reply.error_detail,
+        )
     }
 
     fn decode_models_query(query: &str) -> Result<ModelsQuery, KppError> {

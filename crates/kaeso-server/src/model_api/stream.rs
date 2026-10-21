@@ -320,11 +320,12 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             };
             let (events, last) = match next {
                 Some(Ok(bytes)) => {
-                    let events = decoder.feed(&bytes);
+                    let mut events = decoder.feed(&bytes);
                     app.progress.count(&events);
                     let mut failed = false;
-                    for e in &events {
+                    for e in &mut events {
                         if let StreamEvent::Error(err) = e {
+                            super::pipeline::redact_key_fragments(err);
                             broken.get_or_insert_with(|| Broken::event(err));
                             failed = true;
                         }
@@ -341,10 +342,11 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     (vec![StreamEvent::Error(err)], true)
                 }
                 None => {
-                    let events = decoder.finish();
+                    let mut events = decoder.finish();
                     app.progress.count(&events);
-                    for e in &events {
+                    for e in &mut events {
                         if let StreamEvent::Error(err) = e {
+                            super::pipeline::redact_key_fragments(err);
                             broken.get_or_insert_with(|| Broken::ended(err.clone()));
                         }
                     }

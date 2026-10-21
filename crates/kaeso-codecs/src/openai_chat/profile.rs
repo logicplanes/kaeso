@@ -31,6 +31,7 @@ pub struct RequestProfile {
 pub struct ReplyProfile {
     pub reasoning: ReplyReasoning,
     pub reasoning_fields: &'static [&'static str],
+    pub error_detail: &'static [&'static str],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -70,6 +71,7 @@ impl ReplyProfile {
     pub const OPENAI: ReplyProfile = ReplyProfile {
         reasoning: ReplyReasoning::AsSent,
         reasoning_fields: &[],
+        error_detail: &[],
     };
 }
 
@@ -126,6 +128,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn reasoning_fields(mut self, fields: &'static [&'static str]) -> Self {
         self.reply.reasoning_fields = fields;
+        self
+    }
+
+    #[must_use]
+    pub const fn error_detail(mut self, path: &'static [&'static str]) -> Self {
+        self.reply.error_detail = path;
         self
     }
 

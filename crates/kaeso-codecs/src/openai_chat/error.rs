@@ -15,6 +15,24 @@ pub(crate) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> Kp
     err
 }
 
+pub(crate) fn with_detail(mut err: KppError, path: &[&str]) -> KppError {
+    if path.is_empty() {
+        return err;
+    }
+    let detail = err
+        .raw
+        .as_ref()
+        .and_then(|raw| path.iter().try_fold(raw, |v, key| v.get(*key)))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|d| !d.is_empty() && !err.message.contains(*d))
+        .map(str::to_owned);
+    if let Some(detail) = detail {
+        err.message = format!("{}: {detail}", err.message.trim_end_matches('.'));
+    }
+    err
+}
+
 pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
     let origin = kaeso_kpp::Origin::new(DIALECT);
     let parsed: Option<Ext<ErrorResponse>> = Ext::from_slice(body).ok();

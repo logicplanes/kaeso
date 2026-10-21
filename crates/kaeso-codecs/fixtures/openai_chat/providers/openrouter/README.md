@@ -47,5 +47,6 @@ Every live recording used a free model (an id ending in `:free`) and is listed w
 
 - Request fields with no KPP field (`provider`, `models`, `transforms`, `usage`, `reasoning`) stay in `openai_chat` Extras: they round-trip to OpenRouter and are refused or dropped across formats as the [extras allowlist](https://docs.kaeso.app/development/kpp/cross-format#extras) says.
 - `reasoning` on a reply message and in deltas becomes a reasoning block through the `chat` profile's `reasoning_fields(["reasoning"])`, so Anthropic Messages and Responses apps get it as a thinking block or reasoning item and Chat apps get the field back as sent.
+- An error's `metadata.raw`, the upstream provider's own error, joins the generic `message` through the `chat` profile's `error_detail(["error", "metadata", "raw"])`: apps in other formats and the request log get `Provider returned error: <reason>`, and Chat apps get the body unchanged (`errors/recorded-upstream-rate-limited.json`, `errors/recorded-routing-fields.json`).
 - Reply fields with no KPP field (`provider`, `native_finish_reason`, `reasoning_details`, `usage.cost`, `usage.is_byok`, `usage.cost_details` and the extra token details) stay in Extras.
 - SSE comments round-trip as comments.
