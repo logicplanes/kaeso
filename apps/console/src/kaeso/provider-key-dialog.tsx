@@ -6,7 +6,7 @@ import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
-import { providerOptions, useProviders } from "./providers";
+import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 
@@ -72,10 +72,10 @@ export function ProviderKeyDialog({
       setSecret("");
       toast.success(
         replace
-          ? t("kaeso.providerKey.replaced", "{name} replaced", { name: k.name })
+          ? t("kaeso.providerKey.replaced", "{title} replaced", { title: keyTitle(k, providers) })
           : k.is_default
             ? t("kaeso.providerKey.isDefault", "{name} is the {provider} default", { name: k.name, provider: label })
-            : t("kaeso.providerKey.added", "{name} added", { name: k.name }),
+            : t("kaeso.providerKey.added", "{title} added", { title: keyTitle(k, providers) }),
       );
       onClose();
     },

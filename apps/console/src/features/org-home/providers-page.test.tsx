@@ -7,6 +7,7 @@ import { OTHER_USER, credential, hoverReason, member, notifications } from "~/te
 import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
 
 const PATH = `/orgs/${ORG}/providers`;
 const CREDENTIALS = "orgs/:org/credentials";
@@ -19,6 +20,7 @@ function keys(list: CredentialView[]) {
 }
 
 const table = () => screen.findByRole("table", { name: "Provider keys" });
+const wholeText = (text: string) => (_: string, el: Element | null) => el?.textContent === text && ![...el.children].some((c) => c.textContent === text);
 const row = async (name: string | RegExp) => (await within(await table()).findByText(name)).closest('[role="row"]') as HTMLElement;
 
 async function openMenu(user: UserEvent, name: string) {
@@ -84,12 +86,15 @@ describe("organization providers", () => {
     expect(within(dialog).queryByRole("group")).not.toBeInTheDocument();
   });
 
-  it("offers only the documentation in an empty organization to people who can't add keys", async () => {
+  it("says why people who can't add keys can't, in an empty organization", async () => {
     withRights(["org.view", "provider_credentials.view"]);
     keys([]);
-    await renderApp(PATH);
+    const { user } = await renderApp(PATH);
     expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add provider key" })).not.toBeInTheDocument();
+    const add = screen.getByRole("button", { name: "Add provider key" });
+    await hoverReason(user, add, "You need Add provider keys; ask an owner or admin for it.");
+    await user.click(add);
+    expect(screen.queryByRole("dialog", { name: /Add provider key/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "About provider keys" })).toBeInTheDocument();
   });
 
@@ -373,6 +378,32 @@ describe("organization providers", () => {
       expect(search).toHaveValue("");
       expect(await row("Staging")).toBeInTheDocument();
     });
+
+    it("starts with an empty search when the search comes back after the keys fit again", async () => {
+      signedIn();
+      keys(many);
+      const { user } = await renderApp(PATH);
+      await user.type(await screen.findByRole("searchbox", { name: "Search provider keys" }), "groq");
+      keys(many.slice(0, 8));
+      await act(() => queryClient.invalidateQueries({ queryKey: ["orgs", ORG, "credentials"] }));
+      await waitFor(() => expect(screen.queryByRole("searchbox", { name: "Search provider keys" })).not.toBeInTheDocument());
+      keys(many);
+      await act(() => queryClient.invalidateQueries({ queryKey: ["orgs", ORG, "credentials"] }));
+      expect(await screen.findByRole("searchbox", { name: "Search provider keys" })).toHaveValue("");
+      expect(await row("Staging")).toBeInTheDocument();
+    });
+
+    it("keeps showing the search's result when a later refresh fails", async () => {
+      signedIn();
+      keys(many);
+      const { user } = await renderApp(PATH);
+      await user.type(await screen.findByRole("searchbox", { name: "Search provider keys" }), "nothing like it");
+      expect(await screen.findByText("No provider keys match")).toBeInTheDocument();
+      on("GET", CREDENTIALS, apiError(503, "unavailable", "Down for a moment."));
+      await act(() => queryClient.invalidateQueries({ queryKey: ["orgs", ORG, "credentials"] }));
+      expect(screen.getByText("No provider keys match")).toBeInTheDocument();
+      expect(screen.queryByText("The provider keys couldn't load")).not.toBeInTheDocument();
+    });
   });
 
   it("explains that assigned projects keep the default key when another becomes the default", async () => {
@@ -407,11 +438,17 @@ describe("organization providers", () => {
         .getAllByRole("columnheader")
         .map((h) => h.textContent);
       expect(headers).not.toContain("Projects");
-      expect(await within(await table()).findByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026")).toBeInTheDocument();
-      expect(within(await table()).getByText("Checkout assistant, and every unassigned project · Never · Ada Okafor (you), 15 Oct 2026")).toBeInTheDocument();
+      expect(
+        await within(await table()).findByText(wholeText("Projects: Support triage · Last used: Never · Added: Ada Okafor (you), 1 Oct 2026")),
+      ).toBeInTheDocument();
+      expect(
+        within(await table()).getByText(
+          wholeText("Projects: Checkout assistant, and every unassigned project · Last used: Never · Added: Ada Okafor (you), 15 Oct 2026"),
+        ),
+      ).toBeInTheDocument();
       act(() => showTooltipsAtOnce(true));
       try {
-        await user.hover(within(await table()).getByText("Support triage · Never · Ada Okafor (you), 1 Oct 2026"));
+        await user.hover(within(await table()).getByText(wholeText("Projects: Support triage · Last used: Never · Added: Ada Okafor (you), 1 Oct 2026")));
         expect(await screen.findAllByText("Support triage", { exact: true })).not.toHaveLength(0);
       } finally {
         act(() => showTooltipsAtOnce(false));

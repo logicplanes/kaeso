@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useDeferredValue, useMemo, useState, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -19,6 +19,7 @@ import {
   SearchInput,
   Text,
   Tooltip,
+  VisuallyHidden,
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
@@ -33,7 +34,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgPartyName } from "~/features/org/party";
 import { docsPage } from "~/format/docs";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
-import { useProviders, type Providers } from "~/kaeso/providers";
+import { keyTitle, useProviders, type Providers } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { OrgHeader } from "~/shell/org-header";
 import { toast } from "~/shell/toast";
@@ -43,18 +44,15 @@ type Row = { id: string; provider: string; key: CredentialView; first: boolean }
 
 export const SEARCH_ABOVE = 8;
 
-function matches(key: CredentialView, query: string, catalog: Providers): boolean {
-  const words = [catalog.name(key.provider), key.provider, key.name, ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
-  return query
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((part) => words.some((w) => w.includes(part)));
-}
+const searchWords = (key: CredentialView, catalog: Providers) =>
+  [catalog.name(key.provider), key.provider, key.name, ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
 
 function rowsOf(keys: CredentialView[], catalog: Providers): Row[] {
-  const providers = [...new Set(keys.map((k) => k.provider))].sort(catalog.byName);
-  return providers.flatMap((provider) => keys.filter((k) => k.provider === provider).map((key, i) => ({ id: key.id, provider, key, first: i === 0 })));
+  const byProvider = new Map<string, CredentialView[]>();
+  for (const k of keys) byProvider.set(k.provider, [...(byProvider.get(k.provider) ?? []), k]);
+  return [...byProvider.keys()]
+    .sort(catalog.byName)
+    .flatMap((provider) => (byProvider.get(provider) ?? []).map((key, i) => ({ id: key.id, provider, key, first: i === 0 })));
 }
 
 const joined = (names: string[]) => names.join(t("orgHome.listSeparator", ", "));
@@ -77,9 +75,6 @@ function withProjectNames(k: CredentialView, text: ReactElement) {
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
-export const keyTitle = (k: CredentialView, providers: Providers) =>
-  t("orgHome.keyTitle", "{provider} · {name}", { provider: providers.name(k.provider), name: k.name });
-
 export function OrgProvidersPage({ org }: { org: string }) {
   const rights = useOrgRights(org);
   const needs = useNeedsRight(org);
@@ -99,8 +94,14 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const [hidden, setHidden] = useState<string[]>([]);
   const keys = useMemo(() => credentials.data ?? [], [credentials.data]);
   const searchable = keys.length > SEARCH_ABOVE;
-  const shown = searchable && query.trim() ? keys.filter((k) => matches(k, query, providers)) : keys;
-  const rows = credentials.data ? rowsOf(shown, providers) : [];
+  if (!searchable && query) setQuery("");
+  const searched = useDeferredValue(searchable ? query : "");
+  const words = useMemo(() => new Map(keys.map((k) => [k.id, searchWords(k, providers)])), [keys, providers]);
+  const rows = useMemo(() => {
+    const parts = searched.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    const shown = parts.length ? keys.filter((k) => parts.every((part) => (words.get(k.id) ?? []).some((w) => w.includes(part)))) : keys;
+    return credentials.data ? rowsOf(shown, providers) : [];
+  }, [credentials.data, keys, words, searched, providers]);
   const addReason = canAdd ? undefined : needs("provider_credentials.create");
   const addLabel = t("orgHome.addProviderKey", "Add provider key");
   usePageCreateAction(canView ? { label: addLabel, run: () => setAdding(true), disabledReason: addReason } : null);
@@ -123,124 +124,133 @@ export function OrgProvidersPage({ org }: { org: string }) {
     onError: () => setDeleting(null),
   });
 
-  const menu = (k: CredentialView) => {
-    if (!canChange && !canDelete) return null;
-    return (
-      <Menu>
-        <Menu.Trigger>
-          <IconButton icon={icons.more} aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k, providers) })} size="xs" />
-        </Menu.Trigger>
-        <Menu.Content align="end">
-          {canChange && !k.is_default && (
-            <Menu.Item icon={icons.home} onClick={() => makeDefault.mutate(k)}>
-              {t("orgHome.makeDefault", "Make default")}
-            </Menu.Item>
-          )}
-          {canChange && (
-            <Menu.Item icon={icons.route} onClick={() => setAssigning(k)}>
-              {t("orgHome.assignToProjects", "Assign to projects")}
-            </Menu.Item>
-          )}
-          {canChange && (
-            <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
-              {t("orgHome.replace", "Replace")}
-            </Menu.Item>
-          )}
-          {canChange && (
-            <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
-              {t("common.rename", "Rename")}
-            </Menu.Item>
-          )}
-          {canDelete && (
-            <Menu.Item icon={icons.delete} variant="danger" onClick={() => setDeleting(k)}>
-              {t("common.delete", "Delete")}
-            </Menu.Item>
-          )}
-        </Menu.Content>
-      </Menu>
-    );
-  };
+  const setDefault = makeDefault.mutate;
+  const columns = useMemo(() => {
+    const menu = (k: CredentialView) => {
+      if (!canChange && !canDelete) return null;
+      return (
+        <Menu>
+          <Menu.Trigger>
+            <IconButton icon={icons.more} aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k, providers) })} size="xs" />
+          </Menu.Trigger>
+          <Menu.Content align="end">
+            {canChange && !k.is_default && (
+              <Menu.Item icon={icons.home} onClick={() => setDefault(k)}>
+                {t("orgHome.makeDefault", "Make default")}
+              </Menu.Item>
+            )}
+            {canChange && (
+              <Menu.Item icon={icons.route} onClick={() => setAssigning(k)}>
+                {t("orgHome.assignToProjects", "Assign to projects")}
+              </Menu.Item>
+            )}
+            {canChange && (
+              <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
+                {t("orgHome.replace", "Replace")}
+              </Menu.Item>
+            )}
+            {canChange && (
+              <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
+                {t("common.rename", "Rename")}
+              </Menu.Item>
+            )}
+            {canDelete && (
+              <Menu.Item icon={icons.delete} variant="danger" onClick={() => setDeleting(k)}>
+                {t("common.delete", "Delete")}
+              </Menu.Item>
+            )}
+          </Menu.Content>
+        </Menu>
+      );
+    };
 
-  const addedBy = (k: CredentialView) => t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) });
+    const addedBy = (k: CredentialView) => t("orgHome.addedBy", "{name}, {date}", { name: partyName(k.created_by), date: formatDate(k.created_at) });
 
-  const columns = [
-    col.custom(
-      { id: "provider", header: t("common.provider", "Provider"), size: 208, minWidth: 128, priority: 1, grow: true },
-      (r: Row) => r,
-      (r: Row) => (
-        <span className="flex min-w-0 items-center gap-8 sm:gap-12">
-          {r.first ? <ProviderBadge provider={r.provider} name={providers.name(r.provider)} size="lg" /> : <span aria-hidden className="w-28 shrink-0" />}
-          <Text weight={r.first ? "medium" : undefined} tone={r.first ? "default" : "tertiary"} truncate>
-            {providers.name(r.provider)}
-          </Text>
-        </span>
-      ),
-    ),
-    col.custom(
-      { id: "key", header: t("orgHome.key", "Key"), size: 240, priority: 1, grow: true },
-      (r: Row) => r,
-      (r: Row) => {
-        const under = [
-          hidden.includes("projects") ? assignment(r.key) : null,
-          hidden.includes("used") ? lastUsed(r.key) : null,
-          hidden.includes("added") ? addedBy(r.key) : null,
-        ].filter((part): part is string => !!part);
-        return (
-          <span className="flex min-w-0 flex-col">
-            <span className="flex min-w-0 items-center gap-8">
-              <Text truncate>{r.key.name}</Text>
-              <Tooltip content={t("orgHome.masterKeyId", "Encrypted with the master key {id}", { id: r.key.key_id })}>
-                <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
-              </Tooltip>
-              {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
-            </span>
-            {under.length > 0 &&
-              withProjectNames(
-                r.key,
-                <Text variant="small" tone="secondary" truncate>
-                  {under.join(t("orgHome.partSeparator", " · "))}
-                </Text>,
-              )}
+    return [
+      col.custom(
+        { id: "provider", header: t("common.provider", "Provider"), size: 208, minWidth: 128, priority: 1, grow: true },
+        (r: Row) => r,
+        (r: Row) => (
+          <span className="flex min-w-0 items-center gap-8 sm:gap-12">
+            {r.first ? <ProviderBadge provider={r.provider} name={providers.name(r.provider)} size="lg" /> : <span aria-hidden className="w-28 shrink-0" />}
+            <Text weight={r.first ? "medium" : undefined} tone={r.first ? "default" : "tertiary"} truncate>
+              {providers.name(r.provider)}
+            </Text>
           </span>
-        );
-      },
-    ),
-    col.custom(
-      { id: "projects", header: t("common.projects", "Projects"), size: 220, priority: 2 },
-      (r: Row) => r.key,
-      (k: CredentialView) =>
-        withProjectNames(
-          k,
-          <Text variant="small" tone={k.projects.length > 0 || k.is_default ? "secondary" : "tertiary"} truncate>
-            {assignment(k)}
-          </Text>,
         ),
-    ),
-    col.custom(
-      { id: "added", header: t("orgHome.added", "Added"), size: 216, priority: 3 },
-      (r: Row) => r.key,
-      (k: CredentialView) => (
-        <Text variant="small" tone="secondary" truncate>
-          {addedBy(k)}
-        </Text>
       ),
-    ),
-    col.custom(
-      { id: "used", header: t("common.lastUsed", "Last used"), size: 136, priority: 2 },
-      (r: Row) => r.key,
-      (k: CredentialView) => (
-        <Text variant="small" tone={k.last_used_at ? "secondary" : "tertiary"}>
-          {lastUsed(k)}
-        </Text>
+      col.custom(
+        { id: "key", header: t("orgHome.key", "Key"), size: 240, priority: 1, grow: true },
+        (r: Row) => r,
+        (r: Row) => {
+          const under = [
+            hidden.includes("projects") ? { label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
+            hidden.includes("used") ? { label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
+            hidden.includes("added") ? { label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
+          ].filter((part) => part !== null);
+          return (
+            <span className="flex min-w-0 flex-col">
+              <span className="flex min-w-0 items-center gap-8">
+                <Text truncate>{r.key.name}</Text>
+                <Tooltip content={t("orgHome.masterKeyId", "Encrypted with the master key {id}", { id: r.key.key_id })}>
+                  <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
+                </Tooltip>
+                {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
+              </span>
+              {under.length > 0 &&
+                withProjectNames(
+                  r.key,
+                  <Text variant="small" tone="secondary" truncate>
+                    {under.map((part, i) => (
+                      <span key={part.label}>
+                        {i > 0 && t("orgHome.partSeparator", " · ")}
+                        <VisuallyHidden>{t("orgHome.foldedLabel", "{label}:", { label: part.label })} </VisuallyHidden>
+                        {part.value}
+                      </span>
+                    ))}
+                  </Text>,
+                )}
+            </span>
+          );
+        },
       ),
-    ),
-    col.custom(
-      { id: "actions", header: "", size: 56, priority: 1 },
-      (r: Row) => r.key,
-      (k: CredentialView) => menu(k),
-      { align: "end" },
-    ),
-  ].map((c) => ({ ...c, enableSorting: false }));
+      col.custom(
+        { id: "projects", header: t("common.projects", "Projects"), size: 220, priority: 2 },
+        (r: Row) => r.key,
+        (k: CredentialView) =>
+          withProjectNames(
+            k,
+            <Text variant="small" tone={k.projects.length > 0 || k.is_default ? "secondary" : "tertiary"} truncate>
+              {assignment(k)}
+            </Text>,
+          ),
+      ),
+      col.custom(
+        { id: "added", header: t("orgHome.added", "Added"), size: 216, priority: 3 },
+        (r: Row) => r.key,
+        (k: CredentialView) => (
+          <Text variant="small" tone="secondary" truncate>
+            {addedBy(k)}
+          </Text>
+        ),
+      ),
+      col.custom(
+        { id: "used", header: t("common.lastUsed", "Last used"), size: 136, priority: 2 },
+        (r: Row) => r.key,
+        (k: CredentialView) => (
+          <Text variant="small" tone={k.last_used_at ? "secondary" : "tertiary"}>
+            {lastUsed(k)}
+          </Text>
+        ),
+      ),
+      col.custom(
+        { id: "actions", header: "", size: 56, priority: 1 },
+        (r: Row) => r.key,
+        (k: CredentialView) => menu(k),
+        { align: "end" },
+      ),
+    ].map((c) => ({ ...c, enableSorting: false }));
+  }, [canChange, canDelete, hidden, partyName, providers, setDefault]);
 
   const deletingProvider = deleting ? providers.name(deleting.provider) : "";
   const successor = deleting?.is_default
@@ -293,7 +303,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
             onHiddenColumnsChange={setHidden}
             density="comfortable"
             loading={credentials.isPending}
-            error={credentials.isError && rows.length === 0 ? t("orgHome.providerKeysFailed", "The provider keys couldn't load") : undefined}
+            error={credentials.isError && keys.length === 0 ? t("orgHome.providerKeysFailed", "The provider keys couldn't load") : undefined}
             onRetry={() => void credentials.refetch()}
             empty={
               keys.length > 0 ? (
@@ -308,11 +318,15 @@ export function OrgProvidersPage({ org }: { org: string }) {
                   description={t("orgHome.noProviderKeysHint", "A provider key lets this organization's projects call that provider's models.")}
                   actions={
                     <>
-                      {canAdd && (
-                        <Button variant="primary" leadingIcon={icons.add} onClick={() => setAdding(true)}>
-                          {addLabel}
-                        </Button>
-                      )}
+                      <Button
+                        variant="primary"
+                        leadingIcon={icons.add}
+                        disabled={!canAdd}
+                        {...(addReason ? { disabledReason: addReason } : {})}
+                        onClick={() => setAdding(true)}
+                      >
+                        {addLabel}
+                      </Button>
                       <Button variant="ghost" href={docsPage("/console/provider-keys")}>
                         {t("orgHome.aboutProviderKeys", "About provider keys")}
                       </Button>
