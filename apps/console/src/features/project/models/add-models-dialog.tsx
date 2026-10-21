@@ -18,7 +18,6 @@ import {
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
-import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview, SearchHit } from "~/api/generated/types";
 import { currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
@@ -118,7 +117,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       setReview({ preview, draft: draftFrom(previewFields(preview)) });
       setView("review");
     } catch (e) {
-      if (isApiError(e)) toastApiError(e);
+      toastApiError(e);
     }
   };
 
