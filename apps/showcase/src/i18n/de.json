@@ -1048,5 +1048,6 @@
   "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "Wird mit den IDs der Spalten aufgerufen, die bei der Breite der Tabelle wegfallen, damit eine verbliebene Spalte ihren Inhalt zeigen kann.",
   "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "Lässt einen Untertitel unter seinem Titel umbrechen, statt ihn mit Auslassungspunkten zu kürzen, für Beschreibungen, die man ganz liest.",
   "Lets a subtitle under its title wrap. Set by `List`.": "Lässt einen Untertitel unter seinem Titel umbrechen. Wird von `List` gesetzt.",
-  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "Wird mit dem Text aufgerufen, der getippt, aber noch nicht als Tag hinzugefügt ist, damit ein Formular ihn schon mitzählen kann."
+  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "Wird mit dem Text aufgerufen, der getippt, aber noch nicht als Tag hinzugefügt ist, damit ein Formular ihn schon mitzählen kann.",
+  "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.": "Nur ganze Zahlen, etwa eine Anzahl von Tagen: ein Ziffernblock auf Telefonen und keine Tausendertrennzeichen im Feld."
 }

@@ -291,3 +291,30 @@ async fn the_last_instance_admin_is_never_deactivated_or_deleted() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn instance_admins_see_which_orgs_a_user_belongs_to() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (_, grace) = join(&app, &owner, "grace@example.com", "Grace Hopper").await;
+
+    let r = app
+        .get(&format!("/instance/users/{grace}/orgs"), &owner.cookie)
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let orgs = r.body["data"].as_array().unwrap();
+    assert_eq!(orgs.len(), 1, "{:?}", r.body);
+    assert_eq!(orgs[0]["id"], owner.org_id.as_str());
+    assert_eq!(orgs[0]["state"], "active");
+    assert_eq!(orgs[0]["role"]["id"], "member");
+    assert_eq!(orgs[0]["role"]["name"], "Member");
+
+    let r = app
+        .get(
+            "/instance/users/usr_00000000000000000000000000/orgs",
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+}

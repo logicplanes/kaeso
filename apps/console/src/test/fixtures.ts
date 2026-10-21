@@ -155,7 +155,19 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
   const projects = options.projects ?? [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })];
   on("GET", "auth/session", session);
   on("GET", "me/memberships", { data: memberships });
-  on("GET", "me/whats-new", { current: "40.4.2", seen: "40.4.2", releases: [] });
+  on("GET", "me/whats-new", {
+    current: "40.4.2",
+    seen: "40.4.2",
+    releases: [],
+    running: {
+      version: "40.4.2",
+      published_at: "2026-10-01T12:00:00Z",
+      prerelease: false,
+      notes: "## Added\n\n- Search on every list.",
+      url: "https://github.com/logicplanes/kaeso/releases/tag/v40.4.2",
+      art: null,
+    },
+  });
   on("POST", "me/whats-new/seen", noContent);
   on("GET", "orgs/:org/rights", catalogue);
   on("GET", "orgs/:org/roles", page(roles));

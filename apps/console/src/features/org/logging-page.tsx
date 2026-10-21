@@ -196,6 +196,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
                   <NumberInput
                     aria-label={t("org.logging.metadataRetention", "Metadata retention")}
                     size="sm"
+                    integer
                     value={metadata}
                     onValueChange={setMetadata}
                     min="1"
@@ -217,6 +218,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
                   <NumberInput
                     aria-label={t("org.logging.contentRetention", "Content retention")}
                     size="sm"
+                    integer
                     value={content}
                     onValueChange={setContent}
                     min="1"

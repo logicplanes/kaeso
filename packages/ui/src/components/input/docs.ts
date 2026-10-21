@@ -37,6 +37,7 @@ export const docs = {
       defaultValue: "The number on first render, as text.",
       description: "One sentence of help under the label.",
       hideStepper: "Hide the stepper circles.",
+      integer: "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",
       label: "The visible label.",
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",

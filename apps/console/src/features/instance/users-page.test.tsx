@@ -38,12 +38,20 @@ describe("instance users list", () => {
     await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "Users", level: 1 })).toBeInTheDocument();
     expect(await within(table()).findByText("Grace Hopper")).toBeInTheDocument();
-    expect(within(table()).getByText("Admin")).toBeInTheDocument();
+    expect(within(table()).getByText("Instance admin")).toBeInTheDocument();
     expect(within(table()).getByText("linus@example.com")).toBeInTheDocument();
     expect(within(table()).getByText("Deactivated")).toBeInTheDocument();
     expect(within(table()).getAllByText("Active")).toHaveLength(2);
     expect(within(table()).getAllByText("15 Oct 2026")).toHaveLength(3);
     expect(userQueries()[0]).toEqual({ limit: "100" });
+  });
+
+  it("gives the creation day room for it in every language", async () => {
+    signedIn();
+    users();
+    await renderApp(PATH, { locale: "zh-CN" });
+    const row = (await within(await screen.findByRole("table", { name: "用户" })).findByText("Grace Hopper")).closest<HTMLElement>("[role=row]");
+    expect(row?.style.gridTemplateColumns.split(" ").at(-1)).toBe("160px");
   });
 
   it("searches by name or email through the URL", async () => {
@@ -229,6 +237,33 @@ describe("a user's sheet", () => {
     expect(within(sheet).getByText("Off")).toBeInTheDocument();
     expect(within(sheet).getByRole("switch", { name: "Instance admin" })).not.toBeChecked();
     expect(within(sheet).queryByRole("button", { name: "Reset two-factor" })).not.toBeInTheDocument();
+  });
+
+  it("lists the organizations a user belongs to, with their role in each", async () => {
+    signedIn();
+    on("GET", `instance/users/${GRACE.id}/orgs`, {
+      data: [
+        { id: "org_acme", name: "Acme", state: "active", role: { id: "admin", kind: "builtin", name: "Admin" } },
+        { id: "org_old", name: "Old pilot", state: "scheduled_for_deletion", role: { id: "member", kind: "builtin", name: "Member" } },
+      ],
+      has_more: false,
+      next_cursor: null,
+    });
+    const { sheet, user, router } = await openUser(GRACE);
+    const orgs = await within(sheet).findByRole("grid", { name: "Organizations" });
+    const acme = await within(orgs).findByRole("gridcell", { name: /Acme/ });
+    expect(acme).toHaveTextContent("Admin");
+    expect(within(orgs).getByRole("gridcell", { name: /Old pilot/ })).toHaveTextContent("Scheduled for deletion");
+    await user.click(acme);
+    await waitFor(() => expect(router.state.location.pathname).toBe("/settings/instance/orgs/org_acme"));
+  });
+
+  it("says when a user is in no organization", async () => {
+    signedIn();
+    on("GET", `instance/users/${GRACE.id}/orgs`, { data: [], has_more: false, next_cursor: null });
+    const { sheet } = await openUser(GRACE);
+    expect(await within(sheet).findByText("In no organization")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Delete user" })).toBeInTheDocument();
   });
 
   it("shows None for a user without an email", async () => {

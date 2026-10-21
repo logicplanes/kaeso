@@ -1048,5 +1048,6 @@
   "Called with the ids of the columns left out at the table's width, so a kept column can show what they held.": "以表格宽度下被省略的列的 ID 调用，让保留的列可以显示它们的内容。",
   "Lets a subtitle under its title wrap instead of ending with an ellipsis, for descriptions people read in full.": "让标题下的副标题换行显示，而不是以省略号截断，用于需要完整阅读的描述。",
   "Lets a subtitle under its title wrap. Set by `List`.": "让标题下的副标题换行显示。由 `List` 设置。",
-  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "以已输入但尚未添加为标签的文字调用，让表单在添加前就能计入它。"
+  "Called with the text typed but not added as a tag yet, so a form can count it before it is added.": "以已输入但尚未添加为标签的文字调用，让表单在添加前就能计入它。",
+  "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.": "仅限整数，例如天数：手机上显示数字键盘，输入框中不加千位分隔符。"
 }

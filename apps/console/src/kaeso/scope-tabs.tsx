@@ -3,8 +3,6 @@ import { t } from "~/i18n";
 
 export type Scope = "active" | "archived" | "all";
 
-export const SCOPES: readonly Scope[] = ["active", "archived", "all"];
-
 export function ScopeTabs({
   value,
   onChange,
@@ -19,7 +17,7 @@ export function ScopeTabs({
   archivedLabel?: string | null;
 }) {
   return (
-    <PillTabs value={value} onValueChange={(v) => onChange(SCOPES.find((s) => s === v) ?? "active")}>
+    <PillTabs value={value} onValueChange={(v) => onChange(v === "archived" || v === "all" ? v : "active")}>
       <PillTabs.List aria-label={label}>
         <PillTabs.Tab value="active">{activeLabel}</PillTabs.Tab>
         {archivedLabel && <PillTabs.Tab value="archived">{archivedLabel}</PillTabs.Tab>}

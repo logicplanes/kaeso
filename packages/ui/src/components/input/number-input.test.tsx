@@ -35,6 +35,18 @@ describe("NumberInput", () => {
     expect(input).toHaveValue("100,000");
   });
 
+  it("takes whole numbers only, with a numeric keypad and no thousands separators", async () => {
+    render(<NumberInput aria-label="Days" integer defaultValue="3650" unit="days" />);
+    const input = screen.getByRole("textbox", { name: "Days" });
+    expect(input).toHaveAttribute("inputmode", "numeric");
+    expect(input).toHaveValue("3650");
+    await userEvent.clear(input);
+    await userEvent.type(input, "36.5x0");
+    expect(input).toHaveValue("3650");
+    fireEvent.blur(input);
+    expect(input).toHaveValue("3650");
+  });
+
   it("keeps a lone minus sign and steps up from nothing", async () => {
     const onChange = vi.fn();
     render(<NumberInput aria-label="Offset" min="-5" onValueChange={onChange} />);
