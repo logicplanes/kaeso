@@ -7,6 +7,7 @@ export const KAESO_SKELETON_VARIANTS = {
     line: { classes: "h-12 rounded-pill", description: "A pill line for text" },
     circle: { classes: "rounded-pill", description: "Avatars and icons" },
     control: { classes: "h-36 rounded-pill", description: "The shape of a 36px control" },
+    "control-sm": { classes: "h-32 rounded-pill", description: "The shape of a 32px control, such as a small button in a page header" },
   },
 } as const;
 export const KAESO_SKELETON_DEFAULT_VARIANTS = { shape: "block" } as const;

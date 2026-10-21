@@ -22,6 +22,8 @@ export const KAESO_DONUT_VARIANTS = {
 } as const;
 export const KAESO_DONUT_DEFAULT_VARIANTS = { size: "md" } as const;
 
+const OTHER = "__other";
+
 export function groupSmall(slices: Slice[], min = 0.02, t: UiText = englishText): Slice[] {
   const total = slices.reduce((a, s) => a + s.value, 0) || 1;
   const small = slices.filter((s) => s.value > 0 && s.value / total < min);
@@ -31,7 +33,7 @@ export function groupSmall(slices: Slice[], min = 0.02, t: UiText = englishText)
   return [
     ...big,
     {
-      id: "__other",
+      id: OTHER,
       label: t("donut.other", "Other"),
       value: rest,
       color: "var(--k-text-tertiary)",
@@ -59,6 +61,8 @@ export function wholeShares(values: number[], t: UiText = englishText): string[]
   return floors.map((f, i) => (f === 0 && (values[i] ?? 0) > 0 ? t("donut.underOnePercent", "<1%") : formatPercent(f / 100, 0)));
 }
 
+const byValue = (slices: Slice[]) => [...slices].sort((a, b) => Number(a.id === OTHER) - Number(b.id === OTHER) || b.value - a.value);
+
 function useOtherData(identity: string): boolean {
   const [seen, setSeen] = useState(identity);
   if (seen !== identity) setSeen(identity);
@@ -80,7 +84,7 @@ export const Donut = forwardRef<
   const t = useUiText();
   const D = { sm: 140, md: 160, lg: 180 }[size];
   const STROKE = 14;
-  const data = groupSmall(slices, 0.02, t);
+  const data = byValue(groupSmall(slices, 0.02, t));
   const sum = data.reduce((a, s) => a + s.value, 0);
   const other = useOtherData(data.map((d) => d.id).join("\u0000"));
   const tween = useTweened(
@@ -110,7 +114,7 @@ export const Donut = forwardRef<
   );
   const table = {
     columns: [t("donut.slice", "Slice"), t("donut.value", "Value"), t("donut.share", "Share")],
-    rows: data.map((d) => [d.label, formatValue(d.value), formatPercent(sum ? d.value / sum : 0)]),
+    rows: data.map((d, i) => [d.label, formatValue(d.value), shares[i] ?? ""]),
   };
   const box = useRef<HTMLDivElement | null>(null);
   const width = useLayoutWidth(box);

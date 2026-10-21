@@ -749,7 +749,6 @@
   "The page, inside the inset panel.": "Die Seite, im eingerückten Panel.",
   "The pairs to show.": "Die anzuzeigenden Paare.",
   "The parameters, such as temperature and effort.": "Die Parameter, etwa Temperatur und Aufwand.",
-  "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.": "Die Teile des Ganzen, jeder mit `id`, `label`, `value` und optionaler `color`. Anteile unter 2 % werden als „Sonstige“ zusammengefasst, wenn es zwei oder mehr sind.",
   "The person's or organization's name; its first letters show without a picture, and it is the accessible name.": "Der Name der Person oder Organisation; ohne Bild erscheinen seine Anfangsbuchstaben, und er ist der zugängliche Name.",
   "The picker's accessible name (\"Model\" by default).": "Der zugängliche Name der Auswahl (standardmäßig „Modell“).",
   "The picture's address; without one, or when it fails to load, the letters show.": "Die Adresse des Bilds; ohne Bild oder wenn es nicht lädt, erscheinen die Buchstaben.",
@@ -785,7 +784,6 @@
   "The selected tab, when you control it.": "Der ausgewählte Tab, bei gesteuertem Wert.",
   "The send button's accessible name.": "Der zugängliche Name des Senden-Buttons.",
   "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.": "Die Serien, jede mit `id`, `label`, `points` aus `t` (einer Zeit) und `v` sowie optionaler `color`.",
-  "The shape it stands in for: a line of text, a control, a circle or a block.": "Die Form, die es vertritt: eine Textzeile, ein Steuerelement, einen Kreis oder einen Block.",
   "The shape of each step: a pill or a box.": "Die Form jedes Schritts: eine Pille oder ein Kasten.",
   "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.": "Der verbrauchte Anteil, von 0 bis 1. Werte über 1 füllen den Bogen und färben ihn als Gefahr.",
   "The sheet's content.": "Der Inhalt des Sheets.",
@@ -1048,5 +1046,7 @@
   "Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "Markiert den ersten (`first`) oder letzten (`last`) Punkt als nur teilweise abgedeckt: Die Linie zu ihm ist gestrichelt, und sein Tooltip sagt „unvollständig“. `ongoing` markiert den letzten als noch laufend, etwa heute, und sagt „bisher“.",
   "Shows each series' share of the point's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "Zeigt im Tooltip den Anteil jeder Reihe an der Summe des Punkts (standardmäßig an). Schalten Sie es aus, wenn eine Reihe Teil einer anderen ist, etwa Fehler innerhalb der Anfragen.",
   "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.": "`time` beschriftet runde Zeiten, so viele wie passen (Standard). `points` setzt jeden Punkt in die Mitte eines gleich großen Schritts und beschriftet jeden n-ten, wie ein Balkendiagramm seine Kategorien setzt und beschriftet, sodass ein Balkendiagramm derselben Tage mit ihm übereinstimmt.",
-  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "Die Zeitzone, in der Achse und Standardbeschriftungen Zeiten lesen, etwa „UTC“ für in UTC gezählte Tage. Standardmäßig die mit `setFormatTimeZone` gesetzte Zone, sonst die des Betrachters."
+  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "Die Zeitzone, in der Achse und Standardbeschriftungen Zeiten lesen, etwa „UTC“ für in UTC gezählte Tage. Standardmäßig die mit `setFormatTimeZone` gesetzte Zone, sonst die des Betrachters.",
+  "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more; the legend lists them by value, Other last.": "Die Teile des Ganzen, jeder mit `id`, `label`, `value` und optionaler `color`. Anteile unter 2 % werden als „Sonstige“ zusammengefasst, wenn es zwei oder mehr sind; die Legende listet sie nach Wert, „Sonstige“ zuletzt.",
+  "The shape it stands in for: a line of text, a control (36px, or 32px with `control-sm`), a circle or a block.": "Die Form, die es vertritt: eine Textzeile, ein Steuerelement (36px, oder 32px mit `control-sm`), einen Kreis oder einen Block."
 }

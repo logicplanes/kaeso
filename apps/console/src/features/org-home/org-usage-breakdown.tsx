@@ -22,6 +22,9 @@ const heading = (by: OrgBreakdown) =>
   by === "project" ? t("common.project", "Project") : by === "model" ? t("common.model", "Model") : t("orgHome.member", "Member");
 
 const NOTABLE_ERROR_RATE = 0.05;
+const NAME_COLUMN = "w-full max-w-0";
+const NUMBER_COLUMN = "whitespace-nowrap";
+const PHONE_HIDDEN = "hidden whitespace-nowrap sm:table-cell";
 
 export function OrgUsageBreakdown({
   org,
@@ -58,7 +61,13 @@ export function OrgUsageBreakdown({
   });
   const named = accounts.data ?? [];
   const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.isLoading));
-  const rows = loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key));
+  const used = usage.data ?? [];
+  const idle =
+    by === "project" && used.length > 0
+      ? (projects ?? []).filter((p) => !p.archived_at && !used.some((r) => r.key === p.id)).map((p) => quietRow(p.id, showCost))
+      : [];
+  const projectName = (key: string) => projects?.find((p) => p.id === key)?.name ?? key;
+  const rows = loading ? [] : [...used, ...idle].sort((a, b) => b.requests - a.requests || projectName(a.key).localeCompare(projectName(b.key)));
 
   const label = (r: UsageRow) => {
     if (by === "project") {
@@ -67,7 +76,10 @@ export function OrgUsageBreakdown({
       return (
         <span className="flex min-w-0 items-center gap-8">
           <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />
-          <Link href={projectPath(org, p.id)}>{p.name}</Link>
+          <span className="min-w-0 truncate">
+            <Link href={projectPath(org, p.id)}>{p.name}</Link>
+          </span>
+          {p.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
           {p.archived_at && <Badge>{t("common.archived", "Archived")}</Badge>}
         </span>
       );
@@ -75,7 +87,7 @@ export function OrgUsageBreakdown({
     if (by === "model") {
       const [provider, ...model] = r.key.split("/");
       if (!provider || !model.join("/")) return <Text tone="secondary">{t("orgHome.noModel", "No model")}</Text>;
-      return <ModelLabel provider={provider} model={model.join("/")} />;
+      return <ModelLabel className="max-w-full" provider={provider} model={model.join("/")} />;
     }
     const [kind, id = r.key] = r.key.split(":");
     if (kind === "service_account") {
@@ -130,18 +142,18 @@ export function OrgUsageBreakdown({
       <Table aria-label={t("orgHome.usageBreakdown", "Usage breakdown")} {...(loading ? { "aria-busy": true } : {})}>
         <Table.Head>
           <Table.Row>
-            <Table.HeaderCell>{heading(by)}</Table.HeaderCell>
-            <Table.HeaderCell align="end" className="w-120">
+            <Table.HeaderCell className={NAME_COLUMN}>{heading(by)}</Table.HeaderCell>
+            <Table.HeaderCell align="end" className={NUMBER_COLUMN}>
               {t("common.requests", "Requests")}
             </Table.HeaderCell>
-            <Table.HeaderCell align="end" className="w-120">
+            <Table.HeaderCell align="end" className={PHONE_HIDDEN}>
               {t("orgHome.errors", "Errors")}
             </Table.HeaderCell>
-            <Table.HeaderCell align="end" className="w-120">
+            <Table.HeaderCell align="end" className={PHONE_HIDDEN}>
               {t("common.tokens", "Tokens")}
             </Table.HeaderCell>
             {showCost && (
-              <Table.HeaderCell align="end" className="w-120">
+              <Table.HeaderCell align="end" className={NUMBER_COLUMN}>
                 {t("common.cost", "Cost")}
               </Table.HeaderCell>
             )}
@@ -161,18 +173,18 @@ export function OrgUsageBreakdown({
           )}
           {rows.map((r) => (
             <Table.Row key={r.key}>
-              <Table.Cell>{label(r)}</Table.Cell>
-              <Table.Cell align="end">
+              <Table.Cell className={NAME_COLUMN}>{label(r)}</Table.Cell>
+              <Table.Cell align="end" className={NUMBER_COLUMN}>
                 <Text tabular>{formatNumber(r.requests)}</Text>
               </Table.Cell>
-              <Table.Cell align="end" {...(notable(r) ? { tone: "danger" as const } : {})}>
+              <Table.Cell align="end" className={PHONE_HIDDEN} {...(notable(r) ? { tone: "danger" as const } : {})}>
                 <Errors errors={r.errors} requests={r.requests} />
               </Table.Cell>
-              <Table.Cell align="end">
+              <Table.Cell align="end" className={PHONE_HIDDEN}>
                 <Text tabular>{formatTokens(totalTokens(r))}</Text>
               </Table.Cell>
               {showCost && (
-                <Table.Cell align="end">
+                <Table.Cell align="end" className={NUMBER_COLUMN}>
                   <Text tabular>{r.cost ? periodUSD(r.cost) : "—"}</Text>
                 </Table.Cell>
               )}
@@ -183,6 +195,18 @@ export function OrgUsageBreakdown({
     </Section>
   );
 }
+
+const quietRow = (key: string, showCost: boolean): UsageRow => ({
+  key,
+  requests: 0,
+  errors: 0,
+  input_tokens: 0,
+  output_tokens: 0,
+  cache_read_tokens: 0,
+  cache_write_tokens: 0,
+  reasoning_tokens: 0,
+  ...(showCost ? { cost: "0" } : {}),
+});
 
 const notable = (r: UsageRow) => r.errors > 0 && r.requests > 0 && r.errors / r.requests >= NOTABLE_ERROR_RATE;
 

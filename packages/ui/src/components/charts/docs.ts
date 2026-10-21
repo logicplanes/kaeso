@@ -75,7 +75,7 @@ export const docs = {
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       size: "The ring's diameter: `sm` 140px, `md` 160px (default) or `lg` 180px.",
       slices:
-        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.",
+        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more; the legend lists them by value, Other last.",
       total: "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`.",
       totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
     },
@@ -124,7 +124,7 @@ export const docs = {
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       size: "The ring's diameter: `sm` 140px, `md` 160px (default) or `lg` 180px.",
       slices:
-        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.",
+        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more; the legend lists them by value, Other last.",
       total: "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`.",
       totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
     },

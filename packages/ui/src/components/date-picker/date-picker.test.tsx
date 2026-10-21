@@ -57,6 +57,36 @@ describe("DateRangePicker", () => {
   });
 });
 
+describe("a picked preset", () => {
+  it("shows its own range and selection while the popover closes", async () => {
+    const { RangePopup } = await import("./range-popup.js");
+    const { PopoverRoot } = await import("../popover/popover-root.js");
+    const week = { from: new Date(2026, 9, 14), to: new Date(2026, 9, 20) };
+    const onPick = vi.fn();
+    render(
+      <PopoverRoot open>
+        <RangePopup
+          range={{ from: new Date(2026, 8, 21), to: new Date(2026, 9, 20) }}
+          preset="30d"
+          presets={[
+            { id: "7d", label: "Last 7 days", range: () => week },
+            { id: "30d", label: "Last 30 days", range: () => ({ from: new Date(2026, 8, 21), to: new Date(2026, 9, 20) }) },
+          ]}
+          onPick={onPick}
+          onClose={() => {}}
+          weekStartsOn={1}
+          disabledDays={undefined}
+        />
+      </PopoverRoot>,
+    );
+    await userEvent.click(screen.getByRole("option", { name: "Last 7 days" }));
+    expect(onPick).toHaveBeenCalledWith(week, "7d");
+    expect(screen.getByRole("option", { name: "Last 7 days" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: "Last 30 days" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("textbox", { name: "Start date" })).toHaveValue("2026-10-14");
+  });
+});
+
 describe("DateRangePicker's popover", () => {
   const months = () => screen.getAllByRole("grid").map((g) => g.getAttribute("aria-label"));
   const open = async () => {

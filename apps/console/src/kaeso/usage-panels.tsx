@@ -74,7 +74,7 @@ export function UsageMetrics({
   const delta = (now: number, before: number | undefined) => {
     const c = change(now, before);
     if (c !== undefined) return { change: { value: c }, detail: vs };
-    return p && now > 0 ? { detail: t("kaeso.usage.upFromNone", "Up from none") } : {};
+    return p && now > 0 ? { detail: t("kaeso.usage.noEarlierData", "No earlier data") } : {};
   };
   const rate = sum.requests ? sum.errors / sum.requests : 0;
   const cost = sum.cost ?? (showCost && rows.length === 0 ? "0" : null);
@@ -144,15 +144,13 @@ export function bucketNames({ from, to, granularity: g = "day" }: Pick<DailyProp
   };
 }
 
-const timeAxis = (days: { day: string }[], props: DailyProps) => {
+const timeAxis = (props: DailyProps) => {
   const names = bucketNames(props);
-  const byTime = new Map(days.map((d) => [pointTime(d.day).getTime(), d.day]));
-  const day = (time: Date) => byTime.get(time.getTime()) ?? "";
   return {
     timeZone: "UTC",
     tickAt: "points" as const,
-    formatTime: (time: Date) => names.label(day(time)),
-    formatTick: (time: Date) => names.axis(day(time)),
+    formatTime: (time: Date) => names.label(utcDay(time)),
+    formatTick: (time: Date) => names.axis(utcDay(time)),
     partial: names.partial,
   };
 };
@@ -200,7 +198,7 @@ export function RequestsChart(props: DailyProps) {
           empty={props.rows.length === 0}
           emptyText={t("kaeso.usage.noRequests", "No requests in this period.")}
           shares={false}
-          {...timeAxis(days, props)}
+          {...timeAxis(props)}
           {...chartState(props)}
         />
       )}
@@ -244,7 +242,7 @@ export function CostChart(props: DailyProps) {
         formatValue={(v) => formatUSD(v.toFixed(6))}
         empty={props.rows.length === 0}
         emptyText={t("kaeso.usage.noCost", "No cost in this period.")}
-        {...timeAxis(days, props)}
+        {...timeAxis(props)}
         {...chartState(props)}
       />
     </Section>

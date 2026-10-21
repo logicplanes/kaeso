@@ -2,7 +2,7 @@ import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
+import { motion, tokenKindSeries, tokenKindTint, viz } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
@@ -61,6 +61,36 @@ export function assignSeries(ids: string[]): Map<string, number> {
 
 export function seriesColors(ids: string[], thin = false): Map<string, string> {
   return new Map([...assignSeries(ids)].map(([id, i]) => [id, (thin ? VIZ_THIN : VIZ)[i]!]));
+}
+
+function hueOf(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (!d) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+/** Chart colors for things that have a hue of their own, such as projects by their picture: each id gets the free palette color nearest its hue, in order, and ids without a hue the colors left. */
+export function seriesColorsNear(ids: string[], hues: ReadonlyMap<string, number>): Map<string, string> {
+  const vizHues = viz.map((c) => hueOf(c.light));
+  const used = new Set<number>();
+  const out = new Map<string, string>();
+  const gap = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+  for (const id of ids) {
+    const hue = hues.get(id);
+    if (hue === undefined || out.has(id)) continue;
+    const free = [...VIZ.keys()].filter((k) => !used.has(k));
+    const k = free.sort((a, b) => gap(vizHues[a]!, hue) - gap(vizHues[b]!, hue))[0];
+    if (k === undefined) break;
+    used.add(k);
+    out.set(id, VIZ[k]!);
+  }
+  const rest = ids.filter((id) => !out.has(id));
+  const free = [...VIZ.keys()].filter((k) => !used.has(k));
+  rest.forEach((id, i) => out.set(id, VIZ[free[i % Math.max(1, free.length)] ?? seriesIndex(id)]!));
+  return out;
 }
 
 export const seriesColor = (id: string, thin = false) => (thin ? VIZ_THIN : VIZ)[seriesIndex(id)]!;

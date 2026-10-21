@@ -39,7 +39,7 @@ function opensYear(key: string, g: Granularity): boolean {
 const dayName = (day: string, withYear = false) => (withYear || opensYear(day, "day") ? fullDayLabel(day) : dayLabel(day));
 const weekName = (day: string, withYear = false) => (withYear || opensYear(day, "week") ? fullDayLabel(day) : dayLabel(day));
 
-export const spansYears = (from: string, to: string, g: Granularity) => (bucketsBetween(from, to, g)[0] ?? from).slice(0, 4) !== to.slice(0, 4);
+export const spansYears = (from: string, to: string, g: Granularity) => bucketsBetween(from, to, g).some((key) => key.slice(0, 4) !== to.slice(0, 4));
 
 export function bucketLabel(key: string, g: Granularity, withYear = false): string {
   if (g === "day") return dayName(key, withYear);
@@ -55,8 +55,7 @@ const lastDay = (key: string, g: Granularity) => {
 
 export function partialBuckets(from: string, to: string, g: Granularity, today: string): { first: boolean; last: boolean; ongoing: boolean } {
   const keys = bucketsBetween(from, to, g);
-  const last = keys[keys.length - 1];
-  return { first: (keys[0] ?? from) < from, last: last !== undefined && lastDay(last, g) > to, ongoing: to >= today };
+  return { first: keys.slice(0, 1).some((key) => key < from), last: keys.slice(-1).some((key) => lastDay(key, g) > to), ongoing: to >= today };
 }
 
 export function bucketAxisLabel(key: string, g: Granularity): string {

@@ -84,7 +84,7 @@ describe("UsageMetrics", () => {
 
   it("says usage went up from none", async () => {
     await renderUi(<UsageMetrics rows={twoDays} previous={[]} from="2026-10-13" to="2026-10-14" compare="vs last week" showCost={false} />);
-    expect(tile("Requests")).toHaveTextContent("Up from none");
+    expect(tile("Requests")).toHaveTextContent("No earlier data");
     expect(screen.queryByText("Cost")).not.toBeInTheDocument();
     expect(tile("Errors")).not.toHaveTextContent("vs last week");
   });
@@ -259,9 +259,24 @@ describe("CostShare", () => {
     expect(share).toHaveTextContent("$1.75");
     expect(share).toHaveTextContent("Total cost");
     expect(rowsOf("Cost by project")).toEqual([
-      ["Day 2026-10-13", "$0.50", "28.6%"],
-      ["Day 2026-10-14", "$1.25", "71.4%"],
+      ["Day 2026-10-14", "$1.25", "71%"],
+      ["Day 2026-10-13", "$0.50", "29%"],
     ]);
+  });
+
+  it("colors each slice nearest its hue", async () => {
+    await renderUi(
+      <CostShare
+        title="Cost by project"
+        description="Where the money went."
+        rows={twoDays}
+        label={(key) => `Day ${key}`}
+        hues={new Map([["2026-10-14", 150]])}
+      />,
+    );
+    const swatch = (name: string) => within(screen.getByRole("list", { name: "Legend" })).getByText(name).previousElementSibling as HTMLElement;
+    expect(swatch("Day 2026-10-14").style.background).toBe("var(--k-viz-3)");
+    expect(swatch("Day 2026-10-13").style.background).not.toBe("var(--k-viz-3)");
   });
 
   it("says when nothing cost anything", async () => {

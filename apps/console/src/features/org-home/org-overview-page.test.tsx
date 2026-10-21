@@ -19,13 +19,14 @@ const breakdown = () => screen.findByRole("table", { name: "Usage breakdown" });
 const usageQueries = () => requests("GET", USAGE).map((r) => Object.fromEntries(r.query));
 
 describe("organization overview", () => {
-  it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {
+  it("shows the period's usage, the cost by project and every project ordered by requests", async () => {
     signedIn({
       projects: [
         project({ id: OTHER_PROJECT, name: "Support triage", is_default: false }),
         project(),
         project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T00:00:00Z" }),
         project({ id: "proj_quiet", name: "Quiet archive", is_default: false, archived_at: "2026-09-01T00:00:00Z" }),
+        project({ id: "proj_new", name: "New idea", is_default: false }),
       ],
     });
     usage({
@@ -48,26 +49,19 @@ describe("organization overview", () => {
     await within(table).findByRole("link", { name: "Checkout assistant" });
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows.map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
-      "CCheckout assistant",
+      "CCheckout assistantDefault",
       "SSupport triage",
       "OOld pilotArchived",
+      "NNew idea",
       "proj_deleted",
     ]);
     expect(rows[0]).toHaveTextContent("10.0%3");
     expect(rows[2]).toHaveTextContent("100%5");
-    expect(rows[3]).toHaveTextContent("—");
+    expect(rows[3]).toHaveTextContent("New idea000$0.00");
+    expect(rows[4]).toHaveTextContent("—");
     expect(within(table).getByRole("link", { name: "Checkout assistant" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
 
-    const list = screen.getByRole("grid", { name: "Projects" });
-    await waitFor(() =>
-      expect(
-        within(list)
-          .getAllByRole("gridcell")
-          .map((c) => c.textContent),
-      ).toEqual(["CCheckout assistantDefault30 requests", "SSupport triage10 requests", "OOld pilotArchived5 requests"]),
-    );
-    expect(screen.getByText("Requests in the period; open one to work in it")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
+    expect(screen.queryByRole("grid", { name: "Projects" })).not.toBeInTheDocument();
 
     expect(usageQueries()).toEqual(
       expect.arrayContaining([
@@ -78,7 +72,7 @@ describe("organization overview", () => {
     );
     expect(requests("GET", "orgs/:org/projects").some((r) => r.query.get("include_archived") === "true")).toBe(true);
 
-    await user.click(within(list).getByRole("gridcell", { name: /Support triage/ }));
+    await user.click(within(table).getByRole("link", { name: "Support triage" }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
@@ -184,15 +178,7 @@ describe("organization overview", () => {
     const { user } = await renderApp(`/orgs/${ORG}?${PERIOD}`);
     const table = await breakdown();
     const link = await within(table).findByRole("link", { name: "Checkout assistant" });
-    expect(link.parentElement?.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
-    const list = screen.getByRole("grid", { name: "Projects" });
-    await waitFor(() =>
-      expect(
-        within(list)
-          .getByRole("gridcell", { name: /Checkout assistant/ })
-          .querySelector('img[src="/avatars/checkout.webp"]'),
-      ).not.toBeNull(),
-    );
+    expect(link.closest("td")?.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
     await user.click(screen.getByRole("radio", { name: "By member" }));
     const ada = await within(table).findByText("Ada Okafor (you)");
     expect(ada.parentElement?.querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
@@ -301,6 +287,21 @@ describe("organization overview", () => {
     expect(screen.queryByRole("button", { name: "Period" })).not.toBeInTheDocument();
     expect(requests("GET", USAGE)).toHaveLength(0);
     expect(requests("GET", "orgs/:org/usage/span")).toHaveLength(0);
+  });
+
+  it("opens a project from the list, with its picture", async () => {
+    withRights(["org.view"]);
+    on(
+      "GET",
+      "orgs/:org/projects",
+      page([project({ avatar_url: "/avatars/checkout.webp" }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })]),
+    );
+    const { user, router } = await renderApp(`/orgs/${ORG}`);
+    const list = await screen.findByRole("grid", { name: "Projects" });
+    const checkout = await within(list).findByRole("gridcell", { name: /Checkout assistant/ });
+    expect(checkout.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
+    await user.click(within(list).getByRole("gridcell", { name: /Support triage/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
   it("starts all time at the first day with usage and compares with nothing", async () => {

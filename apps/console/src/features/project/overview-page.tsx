@@ -7,6 +7,8 @@ import { projectUsageQuery, usageSpanQuery, type GroupBy } from "~/api/queries/u
 import { granularity, spansYears } from "~/format/buckets";
 import { previousPeriod, type PeriodSearch } from "~/format/period";
 import { comparedWith, presetDays, resolvePeriod } from "~/format/presets";
+import { PeriodPickerPlaceholder } from "~/kaeso/period-placeholder";
+import { AsidePlaceholder } from "./overview-aside-placeholder";
 import { CostChart, RequestsChart, TokensChart, UsageMetrics } from "~/kaeso/usage-panels";
 import { ProjectHeader } from "~/shell/project-header";
 import { useProjectRights } from "~/auth/rights";
@@ -16,6 +18,7 @@ const loadParts = () => import("./overview-parts");
 const Breakdown = lazy(() => loadParts().then((m) => ({ default: m.Breakdown })));
 const Aside = lazy(() => loadParts().then((m) => ({ default: m.Aside })));
 const CostShare = lazy(() => loadParts().then((m) => ({ default: m.CostShare })));
+
 const PeriodPicker = lazy(() => import("~/kaeso/period-picker").then((m) => ({ default: m.PeriodPicker })));
 
 export type OverviewSearch = PeriodSearch & { by?: Exclude<GroupBy, "project" | "week" | "month"> };
@@ -57,7 +60,7 @@ export function OverviewPage({ org, project, search }: { org: string; project: s
         project={project}
         page={t("project.overview.title", "Overview")}
         actions={
-          <Suspense fallback={null}>
+          <Suspense fallback={<PeriodPickerPlaceholder />}>
             <PeriodPicker from={from} to={to} period={period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
           </Suspense>
         }
@@ -65,8 +68,8 @@ export function OverviewPage({ org, project, search }: { org: string; project: s
       <AppFrame.Body padding="page">
         <SplitView
           aside={
-            <Suspense fallback={null}>
-              <Aside org={org} project={project} modelCount={models.data?.length} />
+            <Suspense fallback={<AsidePlaceholder org={org} project={project} />}>
+              <Aside org={org} project={project} modelCount={models.data?.length} modelsLoading={models.isLoading} />
             </Suspense>
           }
         >

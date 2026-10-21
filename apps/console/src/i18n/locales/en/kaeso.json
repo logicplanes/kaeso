@@ -186,6 +186,7 @@
   "kaeso.usage.input": "Input",
   "kaeso.usage.lessThan": "<{amount}",
   "kaeso.usage.noCost": "No cost in this period.",
+  "kaeso.usage.noEarlierData": "No earlier data",
   "kaeso.usage.noRequests": "No requests in this period.",
   "kaeso.usage.noTokens": "No tokens in this period.",
   "kaeso.usage.output": "Output",
@@ -194,6 +195,5 @@
   "kaeso.usage.requestsPerUtc": "Requests and errors per {granularity, select, week {week} month {month} other {day}} (UTC)",
   "kaeso.usage.tokensByKind": "Tokens by kind per {granularity, select, week {week} month {month} other {day}}",
   "kaeso.usage.tokensPerUtc": "By kind, per {granularity, select, week {week} month {month} other {day}} (UTC)",
-  "kaeso.usage.totalCost": "Total cost",
-  "kaeso.usage.upFromNone": "Up from none"
+  "kaeso.usage.totalCost": "Total cost"
 }

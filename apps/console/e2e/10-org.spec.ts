@@ -343,10 +343,5 @@ test("usage: the old settings page opens the overview with its period", async ({
   await expect(page).toHaveURL(new RegExp(`/orgs/${org}\\?from=2026-01-01&to=2026-01-31$`));
   await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
   await expect(page.getByLabel("Usage in the period")).toBeVisible();
-  await expect(
-    page
-      .getByRole("grid", { name: "Projects" })
-      .getByText(/requests?$/)
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByRole("table", { name: "Usage breakdown" })).toBeVisible();
 });

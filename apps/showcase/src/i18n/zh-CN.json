@@ -749,7 +749,6 @@
   "The page, inside the inset panel.": "页面，位于内嵌面板中。",
   "The pairs to show.": "要显示的键值对。",
   "The parameters, such as temperature and effort.": "参数，例如温度和推理强度。",
-  "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.": "整体的各个部分，每个包含 `id`、`label`、`value` 和可选的 `color`。占比低于 2% 的部分在有两个或以上时合并为“其他”。",
   "The person's or organization's name; its first letters show without a picture, and it is the accessible name.": "人员或组织的名称；没有图片时显示其首字母，并作为无障碍名称。",
   "The picker's accessible name (\"Model\" by default).": "选择器的无障碍名称（默认为“模型”）。",
   "The picture's address; without one, or when it fails to load, the letters show.": "图片地址；没有地址或加载失败时显示首字母。",
@@ -785,7 +784,6 @@
   "The selected tab, when you control it.": "受控时选中的标签页。",
   "The send button's accessible name.": "发送按钮的无障碍名称。",
   "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.": "系列，每个包含 `id`、`label`、由 `t`（时间）和 `v` 组成的 `points`，以及可选的 `color`。",
-  "The shape it stands in for: a line of text, a control, a circle or a block.": "它所代替的形状：一行文字、一个控件、一个圆形或一个方块。",
   "The shape of each step: a pill or a box.": "每个步骤的形状：胶囊或方框。",
   "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.": "已用比例，从 0 到 1。超过 1 时圆弧填满并变为危险色。",
   "The sheet's content.": "侧滑面板的内容。",
@@ -1048,5 +1046,7 @@
   "Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "将第一个（`first`）或最后一个（`last`）点标记为只覆盖其跨度的一部分：通往它的线为虚线，提示框显示“不完整”。`ongoing` 将最后一个标记为仍在计数，例如今天，并显示“截至目前”。",
   "Shows each series' share of the point's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "在提示框中显示每个系列占该点总数的比例（默认开启）。当一个系列是另一个系列的一部分时关闭它，例如请求中的错误。",
   "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.": "`time` 标注整点时间，能放下多少就标多少（默认）。`points` 将每个点放在等宽步长的中间，并每隔 n 个标注一个，与柱状图放置和标注类别的方式相同，因此同样日期的柱状图会与它对齐。",
-  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "坐标轴和默认标签读取时间所用的时区，例如按 UTC 计数的日期用 \"UTC\"。默认使用 `setFormatTimeZone` 设置的时区，否则使用查看者的时区。"
+  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "坐标轴和默认标签读取时间所用的时区，例如按 UTC 计数的日期用 \"UTC\"。默认使用 `setFormatTimeZone` 设置的时区，否则使用查看者的时区。",
+  "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more; the legend lists them by value, Other last.": "整体的各个部分，每个包含 `id`、`label`、`value` 和可选的 `color`。占比低于 2% 的部分在有两个或以上时合并为“其他”；图例按数值排列，“其他”排在最后。",
+  "The shape it stands in for: a line of text, a control (36px, or 32px with `control-sm`), a circle or a block.": "它所代替的形状：一行文字、一个控件（36px，或使用 `control-sm` 时为 32px）、一个圆形或一个方块。"
 }

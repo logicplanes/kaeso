@@ -13,6 +13,7 @@ import { periodUSD } from "~/kaeso/usage-panels";
 import { bucketLabel, type Granularity } from "~/format/buckets";
 import { serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import { projectPath } from "~/shell/pages";
+import { AsidePlaceholder } from "./overview-aside-placeholder";
 import type { OverviewSearch } from "./overview-page";
 import { useProjectRights } from "~/auth/rights";
 import { t } from "~/i18n";
@@ -28,8 +29,9 @@ const byOptions = (g: Granularity) => [
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
-const NUMBER_COLUMN = "w-96 sm:w-120";
-const PHONE_HIDDEN = "hidden w-120 sm:table-cell";
+const NAME_COLUMN = "w-full max-w-0";
+const NUMBER_COLUMN = "whitespace-nowrap";
+const PHONE_HIDDEN = "hidden whitespace-nowrap sm:table-cell";
 
 const NOTABLE_ERROR_RATE = 0.05;
 
@@ -100,10 +102,10 @@ export function Breakdown({
         />
       }
     >
-      <Table aria-label={t("project.overview.usageBreakdown", "Usage breakdown")} className="table-fixed" {...(waiting ? { "aria-busy": true } : {})}>
+      <Table aria-label={t("project.overview.usageBreakdown", "Usage breakdown")} {...(waiting ? { "aria-busy": true } : {})}>
         <Table.Head>
           <Table.Row>
-            <Table.HeaderCell>
+            <Table.HeaderCell className={NAME_COLUMN}>
               {by === "day"
                 ? timeHeader(granularity)
                 : by === "model"
@@ -155,8 +157,10 @@ export function Breakdown({
           )}
           {sorted.map((r) => (
             <Table.Row key={r.key}>
-              <Table.Cell>{label(r)}</Table.Cell>
-              <Table.Cell align="end">{formatNumber(r.requests)}</Table.Cell>
+              <Table.Cell className={NAME_COLUMN}>{label(r)}</Table.Cell>
+              <Table.Cell align="end" className={NUMBER_COLUMN}>
+                {formatNumber(r.requests)}
+              </Table.Cell>
               <Table.Cell
                 align="end"
                 className={PHONE_HIDDEN}
@@ -175,7 +179,11 @@ export function Breakdown({
               <Table.Cell align="end" className={PHONE_HIDDEN}>
                 {formatTokens(totalTokens(r))}
               </Table.Cell>
-              {showCost && <Table.Cell align="end">{r.cost === null || r.cost === undefined ? "—" : periodUSD(r.cost)}</Table.Cell>}
+              {showCost && (
+                <Table.Cell align="end" className={NUMBER_COLUMN}>
+                  {r.cost === null || r.cost === undefined ? "—" : periodUSD(r.cost)}
+                </Table.Cell>
+              )}
             </Table.Row>
           ))}
         </Table.Body>
@@ -184,7 +192,17 @@ export function Breakdown({
   );
 }
 
-export function Aside({ org, project, modelCount }: { org: string; project: string; modelCount: number | undefined }) {
+export function Aside({
+  org,
+  project,
+  modelCount,
+  modelsLoading = false,
+}: {
+  org: string;
+  project: string;
+  modelCount: number | undefined;
+  modelsLoading?: boolean | undefined;
+}) {
   const rights = useProjectRights(org, project);
   const navigate = useNavigate();
   const base = projectPath(org, project);
@@ -195,8 +213,13 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
   const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
   const go = (href: string) => void navigate({ href });
   const settled = (q: { isPending: boolean }, on: boolean) => !on || !q.isPending;
-  if (!settled(limits, rights.has("limits.view")) || !settled(errors, rights.has("logs.metadata.view")) || !settled(keys, rights.has("keys.all.view")))
-    return null;
+  if (
+    modelsLoading ||
+    !settled(limits, rights.has("limits.view")) ||
+    !settled(errors, rights.has("logs.metadata.view")) ||
+    !settled(keys, rights.has("keys.all.view"))
+  )
+    return <AsidePlaceholder org={org} project={project} />;
   return (
     <InsetContent>
       {rights.has("limits.view") && (

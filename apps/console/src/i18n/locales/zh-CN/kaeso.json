@@ -186,6 +186,7 @@
   "kaeso.usage.input": "输入",
   "kaeso.usage.lessThan": "低于 {amount}",
   "kaeso.usage.noCost": "此时段内无费用。",
+  "kaeso.usage.noEarlierData": "此前无数据",
   "kaeso.usage.noRequests": "此时段内无请求。",
   "kaeso.usage.noTokens": "此时段内无 Token。",
   "kaeso.usage.output": "输出",
@@ -194,6 +195,5 @@
   "kaeso.usage.requestsPerUtc": "每{granularity, select, week {周} month {月} other {日}}请求数和错误数（UTC）",
   "kaeso.usage.tokensByKind": "每{granularity, select, week {周} month {月} other {日}}各类 Token",
   "kaeso.usage.tokensPerUtc": "按类型，每{granularity, select, week {周} month {月} other {日}}（UTC）",
-  "kaeso.usage.totalCost": "总费用",
-  "kaeso.usage.upFromNone": "从零增长"
+  "kaeso.usage.totalCost": "总费用"
 }

@@ -50,10 +50,11 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
   const months = wide ? 2 : 1;
   const [draft, setDraft] = useState<DateRange | undefined>(range ?? undefined);
   const [custom, setCustom] = useState(preset === null);
+  const [chosen, setChosen] = useState<string | null>(null);
   const [last, setLast] = useState(() => monthOf(range?.to ?? range?.from ?? new Date()));
   const first = addMonths(last, 1 - months);
   const shows = (d: Date) => d >= first && monthOf(d) <= last;
-  const selected = custom ? null : preset;
+  const selected = custom ? null : (chosen ?? preset);
   const edit = (next: DateRange | undefined) => {
     setDraft(next);
     setCustom(true);
@@ -89,7 +90,14 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
                 aria-selected={selected === id}
                 tabIndex={selected === id ? 0 : -1}
                 className={item}
-                onClick={() => onPick(p.range(), id)}
+                onClick={() => {
+                  const next = p.range();
+                  setDraft(next);
+                  setChosen(id);
+                  setCustom(false);
+                  setLast(monthOf(next.to ?? next.from ?? new Date()));
+                  onPick(next, id);
+                }}
               >
                 {p.label}
               </button>

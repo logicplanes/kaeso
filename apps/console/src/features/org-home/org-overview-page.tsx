@@ -1,13 +1,15 @@
 import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, List, Section, Text } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, List, Section } from "@logicplanes/kaeso-ui";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery, usageSpanQuery } from "~/api/queries/usage";
 import { useOrgRights } from "~/auth/session";
 import { granularity } from "~/format/buckets";
 import { previousPeriod, type PeriodSearch } from "~/format/period";
 import { comparedWith, presetDays, resolvePeriod } from "~/format/presets";
+import { PeriodPickerPlaceholder } from "~/kaeso/period-placeholder";
+import { usePictureHues } from "~/kaeso/picture-hues";
 import { RequestsChart, TokensChart, UsageMetrics } from "~/kaeso/usage-panels";
 import { OrgHeader } from "~/shell/org-header";
 import { projectPath } from "~/shell/pages";
@@ -16,6 +18,7 @@ import { t } from "~/i18n";
 
 const CostShare = lazy(() => import("~/kaeso/cost-share").then((m) => ({ default: m.CostShare })));
 const OrgUsageBreakdown = lazy(() => import("./org-usage-breakdown").then((m) => ({ default: m.OrgUsageBreakdown })));
+
 const PeriodPicker = lazy(() => import("~/kaeso/period-picker").then((m) => ({ default: m.PeriodPicker })));
 
 export type OrgOverviewSearch = PeriodSearch & { by?: OrgBreakdown };
@@ -38,11 +41,8 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
   const projects = useQuery(orgProjectsQuery(org, true));
   const setSearch = (next: OrgOverviewSearch) => void navigate({ to: "/orgs/$org", params: { org }, search: { ...search, ...next }, replace: true });
   const dailyState = { rows: daily.data ?? [], from, to, granularity: g, loading: daily.isPending, failed: daily.isError, onRetry: () => void daily.refetch() };
-  const usageOf = (id: string) => byProject.data?.find((r) => r.key === id);
   const name = (id: string) => projects.data?.find((p) => p.id === id)?.name ?? id;
-  const sorted = (projects.data ?? [])
-    .filter((p) => !p.archived_at || (usageOf(p.id)?.requests ?? 0) > 0)
-    .sort((a, b) => (usageOf(b.id)?.requests ?? 0) - (usageOf(a.id)?.requests ?? 0));
+  const hues = usePictureHues((projects.data ?? []).map((p) => ({ id: p.id, src: p.avatar_url })));
 
   return (
     <>
@@ -51,7 +51,7 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
         page={t("orgHome.overview", "Overview")}
         actions={
           canUsage && (
-            <Suspense fallback={null}>
+            <Suspense fallback={<PeriodPickerPlaceholder />}>
               <PeriodPicker from={from} to={to} period={period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
             </Suspense>
           )
@@ -80,6 +80,7 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
                     description={t("orgHome.costByProjectHint", "USD in the period")}
                     rows={byProject.data ?? []}
                     label={name}
+                    hues={hues}
                     loading={byProject.isPending || projects.isPending}
                     failed={byProject.isError}
                     onRetry={() => void byProject.refetch()}
@@ -100,41 +101,33 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
               </Suspense>
             </>
           )}
-          <Section
-            title={t("common.projects", "Projects")}
-            description={
-              canUsage ? t("orgHome.projectsHintUsage", "Requests in the period; open one to work in it") : t("orgHome.projectsHint", "Open one to work in it")
-            }
-            actions={
-              <Button size="sm" href={`/orgs/${org}/projects`}>
-                {t("orgHome.allProjects", "All projects")}
-              </Button>
-            }
-          >
-            <List
-              aria-label={t("common.projects", "Projects")}
-              loading={projects.isPending || byProject.isLoading}
-              items={(byProject.isLoading ? [] : sorted).map((p) => ({
-                id: p.id,
-                title: p.name,
-                leading: <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />,
-                meta: (
-                  <>
-                    {p.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
-                    {p.archived_at && <Badge>{t("common.archived", "Archived")}</Badge>}
-                    {canUsage && byProject.data && <Requests n={usageOf(p.id)?.requests ?? 0} />}
-                  </>
-                ),
-              }))}
-              onOpen={(item) => void navigate({ href: projectPath(org, item.id) })}
-            />
-          </Section>
+          {!canUsage && (
+            <Section
+              title={t("common.projects", "Projects")}
+              description={t("orgHome.projectsHint", "Open one to work in it")}
+              actions={
+                <Button size="sm" href={`/orgs/${org}/projects`}>
+                  {t("orgHome.allProjects", "All projects")}
+                </Button>
+              }
+            >
+              <List
+                aria-label={t("common.projects", "Projects")}
+                loading={projects.isPending}
+                items={(projects.data ?? [])
+                  .filter((p) => !p.archived_at)
+                  .map((p) => ({
+                    id: p.id,
+                    title: p.name,
+                    leading: <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />,
+                    meta: p.is_default ? <Badge>{t("orgHome.default", "Default")}</Badge> : undefined,
+                  }))}
+                onOpen={(item) => void navigate({ href: projectPath(org, item.id) })}
+              />
+            </Section>
+          )}
         </div>
       </AppFrame.Body>
     </>
   );
-}
-
-function Requests({ n }: { n: number }) {
-  return <Text tone="secondary">{t("orgHome.requestCount", "{count, plural, one {# request} other {# requests}}", { count: n })}</Text>;
 }
