@@ -248,7 +248,7 @@ function ModelCell({ row }: { row: LogView }) {
         </Badge>
       )}
       {row.source === "playground" && (
-        <Pill size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-lg:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
+        <Pill size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-md:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
           {t("logs.source.playground", "Playground")}
         </Pill>
       )}
@@ -258,7 +258,7 @@ function ModelCell({ row }: { row: LogView }) {
         </Text>
       )}
       {row.error_message && (
-        <Text variant="small" tone="secondary" truncate className="hidden min-w-0 flex-1 basis-0 @cell-md:block">
+        <Text variant="small" tone="secondary" truncate className="hidden min-w-0 flex-1 basis-0 @cell-lg:block">
           {row.error_message}
         </Text>
       )}

@@ -108,6 +108,6 @@ describe("logColumns", () => {
     );
     const [ok, failed] = screen.getAllByText("Playground").map((e) => e.closest("[class*='@cell-']"));
     expect(ok).toHaveClass("@cell-sm:inline-flex");
-    expect(failed).toHaveClass("@cell-lg:inline-flex");
+    expect(failed).toHaveClass("@cell-md:inline-flex");
   });
 });
