@@ -79,6 +79,10 @@ async fn security_settings_start_open_and_follow_each_switch() {
     assert_eq!(r.body["max_key_lifetime_days"], Value::Null);
     assert_eq!(r.body["sso"], Value::Null);
     assert_eq!(r.body["sso_default_role"], Value::Null);
+    assert_eq!(
+        r.body["sso_redirect_url"],
+        format!("{}/platform/v1/auth/oidc/callback", common::ORIGIN)
+    );
 
     for days in [0, 3651] {
         let r = put(

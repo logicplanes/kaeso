@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
+  Badge,
   Button,
   Code,
   Combobox,
+  Field,
   InlineCopyText,
   Input,
   NumberInput,
-  Pill,
   RolePicker,
   SensitiveInput,
   SettingsGroup,
@@ -24,6 +25,7 @@ import { orgViewKey, securityQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
+import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
 import { useCatalogue } from "~/kaeso/catalogue";
 import { roleOptions, rolesOfScope, useRoles } from "~/kaeso/roles";
@@ -68,7 +70,6 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
   const canManage = rights.has("security.sso.manage");
   const [editing, setEditing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [registered, setRegistered] = useState<string | null>(null);
   const sso = security.sso;
   const verify = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/security/sso/verify", { params: { path: { org } } })),
@@ -85,7 +86,6 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
     invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
     onSuccess: () => {
       setDisconnecting(false);
-      setRegistered(null);
       toast(t("org.sso.disconnected", "Identity provider disconnected"));
     },
     onError: () => setDisconnecting(false),
@@ -143,32 +143,39 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
             <SettingsRow
               title={t("org.sso.domains", "Email domains")}
               description={t("org.sso.domainsHint", "Verified domains' addresses sign in through the provider.")}
-              control={
-                <Button
-                  size="sm"
-                  disabled={!canManage || sso.domains.every((d) => d.verified)}
-                  {...(canManage ? {} : { disabledReason: needs("security.sso.manage") })}
-                  loading={verify.isPending}
-                  onClick={() => verify.mutate()}
-                >
-                  {t("org.sso.verify", "Verify domains")}
-                </Button>
-              }
             />
             {sso.domains.map((d) => (
               <SettingsRow
                 key={d.domain}
-                title={d.domain}
+                title={
+                  <span className="flex min-w-0 items-center gap-8">
+                    <span className="truncate">{d.domain}</span>
+                    <Badge tone={d.verified ? "success" : "warning"}>
+                      {d.verified ? t("org.sso.verified", "Verified") : t("org.sso.unverified", "Unverified")}
+                    </Badge>
+                  </span>
+                }
                 description={
                   d.verified
-                    ? t("org.sso.domainVerified", "Verified; its addresses sign in through the provider.")
-                    : t("org.sso.domainUnverified", "Add a TXT record at {name}.", { name: d.record_name })
+                    ? t("org.sso.domainVerified", "Its addresses sign in through the provider.")
+                    : tRich("org.sso.domainUnverified", "Add this TXT record at {name}, then verify.", {
+                        name: <Code className="text-nowrap">{d.record_name}</Code>,
+                      })
                 }
                 control={
-                  d.verified ? (
-                    <Pill size="sm">{t("org.sso.verified", "Verified")}</Pill>
-                  ) : (
-                    <InlineCopyText value={d.record_value} label={t("org.sso.copyRecord", "Copy TXT value")} />
+                  d.verified ? undefined : (
+                    <div className="flex min-w-0 items-center gap-8">
+                      <InlineCopyText value={d.record_value} label={t("org.sso.copyRecord", "Copy TXT value")} />
+                      <Button
+                        size="sm"
+                        disabled={!canManage}
+                        {...(canManage ? {} : { disabledReason: needs("security.sso.manage") })}
+                        loading={verify.isPending}
+                        onClick={() => verify.mutate()}
+                      >
+                        {t("org.sso.verify", "Verify")}
+                      </Button>
+                    </div>
                   )
                 }
               />
@@ -189,11 +196,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
             />
             <SettingsRow
               title={t("org.sso.redirectUrl", "Redirect URL")}
-              description={
-                registered === sso.redirect_url
-                  ? t("org.sso.registerRedirect", "Register this redirect URL at the provider.")
-                  : t("org.sso.redirectRegistered", "Registered at the provider as the sign-in callback.")
-              }
+              description={t("org.sso.registerRedirect", "Register it at the provider as the sign-in callback.")}
               control={<InlineCopyText value={sso.redirect_url} label={t("org.sso.copyRedirect", "Copy redirect URL")} />}
             />
             <SettingsRow
@@ -209,11 +212,8 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
           org={org}
           current={sso ?? null}
           defaultRole={security.sso_default_role?.id ?? null}
+          redirectUrl={security.sso_redirect_url}
           onClose={() => setEditing(false)}
-          onSaved={(saved) => {
-            setEditing(false);
-            setRegistered(saved.redirect_url);
-          }}
         />
       )}
       <AlertDialog
@@ -251,14 +251,14 @@ function SsoDialog({
   org,
   current,
   defaultRole,
+  redirectUrl,
   onClose,
-  onSaved,
 }: {
   org: string;
   current: SsoView | null;
   defaultRole: string | null;
+  redirectUrl: string;
   onClose: () => void;
-  onSaved: (sso: SsoView) => void;
 }) {
   const [issuer, setIssuer] = useState(current?.issuer ?? "");
   const [clientId, setClientId] = useState(current?.client_id ?? "");
@@ -290,10 +290,9 @@ function SsoDialog({
         }),
       ),
     invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
-    onSuccess: (s) => {
+    onSuccess: () => {
       toast.success(current ? t("org.sso.saved", "Single sign-on saved") : t("org.sso.connected", "Identity provider connected"));
-      if (s.sso) onSaved(s.sso);
-      else onClose();
+      onClose();
     },
   });
   const addDomain = (raw: string) => {
@@ -334,16 +333,21 @@ function SsoDialog({
         {
           id: "issuer",
           title: t("org.sso.issuerStep", "Where is your identity provider?"),
-          description: t("org.sso.issuerStepHint", "Create an OpenID Connect app at your provider, then enter its issuer URL."),
+          description: t("org.sso.issuerStepHint", "Create an OpenID Connect app at your provider with this redirect URL, then enter its issuer URL."),
           blockedReason: providerReason,
           content: (
-            <Input
-              aria-label={t("org.sso.issuerUrl", "Issuer URL")}
-              placeholder={t("org.sso.issuerExample", "https://login.example.com")}
-              value={issuer}
-              onChange={(e) => setIssuer(e.target.value)}
-              autoFocus
-            />
+            <div className="flex flex-col gap-16">
+              <Field label={t("org.sso.redirectUrl", "Redirect URL")}>
+                <InlineCopyText value={redirectUrl} label={t("org.sso.copyRedirect", "Copy redirect URL")} />
+              </Field>
+              <Input
+                label={t("org.sso.issuerUrl", "Issuer URL")}
+                placeholder={t("org.sso.issuerExample", "https://login.example.com")}
+                value={issuer}
+                onChange={(e) => setIssuer(e.target.value)}
+                autoFocus
+              />
+            </div>
           ),
         },
         {
@@ -491,7 +495,11 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
       <SettingsGroup>
         <SettingsRow
           title={t("org.sso.require", "Require single sign-on")}
-          description={t("org.sso.requireHint", "Members get in only through the identity provider.")}
+          description={
+            security.sso
+              ? t("org.sso.requireHint", "Members get in only through the identity provider.")
+              : t("org.sso.connectFirst", "Connect an identity provider first")
+          }
           control={
             <Switch
               aria-label={t("org.sso.require", "Require single sign-on")}

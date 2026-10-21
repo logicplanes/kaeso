@@ -25,11 +25,11 @@ test("an identity provider is connected, and a new person signs in through it", 
   await page.getByRole("option", { name: /Join as Member/ }).click();
   await submitSteps(dialog, "Connect");
   await expect(toastText(page, "Identity provider connected")).toBeVisible();
-  await expect(page.getByText("Register this redirect URL at the provider.")).toBeVisible();
+  await expect(page.getByText("Register it at the provider as the sign-in callback.")).toBeVisible();
   await expect(page.getByRole("switch", { name: "Require single sign-on" })).not.toHaveAttribute("aria-disabled", "true");
   verifyDomain("example.com");
   await page.reload();
-  await expect(page.getByText("Verified; its addresses sign in through the provider.")).toBeVisible();
+  await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
 
   const other = await browser.newContext();
   const visitor = await other.newPage();

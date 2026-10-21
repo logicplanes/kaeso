@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import type { SecurityView } from "~/api/generated/types";
 import { ORG, signedIn, whoAmI, withRights } from "~/test/fixtures";
 import { hoverReason, notifications, security, sso, ssoDomain, fill } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 
 const PATH = `/settings/orgs/${ORG}/security`;
 const MEMBER_ROLE = { id: "member", kind: "builtin", name: "Member" };
@@ -34,12 +35,16 @@ describe("email domain verification", () => {
       return security({ sso: sso({ domains: [ssoDomain("northwind.test", true)] }) });
     });
     const { user } = await renderApp(PATH);
-    expect(await screen.findByText("Add a TXT record at _kaeso-verify.northwind.test.")).toBeInTheDocument();
+    const record = await screen.findByText("_kaeso-verify.northwind.test");
+    expect(record).toHaveClass("text-nowrap");
+    expect(record.parentElement).toHaveTextContent("Add this TXT record at _kaeso-verify.northwind.test, then verify.");
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
     expect(screen.getByText("kaeso-verify=northwind-token")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Verify domains" }));
+    await user.click(screen.getByRole("button", { name: "Verify" }));
     expect(await notifications().findByText("Domains verified")).toBeInTheDocument();
-    expect(await screen.findByText("Verified; its addresses sign in through the provider.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Verify domains" })).toBeDisabled();
+    expect(await screen.findByText("Its addresses sign in through the provider.")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Verify" })).not.toBeInTheDocument();
   });
 
   it("says when the TXT record isn't found yet", async () => {
@@ -48,7 +53,7 @@ describe("email domain verification", () => {
     on("GET", "orgs/:org/security", unverified);
     on("POST", "orgs/:org/security/sso/verify", unverified);
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Verify domains" }));
+    await user.click(await screen.findByRole("button", { name: "Verify" }));
     expect(await notifications().findByText("No TXT record found yet; DNS changes can take a while")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/security/sso/verify")).toHaveLength(1);
   });
@@ -77,7 +82,9 @@ describe("organization security", () => {
     expect(screen.getByText("northwind.test")).toBeInTheDocument();
     expect(screen.getByText("northwind.example")).toBeInTheDocument();
     expect(screen.getByText("People without an invitation join as Member.")).toBeInTheDocument();
-    expect(screen.getByText("Registered at the provider as the sign-in callback.")).toBeInTheDocument();
+    expect(screen.getByText("Register it at the provider as the sign-in callback.")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
     expect(screen.getByText("mk_sso")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByText("Says Continue with SSO.")).toBeInTheDocument();
@@ -164,6 +171,8 @@ describe("connecting an identity provider", () => {
     await user.click(await screen.findByRole("button", { name: "Connect an identity provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Connect an identity provider" });
     const next = () => within(dialog).getByRole("button", { name: "Continue" });
+    expect(within(dialog).getByText("Create an OpenID Connect app at your provider with this redirect URL, then enter its issuer URL.")).toBeInTheDocument();
+    expect(within(dialog).getByText("https://console.northwind.test/sso/callback")).toBeInTheDocument();
     await hoverReason(user, next(), "Enter the issuer URL");
     const issuer = within(dialog).getByRole("textbox", { name: "Issuer URL" });
     await fill(user, issuer, "login.example.com");
@@ -212,7 +221,7 @@ describe("connecting an identity provider", () => {
       },
     ]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Connect an identity provider" })).not.toBeInTheDocument());
-    expect(await screen.findByText("Register this redirect URL at the provider.")).toBeInTheDocument();
+    expect(await screen.findByText("Register it at the provider as the sign-in callback.")).toBeInTheDocument();
     expect(screen.getByText("People without an invitation join as Member.")).toBeInTheDocument();
   });
 
@@ -337,7 +346,16 @@ describe("security requirements", () => {
     signedIn();
     serveSecurity(security());
     const { user } = await renderApp(PATH);
-    await hoverReason(user, await screen.findByRole("switch", { name: "Require single sign-on" }), "Connect an identity provider first");
+    const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
+    expect(screen.getAllByText("Connect an identity provider first")).toHaveLength(1);
+    expect(toggle).toHaveAttribute("aria-disabled", "true");
+    act(() => showTooltipsAtOnce(true));
+    try {
+      await user.hover(toggle);
+      await waitFor(() => expect(screen.getAllByText("Connect an identity provider first").length).toBeGreaterThan(1));
+    } finally {
+      act(() => showTooltipsAtOnce(false));
+    }
   });
 
   it("asks before requiring single sign-on of someone who signed in with a password", async () => {

@@ -46,7 +46,7 @@ test("the first admin sets up an install without passwords and connects the iden
   await expect(toastText(page, "Identity provider connected")).toBeVisible();
   verifyDomain("example.com", "gateway-sso");
   await page.reload();
-  await expect(page.getByText("Verified; its addresses sign in through the provider.")).toBeVisible();
+  await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
   await expect(page.getByText("Says Continue with Northwind ID and starts on its own.")).toBeVisible();
   await expect(page.getByText(new RegExp(`${SSO_CONSOLE_URL}/sign-in\\?org=org_`))).toBeVisible();
 });

@@ -37,7 +37,7 @@ A picture is a PNG, JPEG or WebP image, and the console crops it to a square.
 
 Single sign-on lets members sign in through your OpenID Connect identity provider. First create an app for Kaeso at your provider. Then, under **Security**, choose **Connect an identity provider** and answer five steps:
 
-1. **Where is your identity provider?** Enter the app's issuer URL, such as `https://login.example.com`.
+1. **Where is your identity provider?** The step shows the **Redirect URL** to register in the app as its sign-in callback. Enter the app's issuer URL, such as `https://login.example.com`.
 2. **Which app signs people in?** Enter its client id and client secret.
 3. **Which email domains sign in with it?** The sign-in page sends people with an address at these domains to your provider. Internationalized domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
 4. **Can people join without an invitation?** Choose **Invite only**, or the role that people new to Kaeso join with. That role can't be Owner.
@@ -50,13 +50,13 @@ Once you connect, the page shows two addresses:
 
 ### Verify your email domains
 
-Single sign-on signs in and admits only addresses at verified domains, so no organization can claim a domain it doesn't hold. For each domain, **Security** shows a TXT record. Add it at your DNS provider, then choose **Verify domains**:
+Single sign-on signs in and admits only addresses at verified domains, so no organization can claim a domain it doesn't hold. For each domain, **Security** shows whether it is **Verified** or **Unverified**, and the TXT record an unverified one needs. Add it at your DNS provider, then choose **Verify** next to the domain:
 
 ```text
 _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9fG1bC3xT8eA"
 ```
 
-DNS changes can take a while to show; choose **Verify domains** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
+DNS changes can take a while to show; choose **Verify** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
 
 **Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
 
