@@ -20,7 +20,7 @@ describe("logsLayout", () => {
 });
 
 function table(layout: LogsLayout, spansDays = true) {
-  const all = logColumns({ spansDays, layout, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+  const all = logColumns({ spansDays, layout, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
   render(<DataTable aria-label="Requests" data={[logRow()]} columns={COLUMNS.map((c) => all[c])} getRowId={(r) => r.id} />);
   return screen.getAllByRole("cell");
 }
@@ -55,7 +55,7 @@ describe("logColumns", () => {
   });
 
   it("puts the model first in its cell, then the outcome, the source and the message", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
     render(
       <DataTable
         aria-label="Requests"
@@ -69,7 +69,7 @@ describe("logColumns", () => {
   });
 
   it("starts with the outcome when a request was refused before a model was chosen", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
     render(
       <DataTable
         aria-label="Requests"
@@ -83,7 +83,7 @@ describe("logColumns", () => {
   });
 
   it("gives a successful Playground request's tag room sooner than a failed one's", () => {
-    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "" });
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
     render(
       <DataTable
         aria-label="Requests"
