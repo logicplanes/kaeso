@@ -40,6 +40,7 @@ const neutralRules: readonly (readonly [keyof typeof neutral, keyof typeof neutr
   ["focus", "bg-panel", 3],
   ["line-strong", "bg-panel", 1.3],
   ...(["line-field", "line-field-hover"] as const).flatMap((edge) => surfaces.map((bg) => [edge, bg, 3] as const)),
+  ...(["item-hover", "item-pressed"] as const).map((row) => ["line-field", row, 3] as const),
 ];
 
 describe.each(MODES)("contrast in %s mode", (mode) => {
