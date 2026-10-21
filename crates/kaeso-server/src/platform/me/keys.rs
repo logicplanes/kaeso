@@ -6,7 +6,7 @@ use kaeso_store::pg::{keys, members};
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use crate::platform::access::{Ctx, require_org_policy};
+use crate::platform::access::{Ctx, policy_gap, require_org_policy};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::keys::KeyView;
@@ -25,7 +25,10 @@ pub struct MyKeyFilter {
 #[utoipa::path(
     get,
     path = "/me/keys",
-    summary = "Every key of the signed-in user, in every project.",
+    summary = "The signed-in user's keys, in every project of the orgs this session may\n\
+    open.",
+    description = "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, \
+    such as another org's when the session came from an org's SSO.",
     tag = "me",
     params(PageParams, MyKeyFilter),
     responses((status = 200, body = List<KeyView>))
@@ -37,9 +40,17 @@ pub async fn list(
     Query(f): Query<MyKeyFilter>,
 ) -> ApiResult<Json<List<KeyView>>> {
     let page = page.page()?;
+    let session = ctx.session()?;
+    let open: Vec<uuid::Uuid> = members::orgs_of_user(&state.pg, session.user_id)
+        .await?
+        .into_iter()
+        .filter(|m| policy_gap(session, m.org_id, m.require_sso, m.require_2fa).is_none())
+        .map(|m| m.org_id)
+        .collect();
     let rows = keys::list_of_user(
         &state.pg,
-        ctx.user_id()?.uuid(),
+        session.user_id,
+        &open,
         f.include_archived.unwrap_or(false),
         page.after,
         page.fetch(),

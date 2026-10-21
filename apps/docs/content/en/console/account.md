@@ -65,7 +65,7 @@ Through single sign-on, the console opens your identity provider in a small wind
 
 ## After signing in through single sign-on
 
-A sign-in through an organization's identity provider opens only that organization, and lets you read your account. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
+A sign-in through an organization's identity provider opens only that organization, and lets you read your account. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 
 - changing your email address or password, or two-factor authentication;
 - creating an organization, leaving another one, or deleting the account;

@@ -1227,6 +1227,92 @@ async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign
     s.cleanup().await;
 }
 
+async fn own_key(app: &App, cookie: &str, org: &str, name: &str) -> String {
+    let projects = app.get(&format!("/orgs/{org}/projects"), cookie).await;
+    let project = projects.body["data"][0]["id"].as_str().unwrap().to_owned();
+    let r = app
+        .post(
+            &format!("/orgs/{org}/projects/{project}/keys"),
+            json!({ "name": name }),
+            Some(cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    r.body["id"].as_str().unwrap().to_owned()
+}
+
+fn key_names(r: &common::Resp) -> Vec<String> {
+    let mut names: Vec<String> = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| k["name"].as_str().unwrap().to_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+#[tokio::test]
+async fn an_sso_session_lists_only_the_keys_of_the_org_it_may_open() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    own_key(&app, &owner.cookie, &owner.org_id, "acme-bot").await;
+    let beta = app
+        .post("/me/orgs", json!({ "name": "Beta" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let beta = beta.body["id"].as_str().unwrap().to_owned();
+    let beta_key = own_key(&app, &owner.cookie, &beta, "beta-bot").await;
+
+    let sso = sso_as(&app, &idp, &owner.org_id, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    let mine = app
+        .get("/me/keys", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        key_names(&mine),
+        ["acme-bot"],
+        "a key in an org the SSO session may not open stays hidden"
+    );
+    let r = app.get(&format!("/me/keys/{beta_key}"), &sso).await;
+    assert_eq!(r.error_type(), "other_sign_in_required");
+    let r = app
+        .get("/me/keys?include_archived=true", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(key_names(&r), ["acme-bot"]);
+
+    let mine = app.get("/me/keys", &owner.cookie).await;
+    assert_eq!(key_names(&mine), ["acme-bot", "beta-bot"]);
+    sqlx::query("UPDATE organizations SET require_2fa = true WHERE id = $1")
+        .bind(common::uuid(&beta))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let mine = app.get("/me/keys", &owner.cookie).await;
+    assert_eq!(
+        key_names(&mine),
+        ["acme-bot"],
+        "a session without the second factor an org requires doesn't list its keys"
+    );
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn accounts_an_orgs_sso_created_before_links_existed_link_at_their_next_sign_in() {
     let s = TestServices::start().await;

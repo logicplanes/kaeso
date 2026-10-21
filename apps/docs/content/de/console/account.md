@@ -65,7 +65,7 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 ## Nach einer Anmeldung über Single Sign-on
 
-Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
+Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 
 - E-Mail-Adresse, Passwort oder Zwei-Faktor-Authentifizierung ändern;
 - eine Organisation erstellen, eine andere verlassen oder das Konto löschen;

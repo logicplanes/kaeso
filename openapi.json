@@ -4173,8 +4173,8 @@
         "tags": [
           "me"
         ],
-        "summary": "Every key of the signed-in user, in every project.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "summary": "The signed-in user's keys, in every project of the orgs this session may\nopen.",
+        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from an org's SSO.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "getMeKeys",
         "parameters": [
           {
