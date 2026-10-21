@@ -165,6 +165,27 @@ pub async fn revoke(
         == 1)
 }
 
+pub async fn revoke_others_for(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    email: &str,
+    accepted: Uuid,
+    now: OffsetDateTime,
+) -> Result<u64, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE invites SET revoked_at = $4, updated_at = now() \
+         WHERE org_id = $1 AND lower(email) = lower($2) AND id <> $3 \
+         AND accepted_at IS NULL AND revoked_at IS NULL",
+        org_id,
+        email,
+        accepted,
+        now
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
+}
+
 pub async fn renew(
     db: impl PgExecutor<'_>,
     org_id: Option<Uuid>,

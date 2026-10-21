@@ -175,6 +175,128 @@ async fn invites_add_members_with_their_presets_and_project_roles() {
 }
 
 #[tokio::test]
+async fn a_second_invitation_never_restores_roles_taken_away() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": "Bot" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let email = "ada@example.com";
+    let mut invites = Vec::new();
+    let mut tokens = Vec::new();
+    for n in 1..=2 {
+        let r = app
+            .post(
+                &format!("/orgs/{org}/invites"),
+                json!({ "email": email, "role": "developer", "project_roles": [{ "project_id": project, "role": "admin" }] }),
+                Some(&owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        invites.push(r.body["id"].as_str().unwrap().to_owned());
+        app.wait_for_mail(email, n).await;
+        tokens.push(app.last_token(email));
+    }
+
+    let accepted = app
+        .post(
+            "/auth/invites/accept",
+            json!({ "token": tokens[0], "name": "Ada", "password": PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let ada = accepted.cookie().unwrap();
+    let ada_id = accepted.body["user"]["id"].as_str().unwrap().to_owned();
+    let second = app
+        .get(
+            &format!("/orgs/{org}/invites/{}", invites[1]),
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(second.body["status"], "revoked");
+    let audit = app
+        .get(
+            &format!("/orgs/{org}/audit-log?action=invite.accept"),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        audit.body["data"][0]["after"]["revoked_invites"], 1,
+        "{:?}",
+        audit.body
+    );
+
+    let member = format!("/orgs/{org}/projects/{project}/members/{ada_id}");
+    app.call(
+        Method::PATCH,
+        &member,
+        Some(json!({ "role": "viewer" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let r = app
+        .post(
+            "/auth/invites/accept",
+            json!({ "token": tokens[1] }),
+            Some(&ada),
+        )
+        .await
+        .expect_status(StatusCode::NOT_FOUND);
+    assert_eq!(
+        r.body["error"]["message"],
+        "This invitation is no longer valid; ask for a new one."
+    );
+
+    sqlx::query("UPDATE invites SET revoked_at = NULL WHERE id = $1")
+        .bind(common::uuid(&invites[1]))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let r = app
+        .post(
+            "/auth/invites/accept",
+            json!({ "token": tokens[1] }),
+            Some(&ada),
+        )
+        .await
+        .expect_status(StatusCode::CONFLICT);
+    assert_eq!(
+        r.body["error"]["message"],
+        "ada@example.com is already a member of this organization."
+    );
+    let second = app
+        .get(
+            &format!("/orgs/{org}/invites/{}", invites[1]),
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(second.body["status"], "pending");
+
+    let now = app
+        .get(&member, &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(now.body["grant"]["role"]["id"], "viewer");
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn rights_can_only_be_granted_by_holders_and_owners_stay() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;

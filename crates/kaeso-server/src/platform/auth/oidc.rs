@@ -761,10 +761,15 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             });
         }
         if let Some(invite) = invite {
-            invite_service::accept(&mut tx, &invite, user_id, ctx.now).await?;
+            let invite_service::Accepted::Joined { revoked_others, .. } =
+                invite_service::accept(&mut tx, &invite, user_id, ctx.now).await?
+            else {
+                return Err(no_access());
+            };
             ctx.audit(Some(org), "invite.accept")
                 .by(user_id)
                 .target("invite", invite.id)
+                .after(serde_json::json!({ "revoked_invites": revoked_others }))
                 .write(&mut tx)
                 .await?;
         } else if let Some(preset) = org_row.sso_default_preset.clone() {

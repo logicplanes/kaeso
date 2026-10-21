@@ -135,7 +135,8 @@ pub struct AcceptedView {
     path = "/auth/invites/accept",
     summary = "Accepts an invitation. Signed in, the session's user must have the\n\
     invited address. Not signed in, the account is created (with `name`) and\n\
-    signed in; an existing account must sign in first.",
+    signed in; an existing account must sign in first. Refused for a member of\n\
+    the org; accepting revokes the address's other pending invitations to it.",
     tag = "auth",
     request_body = AcceptRequest,
     responses(
@@ -229,18 +230,28 @@ async fn finish(
         crate::services::orgs::ensure_changeable(&state.pg, org).await?;
     }
     let outcome = accept(&mut *tx, invite, user, ctx.now).await?;
-    let org = match outcome {
+    let (org, revoked_others) = match outcome {
         Accepted::Gone => {
             return Err(ApiError::NotFound(
                 "This invitation is no longer valid.".into(),
             ));
         }
-        Accepted::Instance => None,
-        Accepted::Joined(org) => Some(org),
+        Accepted::AlreadyMember => {
+            return Err(ApiError::Conflict(format!(
+                "{} is already a member of this organization.",
+                invite.email
+            )));
+        }
+        Accepted::Instance => (None, 0),
+        Accepted::Joined {
+            org,
+            revoked_others,
+        } => (Some(org), revoked_others),
     };
     ctx.audit(org, "invite.accept")
         .by(user)
         .target("invite", kaeso_core::id::InviteId::from_uuid(invite.id))
+        .after(serde_json::json!({ "revoked_invites": revoked_others }))
         .write(tx)
         .await?;
     Ok(org)

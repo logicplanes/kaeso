@@ -15,7 +15,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Accepts an invitation. Signed in, the session's user must have the\ninvited address. Not signed in, the account is created (with `name`) and\nsigned in; an existing account must sign in first.",
+        "summary": "Accepts an invitation. Signed in, the session's user must have the\ninvited address. Not signed in, the account is created (with `name`) and\nsigned in; an existing account must sign in first. Refused for a member of\nthe org; accepting revokes the address's other pending invitations to it.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthInvitesAccept",
         "requestBody": {
