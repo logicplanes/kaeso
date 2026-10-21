@@ -26,7 +26,7 @@ const signInSearch = (search: Record<string, unknown>): { next?: string; org?: s
 export const Route = createFileRoute("/sign-in")({
   validateSearch: signInSearch,
   beforeLoad: async ({ context, search }) => {
-    const signedIn = await context.queryClient.fetchQuery({ ...sessionQuery, retry: false }).then(
+    const signedIn = await context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0, retry: false }).then(
       () => true,
       () => false,
     );

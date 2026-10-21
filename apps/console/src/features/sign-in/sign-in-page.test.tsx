@@ -174,6 +174,17 @@ describe("a signed-in visit", () => {
     expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
   });
 
+  it("asks the gateway again rather than trusting a session it read moments ago", async () => {
+    signedIn();
+    const { router } = await renderApp(`/orgs/${ORG}/projects`);
+    await screen.findByRole("navigation", { name: "Console" });
+    signedOut();
+    on("GET", "auth/methods", methods());
+    await router.navigate({ to: "/sign-in" });
+    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/sign-in");
+  });
+
   it("opens the console without a next page, and never another site", async () => {
     signedIn();
     await renderApp("/sign-in?next=//elsewhere.test/steal");
