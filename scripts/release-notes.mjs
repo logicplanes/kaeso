@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { GROUPS, TOPICS, context, draft, escaped, history, linked, release } from "./changelog.mjs";
+import { GROUPS, TOPICS, context, draft, escaped, hazard, history, linked, notes, release } from "./changelog.mjs";
 
 export const MODEL = "claude-haiku-5-5";
 export const API_URL = "https://ai.logicplanes.com";
@@ -35,7 +35,7 @@ const NOT_PEOPLE = new Set([
 const ISSUES = `query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
-      closingIssuesReferences(first: 20) { nodes { number title } }
+      closingIssuesReferences(first: 20) { nodes { number title author { login } } }
     }
   }
 }`;
@@ -59,19 +59,53 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
   const latest = since ?? (git(["-c", "versionsort.suffix=-", "tag", "--list", "v*", "--sort=-v:refname"]).split("\n")[0].trim() || null);
   const sinceDate = latest ? git(["log", "-1", "--format=%cI", latest]).trim() : null;
   const range = since ? [`${since}..${head}`] : [head, "--not", "--tags=v*"];
-  const numbers = new Set();
-  for (const line of git(["log", "--no-merges", "--format=%H%x09%s", ...range]).split("\n")) {
-    if (!line.trim()) continue;
-    const [sha, subject = ""] = line.split("\t");
-    const own = /\(#(\d+)\)$/.exec(subject)?.[1];
-    if (own) numbers.add(Number(own));
-    else for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) if (pull.merged_at) numbers.add(pull.number);
+  // Titles and bodies come from the commits as merged: anyone who can edit a pull request can still change its live title and body.
+  const landed = new Map();
+  for (const record of git(["log", "--no-merges", "--format=%H%x1f%s%x1f%b%x1e", ...range]).split("\x1e")) {
+    if (!record.trim()) continue;
+    const [sha, subject = "", message = ""] = record.replace(/^\n/, "").split("\x1f");
+    const own = /\s*\(#(\d+)\)$/.exec(subject);
+    if (own) {
+      const number = Number(own[1]);
+      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: message.trim() });
+      continue;
+    }
+    for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) {
+      if (!pull.merged_at) continue;
+      const entry = landed.get(pull.number) ?? { squashed: false, title: null, messages: [] };
+      if (!entry.squashed) entry.messages.push([subject, message.trim()].filter(Boolean).join("\n\n"));
+      landed.set(pull.number, entry);
+    }
   }
+  const titleAtMerge = (pull) =>
+    each(
+      "api",
+      "--paginate",
+      `repos/${repository}/issues/${pull.number}/events`,
+      "--jq",
+      '.[] | select(.event == "renamed") | {at: .created_at, from: .rename.from}',
+    )
+      .filter(({ at }) => at > pull.merged_at)
+      .sort((a, b) => a.at.localeCompare(b.at))[0]?.from ?? pull.title;
+  const permissionOf = (login) => {
+    try {
+      return gh(["api", `repos/${repository}/collaborators/${login}/permission`, "--jq", ".permission"]).trim();
+    } catch {
+      return "none";
+    }
+  };
+  const permissions = new Map();
+  const canWrite = (login) => {
+    if (!login) return false;
+    if (!permissions.has(login)) permissions.set(login, permissionOf(login));
+    return ["admin", "write"].includes(permissions.get(login));
+  };
   const [owner, name] = repository.split("/");
   const pulls = [];
-  for (const number of [...numbers].sort(byNumber)) {
+  for (const number of [...landed.keys()].sort(byNumber)) {
     const pull = json("api", `repos/${repository}/pulls/${number}`);
     if (!pull.merged_at) continue;
+    const merged = landed.get(number);
     const files = each("api", "--paginate", `repos/${repository}/pulls/${number}/files`, "--jq", ".[] | {path: .filename, additions, deletions}");
     const commits = each(
       "api",
@@ -89,16 +123,18 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     coauthors.delete(author);
     pulls.push({
       number,
-      title: pull.title,
+      title: merged.squashed ? merged.title : titleAtMerge(pull),
       url: pull.html_url,
       labels: (pull.labels ?? []).map((label) => label.name),
       author,
       bot: !isPerson(author, pull.user?.type),
       merged_at: pull.merged_at,
-      body: truncated(pull.body ?? "", BODY_LIMIT),
+      body: truncated(merged.squashed ? merged.body : merged.messages.join("\n\n"), BODY_LIMIT),
       files: files.slice(0, FILE_LIMIT),
       files_total: files.length,
-      linked_issues: (issues.data?.repository?.pullRequest?.closingIssuesReferences?.nodes ?? []).map(({ number, title }) => ({ number, title })),
+      linked_issues: (issues.data?.repository?.pullRequest?.closingIssuesReferences?.nodes ?? [])
+        .filter((issue) => canWrite(issue.author?.login))
+        .map(({ number, title }) => ({ number, title })),
       coauthors: [...coauthors].sort(byLogin),
     });
   }
@@ -183,7 +219,7 @@ Answer with the JSON the schema describes:
 - sections: Keep a Changelog sections (Added, Changed, Deprecated, Removed, Fixed, Security). A pull request's type label (added, changed, deprecated, removed, fixed, security) chooses its section when it has one. Within a section, a topic groups entries: Gateway, KPP, Console, UI library, Documentation or Self-hosting, following a pull request's area label when it has exactly one, or "" for entries without a topic.
 - Each entry: one to three sentences in the style of earlier_notes and curated_notes, at most ${ENTRY_LIMIT} characters and usually under 400: present tense, what changed and why it matters to someone who runs or integrates Kaeso, specific, no hype, no exclamation marks, no emojis. Group closely related pull requests into one entry when that reads better.
 - prs: the numbers of the pull requests an entry describes. Every number in must_list appears in exactly one entry of sections, and no other number appears. Never write pull request or issue numbers in the text.
-- Text is plain: no Markdown links or images, no HTML, no addresses or URLs, no headings, no @mentions. Write settings, environment variables, fields, endpoints, commands and file names as inline code in backticks.
+- Text is plain: no Markdown links or images, no HTML, no addresses, URLs, host names or domains, no shell commands that download something or pipe into a shell, no headings, no @mentions. Write settings, environment variables, fields, endpoints, commands and file names as inline code in backticks.
 - curated_notes, when present, are the maintainer's own lines for this release: keep their meaning and prefer their wording, shorten a line that is longer than an entry may be, attach the pull requests they describe, and keep a line without a matching pull request with empty prs. A curated line and the pull request it describes are one entry, never two.
 - prerelease_notes, when present, are the notes of this version's pre-releases, which this release replaces: carry their entries over, rewritten where that reads better.
 - breaking: only changes that make people who run or integrate Kaeso act when they upgrade, such as pull requests labelled breaking. Each one also stays an entry in its section.
@@ -256,7 +292,8 @@ export function plain(text, limit, logins) {
   if (trimmed.length > limit) return `is longer than ${limit} characters`;
   if (/[\r\n]/.test(trimmed)) return "spans several lines";
   if (/\p{Extended_Pictographic}/u.test(trimmed)) return "has an emoji";
-  if (/(https?:|ftp:|mailto:|www\.|:\/\/)/i.test(trimmed)) return "has an address";
+  const risky = hazard(trimmed);
+  if (risky) return risky;
   const outside = trimmed.replace(/`[^`]+`/g, " ");
   if (outside.includes("`")) return "has an unclosed code span";
   if (/[<>[\]\\]/.test(outside)) return "has markup";
@@ -509,6 +546,27 @@ export function body({ changelog, version, brief = null, docs = DOCS_URL, notify
   ]);
 }
 
+const fenced = (text) => {
+  const fence = "`".repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map(([run]) => run.length + 1)));
+  return [`${fence}markdown`, ...text.split("\n"), fence];
+};
+
+export function review({ changelog, version, brief = null, notify = () => {} }) {
+  return [
+    `### Release notes of ${version} to review`,
+    "",
+    "Tag waits for approval in the `release` environment, and the release publishes these notes as they stand here. Approve Tag only when both read right; otherwise reject it, fix the cause on `dev` and run Release again.",
+    "",
+    "#### CHANGELOG.md",
+    "",
+    ...fenced(notes(changelog, version)),
+    "",
+    "#### GitHub release",
+    "",
+    ...fenced(body({ changelog, version, brief, notify }).join("\n")),
+  ];
+}
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const changelogFile = join(root, "CHANGELOG.md");
 
@@ -576,6 +634,12 @@ async function main(args) {
     process.stdout.write(`${lines.join("\n")}\n`);
     return;
   }
+  if (opts.command === "review" && opts.version && opts.out) {
+    const brief = opts.brief ? JSON.parse(readFileSync(opts.brief, "utf8")) : null;
+    mkdirSync(dirname(opts.out), { recursive: true });
+    writeFileSync(opts.out, `${review({ changelog, version: opts.version, brief, notify: notifier }).join("\n")}\n`);
+    return;
+  }
   if (opts.dryRun && !opts.command) {
     process.stderr.write("Collecting the merged pull requests…\n");
     const collected = gather();
@@ -589,7 +653,7 @@ async function main(args) {
     return;
   }
   throw new Error(
-    "usage: node scripts/release-notes.mjs collect --out <file> [--since <tag>] [--head <rev>] | write --pulls <file> --out <file> [--brief-out <file>] [--version <version>] | body --version <version> [--brief <file>] | --dry-run [--since <tag>] [--head <rev>] [--version <version>]",
+    "usage: node scripts/release-notes.mjs collect --out <file> [--since <tag>] [--head <rev>] | write --pulls <file> --out <file> [--brief-out <file>] [--version <version>] | body --version <version> [--brief <file>] | review --version <version> --out <file> [--brief <file>] | --dry-run [--since <tag>] [--head <rev>] [--version <version>]",
   );
 }
 

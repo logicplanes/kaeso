@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 
 mod common;
 
@@ -568,8 +568,10 @@ async fn failed_checks_are_recorded_and_retried_when_the_feed_allows_not_at_once
     )
     .unwrap();
     assert!(
-        next - checked >= time::Duration::hours(2),
-        "honours Retry-After"
+        next - checked >= time::Duration::hours(1)
+            && next - checked < time::Duration::hours(1) + time::Duration::minutes(1),
+        "honours Retry-After for at most an hour, not {}",
+        next - checked
     );
 
     assert!(
@@ -1007,36 +1009,147 @@ async fn a_start_the_updater_does_not_confirm_stays_running_until_it_reports() {
     s.cleanup().await;
 }
 
+fn update_check_job() -> kaeso_server::jobs::Job {
+    kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "update_check")
+        .unwrap()
+}
+
 #[tokio::test]
-async fn a_manual_check_honours_githubs_wait() {
+async fn a_feed_that_asks_to_wait_for_ages_holds_checks_back_an_hour_and_an_admin_a_minute() {
     let s = TestServices::start().await;
     let (gh, url) = github(stable()).await;
-    gh.lock().unwrap().status = Some((429, Some("600")));
-    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    gh.lock().unwrap().status = Some((429, Some("9223372036854775807")));
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+        ],
+    )
+    .await;
     let owner = app.setup().await;
-    let first = app
-        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
-        .await;
+    let job = update_check_job();
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(summary, "check failed");
+    let first = app.get("/instance/updates", &owner.cookie).await;
+    let error = first.body["check"]["error"].as_str().unwrap();
+    assert!(error.contains("refused more requests"), "{error}");
+    let at = |field: &str| {
+        time::OffsetDateTime::parse(
+            first.body["check"][field].as_str().unwrap(),
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap()
+    };
+    let wait = at("next_check_at") - at("last_checked_at");
     assert!(
-        first.body["check"]["error"]
-            .as_str()
-            .unwrap()
-            .contains("refused more requests")
+        wait >= time::Duration::hours(1)
+            && wait < time::Duration::hours(1) + time::Duration::minutes(1),
+        "the next check is due in about an hour, not {wait}"
     );
+
     gh.lock().unwrap().status = None;
     let waiting = app
         .post("/instance/updates/check", json!({}), Some(&owner.cookie))
         .await;
     assert_eq!(waiting.status, StatusCode::OK);
     assert_eq!(waiting.body["check"]["error"], first.body["check"]["error"]);
-    assert_eq!(gh.lock().unwrap().requests.len(), 1, "GitHub asked to wait");
-    app.clock.advance(time::Duration::minutes(11));
+    assert_eq!(
+        gh.lock().unwrap().requests.len(),
+        1,
+        "a second click right away waits"
+    );
+
+    app.clock.advance(time::Duration::minutes(2));
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(summary, "check not due");
     let after = app
         .post("/instance/updates/check", json!({}), Some(&owner.cookie))
         .await;
     assert_eq!(after.body["check"]["error"], Value::Null);
     assert_eq!(after.body["state"], "available");
     assert_eq!(gh.lock().unwrap().requests.len(), 2);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_wait_stored_by_an_older_version_holds_checks_back_an_hour_at_most() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let now = kaeso_core::clock::Clock::now(&app.clock);
+    let far = time::PrimitiveDateTime::MAX.assume_utc();
+    updates::record_check(
+        &app.state.pg,
+        now,
+        None,
+        Some("update.kaeso.app refused more requests for now"),
+        far,
+        Some(far),
+    )
+    .await
+    .unwrap();
+    let r = app.get("/instance/updates", &owner.cookie).await;
+    let next = time::OffsetDateTime::parse(
+        r.body["check"]["next_check_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap();
+    assert!(next - now <= time::Duration::hours(1) + time::Duration::minutes(1));
+
+    let job = update_check_job();
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(summary, "check not due");
+    app.clock
+        .advance(time::Duration::hours(1) + time::Duration::minutes(1));
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(summary, "release list fetched");
+    assert_eq!(gh.lock().unwrap().requests.len(), 1);
+    s.cleanup().await;
+}
+
+fn explode() -> kaeso_server::jobs::JobError {
+    panic!("the feed sent nonsense")
+}
+
+#[tokio::test]
+async fn a_job_that_panics_fails_and_runs_again() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[]).await;
+    let job = kaeso_server::jobs::Job {
+        name: "panics",
+        every: std::time::Duration::from_secs(60),
+        lock: 99,
+        run: |_| Box::pin(async { Err(explode()) }),
+    };
+    for _ in 0..2 {
+        let e = kaeso_server::jobs::run_once(&app.state, job)
+            .await
+            .unwrap_err();
+        assert_eq!(e.to_string(), "the job panicked: the feed sent nonsense");
+    }
     s.cleanup().await;
 }
 

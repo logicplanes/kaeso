@@ -30,13 +30,13 @@ Everything else reads the version instead of stating it. A page writes `\{{versi
 
 ## The changelog
 
-`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and pull requests never change it. The Release workflow writes each version's section from the pull requests merged since the last release. Each pull request's title becomes its line, with a link to the pull request, and its labels choose where the line goes.
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and pull requests never change it. The Release workflow writes each version's section from the pull requests merged since the last release. Each pull request's title as merged becomes its line, with a link to the pull request, and its labels choose where the line goes. The title as merged is the subject of the pull request's squash commit on `prod`, so editing a pull request after its merge changes nothing. For a pull request merged another way, it is the title at the moment of the merge.
 
 Pull requests labelled `internal` are left out. Dependabot's updates become one line, "Dependencies updated". A pull request labelled `breaking` is also named at the top of the section.
 
 To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
-When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -45,6 +45,20 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 A stable release after pre-releases of its version folds their sections into one, so its notes cover everything since the last stable release.
 
 The GitHub release shows a short version of the section. It has one sentence, up to five highlights, the breaking changes, the contributors, and links to the full changelog and the compare view. The model writes it with the section. Without the model, the release lists the section's first five lines, each cut to its first sentence. The preview above prints the GitHub release after the notes.
+
+### What the notes may say
+
+Every line of the notes, from the model or from a title, passes these checks:
+
+- No addresses: no URLs, email addresses or IP addresses.
+- No host names but `kaeso.app` and its subdomains, `github.com/logicplanes/kaeso` and Kaeso's images on `ghcr.io/logicplanes`. `crates.io` and `models.dev` may appear without a path. A name ending in a common top-level domain, such as `.com` or `.example`, counts as a host name, in code spans too.
+- No shell pipelines such as `| sh`, and no download commands such as `curl -fsSL` or `wget`.
+
+A draft that still fails after one correction falls back to the titles. A title that fails stops the **Prepare** job and names the pull request. Write a line for it under `[Unreleased]` on `dev`, linking the pull request, and run Release again.
+
+### Review before the tag
+
+Every job that uses a secret, writes to the repository or publishes runs in the `release` environment, so it waits for the maintainer's approval. Approving **Release notes** lets the model draft. **Prepare** then writes the changelog and shows the section and the GitHub release in its summary, exactly as the release publishes them. **Tag** waits for your approval after that, so read the summary first. If anything in it is wrong, reject **Tag**, fix the cause on `dev` and run Release again.
 
 ### Labels
 
@@ -79,6 +93,8 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
    ```
+
+   Approve the run's jobs as they wait. Before you approve **Tag**, read the notes in the summary of **Prepare** ([review before the tag](#review-before-the-tag)).
 
 5. Bring the release into `dev`. The run's **Sync dev** job tries, but `dev` only takes pull requests, so it usually finishes with a warning and shows the command to run. Merge by hand, which your bypass of the `dev` rules allows:
 

@@ -32,7 +32,7 @@ flowchart TD
 
 - **列表。** 一次检查带着 `If-None-Match` 获取 `releases_url?per_page=50`，并沿着下一页链接继续，最多十页，因为版本源不按版本顺序列出版本。列表有变化时，在一个事务中替换 `update_releases`。
 - **清单。** 对每个比当前运行版本更新的版本，检查会获取并保存它的 `release.json`，或者保存无法获取的原因。每次检查最多获取十二份，同时获取四份，从最新的开始。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，使用镜像时则从 `updates.releases_url` 的源获取，而且客户端从不跟随从 HTTPS 到 HTTP 的重定向。
-- **时间。** `update_check` 任务每分钟运行一次，下一次检查在 5 分钟后，再加上一分钟内的随机时间，使各个实例不会同时请求。失败后至少隔 15 分钟，如果更新源的 `Retry-After` 或 GitHub 的 `x-ratelimit-reset` 要求更晚则更晚。在此之前，`update_settings.blocked_until` 也会阻止 `instance/updates/check` 发起请求。
+- **时间。** `update_check` 任务每分钟运行一次，下一次检查在 5 分钟后，再加上一分钟内的随机时间，使各个实例不会同时请求。失败后至少隔 15 分钟，如果更新源的 `Retry-After` 或 GitHub 的 `x-ratelimit-reset` 要求更晚则更晚，但最多一小时（`MAX_WAIT`），这是 GitHub 每小时速率限制最长会要求的时间。在此之前，`update_settings.blocked_until` 会推迟该任务的检查。实例管理员通过 `instance/updates/check` 发起的检查最多只在上次检查后等待一分钟，因此更新源无法阻止它，反复点击也不会频繁请求更新源。旧版本保存的等待时间同样最多算一小时。发生 panic 的任务算作失败，并在下一轮再次运行。
 - **自动更新。** 当 `update_settings.mode` 为 `automatic` 时，同一个任务用 `kaeso_update::schedule` 计算更新窗口：即实例 IANA 时区中的那个整点，通过 `jiff` 及其内置的时区数据计算，因此夏令时会让它移动。在窗口的那一小时内，任务在 `update_settings.auto_window_at` 中占用该窗口，因此一个窗口最多启动一次更新。如果上次成功检查已超过一小时，任务会先检查新版本，然后像 `apply` 一样启动计划的目标版本，设置 `update_jobs.automatic`，且不关联用户。更改模式或窗口会把 `auto_window_at` 设为当前时间，因此更改永远不会立即启动更新。
 
 `kaeso_update::policy::plan` 决定提供哪个版本：所选通道上比当前运行版本更新的最新版本。版本源标记为预发布的版本一律算作预发布，无论其版本号如何。遇到新的主版本、任何被跨过的版本清单中有 `manual: true`，或者缺少清单时，该更新需要手动操作。目标版本的 `manual_since` 也会计入，因此即使网关从未见过某个被跨过的版本，更新仍会被标记为需要手动操作。
@@ -114,7 +114,7 @@ Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求�
 | 位置 | 内容 |
 | --- | --- |
 | `crates/kaeso-update` | 版本标签、通道、包含主版本、手动步骤和预发布的计划、清单和协议 |
-| `crates/kaeso-server/tests/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避、清单、权限、审计日志、单一更新锁以及每种结束方式 |
+| `crates/kaeso-server/tests/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避及其一小时上限、清单、权限、审计日志、单一更新锁以及每种结束方式 |
 | `crates/kaeso-updater/tests/verify.rs` | Kaeso 0.1.0 的真实证明能通过验证；换成其他镜像、提交、工作流、签名或日志条目则不能 |
 | `crates/kaeso-updater/src/guard.rs` | 在会放宽权限的 `HostConfig` 字段上与被替换容器不同的容器、其他名称和其他镜像都会被拒绝 |
 | `crates/kaeso-updater/tests/engine.rs`、`server.rs` | 更新器对接模拟的 Docker API：完整更新、每种拒绝、回滚、每一步的重启、状态文件和 API |

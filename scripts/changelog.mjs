@@ -145,8 +145,43 @@ export const escaped = (text) =>
     .replace(/^(\d+)([.)])/, "$1\\$2")
     .replace(/^(#|[-+*](?=\s))/, "\\$1");
 
+const HOST = /(?<![\p{L}\p{N}_.-])((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+([a-z][a-z0-9-]*[a-z0-9]))(?![\p{L}\p{N}_-])/giu;
+const OWN_HOST = /^(?:[a-z0-9-]+\.)*kaeso\.app$/;
+const OWN_PATHS = [/^github\.com\/logicplanes\/kaeso(?![\w-]|\.\w)/i, /^ghcr\.io\/logicplanes\/kaeso-/i];
+const SERVICES = new Set(["crates.io", "models.dev"]);
+const PATH = /^(?::\d+)?\/[^\s`()<>]*|^:\d+/;
+const CODE_TYPES = new Set(["cs", "go", "js", "md", "py", "rb", "rs", "ts"]);
+const DOMAINS = new Set(
+  "app biz click cloud com dev example info invalid link live localhost mov net online onion org page run shop site store tech test top xyz zip".split(" "),
+);
+const PIPED = /\|\s*(?:sudo\s+)?(?:(?:ba|da|fi|k|z)?sh|python3?|perl|ruby|node|iex)\b/i;
+const DOWNLOAD = /\b(?:curl|wget)\s+(?:-|[^\s,;]*[./:])|`\s*(?:sudo\s+)?(?:curl|wget)\b/i;
+
+const domainLike = (name) => DOMAINS.has(name) || (name.length === 2 && !CODE_TYPES.has(name));
+
+export function hazard(text) {
+  if (/(https?:|ftp:|mailto:|www\.|:\/\/)/i.test(text) || /\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(text)) return "has an address";
+  if (PIPED.test(text)) return "pipes into a shell";
+  if (DOWNLOAD.test(text)) return "has a download command";
+  for (const match of text.matchAll(HOST)) {
+    const host = match[1].toLowerCase();
+    const path = PATH.exec(text.slice(match.index + match[1].length))?.[0] ?? "";
+    if (OWN_HOST.test(host) || OWN_PATHS.some((own) => own.test(`${host}${path}`)) || (!path && SERVICES.has(host))) continue;
+    if (path || domainLike(match[2].toLowerCase())) return `names ${host}, which isn't one of Kaeso's addresses`;
+  }
+  return null;
+}
+
 const link = ({ number, url }) => `[#${number}](${url})`;
 const sentence = (pull) => `${escaped(pull.title.replace(/\.+$/, ""))} (${link(pull)})`;
+const safe = (pull) => {
+  const problem = hazard(pull.title);
+  if (problem)
+    throw new Error(
+      `The title of #${pull.number} ${problem}, so it can't be a changelog line; write its line under [Unreleased] in CHANGELOG.md, linking #${pull.number}.`,
+    );
+  return pull;
+};
 const item = (pull) => `- ${sentence(pull)}`;
 
 const checked = (pulls) => {
@@ -167,10 +202,10 @@ const checked = (pulls) => {
   });
 };
 
-export function generate(pulls) {
+export function generate(pulls, { strict = true } = {}) {
   const unique = [...new Map(checked(pulls).map((pull) => [pull.number, pull])).values()].toSorted((a, b) => a.number - b.number);
   const visible = unique.filter(({ labels }) => !labels.includes(INTERNAL));
-  const own = visible.filter((pull) => !isDependency(pull));
+  const own = visible.filter((pull) => !isDependency(pull)).map((pull) => (strict ? safe(pull) : pull));
   const dependencies = visible.filter(isDependency);
   const entries = own.map((pull) => ({ group: TYPES[typeOf(pull)], topic: topicOf(pull), line: item(pull) }));
   if (dependencies.length) entries.push({ group: TYPES.changed, topic: null, line: `- Dependencies updated (${dependencies.map(link).join(", ")})` });
@@ -189,10 +224,13 @@ const UNRELEASED = "Unreleased";
 
 export const linked = (markdown) => [...markdown.matchAll(/\[#(\d+)\]\(https:\/\/[^\s()]+\/pull\/\1\)/g)].map(([, number]) => Number(number));
 
-const drafted = (changelog, pulls, folds) => {
+const drafted = (changelog, pulls, folds, strict = true) => {
   const pending = changelog.sections.find(({ name }) => name === UNRELEASED);
   const covered = new Set(changelog.sections.filter(({ name }) => folds(name)).flatMap(({ body }) => linked(body.join("\n"))));
-  const generated = generate(checked(pulls).filter(({ number }) => !covered.has(number)));
+  const generated = generate(
+    checked(pulls).filter(({ number }) => !covered.has(number)),
+    { strict },
+  );
   const body = pending && fold([pending.body]).length ? fold([pending.body, generated]) : generated;
   if (!pending) return [{ name: UNRELEASED, heading: `## [${UNRELEASED}]`, body }, ...changelog.sections];
   return changelog.sections.map((section) => (section === pending ? { ...section, body } : section));
@@ -204,7 +242,7 @@ export function releasable(text, version, pulls = []) {
   const folds = folded(version);
   return (
     fold(
-      drafted(changelog, pulls, folds)
+      drafted(changelog, pulls, folds, false)
         .filter(({ name }) => folds(name))
         .map(({ body }) => body),
     ).length > 0
@@ -241,7 +279,7 @@ export function release(text, version, date, pulls = [], written = null) {
   const unreleased = unreleasedLink(changelog.links);
   const base = repositoryOf(changelog.links);
   if (!base) throw new Error("CHANGELOG.md has no [Unreleased] compare link");
-  const drafts = drafted(changelog, pulls, folds);
+  const drafts = written ? changelog.sections : drafted(changelog, pulls, folds);
   const body = written ? trim(written) : fold(drafts.filter(({ name }) => folds(name)).map((section) => section.body));
   const sections = [{ heading: `## [${UNRELEASED}]`, body: [] }, { heading: `## [${version}] - ${date}`, body }, ...drafts.filter(({ name }) => !folds(name))];
   const links = changelog.links.flatMap((line) => {
@@ -350,5 +388,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     );
     process.exit(2);
   }
-  commands[command](...rest);
+  try {
+    commands[command](...rest);
+  } catch (error) {
+    console.error(process.env.GITHUB_ACTIONS === "true" ? `::error::${error.message}` : error.message);
+    process.exit(1);
+  }
 }

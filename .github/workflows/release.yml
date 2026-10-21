@@ -208,6 +208,20 @@ jobs:
             echo "The changelog comes from the lines under [Unreleased] and the pull requests' titles and labels." >> "$GITHUB_STEP_SUMMARY"
           fi
           node scripts/changelog.mjs release "$VERSION" "$(date -u +%F)" "$RUNNER_TEMP/pulls/pulls.json" "${notes[@]}"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        continue-on-error: true
+        with:
+          name: release-brief
+          path: ${{ runner.temp }}/brief
+      - name: Show the notes for review before Tag
+        run: |
+          set -euo pipefail
+          brief=()
+          if [[ -s "$RUNNER_TEMP/brief/brief.json" ]]; then
+            brief=(--brief "$RUNNER_TEMP/brief/brief.json")
+          fi
+          node scripts/release-notes.mjs review --version "$VERSION" --out "$RUNNER_TEMP/review.md" "${brief[@]}"
+          cat "$RUNNER_TEMP/review.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Keep the changes
         run: |
           set -euo pipefail

@@ -4,8 +4,10 @@ pub mod models_dev;
 pub mod org_deletion;
 pub mod update_check;
 
+use std::panic::AssertUnwindSafe;
 use std::time::Duration;
 
+use futures::FutureExt;
 use futures::future::BoxFuture;
 use kaeso_store::StoreError;
 use kaeso_store::pg::{locks, try_with_advisory_lock};
@@ -20,6 +22,16 @@ pub enum JobError {
     Store(#[from] StoreError),
     #[error(transparent)]
     ModelsDev(#[from] SyncError),
+    #[error("the job panicked: {0}")]
+    Panicked(String),
+}
+
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
+    payload
+        .downcast_ref::<&str>()
+        .map(|s| (*s).to_owned())
+        .or_else(|| payload.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "no message".to_owned())
 }
 
 #[derive(Clone, Copy)]
@@ -73,8 +85,12 @@ pub fn all() -> Vec<Job> {
 
 pub async fn run_once(state: &AppState, job: Job) -> Result<Option<String>, JobError> {
     let st = state.clone();
+    // A panic is caught inside the lock so the lock is released and the job's loop keeps running.
     let outcome = try_with_advisory_lock(&state.pg, locks::JOBS_BASE + job.lock, || async move {
-        Ok((job.run)(st).await)
+        Ok(AssertUnwindSafe(async move { (job.run)(st).await })
+            .catch_unwind()
+            .await
+            .unwrap_or_else(|payload| Err(JobError::Panicked(panic_message(&*payload)))))
     })
     .await?;
     match outcome {
