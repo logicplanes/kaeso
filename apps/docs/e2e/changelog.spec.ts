@@ -43,12 +43,12 @@ const LANGUAGES = [
 ] as const;
 
 for (const l of LANGUAGES) {
-  test(`the changelog at ${l.path} shows every release in its language, with the entries in English`, async ({ page }) => {
+  test(`the changelog at ${l.path} shows the latest releases in its language, with the entries in English`, async ({ page }) => {
     await page.goto(l.path);
     await expect(page.getByRole("heading", { level: 1, name: l.title })).toBeVisible();
     const nav = page.getByRole("navigation", { name: l.nav });
     await expect(nav.getByRole("link", { name: l.title })).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("heading", { level: 2 })).toHaveText([l.unreleased, "1.3.0-rc.1", "1.2.0", "1.1.1", "1.1.0", "1.0.0"]);
+    await expect(page.getByRole("heading", { level: 2 })).toHaveText([l.unreleased, "1.3.0-rc.1", "1.2.0"]);
     const latest = page.getByRole("region", { name: "1.2.0" });
     await expect(latest.getByText(l.latest, { exact: true })).toBeVisible();
     await expect(page.getByText(l.latest, { exact: true })).toHaveCount(1);
@@ -91,17 +91,24 @@ test("the lines under Unreleased say they are not released yet", async ({ page }
   await expect(unreleased.locator("time")).toHaveCount(0);
 });
 
-test("a link to a version opens the changelog there, and the versions link to each other", async ({ page }) => {
+test("a link to a version opens the page of its series there, and the versions link to each other", async ({ page, request }) => {
   await page.goto("/de/changelog#v1.1.0");
+  await expect(page).toHaveURL("/de/changelog/1.1#v1.1.0");
+  await expect(page.getByRole("heading", { level: 1, name: "Änderungen 1.1" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "1.1.0" })).toBeInViewport();
   await page.getByRole("region", { name: "1.1.0" }).getByRole("link", { name: "1.0.0", exact: true }).click();
-  await expect(page).toHaveURL("/de/changelog#v1.0.0");
+  await expect(page).toHaveURL("/de/changelog/1.0#v1.0.0");
   await expect(page.getByRole("heading", { level: 2, name: "1.0.0" })).toBeInViewport();
+  await page.getByRole("navigation", { name: "Weitere Releases" }).getByRole("link", { name: "Neueste Releases" }).click();
+  await expect(page).toHaveURL("/de/changelog");
+  const html = await (await request.get("/zh-CN/changelog/1.1")).text();
+  expect(html).toContain("<title>更新日志 1.1 · Kaeso 文档</title>");
+  expect(await (await request.get("/sitemap.xml")).text()).toContain("<loc>https://docs.kaeso.app/changelog/1.0</loc>");
 });
 
 test("the changelog fits a phone without scrolling sideways", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  for (const path of ["/changelog", "/de/changelog", "/zh-CN/changelog"]) {
+  for (const path of ["/changelog", "/de/changelog", "/zh-CN/changelog", "/changelog/1.1"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
@@ -111,7 +118,7 @@ test("the changelog fits a phone without scrolling sideways", async ({ page }) =
 for (const theme of ["light", "dark"] as const) {
   test(`the changelog passes axe in every language in the ${theme} theme`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: theme });
-    for (const { path } of LANGUAGES) {
+    for (const path of [...LANGUAGES.map((l) => l.path), "/de/changelog/1.1"]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();

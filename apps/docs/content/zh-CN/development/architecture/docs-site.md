@@ -28,7 +28,7 @@ flowchart TD
 | `compile.ts` | 单个页面：先用关闭了原始 HTML 的 marked 词法分析器，再转为 `src/markdown/ast.ts` 中的页面格式，同时检查链接、把带 `tab` 的连续代码块合成代码组、把页面链接列表做成链接卡片，并收集搜索词 |
 | `site.ts` | 单种语言：地址、侧边栏、上一页和下一页、按 GitHub 方式解析的相对链接、图片及其尺寸 |
 | `docs.ts` | 所有语言，并检查各语言包含相同的页面、顺序也相同 |
-| `changelog.ts` | `/changelog` 页面，通过 `scripts/changelog.mjs` 中的 `history` 由 `CHANGELOG.md` 生成 |
+| `changelog.ts` | 更新日志页面，通过 `scripts/changelog.mjs` 中的 `history` 由 `CHANGELOG.md` 生成：`/changelog` 包含未发布内容和最新系列，每个较早的系列位于 `/changelog/<major.minor>`，使任何页面都不超出其预算 |
 | `diagram.ts`、`mermaid.ts`、`diagrams.ts` | 图示：基于 Kaeso 令牌的 Mermaid 配置、在无头 Chromium 中的绘制，以及 `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | 根据 `redirects.json` 在旧地址生成的页面 |
 | `plugin.ts` | Vite 插件：虚拟模块、开发时的重新加载、每个页面每种语言一个 HTML 文件、`404.html` 文件和站点地图 |

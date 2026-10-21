@@ -28,7 +28,7 @@ flowchart TD
 | `compile.ts` | One page: marked's lexer with raw HTML off, then the page format of `src/markdown/ast.ts`, with links checked, code groups made from consecutive fences with a `tab`, link cards made from lists of page links, and search words collected |
 | `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes |
 | `docs.ts` | Every language, and the check that they hold the same pages in the same order |
-| `changelog.ts` | The `/changelog` page, made from `CHANGELOG.md` through `history` in `scripts/changelog.mjs` |
+| `changelog.ts` | The changelog pages, made from `CHANGELOG.md` through `history` in `scripts/changelog.mjs`: `/changelog` with Unreleased and the latest series, and `/changelog/<major.minor>` for each older series, so no page outgrows its budget |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | The diagrams: their Mermaid configuration from Kaeso's tokens, their drawing in headless Chromium, and `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | The pages at old addresses from `redirects.json` |
 | `plugin.ts` | The Vite plugin: virtual modules, reloads in development, an HTML file per page and language, the `404.html` files and the sitemap |

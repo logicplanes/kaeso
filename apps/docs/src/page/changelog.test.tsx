@@ -25,7 +25,7 @@ function app(path: string) {
 const release = (version: string) => screen.getByRole("region", { name: version });
 
 describe("the changelog page", () => {
-  it("shows every release with its date, its marks and its links, newest first", async () => {
+  it("shows the latest series with Unreleased and newer pre-releases, each release with its date, its marks and its links", async () => {
     app("/changelog");
     expect(await screen.findByRole("heading", { level: 1, name: "Changelog" })).toBeInTheDocument();
     expect(screen.getByText("Every change people will notice, release by release.")).toBeInTheDocument();
@@ -34,20 +34,15 @@ describe("the changelog page", () => {
       ["unreleased", "Unreleased"],
       ["v1.3.0-rc.1", "1.3.0-rc.1"],
       ["v1.2.0", "1.2.0"],
-      ["v1.1.1", "1.1.1"],
-      ["v1.1.0", "1.1.0"],
-      ["v1.0.0", "1.0.0"],
     ]);
     const latest = release("1.2.0");
     expect(within(latest).getByText("Latest")).toBeInTheDocument();
     expect(screen.getAllByText("Latest")).toHaveLength(1);
     expect(within(release("1.3.0-rc.1")).getByText("Pre-release")).toBeInTheDocument();
-    expect(within(release("1.1.1")).getByText("Withdrawn")).toBeInTheDocument();
     expect(latest.querySelector("time")).toHaveAttribute("dateTime", "2026-11-15");
     expect(latest.querySelector("time")).toHaveTextContent("15 Nov 2026");
     expect(within(latest).getByRole("link", { name: /Release on GitHub/ })).toHaveAttribute("href", `${repo}/releases/tag/v1.2.0`);
     expect(within(latest).getByRole("link", { name: /Changes since 1\.1\.1/ })).toHaveAttribute("href", `${repo}/compare/v1.1.1...v1.2.0`);
-    expect(within(release("1.0.0")).queryByRole("link", { name: /Changes since/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Edit on GitHub/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Every release on GitHub/ })).toHaveAttribute("href", `${repo}/releases`);
   });
@@ -85,13 +80,41 @@ describe("the changelog page", () => {
         .map((li) => li.textContent),
     ).toEqual(["•one alias per project,", "•resolved before the limits are checked."]);
     expect(within(latest).getByRole("link", { name: /the retention/ })).toHaveAttribute("href", "https://docs.kaeso.app/console/request-logs");
-    expect(within(release("1.1.0")).getByRole("link", { name: "1.0.0" })).toHaveAttribute("href", "#v1.0.0");
     const toc = screen.getByRole("navigation", { name: "On this page" });
     expect(
       within(toc)
         .getAllByRole("link")
         .map((l) => l.textContent),
-    ).toEqual(["Unreleased", "1.3.0-rc.1", "1.2.0", "1.1.1", "1.1.0", "1.0.0"]);
+    ).toEqual(["Unreleased", "1.3.0-rc.1", "1.2.0"]);
+  });
+
+  it("puts each older series on a page of its own, linked to the others", async () => {
+    app("/changelog/1.1");
+    expect(await screen.findByRole("heading", { level: 1, name: "Changelog 1.1" })).toBeInTheDocument();
+    expect(screen.getByText("Every change people will notice in the 1.1 releases.")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["1.1.1", "1.1.0"]);
+    expect(within(release("1.1.1")).getByText("Withdrawn")).toBeInTheDocument();
+    expect(within(release("1.1.0")).getByRole("link", { name: "1.0.0" })).toHaveAttribute("href", "/changelog/1.0#v1.0.0");
+    const more = screen.getByRole("navigation", { name: "More releases" });
+    expect(
+      within(more)
+        .getAllByRole("link")
+        .map((l) => [l.textContent, l.getAttribute("href")]),
+    ).toEqual([
+      ["Latest releases", "/changelog"],
+      ["Changelog 1.0", "/changelog/1.0"],
+    ]);
+    expect(screen.queryByRole("region", { name: "Unreleased" })).not.toBeInTheDocument();
+  });
+
+  it("opens the page that holds a version when a link names it on another page", async () => {
+    app("/de/changelog#v1.0.0");
+    expect(await screen.findByRole("heading", { level: 1, name: "Änderungen 1.0" })).toBeInTheDocument();
+    expect(within(release("1.0.0")).queryByRole("link", { name: /Änderungen seit/ })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Weitere Releases" })).getByRole("link", { name: "Neueste Releases" })).toHaveAttribute(
+      "href",
+      "/de/changelog",
+    );
   });
 
   it("translates its own words in German and marks the English entries as English", async () => {

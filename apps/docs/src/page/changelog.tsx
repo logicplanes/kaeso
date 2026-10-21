@@ -1,6 +1,7 @@
 import { Badge, Link, Separator, Text } from "@logicplanes/kaeso-ui";
 import { formatDate, parseISODate } from "@logicplanes/kaeso-ui/format";
-import { Fragment, type ReactNode } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { Fragment, useEffect, type ReactNode } from "react";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { ChangelogContent, ChangelogEntry, ChangelogRelease } from "~/markdown/ast";
 import { Markdown } from "~/markdown/render";
@@ -97,11 +98,40 @@ function Release({ release, lang }: { release: ChangelogRelease; lang: string | 
   );
 }
 
+function ForwardToVersion({ elsewhere }: { elsewhere: Record<string, string> }) {
+  const hash = useLocation({ select: (l) => l.hash });
+  const navigate = useNavigate();
+  const page = hash ? elsewhere[decodeURIComponent(hash)] : undefined;
+  useEffect(() => {
+    if (page) void navigate({ to: page, hash, replace: true });
+  }, [page, hash, navigate]);
+  return null;
+}
+
+function MoreReleases({ pages }: { pages: NonNullable<ChangelogContent["pages"]> }) {
+  const t = useText();
+  const path = useLocation({ select: (l) => l.pathname });
+  return (
+    <nav aria-label={t("changelog.pages")} className="flex flex-wrap items-center gap-x-16 gap-y-4">
+      <Text variant="body" tone="secondary">
+        {t("changelog.pages")}
+      </Text>
+      {pages
+        .filter((p) => p.path !== path)
+        .map((p) => (
+          <Link key={p.path} href={p.path} variant="quiet">
+            {p.series ? t("changelog.seriesTitle").replace("{series}", p.series) : t("changelog.current")}
+          </Link>
+        ))}
+    </nav>
+  );
+}
+
 export function Changelog({ changelog }: { changelog: ChangelogContent }) {
   const t = useText();
   const locale = useSiteLocale();
   const lang = locale === "en" ? undefined : "en";
-  const { unreleased, releases } = changelog;
+  const { unreleased, releases, pages, elsewhere } = changelog;
   if (!unreleased && !releases.length)
     return (
       <Text as="p" variant="body-lg" weight="regular" tone="secondary" className="mt-40">
@@ -110,6 +140,7 @@ export function Changelog({ changelog }: { changelog: ChangelogContent }) {
     );
   return (
     <div className="mt-40 flex flex-col gap-40">
+      {elsewhere && <ForwardToVersion elsewhere={elsewhere} />}
       {unreleased && (
         <section aria-labelledby={unreleased.id} className="flex flex-col gap-16">
           <div className="flex flex-col gap-4">
@@ -134,6 +165,7 @@ export function Changelog({ changelog }: { changelog: ChangelogContent }) {
           <Release release={release} lang={lang} />
         </Fragment>
       ))}
+      {pages && <MoreReleases pages={pages} />}
     </div>
   );
 }

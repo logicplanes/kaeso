@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
 import { release } from "../../../../scripts/changelog.mjs";
 import type { Block } from "../../src/markdown/ast.ts";
-import { buildChangelog, changelogClash, changelogToc, withChangelog } from "./changelog.ts";
+import { buildChangelog, changelogClash, changelogPages, changelogToc, withChangelog } from "./changelog.ts";
 import { buildDocs } from "./docs.ts";
 import { buildSite } from "./site.ts";
 
@@ -240,12 +240,56 @@ describe("the changelog page", () => {
     const meta = site.metas.find((m) => m.path === "/de/changelog");
     expect(meta).toMatchObject({ title: "Änderungen", prev: { path: "/de", title: "Start" }, next: { path: "/de/keys", title: "Keys" } });
     expect(site.metas[0]?.next).toEqual({ path: "/de/changelog", title: "Änderungen" });
-    expect(site.search.at(-1)).toMatchObject({
-      path: "/de/changelog",
-      title: "Änderungen",
-      headings: expect.arrayContaining([{ id: "v1.2.0", label: "1.2.0" }]),
-    });
-    expect(site.pages.at(-1)?.compiled?.changelog).toBe(changelog.content);
+    expect(site.search.slice(-3).map((e) => [e.path, e.title, e.headings.map((h) => h.label)])).toEqual([
+      ["/de/changelog", "Änderungen", ["Unveröffentlicht", "1.3.0-rc.1", "1.2.0"]],
+      ["/de/changelog/1.1", "Änderungen 1.1", ["1.1.1", "1.1.0"]],
+      ["/de/changelog/1.0", "Änderungen 1.0", ["1.0.0"]],
+    ]);
+    expect(site.search.at(-1)?.words).toContain("stable");
+    expect(site.metas.slice(-2)).toEqual([
+      {
+        path: "/de/changelog/1.1",
+        title: "Änderungen 1.1",
+        description: "Jede spürbare Änderung in den Releases 1.1.",
+        label: "Änderungen 1.1",
+        file: changelog.rel,
+      },
+      {
+        path: "/de/changelog/1.0",
+        title: "Änderungen 1.0",
+        description: "Jede spürbare Änderung in den Releases 1.0.",
+        label: "Änderungen 1.0",
+        file: changelog.rel,
+      },
+    ]);
+    expect(site.pages.slice(-3).map((p) => p.compiled?.changelog?.releases.map((r) => r.version))).toEqual([
+      ["1.3.0-rc.1", "1.2.0"],
+      ["1.1.1", "1.1.0"],
+      ["1.0.0"],
+    ]);
+  });
+
+  it("splits the releases into one page per minor series, with links between the pages", () => {
+    const pages = changelogPages(changelog.content, "/changelog");
+    expect(pages.map((p) => [p.path, p.series, p.content.releases.map((r) => r.version), !!p.content.unreleased])).toEqual([
+      ["/changelog", undefined, ["1.3.0-rc.1", "1.2.0"], true],
+      ["/changelog/1.1", "1.1", ["1.1.1", "1.1.0"], false],
+      ["/changelog/1.0", "1.0", ["1.0.0"], false],
+    ]);
+    const [latest, older] = pages;
+    expect(latest?.content.pages).toEqual([{ path: "/changelog" }, { path: "/changelog/1.1", series: "1.1" }, { path: "/changelog/1.0", series: "1.0" }]);
+    expect(latest?.content.elsewhere).toMatchObject({ "v1.0.0": "/changelog/1.0", "v1.1.0": "/changelog/1.1" });
+    expect(latest?.content.elsewhere).not.toHaveProperty("v1.2.0");
+    expect(older?.content.elsewhere).toMatchObject({ unreleased: "/changelog", "v1.2.0-added": "/changelog" });
+    expect(text(older?.content.releases[1]?.sections.flatMap((s) => s.blocks) ?? [])).toContain('"kind":"page","href":"/changelog/1.0#v1.0.0"');
+    expect(latest?.content.repository).toBe(repoUrl);
+  });
+
+  it("keeps a changelog of one series, or none, on a single page", () => {
+    const one = buildChangelog(fixture, docsRoot).content;
+    const single = { ...one, releases: one.releases.filter((r) => r.version.startsWith("1.1.")) };
+    expect(changelogPages(single, "/changelog").map((p) => [p.path, p.content.releases.length, p.content.pages])).toEqual([["/changelog", 2, undefined]]);
+    expect(changelogPages({ releases: [] }, "/changelog")).toEqual([{ path: "/changelog", content: { releases: [] } }]);
   });
 
   it("starts the sidebar when there is no home page group", () => {
@@ -263,5 +307,9 @@ describe("the changelog page", () => {
       "content/zh-CN/changelog.md: its address /zh-CN/changelog is the changelog's; rename it",
     ]);
     expect(changelogClash(docs.sites.en, "/fr")).toEqual([]);
+    repo(everyLanguage({ "index.md": page("Start"), "changelog/index.md": page("Changes"), "changelog/notes.md": page("Notes") }));
+    expect(buildDocs(join(root, "content"), root, "1.4.0", fixture).problems).toContain(
+      "content/en/changelog/notes.md: its address /changelog/notes is the changelog's; rename it",
+    );
   });
 });

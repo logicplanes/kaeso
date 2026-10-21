@@ -28,7 +28,7 @@ flowchart TD
 | `compile.ts` | Eine Seite: der Lexer von marked mit abgeschaltetem Roh-HTML, dann das Seitenformat aus `src/markdown/ast.ts`, mit geprüften Links, Code-Gruppen aus aufeinanderfolgenden Fences mit `tab`, Link-Karten aus Listen von Seitenlinks und gesammelten Suchbegriffen |
 | `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links so aufgelöst wie auf GitHub, Bilder und ihre Größen |
 | `docs.ts` | Alle Sprachen und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
-| `changelog.ts` | Die Seite `/changelog`, gebaut aus `CHANGELOG.md` über `history` in `scripts/changelog.mjs` |
+| `changelog.ts` | Die Änderungsseiten, gebaut aus `CHANGELOG.md` über `history` in `scripts/changelog.mjs`: `/changelog` mit Unveröffentlicht und der neuesten Reihe, `/changelog/<major.minor>` für jede ältere Reihe, damit keine Seite ihr Budget überschreitet |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | Die Diagramme: ihre Mermaid-Konfiguration aus den Tokens von Kaeso, ihr Zeichnen in Headless-Chromium und `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | Die Seiten unter alten Adressen aus `redirects.json` |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen in der Entwicklung, eine HTML-Datei pro Seite und Sprache, die `404.html`-Dateien und die Sitemap |

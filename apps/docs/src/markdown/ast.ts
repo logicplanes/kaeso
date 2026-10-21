@@ -85,6 +85,8 @@ export interface ChangelogContent {
   releases: ChangelogRelease[];
   unreleased?: ChangelogEntry & { since?: string; compare?: string };
   repository?: string;
+  pages?: { path: string; series?: string }[];
+  elsewhere?: Record<string, string>;
 }
 
 export interface PageContent {

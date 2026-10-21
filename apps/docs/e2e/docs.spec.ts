@@ -44,6 +44,8 @@ test("every page is built with its own title, description and alternates", async
     "/reference/platform-api",
     "/reference/platform-api/keys",
     "/reference/models",
+    "/changelog/1.1",
+    "/changelog/1.0",
   ];
   const locs = [...sitemap.matchAll(/<loc>https:\/\/docs\.kaeso\.app([^<]*)<\/loc>/g)].map((m) => m[1] || "/");
   expect(locs.filter((l) => !/^\/(de|zh-CN)(\/|$)/.test(l))).toEqual(english);
@@ -54,7 +56,7 @@ test("every page is built with its own title, description and alternates", async
 test("the build passes the site check: every page in the sitemap, with its alternates and link previews", () => {
   const docs = fileURLToPath(new URL("..", import.meta.url));
   const out = execFileSync("node", ["../../scripts/check-site.mjs", "dist-e2e", "https://docs.kaeso.app"], { cwd: docs, encoding: "utf8" });
-  expect(out).toMatch(/^site: 27 pages, all 27 in sitemap\.xml/);
+  expect(out).toMatch(/^site: 33 pages, all 33 in sitemap\.xml/);
 });
 
 test("a page names its language, its preview image and what it is", async ({ request }) => {
