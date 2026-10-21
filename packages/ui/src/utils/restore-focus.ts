@@ -6,6 +6,11 @@ function focused(): HTMLElement | null {
   return a instanceof HTMLElement && a !== document.body ? a : null;
 }
 
+function focusedElsewhere(): boolean {
+  const layer = focused()?.closest("[role=dialog], [role=alertdialog]");
+  return layer === null || !!layer?.hasAttribute("data-open");
+}
+
 export function useRestoreFocus(open: boolean | undefined, first: () => HTMLElement | boolean = () => true) {
   const opener = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
@@ -13,6 +18,9 @@ export function useRestoreFocus(open: boolean | undefined, first: () => HTMLElem
   if (open !== undefined) wasOpen.current = open;
   return {
     initialFocus: () => first(),
-    finalFocus: () => (open !== undefined && opener.current?.isConnected ? opener.current : true),
+    finalFocus: () => {
+      if (open !== undefined && opener.current?.isConnected) return opener.current;
+      return !focusedElsewhere();
+    },
   };
 }
