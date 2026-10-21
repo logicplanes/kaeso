@@ -47,11 +47,7 @@ export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: 
     ],
     ...(m.context_limit ? { context: m.context_limit } : {}),
     ...(price ? { price } : {}),
-    ...(!m.provider_key
-      ? { disabled: true, note: noKey }
-      : m.availability === "unavailable"
-        ? { disabled: true, note: notServed() }
-        : {}),
+    ...(!m.provider_key ? { disabled: true, note: noKey } : m.availability === "unavailable" ? { disabled: true, note: notServed() } : {}),
   };
 }
 

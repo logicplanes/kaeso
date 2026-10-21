@@ -96,7 +96,7 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
             size="md"
             fullWidth
             placeholder={above}
-            options={keepChosen(options, editing ?? [])}
+            options={keepChosen(options, editing)}
             providers={providers}
             value={editing}
             onValueChange={setEditing}
