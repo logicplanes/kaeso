@@ -21,6 +21,23 @@ function libraryBuild(): Plugin {
   return { name: `kaeso-ui-build-${hash.digest("hex").slice(0, 16)}` };
 }
 
+// Vite serves a linked workspace package's unlisted entries from dist, beside the pre-bundled copy: two copies of its contexts.
+function libraryEntries(): string[] {
+  const name = "@logicplanes/kaeso-ui";
+  const exports = (JSON.parse(readFileSync(join(uiDist, "../package.json"), "utf8")) as { exports: Record<string, string | { import?: string }> }).exports;
+  return Object.entries(exports).flatMap(([key, target]) => {
+    const file = typeof target === "string" ? target : target.import;
+    if (!file?.endsWith(".js")) return [];
+    const [before = "", after = ""] = file.replace(/^\.\/dist\//, "").split("*");
+    if (!key.includes("*")) return [key === "." ? name : `${name}${key.slice(1)}`];
+    const dir = join(uiDist, before);
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(after) && !f.endsWith(".map"))
+      .map((f) => `${name}${key.slice(1).replaceAll("*", f.slice(0, -after.length))}`);
+  });
+}
+
 function themeInit(): Plugin {
   const file = "theme-init.js";
   return {
@@ -224,10 +241,7 @@ export default defineConfig({
       "@tanstack/react-query",
       "@tanstack/react-router",
       "openapi-fetch",
-      "@logicplanes/kaeso-ui",
-      "@logicplanes/kaeso-ui/format",
-      "@logicplanes/kaeso-ui/i18n",
-      "@logicplanes/kaeso-ui/toast",
+      ...libraryEntries(),
       "marked",
     ],
   },
