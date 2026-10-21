@@ -12,6 +12,7 @@ import {
   FilterRow,
   Input,
   KeyValue,
+  List,
   SearchInput,
   Section,
   PillTabs,
@@ -29,14 +30,14 @@ import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { InstanceUserView } from "~/api/generated/types";
-import { instanceUserQuery, instanceUsersQuery } from "~/api/queries/instance";
+import { instanceUserOrgsQuery, instanceUserQuery, instanceUsersQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { userStateLabel } from "~/format/labels";
 import { usePageCreateAction } from "~/shell/create-action";
 import { toast } from "~/shell/toast";
 import { InstancePage } from "./instance-page";
-import { t } from "~/i18n";
+import { locale, t, type Locale } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
 
 const STATES = ["active", "deactivated", "deleted"] as const;
@@ -45,6 +46,7 @@ type UserState = (typeof STATES)[number];
 export type UsersSearch = { q?: string; state?: UserState; user?: string; invite?: boolean };
 
 const STATE_DOT: Record<string, "warning" | "neutral"> = { deactivated: "warning", deleted: "neutral" };
+const CREATED_WIDTH: Record<Locale, number> = { en: 136, de: 144, "zh-CN": 160 };
 
 export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   const navigate = useNavigate();
@@ -57,6 +59,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   };
   const rows = useMemo(() => users.data?.pages.flatMap((p) => p.data) ?? [], [users.data]);
 
+  const lang = locale();
   const columns = useMemo(
     () => [
       col.custom(
@@ -66,7 +69,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
           <span className="flex min-w-0 items-center gap-8">
             <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
             <span className="truncate">{u.name}</span>
-            {u.is_instance_admin && <Badge>{t("instance.admin", "Admin")}</Badge>}
+            {u.is_instance_admin && <Badge>{t("instance.instanceAdmin", "Instance admin")}</Badge>}
           </span>
         ),
       ),
@@ -77,12 +80,12 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
       ),
       col.custom(
-        { id: "created", header: t("common.created", "Created"), size: 136, priority: 3 },
+        { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
         (u: InstanceUserView) => u.created_at,
         (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
       ),
     ],
-    [],
+    [lang],
   );
 
   return (
@@ -369,22 +372,26 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
           </SettingsGroup>
         </Section>
       )}
+      <UserOrgs userId={u.id} />
       {!deleted && (
         <Section title={t("instance.deleteUser", "Delete user")} spacing="none">
-          <div className="flex flex-col items-start gap-8">
-            <Text variant="small" tone="secondary">
-              {t("instance.deleteUserHint", 'Their name and email are removed; they appear as "Deleted user" in history.')}
-            </Text>
-            <Button
-              size="sm"
-              variant="danger-secondary"
-              disabled={self}
-              {...(self ? { disabledReason: t("instance.deleteSelfInProfile", "Delete your own account in your profile") } : {})}
-              onClick={() => setConfirm("delete")}
-            >
-              {t("instance.deleteUser", "Delete user")}
-            </Button>
-          </div>
+          <SettingsGroup>
+            <SettingsRow
+              title={t("instance.deleteUser", "Delete user")}
+              description={t("instance.deleteUserHint", 'Removes their name and email; history shows "Deleted user".')}
+              control={
+                <Button
+                  size="sm"
+                  variant="danger-secondary"
+                  disabled={self}
+                  {...(self ? { disabledReason: t("instance.deleteSelfInProfile", "Delete your own account in your profile") } : {})}
+                  onClick={() => setConfirm("delete")}
+                >
+                  {t("instance.deleteUser", "Delete user")}
+                </Button>
+              }
+            />
+          </SettingsGroup>
         </Section>
       )}
       <AlertDialog
@@ -429,5 +436,39 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         onConfirm={() => remove.mutateAsync()}
       />
     </div>
+  );
+}
+
+function UserOrgs({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const orgs = useQuery(instanceUserOrgsQuery(userId));
+  return (
+    <Section title={t("instance.userOrgs", "Organizations")} spacing="none">
+      <List
+        aria-label={t("instance.userOrgs", "Organizations")}
+        density="compact"
+        loading={orgs.isPending}
+        items={(orgs.data ?? []).map((o) => ({
+          id: o.id,
+          textValue: o.name,
+          title: o.name,
+          leading: <Avatar name={o.name} kind="org" size={20} decorative />,
+          meta: (
+            <>
+              {o.state === "scheduled_for_deletion" && <Badge tone="warning">{t("instance.scheduledForDeletion", "Scheduled for deletion")}</Badge>}
+              <Badge>{o.role.name}</Badge>
+            </>
+          ),
+        }))}
+        onOpen={(item) => void navigate({ to: "/settings/instance/orgs/$org", params: { org: item.id } })}
+        empty={
+          orgs.isError ? (
+            <Empty size="compact" title={t("instance.userOrgsFailed", "Their organizations couldn't load")} />
+          ) : (
+            <Empty size="compact" title={t("instance.noUserOrgs", "In no organization")} />
+          )
+        }
+      />
+    </Section>
   );
 }

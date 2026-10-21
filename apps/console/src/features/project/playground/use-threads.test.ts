@@ -284,6 +284,40 @@ describe("useThreads", () => {
     expect(result.current.threads[1]).toBe(other);
   });
 
+  it("hands back what it cleared, restores it only into empty columns, and leaves its threads behind", async () => {
+    const s = streamingFetch();
+    fetchMock = s.fetch;
+    const onLeave = vi.fn();
+    const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 2, { onLeave }));
+    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    await waitFor(() => expect(s.fetch).toHaveBeenCalled());
+    act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Half" })));
+    await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Half"));
+    let cleared: ReturnType<typeof result.current.clear> = [];
+    act(() => {
+      cleared = result.current.clear();
+    });
+    expect(cleared[0]?.turns[0]?.response).toMatchObject({ status: "stopped", text: "Half" });
+    expect(result.current.threads.every((t) => t.turns.length === 0)).toBe(true);
+    act(() => result.current.restore(cleared));
+    expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Half");
+
+    const t = streamingFetch();
+    fetchMock = t.fetch;
+    act(() => result.current.send("Again", [{ column: 0, request }]));
+    await waitFor(() => expect(t.fetch).toHaveBeenCalled());
+    act(() => result.current.restore([{ key: result.current.threads[0]?.key ?? "", turns: [] }]));
+    expect(result.current.threads[0]?.turns).toHaveLength(2);
+    unmount();
+    const left = onLeave.mock.calls[0]?.[0] as ReturnType<typeof result.current.clear>;
+    expect(left[0]?.turns.map((x) => x.response.status)).toEqual(["stopped", "stopped"]);
+
+    const again = renderHook(() => useThreads("org_1", "proj_1", 2, { initial: left }));
+    expect(again.result.current.threads).toEqual(left);
+    const fewer = renderHook(() => useThreads("org_1", "proj_1", 1, { initial: left }));
+    expect(fewer.result.current.threads[0]?.turns).toEqual([]);
+  });
+
   it("drops a repaint still waiting for its frame when it unmounts", async () => {
     const frames = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(() => 42);
     const cancel = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => undefined);

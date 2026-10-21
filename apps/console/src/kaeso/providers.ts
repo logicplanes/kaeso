@@ -29,6 +29,9 @@ export function providerCatalog(list: readonly ProviderView[]): Providers {
   };
 }
 
+export const keyTitle = (k: CredentialView, providers: Providers) =>
+  t("kaeso.providerKey.title", "{provider} · {name}", { provider: providers.name(k.provider), name: k.name });
+
 export function useProviders(org: string): Providers {
   const providers = useQuery(providersQuery(org));
   return useMemo(() => providerCatalog(providers.data ?? []), [providers.data]);

@@ -159,12 +159,14 @@ describe("Dialog", () => {
     await userEvent.type(screen.getByLabelText("Password"), "correct horse{Enter}");
     expect(onSubmit).toHaveBeenCalledOnce();
   });
-  it("Enter keeps its own meaning in a text area, a combobox, on a button and while an input method composes", async () => {
+  it("Enter keeps its own meaning in a text area, a combobox, a search field, on a button and while an input method composes", async () => {
     const onSubmit = vi.fn();
     render(
       <Dialog defaultOpen title="Edit prompt" onSubmit={onSubmit}>
         <textarea aria-label="Prompt" />
         <input aria-label="Model" role="combobox" />
+        <input aria-label="Name" />
+        <input aria-label="Search models" type="search" />
         <input aria-label="Tag" onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} />
         <input aria-label="Notify" type="checkbox" />
         <button type="button">Preview</button>
@@ -179,9 +181,14 @@ describe("Dialog", () => {
     await userEvent.keyboard("{Enter}");
     screen.getByRole("button", { name: "Preview" }).focus();
     await userEvent.keyboard("{Enter}");
-    const field = screen.getByRole("combobox", { name: "Model" });
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search models" }), "gpt{Enter}");
+    const field = screen.getByRole("textbox", { name: "Name" });
     fireEvent.keyDown(field, { key: "Enter", isComposing: true });
+    fireEvent.keyDown(field, { key: "Enter", keyCode: 229 });
     expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.keyDown(field, { key: "Enter", keyCode: 13 });
+    expect(onSubmit).toHaveBeenCalledOnce();
+    onSubmit.mockClear();
     await userEvent.type(screen.getByLabelText("Prompt"), "{Control>}{Enter}{/Control}");
     expect(onSubmit).toHaveBeenCalledOnce();
   });
@@ -618,6 +625,39 @@ describe("StepDialog", () => {
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
     expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
     await userEvent.keyboard("{Enter}");
+    expect(dialog).toHaveAccessibleDescription("Step 2 of 2");
+  });
+  it("stays on its step on the Enter that confirms what an input method composed, and on Enter in a search field", async () => {
+    render(
+      <StepDialog
+        open
+        title="Add models"
+        submitLabel="Add models"
+        onSubmit={() => {}}
+        steps={[
+          {
+            id: "pick",
+            title: "Which models?",
+            content: (
+              <>
+                <input aria-label="Display name" />
+                <input aria-label="Search models" type="search" />
+              </>
+            ),
+          },
+          { id: "review", title: "Add them?", content: <p>2 models</p> },
+        ]}
+      />,
+    );
+    await frames();
+    const dialog = screen.getByRole("dialog");
+    const name = screen.getByRole("textbox", { name: "Display name" });
+    fireEvent.keyDown(name, { key: "Enter", isComposing: true });
+    fireEvent.keyDown(name, { key: "Enter", keyCode: 229 });
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search models" }), "qwen{Enter}");
+    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    fireEvent.keyDown(name, { key: "Enter", keyCode: 13 });
+    await frames();
     expect(dialog).toHaveAccessibleDescription("Step 2 of 2");
   });
   describe.each([

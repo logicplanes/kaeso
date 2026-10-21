@@ -320,16 +320,39 @@ describe("instance updates page", () => {
     await hoverReason(user, failed, "api.github.com can't be reached: no connection");
   });
 
-  it("says when it never looked and that checks are off", async () => {
+  it("says when it never looked and that checks are off, and keeps the settings a manual check uses", async () => {
     signedIn();
     on(
       "GET",
       "instance/updates",
-      updates({ settings: updateSettings({ check: false }), check: { last_checked_at: null, last_success_at: null, next_check_at: null, error: null } }),
+      updates({
+        state: "unknown",
+        settings: updateSettings({ check: false }),
+        check: { last_checked_at: null, last_success_at: null, next_check_at: null, error: null },
+      }),
     );
     history();
     await renderApp(PATH);
     expect(await screen.findByText("Checking is off in the gateway's configuration.")).toBeInTheDocument();
+    expect(screen.queryByText("Not checked yet")).not.toBeInTheDocument();
+    expect(screen.queryByText("Up to date")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Releases" })).toBeEnabled();
+    expect(screen.getByRole("combobox", { name: "How updates install" })).toBeEnabled();
+    expect(screen.getByText("You start each update on this page once one is out.")).toBeInTheDocument();
+  });
+
+  it("shows what's new in the running version again", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates());
+    history();
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "What's new" }));
+    const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
+    expect(within(dialog).getByText("Published 1 Oct 2026")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "What's new in Kaeso" })).not.toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "What's new" }));
+    expect(await screen.findByRole("dialog", { name: "What's new in Kaeso" })).toBeInTheDocument();
   });
 
   it("changes the settings and says what changed", async () => {

@@ -10,3 +10,7 @@ export function recall<T>(name: readonly string[]): T | undefined {
 export function remember<T>(name: readonly string[], value: T): void {
   queryClient.setQueryData([ROOT, ...name], value);
 }
+
+export function forget(name: readonly string[]): void {
+  queryClient.removeQueries({ queryKey: [ROOT, ...name] });
+}

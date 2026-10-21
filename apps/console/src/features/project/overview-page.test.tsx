@@ -231,10 +231,10 @@ describe("OverviewPage", () => {
   it("loads the daily usage again from a chart that couldn't load", async () => {
     signedIn();
     projectData();
-    let calls = 0;
+    let failing = true;
     on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
     on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "day" && ++calls === 1
+      query.get("group_by") === "day" && failing
         ? apiError(403, "permission_denied", "Usage is hidden for now.")
         : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
     );
@@ -243,6 +243,7 @@ describe("OverviewPage", () => {
     const requestsChart = (await screen.findByRole("heading", { name: "Requests" })).closest("section") as HTMLElement;
     expect(await within(requestsChart).findByText("Couldn't load this chart")).toBeInTheDocument();
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
+    failing = false;
     await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
     await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("Oct 13"));
@@ -251,16 +252,17 @@ describe("OverviewPage", () => {
   it("loads the daily rows again from the breakdown", async () => {
     signedIn();
     projectData();
-    let calls = 0;
+    let failing = true;
     on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
     on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "day" && ++calls === 1
+      query.get("group_by") === "day" && failing
         ? apiError(403, "permission_denied", "Usage is hidden for now.")
         : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
     );
     const { user } = await renderApp(projectPath(`?${PERIOD}&by=day`));
 
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
+    failing = false;
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("Oct 13"));
   });

@@ -3,6 +3,7 @@ import { api, data } from "../client";
 import type {
   InstanceOrgUsage,
   InstanceOrgView,
+  InstanceUserOrg,
   InstanceUserView,
   MemberView,
   ModelsDevStatus,
@@ -18,6 +19,12 @@ export const instanceUserQuery = (user: string) =>
   queryOptions({
     queryKey: ["instance", "users", "one", user],
     queryFn: async (): Promise<InstanceUserView> => data(await api.GET("/platform/v1/instance/users/{user}", { params: { path: { user } } })),
+  });
+
+export const instanceUserOrgsQuery = (user: string) =>
+  queryOptions({
+    queryKey: ["instance", "users", "one", user, "orgs"],
+    queryFn: async (): Promise<InstanceUserOrg[]> => data(await api.GET("/platform/v1/instance/users/{user}/orgs", { params: { path: { user } } })).data,
   });
 
 export const instanceUsersQuery = (search: string, state: string | undefined) =>

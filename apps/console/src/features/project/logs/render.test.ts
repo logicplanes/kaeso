@@ -67,6 +67,24 @@ describe("requestView", () => {
   it("maps an OpenAI Responses string input", () => {
     expect(requestView("openai_responses", responsesTools.request)?.messages).toEqual([{ role: "user", content: responsesTools.request.input }]);
   });
+  it("writes structured parameters as fields, not JSON", () => {
+    const v = requestView("anthropic_messages", {
+      messages: [{ role: "user", content: "Hi" }],
+      thinking: { type: "enabled", budget_tokens: 2048 },
+      output_config: { format: { type: "json_schema", schema: {} }, effort: null },
+      stop_sequences: ["END", "STOP"],
+      metadata: {},
+    });
+    expect(v?.params).toEqual(
+      expect.arrayContaining([
+        { label: "Thinking", value: "type: enabled, budget_tokens: 2048" },
+        { label: "Output", value: "format: (type: json_schema, schema: {})" },
+        { label: "Stop sequences", value: "END, STOP" },
+        { label: "Metadata", value: "{}" },
+      ]),
+    );
+  });
+
   it("returns null for anything it can't map, instead of guessing", () => {
     expect(requestView("anthropic_messages", { messages: [{ role: "user", content: [{ type: "server_tool_use" }] }] })).toBeNull();
     expect(requestView("openai_chat", { messages: [{ role: "robot", content: "x" }] })).toBeNull();
@@ -121,6 +139,8 @@ describe("reasoning", () => {
       { type: "reasoning", text: "" },
       { type: "reasoning", text: "", redacted: true },
     ]);
+    expect(v?.params).toContainEqual({ label: "Reasoning", value: "effort: high, summary: auto" });
+    expect(v?.params).toContainEqual({ label: "Store", value: "false" });
     const json = JSON.stringify(v);
     expect(json).not.toContain("kpp:reasoning");
     expect(json).not.toContain("gAAAA");
@@ -297,7 +317,7 @@ describe("requestView, every part", () => {
     expect(v?.messages[3]).toEqual({ role: "tool", content: [{ type: "tool_result", content: [{ type: "text", text: "drawn" }] }] });
     expect(v?.tools).toEqual([{ name: "draw" }, { name: "code_interpreter" }]);
     expect(v?.params).toEqual([
-      { label: "Stop", value: '["END"]' },
+      { label: "Stop", value: "END" },
       { label: "Seed", value: "7" },
     ]);
   });

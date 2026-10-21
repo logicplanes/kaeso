@@ -63,10 +63,45 @@ pub struct WhatsNewView {
     pub seen: Option<String>,
     #[doc = "Every release after `seen` up to the running version, newest first, at most 10; pre-releases only while a pre-release runs."]
     pub releases: Vec<WhatsNewRelease>,
+    #[doc = "The running release, with its notes when the gateway knows them, so it can be shown again after it was seen."]
+    pub running: WhatsNewRelease,
 }
 
 fn release_page(version: &Version) -> String {
     format!("https://github.com/logicplanes/kaeso/releases/tag/v{version}")
+}
+
+fn release_of(k: &Known) -> WhatsNewRelease {
+    WhatsNewRelease {
+        version: k.version.to_string(),
+        published_at: Some(k.row.published_at),
+        prerelease: k.row.prerelease,
+        notes: k.row.notes.clone(),
+        url: k.row.url.clone(),
+        art: k
+            .row
+            .art
+            .clone()
+            .and_then(|a| serde_json::from_value(a).ok()),
+    }
+}
+
+fn unknown_release(running: &Version) -> WhatsNewRelease {
+    WhatsNewRelease {
+        version: running.to_string(),
+        published_at: None,
+        prerelease: !running.pre.is_empty(),
+        notes: String::new(),
+        url: release_page(running),
+        art: None,
+    }
+}
+
+fn running_release(running: &Version, known: &[Known]) -> WhatsNewRelease {
+    known
+        .iter()
+        .find(|k| k.version == *running)
+        .map_or_else(|| unknown_release(running), release_of)
 }
 
 fn unseen(running: &Version, seen: &Version, known: &[Known]) -> Vec<WhatsNewRelease> {
@@ -79,31 +114,10 @@ fn unseen(running: &Version, seen: &Version, known: &[Known]) -> Vec<WhatsNewRel
     let mut out: Vec<WhatsNewRelease> = releases
         .into_iter()
         .take(MAX_RELEASES)
-        .map(|k| WhatsNewRelease {
-            version: k.version.to_string(),
-            published_at: Some(k.row.published_at),
-            prerelease: k.row.prerelease,
-            notes: k.row.notes.clone(),
-            url: k.row.url.clone(),
-            art: k
-                .row
-                .art
-                .clone()
-                .and_then(|a| serde_json::from_value(a).ok()),
-        })
+        .map(release_of)
         .collect();
     if running > seen && !out.iter().any(|r| r.version == running.to_string()) {
-        out.insert(
-            0,
-            WhatsNewRelease {
-                version: running.to_string(),
-                published_at: None,
-                prerelease: !running.pre.is_empty(),
-                notes: String::new(),
-                url: release_page(running),
-                art: None,
-            },
-        );
+        out.insert(0, unknown_release(running));
         out.truncate(MAX_RELEASES);
     }
     out
@@ -119,18 +133,16 @@ fn unseen(running: &Version, seen: &Version, known: &[Known]) -> Vec<WhatsNewRel
 pub async fn get(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<WhatsNewView>> {
     let running = service::running();
     let seen = users::seen_version(&state.pg, ctx.user_id()?.uuid()).await?;
+    let known = service::known(updates::releases(&state.pg).await?);
     let releases = match seen.as_deref().map(Version::parse) {
-        Some(Ok(seen)) => unseen(
-            &running,
-            &seen,
-            &service::known(updates::releases(&state.pg).await?),
-        ),
+        Some(Ok(seen)) => unseen(&running, &seen, &known),
         _ => Vec::new(),
     };
     Ok(Json(WhatsNewView {
         current: running.to_string(),
         seen,
         releases,
+        running: running_release(&running, &known),
     }))
 }
 
@@ -214,6 +226,18 @@ mod tests {
             out[0].url,
             "https://github.com/logicplanes/kaeso/releases/tag/v2.0.0"
         );
+    }
+
+    #[test]
+    fn the_running_release_is_known_even_once_seen() {
+        let list = known(&[("1.1.0", false), ("1.2.0", false)]);
+        let running = running_release(&v("1.2.0"), &list);
+        assert_eq!(running.version, "1.2.0");
+        assert_eq!(running.notes, "Notes of 1.2.0");
+        assert!(unseen(&v("1.2.0"), &v("1.2.0"), &list).is_empty());
+        let unknown = running_release(&v("1.3.0"), &list);
+        assert_eq!(unknown.notes, "");
+        assert_eq!(unknown.published_at, None);
     }
 
     #[test]

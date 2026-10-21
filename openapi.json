@@ -3432,6 +3432,67 @@
         "x-kaeso-access": "instance_admin"
       }
     },
+    "/platform/v1/instance/users/{user}/orgs": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The orgs a user belongs to, by name, with their role in each.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "operationId": "getInstanceUsersUserOrgs",
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_InstanceUserOrg"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
     "/platform/v1/instance/users/{user}/reactivate": {
       "post": {
         "tags": [
@@ -17254,6 +17315,36 @@
           }
         }
       },
+      "InstanceUserOrg": {
+        "type": "object",
+        "description": "An org a user belongs to, as instance admins see it.",
+        "required": [
+          "id",
+          "name",
+          "state",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "Acme"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleRef",
+            "description": "The user's role in it."
+          },
+          "state": {
+            "type": "string",
+            "description": "`active` or `scheduled_for_deletion`.",
+            "example": "active"
+          }
+        }
+      },
       "InstanceUserView": {
         "allOf": [
           {
@@ -18533,6 +18624,61 @@
           }
         }
       },
+      "List_InstanceUserOrg": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An org a user belongs to, as instance admins see it.",
+              "required": [
+                "id",
+                "name",
+                "state",
+                "role"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/OrgId",
+                  "description": "The org."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Its name.",
+                  "example": "Acme"
+                },
+                "role": {
+                  "$ref": "#/components/schemas/RoleRef",
+                  "description": "The user's role in it."
+                },
+                "state": {
+                  "type": "string",
+                  "description": "`active` or `scheduled_for_deletion`.",
+                  "example": "active"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_InstanceUserView": {
         "type": "object",
         "description": "A page of results.",
@@ -19341,7 +19487,8 @@
                 "efforts",
                 "temperature",
                 "input_modalities",
-                "provider_key"
+                "provider_key",
+                "availability"
               ],
               "properties": {
                 "aliases": {
@@ -19350,6 +19497,10 @@
                     "type": "string"
                   },
                   "description": "The project's aliases pointing at it."
+                },
+                "availability": {
+                  "$ref": "#/components/schemas/AvailabilityState",
+                  "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found; the Playground offers an `unavailable`\nmodel only greyed out."
                 },
                 "cache_read_price": {
                   "type": [
@@ -21487,7 +21638,8 @@
           "efforts",
           "temperature",
           "input_modalities",
-          "provider_key"
+          "provider_key",
+          "availability"
         ],
         "properties": {
           "aliases": {
@@ -21496,6 +21648,10 @@
               "type": "string"
             },
             "description": "The project's aliases pointing at it."
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilityState",
+            "description": "Whether the provider serves it to the project's provider key, as the\nlast check or request found; the Playground offers an `unavailable`\nmodel only greyed out."
           },
           "cache_read_price": {
             "type": [
@@ -24619,7 +24775,8 @@
         "description": "What changed in Kaeso since the signed-in user last saw it.",
         "required": [
           "current",
-          "releases"
+          "releases",
+          "running"
         ],
         "properties": {
           "current": {
@@ -24633,6 +24790,10 @@
               "$ref": "#/components/schemas/WhatsNewRelease"
             },
             "description": "Every release after `seen` up to the running version, newest first, at most 10; pre-releases only while a pre-release runs."
+          },
+          "running": {
+            "$ref": "#/components/schemas/WhatsNewRelease",
+            "description": "The running release, with its notes when the gateway knows them, so it can be shown again after it was seen."
           },
           "seen": {
             "type": [

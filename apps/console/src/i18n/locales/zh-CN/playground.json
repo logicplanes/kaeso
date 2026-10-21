@@ -2,6 +2,7 @@
   "playground.addColumn": "添加列",
   "playground.addModels": "添加模型",
   "playground.chooseModel": "选择模型",
+  "playground.cleared": "已清除对话",
   "playground.connectionClosed": "回复完成前连接已关闭，请重试。",
   "playground.empty": "暂无可试用的模型",
   "playground.emptyHint": "此项目目录中您有权调用的模型会显示在这里。",
@@ -22,5 +23,6 @@
   "playground.suggestion.haiku": "写一首关于延迟的俳句",
   "playground.suggestion.raceCondition": "向新工程师解释什么是竞态条件",
   "playground.suggestion.restGrpc": "用三个要点比较 REST 和 gRPC",
-  "playground.title": "试验场"
+  "playground.title": "试验场",
+  "playground.undoClear": "撤销"
 }

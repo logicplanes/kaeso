@@ -291,6 +291,44 @@ async fn a_success_marks_an_unavailable_model_available_again() {
 }
 
 #[tokio::test]
+async fn the_playground_lists_what_the_last_check_found() {
+    let env = env().await;
+    sqlx::query("UPDATE catalogue_models SET availability = 'unavailable', availability_checked_at = $1 WHERE model_id = 'claude-haiku-4-5'")
+        .bind(env.app.state.clock.now())
+        .execute(&env.app.state.pg)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE catalogue_models SET availability = 'available', availability_checked_at = $1 WHERE model_id = $2")
+        .bind(env.app.state.clock.now())
+        .bind(UNSERVED_GPT)
+        .execute(&env.app.state.pg)
+        .await
+        .unwrap();
+    kaeso_server::services::catalogue::forget(&env.app.state, common::uuid(env.project.as_str()))
+        .await;
+    let r = env
+        .app
+        .get(
+            &format!("{}/playground/models", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let availability = |model: &str| {
+        r.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == model)
+            .unwrap_or_else(|| panic!("no playground model {model}"))["availability"]
+            .clone()
+    };
+    assert_eq!(availability("claude-haiku-4-5"), "unavailable");
+    assert_eq!(availability(UNSERVED_GPT), "available");
+    assert_eq!(availability(UNSERVED_CLAUDE), "unchecked");
+}
+
+#[tokio::test]
 async fn an_unavailable_model_is_refused_without_calling_the_provider_until_a_recheck_is_due() {
     let env = env().await;
     let r = ask(&env, UNSERVED_CLAUDE).await;

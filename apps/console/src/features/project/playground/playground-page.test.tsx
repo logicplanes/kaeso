@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
@@ -150,6 +150,47 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "anthropic/claude-opus-5-5" }));
   });
 
+  it("keeps the model just chosen when a column is added before the page catches up", async () => {
+    signedIn();
+    on(
+      "GET",
+      MODELS,
+      page([playgroundModel(), claude, playgroundModel({ id: "cm_n", model_id: "gpt-5.4-nano", display_name: "GPT-5.4 nano", model: "gpt-5.4-nano" })]),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+
+    await screen.findByText("claude-opus-5-5");
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const nano = within(await screen.findByRole("listbox")).getByRole("option", { name: /GPT-5.4 nano/ });
+    act(() => {
+      fireEvent.click(nano);
+      fireEvent.click(screen.getByRole("button", { name: "Add column" }));
+    });
+    await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-nano,anthropic/claude-opus-5-5" }));
+  });
+
+  it("greys out models the provider doesn't serve and never adds one", async () => {
+    signedIn();
+    on(
+      "GET",
+      MODELS,
+      page([
+        playgroundModel({ id: "cm_g", provider: "groq", model_id: "llama-3.1-8b-instant", display_name: "Llama 3.1 8B", availability: "unavailable" }),
+        playgroundModel(),
+      ]),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+
+    expect(await screen.findByText("gpt-5.4-mini")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Model" }));
+    const llama = within(await screen.findByRole("listbox")).getByRole("option", { name: /Llama 3.1 8B/ });
+    expect(llama).toHaveAttribute("aria-disabled", "true");
+    expect(llama).toHaveTextContent("The provider doesn't serve it");
+    await user.keyboard("{Escape}{Escape}");
+    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-mini" }));
+  });
+
   it("asks for a model when the link names one the project doesn't have", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));
@@ -222,6 +263,49 @@ describe("PlaygroundPage", () => {
     await user.click(screen.getByRole("button", { name: "Clear" }));
     await waitFor(() => expect(screen.queryByText("Second try worked.")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Write a haiku about latency" })).toBeInTheDocument();
+    expect(await notifications().findByText("Conversation cleared")).toBeInTheDocument();
+    await user.click(notifications().getByRole("button", { name: "Undo" }));
+    expect(await screen.findByText("Second try worked.")).toBeInTheDocument();
+    expect(screen.getByText("Hi")).toBeInTheDocument();
+    await waitFor(() => expect(notifications().queryByText("Conversation cleared")).not.toBeInTheDocument());
+  });
+
+  it("keeps the conversation when you leave the Playground and come back, and asks before the tab closes", async () => {
+    signedIn();
+    on(
+      "GET",
+      MODELS,
+      page([playgroundModel(), claude, playgroundModel({ id: "cm_n", model_id: "gpt-5.4-nano", display_name: "GPT-5.4 nano", model: "gpt-5.4-nano" })]),
+    );
+    on("POST", RESPONSES, ({ body }: { body: unknown }) => reply(`From ${(body as { model: string }).model}.`));
+    const { user, router } = await renderApp(`${PLAYGROUND}?models=openai/gpt-5.4-nano,openai/gpt-5.4-mini`);
+
+    await screen.findByText("gpt-5.4-nano");
+    const leaving = () => {
+      const e = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(e);
+      return e.defaultPrevented;
+    };
+    expect(leaving()).toBe(false);
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText("From gpt-5.4-nano.")).toBeInTheDocument();
+    expect(await screen.findByText("From gpt-5.4-mini.")).toBeInTheDocument();
+    expect(leaving()).toBe(true);
+
+    await router.navigate({ to: "/orgs/$org/projects/$project/keys", params: { org: ORG, project: PROJECT } });
+    await waitFor(() => expect(screen.queryByText("From gpt-5.4-nano.")).not.toBeInTheDocument());
+    expect(leaving()).toBe(false);
+    await router.navigate({ to: "/orgs/$org/projects/$project/playground", params: { org: ORG, project: PROJECT } });
+    expect(await screen.findByText("From gpt-5.4-nano.")).toBeInTheDocument();
+    expect(screen.getByText("From gpt-5.4-mini.")).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-nano,openai/gpt-5.4-mini" }));
+    expect(leaving()).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+    await router.navigate({ to: "/orgs/$org/projects/$project/keys", params: { org: ORG, project: PROJECT } });
+    await router.navigate({ to: "/orgs/$org/projects/$project/playground", params: { org: ORG, project: PROJECT } });
+    expect(await screen.findByText("Nothing sent yet")).toBeInTheDocument();
   });
 
   it("sends the earlier turns with a follow-up", async () => {

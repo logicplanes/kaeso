@@ -253,6 +253,7 @@ function KeyLifetime({ org, project, days }: { org: string; project: string; day
                   <NumberInput
                     aria-label={t("project.settings.maxKeyLifetime", "Maximum key lifetime")}
                     size="sm"
+                    integer
                     value={draft}
                     onValueChange={setDraft}
                     min="1"

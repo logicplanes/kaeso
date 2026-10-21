@@ -15,6 +15,7 @@ const options: ModelPickerOption[] = [
 const providers = [
   { id: "openai", name: "OpenAI" },
   { id: "anthropic", name: "Anthropic" },
+  { id: "deepseek", name: "DeepSeek" },
 ];
 
 const open = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -55,7 +56,8 @@ describe("ModelPicker", () => {
     await user.click(screen.getByRole("button", { name: "Model" }));
     const groups = within(await screen.findByRole("listbox", { name: "Model" })).getAllByRole("group");
     expect(groups.map((g) => document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent)).toEqual(["acme", "Anthropic", "DeepSeek", "OpenAI"]);
-    expect(within(screen.getByRole("group", { name: "Providers" })).getByRole("button", { name: "acme" })).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(screen.getByRole("option", { name: /^acme/ })).toBeInTheDocument();
   });
 
   it("searches by name, id and provider, and closes with the chosen model shown", async () => {
@@ -93,10 +95,39 @@ describe("ModelPicker", () => {
     expect(screen.queryByRole("option", { name: /GPT-4\b/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("switch", { name: "Deprecated" }));
     expect(screen.getByRole("option", { name: /GPT-4/ })).toBeInTheDocument();
-    await user.click(within(screen.getByRole("group", { name: "Providers" })).getByRole("button", { name: "Anthropic" }));
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(screen.getAllByRole("option", { name: /^(All providers|Anthropic|DeepSeek|OpenAI)/ }).map((o) => o.textContent)).toEqual([
+      "All providers",
+      "Anthropic1",
+      "DeepSeek1",
+      "OpenAI3",
+    ]);
+    await user.click(screen.getByRole("option", { name: /^Anthropic/ }));
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Claude Sonnet 4.5claude-sonnet-4-5No key"]);
-    await user.click(within(screen.getByRole("group", { name: "Providers" })).getByRole("button", { name: "All" }));
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    await user.click(screen.getByRole("option", { name: "All providers" }));
     expect(screen.getAllByRole("option")).toHaveLength(5);
+  });
+
+  it("offers only the providers whose models match the search, and opens fresh", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<ModelPicker options={options} providers={providers} onValueChange={onValueChange} />);
+    await open(user);
+    await user.keyboard("gpt");
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    expect(screen.getAllByRole("option", { name: /^(All providers|Anthropic|DeepSeek|OpenAI)/ }).map((o) => o.textContent)).toEqual([
+      "All providers",
+      "OpenAI2",
+    ]);
+    await user.click(screen.getByRole("option", { name: /^OpenAI/ }));
+    await user.click(screen.getAllByRole("option").find((o) => o.textContent?.startsWith("GPT-5 mini")) as HTMLElement);
+    expect(onValueChange).toHaveBeenCalledWith("gpt-5-mini");
+    expect(screen.queryByRole("listbox", { name: "Model" })).not.toBeInTheDocument();
+    await open(user);
+    expect(screen.getByRole("combobox", { name: "Search models" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Provider" })).toHaveTextContent("All providers");
+    expect(screen.getAllByRole("option")).toHaveLength(4);
   });
 
   it("chooses several models and offers an option for every model", async () => {

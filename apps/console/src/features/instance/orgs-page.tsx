@@ -13,6 +13,7 @@ import {
   IconButton,
   Input,
   Menu,
+  PillTabs,
   SearchInput,
   Text,
   col,
@@ -130,7 +131,16 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
         </>
       }
     >
-      <FilterRow>
+      <FilterRow
+        tabs={
+          <PillTabs value={byDeletion ? "deletion" : "created"} onValueChange={(v) => show({ q: search.q, sort: v === "deletion" ? "deletion" : undefined })}>
+            <PillTabs.List aria-label={t("instance.orgOrder", "Order")}>
+              <PillTabs.Tab value="created">{t("instance.newestFirst", "Newest first")}</PillTabs.Tab>
+              <PillTabs.Tab value="deletion">{t("instance.deletionFirst", "Deletion due first")}</PillTabs.Tab>
+            </PillTabs.List>
+          </PillTabs>
+        }
+      >
         <div className="w-240">
           <SearchInput
             aria-label={t("instance.searchOrgs", "Search organizations")}

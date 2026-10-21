@@ -95,6 +95,17 @@ describe("AddModelsDialog", () => {
     expect(requests("POST", BATCH).map((r) => r.body)).toEqual([{ provider: "openai", model_ids: ["gpt-5"] }]);
   });
 
+  it("searches on Enter in the search box without adding the ticked models", async () => {
+    setUp();
+    const { user, dialog } = await open();
+
+    await user.click(await within(dialog).findByRole("checkbox", { name: "Select gpt-5" }));
+    await user.type(within(dialog).getByRole("searchbox", { name: "Search models" }), "mini{Enter}");
+    expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Add 1 model" })).toBeInTheDocument();
+    expect(requests("POST", BATCH)).toEqual([]);
+  });
+
   it("opens a model's values with Enter or a click, and Back returns to the search", async () => {
     setUp();
     on("POST", MODELS, catalogueModel({ id: "cm_gpt5", model_id: "gpt-5" }));

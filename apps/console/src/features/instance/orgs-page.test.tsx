@@ -103,6 +103,18 @@ describe("instance organizations list", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("orders by deletion date with the tabs beside the search", async () => {
+    signedIn();
+    orgs();
+    const { user } = await renderApp(PATH);
+    await within(table()).findByText("Northwind Labs");
+    expect(screen.getByRole("tab", { name: "Newest first" })).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: "Deletion due first" }));
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("sort")).toBe("deletion"));
+    await user.click(screen.getByRole("tab", { name: "Newest first" }));
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("sort")).toBeNull());
+  });
+
   it("keeps the deletion order from the URL", async () => {
     signedIn();
     orgs();

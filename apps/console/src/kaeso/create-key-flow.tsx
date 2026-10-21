@@ -23,7 +23,7 @@ import { orgQuery } from "~/api/queries/orgs";
 import { projectQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
-import { catalogueModelOption } from "./model-options";
+import { catalogueModelOption, keepChosen } from "./model-options";
 import { t } from "~/i18n";
 import { ExpiryPicker, defaultExpiry, expiryRequest, type Expiry } from "./expiry-picker";
 import { LimitEditor, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
@@ -208,7 +208,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                   appearance="default"
                   size="md"
                   fullWidth
-                  options={allowedModels.map(catalogueModelOption)}
+                  options={keepChosen(allowedModels.map(catalogueModelOption), keptModels)}
                   value={keptModels}
                   onValueChange={setModels}
                   placeholder={t("kaeso.limits.allModels", "All models")}

@@ -17,7 +17,7 @@ describe("instance system page", () => {
     expect(screen.getByText("40.4.2")).toBeInTheDocument();
     expect(screen.getAllByText("Up")).toHaveLength(3);
     expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("None: every request was logged.")).toBeInTheDocument();
+    expect(screen.getByText("Every request since the start was logged.")).toBeInTheDocument();
     expect(screen.getByText("2.0 MB")).toBeInTheDocument();
     expect(screen.getByText("10.0 MB")).toBeInTheDocument();
     expect(screen.getByText("48,210")).toBeInTheDocument();

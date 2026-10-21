@@ -199,11 +199,12 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     return { rows, options, spans };
   }, [shown]);
   const labelled = shown.some((g) => g.group.label);
+  const fits = height === "inline" && !toolbar && !footer;
   const unfiltered = useMemo(
-    () => visibleGroups(groups, "", match).reduce((sum, { group, items }) => sum + (group.label ? HEADER : 0) + items.length * rowHeight, 0),
-    [groups, match, rowHeight],
+    () => (fits ? visibleGroups(groups, "", match).reduce((sum, { group, items }) => sum + (group.label ? HEADER : 0) + items.length * rowHeight, 0) : 0),
+    [fits, groups, match, rowHeight],
   );
-  const fitted = height === "inline" && !toolbar && !footer ? { height: SEARCH[size] + 2 * EDGE + Math.max(unfiltered, EMPTY) } : undefined;
+  const fitted = fits ? { height: SEARCH[size] + 2 * EDGE + Math.max(unfiltered, EMPTY) } : undefined;
   const offsets = useMemo(() => {
     const out = [EDGE];
     for (const row of rows) out.push((out[out.length - 1] ?? EDGE) + (row.kind === "header" ? HEADER : rowHeight));

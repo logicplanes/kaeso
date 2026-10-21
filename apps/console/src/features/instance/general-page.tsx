@@ -87,6 +87,7 @@ function OrgDeletion({ settings }: { settings: SettingsView }) {
                 <NumberInput
                   aria-label={t("instance.gracePeriod", "Grace period")}
                   size="sm"
+                  integer
                   value={days}
                   onValueChange={setDays}
                   min={String(GRACE_DAYS.min)}

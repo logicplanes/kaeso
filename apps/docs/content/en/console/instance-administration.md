@@ -12,7 +12,7 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 **Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
 
-Choose a user to open their sheet, which has these actions:
+Instance admins carry an **Instance admin** badge. Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 
 | Action | What it does |
 | --- | --- |
@@ -69,7 +69,7 @@ Sign-in methods and email are set in the gateway's [configuration](../self-hosti
 
 The history lists every update, with who started it, or **Automatically**, and how it ended.
 
-After an update, everyone who opens the console sees **What's new in Kaeso** once: the new version on its own artwork, which never changes, with its improvements, and **Next** through every release they missed. **Continue**, Escape or a click outside closes it.
+After an update, everyone who opens the console sees **What's new in Kaeso** once: the new version on its own artwork, which never changes, with its improvements, and **Next** through every release they missed. **Continue**, Escape or a click outside closes it. **What's new** on **Updates** shows the running version's notes again.
 
 ## Read the audit log
 

@@ -6,6 +6,12 @@ import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { t } from "~/i18n";
 
+const transportName = (transport: string) =>
+  transport === "smtp" ? t("instance.transportSmtp", "SMTP server") : transport === "log" ? t("instance.transportLog", "Gateway log") : transport;
+
+const transportHint = (transport: string) =>
+  transport === "log" ? t("instance.transportLogHint", "Emails are written to the gateway's log, not sent.") : undefined;
+
 export function Mail({ settings }: { settings: SettingsView }) {
   const [open, setOpen] = useState(false);
   const mail = settings.mail;
@@ -20,7 +26,11 @@ export function Mail({ settings }: { settings: SettingsView }) {
       }
     >
       <SettingsGroup>
-        <SettingsRow title={t("instance.transport", "Transport")} control={<Code>{mail.transport}</Code>} />
+        <SettingsRow
+          title={t("instance.transport", "Transport")}
+          description={transportHint(mail.transport)}
+          control={<Text tone="secondary">{transportName(mail.transport)}</Text>}
+        />
         {mail.host && <SettingsRow title={t("instance.host", "Host")} control={<Code>{`${mail.host}:${mail.port}`}</Code>} />}
         <SettingsRow title={t("instance.from", "From")} control={<Text tone="secondary">{mail.from}</Text>} />
       </SettingsGroup>

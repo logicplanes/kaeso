@@ -34,6 +34,7 @@ import { UpdateDialog, type Opened } from "./update-dialog";
 import { checkErrorText, jobResult, UPDATER_DOCS } from "./update-words";
 import { hourLabel, weekdayName } from "~/format/time-zones";
 import { t } from "~/i18n";
+import { showWhatsNew } from "~/shell/whats-new-request";
 
 export function InstanceUpdatesPage() {
   const [opened, setOpened] = useState<Opened | null>(null);
@@ -96,9 +97,9 @@ function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (releas
     <StatusDot tone="success" icon={icons.success}>
       {t("instance.updates.upToDate", "Up to date")}
     </StatusDot>
-  ) : (
+  ) : u.settings.check ? (
     <Text tone="secondary">{t("instance.updates.notChecked", "Not checked yet")}</Text>
-  );
+  ) : undefined;
   const description = running ? (
     t("instance.updates.runningTitle", "Updating to Kaeso {version}", { version: running.to })
   ) : u.check.error ? (
@@ -110,7 +111,18 @@ function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (releas
   );
   return (
     <SettingsGroup className="mt-40">
-      <SettingsRow title={t("instance.updates.runningVersion", "Kaeso {version}", { version: u.current })} description={description} control={action} />
+      <SettingsRow
+        title={t("instance.updates.runningVersion", "Kaeso {version}", { version: u.current })}
+        description={description}
+        control={
+          <div className="flex items-center gap-8">
+            <Button size="sm" variant="ghost" onClick={showWhatsNew}>
+              {t("instance.updates.whatsNew", "What's new")}
+            </Button>
+            {action}
+          </div>
+        }
+      />
     </SettingsGroup>
   );
 }
@@ -288,7 +300,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
           description={
             s.mode === "automatic"
               ? t("instance.updates.automaticHint", "In the update window; major versions wait for you.")
-              : t("instance.updates.manualHint", "You start each update with the button above.")
+              : t("instance.updates.manualHint", "You start each update on this page once one is out.")
           }
           control={
             <div className="w-240">
