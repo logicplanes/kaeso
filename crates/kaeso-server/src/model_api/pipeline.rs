@@ -894,6 +894,9 @@ pub(crate) fn without_key_fragments(mut err: KppError) -> KppError {
 
 pub(crate) fn redact_key_fragments(err: &mut KppError) {
     err.message = kaeso_core::secret::redact_tokens(&err.message);
+    if let Some(raw) = err.raw.as_mut() {
+        kaeso_core::secret::redact_json(raw);
+    }
 }
 
 pub(crate) fn declared_key_refusal(
@@ -960,5 +963,44 @@ mod tests {
         let in_a_reply =
             decode_reply(DialectId::OpenAiChat, 200, &HeaderList::new(), body, &ctx).unwrap_err();
         assert_eq!(in_a_reply.message, err.message);
+    }
+
+    #[test]
+    fn a_same_format_error_body_reaches_every_app_without_key_fragments_or_account_ids() {
+        let cases: [(&str, DialectId, &[u8]); 3] = [
+            (
+                "openrouter",
+                DialectId::OpenAiChat,
+                br#"{"error": {"message": "Provider returned error", "code": 429, "metadata": {"raw": "Rate limit reached for key sk-proj-Ab1xYz789 in organization org-AbCdEf123456."}}, "user_id": "user_2xQ9mLp7Vt4Kd8Rf"}"#,
+            ),
+            (
+                "openai",
+                DialectId::OpenAiResponses,
+                br#"{"error": {"message": "Rate limit reached in organization org-AbCdEf123456 for key sk-proj-Ab1xYz789.", "type": "requests", "param": null, "code": "rate_limit_exceeded"}}"#,
+            ),
+            (
+                "anthropic",
+                DialectId::AnthropicMessages,
+                br#"{"type": "error", "error": {"type": "rate_limit_error", "message": "This request would exceed your organization's rate limit (org: 0d5b7a5e-1c2f-4a59-9a8e-3f1d2c4b5a6e, model: claude-opus-5-5)."}, "request_id": "req_011CXyZ"}"#,
+            ),
+        ];
+        for (provider, dialect, body) in cases {
+            let p = kaeso_core::provider::provider(provider).unwrap();
+            let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+            let ctx = EgressCtx::new(&req).with_chat_profile(p.chat);
+            let err = provider_error(p, dialect, 429, &HeaderList::new(), body, &ctx);
+            for app in [
+                DialectId::OpenAiChat,
+                DialectId::OpenAiResponses,
+                DialectId::AnthropicMessages,
+            ] {
+                let sent = dispatch::encode_error(app, &err).body;
+                let text = String::from_utf8_lossy(&sent);
+                for secret in ["Ab1xYz789", "AbCdEf123456", "2xQ9mLp7", "0d5b7a5e"] {
+                    assert!(!text.contains(secret), "{provider} to {app}: {text}");
+                }
+                assert!(text.contains("[redacted]"), "{provider} to {app}: {text}");
+            }
+        }
     }
 }

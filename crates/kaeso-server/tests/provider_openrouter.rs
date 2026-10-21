@@ -298,3 +298,57 @@ async fn an_upstream_rate_limit_names_its_reason_for_other_formats_and_in_the_re
         "upstream_provider_shared_pool"
     );
 }
+
+#[tokio::test]
+async fn the_recorded_upstream_rate_limit_reaches_every_app_without_the_operators_account_id() {
+    let env = env().await;
+    let marker = "Hello! [mock:error=providers/openrouter/recorded-upstream-rate-limited]";
+    let recorded = "user_000000000000000000000000000";
+    for stream in [false, true] {
+        let mut body = chat(MODEL, marker);
+        body["stream"] = json!(stream);
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(body),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+        let reply = r.json();
+        assert_eq!(reply["user_id"], "[redacted]", "stream {stream}");
+        assert_eq!(reply["error"]["metadata"]["provider_name"], "Liquid");
+        assert!(
+            !r.text().contains(recorded),
+            "stream {stream}: {}",
+            r.text()
+        );
+
+        let mut body = messages(MODEL, marker);
+        body["stream"] = json!(stream);
+        let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+        assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+        assert_eq!(r.json()["error"]["type"], "rate_limit_error");
+        assert!(
+            !r.text().contains(recorded),
+            "stream {stream}: {}",
+            r.text()
+        );
+
+        let r = call(
+            &env,
+            "/v1/responses",
+            Some(&env.key),
+            false,
+            Some(json!({ "model": MODEL, "input": marker, "stream": stream })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+        assert!(
+            !r.text().contains(recorded),
+            "stream {stream}: {}",
+            r.text()
+        );
+    }
+}

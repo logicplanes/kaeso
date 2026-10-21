@@ -180,7 +180,7 @@ Once a stream has started, its status can't change. If the provider fails or end
 
 ## Provider errors
 
-When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`.
+When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`. In every error, also one streamed or rewritten for another format, anything that looks like a key or an account, user, project or organization id is replaced by `[redacted]`.
 
 Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 

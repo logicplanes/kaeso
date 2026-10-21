@@ -180,7 +180,7 @@ Hat ein Stream begonnen, kann sich sein Status nicht mehr ändern. Scheitert der
 
 ## Fehler des Anbieters
 
-Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter, außer wenn der Anbieter den Anbieter-Schlüssel des Projekts abgelehnt hat. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`.
+Sprechen Ihre App und der Anbieter dasselbe Format, gibt Kaeso den Fehler des Anbieters mit seinem Status weiter, außer wenn der Anbieter den Anbieter-Schlüssel des Projekts abgelehnt hat. Ein Anthropic-Fehler erhält zusätzlich Kaesos ID in `request_id`. In jedem Fehler, auch in einem gestreamten oder für ein anderes Format neu geschriebenen, ist alles, was wie ein Schlüssel oder eine Konto-, Benutzer-, Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt.
 
 Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bedeutung:
 

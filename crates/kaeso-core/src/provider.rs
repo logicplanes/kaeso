@@ -589,6 +589,12 @@ mod tests {
                     "{}: {prefix:?}",
                     p.id
                 );
+                let leaked = format!("key {prefix}AbCd1234 refused");
+                assert!(
+                    !crate::secret::redact_tokens(&leaked).contains("AbCd1234"),
+                    "{}: keys starting {prefix:?} are not redacted from provider errors",
+                    p.id
+                );
             }
             assert_eq!(p.dialects.first(), Some(&p.generation), "{}", p.id);
             for d in [p.count_tokens, p.embeddings].into_iter().flatten() {

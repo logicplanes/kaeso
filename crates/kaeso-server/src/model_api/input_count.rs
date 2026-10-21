@@ -58,7 +58,7 @@ impl InputCounter {
                 Ok(n) => return Input::Counted(n),
                 Err(e) => tracing::warn!(
                     provider,
-                    error = %e,
+                    error = %super::pipeline::without_key_fragments(e).message,
                     "cannot count the input of a stream that ended early; estimating it from its size"
                 ),
             }
