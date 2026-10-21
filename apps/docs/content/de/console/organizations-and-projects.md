@@ -14,7 +14,7 @@ Dasselbe Menü listet Ihre Organisationen und wechselt zwischen ihnen.
 
 ## Nutzung ablesen
 
-Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum Ihrer Wahl, von heute bis zur gesamten Laufzeit. Sie schlüsselt außerdem die Kosten nach Projekt auf und die Nutzung nach Projekt, Modell oder Mitglied. Für die Nutzung brauchen Sie das Recht **Gesamtnutzung ansehen**, für die Kosten **Gesamtkosten ansehen**.
+Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum Ihrer Wahl, von heute bis zur gesamten Laufzeit. Jede Summe wird mit dem Zeitraum davor verglichen, außer für heute, das noch läuft, und die gesamte Laufzeit. Diagramme zählen nach UTC-Tagen; ein Tag, eine Woche oder ein Monat, der noch läuft, wird gestrichelt oder heller gezeichnet, und sein Tooltip sagt „bisher“. Sie schlüsselt außerdem die Kosten nach Projekt auf und die Nutzung nach Projekt, Modell oder Mitglied. Für die Nutzung brauchen Sie das Recht **Gesamtnutzung ansehen**, für die Kosten **Gesamtkosten ansehen**.
 
 Die **Übersicht** eines Projekts zeigt dieselben Zahlen für ein Projekt, aufgeschlüsselt nach Zeit, Modell, Schlüssel oder Mitglied. Sie listet außerdem die Limits des Projekts mit ihrem Verbrauch und die letzten Fehler.
 

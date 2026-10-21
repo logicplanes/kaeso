@@ -1,19 +1,20 @@
 import { BarChart, TOKEN_KIND_ORDER, tokenKindColor, type TimeSeries } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
-import { bucketAxisLabel, bucketLabel } from "~/format/buckets";
 import { t } from "~/i18n";
-import { byBucket, chartState, tokensByKind, type DailyProps } from "./usage-panels";
+import { bucketNames, byBucket, chartState, tokensByKind, type DailyProps } from "./usage-panels";
 
 export function DayBars(props: DailyProps & { label: string; days: { day: string }[]; series: TimeSeries[] }) {
-  const g = props.granularity ?? "day";
+  const names = bucketNames(props);
   return (
     <BarChart
       aria-label={props.label}
-      categories={props.days.map((d) => bucketLabel(d.day, g))}
+      categories={props.days.map((d) => names.label(d.day))}
       dates={props.days.map((d) => d.day)}
       series={props.series.map((s) => ({ id: s.id, label: s.label, color: s.color, values: s.points.map((p) => p.v) }))}
       layout="grouped"
+      shares={false}
+      partial={names.partial}
       height={240}
       formatValue={formatNumber}
       empty={props.rows.length === 0}
@@ -26,6 +27,7 @@ export function DayBars(props: DailyProps & { label: string; days: { day: string
 export function TokenBars(props: DailyProps) {
   const g = props.granularity ?? "day";
   const days = byBucket(props.rows, props.from, props.to, g);
+  const names = bucketNames(props);
   const field: Record<(typeof TOKEN_KIND_ORDER)[number], (r: UsageRow) => number> = {
     input: (r) => r.input_tokens,
     cacheRead: (r) => r.cache_read_tokens,
@@ -49,9 +51,10 @@ export function TokenBars(props: DailyProps) {
   return (
     <BarChart
       aria-label={tokensByKind(g)}
-      categories={days.map((d) => bucketLabel(d.day, g))}
+      categories={days.map((d) => names.label(d.day))}
       dates={days.map((d) => d.day)}
-      {...(g === "day" ? {} : { axisLabels: days.map((d) => bucketAxisLabel(d.day, g)) })}
+      axisLabels={days.map((d) => names.axis(d.day))}
+      partial={names.partial}
       series={series}
       layout="stacked"
       height={240}

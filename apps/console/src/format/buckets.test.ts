@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { axisLabelIndexes } from "@logicplanes/kaeso-ui";
 import { apply, load } from "~/i18n";
-import { bucketAxisLabel, bucketLabel, bucketsBetween, granularity, mondayOf } from "./buckets";
+import { bucketAxisLabel, bucketLabel, bucketsBetween, granularity, mondayOf, partialBuckets, spansYears } from "./buckets";
 import { periodSearch } from "./period";
 import { comparedWith, presetDays, resolvePeriod } from "./presets";
 
@@ -91,6 +91,30 @@ describe.each(ZONES)("a new year's first bucket in $tz", ({ tz, offset }) => {
   });
 });
 
+describe("a period across two years", () => {
+  it("names the year of every bucket", () => {
+    expect(spansYears("2025-10-21", "2026-10-20", "week")).toBe(true);
+    expect(spansYears("2026-01-01", "2026-10-20", "week")).toBe(true);
+    expect(spansYears("2026-01-05", "2026-10-20", "week")).toBe(false);
+    expect(spansYears("2026-04-21", "2026-10-20", "day")).toBe(false);
+    expect(bucketLabel("2025-10-20", "week", true)).toBe("Week of 20 Oct 2025");
+    expect(bucketLabel("2026-10-19", "week", true)).toBe("Week of 19 Oct 2026");
+    expect(bucketLabel("2025-12-20", "day", true)).toBe("Dec 20, 2025");
+    expect(bucketLabel("2026-10-01", "month", true)).toBe("Oct 2026");
+  });
+});
+
+describe("partial buckets", () => {
+  it("mark a first bucket the period starts inside, a last one it ends inside, and today", () => {
+    expect(partialBuckets("2025-10-21", "2026-10-20", "week", "2026-10-20")).toEqual({ first: true, last: true, ongoing: true });
+    expect(partialBuckets("2026-10-05", "2026-10-18", "week", "2026-10-20")).toEqual({ first: false, last: false, ongoing: false });
+    expect(partialBuckets("2026-04-01", "2026-09-30", "month", "2026-10-20")).toEqual({ first: false, last: false, ongoing: false });
+    expect(partialBuckets("2026-04-21", "2026-09-15", "month", "2026-10-20")).toEqual({ first: true, last: true, ongoing: false });
+    expect(partialBuckets("2026-02-01", "2026-02-28", "month", "2026-10-20")).toEqual({ first: false, last: false, ongoing: false });
+    expect(partialBuckets("2026-09-21", "2026-10-20", "day", "2026-10-20")).toEqual({ first: false, last: false, ongoing: true });
+  });
+});
+
 describe("presets", () => {
   const now = new Date("2026-10-14T10:00:00Z");
   it("end on the API's today and count back", () => {
@@ -109,12 +133,14 @@ describe("presets", () => {
     expect(presetDays("all", now, null)).toEqual({ from: "2026-10-14", to: "2026-10-14" });
     expect(presetDays("all", now)).toEqual({ from: "2026-10-14", to: "2026-10-14" });
   });
-  it("compare with the prior period, except All time", () => {
-    expect(comparedWith("6m", 183)).toBe("vs. prior 6 months");
-    expect(comparedWith("12m", 365)).toBe("vs. prior 12 months");
-    expect(comparedWith("7d", 7)).toBe("vs. prior 7 days");
-    expect(comparedWith(undefined, 1)).toBe("vs. prior 1 day");
-    expect(comparedWith("all", 60)).toBeUndefined();
+  it("compare with the prior period, except All time and a today that isn't over", () => {
+    expect(comparedWith("6m", "2026-04-15", "2026-10-14", now)).toBe("vs. prior 6 months");
+    expect(comparedWith("12m", "2025-10-15", "2026-10-14", now)).toBe("vs. prior 12 months");
+    expect(comparedWith("7d", "2026-10-08", "2026-10-14", now)).toBe("vs. prior 7 days");
+    expect(comparedWith(undefined, "2026-10-13", "2026-10-13", now)).toBe("vs. prior 1 day");
+    expect(comparedWith("all", "2026-08-15", "2026-10-14", now)).toBeUndefined();
+    expect(comparedWith("today", "2026-10-14", "2026-10-14", now)).toBeUndefined();
+    expect(comparedWith(undefined, "2026-10-14", "2026-10-14", now)).toBeUndefined();
   });
 });
 

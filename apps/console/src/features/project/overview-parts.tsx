@@ -40,6 +40,7 @@ export function Breakdown({
   rows,
   by,
   granularity = "day",
+  withYear = false,
   showCost,
   modelName,
   loading,
@@ -52,6 +53,7 @@ export function Breakdown({
   rows: UsageRow[];
   by: NonNullable<OverviewSearch["by"]>;
   granularity?: Granularity | undefined;
+  withYear?: boolean | undefined;
   showCost: boolean;
   modelName: (key: string) => string;
   loading: boolean;
@@ -68,7 +70,7 @@ export function Breakdown({
   const waiting = !failed && (loading || (by === "key" && keys.isLoading) || (by === "member" && partiesLoading));
   const sorted = waiting ? [] : by === "day" ? [...rows].sort((a, b) => b.key.localeCompare(a.key)) : [...rows].sort((a, b) => b.requests - a.requests);
   const label = (r: UsageRow) => {
-    if (by === "day") return <Text tabular>{bucketLabel(r.key, granularity)}</Text>;
+    if (by === "day") return <Text tabular>{bucketLabel(r.key, granularity, withYear)}</Text>;
     if (by === "model") {
       const [provider = "", ...rest] = r.key.split("/");
       const model = rest.join("/");
