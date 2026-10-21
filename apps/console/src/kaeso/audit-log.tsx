@@ -36,9 +36,10 @@ import { patchSearch, type SearchPatch } from "~/search";
 import { dayKey, inZone, yearOf } from "~/format/zone";
 import { usePhone } from "~/shell/use-phone";
 
+const dateTag = () => (locale() === "en" ? "en-GB" : locale());
 const shortTimes = new Map<string, Intl.DateTimeFormat>();
 function shortTime(v: string): string {
-  const tag = locale() === "en" ? "en-GB" : locale();
+  const tag = dateTag();
   const zone = inZone();
   const key = `${tag}|${String(zone.timeZone)}`;
   let f = shortTimes.get(key);
@@ -50,13 +51,13 @@ const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
 function compactTime(v: string): string {
   const at = new Date(v);
-  const tag = locale() === "en" ? "en-GB" : locale();
+  const tag = dateTag();
   if (dayKey(at) === dayKey(new Date())) return new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }).format(at);
   const thisYear = yearOf(at) === yearOf(new Date());
   return new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", ...(thisYear ? {} : { year: "2-digit" }), ...inZone() }).format(at);
 }
 function zoneName(at: Date): string {
-  const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...inZone() }).formatToParts(at);
+  const parts = new Intl.DateTimeFormat(dateTag(), { timeZoneName: "short", ...inZone() }).formatToParts(at);
   return parts
     .filter((p) => p.type === "timeZoneName")
     .map((p) => p.value)

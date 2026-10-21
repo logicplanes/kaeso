@@ -318,7 +318,7 @@ test("audit log: the changes above are recorded, filtered by action, and open wi
   await page.getByRole("option", { name: /^Platform keys: every action/ }).click();
   await expect(grid.getByText("Platform key created")).toBeVisible();
   await expect(grid.getByText("Organization changed")).toHaveCount(0);
-  await expect(grid.getByText("Terraform")).toBeVisible();
+  await expect(grid.getByText("Terraform")).toHaveCount(2);
   await grid.getByText("Platform key created").click();
   const sheet = page.getByRole("dialog", { name: "Platform key created" });
   await expect(sheet.getByText("platform_key.create")).toBeVisible();

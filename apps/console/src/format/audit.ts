@@ -138,7 +138,7 @@ export function auditActionOptions(): { value: string; label: string; descriptio
   return Object.entries(AUDIT_ACTIONS).flatMap(([kind, actions]) => [
     {
       value: `${kind}.`,
-      label: t("format.audit.everyActionOf", "{kind}: every action", { kind: KIND_LABELS[kind]?.() ?? kind }),
+      label: t("format.audit.everyActionOf", "{kind}: every action", { kind: (KIND_LABELS[kind] as () => string)() }),
       description: `${kind}.*`,
     },
     ...actions.map((a) => ({ value: a, label: auditActionLabel(a), description: a })),

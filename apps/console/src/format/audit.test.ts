@@ -85,6 +85,7 @@ describe("audit actions", () => {
     const actions = Object.values(AUDIT_ACTIONS).flat();
     expect(options).toHaveLength(kinds.length + actions.length);
     expect(options.filter((o) => o.value.endsWith(".")).map((o) => o.value)).toEqual(kinds.map((k) => `${k}.`));
+    for (const kind of options.filter((o) => o.value.endsWith("."))) expect(kind.label, kind.value).not.toMatch(/^[a-z_]+: /);
   });
 
   it("are named in German and Chinese", async () => {
@@ -105,6 +106,7 @@ describe("target names in snapshots", () => {
       "daily token budget of 20000000 tokens",
     );
     expect(snapshotName({ target_kind: "org", after: { org: { id: "org_1", name: "Northwind Labs" } } })).toBe("Northwind Labs");
+    expect(snapshotName({ target_kind: "org", before: { name: "Northwind" } })).toBe("Northwind");
     expect(snapshotName({ target_kind: "role", after: null, before: { name: "Support lead" } })).toBe("Support lead");
     expect(snapshotName({ target_kind: "catalogue_model", after: { model_id: "gpt-5" } })).toBe("gpt-5");
     expect(snapshotName({ target_kind: "user", after: { email: "grace@example.com" } })).toBe("grace@example.com");
