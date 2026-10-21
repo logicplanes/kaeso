@@ -4,27 +4,33 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-21
+
+Kaeso 0.3.1 is a small follow-up to 0.3.0 with no breaking changes. The gateway now checks for new releases every 5 minutes, and Settings shows the last check only when it failed. The documentation changelog is split into one page per minor series, and the UI library's ReleaseArt takes an image source for stored release artwork.
+
+**Full changes:** [v0.3.0...v0.3.1](https://github.com/logicplanes/kaeso/compare/v0.3.0...v0.3.1)
+
 ### Added
 
-- Each release on the documentation's changelog shows its artwork from `update.kaeso.app`, the same picture as the console's What's new dialog. The documentation's Content Security Policy allows images from `update.kaeso.app` for it.
+- Each release on the documentation's changelog shows its artwork, the same picture as the console's What's new dialog. The documentation's Content Security Policy allows images from the update server for it.
 
 #### UI library
 
-- `ReleaseArt` takes `src`, an image of a release's stored artwork such as `https://update.kaeso.app/art/0.3.0.svg`, shown in the same frame as the drawn picture, which takes its place if the image doesn't load.
+- `ReleaseArt` takes a `src` prop, an image of a release's stored artwork, shown in the same frame as the drawn picture, which stays as the fallback if the image doesn't load.
 
 ### Changed
 
-- The gateway looks for new releases every 5 minutes instead of twice a day, and 15 minutes after a failed check; an unchanged release list costs only a `304` answer.
+- The gateway checks for new releases every 5 minutes instead of twice a day, and 15 minutes after a failed check. An unchanged release list costs only a `304` answer.
 
 #### Console
 
-- **Settings → Instance → Updates** no longer shows when the gateway last looked for releases; it says only when a check failed.
+- `Settings → Instance → Updates` no longer shows when the gateway last looked for releases; it says only when a check failed.
 
 ### Fixed
 
 #### Documentation
 
-- The changelog at docs.kaeso.app has one page per minor series, so no page outgrows the site's page budget as releases add up: `/changelog` shows Unreleased and the latest series, and each older series is at `/changelog/<major.minor>`, such as `/changelog/0.2`. Links to a version, including old `/changelog#v0.1.0` addresses, open the page that holds it. The 0.3.0 documentation and showcase couldn't be deployed until this was fixed.
+- The changelog is split into one page per minor series, so no page outgrows the site's page budget. Older series sit on their own pages, and links to a version, including old version anchors, open the page that holds it. The 0.3.0 documentation and showcase could not be deployed until this was fixed.
 
 ## [0.3.0] - 2026-10-21
 
@@ -451,7 +457,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.1
 [0.3.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.0
 [0.2.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.2
 [0.2.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.2.1
