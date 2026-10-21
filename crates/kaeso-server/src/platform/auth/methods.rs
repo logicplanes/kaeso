@@ -46,18 +46,23 @@ pub struct SignInMethodsView {
 pub struct SsoProviderView {
     #[doc = "The org it signs in to; pass it as `org` to `auth/oidc/start`."]
     pub org: OrgId,
+    #[doc = "The org's name, so the page says where the provider signs in."]
+    #[schema(example = "Acme")]
+    pub org_name: String,
     #[doc = "The name on the sign-in button, such as `Acme ID`; `null` to say SSO."]
     #[schema(example = "Acme ID")]
     pub name: Option<String>,
     #[doc = "The page starts the sign-in at the provider without a click, unless the\n\
-        person just signed out or the last attempt failed."]
+        browser is signed in already, the person just signed out or the last\n\
+        attempt failed."]
     pub auto_redirect: bool,
 }
 
 impl SsoProviderView {
-    fn of(c: oidc::Connection) -> SsoProviderView {
+    fn of(c: oidc::Connection, org: &orgs::Org) -> SsoProviderView {
         SsoProviderView {
             org: OrgId::from_uuid(c.org_id),
+            org_name: org.name.clone(),
             name: c.display_name,
             auto_redirect: c.auto_redirect,
         }
@@ -109,10 +114,16 @@ async fn offered(state: &AppState, org: Option<OrgId>) -> ApiResult<Option<SsoPr
         },
         None => None,
     };
-    Ok(match org {
-        Some(org) => oidc::get(&state.pg, org).await?.map(SsoProviderView::of),
-        None => None,
-    })
+    let Some(org) = org else {
+        return Ok(None);
+    };
+    let (Some(connection), Some(row)) = (
+        oidc::get(&state.pg, org).await?,
+        orgs::get(&state.pg, org).await?,
+    ) else {
+        return Ok(None);
+    };
+    Ok(Some(SsoProviderView::of(connection, &row)))
 }
 
 #[utoipa::path(
@@ -164,12 +175,14 @@ pub async fn lookup(
         Some(org) => oidc::get(&state.pg, org).await?,
         None => None,
     };
-    methods.sso = connection.is_some();
-    if let Some(connection) = connection {
-        methods.sso_required = orgs::get(&state.pg, connection.org_id)
-            .await?
-            .is_some_and(|o| o.require_sso);
-        methods.provider = Some(SsoProviderView::of(connection));
+    let org = match &connection {
+        Some(c) => orgs::get(&state.pg, c.org_id).await?,
+        None => None,
+    };
+    methods.sso = connection.is_some() && org.is_some();
+    if let (Some(connection), Some(org)) = (connection, org) {
+        methods.sso_required = org.require_sso;
+        methods.provider = Some(SsoProviderView::of(connection, &org));
     }
     if methods.sso_required {
         methods.password = false;

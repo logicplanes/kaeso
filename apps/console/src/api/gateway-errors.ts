@@ -122,6 +122,7 @@ const messages = (): Rule[] => [
   rule("errors.issuerPlain", () => t("errors.issuerPlain", "`issuer` takes no query, fragment or credentials.")),
   rule("errors.ssoLinkRequired", () => t("errors.ssoLinkRequired", "Your account isn't linked to this SSO; sign in another way and link it under Account.")),
   rule("errors.ssoLinkedElsewhere", () => t("errors.ssoLinkedElsewhere", "This SSO identity is already linked to another Kaeso account.")),
+  rule("errors.ssoSignedInAsOther", () => t("errors.ssoSignedInAsOther", "This browser is signed in to another account; sign out first, then sign in again.")),
   rule("errors.ssoOtherAccount", () => t("errors.ssoOtherAccount", "You signed in at the identity provider as someone else; sign in there as yourself.")),
   rule("errors.ssoStaleSignIn", () => t("errors.ssoStaleSignIn", "The identity provider didn't ask you to sign in again; try again or confirm another way.")),
   rule("errors.noOrgAccess", () => t("errors.noOrgAccess", "You have no access to this organization yet; ask an admin to invite you.")),

@@ -15,7 +15,7 @@ The page shows a provider's button right away in two cases:
 - Passwords and sign-in links are off, and exactly one organization has an identity provider.
 - Someone opens the organization's sign-in link, such as `https://kaeso.example.com/sign-in?org=org_…`, which its **Security** page shows. While other methods are on, the page also offers **Sign in with your email instead**.
 
-The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. With **Start without a click** on, the page sends people to the provider at once when it is their only way in. It still waits for a click after someone signs out, or when the provider refused a sign-in, so the reason stays readable.
+The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. With **Start without a click** on, the page sends people to the provider at once when it is their only way in. It still waits for a click after someone signs out, or when the provider refused a sign-in, so the reason stays readable, and when the browser is signed in already.
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
@@ -25,13 +25,15 @@ A provider can also sign someone in with a session of its own from earlier, with
 
 ## Links that go straight to the provider
 
-A link to `/platform/v1/auth/oidc/start` sends the browser straight to the identity provider, for a bookmark or an intranet page:
+A link to `/platform/v1/auth/oidc/start` sends a browser that isn't signed in straight to the identity provider, for a bookmark or an intranet page:
 
 ```text
 https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
 ```
 
-`org` names the organization, and you can leave it out while only one organization uses single sign-on. `next` is the console page to open afterwards. The link signs in only the browser that opens it, as whoever signs in at the provider. So a link planted on another site can't sign anyone in to someone else's account.
+`org` names the organization, and you can leave it out while only one organization uses single sign-on. `next` is the console page to open afterwards. The link opens the organization's sign-in page, which names the organization and its provider and goes on to the provider at once.
+
+When the browser is signed in to Kaeso already, the page asks first: it names the account that is signed in and waits for a click. Single sign-on never replaces another account's session. When the provider answers with another account, the browser stays signed in and the page says `signed_in_as_other`; to switch accounts, sign out first. So a link planted on another site can neither sign a browser out nor sign it in to someone else's account.
 
 ## Who signs in through single sign-on
 

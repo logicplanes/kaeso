@@ -41,7 +41,7 @@ Single sign-on lets members sign in through your OpenID Connect identity provide
 2. **Which app signs people in?** Enter its client id and client secret.
 3. **Which email domains sign in with it?** The sign-in page sends people with an address at these domains to your provider. Internationalized domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
 4. **Can people join without an invitation?** Choose **Invite only**, or the role that people new to Kaeso join with. That role can't be Owner.
-5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". **Start without a click** sends people straight to your provider when the sign-in page offers only that one, except right after they sign out or the provider refuses them. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
+5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". **Start without a click** sends people straight to your provider when the sign-in page offers only that one, except right after they sign out or the provider refuses them, or while the browser is signed in already. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
 
 Once you connect, the page shows two addresses:
 

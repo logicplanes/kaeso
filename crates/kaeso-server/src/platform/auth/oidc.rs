@@ -113,6 +113,8 @@ const OTHER_ACCOUNT: &str =
 const STALE_SIGN_IN: &str =
     "The identity provider didn't ask you to sign in again; try again or confirm another way.";
 const DEACTIVATED: &str = "This account is deactivated.";
+const SIGNED_IN_AS_OTHER: &str =
+    "This browser is signed in to another account; sign out first, then sign in again.";
 const NO_VERIFIED_DOMAIN: &str =
     "This organization's SSO has no verified email domain yet; ask an admin to verify one.";
 const OTHER_DOMAIN: &str = "This organization's SSO only signs in addresses of ";
@@ -132,6 +134,7 @@ const CODES: &[(&str, &str)] = &[
     (OTHER_ACCOUNT, "other_account"),
     (STALE_SIGN_IN, "stale_sign_in"),
     (DEACTIVATED, "deactivated"),
+    (SIGNED_IN_AS_OTHER, "signed_in_as_other"),
     (NO_VERIFIED_DOMAIN, "no_verified_domain"),
 ];
 
@@ -315,28 +318,29 @@ pub async fn start(
 #[utoipa::path(
     get,
     path = "/auth/oidc/start",
-    summary = "A link that starts SSO: sends the browser straight to the identity\n\
-    provider, with the flow bound to this browser as `POST auth/oidc/start`\n\
-    binds it. On failure, to the sign-in page with an error code in `#sso_error=`.",
-    description = "For links from an intranet page or a bookmark. It only begins a sign-in \
-    in the browser that follows it, and whoever signs in at the provider is who is signed in \
-    afterwards, so it needs no `Origin` header.",
+    summary = "A link to an org's SSO: sends the browser to the console's sign-in page for\n\
+    the org (`/sign-in?org=…&next=…&start=sso`), which names the org and its\n\
+    identity provider. On failure, to the sign-in page with an error code in\n\
+    `#sso_error=`.",
+    description = "For links from an intranet page or a bookmark. It begins no sign-in itself: \
+    the page starts one with `POST auth/oidc/start`, at once in a browser without a session, \
+    and only when the person chooses to in a browser that is signed in already. The callback \
+    never replaces another account's session, so a link planted on another site can neither \
+    sign that browser in to someone else's account nor end its session.",
     tag = "auth",
     params(StartLink),
-    responses((status = 303, description = "Redirect to the identity provider, or to the sign-in page with `#sso_error=`."))
+    responses((status = 303, description = "Redirect to the sign-in page, with `#sso_error=` on failure."))
 )]
 pub async fn start_link(
     State(state): State<AppState>,
-    ctx: Ctx,
     link: Result<Query<StartLink>, ApiError>,
 ) -> Response {
     let link = match link {
         Ok(Query(link)) => link,
         Err(e) => return refused(&state, &e, &Back::default(), false),
     };
-    let begun = async {
+    let page = async {
         sso_on(&state)?;
-        throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
         let next = next::validate(&state.config.public_url, link.next.as_deref())?;
         let org = match link.org {
             Some(org) => org,
@@ -348,16 +352,18 @@ pub async fn start_link(
                 }
             },
         };
-        let named = link.org.is_some();
-        begin(&state, &ctx, org, Purpose::SignIn { named }, next).await
+        oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
+        Ok(Back {
+            org: Some(org),
+            next,
+            to_page: false,
+        })
     };
-    match begun.await {
-        Ok(begun) => {
-            let mut response = redirect(&begun.authorization_url);
-            response
-                .headers_mut()
-                .append(header::SET_COOKIE, begun.cookie);
-            response
+    match page.await {
+        Ok(page) => {
+            let page = sign_in_location(&state, &page);
+            let joiner = if page.contains('?') { '&' } else { '?' };
+            redirect(&format!("{page}{joiner}start=sso"))
         }
         Err(e) => {
             let back = Back {
@@ -427,6 +433,10 @@ fn failed_location(state: &AppState, reason: &str, back: &Back) -> String {
         page.set_fragment(Some(&format!("sso_error={reason}")));
         return page.to_string();
     }
+    format!("{}#sso_error={reason}", sign_in_location(state, back))
+}
+
+fn sign_in_location(state: &AppState, back: &Back) -> String {
     let next = back
         .next
         .as_deref()
@@ -444,10 +454,7 @@ fn failed_location(state: &AppState, reason: &str, back: &Back) -> String {
     } else {
         format!("?{}", query.join("&"))
     };
-    format!(
-        "{}sign-in{query}#sso_error={reason}",
-        state.config.public_url
-    )
+    format!("{}sign-in{query}", state.config.public_url)
 }
 
 fn refused(state: &AppState, e: &ApiError, back: &Back, clear_binding: bool) -> Response {
@@ -483,8 +490,10 @@ fn binding_from(state: &AppState, headers: &HeaderMap) -> Option<String> {
     `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, \
     `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, \
     `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, \
-    `linked_elsewhere`, `org_scheduled`, `throttled` and `failed`. Show your own message for \
-    each; new codes may appear, so show a general one for a code you don't know.",
+    `linked_elsewhere`, `signed_in_as_other`, `org_scheduled`, `throttled` and `failed`. \
+    `signed_in_as_other` means the browser is signed in to another account, which stays signed \
+    in; an answer for the same account replaces its session. Show your own message for each; \
+    new codes may appear, so show a general one for a code you don't know.",
     tag = "auth",
     params(Callback),
     responses((status = 303, description = "Redirect to the console (signed in) or to the sign-in page with `#sso_error=`."))
@@ -742,6 +751,13 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     };
     if user.state != "active" {
         return Err(deactivated());
+    }
+    // A link from another site can carry a browser through someone else's identity provider,
+    // so an SSO answer never replaces the session of another account in this browser.
+    if let Ok(current) = ctx.session()
+        && current.user_id != user.id
+    {
+        return Err(ApiError::PermissionDenied(SIGNED_IN_AS_OTHER.into()));
     }
     let user_id = UserId::from_uuid(user.id);
     if members::get_org(&mut *tx, org.uuid(), user.id)

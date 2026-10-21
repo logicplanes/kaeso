@@ -343,6 +343,7 @@
   "errors.ssoLinkRequired": "Ihr Konto ist nicht mit dieser SSO verknüpft; melden Sie sich anders an und verknüpfen Sie es unter „Konto“.",
   "errors.ssoLinkedElsewhere": "Diese SSO-Identität ist bereits mit einem anderen Kaeso-Konto verknüpft.",
   "errors.ssoOtherAccount": "Sie haben sich beim Identitätsanbieter als jemand anderes angemeldet; melden Sie sich dort als Sie selbst an.",
+  "errors.ssoSignedInAsOther": "Dieser Browser ist bei einem anderen Konto angemeldet; melden Sie sich zuerst ab und dann erneut an.",
   "errors.ssoStaleSignIn": "Der Identitätsanbieter hat Sie nicht erneut nach der Anmeldung gefragt; versuchen Sie es noch einmal oder bestätigen Sie anders.",
   "errors.ssoNameOrg": "Die Organisation mit `org` angeben; hier nutzen mehrere Organisationen SSO.",
   "errors.ssoNeedsDomain": "Mindestens eine E-Mail-Domain angeben, deren Benutzer sich über diesen Anbieter anmelden.",

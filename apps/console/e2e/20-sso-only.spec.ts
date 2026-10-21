@@ -80,6 +80,12 @@ test("a start link sends a bookmark straight to the identity provider", async ({
   await signInAtProvider(page, "sam@example.com", "Sam Rivera");
   await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
   await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
+
+  await page.goto("/platform/v1/auth/oidc/start?next=%2Fsettings%2Faccount%2Fsessions");
+  await expect(page.getByText(`You're signed in as sam@example.com here; to sign in to ${ADMIN.org} as someone else, sign out first.`)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mock identity provider" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Stay signed in as sam@example.com" }).click();
+  await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
   await context.close();
 });
 

@@ -21,6 +21,7 @@ const CODES = [
   "accept_invite",
   "link_required",
   "linked_elsewhere",
+  "signed_in_as_other",
   "org_scheduled",
   "throttled",
 ];

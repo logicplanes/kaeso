@@ -17,21 +17,23 @@ const ORG_ID = /^org_[A-Za-z0-9]{1,64}$/;
 
 const text = (search: Record<string, unknown>, key: string) => (typeof search[key] === "string" ? { [key]: search[key] } : {});
 
-const signInSearch = (search: Record<string, unknown>): { next?: string; org?: string; done?: string } => ({
+const signInSearch = (search: Record<string, unknown>): { next?: string; org?: string; done?: string; start?: string } => ({
   ...(typeof search.next === "string" && internalPath(search.next) ? { next: search.next } : {}),
   ...text(search, "org"),
   ...text(search, "done"),
+  ...(search.start === "sso" ? { start: "sso" } : {}),
 });
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: signInSearch,
-  beforeLoad: async ({ context, search }) => {
-    const signedIn = await context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0, retry: false }).then(
-      () => true,
-      () => false,
+  beforeLoad: async ({ context, search }): Promise<{ signedInAs: string | null }> => {
+    const current = await context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0, retry: false }).then(
+      (who) => who,
+      () => null,
     );
-    if (!signedIn) return;
+    if (!current) return { signedInAs: null };
     const failed = new URLSearchParams(window.location.hash.slice(1)).get("sso_error");
+    if (!failed && search.org && ORG_ID.test(search.org)) return { signedInAs: current.user.email ?? current.user.name };
     const next = safeNext(search.next);
     throw redirect({ href: failed ? `${next}#sso_error=${encodeURIComponent(failed)}` : next, replace: true });
   },
@@ -45,6 +47,7 @@ function SignIn() {
   const [ssoError] = useState(() => takeFragment("sso_error"));
   const [quiet] = useState(() => ssoError !== null || done === "signed-out");
   const queryClient = useQueryClient();
+  const signedInAs = Route.useRouteContext({ select: (c) => c.signedInAs });
   const [page, setPage] = useState<SignInMethods | null | undefined>(() => queryClient.getQueryData(signInPageQuery(org).queryKey));
   useEffect(() => {
     let current = true;
@@ -56,5 +59,16 @@ function SignIn() {
       current = false;
     };
   }, [org, queryClient]);
-  return <SignInPage next={search.next} org={org} page={page} ssoError={ssoError} notice={done ? NOTICES[done]?.() : undefined} quiet={quiet} />;
+  return (
+    <SignInPage
+      next={search.next}
+      org={org}
+      page={page}
+      ssoError={ssoError}
+      notice={done ? NOTICES[done]?.() : undefined}
+      quiet={quiet}
+      startNow={search.start === "sso"}
+      signedInAs={signedInAs}
+    />
+  );
 }

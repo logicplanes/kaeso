@@ -423,6 +423,7 @@
   "errors.ssoRequiredStopFirst": "SSO is required in this organization; stop requiring it first.",
   "errors.ssoSecretAgain": "Send `client_secret` again when you change `issuer` or `client_id`.",
   "errors.ssoSessionOnly": "Only a console session can change SSO; API keys can't.",
+  "errors.ssoSignedInAsOther": "This browser is signed in to another account; sign out first, then sign in again.",
   "errors.ssoStaleSignIn": "The identity provider didn't ask you to sign in again; try again or confirm another way.",
   "errors.stale.catalogueModel": "This catalogue model was changed since you loaded it; reload it and try again.",
   "errors.stale.limit": "This limit was changed since you loaded it; reload it and try again.",

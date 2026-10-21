@@ -47,6 +47,8 @@ export function SignInPage({
   ssoError,
   notice,
   quiet = false,
+  startNow = false,
+  signedInAs = null,
 }: {
   next?: string | undefined;
   org?: string | undefined;
@@ -54,6 +56,8 @@ export function SignInPage({
   ssoError?: string | null | undefined;
   notice?: string | undefined;
   quiet?: boolean;
+  startNow?: boolean;
+  signedInAs?: string | null;
 }) {
   usePageTitle(t("signIn.title", "Sign in"));
   const navigate = useNavigate();
@@ -86,6 +90,9 @@ export function SignInPage({
   useEffect(() => {
     if (ssoError) void loadSteps().then((m) => m.showSsoError(ssoError));
   }, [ssoError]);
+  useEffect(() => {
+    if (signedInAs && page !== undefined && !page?.provider) void navigate({ href: safeNext(next), replace: true });
+  }, [signedInAs, page, next, navigate]);
   useEffect(() => {
     if (!notice) return;
     toast.success(notice, { id: "sign-in-notice" });
@@ -217,7 +224,8 @@ export function SignInPage({
       <ProviderStep
         provider={alone}
         next={next}
-        auto={!quiet}
+        auto={!quiet && !signedInAs && (startNow || alone.auto_redirect)}
+        signedInAs={signedInAs}
         onEmail={page?.password || page?.magic_link ? () => setWithEmailInstead(true) : undefined}
         signUp={SignUp && <SignUp />}
       />
