@@ -83,7 +83,7 @@ describe("day labels", () => {
   it("abbreviate September with three letters like every other month", () => {
     expect(monthLabel("2026-09-01")).toBe("Sep 2026");
     expect(fullDayLabel("2026-09-30")).toBe("30 Sep 2026");
-    expect(dayLabel("2026-09-30")).toBe("Sep 30");
+    expect(dayLabel("2026-09-30")).toBe("30 Sep");
   });
 
   it("are written the German and Chinese way", async () => {

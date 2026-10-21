@@ -1,5 +1,5 @@
 import type { Capability } from "@logicplanes/kaeso-ui";
-import { formatContext, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatContext, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { t } from "~/i18n";
 
@@ -29,7 +29,7 @@ export function contextLabel(tokens: number | null | undefined): string {
 
 export function priceLabel(f: Fields): string {
   if (!f.input_price && !f.output_price) return "—";
-  const short = (v: string | null | undefined) => (v ? formatUSD(v, Number(v) % 1 === 0 ? { decimals: 0 } : {}) : "—");
+  const short = (v: string | null | undefined) => (v ? (Number(v) % 1 === 0 ? formatUSD(v, { decimals: 0 }) : formatPrice(v)) : "—");
   if (f.input_price && f.output_price && Number(f.output_price) === 0) return short(f.input_price);
   return `${short(f.input_price)} / ${short(f.output_price)}`;
 }

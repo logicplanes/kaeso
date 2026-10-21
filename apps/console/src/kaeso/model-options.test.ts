@@ -23,9 +23,9 @@ describe("model picker options", () => {
     });
   });
 
-  it("write prices exactly, with at least two decimals", () => {
+  it("write fractional prices exactly and whole dollars short, as the Models page does", () => {
     expect(catalogueModelOption(entry({ input_price: "0.075", output_price: "0.3" })).price).toBe("$0.075 / $0.30");
-    expect(catalogueModelOption(entry({ input_price: "4", output_price: "20" })).price).toBe("$4.00 / $20.00");
+    expect(catalogueModelOption(entry({ input_price: "4", output_price: "20" })).price).toBe("$4 / $20");
   });
 
   it("leave out a name that repeats the id, and mark deprecated models", () => {
