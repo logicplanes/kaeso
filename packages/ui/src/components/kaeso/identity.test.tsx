@@ -17,6 +17,16 @@ describe("KeyDisplay", () => {
   });
 });
 
+describe("KeyDisplay state", () => {
+  it("dims a key that isn't active, with its state as a badge unless a heading already names it", () => {
+    const { rerender } = render(<KeyDisplay redacted="sk-kso-AbC1…wxyz" state="disabled" copy={false} />);
+    expect(screen.getByText("Disabled")).toBeInTheDocument();
+    rerender(<KeyDisplay redacted="sk-kso-AbC1…wxyz" state="disabled" stateBadge={false} copy={false} />);
+    expect(screen.queryByText("Disabled")).not.toBeInTheDocument();
+    expect(screen.getByText("sk-kso-AbC1…wxyz")).toHaveClass("text-fg-secondary");
+  });
+});
+
 describe("StatusCode", () => {
   it("colors only what needs a look: a success is the plain code", () => {
     const { rerender } = render(<StatusCode code={200} />);

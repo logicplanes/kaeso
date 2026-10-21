@@ -3,6 +3,7 @@ import { Field, NumberInput, Segmented, Select, Switch, TagInput, Text } from "@
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import type { CatalogueModelView } from "~/api/generated/types";
 import { catalogueModelOption } from "./model-options";
+import { useModelPickerProviders } from "./providers";
 import { limitKindLabel, limitUnit } from "~/format/labels";
 import { t } from "~/i18n";
 
@@ -70,11 +71,13 @@ export function limitBody(d: LimitDraft) {
 }
 
 export function LimitEditor({
+  org,
   value,
   onChange,
   models,
   fixedKind = false,
 }: {
+  org: string;
   value: LimitDraft;
   onChange: (d: LimitDraft) => void;
   models: CatalogueModelView[];
@@ -83,11 +86,15 @@ export function LimitEditor({
   const set = (patch: Partial<LimitDraft>) => onChange({ ...value, ...patch });
   const rate = isRate(value.kind);
   const options = useMemo(() => models.map(catalogueModelOption), [models]);
+  const providers = useModelPickerProviders(
+    org,
+    useMemo(() => [...new Set(models.map((m) => m.provider))], [models]),
+  );
   return (
     <div className="flex flex-col gap-16">
       {!fixedKind && (
         <Select
-          label={t("kaeso.limitEditor.counts", "Counts")}
+          label={t("kaeso.limitEditor.kind", "What it limits")}
           fullWidth
           value={value.kind}
           onValueChange={(k) => set({ kind: k as LimitKind, period: isRate(k as LimitKind) ? "minute" : value.period === "minute" ? "month" : value.period })}
@@ -137,6 +144,7 @@ export function LimitEditor({
           value={value.model}
           onValueChange={(m) => set({ model: m || null })}
           options={options}
+          providers={providers}
         />
       )}
       {!rate && (

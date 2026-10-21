@@ -160,6 +160,7 @@ export interface KeyDisplayProps {
   access?: "inference" | "platform" | "both" | undefined;
   copy?: boolean | undefined;
   className?: string | undefined;
+  stateBadge?: boolean | undefined;
 }
 
 function accessLabels(t: UiText) {
@@ -180,14 +181,14 @@ function stateLabels(t: UiText): Record<KeyState, string> {
 }
 
 export const KeyDisplay = forwardRef<HTMLSpanElement, KeyDisplayProps>(function KeyDisplay(
-  { redacted, state = "active", access, copy = true, className },
+  { redacted, state = "active", stateBadge = true, access, copy = true, className },
   ref,
 ) {
   const t = useUiText();
   return (
     <span ref={ref} className={cn("group/key inline-flex max-w-full min-w-0 items-center gap-8", className)}>
       <span className={cn("min-w-0 truncate mono text-small", state === "active" ? "text-fg" : "text-fg-secondary")}>{redacted}</span>
-      {state !== "active" && <Badge tone={KEY_TONE[state] === "warning" ? "warning" : "neutral"}>{stateLabels(t)[state]}</Badge>}
+      {stateBadge && state !== "active" && <Badge tone={KEY_TONE[state] === "warning" ? "warning" : "neutral"}>{stateLabels(t)[state]}</Badge>}
       {access && <Badge tone={access === "inference" ? "neutral" : "outline"}>{accessLabels(t)[access]}</Badge>}
       {copy && (
         <span className="opacity-0 transition-control group-hover/key:opacity-100 coarse:opacity-100 focus-within:opacity-100">

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
@@ -10,6 +10,7 @@ import {
   Radio,
   RadioCards,
   SecretReveal,
+  Section,
   Select,
   StepDialog,
   icons,
@@ -24,6 +25,7 @@ import { projectQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { catalogueModelOption, keepChosen } from "./model-options";
+import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { ExpiryPicker, defaultExpiry, expiryRequest, type Expiry } from "./expiry-picker";
 import { LimitEditor, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
@@ -68,13 +70,20 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const [access, setAccess] = useState<Access>("inference");
   const [models, setModels] = useState<string[]>([]);
   const [limits, setLimits] = useState<LimitDraft[]>([]);
-  const lastLimit = useRef<HTMLDivElement>(null);
+  const lastLimit = useRef<HTMLElement>(null);
   const [created, setCreated] = useState<{ key: CreatedKey_KeyView; models: string[] } | null>(null);
   const reveal = useKeyReveal(org, project, created, onClose);
 
   const principal: Principal = owner === "me" ? { kind: "user", id: session.user.id } : { kind: "service_account", id: owner };
   const effective = useQuery({ ...modelAccessQuery(org, project, principal), enabled: rights.has("limits.view") });
-  const allowedModels = (catalogue.data ?? []).filter((m) => !effective.data || effective.data.effective.includes(m.id));
+  const allowedModels = useMemo(
+    () => (catalogue.data ?? []).filter((m) => !effective.data || effective.data.effective.includes(m.id)),
+    [catalogue.data, effective.data],
+  );
+  const modelProviders = useModelPickerProviders(
+    org,
+    useMemo(() => [...new Set(allowedModels.map((m) => m.provider))], [allowedModels]),
+  );
   const allowed = new Set(allowedModels.map((m) => m.id));
   const keptModels = models.filter((id) => allowed.has(id));
   const keptLimits = limits.map((l) => (l.model && !allowed.has(l.model) ? { ...l, model: null } : l));
@@ -119,7 +128,11 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
     !fixedServiceAccount && canForAccounts && (accounts.isPending || ownerOptions.length > 1) ? (
       <Select
         label={t("kaeso.createKey.for", "For")}
-        description={t("kaeso.createKey.forHint", "A service account's key acts with the service account's rights.")}
+        description={
+          owner === "me"
+            ? t("kaeso.createKey.forMeHint", "Your key acts with your rights in this project.")
+            : t("kaeso.createKey.forHint", "A service account's key acts with the service account's rights.")
+        }
         options={ownerOptions}
         value={owner}
         onValueChange={(v) => setOwner(v as string)}
@@ -209,30 +222,35 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                   size="md"
                   fullWidth
                   options={keepChosen(allowedModels.map(catalogueModelOption), keptModels)}
+                  providers={modelProviders}
                   value={keptModels}
                   onValueChange={setModels}
                   placeholder={t("kaeso.limits.allModels", "All models")}
                 />
                 {keptLimits.map((l, i) => (
-                  <div key={i} ref={i === keptLimits.length - 1 ? lastLimit : undefined} className="flex flex-col gap-12">
-                    <LimitEditor value={l} onChange={(d) => setLimits(keptLimits.map((x, j) => (j === i ? d : x)))} models={allowedModels} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leadingIcon={icons.delete}
-                      onClick={() => setLimits(keptLimits.filter((_, j) => j !== i))}
-                      className="self-start"
-                    >
-                      {t("kaeso.limits.removeThis", "Remove this limit")}
-                    </Button>
-                  </div>
+                  <Section
+                    key={i}
+                    ref={i === keptLimits.length - 1 ? lastLimit : undefined}
+                    spacing="none"
+                    title={keptLimits.length > 1 ? t("kaeso.createKey.limitNumber", "Limit {number}", { number: i + 1 }) : t("kaeso.createKey.limit", "Limit")}
+                    actions={
+                      <Button variant="ghost" size="sm" leadingIcon={icons.delete} onClick={() => setLimits(keptLimits.filter((_, j) => j !== i))}>
+                        {t("kaeso.limits.removeThis", "Remove this limit")}
+                      </Button>
+                    }
+                  >
+                    <LimitEditor org={org} value={l} onChange={(d) => setLimits(keptLimits.map((x, j) => (j === i ? d : x)))} models={allowedModels} />
+                  </Section>
                 ))}
                 <Button
                   size="sm"
                   leadingIcon={icons.add}
                   onClick={() => {
                     flushSync(() => setLimits([...keptLimits, newLimit()]));
-                    lastLimit.current?.querySelector<HTMLElement>("button")?.focus();
+                    lastLimit.current?.scrollIntoView({ block: "start" });
+                    (lastLimit.current?.querySelector<HTMLElement>("[role=combobox]") ?? lastLimit.current?.querySelector<HTMLElement>("button"))?.focus({
+                      preventScroll: true,
+                    });
                   }}
                   className="self-start"
                 >

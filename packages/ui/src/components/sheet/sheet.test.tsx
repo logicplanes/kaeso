@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRef, useState } from "react";
 import { Sheet } from "./sheet.js";
+import { AlertDialog } from "../dialog/dialog.js";
 import { Button } from "../button/button.js";
 
 function MembersPage() {
@@ -99,6 +100,22 @@ describe("Sheet", () => {
       </Sheet>,
     );
     expect(await screen.findByRole("dialog", { name: "Menu" })).toHaveAttribute("data-side", "bottom");
+  });
+
+  it("dims the page behind a confirmation opened from a sheet that isn't modal, and only once over a modal one", async () => {
+    const { rerender } = render(
+      <Sheet open modal={false} title="checkout-web">
+        <AlertDialog open title="Archive checkout-web?" confirmLabel="Archive key" onConfirm={() => undefined} />
+      </Sheet>,
+    );
+    expect(await screen.findByRole("alertdialog", { name: "Archive checkout-web?" })).toBeInTheDocument();
+    expect(document.querySelectorAll(".bg-overlay")).toHaveLength(1);
+    rerender(
+      <Sheet open title="checkout-web">
+        <AlertDialog open title="Archive checkout-web?" confirmLabel="Archive key" onConfirm={() => undefined} />
+      </Sheet>,
+    );
+    await waitFor(() => expect(document.querySelectorAll(".bg-overlay")).toHaveLength(1));
   });
 
   it("renders inline with a heading, its ref and a close circle that asks to close", async () => {

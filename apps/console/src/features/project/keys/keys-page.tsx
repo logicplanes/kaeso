@@ -64,7 +64,13 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
                 textValue: k.name,
                 title: k.name,
                 subtitle: (
-                  <KeyDisplay redacted={k.redacted} state={asKeyState(k.state)} copy={false} {...(k.access !== "inference" ? { access: k.access } : {})} />
+                  <KeyDisplay
+                    redacted={k.redacted}
+                    state={asKeyState(k.state)}
+                    stateBadge={false}
+                    copy={false}
+                    {...(k.access !== "inference" ? { access: k.access } : {})}
+                  />
                 ),
                 meta: (
                   <Text variant="small" tone={expiry.soon ? "warning" : "secondary"} className="sm:min-w-120 sm:text-right">

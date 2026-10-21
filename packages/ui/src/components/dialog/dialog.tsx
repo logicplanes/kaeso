@@ -20,6 +20,7 @@ import { AlertDialog as BaseAlertDialog } from "@base-ui/react/alert-dialog";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
 import { useScopedDialog } from "../../utils/dialog-scope.js";
+import { OverNonModalSheet } from "../../utils/over-sheet.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -113,6 +114,7 @@ export interface DialogProps {
   headerStart?: ReactNode | undefined;
   className?: string | undefined;
   inline?: boolean | undefined;
+  persistent?: boolean | undefined;
 }
 
 function DialogFrame({
@@ -201,9 +203,10 @@ function focusFirstControl(): HTMLElement | true {
 }
 
 const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref) {
-  const { open, defaultOpen, onOpenChange, trigger, size = "md", anchor = "center", inline, busy } = props;
+  const { open, defaultOpen, onOpenChange, trigger, size = "md", anchor = "center", inline, busy, persistent } = props;
   const focus = useRestoreFocus(open, focusFirstControl);
   const container = usePortalContainer();
+  const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : open);
   if (inline) return <DialogFrame {...props} />;
   return (
@@ -215,10 +218,11 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
         onOpenChange?.(o);
       }}
       onOpenChangeComplete={settled}
+      {...(persistent ? { disablePointerDismissal: true } : {})}
     >
       {trigger && <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
-        <BaseDialog.Backdrop className={BACKDROP} />
+        <BaseDialog.Backdrop className={BACKDROP} forceRender={overSheet} />
         <BaseDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor[anchor].classes)}>
           <BaseDialog.Popup
             ref={ref}
@@ -227,7 +231,9 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
             className={cn(DIALOG_POPUP, KAESO_DIALOG_VARIANTS.size[size].classes, anchor === "top" && "dialog-limits-top")}
           >
             <InsetContent inset={false}>
-              <DialogFrame {...props} />
+              <OverNonModalSheet value={false}>
+                <DialogFrame {...props} />
+              </OverNonModalSheet>
             </InsetContent>
           </BaseDialog.Popup>
         </BaseDialog.Viewport>
@@ -351,6 +357,7 @@ export function AlertDialog(props: AlertDialogProps) {
   const [busy, setBusy] = useState(false);
   const focus = useRestoreFocus(isOpen);
   const container = usePortalContainer();
+  const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : isOpen);
   if (inline) return <AlertFrame {...props} close={() => undefined} busy={busy} setBusy={setBusy} />;
   return (
@@ -364,7 +371,7 @@ export function AlertDialog(props: AlertDialogProps) {
     >
       {trigger && <BaseAlertDialog.Trigger render={trigger} />}
       <BaseAlertDialog.Portal container={container}>
-        <BaseAlertDialog.Backdrop className={BACKDROP} />
+        <BaseAlertDialog.Backdrop className={BACKDROP} forceRender={overSheet} />
         <BaseAlertDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor.center.classes)}>
           <BaseAlertDialog.Popup initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
             <InsetContent inset={false}>

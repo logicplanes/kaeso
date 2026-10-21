@@ -135,6 +135,7 @@ export function StepDialog({
     ...(open !== undefined ? { open } : {}),
     ...(onOpenChange ? { onOpenChange } : {}),
     ...(inline ? { inline } : {}),
+    persistent: true,
   };
   if (result)
     return (
@@ -175,7 +176,6 @@ export function StepDialog({
             disabled={!!blocked}
             {...(blocked ? { disabledReason: blocked } : {})}
             onClick={next}
-            reserveLabels={[submitLabel, continueLabel]}
           >
             {last ? submitLabel : continueLabel}
           </Button>

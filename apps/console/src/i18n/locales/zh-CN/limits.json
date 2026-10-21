@@ -10,6 +10,8 @@
   "limits.emptyProject": "为整个项目添加支出预算或速率限制。",
   "limits.hard": "硬性",
   "limits.key": "密钥",
+  "limits.keyArchived": "密钥已归档",
+  "limits.keyArchivedHint": "该密钥已归档，因此此限额不再适用于任何请求。",
   "limits.keys": "密钥",
   "limits.lastMinute": "最近一分钟",
   "limits.level": "层级",
