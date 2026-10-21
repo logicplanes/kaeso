@@ -132,6 +132,9 @@ describe("token, context and price formats", () => {
   it("keep tokens short in English", () => {
     expect(formatTokens(793_640)).toBe("793.6K");
     expect(formatTokens(131_072)).toBe("131.1K");
+    expect(formatTokens(9_999)).toBe("10K");
+    expect(formatTokens(999_999)).toBe("1M");
+    expect(formatTokens(999_949)).toBe("999.9K");
   });
 });
 

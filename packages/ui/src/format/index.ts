@@ -43,12 +43,18 @@ export function formatNumber(value: number, options: Intl.NumberFormatOptions = 
 
 const COMPACT = { maximumFractionDigits: 1, maximumSignificantDigits: 3, roundingPriority: "morePrecision" } as const;
 
+const nativeCompact = (value: number) => new Intl.NumberFormat(numberLocale(), { notation: "compact", ...COMPACT }).format(value);
+const abbreviated = (text: string) => /\p{L}/u.test(text);
+
 export function formatTokens(value: number): string {
   if (Math.abs(value) < 1000) return formatNumber(value, { maximumFractionDigits: 0 });
-  const compact = new Intl.NumberFormat(numberLocale(), { notation: "compact", ...COMPACT }).format(value);
+  const compact = nativeCompact(value);
   // German and Chinese have no short form below a million and ten thousand, so 793,640 would stand in full beside 2.89 million.
-  if (/\p{L}/u.test(compact)) return compact;
-  return t("format.thousands", "{value}K", { value: formatNumber(value / 1000, COMPACT) });
+  if (abbreviated(compact)) return compact;
+  const thousands = Number(new Intl.NumberFormat("en-US", { ...COMPACT, useGrouping: false }).format(value / 1000));
+  const promoted = nativeCompact(thousands * 1000);
+  if (abbreviated(promoted)) return promoted;
+  return t("format.thousands", "{value}K", { value: formatNumber(thousands, COMPACT) });
 }
 
 /** A model's context or output limit as models are named: a multiple of 1,024 in binary thousands ("128K" for 131,072, "1M" for 1,048,576), anything else in decimal ones ("128K" for 128,000, "200K"). */
