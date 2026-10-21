@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { ORG, signedIn } from "~/test/fixtures";
 import { emailSent, methods, signedInReply } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
@@ -93,7 +93,9 @@ describe("finishing an account", () => {
 
   it("ignores Enter until the form is ready", async () => {
     const { user } = await renderApp("/auth/signup#token=sgn_1");
-    await user.type(await screen.findByRole("textbox", { name: "Name" }), "   {Enter}");
+    const name = await screen.findByRole("textbox", { name: "Name" });
+    await user.type(name, "   {Enter}");
+    fireEvent.submit(name.closest("form") as HTMLFormElement);
     expect(requests("POST", "auth/signup/verify")).toHaveLength(0);
   });
 
