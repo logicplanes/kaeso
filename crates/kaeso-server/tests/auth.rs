@@ -911,7 +911,7 @@ async fn cookie_requests_from_other_origins_are_refused() {
         evil.body["error"]["message"]
             .as_str()
             .unwrap()
-            .contains("Cross-site")
+            .starts_with("Open Kaeso at ")
     );
     assert_eq!(
         app.call_with(Method::GET, "/me", None, Some(&owner.cookie), None)

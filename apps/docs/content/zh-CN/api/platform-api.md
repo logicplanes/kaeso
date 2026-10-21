@@ -81,7 +81,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 跨站请求
 
-携带会话 Cookie 且会更改内容的请求，必须发送值为实例源的 `Origin`，例如 `Origin: https://kaeso.example.com`。发往公开 `auth/*` 端点的此类请求也是如此。浏览器会自动发送该请求头，`Referer` 不能代替它。缺少该请求头或源不同时，Kaeso 返回 `403 permission_denied`，并在消息中指明该请求头。
+携带会话 Cookie 且会更改内容的请求，必须发送值为实例源的 `Origin`，例如 `Origin: https://kaeso.example.com`。发往公开 `auth/*` 端点的此类请求也是如此。浏览器会自动发送该请求头，`Referer` 不能代替它。缺少该请求头或源不同时，Kaeso 返回 `403 permission_denied`，消息会指明应在哪个地址打开 Kaeso。
 
 这样，其他网站既无法借用您的会话执行操作，也无法让您的浏览器登录到他们的账户。
 

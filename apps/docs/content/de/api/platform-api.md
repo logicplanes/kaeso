@@ -81,7 +81,7 @@ Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automati
 
 ### Websiteübergreifende Anfragen
 
-Eine Anfrage, die das Sitzungs-Cookie trägt und etwas ändert, muss `Origin` mit dem Origin Ihrer Installation senden, etwa `Origin: https://kaeso.example.com`. Dasselbe gilt für jede solche Anfrage an einen öffentlichen `auth/*`-Endpunkt. Browser senden den Header selbst, und `Referer` zählt nicht an seiner Stelle. Fehlt er oder nennt einen anderen Origin, antwortet Kaeso mit `403 permission_denied` und nennt den Header in der Meldung.
+Eine Anfrage, die das Sitzungs-Cookie trägt und etwas ändert, muss `Origin` mit dem Origin Ihrer Installation senden, etwa `Origin: https://kaeso.example.com`. Dasselbe gilt für jede solche Anfrage an einen öffentlichen `auth/*`-Endpunkt. Browser senden den Header selbst, und `Referer` zählt nicht an seiner Stelle. Fehlt er oder nennt einen anderen Origin, antwortet Kaeso mit `403 permission_denied`, und die Meldung nennt die Adresse, unter der Kaeso zu öffnen ist.
 
 So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in ein eigenes Konto anmelden.
 
