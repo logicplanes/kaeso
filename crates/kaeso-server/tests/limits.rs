@@ -1334,6 +1334,10 @@ async fn a_budget_charge_lost_to_a_valkey_outage_is_counted_before_the_next_requ
         .await
         .unwrap();
     valkey.restore();
+    common::eventually("the gateway reaching Valkey again", || async {
+        env.app.state.valkey.ping().await.is_ok()
+    })
+    .await;
     let refused = ask(&env, &secret).await;
     assert_eq!(
         refused.status,

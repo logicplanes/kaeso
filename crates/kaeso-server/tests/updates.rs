@@ -537,7 +537,7 @@ async fn an_updater_is_lost_an_hour_after_it_last_answered_not_after_the_start()
 }
 
 #[tokio::test]
-async fn failed_checks_are_recorded_and_retried_after_an_hour_not_at_once() {
+async fn failed_checks_are_recorded_and_retried_when_the_feed_allows_not_at_once() {
     let s = TestServices::start().await;
     let (gh, url) = github(stable()).await;
     gh.lock().unwrap().status = Some((403, Some("7200")));
