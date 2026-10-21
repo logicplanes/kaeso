@@ -179,20 +179,21 @@ const dateFormats = new Map<string, (d: Date) => string>();
 
 /** A cached date formatter in the format locale. English writes the day first with three-letter months ("20 Sep 2026", "Mon 21 Sep"), the console's English everywhere. */
 export function dateFormatter(options: Intl.DateTimeFormatOptions, locale: string = current): (value: DateInput) => string {
-  const key = `${locale}|${JSON.stringify(options)}`;
+  // A cached formatter keeps the zone it was made in, so the viewer's zone is part of the key.
+  const zoned = options.timeZone ? options : { ...options, timeZone: new Intl.DateTimeFormat().resolvedOptions().timeZone };
+  const key = `${locale}|${JSON.stringify(zoned)}`;
   let format = dateFormats.get(key);
   if (!format) {
     if (locale === "en") {
-      const day = new Intl.DateTimeFormat("en-GB", options);
-      const month =
-        options.month === "short" ? new Intl.DateTimeFormat("en-US", { month: "short", timeZone: options.timeZone ?? day.resolvedOptions().timeZone }) : null;
+      const day = new Intl.DateTimeFormat("en-GB", zoned);
+      const month = zoned.month === "short" ? new Intl.DateTimeFormat("en-US", { month: "short", timeZone: zoned.timeZone }) : null;
       format = (d) =>
         day
           .formatToParts(d)
           .map((p) => (p.type === "month" && month ? month.format(d) : p.type === "weekday" ? p.value.replace(/,$/, "") : p.value))
           .join("");
     } else {
-      const f = new Intl.DateTimeFormat(locale, options);
+      const f = new Intl.DateTimeFormat(locale, zoned);
       format = (d) => f.format(d);
     }
     dateFormats.set(key, format);
