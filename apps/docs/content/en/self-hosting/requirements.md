@@ -26,7 +26,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Incoming | TCP ports 80 and 443, and UDP port 443 for HTTP/3 | The certificate and HTTPS |
 | Outgoing | The host of each provider you use ([supported providers](../concepts/supported-providers.md)), or the base URL you set for it ([provider settings](configuration.md#provider-settings)) | The providers you use |
 | Outgoing | `models.dev` | Model data, refreshed once a day |
-| Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, twice a day |
+| Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, every 5 minutes |
 | Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |
 | Outgoing | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker pulling Kaeso's images, when you install or update |
 | Outgoing | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker pulling the images of Caddy, PostgreSQL, ClickHouse, Valkey and the updater's socket proxy |

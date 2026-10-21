@@ -154,7 +154,7 @@ The first three settings only seed a new install. After that, instance admins ch
 
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
-| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases twice a day. |
+| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases every 5 minutes. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases offered: `stable`, or `prerelease` for pre-releases too. |
 | `KAESO_UPDATES_MODE` | `updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual`, where an instance admin starts each one, or `automatic`, in the update window. |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://update.kaeso.app/v1/releases.json` | Where the list of releases comes from: update.kaeso.app, or a mirror that answers like GitHub's releases API. |

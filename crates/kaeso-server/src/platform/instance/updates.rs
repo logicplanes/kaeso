@@ -194,7 +194,7 @@ pub struct ReleaseView {
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "The update settings.")]
 pub struct UpdateSettingsView {
-    #[doc = "Whether the gateway looks for new releases twice a day; `updates.check` in the configuration turns it off for installs without internet."]
+    #[doc = "Whether the gateway looks for new releases every 5 minutes; `updates.check` in the configuration turns it off for installs without internet."]
     pub check: bool,
     #[doc = "Which releases are offered."]
     pub channel: UpdateChannel,

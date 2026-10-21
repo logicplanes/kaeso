@@ -24353,7 +24353,7 @@
           },
           "check": {
             "type": "boolean",
-            "description": "Whether the gateway looks for new releases twice a day; `updates.check` in the configuration turns it off for installs without internet."
+            "description": "Whether the gateway looks for new releases every 5 minutes; `updates.check` in the configuration turns it off for installs without internet."
           },
           "mode": {
             "$ref": "#/components/schemas/UpdateMode",

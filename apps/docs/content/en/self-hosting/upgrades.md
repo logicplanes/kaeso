@@ -39,7 +39,7 @@ When the updater can't install a release, the console shows the commands of step
 
 ## New releases
 
-The gateway looks for new releases at `update.kaeso.app` twice a day, and at least an hour later after a failure. The request carries nothing about your install but the gateway's version.
+The gateway looks for new releases at `update.kaeso.app` every 5 minutes, and 15 minutes later after a failure. The request carries nothing about your install but the gateway's version, and an unchanged list costs only a short `304` answer.
 
 Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. The Platform API's `instance/updates/check` looks at once, even when checks are off. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
 

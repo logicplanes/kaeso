@@ -64,7 +64,7 @@ pub fn all() -> Vec<Job> {
         },
         Job {
             name: "update_check",
-            every: Duration::from_secs(300),
+            every: Duration::from_secs(60),
             lock: 6,
             run: |s| Box::pin(update_check::run(s)),
         },

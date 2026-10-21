@@ -609,11 +609,30 @@ async fn failed_checks_are_recorded_and_retried_after_an_hour_not_at_once() {
     let r = app.get("/instance/updates", &owner.cookie).await;
     assert_eq!(r.body["check"]["error"], Value::Null);
     assert_eq!(r.body["state"], "available");
+    let at = |field: &str| {
+        time::OffsetDateTime::parse(
+            r.body["check"][field].as_str().unwrap(),
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap()
+    };
+    let wait = at("next_check_at") - at("last_checked_at");
+    assert!(
+        wait >= time::Duration::minutes(5) && wait < time::Duration::minutes(6),
+        "the next check is due in about 5 minutes, not {wait}"
+    );
     let summary = kaeso_server::jobs::run_once(&app.state, job)
         .await
         .unwrap()
         .unwrap();
     assert_eq!(summary, "check not due");
+    app.clock.advance(time::Duration::minutes(6));
+    let summary = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(summary, "releases unchanged");
+    assert_eq!(job.every, std::time::Duration::from_secs(60));
     s.cleanup().await;
 }
 

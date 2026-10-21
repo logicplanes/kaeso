@@ -103,7 +103,7 @@ const ROWS: &[Row] = &[
     s("models_dev.sync", "KAESO_MODELS_DEV_SYNC", Bool, Some("true"), false, "Fetch models.dev periodically. Off for installs without internet; the built-in snapshot is used."),
     s("models_dev.url", "KAESO_MODELS_DEV_URL", Text, Some("https://models.dev/api.json"), false, "Where models.dev data is fetched from."),
     s("models_dev.interval", "KAESO_MODELS_DEV_INTERVAL", Text, Some("24h"), false, "How often models.dev is fetched."),
-    s("updates.check", "KAESO_UPDATES_CHECK", Bool, Some("true"), false, "Look for new Kaeso releases twice a day; turn it off for installs without internet."),
+    s("updates.check", "KAESO_UPDATES_CHECK", Bool, Some("true"), false, "Look for new Kaeso releases every 5 minutes; turn it off for installs without internet."),
     s("updates.channel", "KAESO_UPDATES_CHANNEL", Text, Some("stable"), false, "The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console."),
     s("updates.mode", "KAESO_UPDATES_MODE", Text, Some("manual"), false, "How a new install takes updates through the updater: `manual` (an instance admin starts each one in the console) or `automatic` (Kaeso installs them in the update window). Instance admins change it later in the console."),
     s("updates.releases_url", "KAESO_UPDATES_RELEASES_URL", Text, Some("https://update.kaeso.app/v1/releases.json"), false, "Where the list of Kaeso releases is fetched from: update.kaeso.app, or a mirror that answers in the form of GitHub's releases API."),

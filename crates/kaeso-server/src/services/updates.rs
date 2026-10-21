@@ -20,12 +20,12 @@ use time::OffsetDateTime;
 use crate::services::updater::{self, Updater, UpdaterError};
 use crate::state::AppState;
 
-pub const CHECK_INTERVAL: time::Duration = time::Duration::hours(12);
-pub const RETRY_INTERVAL: time::Duration = time::Duration::hours(1);
+pub const CHECK_INTERVAL: time::Duration = time::Duration::minutes(5);
+pub const RETRY_INTERVAL: time::Duration = time::Duration::minutes(15);
 pub const LOST_AFTER: time::Duration = time::Duration::hours(1);
 pub const START_GRACE: time::Duration = time::Duration::minutes(2);
 pub const FRESH_FOR_AUTO: time::Duration = time::Duration::hours(1);
-const JITTER_SECONDS: u32 = 3600;
+const JITTER_SECONDS: u32 = 60;
 const MANIFESTS_AT_ONCE: usize = 4;
 const MANIFESTS_PER_CHECK: usize = 12;
 const PER_PAGE: &str = "50";
@@ -1060,10 +1060,10 @@ mod tests {
     }
 
     #[test]
-    fn the_jitter_stays_within_an_hour() {
+    fn the_jitter_stays_within_a_minute() {
         for _ in 0..100 {
             let j = jitter();
-            assert!(j >= time::Duration::ZERO && j < time::Duration::hours(1));
+            assert!(j >= time::Duration::ZERO && j < time::Duration::minutes(1));
         }
     }
 

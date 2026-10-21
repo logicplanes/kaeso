@@ -154,7 +154,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
-| `KAESO_UPDATES_CHECK` | `updates.check` | Bool | `true` | Zweimal am Tag nach neuen Kaeso-Releases suchen. |
+| `KAESO_UPDATES_CHECK` | `updates.check` | Bool | `true` | Alle 5 Minuten nach neuen Kaeso-Releases suchen. |
 | `KAESO_UPDATES_CHANNEL` | `updates.channel` | Text | `stable` | Die angebotenen Releases: `stable` oder `prerelease`, um auch Vorabversionen zu erhalten. |
 | `KAESO_UPDATES_MODE` | `updates.mode` | Text | `manual` | Wie eine neue Installation Updates über den Updater erhält: `manual`, wobei ein Instanz-Admin jedes startet, oder `automatic`, im Update-Fenster. |
 | `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | Text | `https://update.kaeso.app/v1/releases.json` | Woher die Liste der Releases kommt: update.kaeso.app oder ein Spiegel, der wie die Releases-API von GitHub antwortet. |
