@@ -286,7 +286,12 @@ describe("the changelog page", () => {
   });
 
   it("points a link to a version on another page at that page, wherever the link sits", () => {
-    const link = (id: string) => ({ t: "link" as const, kind: "anchor" as const, href: `#${id}`, c: [{ t: "strong" as const, c: [{ t: "text" as const, v: id }] }] });
+    const link = (id: string) => ({
+      t: "link" as const,
+      kind: "anchor" as const,
+      href: `#${id}`,
+      c: [{ t: "strong" as const, c: [{ t: "text" as const, v: id }] }],
+    });
     const inlines = [link("v0.1.0"), link("v0.2.0"), { t: "em" as const, c: [link("v0.1.0")] }, { t: "code" as const, v: "x" }];
     const blocks: Block[] = [
       { t: "heading", level: 4, id: "h", c: inlines },
@@ -312,7 +317,9 @@ describe("the changelog page", () => {
       yanked: false,
       latest,
       intro: blocks,
-      sections: [{ name: "Fixed", group: "fixed" as const, id: `v${version}-fixed`, blocks, topics: [{ name: "Console", id: `v${version}-fixed-console`, blocks }] }],
+      sections: [
+        { name: "Fixed", group: "fixed" as const, id: `v${version}-fixed`, blocks, topics: [{ name: "Console", id: `v${version}-fixed-console`, blocks }] },
+      ],
     });
     const [latest, older] = changelogPages({ releases: [entry("0.2.0", true), entry("0.1.0", false)] }, "/de/changelog");
     const drawn = text(latest?.content.releases[0]?.intro ?? []);
