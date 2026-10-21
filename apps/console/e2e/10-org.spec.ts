@@ -156,6 +156,7 @@ test("projects: an admin makes Research the default and back after a confirmatio
   const confirm = page.getByRole("dialog", { name: "Make default project" });
   await expect(confirm.getByText("Make Research the default?")).toBeVisible();
   await expect(confirm.getByText(`${before} stays a project; its members keep their places.`)).toBeVisible();
+  await expect(confirm.getByText("People who join the organization from now on start there; current members don't join it.")).toBeVisible();
   await confirm.getByRole("button", { name: "Make default" }).click();
   await expect(toastText(page, "Research is the default project")).toBeVisible();
   await expect(row("Research").getByText("Default", { exact: true })).toBeVisible();
@@ -167,7 +168,9 @@ test("projects: an admin makes Research the default and back after a confirmatio
   await signInWithPassword(developer, "developer@example.com", NEW_PASSWORD);
   await expectSignedIn(developer);
   await developer.goto(`/orgs/${org}/projects`);
-  await expect(developer.getByRole("grid", { name: "Projects" }).getByText("Research", { exact: true })).toBeVisible();
+  const projects = developer.getByRole("grid", { name: "Projects" });
+  await expect(projects.getByText(before, { exact: true })).toBeVisible();
+  await expect(projects.getByText("Research", { exact: true })).toHaveCount(0);
   await expect(developer.getByRole("button", { name: /^Actions for / })).toHaveCount(0);
   await other.close();
 
