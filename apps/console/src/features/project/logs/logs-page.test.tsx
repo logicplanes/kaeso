@@ -137,11 +137,12 @@ describe("LogsPage", () => {
   it("shows a retry when the requests fail to load", async () => {
     signedIn();
     projectData();
-    let calls = 0;
-    on("GET", LOGS, () => (++calls === 1 ? apiError(403, "permission_denied", "These requests are hidden from you.") : listPage([logRow()])));
+    let failing = true;
+    on("GET", LOGS, () => (failing ? apiError(403, "permission_denied", "These requests are hidden from you.") : listPage([logRow()])));
     const { user } = await renderApp(projectPath("logs"));
     expect(await screen.findByText("Couldn't load these rows")).toBeInTheDocument();
     expect((await notifications().findAllByText("These requests are hidden from you.")).length).toBeGreaterThan(0);
+    failing = false;
     await user.click(within(screen.getByRole("main")).getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("row", { name: /key_web/ })).toBeInTheDocument();
   });
