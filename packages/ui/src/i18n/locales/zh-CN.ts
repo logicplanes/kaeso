@@ -16,6 +16,8 @@ const zhCN: Readonly<Record<string, string>> = {
   "chart.listSeparator": "，",
   "chart.liveLine": "{heading}：{values}",
   "chart.liveValue": "{label} {value}",
+  "chart.partial": "{heading}，不完整",
+  "chart.soFar": "{heading}，截至目前",
   "chartFrame.loadFailed": "无法加载此图表",
   "chartFrame.noData": "此时间段无数据",
   "chartFrame.tryAgain": "重试",

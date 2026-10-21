@@ -65,7 +65,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
     if (value === undefined) setInner(next);
     onValueChange?.(next);
   };
-  const splitter = new RegExp(`[${separators.map((s) => s.replace(/[\]\\^-]/g, "\\$&")).join("")}\\n]+`);
+  const splitter = new RegExp(`[${separators.map((s) => s.replace(/[\]\\^-]/g, "\\$&")).join("")}\\n\\t]+`);
   const add = (raw: string) => {
     const parts = raw
       .split(splitter)

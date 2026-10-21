@@ -1,5 +1,5 @@
-import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { apply, load } from "~/i18n";
 import { usage } from "~/test/fixtures/shell";
@@ -130,11 +130,11 @@ describe("usage charts", () => {
       </>,
     );
     expect(screen.getByText("Requests and errors per week (UTC)")).toBeInTheDocument();
-    expect(rowsOf("Requests and errors per week").map((r) => r[0])).toEqual(["Week of 5 Oct", "Week of 12 Oct"]);
+    expect(rowsOf("Requests and errors per week").map((r) => r[0])).toEqual(["Week of 5 Oct", "Week of 12 Oct, partial"]);
     expect(screen.getByText("USD per month (UTC), at the prices of request time")).toBeInTheDocument();
     expect(rowsOf("Cost per month")).toEqual([
       ["Sep 2026", "$1.25"],
-      ["Oct 2026", "$0.00"],
+      ["Oct 2026, partial", "$0.00"],
     ]);
   });
 
@@ -167,6 +167,81 @@ describe("usage charts", () => {
     await renderUi(<TokensChart rows={[]} from="2026-09-01" to="2026-10-01" granularity="month" />);
     expect(await screen.findByText("No tokens in this period.")).toBeInTheDocument();
     expect(screen.getByText("By kind, per month (UTC)")).toBeInTheDocument();
+  });
+});
+
+const zoneBefore = process.env.TZ;
+const drawn = () => {
+  vi.useFakeTimers({ now: new Date("2026-10-20T09:00:00Z"), toFake: ["Date"] });
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+};
+const undrawn = () => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+};
+describe.each(["Europe/Berlin", "America/Los_Angeles"])("charts in a browser in %s", (zone) => {
+  beforeAll(() => {
+    process.env.TZ = zone;
+  });
+  afterAll(() => {
+    process.env.TZ = zoneBefore;
+  });
+  beforeEach(drawn);
+  afterEach(undrawn);
+
+  const month = Array.from({ length: 30 }, (_, i) => usage({ key: new Date(Date.UTC(2026, 8, 21 + i)).toISOString().slice(0, 10), requests: i ? 100 : 2249 }));
+
+  it("names every day by the API's UTC day, in requests, cost and tokens alike", async () => {
+    await renderUi(
+      <>
+        <RequestsChart rows={month} from="2026-09-21" to="2026-10-20" />
+        <CostChart rows={month} from="2026-09-21" to="2026-10-20" />
+        <TokensChart rows={month} from="2026-09-21" to="2026-10-20" />
+      </>,
+    );
+    expect(rowsOf("Requests and errors per day")[0]).toEqual(["Sep 21", "2,249", "5"]);
+    expect(rowsOf("Cost per day")[0]?.[0]).toBe("Sep 21");
+    await waitFor(() => expect(rowsOf("Tokens by kind per day")[0]?.[0]).toBe("Sep 21"));
+    const axis = (name: string) => [...screen.getByRole("figure", { name }).querySelectorAll("svg text[text-anchor=middle]")].map((t) => t.textContent);
+    expect(axis("Requests and errors per day").length).toBeGreaterThan(3);
+    expect(axis("Requests and errors per day")).toEqual(axis("Tokens by kind per day"));
+    expect(axis("Requests and errors per day")).not.toContain("Sep 20");
+  });
+
+  it("puts October's month on October", async () => {
+    const months = ["2026-05-01", "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01", "2026-10-01"].map((key) => usage({ key }));
+    await renderUi(<RequestsChart rows={months} from="2026-04-21" to="2026-10-20" granularity="month" />);
+    expect(rowsOf("Requests and errors per month").map((r) => r[0])).toEqual([
+      "Apr 2026, partial",
+      "May 2026",
+      "Jun 2026",
+      "Jul 2026",
+      "Aug 2026",
+      "Sep 2026",
+      "Oct 2026, so far",
+    ]);
+    const labels = [...screen.getByRole("figure", { name: "Requests and errors per month" }).querySelectorAll("svg text[text-anchor=middle]")];
+    expect(labels.map((t) => t.textContent).at(-1)).toBe("Oct");
+  });
+});
+
+describe("the period still running", () => {
+  beforeEach(drawn);
+  afterEach(undrawn);
+
+  it("says a lone today counts so far", async () => {
+    await renderUi(<RequestsChart rows={[usage({ key: "2026-10-20", requests: 30 })]} from="2026-10-20" to="2026-10-20" />);
+    expect(await screen.findByRole("columnheader", { name: "Category" })).toBeInTheDocument();
+    expect(rowsOf("Requests and errors per day")).toEqual([["Oct 20, so far", "30", "5"]]);
+  });
+
+  it("says today counts so far, and leaves the share of errors out", async () => {
+    await renderUi(<RequestsChart rows={[usage({ key: "2026-10-19" }), usage({ key: "2026-10-20", requests: 30 })]} from="2026-10-19" to="2026-10-20" />);
+    expect(rowsOf("Requests and errors per day").map((r) => r[0])).toEqual(["Oct 19", "Oct 20, so far"]);
+    const figure = screen.getByRole("figure", { name: "Requests and errors per day" });
+    expect(figure.querySelectorAll("path[data-partial]").length).toBeGreaterThan(0);
+    fireEvent.keyDown(within(figure).getByRole("group"), { key: "End" });
+    expect(figure.querySelector("div[role=presentation]")?.textContent).toBe("Oct 20, so farRequests30Errors5");
   });
 });
 

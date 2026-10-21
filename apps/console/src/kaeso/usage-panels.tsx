@@ -2,7 +2,8 @@ import { lazy, Suspense } from "react";
 import { Section, StatGrid, StatTile, TimeseriesChart, VIZ, type TimeSeries } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
-import { bucketLabel, bucketsBetween, type Granularity } from "~/format/buckets";
+import { bucketAxisLabel, bucketLabel, bucketsBetween, partialBuckets, spansYears, type Granularity } from "~/format/buckets";
+import { utcDay } from "~/format/period";
 import { t } from "~/i18n";
 import { totalTokens } from "./tokens";
 
@@ -132,14 +133,26 @@ export function byBucket(rows: UsageRow[], from: string, to: string, g: Granular
   return bucketsBetween(from, to, g).map((day) => ({ day, row: map.get(day) }));
 }
 
-const pointTime = (day: string) => {
-  const [y = 1970, m = 1, d = 1] = day.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-const timeNames = (days: { day: string }[], g: Granularity) => {
-  if (g === "day") return {};
-  const names = new Map(days.map((d) => [pointTime(d.day).getTime(), bucketLabel(d.day, g)]));
-  return { formatTime: (time: Date) => names.get(time.getTime()) ?? "" };
+const pointTime = (day: string) => new Date(`${day}T00:00:00Z`);
+
+export function bucketNames({ from, to, granularity: g = "day" }: Pick<DailyProps, "from" | "to" | "granularity">) {
+  const withYear = spansYears(from, to, g);
+  return {
+    label: (day: string) => bucketLabel(day, g, withYear),
+    axis: (day: string) => bucketAxisLabel(day, g),
+    partial: partialBuckets(from, to, g, utcDay(new Date())),
+  };
+}
+
+const timeAxis = (props: DailyProps) => {
+  const names = bucketNames(props);
+  return {
+    timeZone: "UTC",
+    tickAt: "points" as const,
+    formatTime: (time: Date) => names.label(utcDay(time)),
+    formatTick: (time: Date) => names.axis(utcDay(time)),
+    partial: names.partial,
+  };
 };
 
 export const tokensByKind = (g: Granularity) =>
@@ -184,7 +197,8 @@ export function RequestsChart(props: DailyProps) {
           formatValue={formatNumber}
           empty={props.rows.length === 0}
           emptyText={t("kaeso.usage.noRequests", "No requests in this period.")}
-          {...timeNames(days, g)}
+          shares={false}
+          {...timeAxis(props)}
           {...chartState(props)}
         />
       )}
@@ -228,7 +242,7 @@ export function CostChart(props: DailyProps) {
         formatValue={(v) => formatUSD(v.toFixed(6))}
         empty={props.rows.length === 0}
         emptyText={t("kaeso.usage.noCost", "No cost in this period.")}
-        {...timeNames(days, g)}
+        {...timeAxis(props)}
         {...chartState(props)}
       />
     </Section>

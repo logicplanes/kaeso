@@ -21,8 +21,12 @@ export const docs = {
       layout: "`grouped` puts each category's bars side by side (default), `stacked` stacks them, and `horizontal` draws bars across for rankings.",
       loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
+      partial:
+        'Marks the `first` or `last` category as covering only part of its span: its bars are drawn lighter and its tooltip says "partial". `ongoing` marks the last one as still counting, such as today, and says "so far".',
       series:
         "The bars' series, each with an `id`, a `label`, one value per category and an optional `color`. Colors otherwise come from the series order by `id`.",
+      shares:
+        "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.",
     },
   },
   ChartFrame: {
@@ -176,8 +180,9 @@ export const docs = {
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
         "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+      formatTick: 'Names the times under the axis ("3 Aug", "2026"). Defaults to calendar ticks in `timeZone`; pass it with `tickAt="points"` for buckets.',
       formatTime:
-        'Names a point\'s time in the tooltip, the table and for screen readers, where a point stands for more than its instant: "Week of 3 Aug", "Aug 2026". The axis keeps its calendar ticks.',
+        'Names a point\'s time in the tooltip, the table and for screen readers, where a point stands for more than its instant: "Week of 3 Aug", "Aug 2026".',
       formatValue: "Formats values on the axis and in the tooltip.",
       height: "The plot's height in px (240 by default).",
       hideLegend: "Hide the legend (one series).",
@@ -185,8 +190,16 @@ export const docs = {
       kind: "`line` draws lines (default), `area` adds a light fill under each line, and `stacked` stacks the areas.",
       loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
+      partial:
+        'Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says "partial". `ongoing` marks the last one as still counting, such as today, and says "so far".',
       series: "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.",
+      shares:
+        "Shows each series' share of the point's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.",
       threshold: "A threshold line (a budget) in danger, dashed.",
+      tickAt:
+        "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.",
+      timeZone:
+        'The zone the axis and the default labels read times in, such as "UTC" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer\'s.',
     },
   },
 } satisfies ComponentDocs;

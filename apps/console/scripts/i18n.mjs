@@ -116,7 +116,7 @@ export function placeholders(message) {
   return [...found].sort().join(" ");
 }
 
-export const SAME_AS_ENGLISH = new Set(["kaeso.audit.jsonLines", "logs.param.topK", "logs.param.topP"]);
+export const SAME_AS_ENGLISH = new Set(["format.audit.kind.modelsDev", "kaeso.audit.jsonLines", "logs.param.topK", "logs.param.topP"]);
 
 const visible = (text) =>
   text

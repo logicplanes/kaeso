@@ -99,5 +99,5 @@ test("model sources, system and the instance audit log", async ({ page }) => {
 
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/audit-log"]`).click();
   await expect(page.getByRole("heading", { level: 1, name: "Audit log" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Audit log" }).getByText("instance.settings_update").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Audit log" }).getByText("Instance settings changed").first()).toBeVisible();
 });

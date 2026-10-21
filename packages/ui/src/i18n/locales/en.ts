@@ -16,6 +16,8 @@ const en: Readonly<Record<string, string>> = {
   "chart.listSeparator": ", ",
   "chart.liveLine": "{heading}: {values}",
   "chart.liveValue": "{label} {value}",
+  "chart.partial": "{heading}, partial",
+  "chart.soFar": "{heading}, so far",
   "chartFrame.loadFailed": "Couldn't load this chart",
   "chartFrame.noData": "No data for this period",
   "chartFrame.tryAgain": "Try again",

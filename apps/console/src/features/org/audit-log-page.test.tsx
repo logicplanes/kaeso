@@ -126,7 +126,7 @@ describe("organization audit log", () => {
     signedIn();
     orgData([]);
     await renderApp(`${PATH}?actor=${USER}&event=evt_1`);
-    expect(await screen.findByRole("button", { name: "Export" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Export JSON Lines" })).toBeInTheDocument();
   });
 
   it("reads the log without the other rights", async () => {
@@ -136,7 +136,7 @@ describe("organization audit log", () => {
     const row = await rowOf("test.grace");
     expect(row).toHaveTextContent(OTHER_USER);
     expect(row).toHaveTextContent("cred_openai");
-    expect(screen.queryByRole("button", { name: "Export" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Export JSON Lines" })).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/members")).toHaveLength(0);
     expect(requests("GET", "orgs/:org/platform-keys")).toHaveLength(0);
     expect(requests("GET", "orgs/:org/credentials")).toHaveLength(0);

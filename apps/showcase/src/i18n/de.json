@@ -202,7 +202,7 @@
   "Called with the value when dragging ends.": "Wird mit dem Wert aufgerufen, wenn das Ziehen endet.",
   "Called with the value while it is dragged.": "Wird mit dem Wert aufgerufen, während er gezogen wird.",
   "Cancel": "Abbrechen",
-  "Characters that end a tag, besides Enter.": "Zeichen, die ein Tag beenden, außer Enter.",
+  "Characters that end a tag, besides Enter; pasted text also splits at line breaks and tabs.": "Zeichen, die ein Tag beenden, außer Enter; eingefügter Text wird auch an Zeilenumbrüchen und Tabulatoren getrennt.",
   "Checkbox and radio items": "Kontrollkästchen- und Optionselemente",
   "Checkout conversation": "Unterhaltung im Checkout",
   "Choices for the value menu.": "Auswahlmöglichkeiten für das Wertemenü.",
@@ -420,7 +420,6 @@
   "Multiple": "Mehrere",
   "Multiple with chips": "Mehrere mit Chips",
   "Name": "Name",
-  "Names a point's time in the tooltip, the table and for screen readers, where a point stands for more than its instant: \"Week of 3 Aug\", \"Aug 2026\". The axis keeps its calendar ticks.": "Benennt die Zeit eines Punkts in Tooltip, Tabelle und für Screenreader, wo ein Punkt für mehr als seinen Moment steht: „Woche vom 3. Aug.“, „Aug. 2026“. Die Achse behält ihre Kalendermarken.",
   "Names the action: \"Delete this key?\"": "Nennt die Aktion: „Diesen Schlüssel löschen?“",
   "Names the box by other text, such as the first line of a row whose label holds more.": "Benennt das Kästchen über anderen Text, etwa die erste Zeile einer Reihe, deren Beschriftung mehr enthält.",
   "Names the circle by other text, such as the first line of a row whose label holds more.": "Benennt den Kreis über anderen Text, etwa die erste Zeile einer Reihe, deren Beschriftung mehr enthält.",
@@ -1052,5 +1051,13 @@
   "Choices as ready-made searchable list groups, in place of `values`: rows with marks and details and headings with logos, such as `useModelGroups` or `useProviderGroups` build.": "Auswahl als fertige, durchsuchbare Listengruppen anstelle von `values`: Zeilen mit Zeichen und Details und Überschriften mit Logos, wie sie `useModelGroups` oder `useProviderGroups` bauen.",
   "Called when the value menu opens or closes, so a filter just added can go away when it closes without a value.": "Wird aufgerufen, wenn sich das Wertemenü öffnet oder schließt, damit ein gerade hinzugefügter Filter verschwinden kann, wenn es ohne Wert schließt.",
   "Gives the value menu a search field however few choices it has.": "Gibt dem Wertemenü ein Suchfeld, wie wenige Auswahlmöglichkeiten es auch hat.",
-  "How wide the searchable list opens: `sm` for providers, `lg` for models with their details.": "Wie breit sich die durchsuchbare Liste öffnet: `sm` für Anbieter, `lg` für Modelle mit ihren Details."
+  "How wide the searchable list opens: `sm` for providers, `lg` for models with their details.": "Wie breit sich die durchsuchbare Liste öffnet: `sm` für Anbieter, `lg` für Modelle mit ihren Details.",
+  "Marks the `first` or `last` category as covering only part of its span: its bars are drawn lighter and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "Markiert die erste (`first`) oder letzte (`last`) Kategorie als nur teilweise abgedeckt: Ihre Balken werden heller gezeichnet, und ihr Tooltip sagt „unvollständig“. `ongoing` markiert die letzte als noch laufend, etwa heute, und sagt „bisher“.",
+  "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "Zeigt im Tooltip den Anteil jeder Reihe an der Summe der Kategorie (standardmäßig an). Schalten Sie es aus, wenn eine Reihe Teil einer anderen ist, etwa Fehler innerhalb der Anfragen.",
+  "Names the times under the axis (\"3 Aug\", \"2026\"). Defaults to calendar ticks in `timeZone`; pass it with `tickAt=\"points\"` for buckets.": "Benennt die Zeiten unter der Achse („3. Aug.“, „2026“). Standardmäßig Kalendermarken in `timeZone`; übergeben Sie es mit `tickAt=\"points\"` für Zeitfenster.",
+  "Names a point's time in the tooltip, the table and for screen readers, where a point stands for more than its instant: \"Week of 3 Aug\", \"Aug 2026\".": "Benennt die Zeit eines Punkts in Tooltip, Tabelle und für Screenreader, wo ein Punkt für mehr als seinen Moment steht: „Woche vom 3. Aug.“, „Aug. 2026“.",
+  "Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "Markiert den ersten (`first`) oder letzten (`last`) Punkt als nur teilweise abgedeckt: Die Linie zu ihm ist gestrichelt, und sein Tooltip sagt „unvollständig“. `ongoing` markiert den letzten als noch laufend, etwa heute, und sagt „bisher“.",
+  "Shows each series' share of the point's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.": "Zeigt im Tooltip den Anteil jeder Reihe an der Summe des Punkts (standardmäßig an). Schalten Sie es aus, wenn eine Reihe Teil einer anderen ist, etwa Fehler innerhalb der Anfragen.",
+  "`time` labels round times, as many as fit (default). `points` sets each point in the middle of an equal step and labels every nth one, as a bar chart places and labels its categories, so a bar chart of the same days lines up with it.": "`time` beschriftet runde Zeiten, so viele wie passen (Standard). `points` setzt jeden Punkt in die Mitte eines gleich großen Schritts und beschriftet jeden n-ten, wie ein Balkendiagramm seine Kategorien setzt und beschriftet, sodass ein Balkendiagramm derselben Tage mit ihm übereinstimmt.",
+  "The zone the axis and the default labels read times in, such as \"UTC\" for days counted in UTC. Defaults to the zone set with `setFormatTimeZone`, else the viewer's.": "Die Zeitzone, in der Achse und Standardbeschriftungen Zeiten lesen, etwa „UTC“ für in UTC gezählte Tage. Standardmäßig die mit `setFormatTimeZone` gesetzte Zone, sonst die des Betrachters."
 }
