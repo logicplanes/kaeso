@@ -4,7 +4,7 @@ import { scaleLinear } from "./linear-scale.js";
 import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack, type SeriesPoint } from "d3-shape";
 import { bisector, max as d3max, min as d3min } from "d3-array";
 import { cn } from "../../utils/cn.js";
-import { formatNumber, formatPercent, formatTimeZone } from "../../format/index.js";
+import { dateFormatter, formatNumber, formatPercent, formatTimeZone } from "../../format/index.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import {
   AXIS,
@@ -67,8 +67,7 @@ export interface TimeseriesChartProps extends ChartState {
 const M = { top: 8, right: 52, bottom: 28, left: 0 };
 
 function timeFormat(locale: string, options: Intl.DateTimeFormatOptions, timeZone: string | undefined): (d: Date) => string {
-  const f = new Intl.DateTimeFormat(locale === "en" ? "en-US" : locale, { ...options, ...(timeZone ? { timeZone } : {}) });
-  return (d) => f.format(d);
+  return dateFormatter({ ...options, ...(timeZone ? { timeZone } : {}) }, locale);
 }
 const CLOCK = { hour: "2-digit", minute: "2-digit", hourCycle: "h23" } as const;
 const DAY = { month: "short", day: "numeric" } as const;

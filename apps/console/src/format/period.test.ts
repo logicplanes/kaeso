@@ -73,7 +73,9 @@ describe("days", () => {
 
 describe("day labels", () => {
   it("are written the English way, whatever the time zone", () => {
-    expect(dayLabel("2027-01-01")).toBe("Jan 1");
+    expect(dayLabel("2027-01-01")).toBe("1 Jan");
+    expect(dayLabel("2026-09-21")).toBe("21 Sep");
+    expect(monthLabel("2026-09-01")).toBe("Sep 2026");
     expect(monthLabel("2026-10-01")).toBe("Oct 2026");
     expect(fullDayLabel("2026-10-15")).toBe("15 Oct 2026");
   });
@@ -81,7 +83,7 @@ describe("day labels", () => {
   it("abbreviate September with three letters like every other month", () => {
     expect(monthLabel("2026-09-01")).toBe("Sep 2026");
     expect(fullDayLabel("2026-09-30")).toBe("30 Sep 2026");
-    expect(dayLabel("2026-09-30")).toBe("Sep 30");
+    expect(dayLabel("2026-09-30")).toBe("30 Sep");
   });
 
   it("are written the German and Chinese way", async () => {

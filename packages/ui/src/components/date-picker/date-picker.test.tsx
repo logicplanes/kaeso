@@ -40,7 +40,7 @@ describe("DateRangePicker", () => {
     rerender(<Controlled value={{ from: new Date(2026, 9, 6), to: new Date(2026, 9, 12) }} />);
     expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Fixed week");
     rerender(<Controlled value={{ from: new Date(2026, 8, 13), to: new Date(2026, 9, 12) }} />);
-    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Sep 13 – Oct 12");
+    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("13 Sep – 12 Oct");
   });
 
   it("opens complete once loaded: presets, both months and the typed fields together", async () => {
@@ -148,7 +148,7 @@ describe("DateRangePicker's popover", () => {
     const [range, details] = onChange.mock.calls[0]!;
     expect([range.from.toDateString(), range.to.toDateString()]).toEqual([new Date(2026, 2, 2).toDateString(), new Date(2026, 3, 5).toDateString()]);
     expect(details).toEqual({ preset: null });
-    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Mar 2 – Apr 5");
+    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("2 Mar – 5 Apr");
   });
 
   it("refuses a typed day that is disabled", async () => {
@@ -175,7 +175,7 @@ describe("DateRangePicker's popover", () => {
     await userEvent.type(start, "2026-10-05{Enter}");
     await userEvent.keyboard("{Escape}");
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Oct 1 – Oct 12");
+    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("1 Oct – 12 Oct");
   });
 
   it("hands over the preset with its range", async () => {
@@ -230,7 +230,7 @@ describe("the trigger's name", () => {
       "DateRangePicker with a range",
       <DateRangePicker key="r" aria-label="Period" defaultValue={{ from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) }} />,
       "Period",
-      "Oct 1 – Oct 12",
+      "1 Oct – 12 Oct",
     ],
   ])("%s comes from aria-label", (_, element, name, shown) => {
     render(element);
@@ -331,7 +331,7 @@ describe("the typed ISO field and the calendar agree", () => {
             onValueChange={onChange}
           />,
         );
-        expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Dec 31, 2026 – Jan 1, 2027");
+        expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("31 Dec 2026 – 1 Jan 2027");
         await userEvent.click(screen.getByRole("button", { name: "Period" }));
         await popoverLoaded();
         const start = screen.getByRole("textbox", { name: "Start date" });
@@ -345,7 +345,7 @@ describe("the typed ISO field and the calendar agree", () => {
         const range = onChange.mock.lastCall?.[0];
         expect(ymd(range?.from)).toEqual([2026, 12, 31, 0]);
         expect(ymd(range?.to)).toEqual([2027, 1, 7, 0]);
-        expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Dec 31, 2026 – Jan 7, 2027");
+        expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("31 Dec 2026 – 7 Jan 2027");
       });
     });
   }

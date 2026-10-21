@@ -156,6 +156,7 @@ const de: Readonly<Record<string, string>> = {
   "format.minutesAgo": "vor {count} Min.",
   "format.minutesSeconds": "{min} min {s} s",
   "format.seconds": "{s} s",
+  "format.thousands": "{value}\u00a0Tsd.",
   "format.yesterday": "gestern",
   "heatmap.cell": "{row} {column}: {value}",
   "heatmap.less": "Weniger",

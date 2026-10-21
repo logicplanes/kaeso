@@ -156,6 +156,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "format.minutesAgo": "{count} 分钟前",
   "format.minutesSeconds": "{min} 分 {s} 秒",
   "format.seconds": "{s} 秒",
+  "format.thousands": "{value}千",
   "format.yesterday": "昨天",
   "heatmap.cell": "{row} {column}：{value}",
   "heatmap.less": "少",

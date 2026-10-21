@@ -1,5 +1,5 @@
 import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, VisuallyHidden, col } from "@logicplanes/kaeso-ui";
-import { formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
 import { requestUSD } from "~/format/money";
@@ -8,7 +8,6 @@ import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
-import { dateLocale } from "./timing";
 
 export const COLUMNS = [
   "time",
@@ -84,7 +83,7 @@ export function logsLayout(width: number, phone: boolean, spansDays: boolean, sh
 }
 
 function zoneName(): string {
-  const parts = new Intl.DateTimeFormat(dateLocale(), { timeZoneName: "short", ...inZone() }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...inZone() }).formatToParts(new Date());
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
 }
 const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => c !== "request" && c !== "agent");
@@ -114,7 +113,7 @@ export function logColumns({
   providerName: (id: string) => string;
 }) {
   const stacked = layout === "phone" && spansDays;
-  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString(dateLocale(), { ...parts, hourCycle: "h23", ...inZone() });
+  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => dateFormatter({ ...parts, hourCycle: "h23", ...inZone() }, locale())(iso);
   const time = (iso: string) =>
     format(iso, {
       ...(spansDays ? { day: "numeric", month: "short" } : {}),
