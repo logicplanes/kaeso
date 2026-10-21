@@ -4,6 +4,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+#### Documentation
+
+- Each release's artwork on the changelog fills its frame in the shape it was drawn in, 16:9, instead of sitting between empty bars.
+
 ## [0.3.2] - 2026-10-21
 
 ### Added

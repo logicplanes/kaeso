@@ -95,7 +95,7 @@ function Release({ release, lang }: { release: ChangelogRelease; lang: string | 
           )}
         </div>
       </div>
-      <Suspense fallback={<div aria-hidden className="aspect-21/9 w-full" />}>
+      <Suspense fallback={<div aria-hidden className="aspect-video w-full" />}>
         <ReleaseArtwork version={release.version} label={t("changelog.artwork").replace("{version}", release.version)} />
       </Suspense>
       <Entry entry={release} lang={lang} />
