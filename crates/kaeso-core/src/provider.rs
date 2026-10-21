@@ -355,7 +355,6 @@ pub fn lookup(id: &str) -> Result<&'static Provider, ProviderIdError> {
 static BY_ID: LazyLock<Vec<&'static Provider>> = LazyLock::new(|| {
     let mut by_id: Vec<&'static Provider> = PROVIDERS.iter().collect();
     by_id.sort_by_key(|p| p.id);
-    by_id.dedup_by_key(|p| p.id);
     by_id
 });
 
@@ -397,6 +396,15 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_provider_id_is_listed_once() {
+        let mut ids: Vec<&str> = PROVIDERS.iter().map(|p| p.id).collect();
+        ids.sort_unstable();
+        let listed = ids.len();
+        ids.dedup();
+        assert_eq!(ids.len(), listed, "a provider id is listed twice");
+    }
 
     #[test]
     fn the_mvp_providers_use_their_own_apis() {
