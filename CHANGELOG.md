@@ -4,32 +4,37 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-10-21
+
+Kaeso 0.3.5 changes how the gateway limits request bodies and memory, and it tightens sign-in, invitation and project membership rules. Operators may need to raise `body_limits.model_api` for large uploads, and should review default project membership, since it no longer copies current members. Integrations that use `GET auth/oidc/start` or spend budgets should check the entries under Changed. Several security fixes are included, so upgrading is recommended.
+
+**Full changes:** [v0.3.4...v0.3.5](https://github.com/logicplanes/kaeso/compare/v0.3.4...v0.3.5)
+
 ### Changed
+
+- Making a project the default no longer adds the organization's current members to it; people who join from then on start there.
+- `GET auth/oidc/start` hands the browser to the console's sign-in page, which goes on to the identity provider at once when nobody is signed in.
+- `TotpRequired` carries `attempts` and `codes_locked`, and `auth/methods` names the provider's organization in `org_name`.
 
 #### Gateway
 
 - The model API takes request bodies up to 8 MiB instead of 32 MiB, and the Playground up to 1 MiB; raise `body_limits.model_api` for large PDFs or many images. The new setting `body_limits.in_flight`, 512 MiB by default, bounds the memory requests hold while Kaeso translates them.
 
-#### Platform API
-
-- Making a project the default no longer adds the organization's current members to it; people who join from then on start there.
-- `GET auth/oidc/start` hands the browser to the console's sign-in page, which goes on to the identity provider at once when nobody is signed in. `TotpRequired` carries `attempts` and `codes_locked`, and `auth/methods` names the provider's organization in `org_name`.
-
 ### Security
 
-- A wrong second-factor code counts against its sign-in: after three the password or sign-in link is needed again, and after ten in a row authenticator codes stop working until a recovery code or a password reset by email, and the account's owner gets an email. ([GHSA-h2fm-vp9c-hh88](https://github.com/logicplanes/kaeso/security/advisories/GHSA-h2fm-vp9c-hh88))
-- One model API request can no longer exhaust the gateway's memory: bodies are smaller, messages, content blocks, tools and embedding inputs are counted before they are decoded, and translation shares a memory budget. ([GHSA-vr6h-jrf4-8f5w](https://github.com/logicplanes/kaeso/security/advisories/GHSA-vr6h-jrf4-8f5w))
-- An SSO start link no longer signs a browser in on its own: when someone is signed in, the sign-in page names the organization and waits for a click, and an SSO answer for another person never replaces or ends the browser's session. ([GHSA-r9x9-pm2q-m3vr](https://github.com/logicplanes/kaeso/security/advisories/GHSA-r9x9-pm2q-m3vr))
-- Holding Update organization alone no longer adds anyone to a project by making it the default. ([GHSA-xjcx-5v89-jfx4](https://github.com/logicplanes/kaeso/security/advisories/GHSA-xjcx-5v89-jfx4))
-- SSO sessions date from when the person signed in at the identity provider, so a reused provider session no longer counts as a recent sign-in, and confirmations need the provider's `auth_time`. ([GHSA-w8jw-655f-5vvg](https://github.com/logicplanes/kaeso/security/advisories/GHSA-w8jw-655f-5vvg))
-- Under a spend budget, Kaeso refuses provider-side tools, MCP servers, search options and service tiers it can't price, instead of letting them spend past the budget. ([GHSA-5h99-c7qh-j7ww](https://github.com/logicplanes/kaeso/security/advisories/GHSA-5h99-c7qh-j7ww))
-- Project admins can't change or remove members whose organization role gives them rights the admin lacks, and only organization owners change owners in projects. ([GHSA-hv9c-x3hp-gj93](https://github.com/logicplanes/kaeso/security/advisories/GHSA-hv9c-x3hp-gj93))
-- Accepting a second invitation no longer restores project roles taken away after the first, and accepting one revokes the address's other pending invitations. ([GHSA-22ff-ww33-472c](https://github.com/logicplanes/kaeso/security/advisories/GHSA-22ff-ww33-472c))
-- Invitations and the SSO default role can't give people rights in the default project that the inviter can't grant there. ([GHSA-h7qj-hxgg-pqcv](https://github.com/logicplanes/kaeso/security/advisories/GHSA-h7qj-hxgg-pqcv))
-- A release feed can hold back update checks for at most an hour and no longer stops the update job, and Check now works while it waits. ([GHSA-fqpg-49fp-rpww](https://github.com/logicplanes/kaeso/security/advisories/GHSA-fqpg-49fp-rpww))
-- Provider error bodies reach apps with key fragments and account ids redacted, in every format and in streams. ([GHSA-gh4q-232c-7r4p](https://github.com/logicplanes/kaeso/security/advisories/GHSA-gh4q-232c-7r4p))
-- `GET me/keys` lists only the keys of organizations the session may open. ([GHSA-xq25-6hwj-5xgv](https://github.com/logicplanes/kaeso/security/advisories/GHSA-xq25-6hwj-5xgv))
-- Release notes come from pull requests as they were merged, refuse outside links and commands, and are shown to the maintainer before the tag. ([GHSA-6xrm-g82c-5h3p](https://github.com/logicplanes/kaeso/security/advisories/GHSA-6xrm-g82c-5h3p))
+- A wrong second-factor code counts against its sign-in: after three the password or sign-in link is needed again, and after ten in a row authenticator codes stop working until a recovery code or a password reset by email, and the account's owner gets an email.
+- One model API request can no longer exhaust the gateway's memory: bodies are smaller, messages, content blocks, tools and embedding inputs are counted before they are decoded, and translation shares a memory budget.
+- An SSO start link no longer signs a browser in on its own: when someone is signed in, the sign-in page names the organization and waits for a click, and an SSO answer for another person never replaces or ends the browser's session.
+- Holding Update organization alone no longer adds anyone to a project by making it the default.
+- SSO sessions date from when the person signed in at the identity provider, so a reused provider session no longer counts as a recent sign-in, and confirmations need the provider's `auth_time`.
+- Under a spend budget, Kaeso refuses provider-side tools, MCP servers, search options and service tiers it can't price, instead of letting them spend past the budget.
+- Project admins can't change or remove members whose organization role gives them rights the admin lacks, and only organization owners change owners in projects.
+- Accepting a second invitation no longer restores project roles taken away after the first, and accepting one revokes the address's other pending invitations.
+- Invitations and the SSO default role can't give people rights in the default project that the inviter can't grant there.
+- A release feed can hold back update checks for at most an hour and no longer stops the update job, and Check now works while it waits.
+- Provider error bodies reach apps with key fragments and account ids redacted, in every format and in streams.
+- `GET me/keys` lists only the keys of organizations the session may open.
+- Release tooling refuses outside links and commands in release notes and shows them to the maintainer before the tag.
 
 ## [0.3.4] - 2026-10-21
 
@@ -535,7 +540,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.5
 [0.3.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.4
 [0.3.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.3
 [0.3.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.2
