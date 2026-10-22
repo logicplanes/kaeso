@@ -114,7 +114,7 @@ pub async fn operator_sign_in_link(
             kind: TokenKind::MagicLink,
             hash: &kaeso_core::secret::hash(&token),
             user_id: Some(user.id),
-            email: Some(&email),
+            email: user.email.as_deref(),
             data: serde_json::json!({ "issued_by": OPERATOR_LINK }),
             expires_at: now + crate::platform::auth::magic::LIFETIME,
         },

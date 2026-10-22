@@ -79,6 +79,7 @@ rust_decimal_macros = "1.40"
 base64 = "0.23"
 url = { version = "2.5", features = ["serde"] }
 idna = "1.1"
+unicode-normalization = "0.1"
 ipnet = { version = "2.12", features = ["serde"] }
 indexmap = { version = "2.14", features = ["serde"] }
 moka = { version = "0.12", features = ["future"] }

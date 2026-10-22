@@ -1,3 +1,5 @@
+use unicode_normalization::UnicodeNormalization;
+
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("`{0}` is not a valid email address")]
 pub struct InvalidEmail(pub String);
@@ -5,7 +7,8 @@ pub struct InvalidEmail(pub String);
 pub const MAX_LEN: usize = 254;
 
 pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
-    let s = input.trim();
+    let s: String = input.trim().nfkc().collect();
+    let s = s.as_str();
     let invalid = || InvalidEmail(s.chars().take(64).collect());
     if s.is_empty() || s.len() > MAX_LEN || s.chars().any(|c| c.is_whitespace() || c.is_control()) {
         return Err(invalid());
@@ -20,6 +23,15 @@ pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
         return Err(invalid());
     }
     Ok(address)
+}
+
+pub fn canonical(email: &str) -> String {
+    let folded: String = email.trim().nfkc().collect::<String>().to_lowercase();
+    folded.nfkc().collect()
+}
+
+pub fn same_address(a: &str, b: &str) -> bool {
+    canonical(a) == canonical(b)
 }
 
 pub fn normalize_domain(input: &str) -> Option<String> {
@@ -190,6 +202,33 @@ mod tests {
         );
         assert_eq!(stored_form("BÜCHER").unwrap(), "xn--bcher-kva");
         assert_eq!(stored_form("ada@example"), None);
+    }
+
+    #[test]
+    fn lookalike_addresses_have_one_canonical_form() {
+        assert_eq!(
+            normalize("\u{212A}im@example.com").unwrap(),
+            "Kim@example.com"
+        );
+        assert_eq!(normalize("ａｄａ@example.com").unwrap(), "ada@example.com");
+        assert_eq!(
+            normalize("ada\u{FF20}example.com").unwrap(),
+            "ada@example.com"
+        );
+        assert_eq!(canonical("Kim@example.com"), "kim@example.com");
+        assert!(same_address("\u{212A}IM@example.com", "kim@example.com"));
+        assert!(
+            !same_address("adm\u{130}n@example.com", "admin@example.com"),
+            "a dotted capital I is not an i, whatever the database's lower() says"
+        );
+        for typed in [
+            "\u{212A}im@example.com",
+            "ADM\u{130}N@example.com",
+            "Ada@xn--bcher-kva.example",
+        ] {
+            let once = canonical(typed);
+            assert_eq!(canonical(&once), once, "{typed}");
+        }
     }
 
     #[test]

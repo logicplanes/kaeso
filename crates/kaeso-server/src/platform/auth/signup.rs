@@ -88,13 +88,17 @@ pub async fn request(
     } else {
         LIFETIME
     };
+    let to = existing
+        .as_ref()
+        .and_then(|u| u.email.clone())
+        .unwrap_or_else(|| email.clone());
     tokens::insert(
         &state.pg,
         NewToken {
             kind,
             hash: &secret::hash(&token),
             user_id: existing.as_ref().map(|u| u.id),
-            email: Some(&email),
+            email: Some(&to),
             data: serde_json::json!({}),
             expires_at: ctx.now + lifetime,
         },
@@ -108,8 +112,8 @@ pub async fn request(
         None => kaeso_mail::Locale::choose(None, ctx.accept_language.as_deref()),
     };
     state.mailer.send(match kind {
-        TokenKind::MagicLink => kaeso_mail::templates::magic_link(lang, &email, &url),
-        _ => kaeso_mail::templates::signup(lang, &email, &url),
+        TokenKind::MagicLink => kaeso_mail::templates::magic_link(lang, &to, &url),
+        _ => kaeso_mail::templates::signup(lang, &to, &url),
     });
     Ok(answer)
 }

@@ -63,9 +63,10 @@ pub async fn request(
     {
         return Ok(answer);
     }
-    let Some(user) = users::get_by_email(&state.pg, &email)
+    let Some((user, stored)) = users::get_by_email(&state.pg, &email)
         .await?
         .filter(|u| u.state == "active")
+        .and_then(|u| u.email.clone().map(|stored| (u, stored)))
     else {
         return Ok(answer);
     };
@@ -76,7 +77,7 @@ pub async fn request(
             kind: TokenKind::PasswordReset,
             hash: &secret::hash(&token),
             user_id: Some(user.id),
-            email: Some(&email),
+            email: Some(&stored),
             data: serde_json::json!({}),
             expires_at: ctx.now + LIFETIME,
         },
@@ -91,7 +92,7 @@ pub async fn request(
             .await;
     state
         .mailer
-        .send(kaeso_mail::templates::password_reset(lang, &email, &url));
+        .send(kaeso_mail::templates::password_reset(lang, &stored, &url));
     Ok(answer)
 }
 

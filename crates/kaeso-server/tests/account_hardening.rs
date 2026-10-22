@@ -334,6 +334,73 @@ async fn failed_sign_ins_lock_one_address_out_of_one_account() {
     s.cleanup().await;
 }
 
+fn kinds_to(app: &App, to: &str) -> Vec<&'static str> {
+    app.mail
+        .all()
+        .into_iter()
+        .filter(|m| m.to == to)
+        .map(|m| m.kind.as_str())
+        .collect()
+}
+
+#[tokio::test]
+async fn links_for_an_account_go_to_its_own_address_however_it_is_typed() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    sqlx::query("UPDATE users SET email = 'kim@example.com' WHERE email = 'owner@example.com'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let kelvin = "\u{212A}im@example.com";
+    app.post("/auth/password-reset", json!({ "email": kelvin }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    app.post("/auth/magic-link", json!({ "email": kelvin }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    app.wait_for_mail("kim@example.com", 2).await;
+    assert_eq!(
+        kinds_to(&app, "kim@example.com"),
+        ["password_reset", "magic_link"],
+        "a compatibility form of the address is the account's own address"
+    );
+    assert!(
+        kinds_to(&app, kelvin).is_empty(),
+        "nothing goes to the address as it was typed"
+    );
+
+    app.post(
+        "/auth/password-reset",
+        json!({ "email": "K\u{130}M@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.post(
+        "/auth/magic-link",
+        json!({ "email": "KIM@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.wait_for_mail("kim@example.com", 3).await;
+    assert_eq!(
+        kinds_to(&app, "kim@example.com"),
+        ["password_reset", "magic_link", "magic_link"],
+        "a dotted capital I names another address, though PostgreSQL's lower() folds it to i"
+    );
+    assert!(kinds_to(&app, "K\u{130}M@example.com").is_empty());
+
+    let token = app.last_token("kim@example.com");
+    let r = app
+        .post("/auth/magic-link/lookup", json!({ "token": token }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["email"], "kim@example.com");
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn sign_in_is_refused_while_its_throttles_cannot_be_counted() {
     let valkey = common::flaky_valkey::FlakyValkey::start().await;

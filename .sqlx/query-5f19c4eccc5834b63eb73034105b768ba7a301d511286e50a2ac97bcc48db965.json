@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at FROM invites WHERE org_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > $3 ORDER BY id DESC LIMIT 1",
+  "query": "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at FROM invites WHERE org_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > $3 ORDER BY id DESC",
   "describe": {
     "columns": [
       {
@@ -146,5 +146,5 @@
       false
     ]
   },
-  "hash": "c7d570def3e272101030d1ac35289ab3e32943faef9b452c6cd1f0ec7e719ba1"
+  "hash": "5f19c4eccc5834b63eb73034105b768ba7a301d511286e50a2ac97bcc48db965"
 }

@@ -63,18 +63,25 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<User>, Stor
     .await?)
 }
 
+// PostgreSQL's lower() folds more than Unicode lowercase (`İ` to `i` under glibc and musl), so
+// a row it finds is the address only when both have the same canonical form.
 pub async fn get_by_email(
     db: impl PgExecutor<'_>,
     email: &str,
 ) -> Result<Option<User>, StoreError> {
-    Ok(sqlx::query_as!(
+    let found = sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
          notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE lower(email) = lower($1)",
         email
     )
     .fetch_optional(db)
-    .await?)
+    .await?;
+    Ok(found.filter(|u| {
+        u.email
+            .as_deref()
+            .is_some_and(|stored| kaeso_core::email::same_address(stored, email))
+    }))
 }
 
 pub async fn set_password(db: impl PgExecutor<'_>, id: Uuid, hash: &str) -> Result<(), StoreError> {

@@ -157,7 +157,7 @@ pub async fn accept_invite(
         let mine = me
             .email
             .as_deref()
-            .is_some_and(|e| e.eq_ignore_ascii_case(&invite.email));
+            .is_some_and(|e| kaeso_core::email::same_address(e, &invite.email));
         if !mine {
             return Err(ApiError::PermissionDenied(format!(
                 "This invitation is for {}; sign in with that address to accept it.",

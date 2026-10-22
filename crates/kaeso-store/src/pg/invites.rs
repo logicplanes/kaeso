@@ -90,17 +90,20 @@ pub async fn pending_for(
     email: &str,
     now: OffsetDateTime,
 ) -> Result<Option<Invite>, StoreError> {
-    Ok(sqlx::query_as!(
+    let found = sqlx::query_as!(
         Invite,
         "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
          FROM invites WHERE org_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL AND revoked_at IS NULL \
-         AND expires_at > $3 ORDER BY id DESC LIMIT 1",
+         AND expires_at > $3 ORDER BY id DESC",
         org_id,
         email,
         now
     )
-    .fetch_optional(db)
-    .await?)
+    .fetch_all(db)
+    .await?;
+    Ok(found
+        .into_iter()
+        .find(|i| kaeso_core::email::same_address(&i.email, email)))
 }
 
 pub async fn pending_of_org(

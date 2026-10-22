@@ -750,7 +750,11 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             return Err(no_access());
         }
     }
-    if user.email.as_deref() == Some(email.as_str()) {
+    if user
+        .email
+        .as_deref()
+        .is_some_and(|stored| kaeso_core::email::same_address(stored, &email))
+    {
         users::mark_verified(&mut *tx, user.id, ctx.now).await?;
     }
     let created = sessions::create(
@@ -845,7 +849,13 @@ async fn confirm(
     {
         Some(id) if id == account.id => {}
         Some(_) => return Err(other_account()),
-        None if account.email.as_deref() != Some(email) => return Err(other_account()),
+        None if !account
+            .email
+            .as_deref()
+            .is_some_and(|stored| kaeso_core::email::same_address(stored, email)) =>
+        {
+            return Err(other_account());
+        }
         None => {
             if !sso_identities::bind_pending(
                 &mut *tx,
@@ -921,7 +931,7 @@ async fn create_account(
         .as_deref()
         .and_then(crate::platform::validate::display_name)
         .unwrap_or_else(|| email.split('@').next().unwrap_or(email).to_owned());
-    users::insert(
+    let created = users::insert(
         &mut **tx,
         &users::NewUser {
             id: id.uuid(),
@@ -933,6 +943,9 @@ async fn create_account(
         },
     )
     .await?;
+    if !created {
+        return Err(link_required());
+    }
     ctx.audit(None, "user.create_by_sso")
         .by(id)
         .target("user", id)
