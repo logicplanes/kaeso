@@ -14,7 +14,7 @@ use kaeso_store::pg::tokens::{self, TokenKind};
 use kaeso_testkit::services::TestServices;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::Notify;
+use tokio::sync::{Notify, mpsc};
 use tokio_util::sync::CancellationToken;
 use tower::ServiceExt;
 
@@ -419,40 +419,68 @@ async fn serving_at_most(
     (addr, shutdown)
 }
 
-async fn answer_to(stream: &mut TcpStream) -> String {
+async fn ask(stream: &mut TcpStream) {
     stream
         .write_all(b"GET / HTTP/1.1\r\nHost: kaeso.test\r\n\r\n")
         .await
         .unwrap();
+}
+
+async fn answer(stream: &mut TcpStream) -> String {
     let mut buf = vec![0; 1024];
     let n = stream.read(&mut buf).await.unwrap();
     buf.truncate(n);
     String::from_utf8_lossy(&buf).into_owned()
 }
 
+async fn answer_to(stream: &mut TcpStream) -> String {
+    ask(stream).await;
+    answer(stream).await
+}
+
+async fn once_nothing_can_run() {
+    // With the clock paused, the sleep ends only once every task waits and no socket is ready.
+    tokio::time::pause();
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    tokio::time::resume();
+}
+
 #[tokio::test]
 async fn connections_over_the_limit_wait_until_one_closes() {
-    let (addr, shutdown) = serving_at_most(
-        Router::new().route("/", get(|| async { "hi" })),
-        Duration::from_secs(30),
-        1,
-    )
-    .await;
+    let (entering, mut entered) = mpsc::unbounded_channel();
+    let router = Router::new().route(
+        "/",
+        get(
+            move |axum::extract::ConnectInfo(peer): axum::extract::ConnectInfo<
+                std::net::SocketAddr,
+            >| {
+                entering.send(peer).unwrap();
+                async { "hi" }
+            },
+        ),
+    );
+    let (addr, shutdown) = serving_at_most(router, Duration::from_secs(30), 1).await;
     let mut first = TcpStream::connect(addr).await.unwrap();
+    let first_peer = first.local_addr().unwrap();
     assert!(answer_to(&mut first).await.contains("200 OK"));
     let mut second = TcpStream::connect(addr).await.unwrap();
-    let waiting = tokio::spawn(async move { answer_to(&mut second).await });
-    tokio::time::sleep(Duration::from_millis(300)).await;
-    assert!(
-        !waiting.is_finished(),
-        "the second connection is not served yet"
+    let second_peer = second.local_addr().unwrap();
+    ask(&mut second).await;
+    // Loopback delivers in order, so the second request is in the gateway's socket once this answer is back.
+    assert!(answer_to(&mut first).await.contains("200 OK"));
+    once_nothing_can_run().await;
+    let served: Vec<_> = std::iter::from_fn(|| entered.try_recv().ok()).collect();
+    assert_eq!(
+        served,
+        [first_peer, first_peer],
+        "the first held the only slot"
     );
     drop(first);
-    let answer = tokio::time::timeout(Duration::from_secs(5), waiting)
+    let reply = tokio::time::timeout(Duration::from_secs(10), answer(&mut second))
         .await
-        .expect("served once the first closed")
-        .unwrap();
-    assert!(answer.contains("200 OK"), "{answer}");
+        .expect("served once the first closed");
+    assert!(reply.contains("200 OK"), "{reply}");
+    assert_eq!(entered.recv().await, Some(second_peer));
     shutdown.cancel();
 }
 

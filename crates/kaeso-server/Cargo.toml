@@ -65,3 +65,4 @@ insta.workspace = true
 kaeso-testkit.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 semver.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
