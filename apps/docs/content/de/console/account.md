@@ -69,6 +69,8 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 Über Single Sign-on öffnet die Konsole Ihren Identitätsanbieter in einem kleinen Fenster und bittet Sie, sich dort erneut anzumelden. Die Seite und Ihre Eingaben bleiben, wie sie sind, und die Aktion läuft weiter, sobald Sie sich angemeldet haben. Nur Ihre eigene verknüpfte Identität bestätigt, aus einer frischen Anmeldung, und eine Ablehnung nennt den Grund. Blockiert der Browser das Fenster, geht die Konsole in diesem Tab zum Anbieter und bringt Sie zur Seite zurück. Eine Bestätigung über den Anbieter einer Organisation macht die Sitzung zu einer aus dem Single Sign-on dieser Organisation.
 
+Haben Sie sich über den Anbieter der Organisation angemeldet, die Ihr Konto verwaltet, bietet die Konsole diesen Anbieter zuerst an, daneben **Stattdessen Ihr Passwort verwenden** oder einen Anmeldelink. Einen Anbieter, der keine kürzliche Anmeldung bestätigen kann, bietet sie nicht an, und sie fragt zuerst nach Ihrem Passwort.
+
 ## Nach einer Anmeldung über Single Sign-on
 
 Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen, und Änderungen an Ihrem Konto, die weiterhin eine kürzliche Anmeldung verlangen. Die Verwaltung der Instanz braucht eine weitere Anmeldung, es sei denn, ein Instanz-Admin hat die Organisation dafür gewählt.
