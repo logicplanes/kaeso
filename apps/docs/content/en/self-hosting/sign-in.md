@@ -1,10 +1,10 @@
 ---
 title: Sign-in and single sign-on
-description: Choose how people sign in, run an install on single sign-on alone, and get back in when nothing else works.
+description: Choose how people sign in, run an install without passwords, and get back in when nothing else works.
 order: 7
 ---
 
-People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Three [sign-in settings](configuration.md#sign-in) turn each method on or off for the whole install. An organization admin connects the identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)).
+People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Two [sign-in settings](configuration.md#sign-in) turn passwords and sign-in links on or off for the whole install. Single sign-on is set up per organization, not for the install: it works for an organization once its admin connects the identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)), and every organization can.
 
 ## The sign-in page
 
@@ -45,9 +45,9 @@ A sign-in through an organization's provider opens only that organization, and r
 
 A connection can't list a public mail provider's domain, such as `gmail.com`: every address there would sign in through one organization's provider.
 
-## Run on single sign-on alone
+## Run without passwords or sign-in links
 
-To sign in only through identity providers, turn the other methods off before the first start:
+To sign in only through organizations' identity providers, turn passwords and sign-in links off before the first start:
 
 ```yaml title="compose.override.yaml"
 services:
@@ -61,6 +61,8 @@ services:
 2. Open the setup link. The setup page asks for no password, and then opens the organization's **Security** page.
 3. Connect the identity provider in the same session.
 4. Under **Account** › **Security**, choose **Link** next to the organization, and sign in at the provider. That links your account and checks the connection works.
+
+The sign-in page still asks for the email address first and offers the provider of its organization. An address at no organization's verified domain has no way in, and the page says so.
 
 A sign-in through single sign-on doesn't administer the instance. For instance administration, sign in with a [one-time sign-in link](#get-back-in) from the server.
 

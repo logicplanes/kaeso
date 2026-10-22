@@ -2,7 +2,6 @@ import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
 
 const MESSAGES: Record<string, () => string> = {
-  sso_off: () => t("signIn.ssoError.off", "Single sign-on is turned off on this install."),
   no_sso: () => t("signIn.ssoError.noSso", "No organization uses single sign-on for this sign-in; sign in another way."),
   invalid_link: () => t("signIn.ssoError.invalidLink", "This sign-in link isn't valid; start again from the sign-in page."),
   expired: () => t("signIn.ssoError.expired", "The sign-in expired or began in another browser; start again."),

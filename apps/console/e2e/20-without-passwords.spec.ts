@@ -108,6 +108,16 @@ test("a refused sign-in comes back to the sign-in page and asks for the email ag
   await context.close();
 });
 
+test("an address that no organization's provider signs in has no way in", async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
+  const page = await context.newPage();
+  await page.goto("/sign-in");
+  await enterEmail(page, "eve@elsewhere.example");
+  await expect(page.getByText("There's no way to sign in with eve@elsewhere.example on this install. Ask an administrator.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toHaveCount(0);
+  await context.close();
+});
+
 test("the operator's sign-in link lets the first admin in without a password", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();

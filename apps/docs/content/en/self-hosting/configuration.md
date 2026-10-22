@@ -124,13 +124,12 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 
 ### Sign-in
 
-These settings turn sign-in methods on or off for the whole install. The console shows them, and a method turned off here can't be turned on there ([sign-in and single sign-on](sign-in.md)).
+These settings turn passwords and sign-in links on or off for the whole install. The console shows them, and a method turned off here can't be turned on there. Single sign-on has no install setting: it works for an organization once its admin connects an identity provider ([sign-in and single sign-on](sign-in.md)).
 
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD` | `auth.password` | bool | `true` | Allow sign-in with email and password. |
 | `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | bool | `true` | Allow sign-in with a link sent by email. |
-| `KAESO_AUTH_OIDC` | `auth.oidc` | bool | `true` | Allow sign-in through an organization's OIDC identity provider. |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC requests to private and loopback addresses, for an identity provider on your own network. Turn it on only where organization admins may reach your internal network through the gateway. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused. |
 
 ### API key failures

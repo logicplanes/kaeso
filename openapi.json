@@ -423,7 +423,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "The sign-in methods for an address: the install's, with SSO when the\naddress's domain is a verified domain of an organization with an identity\nprovider, and whether the address may create an account.",
+        "summary": "The sign-in methods for an address: the install's, with `provider` when\nthe address's domain is a verified domain of an organization with an\nidentity provider, and whether the address may create an account.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthMethods",
         "requestBody": {
@@ -483,7 +483,7 @@
           "auth"
         ],
         "summary": "The identity provider returns here. On success the session cookie is\nset and the browser goes to the console; on failure to the sign-in page\nwith an error code in `#sso_error=`.",
-        "description": "The codes: `sso_off`, `no_sso`, `invalid_link`, `expired`, `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, `linked_elsewhere`, `signed_in_as_other`, `org_scheduled`, `throttled` and `failed`. `signed_in_as_other` means the browser is signed in to another account, which stays signed in; an answer for the same account replaces its session. Show your own message for each; new codes may appear, so show a general one for a code you don't know.\n\n**Access:** public; no authentication.",
+        "description": "The codes: `no_sso`, `invalid_link`, `expired`, `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, `linked_elsewhere`, `signed_in_as_other`, `org_scheduled`, `throttled` and `failed`. `signed_in_as_other` means the browser is signed in to another account, which stays signed in; an answer for the same account replaces its session. Show your own message for each; new codes may appear, so show a general one for a code you don't know.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthOidcCallback",
         "parameters": [
           {
@@ -23504,8 +23504,7 @@
         "description": "Sign-in methods, set in configuration.",
         "required": [
           "password",
-          "magic_link",
-          "sso"
+          "magic_link"
         ],
         "properties": {
           "magic_link": {
@@ -23515,10 +23514,6 @@
           "password": {
             "type": "boolean",
             "description": "Email and password."
-          },
-          "sso": {
-            "type": "boolean",
-            "description": "SSO."
           }
         }
       },
@@ -23528,7 +23523,6 @@
         "required": [
           "password",
           "magic_link",
-          "sso",
           "sso_required",
           "sign_up",
           "set_up"
@@ -23546,7 +23540,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SsoProviderView",
-                "description": "The identity provider the page offers by name. Without an address: the\none of the org in `org`, only while its connection has **Start without a\nclick** on; otherwise `null`. With an address: the one of its verified\ndomain."
+                "description": "The identity provider the page offers, by name. With an address: the one\nof the org whose verified domain the address is at, `null` when no org's\nis. Without one: the one of the org in `org`, only while its connection\nhas **Start without a click** on; otherwise `null`."
               },
               {
                 "type": "null"
@@ -23561,13 +23555,9 @@
             "type": "boolean",
             "description": "The page offers to create an account (`auth/signup`). Without an\naddress: some address may. With one: this address may, by the\ninstance's account creation setting and its domain."
           },
-          "sso": {
-            "type": "boolean",
-            "description": "SSO. Without an address: on for the install. With one: the address's\ndomain is a verified domain of an organization with an identity provider."
-          },
           "sso_required": {
             "type": "boolean",
-            "description": "That organization requires SSO, so the page offers SSO alone."
+            "description": "The organization of the address's verified domain requires SSO, so the\npage offers its provider alone."
           }
         }
       },

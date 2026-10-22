@@ -104,7 +104,7 @@ export function MethodsStep({
   onOtherEmail: () => void;
   onForgotPassword: () => void;
 }) {
-  const none = !m.password && !m.magic_link && !m.sso;
+  const none = !m.password && !m.magic_link && !m.provider;
   return (
     <PublicPage
       title={t("signIn.title", "Sign in")}
@@ -114,7 +114,7 @@ export function MethodsStep({
     >
       <form className="flex flex-col gap-16" onSubmit={(e) => (e.preventDefault(), m.password ? onPassword() : undefined)}>
         <input type="email" name="username" autoComplete="username" value={address} readOnly hidden />
-        {m.sso && (
+        {m.provider && (
           <Button variant={m.password ? "secondary" : "primary"} size="xl" fullWidth loading={busy === "sso"} onClick={onSso} autoFocus={!m.password}>
             {ssoLabel(m.provider)}
           </Button>
@@ -137,7 +137,7 @@ export function MethodsStep({
           </>
         )}
         {m.magic_link && (
-          <Button size="xl" fullWidth loading={busy === "magic_link"} onClick={onLink} autoFocus={!m.password && !m.sso}>
+          <Button size="xl" fullWidth loading={busy === "magic_link"} onClick={onLink} autoFocus={!m.password && !m.provider}>
             {t("signIn.emailLink", "Email me a sign-in link")}
           </Button>
         )}

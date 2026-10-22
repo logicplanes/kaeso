@@ -573,7 +573,11 @@ async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
             None,
         )
         .await;
-    assert_eq!(m.body["sso"], false, "an unverified domain routes nobody");
+    assert_eq!(
+        m.body["provider"],
+        Value::Null,
+        "an unverified domain routes nobody"
+    );
 
     app.dns.set(
         "_kaeso-verify.acme.example",
@@ -599,7 +603,7 @@ async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
             None,
         )
         .await;
-    assert_eq!(m.body["sso"], true);
+    assert_eq!(m.body["provider"]["org"], owner.org_id.as_str());
 
     let r = put(
         &app,

@@ -1,10 +1,10 @@
 ---
 title: Anmeldung und Single Sign-on
-description: Legen Sie Anmeldemethoden fest, betreiben Sie Kaeso nur mit Single Sign-on und kommen Sie wieder hinein, wenn nichts geht.
+description: Legen Sie Anmeldemethoden fest, betreiben Sie Kaeso ohne Passwörter und kommen Sie wieder hinein, wenn nichts geht.
 order: 7
 ---
 
-Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink per E-Mail oder über den Identitätsanbieter ihrer Organisation per OpenID Connect. Drei [Einstellungen zur Anmeldung](configuration.md#anmeldung) schalten jede Methode für die ganze Installation ein oder aus. Ein Admin der Organisation verbindet den Identitätsanbieter auf der Seite **Sicherheit** der Organisation ([Organisationen und Projekte](../console/organizations-and-projects.md)).
+Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink per E-Mail oder über den Identitätsanbieter ihrer Organisation per OpenID Connect. Zwei [Einstellungen zur Anmeldung](configuration.md#anmeldung) schalten Passwörter und Anmeldelinks für die ganze Installation ein oder aus. Single Sign-on richtet jede Organisation selbst ein, nicht die Installation: Es funktioniert für eine Organisation, sobald ihr Admin den Identitätsanbieter auf der Seite **Sicherheit** der Organisation verbindet ([Organisationen und Projekte](../console/organizations-and-projects.md)), und jede Organisation kann das.
 
 ## Die Anmeldeseite
 
@@ -45,9 +45,9 @@ Eine Anmeldung über den Anbieter einer Organisation öffnet nur diese Organisat
 
 Eine Verbindung kann keine Domain eines öffentlichen Mail-Anbieters wie `gmail.com` enthalten: Jede Adresse dort würde sich über den Anbieter einer einzigen Organisation anmelden.
 
-## Nur mit Single Sign-on betreiben
+## Ohne Passwörter und Anmeldelinks betreiben
 
-Damit sich Personen nur über Identitätsanbieter anmelden, schalten Sie vor dem ersten Start die anderen Methoden ab:
+Damit sich Personen nur über die Identitätsanbieter von Organisationen anmelden, schalten Sie vor dem ersten Start Passwörter und Anmeldelinks ab:
 
 ```yaml title="compose.override.yaml"
 services:
@@ -61,6 +61,8 @@ services:
 2. Öffnen Sie den Einrichtungslink. Die Einrichtungsseite fragt nach keinem Passwort und öffnet danach die Seite **Sicherheit** der Organisation.
 3. Verbinden Sie den Identitätsanbieter in derselben Sitzung.
 4. Wählen Sie unter **Konto** › **Sicherheit** die Option **Verknüpfen** neben der Organisation und melden Sie sich beim Anbieter an. Das verknüpft Ihr Konto und prüft, dass die Verbindung funktioniert.
+
+Die Anmeldeseite fragt weiterhin zuerst nach der E-Mail-Adresse und bietet den Anbieter ihrer Organisation an. Eine Adresse an keiner bestätigten Domain einer Organisation kommt nicht hinein, und die Seite sagt das.
 
 Eine Anmeldung über Single Sign-on verwaltet die Instanz nicht. Für die Verwaltung der Instanz melden Sie sich mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
 

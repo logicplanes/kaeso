@@ -14,7 +14,6 @@ describe("the first page a start link opens", () => {
       methods({
         password: false,
         magic_link: false,
-        sso: true,
         provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true },
       }),
     );

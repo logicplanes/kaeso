@@ -417,7 +417,6 @@
   "errors.ssoNoOrg": "No organization uses SSO for this sign-in; use another way to sign in.",
   "errors.ssoNoOwners": "SSO can't make owners; choose another role.",
   "errors.ssoNoVerifiedDomain": "This organization's SSO has no verified email domain yet; ask an admin to verify one.",
-  "errors.ssoOff": "SSO sign-in is turned off on this install.",
   "errors.ssoOrgOrEmail": "Send either `org` or `email`.",
   "errors.ssoOtherAccount": "You signed in at the identity provider as someone else; sign in there as yourself.",
   "errors.ssoPublicMail": "{domain} is a public mail domain; name your organization's own domains.",

@@ -21,19 +21,17 @@ pub struct SignInMethodsView {
     pub password: bool,
     #[doc = "A sign-in link by email."]
     pub magic_link: bool,
-    #[doc = "SSO. Without an address: on for the install. With one: the address's\n\
-        domain is a verified domain of an organization with an identity provider."]
-    pub sso: bool,
-    #[doc = "That organization requires SSO, so the page offers SSO alone."]
+    #[doc = "The organization of the address's verified domain requires SSO, so the\n\
+        page offers its provider alone."]
     pub sso_required: bool,
     #[doc = "The page offers to create an account (`auth/signup`). Without an\n\
         address: some address may. With one: this address may, by the\n\
         instance's account creation setting and its domain."]
     pub sign_up: bool,
-    #[doc = "The identity provider the page offers by name. Without an address: the\n\
-        one of the org in `org`, only while its connection has **Start without a\n\
-        click** on; otherwise `null`. With an address: the one of its verified\n\
-        domain."]
+    #[doc = "The identity provider the page offers, by name. With an address: the one\n\
+        of the org whose verified domain the address is at, `null` when no org's\n\
+        is. Without one: the one of the org in `org`, only while its connection\n\
+        has **Start without a click** on; otherwise `null`."]
     pub provider: Option<SsoProviderView>,
     #[doc = "The install is set up: its first user exists, so a setup link no longer\n\
         works and people sign in instead."]
@@ -91,7 +89,6 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
     SignInMethodsView {
         password: a.password,
         magic_link: a.magic_link,
-        sso: a.oidc,
         sso_required: false,
         sign_up,
         provider: None,
@@ -100,7 +97,7 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
 }
 
 async fn offered(state: &AppState, org: Option<OrgId>) -> ApiResult<Option<SsoProviderView>> {
-    let Some(org) = org.filter(|_| state.config.auth.oidc) else {
+    let Some(org) = org else {
         return Ok(None);
     };
     let (Some(connection), Some(row)) = (
@@ -139,9 +136,9 @@ pub async fn get(
 #[utoipa::path(
     post,
     path = "/auth/methods",
-    summary = "The sign-in methods for an address: the install's, with SSO when the\n\
-    address's domain is a verified domain of an organization with an identity\n\
-    provider, and whether the address may create an account.",
+    summary = "The sign-in methods for an address: the install's, with `provider` when\n\
+    the address's domain is a verified domain of an organization with an\n\
+    identity provider, and whether the address may create an account.",
     tag = "auth",
     request_body = MethodsRequest,
     responses((status = 200, body = SignInMethodsView))
@@ -157,11 +154,7 @@ pub async fn lookup(
     let policy = accounts::policy(&instance::get(&state.pg).await?);
     let set_up = users::any_exist(&state.pg).await?;
     let mut methods = install(&state, policy.may_sign_up(&email), set_up);
-    let org = if methods.sso {
-        oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email)).await?
-    } else {
-        None
-    };
+    let org = oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email)).await?;
     let connection = match org {
         Some(org) => oidc::get(&state.pg, org).await?,
         None => None,
@@ -170,7 +163,6 @@ pub async fn lookup(
         Some(c) => orgs::get(&state.pg, c.org_id).await?,
         None => None,
     };
-    methods.sso = connection.is_some() && org.is_some();
     if let (Some(connection), Some(org)) = (connection, org) {
         methods.sso_required = org.require_sso;
         methods.provider = Some(SsoProviderView::of(connection, &org));

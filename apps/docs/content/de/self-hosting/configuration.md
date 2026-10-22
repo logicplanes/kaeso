@@ -124,13 +124,12 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 
 ### Anmeldung
 
-Diese Einstellungen schalten Anmeldemethoden für die ganze Installation ein oder aus. Die Konsole zeigt sie an, und eine hier abgeschaltete Methode lässt sich dort nicht einschalten ([Anmeldung und Single Sign-on](sign-in.md)).
+Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Installation ein oder aus. Die Konsole zeigt sie an, und eine hier abgeschaltete Methode lässt sich dort nicht einschalten. Für Single Sign-on gibt es keine Einstellung der Installation: Es funktioniert für eine Organisation, sobald ihr Admin einen Identitätsanbieter verbindet ([Anmeldung und Single Sign-on](sign-in.md)).
 
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD` | `auth.password` | Bool | `true` | Anmeldung mit E-Mail und Passwort erlauben. |
 | `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | Bool | `true` | Anmeldung mit einem Link per E-Mail erlauben. |
-| `KAESO_AUTH_OIDC` | `auth.oidc` | Bool | `true` | Anmeldung über den OIDC-Identitätsanbieter einer Organisation erlauben. |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | Bool | `false` | OIDC-Anfragen an private und Loopback-Adressen erlauben, für einen Identitätsanbieter in Ihrem eigenen Netz. Schalten Sie es nur ein, wo Admins von Organisationen Ihr internes Netz über das Gateway erreichen dürfen. Link-lokale Adressen und Metadaten-Adressen von Clouds wie `169.254.169.254` bleiben gesperrt. |
 
 ### Fehlgeschlagene Schlüsselprüfungen

@@ -15,7 +15,7 @@ describe("a start link when the provider's step can't be fetched", () => {
     on(
       "GET",
       "auth/methods",
-      methods({ password: false, magic_link: false, sso: true, provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true } }),
+      methods({ password: false, magic_link: false, provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true } }),
     );
     await renderApp(`/sign-in?org=${ORG}&start=sso`);
     expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();

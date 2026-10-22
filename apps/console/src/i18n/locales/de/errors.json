@@ -350,7 +350,6 @@
   "errors.ssoNoOrg": "Keine Organisation nutzt SSO für diese Anmeldung; anders anmelden.",
   "errors.ssoNoOwners": "SSO kann keine Inhaber anlegen; eine andere Rolle wählen.",
   "errors.ssoNoVerifiedDomain": "Die SSO dieser Organisation hat noch keine bestätigte E-Mail-Domain; bitten Sie einen Admin, eine zu bestätigen.",
-  "errors.ssoOff": "Die Anmeldung per SSO ist in dieser Installation ausgeschaltet.",
   "errors.ssoOrgOrEmail": "Entweder `org` oder `email` senden.",
   "errors.ssoPublicMail": "{domain} ist eine Domain eines öffentlichen Mail-Anbieters; nennen Sie die eigenen Domains Ihrer Organisation.",
   "errors.ssoRequiredStopFirst": "SSO ist in dieser Organisation Pflicht; diese Pflicht zuerst aufheben.",

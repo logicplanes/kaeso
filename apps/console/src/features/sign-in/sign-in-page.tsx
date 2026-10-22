@@ -38,7 +38,7 @@ type Step =
 
 const refusedPassword = (e: unknown): e is ApiError => isApiError(e) && !e.unreachable && e.type !== "internal";
 
-const onlySso = (m: SignInMethods) => m.sso && !m.password && !m.magic_link && !m.sign_up;
+const onlySso = (m: SignInMethods) => !!m.provider && !m.password && !m.magic_link && !m.sign_up;
 
 export function SignInPage({
   next,

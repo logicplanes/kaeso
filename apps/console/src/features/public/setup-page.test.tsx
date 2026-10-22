@@ -58,7 +58,7 @@ describe("setting up Kaeso", () => {
   });
 
   it("asks for no password where passwords are off, and opens single sign-on next", async () => {
-    on("GET", "auth/methods", methods({ password: false, magic_link: false, sso: true }));
+    on("GET", "auth/methods", methods({ password: false, magic_link: false }));
     const { user } = await renderApp("/setup#token=stp_1");
     expect(await screen.findByText("Create the first user, an instance admin, and the organization they own; passwords are off here.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
@@ -78,7 +78,7 @@ describe("setting up Kaeso", () => {
   });
 
   it("asks for no password where sign-in links work, and opens the console", async () => {
-    on("GET", "auth/methods", methods({ password: false, magic_link: true, sso: true }));
+    on("GET", "auth/methods", methods({ password: false, magic_link: true }));
     const { user } = await renderApp("/setup#token=stp_1");
     await user.type(await screen.findByRole("textbox", { name: "Name" }), "Ada Okafor");
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();

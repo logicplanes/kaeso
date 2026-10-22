@@ -223,12 +223,12 @@ async fn the_methods_for_an_address_follow_its_domain_not_its_account() {
     let known = methods("owner@example.com").await;
     let unknown = methods("nobody@example.com").await;
     assert_eq!(known, unknown);
-    assert_eq!(known["sso"], false);
+    assert_eq!(known["provider"], serde_json::Value::Null);
     assert_eq!(known["password"], true);
     assert_eq!(known["magic_link"], true);
 
     let sso = methods("ada@ACME.example").await;
-    assert_eq!(sso["sso"], true);
+    assert_eq!(sso["provider"]["org"], owner.org_id.as_str());
     assert_eq!(sso["sso_required"], false);
     assert_eq!(sso["password"], true);
 
@@ -589,7 +589,7 @@ async fn oversized_identity_provider_answers_are_refused() {
     assert_eq!(ok.body().len(), 1 << 10);
 }
 
-const SSO_ONLY: [(&str, &str); 2] = [
+const WITHOUT_PASSWORDS: [(&str, &str); 2] = [
     ("KAESO_AUTH_PASSWORD", "false"),
     ("KAESO_AUTH_MAGIC_LINK", "false"),
 ];
@@ -646,7 +646,7 @@ async fn start_without_a_click(app: &App, org: &str) {
 #[tokio::test]
 async fn with_passwords_and_links_off_the_page_still_asks_for_the_address_first() {
     let s = TestServices::start().await;
-    let app = App::start_with(&s, &SSO_ONLY).await;
+    let app = App::start_with(&s, &WITHOUT_PASSWORDS).await;
     let owner = app.setup().await;
     let idp = MockIdp::start("kaeso", "client-secret").await;
     connect_org(
@@ -660,8 +660,8 @@ async fn with_passwords_and_links_off_the_page_still_asks_for_the_address_first(
     .await;
     let page = methods_page(&app, "").await;
     assert_eq!(
-        (&page["password"], &page["magic_link"], &page["sso"]),
-        (&json!(false), &json!(false), &json!(true))
+        (&page["password"], &page["magic_link"]),
+        (&json!(false), &json!(false))
     );
     assert_eq!(
         page["provider"],
@@ -676,7 +676,6 @@ async fn with_passwords_and_links_off_the_page_still_asks_for_the_address_first(
             None,
         )
         .await;
-    assert_eq!(by_address.body["sso"], true);
     assert_eq!(
         by_address.body["provider"],
         json!({ "org": owner.org_id, "org_name": "Acme", "name": "Acme ID", "auto_redirect": true })
@@ -688,10 +687,7 @@ async fn with_passwords_and_links_off_the_page_still_asks_for_the_address_first(
             None,
         )
         .await;
-    assert_eq!(
-        (&elsewhere.body["sso"], &elsewhere.body["provider"]),
-        (&json!(false), &serde_json::Value::Null)
-    );
+    assert_eq!(elsewhere.body["provider"], serde_json::Value::Null);
     s.cleanup().await;
 }
 
@@ -710,22 +706,16 @@ async fn the_address_offers_only_the_provider_of_its_verified_domain() {
             let r = app
                 .post("/auth/methods", json!({ "email": email }), None)
                 .await;
-            (r.body["sso"].clone(), r.body["provider"]["org"].clone())
+            r.body["provider"]["org"].clone()
         }
     };
-    assert_eq!(
-        offered("ada@acme.example").await,
-        (json!(true), json!(owner.org_id))
-    );
+    assert_eq!(offered("ada@acme.example").await, json!(owner.org_id));
     assert_eq!(
         offered("ada@beta.example").await,
-        (json!(false), serde_json::Value::Null),
+        serde_json::Value::Null,
         "a domain the org hasn't verified offers no SSO"
     );
-    assert_eq!(
-        offered("ada@else.example").await,
-        (json!(false), serde_json::Value::Null)
-    );
+    assert_eq!(offered("ada@else.example").await, serde_json::Value::Null);
     let r = app
         .post(
             "/auth/oidc/start",
@@ -775,12 +765,6 @@ async fn only_an_org_that_starts_without_a_click_is_named_without_an_address() {
     let unknown = OrgId::new();
     assert_eq!(
         methods_page(&app, &format!("?org={unknown}")).await["provider"],
-        serde_json::Value::Null
-    );
-
-    let off = App::start_with(&s, &[("KAESO_AUTH_OIDC", "false")]).await;
-    assert_eq!(
-        methods_page(&off, &named).await["provider"],
         serde_json::Value::Null
     );
     s.cleanup().await;
@@ -919,10 +903,6 @@ async fn a_start_link_goes_on_to_the_provider_only_for_an_org_that_starts_withou
             "a link names its org: {query:?}: {to}"
         );
     }
-
-    let off = App::start_with(&s, &[("KAESO_AUTH_OIDC", "false")]).await;
-    let to = location(&follow(&off, &link).await);
-    assert!(to.ends_with("#sso_error=sso_off"), "{to}");
     s.cleanup().await;
 }
 

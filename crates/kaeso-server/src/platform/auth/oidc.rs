@@ -96,7 +96,6 @@ fn binding_cookie(
     ))
 }
 
-const SSO_OFF: &str = "SSO sign-in is turned off on this install.";
 const NO_SSO: &str = "No organization uses SSO for this sign-in; use another way to sign in.";
 const ENTER_EMAIL: &str = "Enter your email to sign in with single sign-on.";
 const PROVIDER_REFUSED: &str = "The identity provider refused the sign-in.";
@@ -120,7 +119,6 @@ const OTHER_DOMAIN: &str = "This organization's SSO only signs in addresses of "
 const ACCEPT_INVITE: &str = "; sign in to accept the invitation.";
 
 const CODES: &[(&str, &str)] = &[
-    (SSO_OFF, "sso_off"),
     (NO_SSO, "no_sso"),
     (PROVIDER_REFUSED, "provider_refused"),
     (INCOMPLETE, "incomplete"),
@@ -158,14 +156,6 @@ pub fn failure_code(e: &ApiError) -> &'static str {
     }
 }
 
-fn sso_on(state: &AppState) -> ApiResult<()> {
-    if state.config.auth.oidc {
-        Ok(())
-    } else {
-        Err(ApiError::PermissionDenied(SSO_OFF.into()))
-    }
-}
-
 fn no_sso() -> ApiError {
     ApiError::NotFound(NO_SSO.into())
 }
@@ -200,7 +190,6 @@ pub(crate) async fn begin_link(
     user: UserId,
     next: Option<String>,
 ) -> ApiResult<Linking> {
-    sso_on(state)?;
     throttle_ip(state, ctx, TOKENS_PER_IP).await?;
     let begun = begin(state, ctx, org, Purpose::Link(user), next).await?;
     Ok(Linking {
@@ -217,7 +206,6 @@ pub(crate) async fn begin_confirm(
     session: SessionId,
     next: Option<String>,
 ) -> ApiResult<Linking> {
-    sso_on(state)?;
     throttle_ip(state, ctx, TOKENS_PER_IP).await?;
     let begun = begin(state, ctx, org, Purpose::Confirm { user, session }, next).await?;
     Ok(Linking {
@@ -288,7 +276,6 @@ pub async fn start(
     ctx: Ctx,
     Body(req): Body<StartRequest>,
 ) -> ApiResult<Response> {
-    sso_on(&state)?;
     throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
     let next = next::validate(&state.config.public_url, req.next.as_deref())?;
     let org = match (req.org, req.email) {
@@ -362,7 +349,6 @@ pub async fn start_link(
         Err(e) => return refused(&state, &e, &Back::default(), false),
     };
     let page = async {
-        sso_on(&state)?;
         let next = next::validate(&state.config.public_url, link.next.as_deref())?;
         let connection = oidc::get(&state.pg, link.org.uuid())
             .await?
@@ -491,7 +477,7 @@ fn binding_from(state: &AppState, headers: &HeaderMap) -> Option<String> {
     summary = "The identity provider returns here. On success the session cookie is\n\
     set and the browser goes to the console; on failure to the sign-in page\n\
     with an error code in `#sso_error=`.",
-    description = "The codes: `sso_off`, `no_sso`, `invalid_link`, `expired`, \
+    description = "The codes: `no_sso`, `invalid_link`, `expired`, \
     `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, \
     `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, \
     `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, \
@@ -522,9 +508,6 @@ async fn answer(
     headers: &HeaderMap,
     cb: Callback,
 ) -> (Back, ApiResult<Response>) {
-    if let Err(e) = sso_on(state) {
-        return (Back::default(), Err(e));
-    }
     let flow = match cb.state.as_deref() {
         Some(flow_state) => take_flow(state, ctx, headers, flow_state).await,
         None => Err(incomplete()),

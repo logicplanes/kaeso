@@ -171,6 +171,22 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
     Ok(config)
 }
 
+pub fn unknown_variables(source: &dyn Source) -> Vec<String> {
+    let mut names: Vec<String> = source
+        .var_names()
+        .into_iter()
+        .filter(|n| n.starts_with("KAESO_") && n != "KAESO_CONFIG")
+        .filter(|n| !n.starts_with(PROVIDER_ENV_PREFIX))
+        .filter(|n| {
+            !settings().iter().any(|s| {
+                s.env == n.as_str() || (s.secret && n.strip_suffix("_FILE") == Some(&s.env))
+            })
+        })
+        .collect();
+    names.sort();
+    names
+}
+
 fn unknown_file_key(key: String, path: PathBuf) -> ConfigError {
     let mut parts = key.splitn(3, '.');
     let (Some("providers"), Some(id)) = (parts.next(), parts.next()) else {
@@ -529,6 +545,24 @@ mod tests {
     }
 
     #[test]
+    fn variables_that_name_no_setting_are_listed_to_warn_about() {
+        let m = Map::minimal()
+            .set("KAESO_AUTH_PASSWROD", "false")
+            .set("KAESO_MASTER_KEYS_FILE", "/run/secrets/master_keys")
+            .set("KAESO_LISTEN_FILE", "/run/listen")
+            .set("KAESO_CONFIG", "/etc/kaeso.toml")
+            .set(
+                "KAESO_PROVIDERS_OPENAI_BASE_URL",
+                "https://api.openai.com/v1",
+            )
+            .set("HOME", "/home/kaeso");
+        assert_eq!(
+            unknown_variables(&m),
+            ["KAESO_AUTH_PASSWROD", "KAESO_LISTEN_FILE"]
+        );
+    }
+
+    #[test]
     fn unknown_file_keys_are_refused() {
         let m = Map::minimal()
             .set("KAESO_CONFIG", "/k.toml")
@@ -558,9 +592,10 @@ mod tests {
 
     #[test]
     fn invalid_values_name_the_setting_and_never_echo_secrets() {
-        let err = load(&Map::minimal().set("KAESO_AUTH_OIDC", "maybe")).unwrap_err();
+        let err = load(&Map::minimal().set("KAESO_AUTH_PASSWORD", "maybe")).unwrap_err();
         assert!(
-            err.to_string().starts_with("KAESO_AUTH_OIDC (auth.oidc)"),
+            err.to_string()
+                .starts_with("KAESO_AUTH_PASSWORD (auth.password)"),
             "{err}"
         );
         let err =

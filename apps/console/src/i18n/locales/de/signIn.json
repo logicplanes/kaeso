@@ -35,7 +35,6 @@
   "signIn.ssoError.noAccess": "Sie haben noch keinen Zugang zu dieser Organisation; bitten Sie einen Admin um eine Einladung.",
   "signIn.ssoError.noSso": "Für diese Anmeldung nutzt keine Organisation Single Sign-on; melden Sie sich anders an.",
   "signIn.ssoError.noVerifiedDomain": "Diese Organisation hat noch keine E-Mail-Domain für Single Sign-on bestätigt; fragen Sie einen Admin.",
-  "signIn.ssoError.off": "Single Sign-on ist auf dieser Installation ausgeschaltet.",
   "signIn.ssoError.orgScheduled": "Diese Organisation ist zum Löschen vorgemerkt.",
   "signIn.ssoError.otherAccount": "Sie haben sich beim Identitätsanbieter als jemand anderes angemeldet; melden Sie sich dort als Sie selbst an.",
   "signIn.ssoError.providerIncompatible": "Die Single-Sign-on-Verbindung funktioniert mit diesem Identitätsanbieter nicht; sagen Sie es einem Admin.",

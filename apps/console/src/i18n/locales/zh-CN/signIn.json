@@ -35,7 +35,6 @@
   "signIn.ssoError.noAccess": "您尚无权访问此组织；请让管理员邀请您。",
   "signIn.ssoError.noSso": "没有组织为此登录使用单点登录；请用其他方式登录。",
   "signIn.ssoError.noVerifiedDomain": "此组织尚未为单点登录验证邮箱域名；请联系管理员。",
-  "signIn.ssoError.off": "此实例已关闭单点登录。",
   "signIn.ssoError.orgScheduled": "此组织已计划删除。",
   "signIn.ssoError.otherAccount": "您在身份提供方以其他人的身份登录；请在那里以您本人身份登录。",
   "signIn.ssoError.providerIncompatible": "单点登录连接与此身份提供商不兼容；请告知管理员。",
