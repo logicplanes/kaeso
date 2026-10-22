@@ -4,6 +4,21 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Console
+
+- The sign-in page always asks for the email first, and offers single sign-on only for the organization that verified the email's domain, as large services do. Links to `/sign-in?org=…` show the same email page.
+
+#### Gateway
+
+- Single sign-on is set up per organization and no longer switched on for the whole install: `auth.oidc` and `KAESO_AUTH_OIDC` are gone. In a config file the old key stops startup with a clear message; as an environment variable it only logs a warning, so remove it.
+- An organization's start link (`/platform/v1/auth/oidc/start?org=…`) goes straight to its identity provider only while **Start without a click** is on; otherwise it opens the email page and keeps `next`. The Sign-in link on an organization's Security page is now that start link, so share it again if you published the old address.
+
+#### Platform API
+
+- `auth/methods` no longer has `sso`, and names a `provider` only after an email or for a start link with Start without a click; `instance/settings` no longer has `sign_in.sso`. `POST auth/oidc/start` with `org` needs Start without a click or a signed-in member of the organization; otherwise send `email`.
+
 ## [0.3.5] - 2026-10-21
 
 Kaeso 0.3.5 changes how the gateway limits request bodies and memory, and it tightens sign-in, invitation and project membership rules. Operators may need to raise `body_limits.model_api` for large uploads, and should review default project membership, since it no longer copies current members. Integrations that use `GET auth/oidc/start` or spend budgets should check the entries under Changed. Several security fixes are included, so upgrading is recommended.
