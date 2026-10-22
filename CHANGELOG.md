@@ -4,6 +4,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-10-22
+
 ### Changed
 
 #### Console
@@ -555,7 +557,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.6
 [0.3.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.5
 [0.3.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.4
 [0.3.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.3
