@@ -89,7 +89,9 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 
 启动时，更新器最多等待 Docker 两分钟。然后它会完成处于 `online` 的更新，完成新网关变为健康的更新，并回滚其他所有更新。
 
-更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径。代理只按方法和路径过滤，`containers/create` 的请求体由更新器决定。因此更新器相当于宿主机的 root 权限，需要主动开启。`guard.rs` 会在每个请求体发出前检查它。新容器必须沿用被替换容器的名称，以及每个会放宽容器权限的 `HostConfig` 字段，例如 `Privileged`、`CapAdd`、`Devices`、`PidMode`、`NetworkMode`、`Binds` 和 `Mounts`。拉取必须按摘要指定 Kaeso 的镜像。这些检查用于拦截更新器自身的错误，而不是拦截控制了更新器的人。
+更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径。`GET` 可以访问版本、容器列表、按短 ID 或完整 ID 指定的容器，以及按摘要指定的镜像。`POST` 可以访问 `images/create`、为按摘要指定的 Kaeso 镜像打标签、`containers/create`，以及按完整 ID 启动、停止和重命名容器。`DELETE` 按完整 ID 删除容器。代理还只允许来自 `${PWD}`（即运行 `docker compose up` 的文件夹）的绑定挂载，并拒绝 `VolumesFrom`。
+
+代理只匹配路径而不匹配查询参数，因此无法把 `images/create` 限制为 Kaeso 的镜像。它也无法读取 `containers/create` 请求体的其余部分，例如特权、capabilities、设备或宿主机命名空间。查看容器会显示其环境变量，因此更新器可以读取任何容器的密码。因此更新器相当于宿主机的 root 权限，需要主动开启。`guard.rs` 会在每个请求体发出前检查它。新容器必须沿用被替换容器的名称，以及每个可能放宽容器权限的 `HostConfig` 字段。这些字段涵盖特权和 capabilities、设备、命名空间和网络，以及挂载、`ReadonlyRootfs`、`Tmpfs`、`MaskedPaths` 和 `ReadonlyPaths`。它们还涵盖发布的端口、名称解析（`ExtraHosts`、`Dns`、`Links`）、`GroupAdd` 和 `CgroupParent`、资源限制（`Memory`、`PidsLimit`、`Ulimits`）、`Init` 和 `LogConfig`。拉取必须按摘要指定 Kaeso 的镜像。这些检查用于拦截更新器自身的错误，而不是拦截控制了更新器的人。
 
 ### 更新器检查的内容
 

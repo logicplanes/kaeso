@@ -151,15 +151,15 @@ Then remove both `…-previous` containers with `docker rm`. The updater starts 
 
 ### What the updater may do
 
-The updater is equivalent to root on the server. It can create containers, and `docker-proxy`, which runs as root to reach Docker's socket, checks only the method and path of each call. Whoever controls the updater or the proxy controls the server. The updater is built to keep that power narrow:
+The updater is equivalent to root on the server. It can create containers, and `docker-proxy`, which runs as root to reach Docker's socket, checks only the method and path of each call and where bind mounts come from. Whoever controls the updater or the proxy controls the server. The updater is built to keep that power narrow:
 
 - It answers only the gateway, on an internal network, and only with the shared token. The gateway passes it a version number and nothing else.
-- It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs.
+- It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs. It allows bind mounts only from the folder you run `docker compose up` in, so run it in the install's folder.
 - It replaces only the gateway and console containers of its own Compose project, with images it verified.
-- It refuses to create a container whose privileges, capabilities, devices, namespaces, network or mounts differ from the one it replaces, and pulls only Kaeso's images, by digest.
+- It refuses to create a container whose privileges, capabilities, devices, namespaces, network, mounts, ports, name resolution, groups or limits differ from the one it replaces, and pulls only Kaeso's images, by digest.
 - It changes only the image versions and digests in `compose.yaml`, and leaves a file that differs from the release's alone.
 
-Without the `updater` profile, nothing in Kaeso has Docker access.
+The proxy can't check what a new container asks for, such as privileges or host devices, and lets the updater read any container's settings, including the database passwords in their environment. Those checks live in the updater alone. Without the `updater` profile, nothing in Kaeso has Docker access.
 
 ## While Kaeso updates
 

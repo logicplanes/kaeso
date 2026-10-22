@@ -96,7 +96,7 @@ def install(tmp_path_factory):
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
 
     def run(*args: str, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
-        return subprocess.run([*compose, *args], cwd=work, check=check, text=True, **kwargs)
+        return subprocess.run([*compose, *args], cwd=work, env=os.environ | {"PWD": str(work)}, check=check, text=True, **kwargs)
 
     url = f"http://localhost:{port}"
     try:
