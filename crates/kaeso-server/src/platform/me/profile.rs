@@ -175,13 +175,17 @@ pub async fn change_email(
     let user = ctx.user_id()?;
     let email = validate_email("email", &req.email)?;
     throttle_ip(&state, &ctx, EMAILS_PER_IP).await?;
-    throttle::hit(&state, EMAILS_PER_ADDRESS, &email)
-        .await
-        .map_err(|r| {
-            refused(r, |_| {
-                "Too many emails to this address; try again later.".to_owned()
-            })
-        })?;
+    throttle::hit(
+        &state,
+        EMAILS_PER_ADDRESS,
+        &kaeso_core::email::canonical(&email),
+    )
+    .await
+    .map_err(|r| {
+        refused(r, |_| {
+            "Too many emails to this address; try again later.".to_owned()
+        })
+    })?;
     if users::email_taken(&state.pg, &email, Some(user.uuid())).await? {
         return Err(ApiError::Conflict(
             "Another account uses this address.".into(),

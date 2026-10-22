@@ -59,9 +59,13 @@ pub async fn request(
         status: "email_sent",
         message: format!("Open the link we sent to {email} to continue."),
     });
-    if throttle::hit(&state, EMAILS_PER_ADDRESS, &email)
-        .await
-        .is_err()
+    if throttle::hit(
+        &state,
+        EMAILS_PER_ADDRESS,
+        &kaeso_core::email::canonical(&email),
+    )
+    .await
+    .is_err()
     {
         return Ok(answer);
     }

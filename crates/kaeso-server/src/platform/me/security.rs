@@ -56,7 +56,7 @@ pub(crate) async fn require_second_factor(
             ));
         }
     };
-    let attempts = Attempts::new(ctx, &user.to_string());
+    let attempts = Attempts::for_user(ctx, user);
     attempts.begin(state).await?;
     match crate::auth::totp::check(state, user, factor).await {
         Ok(()) => {
@@ -145,7 +145,7 @@ pub async fn change_password(
         .ok_or_else(|| ApiError::not_found("user"))?;
     match (&user.password_hash, req.current_password) {
         (Some(stored), Some(current)) => {
-            let attempts = Attempts::new(&ctx, &user_id.to_string());
+            let attempts = Attempts::for_user(&ctx, user_id);
             attempts.begin(&state).await?;
             let stored = stored.clone();
             let ok = tokio::task::spawn_blocking(move || {
@@ -293,7 +293,7 @@ pub async fn totp_confirm(
     if totp::is_enabled(&state.pg, user_id.uuid()).await? {
         return Err(ApiError::Conflict(ALREADY_ON.into()));
     }
-    let attempts = Attempts::new(&ctx, &user_id.to_string());
+    let attempts = Attempts::for_user(&ctx, user_id);
     attempts.begin(&state).await?;
     match check_code(&state, user_id, &req.code, true).await {
         Ok(()) => attempts.succeeded(&state).await,

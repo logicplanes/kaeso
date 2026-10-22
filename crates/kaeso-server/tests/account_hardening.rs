@@ -334,6 +334,111 @@ async fn failed_sign_ins_lock_one_address_out_of_one_account() {
     s.cleanup().await;
 }
 
+#[tokio::test]
+async fn a_locked_account_stays_locked_however_its_address_is_written() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    sqlx::query("UPDATE users SET email = 'kim@example.com' WHERE email = 'owner@example.com'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let attempt = |email: &'static str, password: &'static str| {
+        let app = &app;
+        async move {
+            app.post(
+                "/auth/password",
+                json!({ "email": email, "password": password }),
+                None,
+            )
+            .await
+            .status
+        }
+    };
+    for _ in 0..10 {
+        assert_eq!(
+            attempt("kim@example.com", "wrong password!!").await,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    for written in [
+        "KIM@example.com",
+        "\u{212A}IM@example.com",
+        "kim@EXAMPLE.com",
+    ] {
+        assert_eq!(
+            attempt(written, PASSWORD).await,
+            StatusCode::TOO_MANY_REQUESTS,
+            "{written} is the locked account's address"
+        );
+    }
+    for _ in 0..3 {
+        assert_eq!(
+            attempt("K\u{130}M@example.com", PASSWORD).await,
+            StatusCode::UNAUTHORIZED,
+            "a dotted capital I is another address and never signs in to the locked account"
+        );
+    }
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn emails_to_one_account_count_together_however_its_address_is_written() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    sqlx::query("UPDATE users SET email = 'kim@example.com' WHERE email = 'owner@example.com'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    for written in [
+        "kim@example.com",
+        "KIM@example.com",
+        "\u{212A}im@example.com",
+        "\u{212A}IM@EXAMPLE.COM",
+        "ｋｉｍ@example.com",
+        "Kim@example.com",
+    ] {
+        app.post("/auth/magic-link", json!({ "email": written }), None)
+            .await
+            .expect_status(StatusCode::OK);
+    }
+    app.post(
+        "/auth/password-reset",
+        json!({ "email": "kim@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    kaeso_store::pg::users::insert(
+        &app.state.pg,
+        &kaeso_store::pg::users::NewUser {
+            id: uuid::Uuid::now_v7(),
+            email: "ada@example.com",
+            name: "Ada",
+            password_hash: None,
+            email_verified_at: None,
+            is_instance_admin: false,
+        },
+    )
+    .await
+    .unwrap();
+    app.post(
+        "/auth/magic-link",
+        json!({ "email": "ada@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.wait_for_mail("ada@example.com", 1).await;
+    assert_eq!(
+        kinds_to(&app, "kim@example.com"),
+        ["magic_link"; 5],
+        "five emails an hour reach one address, whichever way it is written"
+    );
+    s.cleanup().await;
+}
+
 fn kinds_to(app: &App, to: &str) -> Vec<&'static str> {
     app.mail
         .all()

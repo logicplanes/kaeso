@@ -77,8 +77,15 @@ pub(crate) struct Attempts {
 }
 
 impl Attempts {
-    pub(crate) fn new(ctx: &Ctx, account: &str) -> Attempts {
-        let account = account.to_lowercase();
+    pub(crate) fn for_address(ctx: &Ctx, email: &str) -> Attempts {
+        Attempts::new(ctx, kaeso_core::email::canonical(email))
+    }
+
+    pub(crate) fn for_user(ctx: &Ctx, user: UserId) -> Attempts {
+        Attempts::new(ctx, user.to_string())
+    }
+
+    fn new(ctx: &Ctx, account: String) -> Attempts {
         let pair = format!("{account}|{}", crate::auth::key_failures::subject(ctx.ip));
         Attempts { account, pair }
     }
@@ -159,7 +166,7 @@ pub async fn password(
     }
     throttle_ip(&state, &ctx, SIGN_IN_PER_IP).await?;
     let email = kaeso_core::email::normalize(&req.email).map_err(|_| wrong())?;
-    let attempts = Attempts::new(&ctx, &email);
+    let attempts = Attempts::for_address(&ctx, &email);
     attempts.begin(&state).await?;
 
     let user = users::get_by_email(&state.pg, &email).await?;
@@ -243,7 +250,7 @@ pub async fn totp(
         .user_id
         .map(UserId::from_uuid)
         .ok_or_else(|| ApiError::internal("challenge without user"))?;
-    let attempts = Attempts::new(&ctx, &user_id.to_string());
+    let attempts = Attempts::for_user(&ctx, user_id);
     attempts.begin(&state).await?;
     let app_code = matches!(factor, Factor::Code(_));
     if app_code && totp::failed_codes(&state.pg, user_id.uuid()).await? >= CODES_BEFORE_LOCK {
