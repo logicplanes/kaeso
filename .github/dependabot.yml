@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - rust
@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - rust
@@ -36,7 +36,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - javascript
@@ -57,7 +57,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - python
@@ -74,7 +74,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - docker
@@ -97,7 +97,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - docker
@@ -126,7 +126,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 3
+      default-days: 7
     labels:
       - dependencies
       - github-actions
