@@ -20,6 +20,8 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 
 Under **Profile**, choose **Change email** and enter the new address, and with two-factor authentication on, a code from your authenticator app or a recovery code. Kaeso sends a confirmation link to the new address, and a link to cancel the change to the old one. The change takes effect when you open the confirmation link. Signing out the browser that asked for the change, signing out everywhere or resetting your password cancels it too.
 
+Confirming the change signs out every other session of your account. The browser that opens the link stays signed in; when you open it where you aren't signed in, the browser that asked for the change stays.
+
 ## Change your password
 
 Under **Security**, **Change password** sets a new password and signs out your other sessions. If you sign in only with links or single sign-on, you have no password, and **Set password** adds one.

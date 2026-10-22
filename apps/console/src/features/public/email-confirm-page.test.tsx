@@ -20,7 +20,7 @@ describe("confirming a new email address", () => {
     on("POST", "me/email/confirm", me({ email: "ada@example.org" }));
     await renderApp("/me/email/confirm#token=eml_1");
     expect(window.location.hash).toBe("");
-    expect(await (await notifications()).findByText("Email address changed")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Email address changed; your other sessions are signed out")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe("/settings/account/profile"));
     expect(requests("POST", "me/email/confirm").map((r) => r.body)).toEqual([{ token: "eml_1" }]);
   });

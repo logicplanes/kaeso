@@ -208,6 +208,72 @@ async fn email_changes_need_the_second_factor_and_can_be_cancelled_from_the_old_
     s.cleanup().await;
 }
 
+async fn sign_in_as(app: &App, email: &str) -> String {
+    app.post(
+        "/auth/password",
+        json!({ "email": email, "password": PASSWORD }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK)
+    .cookie()
+    .unwrap()
+}
+
+async fn change_email(app: &App, cookie: &str, to: &str, mails: usize) -> String {
+    app.post("/me/email", json!({ "email": to }), Some(cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    app.wait_for_mail(to, mails).await;
+    app.last_token(to)
+}
+
+#[tokio::test]
+async fn confirming_a_new_address_signs_out_every_other_session() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let laptop = sign_in_as(&app, "owner@example.com").await;
+    let phone = sign_in_as(&app, "owner@example.com").await;
+    let signed_in = |cookie: String| {
+        let app = &app;
+        async move { app.get("/auth/session", &cookie).await.status }
+    };
+
+    let token = change_email(&app, &owner.cookie, "new@example.com", 1).await;
+    app.post("/me/email/confirm", json!({ "token": token }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        signed_in(owner.cookie.clone()).await,
+        StatusCode::OK,
+        "the session that asked for the change stays when the link opens elsewhere"
+    );
+    for other in [&laptop, &phone] {
+        assert_eq!(signed_in(other.clone()).await, StatusCode::UNAUTHORIZED);
+    }
+
+    let tablet = sign_in_as(&app, "new@example.com").await;
+    let token = change_email(&app, &owner.cookie, "newer@example.com", 1).await;
+    app.post(
+        "/me/email/confirm",
+        json!({ "token": token }),
+        Some(&tablet),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        signed_in(tablet).await,
+        StatusCode::OK,
+        "the session that opens the link stays"
+    );
+    assert_eq!(
+        signed_in(owner.cookie.clone()).await,
+        StatusCode::UNAUTHORIZED
+    );
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn ending_sessions_or_resetting_the_password_ends_a_pending_email_change() {
     let s = TestServices::start().await;

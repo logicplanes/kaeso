@@ -25,7 +25,7 @@
   "public.createToJoin": "{target, select, role {创建账户以加入 {org}（角色：{role}）。} org {创建账户以加入 {org}。} other {创建账户以加入此 Kaeso 实例。}}",
   "public.emailChangeCancelled": "邮箱更改已取消",
   "public.emailChangeCancelledHint": "您的账户保留此地址；如果您没有请求此更改，请重置密码。",
-  "public.emailChanged": "邮箱地址已更改",
+  "public.emailChanged": "邮箱地址已更改；您的其他会话已退出登录",
   "public.emailMeLink": "通过邮件发送链接",
   "public.finishAccount": "完成注册",
   "public.finishAccountHint": "设置他人看到的名称；密码可选。",
