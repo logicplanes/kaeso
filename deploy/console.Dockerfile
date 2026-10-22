@@ -1,3 +1,11 @@
+# caddy:2.11.7-alpine is built with Go 1.26.8 and x/net 0.59.0; Go 1.26.9 and x/net 0.60.0 fix
+# GO-2026-6603, GO-2026-6609, GO-2026-6610, GO-2026-6611, GO-2026-6612 and GO-2026-6617.
+FROM golang:1.26.9-alpine@sha256:3082400e369fa24d5fc60bca20edab3f6d604e0c5a690ec66b295eff4dd87ade AS caddy
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local XCADDY_GO_BUILD_FLAGS="-trimpath -ldflags=-buildid="
+RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.7 \
+  && xcaddy build v2.11.7 --output /caddy --replace golang.org/x/net=golang.org/x/net@v0.60.0 \
+  && go version -m /caddy | grep -qE '^\s+(dep|=>)\s+golang\.org/x/net\s+v0\.60\.0\s'
+
 FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 WORKDIR /app
 RUN corepack enable
@@ -9,7 +17,7 @@ RUN pnpm --filter kaeso-console... build \
   && rm -rf apps/console/dist/.vite \
   && find apps/console/dist -name '*.map' -delete
 
-FROM caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+FROM alpine:3.24.3@sha256:b3413572228e34bd1c9245f5565e6cd127005655e8a7899aef33d8e83255c9e6
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso console" \
       org.opencontainers.image.description="The web console for the Kaeso gateway." \
@@ -18,13 +26,12 @@ LABEL org.opencontainers.image.title="Kaeso console" \
       org.opencontainers.image.url="https://kaeso.app" \
       org.opencontainers.image.documentation="https://docs.kaeso.app" \
       org.opencontainers.image.licenses="MIT"
-RUN apk add --no-cache --virtual .setcap libcap-utils \
-  && setcap -r /usr/bin/caddy \
-  && apk del .setcap \
+RUN apk add --no-cache ca-certificates mailcap \
   && addgroup -S console && adduser -S -G console -H -s /sbin/nologin console \
-  && mkdir -p /var/lib/console/data /var/lib/console/config \
+  && mkdir -p /etc/caddy /srv /var/lib/console/data /var/lib/console/config \
   && chown -R console:console /var/lib/console
 ENV XDG_DATA_HOME=/var/lib/console/data XDG_CONFIG_HOME=/var/lib/console/config
+COPY --from=caddy --chmod=0555 /caddy /usr/bin/caddy
 COPY --chmod=0444 deploy/console/Caddyfile /etc/caddy/Caddyfile
 COPY --chmod=0555 deploy/console/serve.sh /usr/local/bin/kaeso-console
 COPY --from=build --chmod=0555 /app/apps/console/dist /srv
