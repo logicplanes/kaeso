@@ -20,8 +20,10 @@ use crate::state::AppState;
 pub(super) async fn project_models(
     state: &AppState,
     project: Uuid,
+    key: Option<Uuid>,
+    service_account: Option<Uuid>,
 ) -> Result<Arc<ProjectModels>, KppError> {
-    crate::services::catalogue::project_models(state, project)
+    crate::services::catalogue::project_models_for(state, project, key, service_account)
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "cannot load the project's models");
@@ -39,7 +41,8 @@ async fn visible(
     client: Option<IpAddr>,
 ) -> Result<Vec<ModelInfo>, KppError> {
     let key = auth::authenticate(state, headers, client).await?;
-    let models = project_models(state, key.project_id).await?;
+    let models =
+        project_models(state, key.project_id, Some(key.id), key.service_account_id).await?;
     let access = models.access(Some(key.id), key.user_id, key.service_account_id);
     let mut out = Vec::new();
     let mut listed = HashMap::new();
@@ -128,7 +131,8 @@ async fn get_inner(
     id: &str,
 ) -> Result<ModelInfo, KppError> {
     let key = auth::authenticate(state, headers, client).await?;
-    let models = project_models(state, key.project_id).await?;
+    let models =
+        project_models(state, key.project_id, Some(key.id), key.service_account_id).await?;
     let not_found = || {
         error(
             ErrorKind::NotFound,

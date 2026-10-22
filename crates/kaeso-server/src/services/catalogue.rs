@@ -26,6 +26,20 @@ pub async fn project_models(
     Ok(found.unwrap_or_default())
 }
 
+pub async fn project_models_for(
+    state: &AppState,
+    project: Uuid,
+    key: Option<Uuid>,
+    service_account: Option<Uuid>,
+) -> Result<Arc<ProjectModels>, StoreError> {
+    let models = project_models(state, project).await?;
+    if models.knows(key, service_account) {
+        return Ok(models);
+    }
+    forget(state, project).await;
+    project_models(state, project).await
+}
+
 pub async fn forget(state: &AppState, project: Uuid) {
     state
         .caches

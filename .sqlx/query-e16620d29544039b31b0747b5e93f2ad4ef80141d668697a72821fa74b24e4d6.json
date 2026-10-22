@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT k.id, ma.catalogue_model_id AS \"model?\" FROM api_keys k LEFT JOIN model_access ma ON ma.api_key_id = k.id WHERE k.project_id = $1 AND k.models_restricted AND k.archived_at IS NULL",
+  "query": "SELECT s.id, s.models_restricted, ma.catalogue_model_id AS \"model?\" FROM service_accounts s LEFT JOIN model_access ma ON ma.service_account_id = s.id AND s.models_restricted WHERE s.project_id = $1",
   "describe": {
     "columns": [
       {
@@ -9,13 +9,24 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "api_keys",
+            "table": "service_accounts",
             "name": "id"
           }
         }
       },
       {
         "ordinal": 1,
+        "name": "models_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "models_restricted"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
         "name": "model?",
         "type_info": "Uuid",
         "origin": {
@@ -33,8 +44,9 @@
     },
     "nullable": [
       false,
+      false,
       true
     ]
   },
-  "hash": "102bf0e33c6240c64b4b6f69dc43288d90db58805a27acdff0a1973f057c0814"
+  "hash": "e16620d29544039b31b0747b5e93f2ad4ef80141d668697a72821fa74b24e4d6"
 }
